@@ -58,10 +58,10 @@ def txt_files_to_jsonl(input_dir, output_dir, output_filename, id_category, id_p
         print(f"エラーが発生しました: {e}")
 
 # 使用例
-input_directory = "/Users/nomura/02_Airion/長野オートメーション/prepare_training_data/txt_normal"  # 入力ディレクトリ
+input_directory = "/Users/nomura/02_Airion/長野オートメーション/prepare_training_data/txt_STG"  # 入力ディレクトリ
 output_directory = "/Users/nomura/02_Airion/長野オートメーション/prepare_training_data/jsonl_merged"   # 出力ディレクトリ
-output_filename = "plc_normal_01.jsonl"  # 出力ファイル名
-id_category = "normal"  # "normal" または "STG"
+output_filename = "plc_STG_01.jsonl"  # 出力ファイル名
+id_category = "STG"  # "normal" または "STG"
 id_prefix = "01"        # バージョン番号
 
 txt_files_to_jsonl(input_directory, output_directory, output_filename, id_category, id_prefix)

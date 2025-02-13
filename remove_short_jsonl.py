@@ -2,12 +2,17 @@ import os
 import json
 import random
 
-def filter_jsonl_files(directory_path, length_limit):
+def filter_jsonl_files(input_directory, output_directory, length_limit):
     try:
-        # ディレクトリ内のすべての.jsonlファイルを取得
-        for file_name in os.listdir(directory_path):
+        # 出力フォルダが存在しない場合は作成する
+        if not os.path.exists(output_directory):
+            os.makedirs(output_directory)
+            print(f"出力フォルダ {output_directory} を作成しました。")
+
+        # 入力ディレクトリ内のすべての.jsonlファイルを取得
+        for file_name in os.listdir(input_directory):
             if file_name.endswith('.jsonl'):
-                file_path = os.path.join(directory_path, file_name)
+                file_path = os.path.join(input_directory, file_name)
 
                 # フィルタリングされたデータを格納するリスト
                 filtered_lines = []
@@ -29,30 +34,25 @@ def filter_jsonl_files(directory_path, length_limit):
                 # ランダムに30個の削除されたテキストを表示
                 if removed_texts:
                     sample_texts = random.sample(removed_texts, min(30, len(removed_texts)))
-                    print("Sample of removed 'text' values:")
+                    print("削除された'text'値のサンプル:")
                     for text in sample_texts:
                         print("--------------------------------------------")
                         print(text)
 
-                # 新しいファイル名の生成
-                base_name, ext = os.path.splitext(file_name)
-                if len(base_name) <= length_limit:
-                    new_file_name = f"{base_name}_cut{length_limit}{ext}"
-                else:
-                    new_file_name = file_name
-
-                new_file_path = os.path.join(directory_path, new_file_name)
+                # 出力ファイルのパスを設定（ファイル名にプレフィックス "filtered_" を付与）
+                new_file_name = "filtered_" + file_name
+                new_file_path = os.path.join(output_directory, new_file_name)
 
                 # フィルタリング後のデータを新しいファイルに保存
                 with open(new_file_path, 'w', encoding='utf-8') as file:
                     file.write('\n'.join(filtered_lines))
 
-                print(f"Filtered {file_name}, remaining lines: {len(filtered_lines)} -> Saved as {new_file_name}")
+                print(f"{file_name} をフィルタリングしました。残りの行数: {len(filtered_lines)} -> {new_file_name} に保存")
     except Exception as e:
-        print(f"An error occurred: {e}")
+        print(f"エラーが発生しました: {e}")
 
 # 使用例
-# 指定したディレクトリのパスに置き換えてください
-directory_path = "/Users/nomura/Downloads/長野オートメーション/prepare_training_data/final_training_corpus"
-length_limit = 50  # 可変長の制限値
-filter_jsonl_files(directory_path, length_limit)
+input_directory = "/Users/nomura/02_Airion/長野オートメーション/prepare_training_data/jsonl_merged"
+output_directory = "/Users/nomura/02_Airion/長野オートメーション/prepare_training_data/jsonl_filtered"
+length_limit = 50  # テキストの長さ制限値
+filter_jsonl_files(input_directory, output_directory, length_limit)
