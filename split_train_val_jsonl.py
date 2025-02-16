@@ -49,9 +49,9 @@ def split_jsonl(file_path, train_ratio=0.8, output_dir="./", train_output="train
 
 # 使い方の例
 split_jsonl(
-    file_path="/Users/nomura/Downloads/長野オートメーション/prepare_training_data/output02_cut50.jsonl",
-    train_ratio=0.95,
-    output_dir="/Users/nomura/Downloads/長野オートメーション/prepare_training_data/train-val_split_data",
-    train_output="train_02.jsonl",
-    val_output="val_02.jsonl"
+    file_path="/Users/nomura/02_Airion/長野オートメーション/prepare_training_data/jsonl_sample/plc_sample_01.jsonl",
+    train_ratio=0.90,
+    output_dir="/Users/nomura/02_Airion/長野オートメーション/prepare_training_data/jsonl_splitted_train-val",
+    train_output="plc_sample_01_train.jsonl",
+    val_output="plc_sample_01_val.jsonl"
 )
