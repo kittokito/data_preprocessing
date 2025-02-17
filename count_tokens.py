@@ -1,17 +1,18 @@
 import os
 import json
-import tiktoken
 import matplotlib.pyplot as plt
 import numpy as np
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
+from transformers import AutoTokenizer  # transformers を利用
 
 # --- ファイルパスの設定 ---
-jsonl_file = '/Users/nomura/02_Airion/長野オートメーション/prepare_training_data/jsonl_merged/plc_STG_01.jsonl'
+jsonl_file = '/Users/nomura/02_Airion/長野オートメーション/prepare_training_data/sft.jsonl'
 output_dir = '/Users/nomura/02_Airion/長野オートメーション/prepare_training_data/token_count_plot'
 os.makedirs(output_dir, exist_ok=True)
 
-# --- tiktokenのエンコーダを取得 ---
-enc = tiktoken.encoding_for_model("gpt-4")  # モデル名は小文字で指定
+# --- Hugging Face のトークナイザーを取得 ---
+# Qwen/Qwen2.5-Coder-14B-Instruct 用のトークナイザーを読み込みます
+tokenizer = AutoTokenizer.from_pretrained("Qwen/Qwen2.5-Coder-14B-Instruct")
 
 # --- 総行数の取得 ---
 with open(jsonl_file, 'r', encoding='utf-8') as f:
@@ -23,7 +24,8 @@ with open(jsonl_file, 'r', encoding='utf-8') as f:
     for idx, line in enumerate(f, start=1):
         data = json.loads(line)
         text = data.get("text", "")
-        tokens = enc.encode(text)
+        # トークン化（必要に応じて add_special_tokens の有無を調整）
+        tokens = tokenizer.encode(text, add_special_tokens=False)
         token_counts.append(len(tokens))
         
         # 進捗表示（同一ライン上で更新）
@@ -59,13 +61,12 @@ percentile_90 = np.percentile(token_counts, 90)
 inset_ax = inset_axes(ax, width="40%", height="40%", loc='upper right')
 inset_ax.hist(token_counts, bins=bins, color='skyblue', edgecolor='black')
 inset_ax.set_xlim(percentile_90, max_tokens)
-# inset の y 軸は自動で調整されるため、必要に応じて set_ylim() も利用可能です
 inset_ax.set_title('Tail Zoom', fontsize=10)
 inset_ax.grid(True)
 
 # 入力ファイル名に合わせたPNGファイル名を作成
-input_filename = os.path.basename(jsonl_file)                 # 例: plc_normal_01.jsonl
-png_filename = os.path.splitext(input_filename)[0] + ".png"      # 例: plc_normal_01.png
+input_filename = os.path.basename(jsonl_file)                 # 例: sft.jsonl
+png_filename = os.path.splitext(input_filename)[0] + ".png"      # 例: sft.png
 plot_path = os.path.join(output_dir, png_filename)
 
 plt.savefig(plot_path)
