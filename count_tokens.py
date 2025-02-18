@@ -2,45 +2,46 @@ import os
 import json
 import matplotlib.pyplot as plt
 import numpy as np
-from mpl_toolkits.axes_grid1.inset_locator import inset_axes
-from transformers import AutoTokenizer  # transformers を利用
+import matplotlib.ticker as ticker
+from tqdm import tqdm
+from transformers import AutoTokenizer
 
 # --- ファイルパスの設定 ---
-jsonl_file = '/Users/nomura/02_Airion/長野オートメーション/prepare_training_data/sft.jsonl'
-output_dir = '/Users/nomura/02_Airion/長野オートメーション/prepare_training_data/token_count_plot'
+jsonl_file = './jsonl/jsonl_merged/plc_01.jsonl'
+output_dir = './analyzed_data/token_count_plot'
 os.makedirs(output_dir, exist_ok=True)
 
 # --- Hugging Face のトークナイザーを取得 ---
-# Qwen/Qwen2.5-Coder-14B-Instruct 用のトークナイザーを読み込みます
 tokenizer = AutoTokenizer.from_pretrained("Qwen/Qwen2.5-Coder-14B-Instruct")
 
 # --- 総行数の取得 ---
 with open(jsonl_file, 'r', encoding='utf-8') as f:
     total_lines = sum(1 for _ in f)
 
-# --- 各エントリのトークン数をカウント ---
-token_counts = []
+# --- テキスト一括読み込み ---
+texts = []
 with open(jsonl_file, 'r', encoding='utf-8') as f:
-    for idx, line in enumerate(f, start=1):
-        data = json.loads(line)
-        text = data.get("text", "")
-        # トークン化（必要に応じて add_special_tokens の有無を調整）
-        tokens = tokenizer.encode(text, add_special_tokens=False)
-        token_counts.append(len(tokens))
-        
-        # 進捗表示（同一ライン上で更新）
-        progress = idx / total_lines * 100
-        print(f"\r進捗: {progress:.2f}%", end="", flush=True)
-print()  # 最終的な改行
+    for line in tqdm(f, total=total_lines, desc="テキスト読み込み", dynamic_ncols=True):
+        texts.append(json.loads(line).get("text", ""))
+
+# --- 一括トークン化（バッチ処理） ---
+batch_size = 1000  # バッチサイズは必要に応じて調整
+token_counts = []
+for i in tqdm(range(0, len(texts), batch_size), desc="トークン化", dynamic_ncols=True):
+    batch_texts = texts[i: i+batch_size]
+    batch_encoding = tokenizer(batch_texts, add_special_tokens=False)
+    token_counts.extend([len(ids) for ids in batch_encoding["input_ids"]])
 
 # --- 統計値の計算 ---
 if token_counts:
-    avg_tokens = sum(token_counts) / len(token_counts)
+    sum_tokens = sum(token_counts)
+    avg_tokens = sum_tokens / len(token_counts)
     max_tokens = max(token_counts)
     min_tokens = min(token_counts)
 else:
-    avg_tokens = max_tokens = min_tokens = 0
+    sum_tokens = avg_tokens = max_tokens = min_tokens = 0
 
+print(f"総トークン数: {sum_tokens}")
 print(f"平均トークン数: {avg_tokens}")
 print(f"最大トークン数: {max_tokens}")
 print(f"最小トークン数: {min_tokens}")
@@ -54,22 +55,19 @@ ax.set_xlabel('Token Count')
 ax.set_ylabel('Frequency')
 ax.grid(True)
 
-# --- 裾部分の拡大 inset を追加 ---
-# 90パーセンタイル以上の範囲をズーム表示
-percentile_90 = np.percentile(token_counts, 90)
-# inset の大きさや位置は適宜調整してください
-inset_ax = inset_axes(ax, width="40%", height="40%", loc='upper right')
-inset_ax.hist(token_counts, bins=bins, color='skyblue', edgecolor='black')
-inset_ax.set_xlim(percentile_90, max_tokens)
-inset_ax.set_title('Tail Zoom', fontsize=10)
-inset_ax.grid(True)
+# --- x軸の目盛り設定 ---
+# 1) 目盛りの最大数を10に制限 (必要に応じて変更)
+ax.xaxis.set_major_locator(ticker.MaxNLocator(10))
 
-# 入力ファイル名に合わせたPNGファイル名を作成
-input_filename = os.path.basename(jsonl_file)                 # 例: sft.jsonl
-png_filename = os.path.splitext(input_filename)[0] + ".png"      # 例: sft.png
+# 2) x軸ラベルを45度回転
+ax.tick_params(axis='x', rotation=45)
+
+# --- プロット画像の保存 ---
+input_filename = os.path.basename(jsonl_file)
+png_filename = os.path.splitext(input_filename)[0] + ".png"
 plot_path = os.path.join(output_dir, png_filename)
 
-plt.savefig(plot_path)
+plt.savefig(plot_path, bbox_inches='tight')  # bbox_inches='tight' でラベル切れを防ぐ
 plt.close()
 
 print("プロット結果を保存しました:", plot_path)

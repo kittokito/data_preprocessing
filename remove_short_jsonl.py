@@ -31,9 +31,9 @@ def filter_jsonl_files(input_directory, output_directory, length_limit):
                         except json.JSONDecodeError:
                             continue
 
-                # ランダムに30個の削除されたテキストを表示
+                # ランダムに50個の削除されたテキストを表示
                 if removed_texts:
-                    sample_texts = random.sample(removed_texts, min(30, len(removed_texts)))
+                    sample_texts = random.sample(removed_texts, min(50, len(removed_texts)))
                     print("削除された'text'値のサンプル:")
                     for text in sample_texts:
                         print("--------------------------------------------")
@@ -47,12 +47,16 @@ def filter_jsonl_files(input_directory, output_directory, length_limit):
                 with open(new_file_path, 'w', encoding='utf-8') as file:
                     file.write('\n'.join(filtered_lines))
 
-                print(f"{file_name} をフィルタリングしました。残りの行数: {len(filtered_lines)} -> {new_file_name} に保存")
+                # 保存された行数と省かれた行数を表示
+                print(f"{file_name} をフィルタリングしました。")
+                print(f"  保存された行数: {len(filtered_lines)}")
+                print(f"  省かれた行数: {len(removed_texts)}")
+                print(f"  -> {new_file_name} に保存")
     except Exception as e:
         print(f"エラーが発生しました: {e}")
 
 # 使用例
-input_directory = "/Users/nomura/02_Airion/長野オートメーション/prepare_training_data/jsonl_merged"
-output_directory = "/Users/nomura/02_Airion/長野オートメーション/prepare_training_data/jsonl_filtered"
-length_limit = 50  # テキストの長さ制限値
+input_directory = "./jsonl/jsonl_merged"
+output_directory = "./jsonl/jsonl_filtered"
+length_limit = 200  # テキストの長さ制限値
 filter_jsonl_files(input_directory, output_directory, length_limit)

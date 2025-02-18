@@ -10,14 +10,7 @@ from functools import partial
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 # Qwen/Qwen2.5-Coder-32B-Instruct のトークナイザーをロード
-tokenizer = AutoTokenizer.from_pretrained("Qwen/Qwen2.5-Coder-32B-Instruct")
-
-# 区切り文字とそのトークン数（固定値として扱う）
-DELIMITER = '\n;'
-DELIMITER_TOKEN_COUNT = len(tokenizer(DELIMITER)['input_ids'])
-
-# 除外ファイルの保存先ディレクトリ
-EXCEEDING_DIR = "/Users/nomura/02_Airion/長野オートメーション/prepare_training_data/txt_semicolon_exceeding_limit"
+tokenizer = AutoTokenizer.from_pretrained("Qwen/Qwen2.5-Coder-14B-Instruct")
 
 def split_segments_by_max_sum(segment_token_counts, delimiter_cost, token_limit):
     """
@@ -78,7 +71,7 @@ def split_segments_by_max_sum(segment_token_counts, delimiter_cost, token_limit)
     
     return partitions, chunk_token_counts
 
-def process_file(input_file, output_dir, token_limit=32700):
+def process_file(input_file, output_dir, token_limit=32700, exceeding_dir=None, delimiter=";<h1/>"):
     with open(input_file, 'r', encoding='utf-8') as f:
         content = f.read()
     
@@ -91,7 +84,8 @@ def process_file(input_file, output_dir, token_limit=32700):
             f_out.write(content)
         return None
 
-    segments = content.split(DELIMITER)
+    # 指定された delimiter を使ってセグメント分割
+    segments = content.split(delimiter)
     segments = [seg.strip() for seg in segments if seg.strip()]
     n_segments = len(segments)
     if n_segments == 0:
@@ -100,9 +94,12 @@ def process_file(input_file, output_dir, token_limit=32700):
     tokenized = tokenizer(segments, add_special_tokens=False)
     segment_token_counts = [len(ids) for ids in tokenized['input_ids']]
 
+    # 各セグメントのトークン数が token_limit を超える場合、exceeding_dir に保存
     if any(count > token_limit for count in segment_token_counts):
-        os.makedirs(EXCEEDING_DIR, exist_ok=True)
-        output_file = os.path.join(EXCEEDING_DIR, os.path.basename(input_file))
+        if exceeding_dir is None:
+            raise ValueError("exceeding_dirが指定されていません。")
+        os.makedirs(exceeding_dir, exist_ok=True)
+        output_file = os.path.join(exceeding_dir, os.path.basename(input_file))
         with open(output_file, 'w', encoding='utf-8') as out_f:
             out_f.write(content)
         return {
@@ -112,9 +109,10 @@ def process_file(input_file, output_dir, token_limit=32700):
             "max_segment_token_count": max(segment_token_counts)
         }
     
-    total_tokens = sum(segment_token_counts) + DELIMITER_TOKEN_COUNT * (n_segments - 1)
+    # delimiter のトークン数を計算
+    delimiter_token_count = len(tokenizer(delimiter)['input_ids'])
     
-    partitions, chunk_token_counts = split_segments_by_max_sum(segment_token_counts, DELIMITER_TOKEN_COUNT, token_limit)
+    partitions, chunk_token_counts = split_segments_by_max_sum(segment_token_counts, delimiter_token_count, token_limit)
     
     if max(chunk_token_counts) > token_limit:
         return {
@@ -127,7 +125,8 @@ def process_file(input_file, output_dir, token_limit=32700):
         }
     
     for i, (start, end) in enumerate(partitions):
-        chunk = DELIMITER.join(segments[start:end+1])
+        # 分割したチャンクは delimiter を用いて連結
+        chunk = delimiter.join(segments[start:end+1])
         output_file = os.path.join(output_dir, f"{base_name}_part{i+1}.txt")
         with open(output_file, 'w', encoding='utf-8') as out_f:
             out_f.write(chunk)
@@ -141,12 +140,12 @@ def process_file(input_file, output_dir, token_limit=32700):
         "final_chunk_count_used": len(partitions)
     }
 
-# グローバルに定義することでピクル化可能にする
-def process_single_file(filename, input_dir, output_dir, token_limit):
+# ピクル化可能なようにグローバル関数として定義
+def process_single_file(filename, input_dir, output_dir, token_limit, exceeding_dir, delimiter):
     input_file = os.path.join(input_dir, filename)
-    return process_file(input_file, output_dir, token_limit)
+    return process_file(input_file, output_dir, token_limit, exceeding_dir, delimiter)
 
-def process_directory(input_dir, output_dir, summary_dir, token_limit=32700):
+def process_directory(input_dir, output_dir, summary_dir, token_limit=32700, exceeding_dir=None, delimiter=";<h1/>", label=None):
     os.makedirs(output_dir, exist_ok=True)
     os.makedirs(summary_dir, exist_ok=True)
     
@@ -156,8 +155,15 @@ def process_directory(input_dir, output_dir, summary_dir, token_limit=32700):
     
     files = [filename for filename in os.listdir(input_dir) if filename.endswith('.txt')]
     
-    # partial を使ってグローバル関数に追加の引数を渡す
-    process_func = partial(process_single_file, input_dir=input_dir, output_dir=output_dir, token_limit=token_limit)
+    # partial を使って必要な引数を固定
+    process_func = partial(
+        process_single_file,
+        input_dir=input_dir,
+        output_dir=output_dir,
+        token_limit=token_limit,
+        exceeding_dir=exceeding_dir,
+        delimiter=delimiter
+    )
     
     with ProcessPoolExecutor() as executor:
         results = list(tqdm(executor.map(process_func, files), total=len(files), desc="Processing files", unit="file"))
@@ -174,20 +180,23 @@ def process_directory(input_dir, output_dir, summary_dir, token_limit=32700):
                 files_with_exceeding_chunks.append(file_summary["file_name"])
     
     summary = {
-        "files_with_exceeding_chunks": files_with_exceeding_chunks,
-        "skipped_files_due_to_segment_exceeding_limit": skipped_files,
         "num_split_files": len(summary_list),
+        "num_skipped_files": len(skipped_files),
+        "skipped_files_due_to_segment_exceeding_limit": skipped_files,
         "split_files": summary_list
     }
+
     
-    # ここでサマリファイル名を、入力ディレクトリ名ではなく出力ディレクトリ名に変更
-    output_dir_name = os.path.basename(os.path.normpath(output_dir))
-    summary_file = os.path.join(summary_dir, f"{output_dir_name}.json")
+    out_dir_name = os.path.basename(os.path.normpath(output_dir)).removeprefix("txt_")
+    summary_file = os.path.join(summary_dir, f"{label}_{out_dir_name}.json")
     with open(summary_file, 'w', encoding='utf-8') as f:
         json.dump(summary, f, indent=4, ensure_ascii=False)
 
 if __name__ == "__main__":
-    input_dir = "/Users/nomura/02_Airion/長野オートメーション/prepare_training_data/txt_h1_exceeding_limit"
-    output_dir = "/Users/nomura/02_Airion/長野オートメーション/prepare_training_data/txt_splitted_semicolon"
-    summary_dir = "/Users/nomura/02_Airion/長野オートメーション/prepare_training_data/data_analysis"
-    process_directory(input_dir, output_dir, summary_dir)
+    input_dir = "./txt/txt_exceeding_limit_h1"
+    output_dir = "./txt/txt_splitted_semicolon"
+    exceeding_dir = "./txt/txt_exceeding_limit_semicolon"
+    summary_dir = "./analyzed_data/split_summary"
+    delimiter = "\n;"  # ;<h1/> or \n; 
+    label = "通常" # 通常 or STG命令使用
+    process_directory(input_dir, output_dir, summary_dir, token_limit=16350, exceeding_dir=exceeding_dir, delimiter=delimiter, label=label)
