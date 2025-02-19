@@ -7,7 +7,7 @@ from tqdm import tqdm
 from transformers import AutoTokenizer
 
 # --- ファイルパスの設定 ---
-jsonl_file = './jsonl/jsonl_merged/plc_01.jsonl'
+jsonl_file = './jsonl/jsonl_filtered/filtered_plc_01.jsonl'
 output_dir = './analyzed_data/token_count_plot'
 os.makedirs(output_dir, exist_ok=True)
 
@@ -41,6 +41,7 @@ if token_counts:
 else:
     sum_tokens = avg_tokens = max_tokens = min_tokens = 0
 
+print(f"総行数:{total_lines}")
 print(f"総トークン数: {sum_tokens}")
 print(f"平均トークン数: {avg_tokens}")
 print(f"最大トークン数: {max_tokens}")

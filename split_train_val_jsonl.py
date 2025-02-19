@@ -52,6 +52,6 @@ split_jsonl(
     file_path="./jsonl/jsonl_filtered/filtered_plc_01.jsonl",
     train_ratio=0.95,
     output_dir="./jsonl/jsonl_splitted_train-val",
-    train_output="plc_01_train.jsonl",
-    val_output="plc_01_val.jsonl"
+    train_output="plc_train_01.jsonl",
+    val_output="plc_val_01.jsonl"
 )
