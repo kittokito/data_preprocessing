@@ -1,0 +1,97 @@
+DEVICE:53
+;MODULE:L側溶着RB
+;MODULE_TYPE:0
+;非常停止
+;Emergency Stop
+LD R50010                ; 非常停止
+RES MR2000               ; ROBOCYLINDER STOP
+CON
+ZRES @MR000 @MR1515
+LDB R50010               ; 非常停止
+ANB R50900               ; TRAP
+@SET MR2000              ; ROBOCYLINDER STOP
+LD T200                  ; 遅延ﾀｲﾏ－200　1s
+TMR @1 #10
+CON
+AND @T1
+@SET MR2612              ; L_溶着Z_STP
+CON
+@SET MR2615              ; L_溶着Z_SON
+LD R1412                 ; L_溶着SV
+AND R1413                ; L_溶着EMGS
+AND R1414                ; L_溶着ALM
+OUT MR1315               ; L側　RB移動可 Interlock
+LD MR1315                ; L側　RB移動可 Interlock
+ANB MR1302               ; L側　RB動作中
+AND MR1313               ; L側　ＲＢ原点復帰完了
+OUT MR1314               ; L側　RB起動可
+;ﾎﾟｼﾞｼｮﾝNo.制御
+LD CR2002                ; 常時ON
+PMOV R1400 #0 DM541 #0 #6; L_溶着PM1  RB1 完了ﾎﾟｼﾞｼｮﾝNo.
+;L側　溶着RB動作
+STG MR1300               ; L溶着RBｽﾀｰﾄ
+ANB MR1302               ; L側　RB動作中
+AND R1412                ; L_溶着SV
+ANB R1409                ; L_溶着RMDS
+RES R53108               ; Line-A（左） 溶着動作要求
+CON
+SET MR1302               ; L側　RB動作中
+CON
+JMP @MR1000
+STG @MR1000
+MPS
+LD>= DM540 #1            ; L側　RB 指令ﾎﾟｼﾞｼｮﾝNo.
+AND<= DM540 #5           ; L側　RB 指令ﾎﾟｼﾞｼｮﾝNo.
+ANL
+PMOV DM540 #0 MR2600 #0 #6;L側　RB 指令ﾎﾟｼﾞｼｮﾝNo.  L_溶着Z_PC1
+JMP @MR1001
+MPP
+LD< DM540 #1             ; L側　RB 指令ﾎﾟｼﾞｼｮﾝNo.
+OR> DM540 #5             ; L側　RB 指令ﾎﾟｼﾞｼｮﾝNo.
+ANL
+JMP @MR1005
+STG @MR1001
+TMH @5 #2
+CON
+AND @T5
+SET MR2613               ; L_溶着Z_CSRT
+CON
+JMP @MR1002
+STG @MR1002
+ANB R1411                ; L_溶着PEND
+RES MR2613               ; L_溶着Z_CSRT
+CON
+JMP @MR1003
+STG @MR1003
+MPS
+AND R1411                ; L_溶着PEND
+JMP @MR1004
+MPP
+ANB R1411                ; L_溶着PEND
+TMR @6 #300
+CON
+AND @T6
+SET @MR3000              ; RB動作ﾀｲﾑｵｰﾊﾞｰ
+CON
+ENDS
+STG @MR1004
+TMH @7 #10
+CON
+AND @T7
+AND R1412                ; L_溶着SV
+JMP @MR1005
+STG @MR1005
+AND= DM540 DM541         ; L側　RB 指令ﾎﾟｼﾞｼｮﾝNo.  RB1 完了ﾎﾟｼﾞｼｮﾝNo.
+RES MR1302               ; L側　RB動作中
+CON
+SET MR1301               ; L溶着RB移動完了
+CON
+ENDS
+LD= DM540 #0             ; L側　RB 指令ﾎﾟｼﾞｼｮﾝNo.
+OR= DM540 #1             ; L側　RB 指令ﾎﾟｼﾞｼｮﾝNo.
+OR= DM540 #3             ; L側　RB 指令ﾎﾟｼﾞｼｮﾝNo.
+OR= DM540 #5             ; L側　RB 指令ﾎﾟｼﾞｼｮﾝNo.
+AND MR1313               ; L側　ＲＢ原点復帰完了
+OUT MR1307               ; L側 RB干渉外
+END
+ENDH

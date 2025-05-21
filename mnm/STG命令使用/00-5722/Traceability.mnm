@@ -1,0 +1,569 @@
+DEVICE:53
+;MODULE:Traceability
+;MODULE_TYPE:0
+;SCRIPT_TYPE:
+;トレーサビリティデータ作成
+;Auto 停止時トレサビ 起動
+;<h1/>処理開始
+;空き容量チェック
+;1MB以下はﾌｫﾙﾀﾞ削除
+;FTP送信
+;FOLDER 削除
+;ﾌｫﾙﾀﾞ作成
+;書込み回数確認
+;FILE作成
+;<h1/>DATA書込み開始
+;10分経過 or 40回書込み FTPアップロード
+;<h1/>-----ﾄﾚｻﾋﾞﾃﾞｰﾀ書込み見本
+;工程1
+;変更前
+;<h1/>FTP送信:ReName
+;既にフォルダー内に同じ送信FILE名称がある場合：送信→名称変更
+;送信
+;送信後元のFile名に戻す
+;<h1/>FTP送信
+;<h1/>MyTask Error Process Substance/エラー処理実体
+;<h1/>ERROR
+;ERROR200:MemoryAccess
+;ERROR201:FTP送信ERROR
+;ERROR202:Memoryｶｰﾄﾞ書込みエラー
+;＜トレーサビリティデータ書き込み＆FTP転送  改定版＞
+;
+;SDカード書込みファイル名を従来のタイムスタンプ付のファイル名を止め、FTP転送するファイル名と同じにする事で
+;FTP転送エラー時でのリネームエラー（電源再起動でも復帰不可）を回避する
+;FTP転送が正常終了時にはSDカード内のファイルを消去するのは従来と同じ
+;
+;トレーサビリティデータ作成
+;Traceability\C0*_01.CSV　　← * の所はセルNo.
+;DM9140.T = "Traceability\C02_01"+CHR($00)'FILE名
+;DM9170.T = "Traceability\C02_01.CSV"+CHR($00)'FTP_FILE名
+LD CR2002                ; 常時ON
+NCJ #1004
+;DM9140.T = "Traceability\C02_01"+CHR($00)'FILE名
+;
+LD CR2002                ; 常時ON
+ADRSET VM2 VM0
+MOV #0 VM2
+MOV.D VM0 @VM1
+LD CR2002                ; 常時ON
+LDA $0000
+CON
+SLA #8
+CON
+STA @VM0
+CON
+SMOV @VM0 *@VM1
+LD CR2002                ; 常時ON
+ADRADD.S +1 VM0
+LD CR2002                ; 常時ON
+MOV.D VM0 @VM3
+SMOV "Traceability\C02_01" *@VM3
+LD CR2002                ; 常時ON
+SADD *@VM3 *@VM1 *@VM3
+SMOV *@VM3 DM9140        ; FILE名
+;DM9170.T = "Traceability\C02_01.CSV"+CHR($00)'FTP_FILE名
+LD CR2002                ; 常時ON
+ADRSET VM2 VM0
+MOV #0 VM2
+MOV.D VM0 @VM6
+LD CR2002                ; 常時ON
+LDA $0000
+CON
+SLA #8
+CON
+STA @VM5
+CON
+SMOV @VM5 *@VM6
+LD CR2002                ; 常時ON
+ADRADD.S +1 VM0
+LD CR2002                ; 常時ON
+MOV.D VM0 @VM8
+SMOV "Traceability\C02_01.CSV" *@VM8
+LD CR2002                ; 常時ON
+SADD *@VM8 *@VM6 *@VM8
+SMOV *@VM8 DM9170        ; 状態取得ファイル名
+LABEL #1004
+;
+LD CR2008                ; 運転開始時1ｽｷｬﾝON
+OR @R901
+DW #0 @DM24              ; 書込み位置
+CON
+ZRES @R000 @R1915
+;<h1/>Auto 停止時トレサビ FTP転送起動
+LDF R46100               ; _自動運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+AND<> DM9130 #0          ; 書込み回数
+ANB DM2000.13            ; ﾄﾚｻﾋﾞﾘﾃｨ 有効/無効
+DW #400 DM9130           ; 書込み回数
+CON
+SET R42200               ; FTP送信
+CON
+SET @R000
+STG @R000
+AND R42201               ; FTP送信完了
+RES R42201               ; FTP送信完了
+CON
+ENDS
+;時間管理
+;10分経過したらFTP転送をおこなう為のタイマーセット
+LD @R015                 ; Traceability　timer
+LD CR2003                ; 常時OFF
+LD= DM9130 #0            ; 書込み回数
+UDT @0 #60000            ; ﾄﾚｻﾋﾞ送信
+;<h1/>開始トリガ待ち
+STG R42000               ; ﾄﾚｻﾋﾞ1開始
+ANB CR3211               ; ﾒﾓﾘｶｰﾄﾞ使用中
+ANB R42002               ; ﾄﾚｻﾋﾞ1中
+ANB R42202               ; FTP送信中
+SET R42002               ; ﾄﾚｻﾋﾞ1中
+CON
+JMP @R200                ; 容量有
+STG R42200               ; FTP送信
+ANB CR3211               ; ﾒﾓﾘｶｰﾄﾞ使用中
+ANB R42002               ; ﾄﾚｻﾋﾞ1中
+ANB R42202               ; FTP送信中
+SET R42202               ; FTP送信中
+CON
+JMP @R100
+;定停止移行時
+;\Traceability\C0*_01.csv ファイルの有無を確認し、ファイルが存在した場合はFTP転送をおこなう
+STG @R100
+ANB CR3214               ; ﾒﾓﾘｶｰﾄﾞ命令実行中
+ZRES @R102 @R104         ; 完了通知  ファイル有
+CON
+JMP @R101
+STG @R101
+MPS
+MSTAT DM9170 DM9184 @R102; 状態取得ファイル名  取得結果  完了通知
+MPP
+AND @R102                ; 完了通知
+MPS
+AND @R104                ; ファイル有
+JMP @R212                ; 転送開始
+MPP
+ANB @R104                ; ファイル有
+DW #0 DM9130             ; 書込み回数
+CON
+JMP @R214
+;<h1/>フォルダー作成  \Traceability
+;既に存在する場合は何もせず正常終了
+STG @R200                ; 容量有
+ANB CR3214               ; ﾒﾓﾘｶｰﾄﾞ命令実行中
+ZRES @R201 @R202         ; ﾌｫﾙﾀﾞ作成完了  ﾌｫﾙﾀﾞ作成NG
+CON
+JMP @R203
+STG @R203
+SET @R015                ; Traceability　timer
+CON
+MPS
+MMKDIR "Traceability" @R201;ﾌｫﾙﾀﾞ作成完了
+MPP
+AND @R201                ; ﾌｫﾙﾀﾞ作成完了
+MPS
+ANB @R202                ; ﾌｫﾙﾀﾞ作成NG
+JMP @R207
+MPP
+AND @R202                ; ﾌｫﾙﾀﾞ作成NG
+SET @R700                ; ERR200
+CON
+JMP @R204
+STG @R204
+AND @R701                ; ERR201
+RES @R701                ; ERR201
+CON
+ZRES @R201 @R202         ; ﾌｫﾙﾀﾞ作成完了  ﾌｫﾙﾀﾞ作成NG
+CON
+JMP @R200                ; 容量有
+;<h1/>DATA  SDカード書込み開始
+;書込み完了ON後に書込みNGだったか判断する
+STG @R207
+ZRES @R201 @R202         ; ﾌｫﾙﾀﾞ作成完了  ﾌｫﾙﾀﾞ作成NG
+CON
+@INC DM9130              ; 書込み回数
+CON
+ANB @R302                ; ﾄﾚｻﾋﾞﾃﾞｰﾀ1書込み中
+ANB CR3211               ; ﾒﾓﾘｶｰﾄﾞ使用中
+SET @R300                ; ﾄﾚｻﾋﾞﾃﾞｰﾀ1書込み開始
+CON
+JMP @R208
+STG @R208
+AND @R301                ; ﾄﾚｻﾋﾞﾃﾞｰﾀ1書込み完了
+RES @R301                ; ﾄﾚｻﾋﾞﾃﾞｰﾀ1書込み完了
+CON
+JMP @R209
+STG @R209
+MPS
+ANB @R303                ; ﾄﾚｻﾋﾞﾃﾞｰﾀ1書込NG
+JMP @R211
+MPP
+AND @R303                ; ﾄﾚｻﾋﾞﾃﾞｰﾀ1書込NG
+SET @R800                ; Error201
+CON
+JMP @R210
+STG @R210
+RES @R303                ; ﾄﾚｻﾋﾞﾃﾞｰﾀ1書込NG
+CON
+AND @R801                ; Error201END
+RES @R801                ; Error201END
+CON
+@DEC DM9130              ; 書込み回数
+CON
+JMP @R207
+;書込み正常終了
+;書込み回数確認：40回以上、10分以上経過の場合はFTP転送をおこなう
+STG @R211
+MPS
+LDB @T0                  ; ﾄﾚｻﾋﾞ送信
+AND< DM9130 #40          ; 書込み回数
+ANL
+JMP @R214
+MPP
+LD @T0                   ; ﾄﾚｻﾋﾞ送信
+OR>= DM9130 #40          ; 書込み回数
+ANL
+JMP @R212                ; 転送開始
+;FTP転送開始
+STG @R212                ; 転送開始
+SET @R1000               ; FTP送信
+CON
+JMP @R213
+STG @R213
+AND @R1001               ; FTP送信完了
+RES @R1001               ; FTP送信完了
+CON
+JMP @R214
+STG @R214
+ZRES @R102 @R104         ; 完了通知  ファイル有
+CON
+MPS
+AND R42002               ; ﾄﾚｻﾋﾞ1中
+RES R42002               ; ﾄﾚｻﾋﾞ1中
+CON
+SET R42001               ; ﾄﾚｻﾋﾞ1完了
+CON
+ENDS
+MPP
+AND R42202               ; FTP送信中
+RES R42202               ; FTP送信中
+CON
+SET R42201               ; FTP送信完了
+CON
+ENDS
+;<h1/>トレサビリティデータ　SDカードへの書込み
+;セルによって内容を書き換える
+STG @R300                ; ﾄﾚｻﾋﾞﾃﾞｰﾀ1書込み開始
+DW #0 @DM24              ; 書込み位置
+CON
+SET @R302                ; ﾄﾚｻﾋﾞﾃﾞｰﾀ1書込み中
+CON
+JMP @R304
+STG @R304
+MPS
+LDB R41900               ; ﾒﾓﾘｶｰﾄﾞ書込み完了
+ANB CR3214               ; ﾒﾓﾘｶｰﾄﾞ命令実行中
+ANL
+MPS
+AND= @DM24 #0            ; 書込み位置
+DW #4 DM9400             ; To Memory Type
+CON
+DW #0 DM9401             ; To Memory MODE
+CON
+DW $0000 DM9402          ; To Memory option
+CON
+MWRIT DM9140 W2000 #1 DM9400 R41900;FILE名  工程  To Memory Type  ﾒﾓﾘｶｰﾄﾞ書込み完了
+MRD
+AND= @DM24 #1            ; 書込み位置
+DW #8 DM9400             ; To Memory Type
+CON
+DW #0 DM9401             ; To Memory MODE
+CON
+DW.D #0 DM9402           ; To Memory option
+CON
+MWRIT DM9140 W2001 #16 DM9400 R41900;FILE名  WF ID  To Memory Type  ﾒﾓﾘｶｰﾄﾞ書込み完了
+MRD
+AND= @DM24 #2            ; 書込み位置
+DW #4 DM9400             ; To Memory Type
+CON
+DW #0 DM9401             ; To Memory MODE
+CON
+DW #0 DM9402             ; To Memory option
+CON
+MWRIT DM9140 W2009 #9 DM9400 R41900;FILE名  ﾜｰｸ番地  To Memory Type  ﾒﾓﾘｶｰﾄﾞ書込み完了
+MRD
+AND= @DM24 #3            ; 書込み位置
+DW #7 DM9400             ; To Memory Type
+CON
+DW #0 DM9401             ; To Memory MODE
+CON
+DW #0 DM9402             ; To Memory option
+CON
+MWRIT DM9140 W2012 #3 DM9400 R41900;FILE名  温度（上ﾂｰﾙ）開始時  To Memory Type  ﾒﾓﾘｶｰﾄﾞ書込み完了
+MRD
+AND= @DM24 #4            ; 書込み位置
+DW #8 DM9400             ; To Memory Type
+CON
+DW #0 DM9401             ; To Memory MODE
+CON
+DW #0 DM9402             ; To Memory option
+CON
+MWRIT DM9140 W2018 #16 DM9400 R41900;FILE名  接着剤Lot No  To Memory Type  ﾒﾓﾘｶｰﾄﾞ書込み完了
+MRD
+AND= @DM24 #5            ; 書込み位置
+DW #7 DM9400             ; To Memory Type
+CON
+DW #0 DM9401             ; To Memory MODE
+CON
+DW #0 DM9402             ; To Memory option
+CON
+MWRIT DM9140 W2020 #3 DM9400 R41900;FILE名  剥ぎ取りｽﾋﾟｰ^ﾄﾞ  To Memory Type  ﾒﾓﾘｶｰﾄﾞ書込み完了
+MRD
+AND= @DM24 #6            ; 書込み位置
+DW #4 DM9400             ; To Memory Type
+CON
+DW #0 DM9401             ; To Memory MODE
+CON
+DW #0 DM9402             ; To Memory option
+CON
+MWRIT DM9140 W2026 #6 DM9400 R41900;FILE名  ﾃｰﾌﾟｶｳﾝﾀｰ値  To Memory Type  ﾒﾓﾘｶｰﾄﾞ書込み完了
+MPP
+AND= @DM24 #7            ; 書込み位置
+DW #8 DM9400             ; To Memory Type
+CON
+DW #0 DM9401             ; To Memory MODE
+CON
+DW #1 DM9402             ; To Memory option
+CON
+MWRIT DM9140 W202C #16 DM9400 R41900;FILE名  ﾌｨﾙﾑLotNo  To Memory Type  ﾒﾓﾘｶｰﾄﾞ書込み完了
+MPP
+ANP R41900               ; ﾒﾓﾘｶｰﾄﾞ書込み完了
+RES @R311
+CON
+@INC @DM24               ; 書込み位置
+CON
+MPS
+ANB R41901               ; MemoryCard 書込み失敗
+JMP @R305
+MPP
+AND R41901               ; MemoryCard 書込み失敗
+SET @R303                ; ﾄﾚｻﾋﾞﾃﾞｰﾀ1書込NG
+CON
+JMP @R306
+STG @R305
+ZRES R41900 R41901       ; ﾒﾓﾘｶｰﾄﾞ書込み完了  MemoryCard 書込み失敗
+CON
+MPS
+AND< @DM24 #8            ; 書込み位置
+JMP @R304
+MPP
+AND= @DM24 #8            ; 書込み位置
+JMP @R306
+STG @R306
+ZRES R41900 R41901       ; ﾒﾓﾘｶｰﾄﾞ書込み完了  MemoryCard 書込み失敗
+CON
+RES @R302                ; ﾄﾚｻﾋﾞﾃﾞｰﾀ1書込み中
+CON
+SET @R301                ; ﾄﾚｻﾋﾞﾃﾞｰﾀ1書込み完了
+CON
+ENDS
+;<h1/>FTP転送
+;FTP転送をおこない、ﾌｧｲﾙ転送完了がONした時に転送エラーの状態を確認する。ﾌｧｲﾙ転送完了が一定時間経過してもONしない場合は
+;ﾌｧｲﾙ転送中断をONさせる
+STG @R1000               ; FTP送信
+SET @R1002               ; FTP送信中
+CON
+JMP @R1003
+STG @R1003
+AND R33215               ; FTPｸﾗｲｱﾝﾄ動作可能
+ANB R33100               ; FTPﾌｧｲﾙ転送ｴﾗｰ ID0
+ANB R33000               ; FTPﾌｧｲﾙ転送完了 ID0
+ANB R32100               ; FTPﾌｧｲﾙ転送中断 ID0
+SET R32000               ; FTPﾌｧｲﾙ転送要求 ID0
+CON
+JMP @R1004               ; Script完了
+STG @R1004               ; Script完了
+MPS
+AND R33000               ; FTPﾌｧｲﾙ転送完了 ID0
+RES R32000               ; FTPﾌｧｲﾙ転送要求 ID0
+CON
+MPS
+ANB R33100               ; FTPﾌｧｲﾙ転送ｴﾗｰ ID0
+JMP @R1008               ; 転送OK
+MPP
+AND R33100               ; FTPﾌｧｲﾙ転送ｴﾗｰ ID0
+SET @R708                ; ERR201
+CON
+JMP @R1006
+MPP
+ANB R33000               ; FTPﾌｧｲﾙ転送完了 ID0
+TMR @1 #600              ; ﾀｲﾑｵｰﾊﾞｰ
+CON
+AND @T1                  ; ﾀｲﾑｵｰﾊﾞｰ
+SET R32100               ; FTPﾌｧｲﾙ転送中断 ID0
+CON
+JMP @R1005
+STG @R1005
+MPS
+AND R33000               ; FTPﾌｧｲﾙ転送完了 ID0
+RES R32000               ; FTPﾌｧｲﾙ転送要求 ID0
+CON
+RES R32100               ; FTPﾌｧｲﾙ転送中断 ID0
+CON
+SET @R708                ; ERR201
+CON
+JMP @R1006
+MPP
+TMR @2 #50
+CON
+AND @T2
+RES R32000               ; FTPﾌｧｲﾙ転送要求 ID0
+CON
+RES R32100               ; FTPﾌｧｲﾙ転送中断 ID0
+CON
+SET @R708                ; ERR201
+CON
+JMP @R1006
+STG @R1006
+AND @R709                ; ERR201
+RES @R709                ; ERR201
+CON
+JMP @R1000               ; FTP送信
+STG @R1008               ; 転送OK
+DW #0 DM9130             ; 書込み回数
+CON
+JMP @R1009
+;送信完了
+STG @R1009
+RES @R015                ; Traceability　timer
+CON
+RES @R1002               ; FTP送信中
+CON
+SET @R1001               ; FTP送信完了
+CON
+ENDS
+;<h1/>MyTask Error Process Substance/エラー処理実体
+STG @R600                ; Task0 ERROR
+ANB R39002               ; ERROR_DISP Busy
+MPS
+ZRES @R605 @R608         ; SW1  SW4
+CON
+LDA @DM9                 ; ReturnSW /ERROR_DISP
+CON
+TBCD
+CON
+STA @DM10
+CON
+DISN @DM10 @DM3 #4
+MRD
+DW #0 @DM0               ; TaskNo /ERROR_DISP
+CON
+BMOV @DM0 DM60000 #7     ; TaskNo /ERROR_DISP  TaskNo /ERROR_DISP
+MPP
+SET R39000               ; ERROR_DISP Start
+CON
+SET @R602                ; Task0 ERROR Busy
+CON
+JMP @R603
+STG @R603
+AND R39002               ; ERROR_DISP Busy
+AND= DM60008 @DM1        ; ReturnNo /ERROR_DISP  ErrorNo /ERROR_DISP
+MPS
+AND= DM60007 @DM6        ; ReturnSW /ERROR_DISP
+SET @R605                ; SW1
+CON
+JMP @R604
+MRD
+AND= DM60007 @DM5        ; ReturnSW /ERROR_DISP
+SET @R606                ; SW2
+CON
+JMP @R604
+MRD
+AND= DM60007 @DM4        ; ReturnSW /ERROR_DISP
+SET @R607                ; SW3
+CON
+JMP @R604
+MPP
+AND= DM60007 @DM3        ; ReturnSW /ERROR_DISP
+SET @R608                ; SW4
+CON
+JMP @R604
+STG @R604
+ANB R39002               ; ERROR_DISP Busy
+RES @R602                ; Task0 ERROR Busy
+CON
+SET @R601                ; Task0 ｴﾗｰ完了
+CON
+ENDS
+;<h1/>ERROR
+;ERROR200:MemoryAccess
+STG @R700                ; ERR200
+ANB R39004               ; ｴﾗｰ中
+SET R39004               ; ｴﾗｰ中
+CON
+DW #1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #200 @DM1             ; ErrorNo /ERROR_DISP
+CON
+DW #0 @DM2               ; SensorNo /ERROR_DISP
+CON
+SET @R600                ; Task0 ERROR
+CON
+JMP @R702
+STG @R702
+AND @R601                ; Task0 ｴﾗｰ完了
+RES @R601                ; Task0 ｴﾗｰ完了
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+AND @R605                ; SW1
+SET @R701                ; ERR201
+CON
+ENDS
+;ERROR201:FTP送信ERROR
+STG @R708                ; ERR201
+ANB R39004               ; ｴﾗｰ中
+SET R39004               ; ｴﾗｰ中
+CON
+DW #1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #201 @DM1             ; ErrorNo /ERROR_DISP
+CON
+DW #0 @DM2               ; SensorNo /ERROR_DISP
+CON
+SET @R600                ; Task0 ERROR
+CON
+JMP @R711
+STG @R711
+AND @R601                ; Task0 ｴﾗｰ完了
+RES @R601                ; Task0 ｴﾗｰ完了
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+AND @R605                ; SW1
+SET @R709                ; ERR201
+CON
+ENDS
+;ERROR202:Memoryｶｰﾄﾞ書込みエラー
+STG @R800                ; Error201
+ANB R39004               ; ｴﾗｰ中
+SET R39004               ; ｴﾗｰ中
+CON
+DW #1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #202 @DM1             ; ErrorNo /ERROR_DISP
+CON
+DW #0 @DM2               ; SensorNo /ERROR_DISP
+CON
+SET @R600                ; Task0 ERROR
+CON
+JMP @R803
+STG @R803
+AND @R601                ; Task0 ｴﾗｰ完了
+RES @R601                ; Task0 ｴﾗｰ完了
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+AND @R605                ; SW1
+SET @R801                ; Error201END
+CON
+ENDS
+END
+ENDH

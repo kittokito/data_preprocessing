@@ -1,0 +1,1496 @@
+DEVICE:53
+;MODULE:UT7
+;MODULE_TYPE:0
+;UT7 ｷｬｯﾌﾟ本締め 
+;非常停止
+;Emergency Stop
+LD R50010                ; Emaegency Stop
+OR @MR001
+ZRES @MR002 @MR3415
+CON
+OUT @MR001
+TMR @0 #5
+LD @T0
+MDSTOP UT7
+;<h1/>HOME
+LD R50003                ; HOME mode
+ANB R51807               ; UT7 Do
+SET R51807               ; UT7 Do
+CON
+SET @MR1100
+LDB R50003               ; HOME mode
+ANB R50001               ; AUTO mode
+ANB R50002               ; STEP mode
+AND @MR1015              ; home return finish
+RES R51807               ; UT7 Do
+CON
+RES @MR1015              ; home return finish
+STG @MR1100
+JMP @MR1008
+;原点復帰
+STG @MR1008
+ANB R50300               ; Pause
+ANB R51707               ; UT7 ERROR
+RES MR8406               ; CAP final Tighten down
+CON
+SET MR8407               ; CAP final Tighten up
+CON
+RES MR8408               ; CAP final Tighten upper stream
+CON
+SET MR8409               ; CAP final Tighten lower stream
+CON
+JMP @MR1009
+STG @MR1009
+ANB R50300               ; Pause
+ANB R51707               ; UT7 ERROR
+ANB R5412                ; CAP fainal tightening upper stre
+AND R5413                ; CAP fainal tightening lower stre
+ANB R5410                ; CAP fainal tightening lower limi
+AND R5411                ; CAP fainal tightening upper limi
+JMP @MR1010
+STG @MR1010
+ANB R50300               ; Pause
+ANB R51707               ; UT7 ERROR
+SET R51907               ; UT7 1cycle finished
+CON
+SET @MR1015              ; home return finish
+CON
+ENDS
+;<h1/>AUTO
+LD R50001                ; AUTO mode
+ANB R51807               ; UT7 Do
+ANB @MR2001
+SET R51807               ; UT7 Do
+CON
+SET @MR2000              ; UT7 AUTO START
+LDB R50003               ; HOME mode
+ANB R50001               ; AUTO mode
+ANB R50002               ; STEP mode
+AND @MR2915
+RES @MR2001
+CON
+RES R51807               ; UT7 Do
+CON
+RES @MR2915
+LD CR2002                ; Normal ON
+OUT MR7601               ; Driver1 spped change
+LD CR2002                ; Normal ON
+OUT MR7609               ; Driver2 spped change
+STG @MR2000              ; UT7 AUTO START
+AND R50209               ; Operation Start
+SET @MR2001
+CON
+JMP @MR2003
+;チャック位置確認
+STG @MR2003
+ANB R50300               ; Pause
+ANB R51707               ; UT7 ERROR
+ANB @MR2800
+LDA #2
+CON
+ADD EM1202               ; Main INDEX current POS
+CON
+STA DM19700              ; UT7 chuck No.
+CON
+JMP @MR2004
+STG @MR2004
+ANB R50300               ; Pause
+ANB R51707               ; UT7 ERROR
+MPS
+LD>= DM19700 #1          ; UT7 chuck No.
+AND<= DM19700 #8         ; UT7 chuck No.
+ANL
+JMP @MR2006
+MPP
+AND> DM19700 #8          ; UT7 chuck No.
+LDA DM19700              ; UT7 chuck No.
+CON
+SUB #8
+CON
+STA DM19700              ; UT7 chuck No.
+CON
+JMP @MR2006
+STG @MR2006
+MPS
+LD LR41100               ; AC Parameter 0(Normal mode)
+OR LR41102               ; AC Parameter 2(UT6-8 only)
+ANL
+JMP @MR2005
+MRD
+LD LR41101               ; AC Parameter 1(UT6.7 non action)
+OR LR41107               ; AC Parameter 7(UT8 only)
+ANL
+JMP @MR2910
+MPP
+LDB LR41100              ; AC Parameter 0(Normal mode)
+ANB LR41101              ; AC Parameter 1(UT6.7 non action)
+ANB LR41102              ; AC Parameter 2(UT6-8 only)
+ANB LR41107              ; AC Parameter 7(UT8 only)
+ANL
+JMP @MR2005
+;在荷確認
+STG @MR2005
+MPS
+LD= DM20700 #6           ; UT7-1 Work detection
+AND= DM20702 #6          ; UT7-2 Work detection
+LD R4812                 ; INDEX chuck 7-1 work existence
+AND R4813                ; INDEX chuck 7-2 work existence
+LDB MR700                ; Upper stream non H/S
+AND MR714                ; Non Shrink film
+ORL
+ANL
+LD= DM20700 #6           ; UT7-1 Work detection
+AND= DM20702 #0          ; UT7-2 Work detection
+LD R4812                 ; INDEX chuck 7-1 work existence
+OR MR714                 ; Non Shrink film
+ANL
+ANB R4813                ; INDEX chuck 7-2 work existence
+ORL
+LD= DM20700 #0           ; UT7-1 Work detection
+AND= DM20702 #6          ; UT7-2 Work detection
+ANB R4812                ; INDEX chuck 7-1 work existence
+LD R4813                 ; INDEX chuck 7-2 work existence
+OR MR714                 ; Non Shrink film
+ANL
+ORL
+ANB R50300               ; Pause
+ANB R51707               ; UT7 ERROR
+ANL
+SET MR407                ; UT7 work detection/data check 
+CON
+JMP @MR2100
+MPP
+LD= DM20700 #0           ; UT7-1 Work detection
+AND= DM20702 #0          ; UT7-2 Work detection
+LDB R4812                ; INDEX chuck 7-1 work existence
+ANB R4813                ; INDEX chuck 7-2 work existence
+LDB MR700                ; Upper stream non H/S
+AND MR714                ; Non Shrink film
+ORL
+ANL
+LD= DM20700 #7           ; UT7-1 Work detection
+AND= DM20702 #7          ; UT7-2 Work detection
+AND R4812                ; INDEX chuck 7-1 work existence
+AND R4813                ; INDEX chuck 7-2 work existence
+ORL
+LD= DM20700 #7           ; UT7-1 Work detection
+AND= DM20702 #0          ; UT7-2 Work detection
+AND R4812                ; INDEX chuck 7-1 work existence
+ANB R4813                ; INDEX chuck 7-2 work existence
+ORL
+LD= DM20700 #0           ; UT7-1 Work detection
+AND= DM20702 #7          ; UT7-2 Work detection
+ANB R4812                ; INDEX chuck 7-1 work existence
+AND R4813                ; INDEX chuck 7-2 work existence
+ORL
+ANB R50300               ; Pause
+ANB R51707               ; UT7 ERROR
+ANL
+JMP @MR2910
+;通常動作
+;Ordinary Movement
+STG @MR2100
+ANB R50300               ; Pause
+ANB R51707               ; UT7 ERROR
+MPS
+AND= DM19700 #1          ; UT7 chuck No.
+RES MR7801               ; INDEX chuck1 open
+CON
+SET MR7800               ; INDEX chuck1 close
+CON
+JMP @MR2101
+MRD
+AND= DM19700 #2          ; UT7 chuck No.
+RES MR7803               ; INDEX chuck2 open
+CON
+SET MR7802               ; INDEX chuck2 close
+CON
+JMP @MR2101
+MRD
+AND= DM19700 #3          ; UT7 chuck No.
+RES MR7805               ; INDEX chuck3 open
+CON
+SET MR7804               ; INDEX chuck3 close
+CON
+JMP @MR2101
+MRD
+AND= DM19700 #4          ; UT7 chuck No.
+RES MR7807               ; INDEX chuck4 open
+CON
+SET MR7806               ; INDEX chuck4 close
+CON
+JMP @MR2101
+MRD
+AND= DM19700 #5          ; UT7 chuck No.
+RES MR7809               ; INDEX chuck5 open
+CON
+SET MR7808               ; INDEX chuck5 close
+CON
+JMP @MR2101
+MRD
+AND= DM19700 #6          ; UT7 chuck No.
+RES MR7811               ; INDEX chuck6 open
+CON
+SET MR7810               ; INDEX chuck6 close
+CON
+JMP @MR2101
+MRD
+AND= DM19700 #7          ; UT7 chuck No.
+RES MR7813               ; INDEX chuck7 open
+CON
+SET MR7812               ; INDEX chuck7 close
+CON
+JMP @MR2101
+MPP
+AND= DM19700 #8          ; UT7 chuck No.
+RES MR7815               ; INDEX chuck8 open
+CON
+SET MR7814               ; INDEX chuck8 close
+CON
+JMP @MR2101
+LD CR2002                ; Normal ON
+LD= DM19700 #1           ; UT7 chuck No.
+AND MR7800               ; INDEX chuck1 close
+ANB MR7801               ; INDEX chuck1 open
+LD= DM19700 #2           ; UT7 chuck No.
+AND MR7802               ; INDEX chuck2 close
+ANB MR7803               ; INDEX chuck2 open
+ORL
+LD= DM19700 #3           ; UT7 chuck No.
+AND MR7804               ; INDEX chuck3 close
+ANB MR7805               ; INDEX chuck3 open
+ORL
+LD= DM19700 #4           ; UT7 chuck No.
+AND MR7806               ; INDEX chuck4 close
+ANB MR7807               ; INDEX chuck4 open
+ORL
+LD= DM19700 #5           ; UT7 chuck No.
+AND MR7808               ; INDEX chuck5 close
+ANB MR7809               ; INDEX chuck5 open
+ORL
+LD= DM19700 #6           ; UT7 chuck No.
+AND MR7810               ; INDEX chuck6 close
+ANB MR7811               ; INDEX chuck6 open
+ORL
+LD= DM19700 #7           ; UT7 chuck No.
+AND MR7812               ; INDEX chuck7 close
+ANB MR7813               ; INDEX chuck7 open
+ORL
+LD= DM19700 #8           ; UT7 chuck No.
+AND MR7814               ; INDEX chuck8 close
+ANB MR7815               ; INDEX chuck8 open
+ORL
+ANL
+TMR @1 #3
+STG @MR2101
+ANB R50300               ; Pause
+ANB R51707               ; UT7 ERROR
+AND @T1
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+JMP @MR2102
+STG @MR2102
+RES MR8406               ; CAP final Tighten down
+CON
+SET MR8407               ; CAP final Tighten up
+CON
+AND R5411                ; CAP fainal tightening upper limi
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+JMP @MR2300
+STG @MR2300
+ANB R50300               ; Pause
+ANB R51707               ; UT7 ERROR
+JMP @MR2301
+STG @MR2301
+SET @MR800               ; Pause disable
+CON
+MPS
+LD= DM20700 #6           ; UT7-1 Work detection
+AND= DM20702 #6          ; UT7-2 Work detection
+ANL
+SET @MR3100
+CON
+SET @MR3200
+CON
+JMP @MR2302
+MRD
+LD= DM20700 #6           ; UT7-1 Work detection
+LD= DM20702 #7           ; UT7-2 Work detection
+OR= DM20702 #0           ; UT7-2 Work detection
+ANL
+ANL
+SET @MR3100
+CON
+JMP @MR2303
+MPP
+LD= DM20700 #7           ; UT7-1 Work detection
+OR= DM20700 #0           ; UT7-1 Work detection
+AND= DM20702 #6          ; UT7-2 Work detection
+ANL
+SET @MR3200
+CON
+JMP @MR2304
+;1.2側動作
+STG @MR2302
+MPS
+AND @MR3115
+RES MR8406               ; CAP final Tighten down
+CON
+SET MR8407               ; CAP final Tighten up
+MRD
+AND @MR3215
+RES MR8408               ; CAP final Tighten upper stream
+CON
+SET MR8409               ; CAP final Tighten lower stream
+MPP
+LD @MR3115
+AND @MR3215
+ANL
+RES @MR3115
+CON
+RES @MR3215
+CON
+RES @MR800               ; Pause disable
+CON
+JMP @MR2305
+STG @MR2305
+ANB R50300               ; Pause
+ANB R51707               ; UT7 ERROR
+ANB R5410                ; CAP fainal tightening lower limi
+AND R5411                ; CAP fainal tightening upper limi
+ANB R5412                ; CAP fainal tightening upper stre
+AND R5413                ; CAP fainal tightening lower stre
+JMP @MR2306
+;1側のみ動作
+STG @MR2303
+AND @MR3115
+RES MR8406               ; CAP final Tighten down
+CON
+SET MR8407               ; CAP final Tighten up
+CON
+RES @MR3115
+CON
+RES @MR3215
+CON
+RES @MR800               ; Pause disable
+CON
+JMP @MR2512
+STG @MR2512
+ANB R50300               ; Pause
+ANB R51707               ; UT7 ERROR
+ANB R5410                ; CAP fainal tightening lower limi
+AND R5411                ; CAP fainal tightening upper limi
+ANB R5412                ; CAP fainal tightening upper stre
+AND R5413                ; CAP fainal tightening lower stre
+JMP @MR2306
+;2側のみ動作
+STG @MR2304
+AND @MR3215
+RES MR8408               ; CAP final Tighten upper stream
+CON
+SET MR8409               ; CAP final Tighten lower stream
+CON
+RES @MR3115
+CON
+RES @MR3215
+CON
+RES @MR800               ; Pause disable
+CON
+JMP @MR2513
+STG @MR2513
+ANB R50300               ; Pause
+ANB R51707               ; UT7 ERROR
+ANB R5410                ; CAP fainal tightening lower limi
+AND R5411                ; CAP fainal tightening upper limi
+ANB R5412                ; CAP fainal tightening upper stre
+AND R5413                ; CAP fainal tightening lower stre
+JMP @MR2306
+STG @MR2306
+SET MR40101              ; Torque Data Send
+CON
+MPS
+LD R4812                 ; INDEX chuck 7-1 work existence
+OR MR714                 ; Non Shrink film
+ANL
+JMP @MR2515
+MPP
+LDB R4812                ; INDEX chuck 7-1 work existence
+ANB MR714                ; Non Shrink film
+ANL
+DW #0 DM20700            ; UT7-1 Work detection
+CON
+JMP @MR2501
+;ERR42 UT7-1 ｷｬｯﾌﾟ本締めﾄﾙｸ不良
+STG @MR2515
+ANB R50300               ; Pause
+ANB R51707               ; UT7 ERROR
+MPS
+LDB @MR111               ; UT7-1 CAP torqe NG
+OR MR704                 ; 7st final tight judgement invali
+ANL
+DW #7 DM20700            ; UT7-1 Work detection
+CON
+JMP @MR2307
+MPP
+LD @MR111                ; UT7-1 CAP torqe NG
+ANB MR704                ; 7st final tight judgement invali
+ANL
+SET @MR2608
+CON
+JMP @MR2308
+STG @MR2308
+ANB R50300               ; Pause
+ANB R51707               ; UT7 ERROR
+AND @MR2615
+RES @MR2615
+CON
+JMP @MR2309
+STG @MR2309
+ANB R50300               ; Pause
+ANB R51707               ; UT7 ERROR
+MPS
+LD R4812                 ; INDEX chuck 7-1 work existence
+OR MR714                 ; Non Shrink film
+ANL
+SET @MR2702
+MPP
+LDB R4812                ; INDEX chuck 7-1 work existence
+ANB MR714                ; Non Shrink film
+ANL
+JMP @MR2500
+;ERR42 UT7-1 ｷｬｯﾌﾟ本締めﾄﾙｸ不良ここまで
+;ERR50 UT7-1 ｷｬｯﾌﾟ本締めﾄﾙｸ検出ﾀｲﾑｵｰﾊﾞｰ
+STG @MR2307
+ANB R50300               ; Pause
+ANB R51707               ; UT7 ERROR
+MPS
+LDB @MR203               ; UT7-1 CAP time over torqe 
+OR MR704                 ; 7st final tight judgement invali
+ANL
+DW #7 DM20700            ; UT7-1 Work detection
+CON
+JMP @MR2310
+MPP
+LD @MR203                ; UT7-1 CAP time over torqe 
+ANB MR704                ; 7st final tight judgement invali
+ANL
+SET @MR2608
+CON
+JMP @MR2311
+STG @MR2311
+ANB R50300               ; Pause
+ANB R51707               ; UT7 ERROR
+AND @MR2615
+RES @MR2615
+CON
+JMP @MR2312
+STG @MR2312
+ANB R50300               ; Pause
+ANB R51707               ; UT7 ERROR
+MPS
+AND R4812                ; INDEX chuck 7-1 work existence
+SET @MR2704
+MPP
+ANB R4812                ; INDEX chuck 7-1 work existence
+JMP @MR2500
+;ERR50 UT7-1 ｷｬｯﾌﾟ本締めﾄﾙｸ検出ﾀｲﾑｵｰﾊﾞｰここまで
+;ERR40 UT7-1 ｷｬｯﾌﾟ本締め位置不良
+STG @MR2310
+ANB R50300               ; Pause
+ANB R51707               ; UT7 ERROR
+MPS
+LDB @MR100
+ANB R5608                ; UT7-1-1 CAP slanting ditection
+ANL
+DW #7 DM20700            ; UT7-1 Work detection
+CON
+JMP @MR2501
+MPP
+LD @MR100
+OR R5608                 ; UT7-1-1 CAP slanting ditection
+ANL
+SET @MR2608
+CON
+JMP @MR2314
+STG @MR2314
+ANB R50300               ; Pause
+ANB R51707               ; UT7 ERROR
+AND @MR2615
+RES @MR2615
+CON
+JMP @MR2315
+STG @MR2315
+ANB R50300               ; Pause
+ANB R51707               ; UT7 ERROR
+MPS
+AND R4812                ; INDEX chuck 7-1 work existence
+SET @MR2700
+MPP
+ANB R4812                ; INDEX chuck 7-1 work existence
+JMP @MR2500
+;ERR40 UT7-1 ｷｬｯﾌﾟ本締め位置不良ここまで
+STG @MR2500
+@INC DM5002              ; NG Counter
+CON
+DW #0 DM20700            ; UT7-1 Work detection
+CON
+RES @MR111               ; UT7-1 CAP torqe NG
+CON
+RES @MR203               ; UT7-1 CAP time over torqe 
+CON
+RES @MR100
+CON
+JMP @MR2501
+STG @MR2501
+MPS
+AND R4813                ; INDEX chuck 7-2 work existence
+JMP @MR2514
+MPP
+ANB R4813                ; INDEX chuck 7-2 work existence
+DW #0 DM20702            ; UT7-2 Work detection
+CON
+JMP @MR2508
+;ERR43 UT7-2 ｷｬｯﾌﾟ本締めﾄﾙｸ不良
+STG @MR2514
+ANB R50300               ; Pause
+ANB R51707               ; UT7 ERROR
+MPS
+LDB @MR115               ; UT7-2 CAP torqe NG
+OR MR704                 ; 7st final tight judgement invali
+ANL
+DW #7 DM20702            ; UT7-2 Work detection
+CON
+JMP @MR2502
+MPP
+LD @MR115                ; UT7-2 CAP torqe NG
+ANB MR704                ; 7st final tight judgement invali
+ANL
+SET @MR2608
+CON
+JMP @MR2503
+STG @MR2503
+ANB R50300               ; Pause
+ANB R51707               ; UT7 ERROR
+AND @MR2615
+RES @MR2615
+CON
+JMP @MR2504
+STG @MR2504
+ANB R50300               ; Pause
+ANB R51707               ; UT7 ERROR
+MPS
+AND R4813                ; INDEX chuck 7-2 work existence
+SET @MR2703
+MPP
+ANB R4813                ; INDEX chuck 7-2 work existence
+JMP @MR2511
+;ERR43 UT7-2 ｷｬｯﾌﾟ本締めﾄﾙｸ不良ここまで
+;ERR51 UT7-2 ｷｬｯﾌﾟ本締めﾄﾙｸ検出ﾀｲﾑｵｰﾊﾞｰ
+STG @MR2502
+ANB R50300               ; Pause
+ANB R51707               ; UT7 ERROR
+MPS
+LDB @MR207               ; UT7-2 CAP time over torqe 
+OR MR704                 ; 7st final tight judgement invali
+ANL
+DW #7 DM20702            ; UT7-2 Work detection
+CON
+JMP @MR2505
+MPP
+LD @MR207                ; UT7-2 CAP time over torqe 
+ANB MR704                ; 7st final tight judgement invali
+ANL
+SET @MR2608
+CON
+JMP @MR2506
+STG @MR2506
+ANB R50300               ; Pause
+ANB R51707               ; UT7 ERROR
+AND @MR2615
+RES @MR2615
+CON
+JMP @MR2507
+STG @MR2507
+ANB R50300               ; Pause
+ANB R51707               ; UT7 ERROR
+MPS
+AND R4813                ; INDEX chuck 7-2 work existence
+SET @MR2705
+MPP
+ANB R4813                ; INDEX chuck 7-2 work existence
+JMP @MR2511
+;ERR51 UT7-2 ｷｬｯﾌﾟ本締めﾄﾙｸ検出ﾀｲﾑｵｰﾊﾞｰここまで
+;ERR41 UT7-2 ｷｬｯﾌﾟ本締め位置不良
+STG @MR2505
+ANB R50300               ; Pause
+ANB R51707               ; UT7 ERROR
+MPS
+LDB @MR104
+ANB R5610                ; UT7-2-1 CAP slanting ditection
+OR MR704                 ; 7st final tight judgement invali
+ANL
+DW #7 DM20702            ; UT7-2 Work detection
+CON
+JMP @MR2508
+MPP
+LD @MR104
+OR R5610                 ; UT7-2-1 CAP slanting ditection
+ANB MR704                ; 7st final tight judgement invali
+ANL
+SET @MR2608
+CON
+JMP @MR2509
+STG @MR2509
+ANB R50300               ; Pause
+ANB R51707               ; UT7 ERROR
+AND @MR2615
+RES @MR2615
+CON
+JMP @MR2510
+STG @MR2510
+ANB R50300               ; Pause
+ANB R51707               ; UT7 ERROR
+MPS
+AND R4813                ; INDEX chuck 7-2 work existence
+SET @MR2701
+MPP
+ANB R4813                ; INDEX chuck 7-2 work existence
+JMP @MR2511
+;ERR41 UT7-2 ｷｬｯﾌﾟ本締め位置不良ここまで
+STG @MR2511
+@INC DM5002              ; NG Counter
+CON
+DW #0 DM20702            ; UT7-2 Work detection
+CON
+RES @MR115               ; UT7-2 CAP torqe NG
+CON
+RES @MR207               ; UT7-2 CAP time over torqe 
+CON
+RES @MR104
+CON
+JMP @MR2508
+STG @MR2508
+ANB R50300               ; Pause
+ANB R51707               ; UT7 ERROR
+JMP @MR2910
+;動作終了
+;An End of Operation
+STG @MR2910
+RES MR407                ; UT7 work detection/data check 
+CON
+ANB R50300               ; Pause
+ANB R51707               ; UT7 ERROR
+MPS
+AND R50001               ; AUTO mode
+SET R51907               ; UT7 1cycle finished
+CON
+JMP @MR2911
+MPP
+AND R50002               ; STEP mode
+SET R50009               ; HOLDRQ
+CON
+SET R51907               ; UT7 1cycle finished
+CON
+JMP @MR2911
+STG @MR2911
+ANB R50209               ; Operation Start
+MPS
+AND R50001               ; AUTO mode
+MPS
+LDB R50000               ; HOLD
+AND R50409               ; Cycyle Finished
+ANL
+SET @MR2000              ; UT7 AUTO START
+CON
+ENDS
+MPP
+AND R50000               ; HOLD
+JMP @MR2912
+MPP
+LD R50002                ; STEP mode
+AND R50000               ; HOLD
+ANL
+JMP @MR2912
+;終了処理
+;Processing of end
+STG @MR2912
+ANB R50300               ; Pause
+ANB R51707               ; UT7 ERROR
+MPS
+AND @MR2001
+SET @MR2915
+CON
+ENDS
+MPP
+AND @MR006               ; STEP oparation
+RES @MR006               ; STEP oparation
+CON
+SET @MR3415
+CON
+ENDS
+;<h1/>異常ﾜｰｸ取出
+STG @MR2608
+ANB R50300               ; Pause
+MPS
+AND= DM19700 #1          ; UT7 chuck No.
+RES MR7800               ; INDEX chuck1 close
+CON
+SET MR7801               ; INDEX chuck1 open
+CON
+JMP @MR2609
+MRD
+AND= DM19700 #2          ; UT7 chuck No.
+RES MR7802               ; INDEX chuck2 close
+CON
+SET MR7803               ; INDEX chuck2 open
+CON
+JMP @MR2609
+MRD
+AND= DM19700 #3          ; UT7 chuck No.
+RES MR7804               ; INDEX chuck3 close
+CON
+SET MR7805               ; INDEX chuck3 open
+CON
+JMP @MR2609
+MRD
+AND= DM19700 #4          ; UT7 chuck No.
+RES MR7806               ; INDEX chuck4 close
+CON
+SET MR7807               ; INDEX chuck4 open
+CON
+JMP @MR2609
+MRD
+AND= DM19700 #5          ; UT7 chuck No.
+RES MR7808               ; INDEX chuck5 close
+CON
+SET MR7809               ; INDEX chuck5 open
+CON
+JMP @MR2609
+MRD
+AND= DM19700 #6          ; UT7 chuck No.
+RES MR7810               ; INDEX chuck6 close
+CON
+SET MR7811               ; INDEX chuck6 open
+CON
+JMP @MR2609
+MRD
+AND= DM19700 #7          ; UT7 chuck No.
+RES MR7812               ; INDEX chuck7 close
+CON
+SET MR7813               ; INDEX chuck7 open
+CON
+JMP @MR2609
+MPP
+AND= DM19700 #8          ; UT7 chuck No.
+RES MR7814               ; INDEX chuck8 close
+CON
+SET MR7815               ; INDEX chuck8 open
+CON
+JMP @MR2609
+STG @MR2609
+TMR @2 #5
+CON
+AND @T2
+SET @MR2615
+CON
+ENDS
+;<h1/>STEP
+LD R50002                ; STEP mode
+ANB R50300               ; Pause
+ANB R51807               ; UT7 Do
+SET @MR006               ; STEP oparation
+CON
+SET R51807               ; UT7 Do
+CON
+SET @MR3400
+STG @MR3400
+ANB R50300               ; Pause
+ANB R51707               ; UT7 ERROR
+MPS
+AND LR40800              ; STEP UT7-0 selection lamp
+JMP @MR3401
+MPP
+ANB LR40800              ; STEP UT7-0 selection lamp
+JMP @MR3401
+;STEP　ﾁｬｯｸ位置確認
+STG @MR3401
+ANB R50300               ; Pause
+ANB R51707               ; UT7 ERROR
+ANB @MR2800
+LDA #2
+CON
+ADD EM1202               ; Main INDEX current POS
+CON
+STA DM19700              ; UT7 chuck No.
+CON
+JMP @MR3402
+STG @MR3402
+ANB R50300               ; Pause
+ANB R51707               ; UT7 ERROR
+MPS
+LD>= DM19700 #1          ; UT7 chuck No.
+AND<= DM19700 #8         ; UT7 chuck No.
+ANL
+JMP @MR3403
+MPP
+AND> DM19700 #8          ; UT7 chuck No.
+LDA DM19700              ; UT7 chuck No.
+CON
+SUB #8
+CON
+STA DM19700              ; UT7 chuck No.
+CON
+JMP @MR3403
+;STEP　ﾁｬｯｸ位置確認ここまで
+STG @MR3403
+ANB R50300               ; Pause
+ANB R51707               ; UT7 ERROR
+MPS
+LD R4812                 ; INDEX chuck 7-1 work existence
+AND R4813                ; INDEX chuck 7-2 work existence
+ANL
+DW #6 DM20700            ; UT7-1 Work detection
+CON
+DW #6 DM20702            ; UT7-2 Work detection
+CON
+SET @MR2100
+CON
+JMP @MR3413
+MRD
+LD R4812                 ; INDEX chuck 7-1 work existence
+ANB R4813                ; INDEX chuck 7-2 work existence
+ANL
+DW #6 DM20700            ; UT7-1 Work detection
+CON
+SET @MR2100
+CON
+JMP @MR3413
+MRD
+LDB R4812                ; INDEX chuck 7-1 work existence
+AND R4813                ; INDEX chuck 7-2 work existence
+ANL
+DW #6 DM20702            ; UT7-2 Work detection
+CON
+SET @MR2100
+CON
+JMP @MR3413
+MPP
+LDB R4812                ; INDEX chuck 7-1 work existence
+ANB R4813                ; INDEX chuck 7-2 work existence
+ANL
+SET @MR2910
+CON
+JMP @MR3413
+STG @MR3413
+ANB R50300               ; Pause
+ANB R51707               ; UT7 ERROR
+@SET LR000               ; Step/Manual Oparation Memory
+CON
+ANB @MR006               ; STEP oparation
+MPS
+AND= DM19700 #1          ; UT7 chuck No.
+SET MR7801               ; INDEX chuck1 open
+CON
+RES MR7800               ; INDEX chuck1 close
+CON
+JMP @MR3414
+MRD
+AND= DM19700 #2          ; UT7 chuck No.
+SET MR7803               ; INDEX chuck2 open
+CON
+RES MR7802               ; INDEX chuck2 close
+CON
+JMP @MR3414
+MRD
+AND= DM19700 #3          ; UT7 chuck No.
+SET MR7805               ; INDEX chuck3 open
+CON
+RES MR7804               ; INDEX chuck3 close
+CON
+JMP @MR3414
+MRD
+AND= DM19700 #4          ; UT7 chuck No.
+SET MR7807               ; INDEX chuck4 open
+CON
+RES MR7806               ; INDEX chuck4 close
+CON
+JMP @MR3414
+MRD
+AND= DM19700 #5          ; UT7 chuck No.
+SET MR7809               ; INDEX chuck5 open
+CON
+RES MR7808               ; INDEX chuck5 close
+CON
+JMP @MR3414
+MRD
+AND= DM19700 #6          ; UT7 chuck No.
+SET MR7811               ; INDEX chuck6 open
+CON
+RES MR7810               ; INDEX chuck6 close
+CON
+JMP @MR3414
+MRD
+AND= DM19700 #7          ; UT7 chuck No.
+SET MR7813               ; INDEX chuck7 open
+CON
+RES MR7812               ; INDEX chuck7 close
+CON
+JMP @MR3414
+MPP
+AND= DM19700 #8          ; UT7 chuck No.
+SET MR7815               ; INDEX chuck8 open
+CON
+RES MR7814               ; INDEX chuck8 close
+CON
+JMP @MR3414
+STG @MR3414
+ANB R50300               ; Pause
+ANB R51707               ; UT7 ERROR
+DW #0 DM20700            ; UT7-1 Work detection
+CON
+DW #0 DM20702            ; UT7-2 Work detection
+CON
+ENDS
+LDB R50003               ; HOME mode
+ANB R50001               ; AUTO mode
+ANB R50002               ; STEP mode
+AND @MR3415
+RES R51807               ; UT7 Do
+CON
+RES @MR3415
+;<h1/>ｻﾌﾞﾙｰﾁﾝ
+;Subrutine
+;ﾄﾞﾗｲﾊﾞｰ動作
+;ﾄﾞﾗｲﾊﾞｰ1動作
+STG @MR3100
+SET @MR3300
+CON
+RES MR8407               ; CAP final Tighten up
+CON
+SET MR8406               ; CAP final Tighten down
+CON
+MPS
+AND R5410                ; CAP fainal tightening lower limi
+JMP @MR3107
+MPP
+ANB R5410                ; CAP fainal tightening lower limi
+TMH @13 #100
+CON
+AND @T13
+JMP @MR3107
+STG @MR3107
+DW #0 @DM2
+CON
+SET MR7603               ; Driver1 CW
+CON
+JMP @MR3101
+STG @MR3101
+ANB R4605                ; Screw1 tightening completion
+JMP @MR3102
+STG @MR3102
+MPS
+AND R4605                ; Screw1 tightening completion
+RES MR7602               ; Driver1 STOP
+CON
+RES MR7603               ; Driver1 CW
+CON
+JMP @MR3103
+MPP
+ANB R4605                ; Screw1 tightening completion
+TMH @16 #350
+CON
+AND @T16
+@INC @DM2
+CON
+RES MR7602               ; Driver1 STOP
+CON
+RES MR7603               ; Driver1 CW
+CON
+JMP @MR3112
+;ﾄﾞﾗｲﾊﾞｰ1ｴﾗｰﾘﾄﾗｲ処理
+STG @MR3112
+SET MR7600               ; Driver1 CCW
+CON
+TMH @17 #50
+CON
+AND @T17
+JMP @MR3113
+STG @MR3113
+RES MR7600               ; Driver1 CCW
+CON
+MPS
+AND< @DM2 #1
+JMP @MR3100
+MPP
+AND>= @DM2 #1
+JMP @MR3114
+STG @MR3114
+SET @MR203               ; UT7-1 CAP time over torqe 
+CON
+JMP @MR3105
+;ﾄﾞﾗｲﾊﾞｰ1ｴﾗｰﾘﾄﾗｲ処理ここまで
+STG @MR3103
+TMH @18 #50
+CON
+AND @T18
+MPS
+LD R4601                 ; Screw1 L region pass
+OR R4603                 ; Screw1 H region pass
+OR R4604                 ; Screw1 GOOD region pass
+OR MR704                 ; 7st final tight judgement invali
+ANL
+JMP @MR3104
+MPP
+LDB R4601                ; Screw1 L region pass
+ANB R4603                ; Screw1 H region pass
+ANB R4604                ; Screw1 GOOD region pass
+ANB MR704                ; 7st final tight judgement invali
+ANL
+SET @MR111               ; UT7-1 CAP torqe NG
+CON
+JMP @MR3105
+STG @MR3104
+MPS
+LD R5711                 ; CAP fainal tightening OK positio
+OR MR704                 ; 7st final tight judgement invali
+ANL
+JMP @MR3105
+MPP
+LDB R5711                ; CAP fainal tightening OK positio
+ANB MR704                ; 7st final tight judgement invali
+ANL
+TMH @10 #100
+CON
+AND @T10
+SET @MR100
+CON
+JMP @MR3105
+STG @MR3105
+AND @MR3307
+RES @MR3307
+CON
+SET @MR3115
+CON
+ENDS
+;ﾄﾞﾗｲﾊﾞｰ2動作
+STG @MR3200
+SET @MR3308
+CON
+RES MR8409               ; CAP final Tighten lower stream
+CON
+SET MR8408               ; CAP final Tighten upper stream
+CON
+MPS
+AND R5412                ; CAP fainal tightening upper stre
+JMP @MR3207
+MPP
+ANB R5412                ; CAP fainal tightening upper stre
+TMH @14 #100
+CON
+AND @T14
+JMP @MR3207
+STG @MR3207
+DW #0 @DM3
+CON
+SET MR7611               ; Driver2 CW
+CON
+JMP @MR3201
+STG @MR3201
+ANB R4613                ; Screw2 tightening completion
+JMP @MR3202
+STG @MR3202
+MPS
+AND R4613                ; Screw2 tightening completion
+RES MR7610               ; Driver2 STOP
+CON
+RES MR7611               ; Driver2 CW
+CON
+JMP @MR3203
+MPP
+ANB R4613                ; Screw2 tightening completion
+TMH @21 #350
+CON
+AND @T21
+@INC @DM3
+CON
+RES MR7610               ; Driver2 STOP
+CON
+RES MR7611               ; Driver2 CW
+CON
+JMP @MR3212
+;ﾄﾞﾗｲﾊﾞｰ2ｴﾗｰﾘﾄﾗｲ処理
+STG @MR3212
+SET MR7608               ; Driver2 CCW
+CON
+TMH @22 #50
+CON
+AND @T22
+JMP @MR3213
+STG @MR3213
+RES MR7608               ; Driver2 CCW
+CON
+MPS
+AND< @DM3 #1
+JMP @MR3200
+MPP
+AND>= @DM3 #1
+JMP @MR3214
+STG @MR3214
+SET @MR207               ; UT7-2 CAP time over torqe 
+CON
+JMP @MR3205
+;LINEﾄﾞﾗｲﾊﾞｰ2ｴﾗｰﾘﾄﾗｲ処理ここまで
+STG @MR3203
+TMH @23 #50
+CON
+AND @T23
+MPS
+LD R4609                 ; Screw2 L region pass
+OR R4611                 ; Screw2 H region pass
+OR R4612                 ; Screw2 GOOD region pass
+OR MR704                 ; 7st final tight judgement invali
+ANL
+JMP @MR3204
+MPP
+LDB R4609                ; Screw2 L region pass
+ANB R4611                ; Screw2 H region pass
+ANB R4612                ; Screw2 GOOD region pass
+ANB MR704                ; 7st final tight judgement invali
+ANL
+SET @MR115               ; UT7-2 CAP torqe NG
+CON
+JMP @MR3205
+STG @MR3204
+MPS
+LD R5712                 ; CAP fainal tightening OK positio
+OR MR704                 ; 7st final tight judgement invali
+ANL
+JMP @MR3205
+MPP
+LDB R5712                ; CAP fainal tightening OK positio
+ANB MR704                ; 7st final tight judgement invali
+ANL
+SET @MR104
+CON
+JMP @MR3205
+STG @MR3205
+AND @MR3315
+RES @MR3315
+CON
+SET @MR3215
+CON
+ENDS
+;Torque Data-1
+STG @MR3300
+FMOV #0 DM30000 #200     ; Torque Data1
+JMP @MR3301
+STG @MR3301
+MPS
+AND R26702               ; Port2 Reception data read reque
+BMOV DM27359 DM30000 DM27358;Port2 recive data 1  Torque Data1  Port2 recive data length
+SET R26802               ; Port2 received data read complet
+CON
+JMP @MR3302
+MPP
+ANB MR7603               ; Driver1 CW
+MPS
+AND R4605                ; Screw1 tightening completion
+TMR @3 #50
+CON
+AND @T3
+SET @MR208
+CON
+JMP @MR3208
+MPP
+ANB R4605                ; Screw1 tightening completion
+JMP @MR3306
+STG @MR3208
+AND @MR211
+RES @MR211
+CON
+JMP @MR3306
+STG @MR3302
+ANB R26702               ; Port2 Reception data read reque
+RES R26802               ; Port2 received data read complet
+CON
+JMP @MR3303
+STG @MR3303
+UNIB DM30001 DM30020 #2
+UNIB DM30003 DM30021 #2
+UNIB DM30005 DM30022 #2
+UNIB DM30007 DM30023 #2
+UNIB DM30009 DM30024 #2
+JMP @MR3304
+STG @MR3304
+LDA DM30020
+CON
+SWAP
+CON
+STA DM30030
+CON
+LDA DM30021
+CON
+SWAP
+CON
+STA DM30031
+CON
+LDA DM30022
+CON
+SWAP
+CON
+STA DM30033
+CON
+LDA DM30023
+CON
+SWAP
+CON
+STA DM30034
+CON
+LDA DM30024
+CON
+SWAP
+CON
+STA DM30035
+CON
+JMP @MR3305
+STG @MR3305
+RDASC.D DM30030 DM30100
+RDASC.D DM30033 DM30102
+JMP @MR3306
+STG @MR3306
+SET @MR3307
+CON
+ENDS
+;Torque Data-2
+STG @MR3308
+FMOV #0 DM30200 #200     ; Torque Data2
+JMP @MR3309
+STG @MR3309
+MPS
+AND R28202               ; Port2 Reception data read reque
+BMOV DM28859 DM30200 DM28858;Port2 recive data 1  Torque Data2  Port2 recive data length
+SET R28302               ; Port2 received data read complet
+CON
+JMP @MR3310
+MPP
+ANB MR7611               ; Driver2 CW
+MPS
+AND R4613                ; Screw2 tightening completion
+TMR @4 #50
+CON
+AND @T4
+SET @MR212
+CON
+JMP @MR3209
+MPP
+ANB R4613                ; Screw2 tightening completion
+JMP @MR3314
+STG @MR3209
+AND @MR215
+RES @MR215
+CON
+JMP @MR3314
+STG @MR3310
+ANB R28202               ; Port2 Reception data read reque
+RES R28302               ; Port2 received data read complet
+CON
+JMP @MR3311
+STG @MR3311
+UNIB DM30201 DM30220 #2
+UNIB DM30203 DM30221 #2
+UNIB DM30205 DM30222 #2
+UNIB DM30207 DM30223 #2
+UNIB DM30209 DM30224 #2
+JMP @MR3312
+STG @MR3312
+LDA DM30220
+CON
+SWAP
+CON
+STA DM30230
+CON
+LDA DM30221
+CON
+SWAP
+CON
+STA DM30231
+CON
+LDA DM30222
+CON
+SWAP
+CON
+STA DM30233
+CON
+LDA DM30223
+CON
+SWAP
+CON
+STA DM30234
+CON
+LDA DM30224
+CON
+SWAP
+CON
+STA DM30235
+CON
+JMP @MR3313
+STG @MR3313
+RDASC.D DM30230 DM30300
+RDASC.D DM30233 DM30302
+JMP @MR3314
+STG @MR3314
+SET @MR3315
+CON
+ENDS
+;<h1/>ｴﾗｰ表示
+;Error Display
+;Error 40　UT7-1 ｷｬｯﾌﾟ本締め位置不良
+STG @MR2700
+ANB R50008               ; Whole ERROR
+SET R50008               ; Whole ERROR
+CON
+SET R51707               ; UT7 ERROR
+CON
+SET R50707               ; 40.UT7-1 CAP tighten position NG
+CON
+JMP @MR101
+MOV #40 DM400            ; Message NO.
+STG @MR101
+AND R50008               ; Whole ERROR
+JMP @MR102
+STG @MR102
+ANB R50008               ; Whole ERROR
+ENDS
+;Error 41　UT7-2 ｷｬｯﾌﾟ本締め位置不良
+STG @MR2701
+ANB R50008               ; Whole ERROR
+SET R50008               ; Whole ERROR
+CON
+SET R51707               ; UT7 ERROR
+CON
+SET R50708               ; 41.UT7-2 CAP tighten position NG
+CON
+JMP @MR105
+MOV #41 DM400            ; Message NO.
+STG @MR105
+AND R50008               ; Whole ERROR
+JMP @MR106
+STG @MR106
+ANB R50008               ; Whole ERROR
+ENDS
+;Error 42　UT7-1 ｷｬｯﾌﾟ本締めﾄﾙｸ不良
+STG @MR2702
+ANB R50008               ; Whole ERROR
+SET R50008               ; Whole ERROR
+CON
+SET R51707               ; UT7 ERROR
+CON
+SET R50709               ; 42.UT7-1 CAP tighten torque NG
+CON
+JMP @MR108
+MOV #42 DM400            ; Message NO.
+STG @MR108
+AND R50008               ; Whole ERROR
+JMP @MR109
+STG @MR109
+ANB R50008               ; Whole ERROR
+ENDS
+;Error 43　UT7-2 ｷｬｯﾌﾟ本締めﾄﾙｸ不良
+STG @MR2703
+ANB R50008               ; Whole ERROR
+SET R50008               ; Whole ERROR
+CON
+SET R51707               ; UT7 ERROR
+CON
+SET R50710               ; 43.UT7-2 CAP tighten torque NG
+CON
+JMP @MR112
+MOV #43 DM400            ; Message NO.
+STG @MR112
+AND R50008               ; Whole ERROR
+JMP @MR113
+STG @MR113
+ANB R50008               ; Whole ERROR
+ENDS
+;Error 50　UT7-1 ｷｬｯﾌﾟ本締めﾄﾙｸ検出ﾀｲﾑｵｰﾊﾞｰ
+STG @MR2704
+ANB R50008               ; Whole ERROR
+SET R50008               ; Whole ERROR
+CON
+SET R51707               ; UT7 ERROR
+CON
+SET R50801               ; 50.UT7-1 CAP torqe detection err
+CON
+JMP @MR200
+MOV #50 DM400            ; Message NO.
+STG @MR200
+AND R50008               ; Whole ERROR
+JMP @MR201
+STG @MR201
+ANB R50008               ; Whole ERROR
+ENDS
+;Error 51　UT7-2 ｷｬｯﾌﾟ本締めﾄﾙｸ検出ﾀｲﾑｵｰﾊﾞｰ
+STG @MR2705
+ANB R50008               ; Whole ERROR
+SET R50008               ; Whole ERROR
+CON
+SET R51707               ; UT7 ERROR
+CON
+SET R50802               ; 51.UT7-2 CAP torqe detection err
+CON
+JMP @MR204
+MOV #51 DM400            ; Message NO.
+STG @MR204
+AND R50008               ; Whole ERROR
+JMP @MR205
+STG @MR205
+ANB R50008               ; Whole ERROR
+ENDS
+;Error68 UT7-1 Data Comm NG
+STG @MR208
+ANB R50008               ; Whole ERROR
+SET R50008               ; Whole ERROR
+CON
+SET R51707               ; UT7 ERROR
+CON
+SET R50903               ; 68.UT7-1 Data Comm NG
+CON
+JMP @MR209
+MOV #68 DM400            ; Message NO.
+STG @MR209
+AND R50008               ; Whole ERROR
+JMP @MR210
+STG @MR210
+ANB R50008               ; Whole ERROR
+SET @MR211
+CON
+ENDS
+;Error72 UT7-2 Data Comm NG
+STG @MR212
+ANB R50008               ; Whole ERROR
+SET R50008               ; Whole ERROR
+CON
+SET R51707               ; UT7 ERROR
+CON
+SET R50907               ; 72.UT7-1 Data Comm NG
+CON
+JMP @MR213
+MOV #72 DM400            ; Message NO.
+STG @MR213
+AND R50008               ; Whole ERROR
+JMP @MR214
+STG @MR214
+ANB R50008               ; Whole ERROR
+SET @MR215
+CON
+ENDS
+;<h1/>UT7 ﾎﾟｰｽﾞ禁止
+;UT7 Pause Prohibition
+LDB @MR800               ; Pause disable
+INV
+OUT R51607               ; PACK UT7
+END
+ENDH

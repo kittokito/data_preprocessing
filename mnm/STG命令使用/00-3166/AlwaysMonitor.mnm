@@ -1,0 +1,511 @@
+DEVICE:53
+;MODULE:AlwaysMonitor
+;MODULE_TYPE:0
+;SCRIPT_TYPE:
+;OneSystem Sub-Module
+;
+;---------------------------------------
+;ModuleName	:	AlwaysMonitor
+;ModuleType	:	Sub Module
+;Function	:	常時監視
+;---------------------------------------
+;<使用方法>
+;常時監視が必要な物は本ﾓｼﾞｭｰﾙ内に記述して下さい
+;・ﾋｰﾀｰ過昇温検知による非常停止
+;・ﾁｬﾝﾊﾞｰ排気量低下によるｴﾗｰ出力
+;など
+;<h1/>優先異常
+;取出機 非常停止
+LD CR2007                ; 運転開始時1ｽｷｬﾝOFF
+ONDL #100 @MR1000
+LD @MR1000
+ANB R2003                ; 非常停止(取出機より)
+ANB MR011                ; 取出機(ON=ｵﾌﾗｲﾝ/OFF=ｵﾝﾗｲﾝ
+ANB R46104               ; _非常停止中　ﾓｰﾄﾞﾌﾗｸﾞ
+MEP
+MSTRT F_ERROR_DISP #1
+;ｴｱｰ元圧低下
+LD CR2007                ; 運転開始時1ｽｷｬﾝOFF
+ANB R44302               ; *Group1　ｴｱｰ元圧検出
+MEP
+LDF R46104               ; _非常停止中　ﾓｰﾄﾞﾌﾗｸﾞ
+ANB R44302               ; *Group1　ｴｱｰ元圧検出
+ORL
+MSTRT F_ERROR_DISP #2
+;INDEX <--> RB1 同時起動I/L
+LD MR201                 ; INDEX 回転中
+LD R35000                ; RB1 MOVE
+OR R35002                ; During RB1 MOVE 
+ANL
+MEP
+MSTRT F_ERROR_DISP #10
+;INDEX Alarm
+LDB R1008                ; INDEX Alarm1
+ANB R1009                ; INDEX Alarm2
+ANB R46104               ; _非常停止中　ﾓｰﾄﾞﾌﾗｸﾞ
+TMR @2 #10
+CON
+AND @T2
+MEP
+MSTRT F_ERROR_DISP #16
+;RB2_動作中ﾌﾟﾛｸﾞﾗﾑ停止
+LD R46100                ; _自動運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+OR R46101                ; _原点復帰中　ﾓｰﾄﾞﾌﾗｸﾞ
+LD R46102                ; _ﾒﾝﾃﾅﾝｽ運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+AND<> DM4110 #30         ; _Group1　ﾒﾝﾃ動作番号
+ORL
+ANF MR23504              ; RB2ｺﾝﾄﾛｰﾗ起動完了
+AND MR23505              ; D-NET通信状態OK
+MSTRT F_ERROR_DISP #11
+;RB2_BUSYﾌﾗｸﾞ異常停止
+LDB DM10509.9            ; RB2 RB_BUSY
+ANB DM10509.13           ; RB2 RB_COMP
+LD DM10509.9             ; RB2 RB_BUSY
+AND DM10509.13           ; RB2 RB_COMP
+ORL
+AND MR23504              ; RB2ｺﾝﾄﾛｰﾗ起動完了
+AND MR23505              ; D-NET通信状態OK
+TMR @13 #1
+CON
+AND @T13
+MEP
+MSTRT F_ERROR_DISP #13
+;<h1/>異常
+;ｴｱｰｸﾘｰﾝﾕﾆｯﾄｱﾗｰﾑ1
+LDB R4010                ; ｴｱｰｸﾘｰﾝﾕﾆｯﾄ ALM1
+ANB @MR100               ; ERROR
+ANB R39004               ; ｴﾗｰ中
+TMR @5 #50
+CON
+AND @T5
+DW #0 @DM0               ; TaskNo /ERROR_DISP
+CON
+DW #1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #2 @DM1               ; ErrorNo /ERROR_DISP
+CON
+DW #4010 @DM2            ; SensorNo /ERROR_DISP
+CON
+SET @MR1515
+;ｴｱｰｸﾘｰﾝﾕﾆｯﾄｱﾗｰﾑ2
+LDB R4011                ; ｴｱｰｸﾘｰﾝﾕﾆｯﾄ ALM2
+ANB @MR100               ; ERROR
+ANB R39004               ; ｴﾗｰ中
+TMR @4 #50
+CON
+AND @T4
+DW #0 @DM0               ; TaskNo /ERROR_DISP
+CON
+DW #1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #3 @DM1               ; ErrorNo /ERROR_DISP
+CON
+DW #4011 @DM2            ; SensorNo /ERROR_DISP
+CON
+SET @MR1515
+;ﾄﾚｲ逆入れｱﾗｰﾑ
+LDB R4404                ; 空ﾄﾚｲ給材 大ﾄﾚｲ方向確認
+AND= DM488 #1            ; ﾄﾚｲ逆入検出(手前)(0=無効/1=有効)
+LDB R4414                ; 空ﾄﾚｲ給材 大ﾄﾚｲ方向確認2
+AND= DM490 #1            ; ﾄﾚｲ逆入検出(奥)(0=無効/1=有効)
+ORL
+AND= DM420 #1            ; ﾄﾚｲｻｲｽﾞ(0=小/1=大)
+LDB R4405                ; 空ﾄﾚｲ給材 小ﾄﾚｲ方向確認
+AND= DM488 #1            ; ﾄﾚｲ逆入検出(手前)(0=無効/1=有効)
+LDB R4415                ; 空ﾄﾚｲ給材 小ﾄﾚｲ方向確認2
+AND= DM490 #1            ; ﾄﾚｲ逆入検出(奥)(0=無効/1=有効)
+ORL
+AND= DM420 #0            ; ﾄﾚｲｻｲｽﾞ(0=小/1=大)
+ORL
+AND R4100                ; Sｶﾊﾞｰ1(ﾄﾚｲ投入) 閉中
+LD R4408                 ; ﾄﾚｲ搬送 ﾜｰｸ収納側
+OR R4409                 ; ﾄﾚｲ搬送 ﾄﾚｲ投入側
+ANL
+ANB R39004               ; ｴﾗｰ中
+TMR @3 #10
+CON
+AND @T3
+DW #2 @DM0               ; TaskNo /ERROR_DISP
+CON
+DW #43 @DM1              ; ErrorNo /ERROR_DISP
+CON
+DW #0 @DM2               ; SensorNo /ERROR_DISP
+CON
+DW #2000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+SET MR23500              ; ﾄﾚｲ逆入れ異常
+CON
+SET @MR1515
+;真空ﾎﾟﾝﾌﾟｻｰﾏﾙﾄﾘｯﾌﾟ異常
+LD R009                  ; 真空ﾎﾟﾝﾌﾟ ｻｰﾏﾙﾄﾘｯﾌﾟ
+ANB @MR100               ; ERROR
+ANB @MR101               ; ｴﾗｰ完了
+ANB R39004               ; ｴﾗｰ中
+DW #0 @DM0               ; TaskNo /ERROR_DISP
+CON
+DW #5 @DM1               ; ErrorNo /ERROR_DISP
+CON
+DW #0 @DM2               ; SensorNo /ERROR_DISP
+CON
+DW #1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+SET @MR1515
+;取出機 安全柵 開
+LD R46100                ; _自動運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+OR R46101                ; _原点復帰中　ﾓｰﾄﾞﾌﾗｸﾞ
+OR R46102                ; _ﾒﾝﾃﾅﾝｽ運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+ANB R2004                ; 安全柵 閉(取出機より)
+ANB @MR100               ; ERROR
+ANB @MR101               ; ｴﾗｰ完了
+ANB MR011                ; 取出機(ON=ｵﾌﾗｲﾝ/OFF=ｵﾝﾗｲﾝ
+ANB R39004               ; ｴﾗｰ中
+DW #0 @DM0               ; TaskNo /ERROR_DISP
+CON
+DW #1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #0 @DM2               ; SensorNo /ERROR_DISP
+CON
+MPS
+AND= EM50000 #0          ; 反転EV ｼﾌﾄﾃﾞｰﾀ
+DW #17 @DM1              ; ErrorNo /ERROR_DISP
+CON
+SET @MR1515
+MPP
+AND<> EM50000 #0         ; 反転EV ｼﾌﾄﾃﾞｰﾀ
+DW #19 @DM1              ; ErrorNo /ERROR_DISP
+CON
+SET @MR1515
+;ｻﾌﾞｶﾊﾞｰ開 時間経過異常
+LD R7100                 ; Sｶﾊﾞｰ1(ﾄﾚｲ投入) 開
+ORB R4100                ; Sｶﾊﾞｰ1(ﾄﾚｲ投入) 閉中
+AND<> DM7020 #0          ; ｻﾌﾞｶﾊﾞｰ警報時間設定
+TMR @9 DM7020            ; ｻﾌﾞｶﾊﾞｰ警報時間設定
+CON
+AND @T9
+ANB @MR100               ; ERROR
+ANB @MR101               ; ｴﾗｰ完了
+ANB R39004               ; ｴﾗｰ中
+DW #2 @DM0               ; TaskNo /ERROR_DISP
+CON
+DW #1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+SET MR23502              ; Sｶﾊﾞｰ1開時間ﾀｲﾑｱｳﾄ
+CON
+DW #45 @DM1              ; ErrorNo /ERROR_DISP
+CON
+DW #0 @DM2               ; SensorNo /ERROR_DISP
+CON
+SET @MR1515
+LD R7101                 ; Sｶﾊﾞｰ2(ﾄﾚｲ取出) 開
+ORB R4101                ; Sｶﾊﾞｰ2(ﾄﾚｲ取出) 閉中
+AND<> DM7020 #0          ; ｻﾌﾞｶﾊﾞｰ警報時間設定
+TMR @10 DM7020           ; ｻﾌﾞｶﾊﾞｰ警報時間設定
+CON
+AND @T10
+ANB @MR100               ; ERROR
+ANB @MR101               ; ｴﾗｰ完了
+ANB R39004               ; ｴﾗｰ中
+DW #3 @DM0               ; TaskNo /ERROR_DISP
+CON
+DW #1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+SET MR23503              ; Sｶﾊﾞｰ2開時間ﾀｲﾑｱｳﾄ
+CON
+DW #55 @DM1              ; ErrorNo /ERROR_DISP
+CON
+DW #0 @DM2               ; SensorNo /ERROR_DISP
+CON
+SET @MR1515
+;段積みﾄﾚｲ検知異常
+LDB R4708                ; 段積みﾄﾚｲ部ﾄﾚｲ検知
+AND= DM35020 #0          ; RB2 段積みﾄﾚｲ枚数
+AND R4604                ; 段積ｽﾗｲﾀﾞ 段積位置確認
+AND R007                 ; 安全ｶﾊﾞｰ
+AND<> DM3000 #2127       ; _MainTP　表示中ﾍﾟｰｼﾞNo
+ANB MR24800              ; RB2 実ﾄﾚｲ段積 上昇位置
+ANB MR24801              ; RB2 実ﾄﾚｲ段積 下降位置
+ANB R35102               ; During RB2 MOVE
+TMR @11 #10
+CON
+AND @T11
+ANB @MR100               ; ERROR
+ANB @MR101               ; ｴﾗｰ完了
+ANB R39004               ; ｴﾗｰ中
+DW #5 @DM0               ; TaskNo /ERROR_DISP
+CON
+DW #54 @DM1              ; ErrorNo /ERROR_DISP
+CON
+DW #4708 @DM2            ; SensorNo /ERROR_DISP
+CON
+DW #2000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+SET MR23501              ; 段積みﾄﾚｲ検知異常
+CON
+SET @MR1515
+;真空元圧検知異常
+LDB R008                 ; 元真空検出
+AND R507                 ; 真空ﾎﾟﾝﾌﾟ ON
+TMR @12 #10
+CON
+AND @T12
+ANB @MR100               ; ERROR
+ANB @MR101               ; ｴﾗｰ完了
+ANB R39004               ; ｴﾗｰ中
+DW #0 @DM0               ; TaskNo /ERROR_DISP
+CON
+DW #25 @DM1              ; ErrorNo /ERROR_DISP
+CON
+DW #0 @DM2               ; SensorNo /ERROR_DISP
+CON
+DW #1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+SET @MR1515
+;異常表示
+STG @MR1515
+SET @MR1900              ; Main1 HALT許可
+CON
+ANB R39004               ; ｴﾗｰ中
+SET R39004               ; ｴﾗｰ中
+CON
+SET @MR100               ; ERROR
+CON
+JMP @MR1514
+STG @MR1514
+AND @MR101               ; ｴﾗｰ完了
+RES @MR101               ; ｴﾗｰ完了
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+AND @MR105               ; SW1
+RES @MR1900              ; Main1 HALT許可
+CON
+RES MR23500              ; ﾄﾚｲ逆入れ異常
+CON
+RES MR23501              ; 段積みﾄﾚｲ検知異常
+CON
+RES MR23502              ; Sｶﾊﾞｰ1開時間ﾀｲﾑｱｳﾄ
+CON
+RES MR23503              ; Sｶﾊﾞｰ2開時間ﾀｲﾑｱｳﾄ
+CON
+ENDS
+;<h1/>警告
+;ｲｵﾅｲｻﾞ異常
+LDB R4015                ; ｲｵﾅｲｻﾞ 異常
+AND=.D DM9000 #0         ; _WARNING1表示状態
+TMR @6 #50
+CON
+AND @T6
+@SET @MR204
+STG @MR204
+MPS
+MSTRT WARNING_DISP #1 #2 #2 #1
+MPP
+BAND.D DM9000 #2         ; _WARNING1表示状態
+JMP @MR205
+STG @MR205
+BANB.D DM9000 #2         ; _WARNING1表示状態
+ENDS
+LDP R53608               ; _WARN画面消去
+BAND.D DM9000 #2         ; _WARNING1表示状態
+MSTRT WARNING_DEL #1 #2
+;空ﾄﾚｲ無警告
+LDB R4402                ; 空ﾄﾚｲ給材 ﾄﾚｲｽﾄｯｶ ﾄﾚｲ無
+AND R4100                ; Sｶﾊﾞｰ1(ﾄﾚｲ投入) 閉中
+AND=.D DM9000 #0         ; _WARNING1表示状態
+TMR @1 #50
+CON
+AND @T1
+@SET @MR302
+STG @MR302
+MPS
+MSTRT WARNING_DISP #1 #11 #1 #1
+MPP
+BAND.D DM9000 #11        ; _WARNING1表示状態
+JMP @MR303
+STG @MR303
+MPS
+BANB.D DM9000 #11        ; _WARNING1表示状態
+ENDS
+MPP
+LD R4402                 ; 空ﾄﾚｲ給材 ﾄﾚｲｽﾄｯｶ ﾄﾚｲ無
+AND R4100                ; Sｶﾊﾞｰ1(ﾄﾚｲ投入) 閉中
+ANL
+ENDS
+LDP R53608               ; _WARN画面消去
+LD R4402                 ; 空ﾄﾚｲ給材 ﾄﾚｲｽﾄｯｶ ﾄﾚｲ無
+ANB MR19100              ; ﾄﾚｲ供給中(段ﾊﾞﾗｼ->RB2)
+AND R4100                ; Sｶﾊﾞｰ1(ﾄﾚｲ投入) 閉中
+MEP
+ORL
+BAND.D DM9000 #11        ; _WARNING1表示状態
+MSTRT WARNING_DEL #1 #11
+;空ﾄﾚｲ少ない警告
+LD R4402                 ; 空ﾄﾚｲ給材 ﾄﾚｲｽﾄｯｶ ﾄﾚｲ無
+ANB R4403                ; 空ﾄﾚｲ給材 ﾄﾚｲｽﾄｯｶ ﾄﾚｲ少
+AND R4100                ; Sｶﾊﾞｰ1(ﾄﾚｲ投入) 閉中
+AND=.D DM9000 #0         ; _WARNING1表示状態
+TMR @0 #50
+CON
+AND @T0
+@SET @MR300
+STG @MR300
+MPS
+MSTRT WARNING_DISP #1 #10 #2 #1
+MPP
+BAND.D DM9000 #10        ; _WARNING1表示状態
+JMP @MR301
+STG @MR301
+MPS
+BANB.D DM9000 #10        ; _WARNING1表示状態
+ENDS
+MPP
+LD R4402                 ; 空ﾄﾚｲ給材 ﾄﾚｲｽﾄｯｶ ﾄﾚｲ無
+AND R4403                ; 空ﾄﾚｲ給材 ﾄﾚｲｽﾄｯｶ ﾄﾚｲ少
+ANB MR19100              ; ﾄﾚｲ供給中(段ﾊﾞﾗｼ->RB2)
+AND R4100                ; Sｶﾊﾞｰ1(ﾄﾚｲ投入) 閉中
+ANL
+ENDS
+LDP R53608               ; _WARN画面消去
+ORF R4402                ; 空ﾄﾚｲ給材 ﾄﾚｲｽﾄｯｶ ﾄﾚｲ無
+LD R4402                 ; 空ﾄﾚｲ給材 ﾄﾚｲｽﾄｯｶ ﾄﾚｲ無
+AND R4403                ; 空ﾄﾚｲ給材 ﾄﾚｲｽﾄｯｶ ﾄﾚｲ少
+ANB MR19100              ; ﾄﾚｲ供給中(段ﾊﾞﾗｼ->RB2)
+AND R4100                ; Sｶﾊﾞｰ1(ﾄﾚｲ投入) 閉中
+MEP
+ORL
+BAND.D DM9000 #10        ; _WARNING1表示状態
+MSTRT WARNING_DEL #1 #10
+;段積みﾄﾚｲ受皿検出異常
+LDB R4607                ; 段積 ﾄﾚｲ受皿有無確認
+AND R4101                ; Sｶﾊﾞｰ2(ﾄﾚｲ取出) 閉中
+ANB R7101                ; Sｶﾊﾞｰ2(ﾄﾚｲ取出) 開
+AND=.D DM9000 #0         ; _WARNING1表示状態
+TMR @7 #20
+CON
+AND @T7
+@SET @MR304
+STG @MR304
+MPS
+MSTRT WARNING_DISP #1 #15 #2 #1
+MPP
+BAND.D DM9000 #15        ; _WARNING1表示状態
+JMP @MR305
+STG @MR305
+MPS
+BANB.D DM9000 #15        ; _WARNING1表示状態
+ENDS
+MPP
+LD R4607                 ; 段積 ﾄﾚｲ受皿有無確認
+AND R4101                ; Sｶﾊﾞｰ2(ﾄﾚｲ取出) 閉中
+ANB R7101                ; Sｶﾊﾞｰ2(ﾄﾚｲ取出) 開
+ANL
+ENDS
+LDP R53608               ; _WARN画面消去
+LD R4607                 ; 段積 ﾄﾚｲ受皿有無確認
+AND R4101                ; Sｶﾊﾞｰ2(ﾄﾚｲ取出) 閉中
+ANB R7101                ; Sｶﾊﾞｰ2(ﾄﾚｲ取出) 開
+MEP
+ORL
+BAND.D DM9000 #15        ; _WARNING1表示状態
+MSTRT WARNING_DEL #1 #15
+;段積みﾄﾚｲ取出要求
+LDB R4606                ; 段積 排出ﾄﾚｲ確認
+AND R4101                ; Sｶﾊﾞｰ2(ﾄﾚｲ取出) 閉中
+ANB R7101                ; Sｶﾊﾞｰ2(ﾄﾚｲ取出) 開
+AND=.D DM9000 #0         ; _WARNING1表示状態
+TMR @8 #20
+CON
+AND @T8
+@SET @MR306
+STG @MR306
+MPS
+MSTRT WARNING_DISP #1 #16 #2 #1
+MPP
+BAND.D DM9000 #16        ; _WARNING1表示状態
+JMP @MR307
+STG @MR307
+MPS
+BANB.D DM9000 #16        ; _WARNING1表示状態
+ENDS
+MPP
+LD R4606                 ; 段積 排出ﾄﾚｲ確認
+AND R4101                ; Sｶﾊﾞｰ2(ﾄﾚｲ取出) 閉中
+ANB R7101                ; Sｶﾊﾞｰ2(ﾄﾚｲ取出) 開
+ANL
+ENDS
+LDP R53608               ; _WARN画面消去
+LD R4606                 ; 段積 排出ﾄﾚｲ確認
+AND R4101                ; Sｶﾊﾞｰ2(ﾄﾚｲ取出) 閉中
+ANB R7101                ; Sｶﾊﾞｰ2(ﾄﾚｲ取出) 開
+MEP
+ORL
+BAND.D DM9000 #16        ; _WARNING1表示状態
+MSTRT WARNING_DEL #1 #16
+;<h1/>ﾒｯｾｰｼﾞ表示
+;RB2ｺﾝﾄﾛｰﾗ起動中
+;@EM0.T = "RB2コントローラ未起動"
+LDB MR23504              ; RB2ｺﾝﾄﾛｰﾗ起動完了
+NCJ #1000
+;@EM0.T = "RB2コントローラ未起動"
+LD CR2002                ; 常時ON
+SMOV "RB2コントローラ未起動" @EM0
+LABEL #1000
+;
+LDB MR23504              ; RB2ｺﾝﾄﾛｰﾗ起動完了
+MSTRT BBS_MSG_W #1 #1 @EM0
+LD MR23504               ; RB2ｺﾝﾄﾛｰﾗ起動完了
+MSTRT BBS_MSG_C #1 #1
+;<h1/>ERROR
+;MyTask Error Process Substance/エラー処理実体
+STG @MR100               ; ERROR
+ANB R39002               ; ERROR_DISP Busy
+MPS
+ZRES @MR105 @MR108       ; SW1  SW4
+CON
+LDA @DM9                 ; ReturnSW /ERROR_DISP
+CON
+TBCD
+CON
+STA @DM10
+CON
+DISN @DM10 @DM3 #4
+MRD
+BMOV @DM0 DM60000 #7     ; TaskNo /ERROR_DISP  TaskNo /ERROR_DISP
+MPP
+SET R39000               ; ERROR_DISP Start
+CON
+SET @MR102               ; Task0 ERROR Busy
+CON
+JMP @MR103
+STG @MR103
+AND R39002               ; ERROR_DISP Busy
+AND= DM60008 @DM1        ; ReturnNo /ERROR_DISP  ErrorNo /ERROR_DISP
+MPS
+AND= DM60007 @DM6        ; ReturnSW /ERROR_DISP
+SET @MR105               ; SW1
+CON
+JMP @MR104
+MRD
+AND= DM60007 @DM5        ; ReturnSW /ERROR_DISP
+SET @MR106               ; SW2
+CON
+JMP @MR104
+MRD
+AND= DM60007 @DM4        ; ReturnSW /ERROR_DISP
+SET @MR107               ; SW3
+CON
+JMP @MR104
+MPP
+AND= DM60007 @DM3        ; ReturnSW /ERROR_DISP
+SET @MR108               ; SW4
+CON
+JMP @MR104
+STG @MR104
+ANB R39002               ; ERROR_DISP Busy
+RES @MR102               ; Task0 ERROR Busy
+CON
+SET @MR101               ; ｴﾗｰ完了
+CON
+ENDS
+END
+ENDH

@@ -1,0 +1,115 @@
+DEVICE:53
+;MODULE:Sub_Cover_Cont
+;MODULE_TYPE:0
+;[内容]
+;・非常停止、優先ｴﾗｰ発生時に初期化したいﾃﾞﾊﾞｲｽを指定して下さい
+;※本Taskで使用するﾛｰｶﾙﾃﾞﾊﾞｲｽなど
+;※STG～JMPにて使用しているﾃﾞﾊﾞｲｽは必須
+LD CR2002                ; 常時ON
+FLIK #30 #30 MR24015     ; ﾌﾘｯｶ
+LD R46104                ; _非常停止中　ﾓｰﾄﾞﾌﾗｸﾞ
+ZRES MR24000 MR24015     ; 動作禁止ﾌﾗｸﾞ  ﾌﾘｯｶ
+LD CR2002                ; 常時ON
+TMR #990 #50             ; 遅延ﾀｲﾏ
+LD MR18001               ; RB1(ﾄﾚｲ搬送) 移動中
+OUT MR20302              ; 上段移載動作中
+LD MR8109                ; 下段ﾄﾚｲ搬送 後退(扉側)
+OR MR8108                ; 下段ﾄﾚｲ搬送 前進(ｴﾚﾍﾞｰﾀ側)
+ANB R5208                ; 下段ﾄﾚｲ搬送 前進(ｴﾚﾍﾞｰﾀ側)限
+ANB R5209                ; 下段ﾄﾚｲ搬送 後退(扉側)限
+OUT MR20303              ; 下段移載動作中
+LD CR2002                ; 常時ON
+LDB MR20200              ; 空ﾄﾚｲ交換中
+OR CR2002                ; 常時ON
+ANL
+ANB MR20204              ; ﾒﾝﾃ 空ﾄﾚｲ取り出し動作中
+ANB MR18001              ; RB1(ﾄﾚｲ搬送) 移動中
+ANB MR19001              ; RB2(ｴﾚﾍﾞｰﾀ) 移動中
+LDB MR20300              ; 段積み動作中
+ANB MR20301              ; 段替え動作中
+OR CR2002                ; 常時ON
+ANL
+ANB MR20303              ; 下段移載動作中
+OUT MR24010              ; 扉開OK
+;@サブカバー無効 2014.6.23
+LD CR2003                ; 常時OFF
+ANP R5006                ; ｻﾌﾞｶﾊﾞｰ用 PAUSE SW
+ORP R004                 ; 操作ﾊﾟﾈﾙ "COVER" ｽｲｯﾁ
+LDP B200E                ; ﾒｲﾝよりｽﾃｰﾀｽ(PAUSE)
+ANB DM2000.14            ; 上流 ﾊﾝﾄﾞｼｪｲｸ 有効/無効
+ORL
+ANB MR19905              ; ｻﾌﾞｶﾊﾞｰ　ﾎﾟｰｽﾞ要求
+SET MR19905              ; ｻﾌﾞｶﾊﾞｰ　ﾎﾟｰｽﾞ要求
+;@サブカバー無効 2014.6.23
+LD MR19905               ; ｻﾌﾞｶﾊﾞｰ　ﾎﾟｰｽﾞ要求
+ANB MR24011              ; 扉開
+LD CR2003                ; 常時OFF
+ANP R5005                ; ｻﾌﾞｶﾊﾞｰ用 START SW
+LD R46200                ; _安全ｶﾊﾞｰ1開中
+ANP R002                 ; 操作ﾊﾟﾈﾙ "START" ｽｲｯﾁ
+ORL
+ANL
+ORF MR24013              ; 扉閉OK
+RES MR19905              ; ｻﾌﾞｶﾊﾞｰ　ﾎﾟｰｽﾞ要求
+LD MR19905               ; ｻﾌﾞｶﾊﾞｰ　ﾎﾟｰｽﾞ要求
+AND MR24010              ; 扉開OK
+ANB MR24000              ; 動作禁止ﾌﾗｸﾞ
+ANB MR24012              ; 扉閉確認中
+ANB MR24013              ; 扉閉OK
+SET MR24011              ; 扉開
+LDB R5007                ; ｻﾌﾞｶﾊﾞｰ 閉確認
+ANP T990                 ; 遅延ﾀｲﾏ
+SET MR24011              ; 扉開
+LD MR24011               ; 扉開
+OUT MR24000              ; 動作禁止ﾌﾗｸﾞ
+LD MR24011               ; 扉開
+LD CR2003                ; 常時OFF
+ANP R5005                ; ｻﾌﾞｶﾊﾞｰ用 START SW
+ORP R002                 ; 操作ﾊﾟﾈﾙ "START" ｽｲｯﾁ
+ORP B200F                ; MAINよりSTART-SW
+ANL
+ANB R5007                ; ｻﾌﾞｶﾊﾞｰ 閉確認
+SET MR24012              ; 扉閉確認中
+CON
+RES MR24011              ; 扉開
+LD MR24012               ; 扉閉確認中
+TMR #900 #3              ; ｳｪｲﾄﾀｲﾏ
+CON
+AND T900                 ; ｳｪｲﾄﾀｲﾏ
+MPS
+ANB R5007                ; ｻﾌﾞｶﾊﾞｰ 閉確認
+RES MR24012              ; 扉閉確認中
+CON
+SET MR24011              ; 扉開
+MPP
+AND R5007                ; ｻﾌﾞｶﾊﾞｰ 閉確認
+SET MR24013              ; 扉閉OK
+CON
+RES MR24012              ; 扉閉確認中
+CON
+RES MR24011              ; 扉開
+LD MR24013               ; 扉閉OK
+ANPB MR24013             ; 扉閉OK
+AND R5007                ; ｻﾌﾞｶﾊﾞｰ 閉確認
+RES MR24013              ; 扉閉OK
+LD MR24011               ; 扉開
+MPS
+LD B200A                 ; ﾒｲﾝよりPAUSE許可
+OR DM2000.15             ; 上流 ﾎﾟｰｽﾞ信号 有効/無効
+ANL
+OUT R7005                ; ﾄﾚﾁｪﾝ扉用 開
+MPP
+LD MR24015               ; ﾌﾘｯｶ
+AND CR2003               ; 常時OFF
+ANL
+OUT R7006                ; ﾄﾚﾁｪﾝ扉用 START SW LP
+LD MR19905               ; ｻﾌﾞｶﾊﾞｰ　ﾎﾟｰｽﾞ要求
+LD MR24011               ; 扉開
+LDB MR24011              ; 扉開
+AND MR24015              ; ﾌﾘｯｶ
+ORL
+ANL
+AND CR2003               ; 常時OFF
+OUT R7007                ; ﾄﾚﾁｪﾝ扉用 PAUSE SW LP
+END
+ENDH

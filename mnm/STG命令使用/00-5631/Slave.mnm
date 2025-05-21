@@ -1,0 +1,466 @@
+DEVICE:53
+;MODULE:Slave
+;MODULE_TYPE:0
+LD R50010                ; Emergency　Stop
+ZRES @MR000 @MR515       ; PAUSE条件確認
+;ミューティング処理
+;ﾐｭｰﾃｨﾝｸﾞ1 RB給除材位置
+LD R2008                 ; RB非常停止=OFF
+AND R2009                ; RB1 電源ON
+AND=.L DM2000 EM10006    ; RB1_PCON 現在位置  RB1 Pos1 目標値
+SET @MR008               ; RB 給除材位置
+;ﾐｭｰﾃｨﾝｸﾞ2 ｼｬｯﾀｰ閉
+LD R4502                 ; ｼｬｯﾀｰ1(水平) 閉じ限
+AND R4504                ; ｼｬｯﾀｰ2(縦) 閉じ限
+TMH @13 #4
+CON
+AND @T13
+SET @MR010               ; ｼｬｯﾀｰ閉
+LD @MR008                ; RB 給除材位置
+AND>=.L DM2000 +50       ; RB1_PCON 現在位置
+LD @MR010                ; ｼｬｯﾀｰ閉
+LDB R4502                ; ｼｬｯﾀｰ1(水平) 閉じ限
+ORB R4504                ; ｼｬｯﾀｰ2(縦) 閉じ限
+ANL
+ORL
+TMH @12 #4
+CON
+AND @T12
+RES @MR008               ; RB 給除材位置
+CON
+RES @MR010               ; ｼｬｯﾀｰ閉
+CON
+OUT @MR011               ; ﾐｭｰﾃｨﾝｸﾞ条件 OFF=ﾐｭｰﾃｨﾝｸﾞ
+LDP @MR008               ; RB 給除材位置
+ORP @MR010               ; ｼｬｯﾀｰ閉
+OR @MR012                ; ﾐｭｰﾃｨﾝｸﾞ条件
+ANB @MR011               ; ﾐｭｰﾃｨﾝｸﾞ条件 OFF=ﾐｭｰﾃｨﾝｸﾞ
+ANB MR15000              ; ﾐｭｰﾃｨﾝｸﾞ解除
+OUT @MR012               ; ﾐｭｰﾃｨﾝｸﾞ条件
+LD @MR012                ; ﾐｭｰﾃｨﾝｸﾞ条件
+TMH @10 #3               ; ｳｴｲﾄﾀｲﾏｰ010
+CON
+AND @T10                 ; ｳｴｲﾄﾀｲﾏｰ010
+OUT R50006               ; ﾐｭｰﾃｨﾝｸﾞ中
+CON
+OUT MR2112               ; ﾐｭｰﾃｨﾝｸﾞ中=ON
+;Reset Light Curtain / ライトカーテンリセット
+LD CR2002                ; 常時ON
+TMH @7 #100              ; ﾗｲﾄｶｰﾃﾝﾘｾｯﾄ遅延
+LDP R50003               ; HOME
+ORP R50001               ; AUTO
+ORP R50002               ; STEP
+ORP R50206               ; ﾗｲﾄｶｰﾃﾝﾘｾｯﾄ
+ORP @T7                  ; ﾗｲﾄｶｰﾃﾝﾘｾｯﾄ遅延
+SHOT #10 MR2111          ; ﾗｲﾄｶｰﾃﾝﾘｾｯﾄ
+CON
+RES R50206               ; ﾗｲﾄｶｰﾃﾝﾘｾｯﾄ
+LD MR2111                ; ﾗｲﾄｶｰﾃﾝﾘｾｯﾄ
+SHOT #30 @MR506          ; LCﾘｾｯﾄﾃﾞｨﾚｲ?
+LD CR2002                ; 常時ON
+TMR @3 #20
+;RB動作中にLC遮光 / LC Cut When RB Busy
+LD MR12001               ; RB1:動作中
+OR DM2007.2              ; RB1_PCON 移動中信号
+ANB R1107                ; ﾗｲﾄｶｰﾃﾝ遮光無し=ON
+ANB MR10005              ; ｼｬｯﾀｰ閉中
+SET R50005               ; PAUSERQ
+CON
+SET DM2207.2             ; RB1_PCON 一時停止=ON
+CON
+SET R50208               ; RB動作中LC遮光
+;一時停止条件
+;１、Ｍａｉｎ　Ａｉｒ
+;２、ＰＡＵＳＥ ＳＷ
+;３、動作中のカバー開
+LDB R50010               ; Emergency　Stop
+MPS
+TMH @0 #10               ; 起動遅延
+CON
+ANP @T0                  ; 起動遅延
+SET @MR000               ; PAUSE条件確認
+MPP
+TMR @40 #100
+LDB R1106                ; 正圧監視 ONで正常
+TMH @23 #30              ; 元圧低下検知時間
+LD @MR000                ; PAUSE条件確認
+AND @T40
+AND @T23                 ; 元圧低下検知時間
+SET MR607                ; 動作中MainAirOff
+STG @MR000               ; PAUSE条件確認
+LD @T23                  ; 元圧低下検知時間
+OR R4003                 ; 操作ﾊﾟﾈﾙ ﾎﾟｰｽﾞSW
+OR R4015                 ; 側面 ﾎﾟｰｽﾞSW
+ORB R1108                ; 装置ｶﾊﾞｰ 閉=ON
+OR R50005                ; PAUSERQ
+ANL
+LDB LR49914              ; ｴﾗｰﾘｾｯﾄｷｰ要求
+LD LR49914               ; ｴﾗｰﾘｾｯﾄｷｰ要求
+AND LR49915              ; ｴﾗｰﾘｾｯﾄｷｰ動作OK
+ORL
+ANL
+ANB MR10008              ; 溶着中ﾎﾟｰｽﾞ禁止
+ANB MR10009              ; 検査中ﾎﾟｰｽﾞ禁止
+RES R50005               ; PAUSERQ
+CON
+SET R50300               ; Pause
+CON
+JMP @MR001               ; PAUSE開始
+;一時停止確認
+LDB R50100               ; PACK INDEX
+ANB R50101               ; PACK ST1
+ANB R50102               ; PACK ST2
+ANB R50103               ; PACK ST3
+ANB R50104               ; PACK ST4
+OUT @MR505               ; 全STPack無し
+STG @MR001               ; PAUSE開始
+MPS
+AND @MR505               ; 全STPack無し
+TMH @18 #5               ; ｳｴｲﾄﾀｲﾏｰ018
+CON
+AND @T18                 ; ｳｴｲﾄﾀｲﾏｰ018
+JMP @MR002               ; ST1-4停止要求
+MPP
+LDB @MR505               ; 全STPack無し
+AND R1106                ; 正圧監視 ONで正常
+ANB R4003                ; 操作ﾊﾟﾈﾙ ﾎﾟｰｽﾞSW
+ANB R4015                ; 側面 ﾎﾟｰｽﾞSW
+AND R1108                ; 装置ｶﾊﾞｰ 閉=ON
+ANL
+OUT MR15100              ; SubInfo ﾎﾟｰｽﾞ処理中
+CON
+LD R4002                 ; 操作ﾊﾟﾈﾙ ｽﾀｰﾄSW
+OR R4014                 ; 側面 ｽﾀｰﾄSW
+ANL
+JMP @MR004               ; 004
+STG @MR004               ; 004
+RES R50300               ; Pause
+CON
+JMP @MR000               ; PAUSE条件確認
+LDP @MR002               ; ST1-4停止要求
+AND _ST1
+SET @MR501               ; UT1 ﾎﾟｰｽﾞ中
+CON
+MDSTOP ST1
+STG @MR002               ; ST1-4停止要求
+ANB _ST1
+JMP @MR003               ; 003
+STG @MR003               ; 003
+JMP @MR005               ; RB状態記憶
+;RBなどでﾎﾟｰｽﾞ前の状態を記憶したい場合はここで行う
+STG @MR005               ; RB状態記憶
+MPS
+AND R2009                ; RB1 電源ON
+MPS
+AND DM2007.1             ; RB1_PCON 原点復帰完了
+SET @MR014               ; RB1 ON記憶
+CON
+MPS
+AND CR2002               ; 常時ON
+LDA DM10104              ; RB1 現在ﾎﾟｼﾞｼｮﾝ番号
+CON
+STA @DM0                 ; RB1 Pos記憶
+CON
+SET @MR114               ; RB復帰有り
+CON
+JMP @MR015               ; 015
+MPP
+AND CR2003               ; 常時OFF
+LDA DM10108              ; RB1 目標ﾎﾟｲﾝﾄ番号
+CON
+STA @DM0                 ; RB1 Pos記憶
+CON
+SET @MR114               ; RB復帰有り
+CON
+JMP @MR015               ; 015
+MPP
+ANB DM2007.1             ; RB1_PCON 原点復帰完了
+DW #0 @DM0               ; RB1 Pos記憶
+CON
+JMP @MR015               ; 015
+MPP
+ANB R2009                ; RB1 電源ON
+JMP @MR015               ; 015
+STG @MR015               ; 015
+RES MR2008               ; RB非常停止=OFF
+CON
+SET MR2110               ; 装置扉開
+CON
+JMP @MR100               ; ﾎﾟｰｽﾞ復帰StartSW待ち
+;カバー閉じ後、ＳＴＡＲＴ ｓｗ　ＯＮ
+STG @MR100               ; ﾎﾟｰｽﾞ復帰StartSW待ち
+AND R1106                ; 正圧監視 ONで正常
+ANB R4003                ; 操作ﾊﾟﾈﾙ ﾎﾟｰｽﾞSW
+ANB R4015                ; 側面 ﾎﾟｰｽﾞSW
+LD R4002                 ; 操作ﾊﾟﾈﾙ ｽﾀｰﾄSW
+OR R4014                 ; 側面 ｽﾀｰﾄSW
+ANL
+RES MR2110               ; 装置扉開
+CON
+JMP @MR101               ; 101
+STG @MR101               ; 101
+TMH @1 #50               ; ｶﾊﾞｰ閉確認遅延
+CON
+AND @T1                  ; ｶﾊﾞｰ閉確認遅延
+JMP @MR102               ; 102
+STG @MR102               ; 102
+MPS
+LDB R1106                ; 正圧監視 ONで正常
+OR R4003                 ; 操作ﾊﾟﾈﾙ ﾎﾟｰｽﾞSW
+OR R4015                 ; 側面 ﾎﾟｰｽﾞSW
+ORB R1108                ; 装置ｶﾊﾞｰ 閉=ON
+ANL
+JMP @MR103               ; 103
+MPP
+LD R1106                 ; 正圧監視 ONで正常
+ANB R4003                ; 操作ﾊﾟﾈﾙ ﾎﾟｰｽﾞSW
+ANB R4015                ; 側面 ﾎﾟｰｽﾞSW
+AND R1108                ; 装置ｶﾊﾞｰ 閉=ON
+ANL
+@SET R50206              ; ﾗｲﾄｶｰﾃﾝﾘｾｯﾄ
+CON
+JMP @MR104               ; 104
+STG @MR103               ; 103
+SET MR2110               ; 装置扉開
+CON
+JMP @MR100               ; ﾎﾟｰｽﾞ復帰StartSW待ち
+;ｶﾊﾞｰ閉確認
+;Cover Close Detect
+;RB復帰が居る場合はここでRB復帰のｻﾌﾞﾙｰﾁﾝを呼ぶ
+STG @MR104               ; 104
+ANB R1311                ; ﾗｲﾄｶｰﾃﾝﾘｾｯﾄ
+TMR @6 #5                ; ｳｴｲﾄﾀｲﾏｰ006
+CON
+AND @T6                  ; ｳｴｲﾄﾀｲﾏｰ006
+MPS
+AND R1107                ; ﾗｲﾄｶｰﾃﾝ遮光無し=ON
+JMP @MR106               ; 106
+MPP
+ANB R1107                ; ﾗｲﾄｶｰﾃﾝ遮光無し=ON
+JMP @MR100               ; ﾎﾟｰｽﾞ復帰StartSW待ち
+STG @MR105               ; 105
+@SET R50206              ; ﾗｲﾄｶｰﾃﾝﾘｾｯﾄ
+CON
+TMR @8 #5
+CON
+AND @T8
+JMP @MR104               ; 104
+;一時停止解除後、ﾃﾞｨﾚｲを入れてRB復帰
+;一時停止解除後、RBの位置決め完了のPLSが出る
+STG @MR106               ; 106
+SET MR2008               ; RB非常停止=OFF
+CON
+MPS
+AND R1107                ; ﾗｲﾄｶｰﾃﾝ遮光無し=ON
+TMR @4 #5                ; ｳｴｲﾄﾀｲﾏｰ004
+CON
+AND @T4                  ; ｳｴｲﾄﾀｲﾏｰ004
+MPS
+LD @MR114                ; RB復帰有り
+AND DM2007.4             ; RB1_PCON 運転準備完了 ｻｰﾎﾞONでON
+ANB DM2007.15            ; RB1_PCON 非常停止 ON=非常停止
+ANL
+SET @MR300               ; RB復帰
+CON
+JMP @MR112
+MPP
+ANB @MR114               ; RB復帰有り
+JMP @MR112
+MPP
+ANB R1107                ; ﾗｲﾄｶｰﾃﾝ遮光無し=ON
+JMP @MR109
+;RB復帰前にLCｶｯﾄ
+STG @MR109
+ANB R1311                ; ﾗｲﾄｶｰﾃﾝﾘｾｯﾄ
+AND R1107                ; ﾗｲﾄｶｰﾃﾝ遮光無し=ON
+TMR @9 #2
+CON
+AND @T9
+JMP @MR110
+STG @MR110
+@SET R50206              ; ﾗｲﾄｶｰﾃﾝﾘｾｯﾄ
+CON
+TMR @5 #5
+CON
+AND @T5
+MPS
+ANB DM2007.3             ; RB1_PCON ｱﾗｰﾑ ONで異常
+SET DM2207.4             ; RB1_PCON ｻｰﾎﾞON指令
+CON
+JMP @MR104               ; 104
+MPP
+AND DM2007.3             ; RB1_PCON ｱﾗｰﾑ ONで異常
+SET DM2207.3             ; RB1_PCON ﾘｾｯﾄ=ON
+CON
+JMP @MR111
+STG @MR111
+ANB DM2007.3             ; RB1_PCON ｱﾗｰﾑ ONで異常
+SET DM2207.4             ; RB1_PCON ｻｰﾎﾞON指令
+CON
+RES DM2207.3             ; RB1_PCON ﾘｾｯﾄ=ON
+CON
+JMP @MR104               ; 104
+;
+STG @MR112
+JMP @MR200               ; Pause処理終了
+;RBなど、ﾎﾟｰｽﾞ復帰時に処理が必要な場合はここで行う
+STG @MR300               ; RB復帰
+MPS
+LD CR2003                ; 常時OFF
+AND @MR014               ; RB1 ON記憶
+ANL
+LDA @DM0                 ; RB1 Pos記憶
+CON
+STA DM10108              ; RB1 目標ﾎﾟｲﾝﾄ番号
+CON
+MPS
+AND<> DM10108 #0         ; RB1 目標ﾎﾟｲﾝﾄ番号
+MPS
+ANB DM2007.3             ; RB1_PCON ｱﾗｰﾑ ONで異常
+JMP @MR301
+MPP
+AND DM2007.3             ; RB1_PCON ｱﾗｰﾑ ONで異常
+SET DM2207.3             ; RB1_PCON ﾘｾｯﾄ=ON
+MPP
+AND= DM10108 #0          ; RB1 目標ﾎﾟｲﾝﾄ番号
+JMP @MR303
+MPP
+LDB @MR014               ; RB1 ON記憶
+OR CR2002                ; 常時ON
+ANL
+JMP @MR303
+STG @MR301
+SET MR15500              ; RB1 MOVE
+CON
+JMP @MR302
+STG @MR302
+MPS
+LD R1107                 ; ﾗｲﾄｶｰﾃﾝ遮光無し=ON
+AND MR15501              ; RB1 MOVE comp
+ANL
+RES MR15501              ; RB1 MOVE comp
+CON
+RES DM2207.3             ; RB1_PCON ﾘｾｯﾄ=ON
+CON
+JMP @MR303
+MPP
+ANB R1107                ; ﾗｲﾄｶｰﾃﾝ遮光無し=ON
+SET DM2207.2             ; RB1_PCON 一時停止=ON
+CON
+JMP @MR304
+STG @MR304
+AND R1107                ; ﾗｲﾄｶｰﾃﾝ遮光無し=ON
+RES DM2207.2             ; RB1_PCON 一時停止=ON
+CON
+JMP @MR308
+LD DM2007.0              ; RB1_PCON 位置決め完了信号
+AND DM2007.1             ; RB1_PCON 原点復帰完了
+AND DM2007.2             ; RB1_PCON 移動中信号
+AND DM2007.3             ; RB1_PCON ｱﾗｰﾑ ONで異常
+AND DM2007.4             ; RB1_PCON 運転準備完了 ｻｰﾎﾞONでON
+AND DM2007.5             ; RB1_PCON 押しつけ空振り
+AND DM2007.6             ; RB1_PCON 使用不可
+AND DM2007.7             ; RB1_PCON 軽故障発生でON
+AND DM2007.8             ; RB1_PCON 運転ﾓｰﾄﾞ状態 ON=MANU
+AND DM2007.9             ; RB1_PCON 使用不可
+AND DM2007.10            ; RB1_PCON 使用不可
+AND DM2007.11            ; RB1_PCON 使用不可
+AND DM2007.12            ; RB1_PCON ｿﾞｰﾝ1
+AND DM2007.13            ; RB1_PCON ｿﾞｰﾝ2
+AND DM2007.14            ; RB1_PCON PCON準備完了
+AND DM2007.15            ; RB1_PCON 非常停止 ON=非常停止
+OUT @MR307
+LD DM2207.0              ; RB1_PCON 位置決めｽﾀｰﾄ
+AND DM2207.1             ; RB1_PCON 原点復帰
+AND DM2207.2             ; RB1_PCON 一時停止=ON
+AND DM2207.3             ; RB1_PCON ﾘｾｯﾄ=ON
+AND DM2207.4             ; RB1_PCON ｻｰﾎﾞON指令
+AND DM2207.5             ; RB1_PCON JOG/ｲﾝﾁﾝｸﾞ ON=INCH
+AND DM2207.6             ; RB1_PCON JOG/INCH 速度切替
+AND DM2207.7             ; RB1_PCON JOG-
+AND DM2207.8             ; RB1_PCON JOG+
+AND DM2207.9             ; RB1_PCON 使用不可
+AND DM2207.10            ; RB1_PCON 使用不可
+AND DM2207.11            ; RB1_PCON 使用不可
+AND DM2207.12            ; RB1_PCON 押し付け指定=ON
+AND DM2207.13            ; RB1_PCON 押し付け方向 ON=+
+AND DM2207.14            ; RB1_PCON 運転ﾓｰﾄﾞ MANU=ON
+AND DM2207.15            ; RB1_PCON ﾌﾞﾚｰｷ強制解除=ON
+OUT @MR314
+;RB復帰中にLC遮光 / LC Cut When RB Return
+STG @MR308
+AND MR15501              ; RB1 MOVE comp
+RES MR15501              ; RB1 MOVE comp
+CON
+JMP @MR309
+STG @MR309
+ANP R4002                ; 操作ﾊﾟﾈﾙ ｽﾀｰﾄSW
+SET R50206               ; ﾗｲﾄｶｰﾃﾝﾘｾｯﾄ
+CON
+JMP @MR310
+STG @MR310
+ANB R1311                ; ﾗｲﾄｶｰﾃﾝﾘｾｯﾄ
+TMR @11 #5               ; ｳｴｲﾄﾀｲﾏｰ011
+CON
+AND @T11                 ; ｳｴｲﾄﾀｲﾏｰ011
+MPS
+AND R1107                ; ﾗｲﾄｶｰﾃﾝ遮光無し=ON
+JMP @MR311
+MPP
+ANB R1107                ; ﾗｲﾄｶｰﾃﾝ遮光無し=ON
+JMP @MR309
+STG @MR311
+AND DM2007.4             ; RB1_PCON 運転準備完了 ｻｰﾎﾞONでON
+ANB DM2007.15            ; RB1_PCON 非常停止 ON=非常停止
+JMP @MR312
+STG @MR312
+AND R1107                ; ﾗｲﾄｶｰﾃﾝ遮光無し=ON
+TMR @2 #10
+CON
+AND @T2
+MPS
+ANB R50208               ; RB動作中LC遮光
+JMP @MR302
+MPP
+AND R50208               ; RB動作中LC遮光
+JMP @MR301
+;
+STG @MR303
+RES R50208               ; RB動作中LC遮光
+CON
+RES @MR014               ; RB1 ON記憶
+CON
+SET @MR315               ; RB復帰完了
+CON
+ENDS
+;
+LDP @MR200               ; Pause処理終了
+AND @MR501               ; UT1 ﾎﾟｰｽﾞ中
+MDSTRT ST1
+STG @MR200               ; Pause処理終了
+LD @MR114                ; RB復帰有り
+AND @MR315               ; RB復帰完了
+ORB @MR114               ; RB復帰有り
+ANL
+MPS
+LD R50007                ; 原点復帰　完了
+OR R50004                ; TASKDO
+ANL
+JMP @MR201               ; 201
+MPP
+LDB R50007               ; 原点復帰　完了
+ANB R50004               ; TASKDO
+ANL
+JMP @MR201               ; 201
+STG @MR201               ; 201
+RES @MR114               ; RB復帰有り
+CON
+RES @MR315               ; RB復帰完了
+CON
+RES @MR501               ; UT1 ﾎﾟｰｽﾞ中
+CON
+RES R50300               ; Pause
+CON
+JMP @MR000               ; PAUSE条件確認
+END
+ENDH

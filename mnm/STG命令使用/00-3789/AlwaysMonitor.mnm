@@ -1,0 +1,555 @@
+DEVICE:53
+;MODULE:AlwaysMonitor
+;MODULE_TYPE:0
+;OneSystem Sub-Module
+;
+;---------------------------------------
+;ModuleName	:	AlwaysMonitor
+;ModuleType	:	Sub Module
+;Function	:	常時監視
+;---------------------------------------
+;<使用方法>
+;常時監視が必要な物は本ﾓｼﾞｭｰﾙ内に記述して下さい
+;・ﾋｰﾀｰ過昇温検知による非常停止
+;・ﾁｬﾝﾊﾞｰ排気量低下によるｴﾗｰ出力
+;など
+;<h1/>上流 H/S I/L ERROR
+LDB DM2000.14            ; 上流H/S 無効(ON=無効)
+AND B2003                ; 上流ｾﾙへ動作開始通知
+ANB B2012                ; 上流ｾﾙよりインターロック信号
+MSTRT F_ERROR_DISP #1
+;<h1/>下流 H/S I/L ERROR
+LDB CR2002               ; 常時ON
+ANB DM2000.15            ; 下流H/S 無効(ON=無効)
+AND B2033                ; 下流ｾﾙへ動作開始通知
+ANB B2022                ; 下流ｾﾙよりインターロック信号
+MSTRT F_ERROR_DISP #5
+;<h1/>ﾀﾞﾌﾞﾙｽﾗｲﾀﾞｰ衝突回避回路
+;RB1&2
+LD CR2002                ; 常時ON
+LDA.L DM10500            ; RB1 Current POS
+CON
+ADD.L DM10508            ; RB2 Current POS
+CON
+STA.L DM40016            ; RB1とRB2の合計値
+CON
+AND>=.L DM40016 +221400  ; RB1とRB2の合計値
+MSTRT F_ERROR_DISP #0
+;<h1/>干渉防止対策
+;RB7の干渉防止
+LDB R5005                ; ﾎﾙﾀﾞｻﾌﾞ反転移載PP上下 上限
+OR R5004                 ; ﾎﾙﾀﾞｻﾌﾞ反転移載PP上下 下限
+AND T2179                ; RB6 Pos.10(取出位置)
+AND DM10555.2            ; RB7 MOVE
+DW #10 @DM20             ; F_ERROR_CODE
+;RB6の干渉防止
+LDB R5005                ; ﾎﾙﾀﾞｻﾌﾞ反転移載PP上下 上限
+OR R5004                 ; ﾎﾙﾀﾞｻﾌﾞ反転移載PP上下 下限
+LD T2009                 ; RB1 Pos.10(仮置台取出位置）
+LD= EM1310 #11           ; RB6Target Pos
+OR= EM1310 #12           ; RB6Target Pos
+ANL
+ORL
+AND DM10547.2            ; RB6 MOVE
+DW #11 @DM20             ; F_ERROR_CODE
+;RB1の干渉防止
+LDB T2070                ; RB3 Pos.1(待機位置)
+ANB T2074                ; RB3 Pos.5(搬送位置)
+LDB T2100                ; RB4 Pos.1(待機位置)
+ANB T2104                ; RB4 Pos.5(搬送位置)
+ORL
+LD T2180                 ; RB6 Pos.11(仮置き給材位置上流)
+OR T2181                 ; RB6 Pos.12(仮置き給材位置下流)
+AND= EM1300 #10          ; RB1Target Pos
+ORL
+AND DM10507.2            ; RB1 MOVE
+DW #12 @DM20             ; F_ERROR_CODE
+;RB2の干渉防止
+LDB T2140                ; RB5 Pos.1(待機位置)
+ANB T2144                ; RB5 Pos.5(搬送位置)
+LDB T2255                ; RB8 Pos.1(待機位置)
+ANB T2259                ; RB8 Pos.5(搬送位置)
+ORL
+AND DM10515.2            ; RB2 MOVE
+DW #13 @DM20             ; F_ERROR_CODE
+;塗布UT1
+LD T2014                 ; RB1 Pos.15(塗布UT1 給材位置)
+AND T2084                ; RB3 Pos.15(塗布UT1 給材位置)
+LD T2015                 ; RB1 Pos.16(塗布UT1 除材位置)
+AND T2115                ; RB4 Pos.15(塗布UT1 除材位置)
+ORL
+AND R37302               ; During 塗布1 MOVE
+DW #14 @DM20             ; F_ERROR_CODE
+;塗布UT2
+LD T2019                 ; RB1 Pos.20(塗布UT2 給材位置)
+AND T2089                ; RB3 Pos.20(塗布UT2 給材位置)
+LD T2020                 ; RB1 Pos.21(塗布UT2 除材位置)
+AND T2120                ; RB4 Pos.21(塗布UT2 除材位置)
+ORL
+AND R38102               ; During 塗布2 MOVE
+DW #15 @DM20             ; F_ERROR_CODE
+;塗布UT3
+LD T2024                 ; RB1 Pos.25(塗布UT3 給材位置)
+AND T2124                ; RB4 Pos.25(塗布UT3 給材位置)
+LD T2049                 ; RB2 Pos.10(塗布UT3 除材位置)
+AND T2264                ; RB8 Pos.10(塗布3 取出位置)
+ORL
+AND R18302               ; During 塗布3 MOVE
+DW #16 @DM20             ; F_ERROR_CODE
+;塗布UT4
+LD T2029                 ; RB1 Pos.30(塗布UT4 給材位置)
+AND T2129                ; RB4 Pos.30(塗布UT4 給材位置)
+LD T2054                 ; RB2 Pos.15(塗布UT4 除材位置)
+AND T2269                ; RB8 Pos.15(塗布4 取出位置)
+ORL
+AND R19102               ; During 塗布4 MOVE
+DW #17 @DM20             ; F_ERROR_CODE
+;検査UT
+LD T2059                 ; RB2 Pos.20(検査UT 給材位置)
+AND T2274                ; RB8 Pos.20(検査給材位置)
+LD T2060                 ; RB2 Pos.21(検査UT 除材位置)
+AND T2160                ; RB5 Pos.21(検査取出位置)
+ORL
+AND DM10587.2            ; RB11 MOVE
+DW #18 @DM20             ; F_ERROR_CODE
+;NG排出ﾚｰﾝ
+LD T2069                 ; RB2 Pos.30(NG排出1位置)
+OR T2039                 ; RB2 Pos.31(NG排出2位置)
+AND T2169                ; RB5 Pos.30(NG排出位置)
+AND DM10603.2            ; RB13 MOVE
+DW #19 @DM20             ; F_ERROR_CODE
+;　　F_ERRORﾏｸﾛ実行
+LD CR2007                ; 運転開始時1ｽｷｬﾝOFF
+AND<> @DM20 #0           ; F_ERROR_CODE
+ANB R53009               ; _優先ｴﾗｰ画面消去
+MSTRT F_ERROR_DISP @DM20 ; F_ERROR_CODE
+LDB CR2007               ; 運転開始時1ｽｷｬﾝOFF
+MOV #0 @DM20             ; F_ERROR_CODE
+;<h1/>簡易ｱﾌﾞｿﾘｭｰﾄﾊﾞｯﾃﾘｰ低下警報
+;RB1 簡易ｱﾌﾞｿﾊﾞｯﾃﾘｰ異常
+LD DM10507.3             ; RB1 ALM
+LD= DM10506 $00EE        ; RB1 Alarm CODE
+OR= DM10506 $00EF        ; RB1 Alarm CODE
+ANL
+OR DM10507.7             ; RB1 BALM
+AND CR2002               ; 常時ON
+OUT @LR300
+CON
+DW #1 @DM22              ; WARNING_CODE
+;RB2 簡易ｱﾌﾞｿﾊﾞｯﾃﾘｰ異常
+LD DM10515.3             ; RB2 ALM
+LD= DM10514 $00EE        ; RB2 Alarm CODE
+OR= DM10514 $00EF        ; RB2 Alarm CODE
+ANL
+OR DM10515.7             ; RB2 BALM
+AND CR2002               ; 常時ON
+OUT @LR301
+CON
+DW #2 @DM22              ; WARNING_CODE
+;RB3 簡易ｱﾌﾞｿﾊﾞｯﾃﾘｰ異常
+LD DM10523.3             ; RB3 ALM
+LD= DM10522 $00EE        ; RB3 Alarm CODE
+OR= DM10522 $00EF        ; RB3 Alarm CODE
+ANL
+OR DM10523.7             ; RB3 ALML
+AND CR2002               ; 常時ON
+OUT @LR302
+CON
+DW #3 @DM22              ; WARNING_CODE
+;RB4 簡易ｱﾌﾞｿﾊﾞｯﾃﾘｰ異常
+LD DM10531.3             ; RB4 ALM
+LD= DM10530 $00EE        ; RB4 Alarm CODE
+OR= DM10530 $00EF        ; RB4 Alarm CODE
+ANL
+OR DM10531.7             ; RB4 ALML
+AND CR2002               ; 常時ON
+OUT @LR303
+CON
+DW #4 @DM22              ; WARNING_CODE
+;RB5 簡易ｱﾌﾞｿﾊﾞｯﾃﾘｰ異常
+LD DM10539.3             ; RB5 ALM
+LD= DM10538 $00EE        ; RB5 Alarm CODE
+OR= DM10538 $00EF        ; RB5 Alarm CODE
+ANL
+OR DM10539.7             ; RB5 ALML
+AND CR2002               ; 常時ON
+OUT @LR304
+CON
+DW #5 @DM22              ; WARNING_CODE
+;RB6 簡易ｱﾌﾞｿﾊﾞｯﾃﾘｰ異常
+LD DM10547.3             ; RB6 ALM
+LD= DM10546 $00EE        ; RB6 Alarm CODE
+OR= DM10546 $00EF        ; RB6 Alarm CODE
+ANL
+OR DM10547.7             ; RB6 ALML
+AND CR2002               ; 常時ON
+OUT @LR305
+CON
+DW #6 @DM22              ; WARNING_CODE
+;RB7 簡易ｱﾌﾞｿﾊﾞｯﾃﾘｰ異常
+LD DM10555.3             ; RB7 ALM
+LD= DM10554 $00EE        ; RB7 Alarm CODE
+OR= DM10554 $00EF        ; RB7 Alarm CODE
+ANL
+OR DM10555.7             ; RB7 BALM
+AND CR2002               ; 常時ON
+OUT @LR306
+CON
+DW #7 @DM22              ; WARNING_CODE
+;RB8 簡易ｱﾌﾞｿﾊﾞｯﾃﾘｰ異常
+LD DM10563.3             ; RB8 ALM
+LD= DM10562 $00EE        ; RB8 Alarm CODE
+OR= DM10562 $00EF        ; RB8 Alarm CODE
+ANL
+AND CR2002               ; 常時ON
+OUT @LR307
+CON
+DW #8 @DM22              ; WARNING_CODE
+;RB9 簡易ｱﾌﾞｿﾊﾞｯﾃﾘｰ異常
+LD DM10571.3             ; RB9 ALM
+LD= DM10570 $00EE        ; RB9 Alarm CODE
+OR= DM10570 $00EF        ; RB9 Alarm CODE
+ANL
+OR DM10571.7             ; RB9 ALML
+ANB CR2002               ; 常時ON
+OUT @LR308
+CON
+DW #9 @DM22              ; WARNING_CODE
+;RB10 簡易ｱﾌﾞｿﾊﾞｯﾃﾘｰ異常
+LD DM10579.3             ; RB10 ALM
+LD= DM10578 $00EE        ; RB10 Alarm CODE
+OR= DM10578 $00EF        ; RB10 Alarm CODE
+ANL
+OR DM10579.7             ; RB10 ALML
+ANB CR2002               ; 常時ON
+OUT @LR309
+CON
+DW #10 @DM22             ; WARNING_CODE
+;RB11 簡易ｱﾌﾞｿﾊﾞｯﾃﾘｰ異常
+LD DM10587.3             ; RB11 ALM
+LD= DM10586 $00EE        ; RB11 Alarm CODE
+OR= DM10586 $00EF        ; RB11 Alarm CODE
+ANL
+OR DM10587.7             ; RB11 ALML
+AND CR2002               ; 常時ON
+OUT @LR310
+CON
+DW #11 @DM22             ; WARNING_CODE
+;RB12 簡易ｱﾌﾞｿﾊﾞｯﾃﾘｰ異常
+LD DM10595.3             ; RB12 ALM
+LD= DM10594 $00EE        ; RB12 Alarm CODE
+OR= DM10594 $00EF        ; RB12 Alarm CODE
+ANL
+OR DM10595.7             ; RB12 ALML
+AND CR2002               ; 常時ON
+OUT @LR311
+CON
+DW #12 @DM22             ; WARNING_CODE
+;RB13 簡易ｱﾌﾞｿﾊﾞｯﾃﾘｰ異常
+LD DM10603.3             ; RB13 ALM
+LD= DM10602 $00EE        ; RB13 Alarm CODE
+OR= DM10602 $00EF        ; RB13 Alarm CODE
+ANL
+OR DM10603.7             ; RB13 ALML
+AND CR2002               ; 常時ON
+OUT @LR312
+CON
+DW #13 @DM22             ; WARNING_CODE
+;　　ﾜｰﾆﾝｸﾞﾒｯｾｰｼﾞ表示
+LDB @LR300
+ANB @LR301
+ANB @LR302
+ANB @LR303
+ANB @LR304
+ANB @LR305
+ANB @LR306
+ANB @LR307
+ANB @LR308
+ANB @LR309
+ANB @LR310
+ANB @LR311
+ANB @LR312
+ANB @LR313
+ANB @LR314
+ANB @LR315
+ANB @LR400
+ANB @LR401
+ANB @LR402
+ANB @LR403
+ANB @LR404
+ANB @LR405
+ANB @LR406
+ANB @LR407
+ANB @LR408
+ANB @LR409
+ANB @LR410
+ANB @LR411
+ANB @LR412
+ANB @LR413
+ANB @LR414
+INV
+OUT @LR415
+LD @LR415
+ANB R53608               ; _WARN画面消去
+MEP
+MSTRT WARNING_DISP #1 @DM22 #1 #1;WARNING_CODE
+LDF @LR415
+MSTRT WARNING_DEL #1 @DM22;WARNING_CODE
+;<h1/>MODE MANU選択 警報
+LD DM10507.8             ; RB1 RMDS
+DW #21 @DM24
+CON
+OUT @LR600
+LD DM10515.8             ; RB2 RMDS
+DW #22 @DM24
+CON
+OUT @LR601
+LD DM10523.8             ; RB3 RMDS
+DW #23 @DM24
+CON
+OUT @LR602
+LD DM10531.8             ; RB4 RMDS
+DW #24 @DM24
+CON
+OUT @LR603
+LD DM10539.8             ; RB5 RMDS
+DW #25 @DM24
+CON
+OUT @LR604
+LD DM10547.8             ; RB6 RMDS
+DW #26 @DM24
+CON
+OUT @LR605
+LD DM10555.8             ; RB7 RMDS
+DW #27 @DM24
+CON
+OUT @LR606
+LD DM10563.8             ; RB8 RMDS
+DW #28 @DM24
+CON
+OUT @LR607
+LD DM10571.8             ; RB9 RMDS
+DW #29 @DM24
+CON
+OUT @LR608
+LD DM10579.8             ; RB10 RMDS
+DW #30 @DM24
+CON
+OUT @LR609
+LD DM10587.8             ; RB11 RMDS
+DW #31 @DM24
+CON
+OUT @LR610
+LD DM10595.8             ; RB12 RMDS
+DW #32 @DM24
+CON
+OUT @LR611
+LD DM10603.8             ; RB13 RMDS
+DW #33 @DM24
+CON
+OUT @LR612
+;　　ﾜｰﾆﾝｸﾞﾒｯｾｰｼﾞ表示
+LDB @LR600
+ANB @LR601
+ANB @LR602
+ANB @LR603
+ANB @LR604
+ANB @LR605
+ANB @LR606
+ANB @LR607
+ANB @LR608
+ANB @LR609
+ANB @LR610
+ANB @LR611
+ANB @LR612
+ANB @LR613
+ANB @LR614
+ANB @LR615
+ANB @LR700
+ANB @LR701
+ANB @LR702
+ANB @LR703
+ANB @LR704
+ANB @LR705
+ANB @LR706
+ANB @LR707
+ANB @LR708
+ANB @LR709
+ANB @LR710
+ANB @LR711
+ANB @LR712
+ANB @LR713
+ANB @LR714
+INV
+OUT @LR715
+LD @LR715
+ANB R53608               ; _WARN画面消去
+MEP
+MSTRT WARNING_DISP #1 @DM24 #1 #1
+LDF @LR715
+MSTRT WARNING_DEL #1 @DM24
+;<h1/>塗布1-4ｼﾘﾝｼﾞ定温ｴｱｰON
+LD CR2002                ; 常時ON
+OUT MR9608               ; 塗布1-4ｼﾘﾝｼﾞ定温ｴｱｰON
+LD R46100                ; _自動運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+LDB R4202                ; 塗布UT1 左側定温流量検出1
+ORB R4302                ; 塗布UT1 右側定温流量検出1
+ANL
+ANB R53608               ; _WARN画面消去
+MEP
+MSTRT WARNING_DISP #1 #51 #1 #1
+LD R46100                ; _自動運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+AND R4202                ; 塗布UT1 左側定温流量検出1
+AND R4302                ; 塗布UT1 右側定温流量検出1
+ANB R53608               ; _WARN画面消去
+MEP
+MSTRT WARNING_DEL #1 #51
+LD R46100                ; _自動運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+LDB R5110                ; 塗布UT2 左側定温流量検出1
+ORB R5112                ; 塗布UT2 右側定温流量検出1
+ANL
+ANB R53608               ; _WARN画面消去
+MEP
+MSTRT WARNING_DISP #1 #52 #1 #1
+LD R46100                ; _自動運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+AND R5110                ; 塗布UT2 左側定温流量検出1
+AND R5112                ; 塗布UT2 右側定温流量検出1
+ANB R53608               ; _WARN画面消去
+MEP
+MSTRT WARNING_DEL #1 #52
+LD R46100                ; _自動運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+LDB R4402                ; 塗布UT3 左側定温流量検出1
+ORB R4414                ; 塗布UT3 右側定温流量検出1
+ANL
+ANB R53608               ; _WARN画面消去
+MEP
+MSTRT WARNING_DISP #1 #53 #1 #1
+LD R46100                ; _自動運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+AND R4402                ; 塗布UT3 左側定温流量検出1
+AND R4414                ; 塗布UT3 右側定温流量検出1
+ANB R53608               ; _WARN画面消去
+MEP
+MSTRT WARNING_DEL #1 #53
+LD R46100                ; _自動運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+LDB R4502                ; 塗布UT4 左側定温流量検出1
+ORB R4514                ; 塗布UT4 右側定温流量検出1
+ANL
+ANB R53608               ; _WARN画面消去
+MEP
+MSTRT WARNING_DISP #1 #54 #1 #1
+LD R46100                ; _自動運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+AND R4502                ; 塗布UT4 左側定温流量検出1
+AND R4514                ; 塗布UT4 右側定温流量検出1
+ANB R53608               ; _WARN画面消去
+MEP
+MSTRT WARNING_DEL #1 #61
+LD R46100                ; _自動運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+ANB R1012                ; ｻｰﾓﾄﾞﾗｲﾔｰ1 設定温度範囲内
+TMR @5 #300
+CON
+AND @T5
+ANB R53608               ; _WARN画面消去
+MEP
+MSTRT WARNING_DISP #1 #61 #1 #1
+LD R46100                ; _自動運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+AND R1012                ; ｻｰﾓﾄﾞﾗｲﾔｰ1 設定温度範囲内
+ANB R53608               ; _WARN画面消去
+MEP
+MSTRT WARNING_DEL #1 #61
+LD R46100                ; _自動運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+ANB R1013                ; ｻｰﾓﾄﾞﾗｲﾔｰ2 設定温度範囲内
+TMR @6 #300
+CON
+AND @T6
+ANB R53608               ; _WARN画面消去
+MEP
+MSTRT WARNING_DISP #1 #61 #1 #1
+LD R46100                ; _自動運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+AND R1013                ; ｻｰﾓﾄﾞﾗｲﾔｰ2 設定温度範囲内
+ANB R53608               ; _WARN画面消去
+MEP
+MSTRT WARNING_DEL #1 #61
+;<h1/>在荷ﾜｰｸ数把握
+LD CR2002                ; 常時ON
+LDA.D DM20000            ; 在荷ﾜｰｸ確認Bit1
+CON
+BCNT.D
+CON
+STA DM10
+;給材反転部
+LD R5000                 ; ﾎﾙﾀﾞｻﾌﾞ反転移載PP ﾊﾝﾄﾞ上流 閉限
+ANB R5001                ; ﾎﾙﾀﾞｻﾌﾞ反転移載PP ﾊﾝﾄﾞ上流 開限
+BOUT DM20000 #0          ; 在荷ﾜｰｸ確認Bit1
+LD R5002                 ; ﾎﾙﾀﾞｻﾌﾞ反転移載PP ﾊﾝﾄﾞ下流 閉限
+ANB R5003                ; ﾎﾙﾀﾞｻﾌﾞ反転移載PP ﾊﾝﾄﾞ下流 開限
+BOUT DM20000 #1          ; 在荷ﾜｰｸ確認Bit1
+;塗布給材ﾊﾝﾄﾞ上流
+LD R5100                 ; 塗布供給PP 給材ﾊﾝﾄﾞ1 閉限
+ANB R5101                ; 塗布供給PP 給材ﾊﾝﾄﾞ1 開限
+BOUT DM20000 #2          ; 在荷ﾜｰｸ確認Bit1
+LD R5102                 ; 塗布供給PP 給材ﾊﾝﾄﾞ2 閉限
+ANB R5103                ; 塗布供給PP 給材ﾊﾝﾄﾞ2 開限
+BOUT DM20000 #3          ; 在荷ﾜｰｸ確認Bit1
+;塗布給材ﾊﾝﾄﾞ下流
+LD R5104                 ; 塗布供給PP 移載ﾊﾝﾄﾞ1 閉限
+ANB R5105                ; 塗布供給PP 移載ﾊﾝﾄﾞ1 開限
+BOUT DM20000 #4          ; 在荷ﾜｰｸ確認Bit1
+LD R5106                 ; 塗布供給PP 移載ﾊﾝﾄﾞ2 閉限
+ANB R5107                ; 塗布供給PP 移載ﾊﾝﾄﾞ2 開限
+BOUT DM20000 #5          ; 在荷ﾜｰｸ確認Bit1
+;検査部給材ﾊﾝﾄﾞ
+LD R5200                 ; 検査供給PP 給材ﾊﾝﾄﾞ1 閉限
+ANB R5201                ; 検査供給PP 給材ﾊﾝﾄﾞ1 開限
+BOUT DM20000 #6          ; 在荷ﾜｰｸ確認Bit1
+LD R5202                 ; 検査供給PP 給材ﾊﾝﾄﾞ2 閉限
+ANB R5203                ; 検査供給PP 給材ﾊﾝﾄﾞ2 開限
+BOUT DM20000 #7          ; 在荷ﾜｰｸ確認Bit1
+;検査部除材ﾊﾝﾄﾞ
+LD R5204                 ; 検査供給PP 除材ﾊﾝﾄﾞ1 閉限
+ANB R5205                ; 検査供給PP 除材ﾊﾝﾄﾞ1 開限
+BOUT DM20000 #8          ; 在荷ﾜｰｸ確認Bit1
+LD R5206                 ; 検査供給PP 除材ﾊﾝﾄﾞ2 閉限
+ANB R5207                ; 検査供給PP 除材ﾊﾝﾄﾞ2 開限
+BOUT DM20000 #9          ; 在荷ﾜｰｸ確認Bit1
+;上流ｾﾙ間ｽﾗｲﾀﾞｰ
+LD R5114                 ; ｾﾙ間ｽﾗｲﾀﾞｰ ﾜｰｸ有無検出
+BOUT DM20000 #10         ; 在荷ﾜｰｸ確認Bit1
+;Janome1
+LD R20000                ; 塗布1   ONLINE
+MPS
+AND R4200                ; 塗布UT1 左側ﾜｰｸ有無確認
+BOUT DM20001 #0          ; 在荷ﾜｰｸ確認Bit2
+MPP
+AND R4201                ; 塗布UT1 右側ﾜｰｸ有無確認
+BOUT DM20001 #1          ; 在荷ﾜｰｸ確認Bit2
+;Janome2
+LD R20300                ; 塗布2   ONLINE
+MPS
+AND R4300                ; 塗布UT2 左側ﾜｰｸ有無確認
+BOUT DM20001 #2          ; 在荷ﾜｰｸ確認Bit2
+MPP
+AND R4301                ; 塗布UT2 右側ﾜｰｸ有無確認
+BOUT DM20001 #3          ; 在荷ﾜｰｸ確認Bit2
+;Janome3
+LD R20600                ; 塗布3   ONLINE
+MPS
+AND R4400                ; 塗布UT3 左側ﾜｰｸ有無確認
+BOUT DM20001 #4          ; 在荷ﾜｰｸ確認Bit2
+MPP
+AND R4401                ; 塗布UT3 右側ﾜｰｸ有無確認
+BOUT DM20001 #5          ; 在荷ﾜｰｸ確認Bit2
+;Janome4
+LD R20900                ; 塗布4   ONLINE
+MPS
+AND R4500                ; 塗布UT4 左側ﾜｰｸ有無確認
+BOUT DM20001 #6          ; 在荷ﾜｰｸ確認Bit2
+MPP
+AND R4501                ; 塗布UT4 右側ﾜｰｸ有無確認
+BOUT DM20001 #7          ; 在荷ﾜｰｸ確認Bit2
+;検査UT
+LD R4600                 ; 検査UT 左側ﾜｰｸ有無確認
+BOUT DM20001 #8          ; 在荷ﾜｰｸ確認Bit2
+LD R4601                 ; 検査UT 右側ﾜｰｸ有無確認
+BOUT DM20001 #9          ; 在荷ﾜｰｸ確認Bit2
+END
+ENDH

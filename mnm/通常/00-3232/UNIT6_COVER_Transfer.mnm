@@ -1,0 +1,734 @@
+DEVICE:53
+;MODULE:UNIT6_COVER_Transfer
+;MODULE_TYPE:0
+;
+;UNIT6 Screw RB
+;
+;動作FLG
+LD M6880                 ; 移載ﾍｯﾄﾞ原点復帰完了
+OR M6990                 ; 移載ﾍｯﾄﾞ原点復帰完了
+ANB M103                 ; 原点復帰OK
+OUT M6990                ; 移載ﾍｯﾄﾞ原点復帰完了
+LD CR2002                ; 常時ON
+MPS
+DW K0 D6030              ; UT6 Case status
+MPP
+AND Y218E                ; 除材2 移載ﾁｬｯｸ 閉
+MPS
+AND T1506                ; 除材2_移載ﾁｬｯｸ　閉限 (ﾜｰｸ有でON)
+DW K1 D6030              ; UT6 Case status
+MPP
+ANB T1506                ; 除材2_移載ﾁｬｯｸ　閉限 (ﾜｰｸ有でON)
+DW K2 D6030              ; UT6 Case status
+;■ロボット等機器入力受け
+;ロボット、検査装置など状態、現在位置などをまとめる信号は一旦ここで受ける。
+;<h1/>装置状態・動作条件
+LD T1504                 ; 除材2_移載ﾁｬｯｸ　下降限
+AND T1507                ; 除材2_移載ﾁｬｯｸ　開限
+OUT M6900                ; ﾕﾆｯﾄ6原点
+LDB B0C0                 ; 移載位置Case未検出
+ANB B0C1                 ; ﾕﾆｯﾄ6_異常2
+ANB B0C2                 ; ﾕﾆｯﾄ6_異常3
+ANB B0C3                 ; ﾕﾆｯﾄ6_異常4
+ANB B0C4                 ; ﾕﾆｯﾄ6_異常5
+ANB B0C5                 ; ﾕﾆｯﾄ6_異常6
+INV
+OUT M6901                ; ﾕﾆｯﾄ6全異常
+LD M6900                 ; ﾕﾆｯﾄ6原点
+ANB M6000                ; ﾕﾆｯﾄ6ｽﾃｯﾌﾟ開始
+OUT M6902                ; ﾕﾆｯﾄ6起動条件
+LDB M64                  ; 運転準備
+OR M65                   ; 即停止異常(緊急停止)
+OR M6901                 ; ﾕﾆｯﾄ6全異常
+OR T15                   ; 強制停止
+OUT M6903                ; ﾕﾆｯﾄ6起動OFF
+LD M98                   ; 原点復帰開始
+ANB M6904                ; ﾕﾆｯﾄ6原点復帰中
+OR M6904                 ; ﾕﾆｯﾄ6原点復帰中
+ANB M6903                ; ﾕﾆｯﾄ6起動OFF
+ANB M6579                ; ﾕﾆｯﾄ6原点復帰完了確認
+OUT M6904                ; ﾕﾆｯﾄ6原点復帰中
+LD M83                   ; 各工程起動指令
+AND M6902                ; ﾕﾆｯﾄ6起動条件
+OR M6905                 ; ﾕﾆｯﾄ6起動中
+ANB M6903                ; ﾕﾆｯﾄ6起動OFF
+ANB M6399                ; ﾕﾆｯﾄ6動作完了
+OUT M6905                ; ﾕﾆｯﾄ6起動中
+LD CR2003                ; 常時OFF
+OUT M6908                ; ﾕﾆｯﾄ6警報補助
+;Pack処理
+LDB CR2003               ; 常時OFF
+INV
+OUT M6910                ; UNIT6 Pack
+;□エラー発生　一時停止フラグ
+LD CR2002                ; 常時ON
+MPS
+PMOV.D M6920 K0 D6100 K0 K20;Err420:CASEﾁｬｯｸ異常  UT6ｴﾗｰ判別
+MPP
+AND<>.D D6100 K0         ; UT6ｴﾗｰ判別
+OUT M6912                ; UNIT6 ｴﾗｰ
+LDB M6901                ; ﾕﾆｯﾄ6全異常
+ANB M160                 ; ALL PAUSE
+ANB M6908                ; ﾕﾆｯﾄ6警報補助
+ANB M6912                ; UNIT6 ｴﾗｰ
+LDB M32                  ; 自動ﾓｰﾄﾞ
+ANB M33                  ; 手動ﾓｰﾄﾞ
+LD M32                   ; 自動ﾓｰﾄﾞ
+AND M6905                ; ﾕﾆｯﾄ6起動中
+ORL
+LD M33                   ; 手動ﾓｰﾄﾞ
+AND M6904                ; ﾕﾆｯﾄ6原点復帰中
+ORL
+ANL
+OUT M6913                ; UNIT6     ｴﾗｰ・PAUSE無し
+;RB interlock
+LD CR2002                ; 常時ON
+OUT M6960
+;<h1/>■自動回路 
+;
+;運転開始・ステッパ初期化・補助接点へ展開
+LD CR2002                ; 常時ON
+ZRES M6000 M6399         ; ﾕﾆｯﾄ6ｽﾃｯﾌﾟ開始  ﾕﾆｯﾄ6動作完了
+LDB M6905                ; ﾕﾆｯﾄ6起動中
+MOV K0 D6000             ; ﾕﾆｯﾄ6自動運転ｽﾃｯﾌﾟ
+LD M6905                 ; ﾕﾆｯﾄ6起動中
+MOV D6000 Z1             ; ﾕﾆｯﾄ6自動運転ｽﾃｯﾌﾟ
+OUT M6000:Z1             ; ﾕﾆｯﾄ6ｽﾃｯﾌﾟ開始
+;自動運転ステップ開始
+;投入位置移動
+;Move to Work set point
+LD M6000                 ; ﾕﾆｯﾄ6ｽﾃｯﾌﾟ開始
+AND M6913                ; UNIT6     ｴﾗｰ・PAUSE無し
+MPS
+LDB M70                  ; 自動起動停止指令(ｻｲｸﾙ停止)
+ORB M3398                ; UT3ｻｲｸﾙ停止
+ANL
+@INC D6000               ; ﾕﾆｯﾄ6自動運転ｽﾃｯﾌﾟ
+MPP
+LD M70                   ; 自動起動停止指令(ｻｲｸﾙ停止)
+AND M3398                ; UT3ｻｲｸﾙ停止
+ANL
+DW K300 D6000            ; ﾕﾆｯﾄ6自動運転ｽﾃｯﾌﾟ
+;移載ﾁｬｯｸ　受取準備
+;Remove-Transfer Receive position
+LD M6001                 ; 移載ﾁｬｯｸを受取姿勢に
+MPS
+LD M6913                 ; UNIT6     ｴﾗｰ・PAUSE無し
+AND T1504                ; 除材2_移載ﾁｬｯｸ　下降限
+AND T1507                ; 除材2_移載ﾁｬｯｸ　開限
+ANL
+@INC D6000               ; ﾕﾆｯﾄ6自動運転ｽﾃｯﾌﾟ
+MPP
+OUT M6732                ; 除材2 移載ﾁｬｯｸ 開
+CON
+OUT M6702                ; 除材2 移載ﾍｯﾄﾞ 下降
+;排出要求確認
+;Eject demand check
+LD M6002                 ; 排出要求待ち
+MPS
+AND M6913                ; UNIT6     ｴﾗｰ・PAUSE無し
+MPS
+LD M3985                 ; Y2排出要求
+AND=.L D31470 E2536      ; 軸4 現在座標  Case搬送2_TP_Pos19_Data
+ANL
+@INC D6000               ; ﾕﾆｯﾄ6自動運転ｽﾃｯﾌﾟ
+MPP
+LDB M3985                ; Y2排出要求
+AND M70                  ; 自動起動停止指令(ｻｲｸﾙ停止)
+AND M3398                ; UT3ｻｲｸﾙ停止
+ANL
+DW K300 D6000            ; ﾕﾆｯﾄ6自動運転ｽﾃｯﾌﾟ
+MPP
+OUT M6995                ; COVER搬送進入可能
+;移載ﾁｬｯｸ　閉
+;Transfer-chuck close
+LD M6003                 ; ﾁｬｯｸ閉
+MPS
+AND M6913                ; UNIT6     ｴﾗｰ・PAUSE無し
+MPS
+AND T1506                ; 除材2_移載ﾁｬｯｸ　閉限 (ﾜｰｸ有でON)
+DW K20 D6000             ; ﾕﾆｯﾄ6自動運転ｽﾃｯﾌﾟ
+MPP
+LDB T1506                ; 除材2_移載ﾁｬｯｸ　閉限 (ﾜｰｸ有でON)
+ANB T1507                ; 除材2_移載ﾁｬｯｸ　開限
+ANL
+TMR K623 K30             ; ﾁｬｯｸ開確認時間
+CON
+AND T623                 ; ﾁｬｯｸ開確認時間
+@INC D6000               ; ﾕﾆｯﾄ6自動運転ｽﾃｯﾌﾟ
+MPP
+OUT M6722                ; 除材2 移載ﾁｬｯｸ 閉
+;*ERR420:Chuck error
+LD M6004                 ; ｴﾗｰ発生
+ANB M71                  ; All Error PAUSE
+DW K420 D148             ; 警報No.
+CON
+SET M6920                ; Err420:CASEﾁｬｯｸ異常
+CON
+@INC D6000               ; ﾕﾆｯﾄ6自動運転ｽﾃｯﾌﾟ
+LD M6005                 ; ｴﾗｰ中
+AND M71                  ; All Error PAUSE
+RES B1013                ; Remove_FLG
+CON
+@INC D6000               ; ﾕﾆｯﾄ6自動運転ｽﾃｯﾌﾟ
+LD M6006                 ; ｴﾗｰ解除確認
+AND T130                 ; ｴﾗｰﾘﾄﾗｲｳｪｲﾄ
+MPS
+ANB B1013                ; Remove_FLG
+DW K3 D6000              ; ﾕﾆｯﾄ6自動運転ｽﾃｯﾌﾟ
+MPP
+AND B1013                ; Remove_FLG
+@INC D6000               ; ﾕﾆｯﾄ6自動運転ｽﾃｯﾌﾟ
+LD M6007                 ; ﾌﾗｸﾞﾘｾｯﾄ
+RES B1013                ; Remove_FLG
+CON
+ANB B1013                ; Remove_FLG
+@INC D6000               ; ﾕﾆｯﾄ6自動運転ｽﾃｯﾌﾟ
+LD M6008                 ; ﾁｬｯｸ開
+MPS
+LD M6913                 ; UNIT6     ｴﾗｰ・PAUSE無し
+AND T1507                ; 除材2_移載ﾁｬｯｸ　開限
+ANL
+@INC D6000               ; ﾕﾆｯﾄ6自動運転ｽﾃｯﾌﾟ
+MPP
+OUT M6733                ; 除材2 移載ﾁｬｯｸ 開
+LD M6009                 ; ｹｰｽ残ﾁｪｯｸ
+AND M6913                ; UNIT6     ｴﾗｰ・PAUSE無し
+MPS
+ANB T1311                ; 投入1_塗布位置ﾜｰｸ検出
+DW K200 D6000            ; ﾕﾆｯﾄ6自動運転ｽﾃｯﾌﾟ
+MPP
+AND T1311                ; 投入1_塗布位置ﾜｰｸ検出
+@INC D6000               ; ﾕﾆｯﾄ6自動運転ｽﾃｯﾌﾟ
+;* Err421:Case remain
+LD M6010                 ; ｴﾗｰ発生
+ANB M71                  ; All Error PAUSE
+DW K421 D148             ; 警報No.
+CON
+SET M6921                ; Err421:移載部Case残
+CON
+@INC D6000               ; ﾕﾆｯﾄ6自動運転ｽﾃｯﾌﾟ
+LD M6011                 ; ｴﾗｰ中
+AND M71                  ; All Error PAUSE
+@INC D6000               ; ﾕﾆｯﾄ6自動運転ｽﾃｯﾌﾟ
+LD M6012                 ; ｴﾗｰ解除確認
+AND T130                 ; ｴﾗｰﾘﾄﾗｲｳｪｲﾄ
+DW K9 D6000              ; ﾕﾆｯﾄ6自動運転ｽﾃｯﾌﾟ
+;移載ﾁｬｯｸ　上昇
+;Transfer-head Up
+LD M6020                 ; ﾁｬｯｸ上昇
+MPS
+LD M6913                 ; UNIT6     ｴﾗｰ・PAUSE無し
+AND T1505                ; 除材2_移載ﾁｬｯｸ　上昇限
+ANL
+@INC D6000               ; ﾕﾆｯﾄ6自動運転ｽﾃｯﾌﾟ
+MPP
+OUT M6713                ; 除材2 移載ﾍｯﾄﾞ 上昇
+;ﾁｬｯｸ状態確認
+;Chuck status check
+LD M6021                 ; ﾁｬｯｸ状態確認
+AND M6913                ; UNIT6     ｴﾗｰ・PAUSE無し
+MPS
+AND T1506                ; 除材2_移載ﾁｬｯｸ　閉限 (ﾜｰｸ有でON)
+DW K30 D6000             ; ﾕﾆｯﾄ6自動運転ｽﾃｯﾌﾟ
+MPP
+LDB T1506                ; 除材2_移載ﾁｬｯｸ　閉限 (ﾜｰｸ有でON)
+ANB T1507                ; 除材2_移載ﾁｬｯｸ　開限
+ANL
+TMR K624 K30             ; ﾁｬｯｸ開確認時間
+CON
+AND T624                 ; ﾁｬｯｸ開確認時間
+DW K4 D6000              ; ﾕﾆｯﾄ6自動運転ｽﾃｯﾌﾟ
+;*ERR420:Chuck error
+LD M6022                 ; ｴﾗｰ発生
+ANB M71                  ; All Error PAUSE
+DW K420 D148             ; 警報No.
+CON
+SET M6920                ; Err420:CASEﾁｬｯｸ異常
+CON
+@INC D6000               ; ﾕﾆｯﾄ6自動運転ｽﾃｯﾌﾟ
+LD M6023                 ; ｴﾗｰ中
+AND M71                  ; All Error PAUSE
+RES B1013                ; Remove_FLG
+CON
+@INC D6000               ; ﾕﾆｯﾄ6自動運転ｽﾃｯﾌﾟ
+LD M6024                 ; ｴﾗｰ解除確認
+AND T130                 ; ｴﾗｰﾘﾄﾗｲｳｪｲﾄ
+MPS
+ANB B1013                ; Remove_FLG
+DW K21 D6000             ; ﾕﾆｯﾄ6自動運転ｽﾃｯﾌﾟ
+MPP
+AND B1013                ; Remove_FLG
+@INC D6000               ; ﾕﾆｯﾄ6自動運転ｽﾃｯﾌﾟ
+LD M6025                 ; ﾌﾗｸﾞﾘｾｯﾄ
+RES B1013                ; Remove_FLG
+CON
+ANB B1013                ; Remove_FLG
+@INC D6000               ; ﾕﾆｯﾄ6自動運転ｽﾃｯﾌﾟ
+LD M6026                 ; ﾁｬｯｸ状態確認
+AND M6913                ; UNIT6     ｴﾗｰ・PAUSE無し
+MPS
+LDB T1506                ; 除材2_移載ﾁｬｯｸ　閉限 (ﾜｰｸ有でON)
+ANB T1507                ; 除材2_移載ﾁｬｯｸ　開限
+ANL
+DW K200 D6000            ; ﾕﾆｯﾄ6自動運転ｽﾃｯﾌﾟ
+MPP
+AND T1506                ; 除材2_移載ﾁｬｯｸ　閉限 (ﾜｰｸ有でON)
+@INC D6000               ; ﾕﾆｯﾄ6自動運転ｽﾃｯﾌﾟ
+;* Err421:Case remain
+LD M6027                 ; ｴﾗｰ発生
+ANB M71                  ; All Error PAUSE
+DW K421 D148             ; 警報No.
+CON
+SET M6921                ; Err421:移載部Case残
+CON
+@INC D6000               ; ﾕﾆｯﾄ6自動運転ｽﾃｯﾌﾟ
+LD M6028                 ; ｴﾗｰ中
+AND M71                  ; All Error PAUSE
+@INC D6000               ; ﾕﾆｯﾄ6自動運転ｽﾃｯﾌﾟ
+LD M6029                 ; ｴﾗｰ解除確認
+AND T130                 ; ｴﾗｰﾘﾄﾗｲｳｪｲﾄ
+DW K26 D6000             ; ﾕﾆｯﾄ6自動運転ｽﾃｯﾌﾟ
+;排出完了ﾊﾝﾄﾞｼｪｲｸ
+;Eject end hand-shake
+LD M6030                 ; 排出完了ﾊﾝﾄﾞｼｪｲｸ
+MPS
+LD M6913                 ; UNIT6     ｴﾗｰ・PAUSE無し
+ANB M3985                ; Y2排出要求
+ANL
+@INC D6000               ; ﾕﾆｯﾄ6自動運転ｽﾃｯﾌﾟ
+MPP
+OUT M6980                ; Y2排出完了
+;CASE搬送Y2受渡干渉外確認
+;CASE-Trasfer Y2 move away check
+LD M6031                 ; Case搬送Y2移動待ち
+AND M6913                ; UNIT6     ｴﾗｰ・PAUSE無し
+AND R3112                ; Case搬送Y2 塗布･受渡干渉外
+@INC D6000               ; ﾕﾆｯﾄ6自動運転ｽﾃｯﾌﾟ
+;給材要求確認
+;Suppy demand check
+LD M6032                 ; 排出Y2　給材要求待ち
+MPS
+LD M6913                 ; UNIT6     ｴﾗｰ・PAUSE無し
+AND M8984                ; Y2給材要求
+AND=.L D130 E3154        ; RCA6_Position Data  除材2Y_TP_Pos3_Data
+ANL
+MPS
+ANB T1810                ; 投入2_塗布位置ﾜｰｸ検出
+DW K41 D6000             ; ﾕﾆｯﾄ6自動運転ｽﾃｯﾌﾟ
+MPP
+AND T1810                ; 投入2_塗布位置ﾜｰｸ検出
+@INC D6000               ; ﾕﾆｯﾄ6自動運転ｽﾃｯﾌﾟ
+MPP
+OUT M6996                ; CASE除材準備完了
+;Err366:NG work remain on pass position 
+LD M6033                 ; ｴﾗｰ発生
+ANB M71                  ; All Error PAUSE
+DW K422 D148             ; 警報No.
+CON
+SET M6922                ; Err422:除材搬送2 Case残
+CON
+@INC D6000               ; ﾕﾆｯﾄ6自動運転ｽﾃｯﾌﾟ
+LD M6034                 ; ｴﾗｰ中
+AND M71                  ; All Error PAUSE
+@INC D6000               ; ﾕﾆｯﾄ6自動運転ｽﾃｯﾌﾟ
+LD M6035                 ; ｴﾗｰ解除確認
+AND T130                 ; ｴﾗｰﾘﾄﾗｲｳｪｲﾄ
+@INC D6000               ; ﾕﾆｯﾄ6自動運転ｽﾃｯﾌﾟ
+LD M6036
+MPS
+LD M6913                 ; UNIT6     ｴﾗｰ・PAUSE無し
+ANB M8984                ; Y2給材要求
+ANL
+@INC D6000               ; ﾕﾆｯﾄ6自動運転ｽﾃｯﾌﾟ
+MPP
+OUT M6985                ; Y2給材異常
+LD M6037
+AND M6913                ; UNIT6     ｴﾗｰ・PAUSE無し
+TMR K635 K50
+CON
+AND T635
+DW K31 D6000             ; ﾕﾆｯﾄ6自動運転ｽﾃｯﾌﾟ
+;移載ﾁｬｯｸ　下降
+;Transfer-head Down
+LD M6041                 ; 移載ﾍｯﾄﾞ　下降
+MPS
+LD M6913                 ; UNIT6     ｴﾗｰ・PAUSE無し
+AND T1504                ; 除材2_移載ﾁｬｯｸ　下降限
+ANL
+@INC D6000               ; ﾕﾆｯﾄ6自動運転ｽﾃｯﾌﾟ
+MPP
+OUT M6703                ; 除材2 移載ﾍｯﾄﾞ 下降
+;移載ﾁｬｯｸ　開
+;Transfer-chuck Open
+LD M6042                 ; 移載ﾁｬｯｸ　開
+MPS
+LD M6913                 ; UNIT6     ｴﾗｰ・PAUSE無し
+AND T1507                ; 除材2_移載ﾁｬｯｸ　開限
+ANL
+@INC D6000               ; ﾕﾆｯﾄ6自動運転ｽﾃｯﾌﾟ
+MPP
+OUT M6734                ; 除材2 移載ﾁｬｯｸ 開
+;在荷確認
+;Case check
+LD M6043                 ; 在荷確認
+AND M6913                ; UNIT6     ｴﾗｰ・PAUSE無し
+MPS
+LD T1810                 ; 投入2_塗布位置ﾜｰｸ検出
+OR M37                   ; 空運転ﾓｰﾄﾞ
+ANL
+@INC D6000               ; ﾕﾆｯﾄ6自動運転ｽﾃｯﾌﾟ
+MPP
+LDB T1810                ; 投入2_塗布位置ﾜｰｸ検出
+ANB M37                  ; 空運転ﾓｰﾄﾞ
+ANL
+OUT M6950                ; 移載位置ｹｰｽ行方不明
+;給材完了ﾊﾝﾄﾞｼｪｲｸ
+;Supply end hand-shake
+LD M6044                 ; 給材完了ﾊﾝﾄﾞｼｪｲｸ
+MPS
+LD M6913                 ; UNIT6     ｴﾗｰ・PAUSE無し
+ANB M8984                ; Y2給材要求
+ANL
+@INC D6000               ; ﾕﾆｯﾄ6自動運転ｽﾃｯﾌﾟ
+MPP
+OUT M6984                ; Y2給材完了
+;排出Y2受渡干渉外確認
+;CASE-Eject Y2 move away check
+LD M6045                 ; 排出Y2移動待ち
+AND M6913                ; UNIT6     ｴﾗｰ・PAUSE無し
+AND R3701                ; 除材2Y    塗布干渉外
+DW K300 D6000            ; ﾕﾆｯﾄ6自動運転ｽﾃｯﾌﾟ
+;■■■　 Transfer-chuck abnormal end
+LD M6200                 ; 移載ﾁｬｯｸ異常終了ﾊﾝﾄﾞｼｪｲｸ
+MPS
+LD M6913                 ; UNIT6     ｴﾗｰ・PAUSE無し
+ANB M3985                ; Y2排出要求
+ANL
+@INC D6000               ; ﾕﾆｯﾄ6自動運転ｽﾃｯﾌﾟ
+MPP
+OUT M6981                ; Y2排出異常
+LD M6201                 ; 干渉ﾁｪｯｸ
+AND M6913                ; UNIT6     ｴﾗｰ・PAUSE無し
+AND R3112                ; Case搬送Y2 塗布･受渡干渉外
+AND R3701                ; 除材2Y    塗布干渉外
+DW K300 D6000            ; ﾕﾆｯﾄ6自動運転ｽﾃｯﾌﾟ
+;サイクル停止条件
+;Cycle end check
+LD M6300                 ; 1ｻｲｸﾙ終了
+MPS
+LDB M70                  ; 自動起動停止指令(ｻｲｸﾙ停止)
+ORB M3398                ; UT3ｻｲｸﾙ停止
+ANL
+DW K0 D6000              ; ﾕﾆｯﾄ6自動運転ｽﾃｯﾌﾟ
+MPP
+LD M70                   ; 自動起動停止指令(ｻｲｸﾙ停止)
+AND M3398                ; UT3ｻｲｸﾙ停止
+ANL
+@INC D6000               ; ﾕﾆｯﾄ6自動運転ｽﾃｯﾌﾟ
+LD M6301                 ; 干渉ﾁｪｯｸ
+AND M6913                ; UNIT6     ｴﾗｰ・PAUSE無し
+AND R3112                ; Case搬送Y2 塗布･受渡干渉外
+AND R3701                ; 除材2Y    塗布干渉外
+@INC D6000               ; ﾕﾆｯﾄ6自動運転ｽﾃｯﾌﾟ
+;移載ﾁｬｯｸ　原点へ
+;Remove-Transfer move HOME position
+LD M6302                 ; 移載ﾁｬｯｸ原位置へ
+MPS
+LD M6913                 ; UNIT6     ｴﾗｰ・PAUSE無し
+AND T1504                ; 除材2_移載ﾁｬｯｸ　下降限
+AND T1507                ; 除材2_移載ﾁｬｯｸ　開限
+ANL
+@MOV K398 D6000          ; ﾕﾆｯﾄ6自動運転ｽﾃｯﾌﾟ
+MPP
+OUT M6735                ; 除材2 移載ﾁｬｯｸ 開
+CON
+OUT M6705                ; 除材2 移載ﾍｯﾄﾞ 下降
+;終了
+;Unit AUTO cycle end
+LD M6398                 ; ﾕﾆｯﾄ6ｻｲｸﾙ停止
+MPS
+ANB M70                  ; 自動起動停止指令(ｻｲｸﾙ停止)
+DW K0 D6000              ; ﾕﾆｯﾄ6自動運転ｽﾃｯﾌﾟ
+MPP
+LD M70                   ; 自動起動停止指令(ｻｲｸﾙ停止)
+AND M72                  ; 全ﾕﾆｯﾄ停止確認
+ANL
+@MOV K399 D6000          ; ﾕﾆｯﾄ6自動運転ｽﾃｯﾌﾟ
+;<h1/>■原点復帰回路
+;
+;運転開始・ステッパ初期化・補助接点へ展開
+LD CR2002                ; 常時ON
+ZRES M6500 M6599         ; ﾕﾆｯﾄ6原点復帰開始
+LDB M6904                ; ﾕﾆｯﾄ6原点復帰中
+MOV K0 D6010             ; ﾕﾆｯﾄ6原点復帰ｽﾃｯﾌﾟ
+LD M6904                 ; ﾕﾆｯﾄ6原点復帰中
+MOV D6010 Z1             ; ﾕﾆｯﾄ6原点復帰ｽﾃｯﾌﾟ
+OUT M6500:Z1             ; ﾕﾆｯﾄ6原点復帰開始
+;原点復帰ステップ開始
+;Origin start
+LD M6500                 ; ﾕﾆｯﾄ6原点復帰開始
+AND M6913                ; UNIT6     ｴﾗｰ・PAUSE無し
+AND M4975                ; 塗布Z軸　原点復帰完了
+@INC D6010               ; ﾕﾆｯﾄ6原点復帰ｽﾃｯﾌﾟ
+;移載ﾍｯﾄﾞ　下限ﾁｪｯｸ
+;Transfer-head Lower check
+LD M6501                 ; 移載ﾍｯﾄﾞ下限ﾁｪｯｸ
+AND M6913                ; UNIT6     ｴﾗｰ・PAUSE無し
+MPS
+AND T1504                ; 除材2_移載ﾁｬｯｸ　下降限
+DW K10 D6010             ; ﾕﾆｯﾄ6原点復帰ｽﾃｯﾌﾟ
+MPP
+ANB T1504                ; 除材2_移載ﾁｬｯｸ　下降限
+@INC D6010               ; ﾕﾆｯﾄ6原点復帰ｽﾃｯﾌﾟ
+;移載ﾁｬｯｸ　上昇
+;Transfer-head Up
+LD M6502                 ; 移載ﾍｯﾄﾞ上昇
+MPS
+LD M6913                 ; UNIT6     ｴﾗｰ・PAUSE無し
+AND T1505                ; 除材2_移載ﾁｬｯｸ　上昇限
+ANL
+@INC D6010               ; ﾕﾆｯﾄ6原点復帰ｽﾃｯﾌﾟ
+MPP
+OUT M6714                ; 除材2 移載ﾍｯﾄﾞ 上昇
+;ｹｰｽ把握確認
+;Clamping case check
+LD M6503                 ; ｹｰｽ把握確認
+AND M6913                ; UNIT6     ｴﾗｰ・PAUSE無し
+MPS
+ANB T1506                ; 除材2_移載ﾁｬｯｸ　閉限 (ﾜｰｸ有でON)
+DW K7 D6010              ; ﾕﾆｯﾄ6原点復帰ｽﾃｯﾌﾟ
+MPP
+AND T1506                ; 除材2_移載ﾁｬｯｸ　閉限 (ﾜｰｸ有でON)
+@INC D6010               ; ﾕﾆｯﾄ6原点復帰ｽﾃｯﾌﾟ
+;* Err421:Case remain
+LD M6504                 ; ｴﾗｰ発生
+ANB M71                  ; All Error PAUSE
+DW K421 D148             ; 警報No.
+CON
+SET M6921                ; Err421:移載部Case残
+CON
+@INC D6010               ; ﾕﾆｯﾄ6原点復帰ｽﾃｯﾌﾟ
+LD M6505                 ; ｴﾗｰ中
+AND M71                  ; All Error PAUSE
+@INC D6010               ; ﾕﾆｯﾄ6原点復帰ｽﾃｯﾌﾟ
+LD M6506                 ; ｴﾗｰ解除確認
+AND T130                 ; ｴﾗｰﾘﾄﾗｲｳｪｲﾄ
+DW K3 D6010              ; ﾕﾆｯﾄ6原点復帰ｽﾃｯﾌﾟ
+;移載ﾁｬｯｸ　下降
+;Transfer-head Down
+LD M6507
+MPS
+LD M6913                 ; UNIT6     ｴﾗｰ・PAUSE無し
+AND T1504                ; 除材2_移載ﾁｬｯｸ　下降限
+ANL
+DW K10 D6010             ; ﾕﾆｯﾄ6原点復帰ｽﾃｯﾌﾟ
+MPP
+OUT M6704                ; 除材2 移載ﾍｯﾄﾞ 下降
+;移載ﾁｬｯｸ　開
+;Transfer-chuck open
+LD M6510                 ; 移載ﾁｬｯｸ　開
+MPS
+LD M6913                 ; UNIT6     ｴﾗｰ・PAUSE無し
+AND T1507                ; 除材2_移載ﾁｬｯｸ　開限
+ANL
+DW K20 D6010             ; ﾕﾆｯﾄ6原点復帰ｽﾃｯﾌﾟ
+MPP
+OUT M6736                ; 除材2 移載ﾁｬｯｸ 開
+;移載ﾍｯﾄﾞ原点復帰完了ﾌﾗｸﾞ
+;Trasfer-chuck HOME end FLG. set
+LD M6520                 ; 移載ﾍｯﾄﾞHOME完了
+MPS
+LD M6913                 ; UNIT6     ｴﾗｰ・PAUSE無し
+AND M6990                ; 移載ﾍｯﾄﾞ原点復帰完了
+ANL
+DW K70 D6010             ; ﾕﾆｯﾄ6原点復帰ｽﾃｯﾌﾟ
+MPP
+OUT M6880                ; 移載ﾍｯﾄﾞ原点復帰完了
+;原点復帰終了
+LD M6570                 ; 原点復帰動作完了
+AND M6900                ; ﾕﾆｯﾄ6原点
+OUT M6578                ; ﾕﾆｯﾄ6原点復帰完了
+LD M6578                 ; ﾕﾆｯﾄ6原点復帰完了
+ANB M98                  ; 原点復帰開始
+@MOV K79 D6010           ; ﾕﾆｯﾄ6原点復帰ｽﾃｯﾌﾟ
+;<h1/>■手動回路 
+;
+LD M33                   ; 手動ﾓｰﾄﾞ
+AND M34                  ; ﾒｲﾝ手動操作可能条件
+ANB M6905                ; ﾕﾆｯﾄ6起動中
+ANB M97                  ; 原点復帰動作中
+MC
+;Cover Transfer chuck
+LD B1180                 ; Cover移載ﾁｬｯｸ 閉PB
+LD=.L D31470 E2536       ; 軸4 現在座標  Case搬送2_TP_Pos19_Data
+OR R3113                 ; Case搬送2_TP_Case投入位置
+ANL
+OUT M6721                ; 除材2 移載ﾁｬｯｸ 閉
+LD B1181                 ; Cover移載ﾁｬｯｸ 開PB
+OUT M6731                ; 除材2 移載ﾁｬｯｸ 開
+LD B1182                 ; Cover移載ﾁｬｯｸ 下降PB
+OUT M6701                ; 除材2 移載ﾍｯﾄﾞ 下降
+LD B1183                 ; Cover移載ﾁｬｯｸ 上昇PB
+LD=.L D31470 E2536       ; 軸4 現在座標  Case搬送2_TP_Pos19_Data
+OR R3113                 ; Case搬送2_TP_Case投入位置
+ANL
+OUT M6711                ; 除材2 移載ﾍｯﾄﾞ 上昇
+MCR
+;<h1/>出力回路
+;
+;除材2 移載ﾍｯﾄﾞ　
+;Remove-Trasfer head 2
+LDP M6701                ; 除材2 移載ﾍｯﾄﾞ 下降
+ORP M6702                ; 除材2 移載ﾍｯﾄﾞ 下降
+ORP M6703                ; 除材2 移載ﾍｯﾄﾞ 下降
+ORP M6704                ; 除材2 移載ﾍｯﾄﾞ 下降
+ORP M6705                ; 除材2 移載ﾍｯﾄﾞ 下降
+OR M6700                 ; 除材2 移載ﾍｯﾄﾞ 下降補助
+ANPB M6710               ; 除材2 移載ﾍｯﾄﾞ 上昇補助
+OUT M6700                ; 除材2 移載ﾍｯﾄﾞ 下降補助
+LDP M6711                ; 除材2 移載ﾍｯﾄﾞ 上昇
+ORP M6712                ; 除材2 移載ﾍｯﾄﾞ 上昇
+ORP M6713                ; 除材2 移載ﾍｯﾄﾞ 上昇
+ORP M6714                ; 除材2 移載ﾍｯﾄﾞ 上昇
+ORP M6715                ; 除材2 移載ﾍｯﾄﾞ 上昇
+OR M6710                 ; 除材2 移載ﾍｯﾄﾞ 上昇補助
+ANPB M6700               ; 除材2 移載ﾍｯﾄﾞ 下降補助
+OUT M6710                ; 除材2 移載ﾍｯﾄﾞ 上昇補助
+LD M6700                 ; 除材2 移載ﾍｯﾄﾞ 下降補助
+OUT Y218C                ; 除材2 移載ﾍｯﾄﾞ 下降
+LD M6710                 ; 除材2 移載ﾍｯﾄﾞ 上昇補助
+OUT Y218D                ; 除材2 移載ﾍｯﾄﾞ 上昇
+;除材2 移載ﾁｬｯｸ
+;Remove-Trasfer chuck 2
+LDP M6721                ; 除材2 移載ﾁｬｯｸ 閉
+ORP M6722                ; 除材2 移載ﾁｬｯｸ 閉
+OR M6720                 ; 除材2 移載ﾁｬｯｸ 閉補助
+ANPB M6730               ; 除材2 移載ﾁｬｯｸ 開補助
+OUT M6720                ; 除材2 移載ﾁｬｯｸ 閉補助
+LDP M6731                ; 除材2 移載ﾁｬｯｸ 開
+ORP M6732                ; 除材2 移載ﾁｬｯｸ 開
+ORP M6733                ; 除材2 移載ﾁｬｯｸ 開
+ORP M6734                ; 除材2 移載ﾁｬｯｸ 開
+ORP M6735                ; 除材2 移載ﾁｬｯｸ 開
+ORP M6736                ; 除材2 移載ﾁｬｯｸ 開
+OR M6730                 ; 除材2 移載ﾁｬｯｸ 開補助
+ANPB M6720               ; 除材2 移載ﾁｬｯｸ 閉補助
+OUT M6730                ; 除材2 移載ﾁｬｯｸ 開補助
+LD M6720                 ; 除材2 移載ﾁｬｯｸ 閉補助
+OUT Y218E                ; 除材2 移載ﾁｬｯｸ 閉
+LD M6730                 ; 除材2 移載ﾁｬｯｸ 開補助
+OUT Y218F                ; 除材2 移載ﾁｬｯｸ 開
+;<h1/>異常検出
+;
+LD CR2002                ; 常時ON
+MPS
+LD M6950                 ; 移載位置ｹｰｽ行方不明
+LDB B05C0                ; 原点復帰時ﾈｼﾞ排出異常 BZ停止
+ORB M123                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B0C0                 ; 移載位置Case未検出
+ORL
+ANL
+OUT B0C0                 ; 移載位置Case未検出
+MPP
+LD M122                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B05C0                 ; 原点復帰時ﾈｼﾞ排出異常 BZ停止
+AND B0C0                 ; 移載位置Case未検出
+ANL
+OUT B05C0                ; 原点復帰時ﾈｼﾞ排出異常 BZ停止
+LD CR2002                ; 常時ON
+MPS
+LD CR2003                ; 常時OFF
+LDB B05C1                ; 原点復帰ｴﾘｱ外 BZ停止
+ORB M123                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B0C1                 ; ﾕﾆｯﾄ6_異常2
+ORL
+ANL
+OUT B0C1                 ; ﾕﾆｯﾄ6_異常2
+MPP
+LD M122                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B05C1                 ; 原点復帰ｴﾘｱ外 BZ停止
+AND B0C1                 ; ﾕﾆｯﾄ6_異常2
+ANL
+OUT B05C1                ; 原点復帰ｴﾘｱ外 BZ停止
+LD CR2002                ; 常時ON
+MPS
+LD CR2003                ; 常時OFF
+LDB B05C2                ; ﾈｼﾞ締めRB応答待ち時間 BZ停止
+ORB M123                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B0C2                 ; ﾕﾆｯﾄ6_異常3
+ORL
+ANL
+OUT B0C2                 ; ﾕﾆｯﾄ6_異常3
+MPP
+LD M122                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B05C2                 ; ﾈｼﾞ締めRB応答待ち時間 BZ停止
+AND B0C2                 ; ﾕﾆｯﾄ6_異常3
+ANL
+OUT B05C2                ; ﾈｼﾞ締めRB応答待ち時間 BZ停止
+LD CR2002                ; 常時ON
+MPS
+LD CR2003                ; 常時OFF
+LDB B05C3                ; ﾕﾆｯﾄ6_異常4 BZ停止
+ORB M123                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B0C3                 ; ﾕﾆｯﾄ6_異常4
+ORL
+ANL
+OUT B0C3                 ; ﾕﾆｯﾄ6_異常4
+MPP
+LD M122                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B05C3                 ; ﾕﾆｯﾄ6_異常4 BZ停止
+AND B0C3                 ; ﾕﾆｯﾄ6_異常4
+ANL
+OUT B05C3                ; ﾕﾆｯﾄ6_異常4 BZ停止
+LD CR2002                ; 常時ON
+MPS
+LD CR2003                ; 常時OFF
+LDB B05C4                ; ﾕﾆｯﾄ6_異常5 BZ停止
+ORB M123                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B0C4                 ; ﾕﾆｯﾄ6_異常5
+ORL
+ANL
+OUT B0C4                 ; ﾕﾆｯﾄ6_異常5
+MPP
+LD M122                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B05C4                 ; ﾕﾆｯﾄ6_異常5 BZ停止
+AND B0C4                 ; ﾕﾆｯﾄ6_異常5
+ANL
+OUT B05C4                ; ﾕﾆｯﾄ6_異常5 BZ停止
+LD CR2002                ; 常時ON
+MPS
+LD CR2003                ; 常時OFF
+LDB B05C5                ; ﾕﾆｯﾄ6_異常6 BZ停止
+ORB M123                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B0C5                 ; ﾕﾆｯﾄ6_異常6
+ORL
+ANL
+OUT B0C5                 ; ﾕﾆｯﾄ6_異常6
+MPP
+LD M122                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B05C5                 ; ﾕﾆｯﾄ6_異常6 BZ停止
+AND B0C5                 ; ﾕﾆｯﾄ6_異常6
+ANL
+OUT B05C5                ; ﾕﾆｯﾄ6_異常6 BZ停止
+;異常ﾌﾞｻﾞｰまとめ
+LD B0C0                  ; 移載位置Case未検出
+ANB B05C0                ; 原点復帰時ﾈｼﾞ排出異常 BZ停止
+LD B0C1                  ; ﾕﾆｯﾄ6_異常2
+ANB B05C1                ; 原点復帰ｴﾘｱ外 BZ停止
+ORL
+LD B0C2                  ; ﾕﾆｯﾄ6_異常3
+ANB B05C2                ; ﾈｼﾞ締めRB応答待ち時間 BZ停止
+ORL
+LD B0C3                  ; ﾕﾆｯﾄ6_異常4
+ANB B05C3                ; ﾕﾆｯﾄ6_異常4 BZ停止
+ORL
+LD B0C4                  ; ﾕﾆｯﾄ6_異常5
+ANB B05C4                ; ﾕﾆｯﾄ6_異常5 BZ停止
+ORL
+LD B0C5                  ; ﾕﾆｯﾄ6_異常6
+ANB B05C5                ; ﾕﾆｯﾄ6_異常6 BZ停止
+ORL
+OUT M6909                ; ﾕﾆｯﾄ6異常BZ補助
+END
+ENDH

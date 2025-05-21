@@ -1,0 +1,361 @@
+DEVICE:51
+;MODULE:Master
+;MODULE_TYPE:0
+LD R50000                ; 即停止
+OR R50900                ; TRAP
+OR R50914                ; HOMEsw ON
+ZRES @MR000 @MR1915      ; ｽﾀｰﾄsw ON PLS
+;ﾌﾗｸﾞ管理
+;Flag management
+LDB R50000               ; 即停止
+ANB R50900               ; TRAP
+OUT R55000               ; 即停止/TRAP 入力無し
+LD R49802                ; MAIN     払出し完了
+SET R49807               ; 全ﾕﾆｯﾄ払出し完了
+LDB R49802               ; MAIN     払出し完了
+RES R49807               ; 全ﾕﾆｯﾄ払出し完了
+LD CR2002                ; 常時ON
+OUT R49811               ; 安全ｶﾊﾞｰ  全OK
+LD CR2002                ; 常時ON
+OUT R49812               ; ｴﾘｱｾﾝｻ 　全OK
+;ＣＰＵ起動時モジュール起動
+;Ｍｏｄｕｌｅ  ｓｔａｒｔｓ  ａｔ ｔｈｅ  ｔｉｍｅ  ｏｆ  ＣＰＵ  ｓｔａｒｔｉｎｇ．
+LD CR2002                ; 常時ON
+AND CR2007               ; 運転開始時1ｽｷｬﾝOFF
+AND R55000               ; 即停止/TRAP 入力無し
+ANB R49915               ; 表示用　　 TRAP
+TMR #200 #10             ; 動作中遅延
+MDSTRT MAIN_ST
+@RES LR200               ; 自動ﾓｰﾄﾞ　   選択
+CON
+@RES LR201               ; 手動ﾓｰﾄﾞ　   選択
+;スタートスイッチ管理
+;Ｓｔａｒｔ  ＳＷ   ｍａｎａｇｅｍｅｎｔ
+;
+LD R000                  ; ｽﾀｰﾄsw
+AND _MAIN_ST
+DIFU @MR000              ; ｽﾀｰﾄsw ON PLS
+LD @MR000                ; ｽﾀｰﾄsw ON PLS
+OR @MR001                ; ｽﾀｰﾄsw ON
+AND R49812               ; ｴﾘｱｾﾝｻ 　全OK
+ANB @MR002               ; ｽﾀｰﾄsw OFF
+OUT @MR001               ; ｽﾀｰﾄsw ON
+OUT R51001               ; ｽﾀｰﾄsw ON
+LD @MR001                ; ｽﾀｰﾄsw ON
+ANB R000                 ; ｽﾀｰﾄsw
+OUT @MR002               ; ｽﾀｰﾄsw OFF
+LD @MR001                ; ｽﾀｰﾄsw ON
+DIFU R51000              ; ｽﾀｰﾄsw ON PLS
+;＠モード選択/Select Mode
+;原点復帰
+;ＨＯＭＥ
+LD R51101                ; 原点復帰
+OUT R50003               ; 原点復帰中
+LDP R49908               ; HOME開始sw(ﾀｯﾁﾊﾟﾈﾙ)
+ANB R50301               ; Pause
+MPS
+RES LR200                ; 自動ﾓｰﾄﾞ　   選択
+CON
+RES LR201                ; 手動ﾓｰﾄﾞ　   選択
+CON
+RES R51100               ; 原点復帰完了
+MPP
+DIFU R50914              ; HOMEsw ON
+LDF R49908               ; HOME開始sw(ﾀｯﾁﾊﾟﾈﾙ)
+ANB R50301               ; Pause
+DIFU @MR208              ; HOME Start PLS
+;MAIN-unit
+LDB R51100               ; 原点復帰完了
+ANB R50001               ; 自動中
+ANB R50002               ; 手動中
+AND R1000                ; ｴｱｰ元圧
+OUT @MR100               ; HOME ｽﾀｰﾄ条件
+LD @MR100                ; HOME ｽﾀｰﾄ条件
+ANB R50301               ; Pause
+OUT R51103               ; HOMEsw    Interlock
+LD @MR103                ; HOME 動作中
+OR @MR104                ; HOME終了
+AND R51100               ; 原点復帰完了
+ANB @MR105               ; HOME     終了確認
+OUT @MR104               ; HOME終了
+LD @MR100                ; HOME ｽﾀｰﾄ条件
+AND @MR208               ; HOME Start PLS
+ANB R50006               ; 異常発生中
+ANB R50111               ; Err 全体
+AND R49811               ; 安全ｶﾊﾞｰ  全OK
+OR R51101                ; 原点復帰
+AND T200                 ; 動作中遅延
+AND R55000               ; 即停止/TRAP 入力無し
+ANB R51100               ; 原点復帰完了
+OUT R51101               ; 原点復帰
+LD R51102                ; 原点復帰中
+OR @MR103                ; HOME 動作中
+AND R51101               ; 原点復帰
+ANB @MR105               ; HOME     終了確認
+OUT @MR103               ; HOME 動作中
+;HOME終了操作  /  HOME End Process
+LD @MR104                ; HOME終了
+OUT @MR105               ; HOME     終了確認
+LDP @MR105               ; HOME     終了確認
+OR R50915                ; 原点復帰終了ﾌﾞｻﾞｰON
+ANB T103                 ; HOME終了 ﾌﾞｻﾞｰON
+OUT R50915               ; 原点復帰終了ﾌﾞｻﾞｰON
+TMR #103 #4              ; HOME終了 ﾌﾞｻﾞｰON
+;モード選択
+;Ｍｏｄｅ  Ｓｅｌｅｃｔｉｏｎ
+LDP R50101               ; ﾓｰﾄﾞSW
+AND R50005               ; 停止中
+ANB LR200                ; 自動ﾓｰﾄﾞ　   選択
+ORP R51100               ; 原点復帰完了
+DIFU @MR200              ; 自動ﾓｰﾄﾞ   SW ON
+LDP R50101               ; ﾓｰﾄﾞSW
+AND R50005               ; 停止中
+AND LR200                ; 自動ﾓｰﾄﾞ　   選択
+DIFU @MR201              ; 手動ﾓｰﾄﾞ   SW ON
+LD @MR200                ; 自動ﾓｰﾄﾞ   SW ON
+MPS
+SET LR200                ; 自動ﾓｰﾄﾞ　   選択
+CON
+RES LR201                ; 手動ﾓｰﾄﾞ　   選択
+MPP
+SET R2004
+LD @MR201                ; 手動ﾓｰﾄﾞ   SW ON
+SET LR201                ; 手動ﾓｰﾄﾞ　   選択
+CON
+RES LR200                ; 自動ﾓｰﾄﾞ　   選択
+;
+;ＡＵＴＯ
+;
+;ﾌﾗｸﾞ制御
+;FLG Control
+LD CR2002                ; 常時ON
+LDA DM3000               ; 現在表示中   画面
+CON
+CMP #102
+CON
+AND CR2010               ; 演算結果がｾﾞﾛ
+OUT R49201               ; MAIN 画面表示中
+LD R50104                ; 自動ﾓｰﾄﾞ停止sw
+OR R50100                ; 自動ﾓｰﾄﾞ停止FLG
+RES R50100               ; 自動ﾓｰﾄﾞ停止FLG
+CON
+SET R49800               ; ｻｲｸﾙ停止・払出し開始
+;AUTO処理開始
+;AUTO START
+LD R49201                ; MAIN 画面表示中
+ANP R51001               ; ｽﾀｰﾄsw ON
+AND R49812               ; ｴﾘｱｾﾝｻ 　全OK
+AND LR200                ; 自動ﾓｰﾄﾞ　   選択
+ANB R50001               ; 自動中
+AND R49811               ; 安全ｶﾊﾞｰ  全OK
+DIFU @MR301              ; 自動ｽﾀｰﾄ　  SW ON
+;起動条件OKならSTART
+;START when States OK
+LD @MR301                ; 自動ｽﾀｰﾄ　  SW ON
+AND LR200                ; 自動ﾓｰﾄﾞ　   選択
+AND MR100                ; ST原点FLG
+OR R50001                ; 自動中
+AND R55000               ; 即停止/TRAP 入力無し
+AND R51100               ; 原点復帰完了
+ANB @MR305               ; 自動終了
+RES R50008               ; ｻｲｸﾙ停止FLG
+CON
+OUT R50001               ; 自動中
+;AUTO 停止監視　開始
+;AUTO STOP process Start
+LD R50001                ; 自動中
+DIFU @MR302              ; 自動ｽﾀｰﾄPLS
+LD @MR302                ; 自動ｽﾀｰﾄPLS
+OR @MR303                ; 自動ｽﾀｰﾄ　   確認
+AND R50001               ; 自動中
+ANB @MR304               ; 各ﾀｽｸ動作中
+OUT @MR303               ; 自動ｽﾀｰﾄ　   確認
+;停止信号入力待ち
+;STOP signal wait
+LD @MR303                ; 自動ｽﾀｰﾄ　   確認
+LD R50500                ; AUTO動作     終了
+OR R49800                ; ｻｲｸﾙ停止・払出し開始
+ANL
+OR @MR304                ; 各ﾀｽｸ動作中
+AND R50001               ; 自動中
+ANB @MR305               ; 自動終了
+OUT @MR304               ; 各ﾀｽｸ動作中
+;各ﾓｼﾞｭｰﾙ停止待ち
+;Each modul STOP wait
+LD @MR304                ; 各ﾀｽｸ動作中
+ANF R49807               ; 全ﾕﾆｯﾄ払出し完了
+RES R50500               ; AUTO動作     終了
+CON
+OUT @MR305               ; 自動終了
+;AUTO 終了処理
+;AUTO END process
+LD R49808                ; ｻｲｸﾙ停止 処理FLG.
+OR R51008                ; 自動終了   ﾌﾞｻﾞｰON
+ANB T100                 ; 自動終了   ﾌﾞｻﾞｰON
+OUT R51008               ; 自動終了   ﾌﾞｻﾞｰON
+TMR #100 #4              ; 自動終了   ﾌﾞｻﾞｰON
+LD T100                  ; 自動終了   ﾌﾞｻﾞｰON
+RES LR200                ; 自動ﾓｰﾄﾞ　   選択
+CON
+ZRES R49800 R49811       ; ｻｲｸﾙ停止・払出し開始  安全ｶﾊﾞｰ  全OK
+LD @MR301                ; 自動ｽﾀｰﾄ　  SW ON
+AND R55000               ; 即停止/TRAP 入力無し
+AND R51100               ; 原点復帰完了
+ANB @MR305               ; 自動終了
+ANB R50001               ; 自動中
+ANB MR100                ; ST原点FLG
+SET R50507               ; 自動原点無し起動ｴﾗｰ
+;ＳＴ 原点部
+;
+LDB R001                 ; ﾃｰﾌﾞﾙﾛｯｸ下降限
+AND R002                 ; ﾃｰﾌﾞﾙﾛｯｸ上昇限
+ANB R003                 ; ｻｲﾄﾞｸﾗﾝﾌﾟ前進限
+AND R004                 ; ｻｲﾄﾞｸﾗﾝﾌﾟ後退限
+ANB R005                 ; 前後ｸﾗﾝﾌﾟ前進限
+AND R006                 ; 前後ｸﾗﾝﾌﾟ後退限
+ANB R007                 ; 押し上げｸﾗﾝﾌﾟ上昇限
+AND R008                 ; 押し上げｸﾗﾝﾌﾟ下降限
+ANB R009                 ; ﾛｰﾗ前進限
+AND R010                 ; ﾛｰﾗ後退限
+ANB R011                 ; 上下ｸﾗﾝﾌﾟ下降限
+AND R012                 ; 上下ｸﾗﾝﾌﾟ上昇限
+OUT MR100                ; ST原点FLG
+LDF R50001               ; 自動中
+SET R50008               ; ｻｲｸﾙ停止FLG
+;ＭＡＮＵ
+;
+LD R49201                ; MAIN 画面表示中
+AND R51000               ; ｽﾀｰﾄsw ON PLS
+LD LR000                 ; 通常動作  ｽﾃｯﾌﾟ選択
+OR LR001                 ; 手動選択1
+OR LR002                 ; 手動選択2
+OR LR003                 ; 手動選択3
+OR LR004                 ; 手動選択4
+OR LR005                 ; 手動選択5
+OR LR006                 ; 手動選択6
+OR LR007                 ; 手動選択7
+ANL
+AND LR201                ; 手動ﾓｰﾄﾞ　   選択
+AND R49812               ; ｴﾘｱｾﾝｻ 　全OK
+AND R49811               ; 安全ｶﾊﾞｰ  全OK
+DIFU @MR401              ; 手動ｽﾀｰﾄ 　SW ON
+LD @MR401                ; 手動ｽﾀｰﾄ 　SW ON
+OR R50002                ; 手動中
+AND R55000               ; 即停止/TRAP 入力無し
+AND R51100               ; 原点復帰完了
+ANB @MR405               ; 手動終了
+RES R50008               ; ｻｲｸﾙ停止FLG
+CON
+OUT R50002               ; 手動中
+LD R50002                ; 手動中
+DIFU @MR402              ; 手動STEPｽﾀｰﾄPLS
+LD @MR402                ; 手動STEPｽﾀｰﾄPLS
+OR @MR403                ; 手動ｽﾀｰﾄ　 確認
+AND R50002               ; 手動中
+ANB @MR404               ; 各ﾀｽｸ動作中
+OUT @MR403               ; 手動ｽﾀｰﾄ　 確認
+LDB R50500               ; AUTO動作     終了
+ANB R50700               ; 通常動作  ｽﾃｯﾌﾟ実行中
+ANB R50701               ; ﾀﾞﾐｰ圧着実行中
+ANB R50702               ; ﾄﾚｲﾁｪﾝｼﾞ  ｽﾃｯﾌﾟ実行中
+ANB R50703               ; ﾃｰﾌﾟ交換実行中
+ANB R50704               ; ﾄﾚｲ→ｱﾗｲﾒﾝﾄ  ｽﾃｯﾌﾟ実行中
+ANB R50705               ; ｱﾗｲﾒﾝﾄ→圧着ｽﾃｯﾌﾟ実行中
+ANB R50706               ; ﾃｰﾌﾟ送り  ｽﾃｯﾌﾟ実行中
+ANB R50707
+OUB @MR406               ; STEP実行中
+LD @MR403                ; 手動ｽﾀｰﾄ　 確認
+AND @MR406               ; STEP実行中
+OR @MR404                ; 各ﾀｽｸ動作中
+AND R50002               ; 手動中
+ANB @MR405               ; 手動終了
+OUT @MR404               ; 各ﾀｽｸ動作中
+LD @MR404                ; 各ﾀｽｸ動作中
+ANB @MR406               ; STEP実行中
+OUT @MR405               ; 手動終了
+;*****　連続手動ﾓｰﾄﾞ許可  /  Mnual mode Demand　*****
+LD R42500                ; 連続STEP 許可sw
+TMR #204 #30
+LDP T204
+ALT R42503               ; 連続STEP許可
+;動作中
+;Ｄｕｒｉｎｇ  Ｏｐｅｒａｔｉｏｎ
+LD R50001                ; 自動中
+OR R50002                ; 手動中
+OR R51101                ; 原点復帰
+OUT R50004               ; 動作中
+;手動ﾓｰﾄﾞ監視
+LDB LR000                ; 通常動作  ｽﾃｯﾌﾟ選択
+ANB LR001                ; 手動選択1
+ANB LR002                ; 手動選択2
+ANB LR003                ; 手動選択3
+ANB LR004                ; 手動選択4
+ANB LR005                ; 手動選択5
+ANB LR006                ; 手動選択6
+ANB LR007                ; 手動選択7
+OUB @MR500               ; MEIN_STEPﾓｰﾄﾞ
+;Ｃａｌｌ　Ｐｏｓｔ
+LDB R50002               ; 手動中
+ZRES R50403 R50405       ; Call post   実行中  50405
+STG R50400               ; Call Post
+ANB R50403               ; Call post   実行中
+AND R50002               ; 手動中
+SET R50403               ; Call post   実行中
+CON
+JMP R50404               ; 50404
+STG R50404               ; 50404
+AND @MR500               ; MEIN_STEPﾓｰﾄﾞ
+ANP R51000               ; ｽﾀｰﾄsw ON PLS
+ANB R50301               ; Pause
+ANB R50006               ; 異常発生中
+AND R55000               ; 即停止/TRAP 入力無し
+ANB R50103               ; 警報ｾｯﾄﾌﾗｸﾞ
+ANB R50901               ; ｼﾘﾝﾀﾞｰｴﾗｰ
+ANB R50902               ; Trapしない   異常
+AND R49812               ; ｴﾘｱｾﾝｻ 　全OK
+AND R49811               ; 安全ｶﾊﾞｰ  全OK
+JMP R50405               ; 50405
+STG R50405               ; 50405
+ANB R50400               ; Call Post
+RES R50403               ; Call post   実行中
+CON
+ENDS
+LD R50400                ; Call Post
+AND R50404               ; 50404
+OUT R50401               ; Post Busy
+LD R50002                ; 手動中
+AND R50405               ; 50405
+ORB R50002               ; 手動中
+OR R50408                ; POST PASS
+OR R50409                ; POST PASS 2
+OUT R50402               ; Post Ok
+LD @MR500                ; MEIN_STEPﾓｰﾄﾞ
+AND R51001               ; ｽﾀｰﾄsw ON
+ANB R50301               ; Pause
+TMR @8 #30
+CON
+AND @T8
+OUT R50409               ; POST PASS 2
+;サイクルタイム計算
+;Cycle Time Measeremet 
+LD R50001                ; 自動中
+AND R51602               ; ﾜｰｸ固定処理 実行中
+AND CR2005               ; 100msｸﾛｯｸﾊﾟﾙｽ
+@INC.D DM464             ; ｻｲｸﾙﾀｲﾑ計測
+LDF R51602               ; ﾜｰｸ固定処理 実行中
+MOV.D DM464 DM462        ; ｻｲｸﾙﾀｲﾑ計測  ｻｲｸﾙﾀｲﾑ
+DW.D #0 DM464            ; ｻｲｸﾙﾀｲﾑ計測
+LD R50001                ; 自動中
+AND R51603               ; 固定完了→作業完了待ち
+AND CR2005               ; 100msｸﾛｯｸﾊﾟﾙｽ
+@INC.D DM468             ; 作業差作業時間計測
+LDF R51603               ; 固定完了→作業完了待ち
+MOV.D DM468 DM466        ; 作業差作業時間計測  作業差作業時間
+DW.D #0 DM468            ; 作業差作業時間計測
+;Loging Data
+LDP R51009               ; 自動動作中ﾌﾞｻﾞｰON
+BMOV.D DM1000 DM1004 #98 ; Cycle Time Log  Cycle Time Log
+MOV.D DM462 DM1000       ; ｻｲｸﾙﾀｲﾑ  Cycle Time Log
+MOV.D DM466 DM1002       ; 作業差作業時間  Working Time Log
+END
+ENDH

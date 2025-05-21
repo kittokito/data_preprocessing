@@ -1,0 +1,1304 @@
+DEVICE:53
+;MODULE:除材PP
+;MODULE_TYPE:0
+;非常停止
+LD R53010                ; 非常停止
+OR R54200                ; TRAP
+ZRES @MR100 @MR3415
+LD R55515                ; ﾓｼﾞｭｰﾙｽﾃｰｼﾞﾘｾｯﾄ
+ZRES @MR100 @MR3415
+;条件ﾌﾗｸﾞ / Flug
+LDB R4307                ; PZT除材PP 後退端
+AND R4306                ; PZT除材PP 前進端
+ANB R4308                ; PZT除材PP ﾊﾝﾄﾞ下降端
+AND R4309                ; PZT除材PP ﾊﾝﾄﾞ上昇端
+ANB R4311                ; PZT除材PP 旋回端(CV側)
+AND R4310                ; PZT除材PP 旋回端(治具側)
+AND R56101               ; 除材P&P P1位置表示
+OUT @MR005               ; 除材PP部ｼﾘﾝﾀﾞ RB原位置
+LDB R53300               ; PAUSE中
+ANB R53112               ; 給除材PPｴﾗｰ中
+ANB R53108               ; ｴﾗｰ発生中
+OUT @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+;AUTO動作 / AUTO OPERATION
+LD R53011                ; AUTO MODE
+ANB R54701               ; 除材PP AUTO 動作中
+AND R54700               ; 除材PP AUTO ｽﾀｰﾄ
+LD LR41000               ; 自動ﾊﾟﾗﾒｰﾀ0　通常動作
+OR LR41001               ; 自動ﾊﾟﾗﾒｰﾀ1　払出動作
+OR LR41003               ; 自動ﾊﾟﾗﾒｰﾀ3　左ｱﾗｲﾒﾝﾄのみ動作
+OR LR41006               ; 自動ﾊﾟﾗﾒｰﾀ6　右ｱﾗｲﾒﾝﾄのみ動作
+LD LR41008               ; 自動ﾊﾟﾗﾒｰﾀ8
+LD LR41009               ; L側動作
+OR LR41010               ; R側動作
+ANL
+ORL
+LD LR41007               ; 自動ﾊﾟﾗﾒｰﾀ7　基準測定ﾓｰﾄﾞ
+LD LR41014               ; L側動作
+OR LR41015               ; R側動作
+ANL
+ORL
+ANL
+RES R54702               ; 除材PP AUTO 動作終了
+CON
+SET R54701               ; 除材PP AUTO 動作中
+CON
+RES R54700               ; 除材PP AUTO ｽﾀｰﾄ
+CON
+SET @MR2000
+STG @MR2000
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+MPS
+LD R54806                ; L側ｱﾗｲﾒﾝﾄ除材要求
+AND R54906               ; R側ｱﾗｲﾒﾝﾄ除材要求
+LD R54806                ; L側ｱﾗｲﾒﾝﾄ除材要求
+ANB R54906               ; R側ｱﾗｲﾒﾝﾄ除材要求
+ORL
+ANB R54612               ; L側搬送中
+ANB R54613               ; R側搬送中
+ANL
+JMP @MR2100              ; L側取りP除材開始
+MRD
+LDB R54806               ; L側ｱﾗｲﾒﾝﾄ除材要求
+AND R54906               ; R側ｱﾗｲﾒﾝﾄ除材要求
+ANB R54613               ; R側搬送中
+ANL
+JMP @MR2108              ; R側取りP除材開始
+MPP
+LDB R54806               ; L側ｱﾗｲﾒﾝﾄ除材要求
+ANB R54906               ; R側ｱﾗｲﾒﾝﾄ除材要求
+AND R55002               ; L側ﾜｰｸｾｯﾄ部 AUTO 動作終了
+AND R55102               ; R側ﾜｰｸｾｯﾄ部 AUTO 動作終了
+ANL
+JMP @MR2700              ; 終了処理へ
+;-------
+STG @MR2100              ; L側取りP除材開始
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+ANB R54711               ; 給材P&P L側給材中 
+ANB R54712               ; 給材P&P R側給材中 
+RES R54806               ; L側ｱﾗｲﾒﾝﾄ除材要求
+CON
+AND R4301                ; PZT給材PP 後退端(CV側)
+AND R4305                ; PZT給材PP 旋回戻り端(CV側)
+AND R43001               ; 給除材RB 給材側 P1
+SET R54705               ; L側取りP除材中
+CON
+RES MR6312               ; PZT除材PPﾊﾝﾄﾞ 前進（CV側）
+CON
+SET MR6313               ; PZT除材PPﾊﾝﾄﾞ 後退
+CON
+JMP @MR2101
+STG @MR2101
+SET @MR2900              ; PAUSE禁止
+CON
+JMP @MR2102
+STG @MR2102
+MPS
+AND MR14302              ; 除材P&P_移動完了
+JMP @MR2103
+MPP
+MCALL POINT_MOVE #2 #2 #4 MR14311 MR14302;除材P&P_位置決め異常  除材P&P_移動完了
+STG @MR2103
+RES MR14302              ; 除材P&P_移動完了
+CON
+ANB MR14302              ; 除材P&P_移動完了
+MPS
+AND R4307                ; PZT除材PP 後退端
+JMP @MR2104
+MPP
+LDB R4307                ; PZT除材PP 後退端
+AND R47201               ; 除材PP 後退端ｴﾗｰ
+ANL
+RES @MR2900              ; PAUSE禁止
+CON
+JMP @MR2112
+STG @MR2112
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+AND R4307                ; PZT除材PP 後退端
+ANB R47201               ; 除材PP 後退端ｴﾗｰ
+SET @MR2900              ; PAUSE禁止
+CON
+JMP @MR2103
+STG @MR2104
+RES MR6308               ; PZT除材PPﾊﾝﾄﾞ 旋回
+CON
+SET MR6309               ; PZT除材PPﾊﾝﾄﾞ 旋回戻
+CON
+JMP @MR2105
+STG @MR2105
+MPS
+AND MR14302              ; 除材P&P_移動完了
+JMP @MR2106
+MPP
+MCALL POINT_MOVE #2 #2 #2 MR14311 MR14302;除材P&P_位置決め異常  除材P&P_移動完了
+STG @MR2106
+RES MR14302              ; 除材P&P_移動完了
+CON
+ANB MR14302              ; 除材P&P_移動完了
+RES @MR2900              ; PAUSE禁止
+CON
+AND R4307                ; PZT除材PP 後退端
+AND R4311                ; PZT除材PP 旋回端(CV側)
+SET @MR2107              ; L側除材動作
+CON
+JMP @MR2200
+;-------
+STG @MR2108              ; R側取りP除材開始
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+ANB R54712               ; 給材P&P R側給材中 
+RES R54906               ; R側ｱﾗｲﾒﾝﾄ除材要求
+CON
+AND R4301                ; PZT給材PP 後退端(CV側)
+AND R4305                ; PZT給材PP 旋回戻り端(CV側)
+AND R43001               ; 給除材RB 給材側 P1
+SET R54706               ; R側取りP除材中
+CON
+RES MR6308               ; PZT除材PPﾊﾝﾄﾞ 旋回
+CON
+SET MR6309               ; PZT除材PPﾊﾝﾄﾞ 旋回戻
+CON
+RES MR6312               ; PZT除材PPﾊﾝﾄﾞ 前進（CV側）
+CON
+SET MR6313               ; PZT除材PPﾊﾝﾄﾞ 後退
+CON
+JMP @MR2109
+STG @MR2109
+SET @MR2900              ; PAUSE禁止
+CON
+JMP @MR2110
+STG @MR2110
+MPS
+AND MR14302              ; 除材P&P_移動完了
+JMP @MR2111
+MPP
+MCALL POINT_MOVE #2 #2 #3 MR14311 MR14302;除材P&P_位置決め異常  除材P&P_移動完了
+STG @MR2111
+RES MR14302              ; 除材P&P_移動完了
+CON
+ANB MR14302              ; 除材P&P_移動完了
+RES @MR2900              ; PAUSE禁止
+CON
+AND R4307                ; PZT除材PP 後退端
+AND R4311                ; PZT除材PP 旋回端(CV側)
+SET @MR2115              ; R側除材動作
+CON
+JMP @MR2200
+;-------
+STG @MR2200
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+SET MR6310               ; PZT除材PPﾊﾝﾄﾞ 下降
+CON
+AND R4308                ; PZT除材PP ﾊﾝﾄﾞ下降端
+JMP @MR2201
+STG @MR2201
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+RES MR7104               ; PZT除材PP Vac OFF
+CON
+RES MR7105               ; PZT除材PP Vacﾊｶｲ ON
+CON
+SET MR7103               ; PZT除材PP Vac ON
+CON
+MPS
+LD R4604                 ; PZT除材PP Vac検出
+OR R201                  ; ﾊﾟﾈﾙ内 停止ｽｲｯﾁ
+ANL
+JMP @MR2202
+MPP
+TMR #918 #50
+CON
+AND T918
+JMP @MR2211
+STG @MR2211
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+SET MR7104               ; PZT除材PP Vac OFF
+CON
+RES MR7105               ; PZT除材PP Vacﾊｶｲ ON
+CON
+RES MR7103               ; PZT除材PP Vac ON
+CON
+TMR #921 #5
+CON
+AND T921
+JMP @MR2201
+STG @MR2202
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+MPS
+LDB @MR2115              ; R側除材動作
+AND @MR2107              ; L側除材動作
+ANL
+SET R54614               ; L側ｱﾗｲﾒﾝﾄﾊｶｲON要求
+CON
+TMR #913 #1
+CON
+AND T913
+JMP @MR2203
+MPP
+LDB @MR2107              ; L側除材動作
+AND @MR2115              ; R側除材動作
+ANL
+SET R54615               ; R側ｱﾗｲﾒﾝﾄﾊｶｲON要求
+CON
+TMR #914 #1
+CON
+AND T914
+JMP @MR2203
+STG @MR2203
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+MPS
+LDB @MR2115              ; R側除材動作
+AND @MR2107              ; L側除材動作
+ANB R54614               ; L側ｱﾗｲﾒﾝﾄﾊｶｲON要求
+AND R4607                ; ﾜｰｸｾｯﾄ治具1 Vac OFF検出
+ANL
+RES MR6310               ; PZT除材PPﾊﾝﾄﾞ 下降
+CON
+AND R4309                ; PZT除材PP ﾊﾝﾄﾞ上昇端
+JMP @MR2400
+MPP
+LDB @MR2107              ; L側除材動作
+AND @MR2115              ; R側除材動作
+ANB R54615               ; R側ｱﾗｲﾒﾝﾄﾊｶｲON要求
+AND R4609                ; ﾜｰｸｾｯﾄ治具2 Vac OFF検出
+ANL
+RES MR6310               ; PZT除材PPﾊﾝﾄﾞ 下降
+CON
+AND R4309                ; PZT除材PP ﾊﾝﾄﾞ上昇端
+JMP @MR2408
+STG @MR2400
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+MPS
+AND R4604                ; PZT除材PP Vac検出
+SET R54709               ; L側 PZT吸着OK
+CON
+RES @MR2107              ; L側除材動作
+CON
+JMP @MR2204
+MRD
+AND @MR3508              ; STEP停止
+RES MR8000
+CON
+SET R54709               ; L側 PZT吸着OK
+CON
+RES @MR2107              ; L側除材動作
+CON
+JMP @MR2204
+MPP
+LDB R4604                ; PZT除材PP Vac検出
+ANB @MR3508              ; STEP停止
+ANL
+JMP @MR2401
+STG @MR2401
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+SET MR6600               ; ｾｯﾄ治具1 位置決Y 閉
+CON
+TMR @0 #5
+CON
+AND @T0
+SET MR6602               ; ｾｯﾄ治具1 位置決X 閉
+CON
+TMR @1 #5
+CON
+AND @T1
+JMP @MR2402
+STG @MR2402
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+SET MR7104               ; PZT除材PP Vac OFF
+CON
+RES MR7105               ; PZT除材PP Vacﾊｶｲ ON
+CON
+RES MR7103               ; PZT除材PP Vac ON
+CON
+SET MR6310               ; PZT除材PPﾊﾝﾄﾞ 下降
+CON
+AND R4308                ; PZT除材PP ﾊﾝﾄﾞ下降端
+RES MR6600               ; ｾｯﾄ治具1 位置決Y 閉
+CON
+RES MR6602               ; ｾｯﾄ治具1 位置決X 閉
+CON
+MPS
+ANB @MR3506
+JMP @MR2200
+MPP
+AND @MR3506
+@SET MR8000
+CON
+JMP @MR2200
+STG @MR2204
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+RES @MR3508              ; STEP停止
+CON
+MPS
+LD R53000                ; 自動運転中
+ANB R54709               ; L側 PZT吸着OK
+ANL
+JMP @MR2205
+MPP
+ANB R53000               ; 自動運転中
+@SET R54709              ; L側 PZT吸着OK
+CON
+JMP @MR2205
+STG @MR2205
+RES MR6309               ; PZT除材PPﾊﾝﾄﾞ 旋回戻
+CON
+SET MR6308               ; PZT除材PPﾊﾝﾄﾞ 旋回
+CON
+SET @MR2900              ; PAUSE禁止
+CON
+JMP @MR2206
+STG @MR2206
+MPS
+AND MR14302              ; 除材P&P_移動完了
+JMP @MR2207
+MPP
+MCALL POINT_MOVE #2 #2 #4 MR14311 MR14302;除材P&P_位置決め異常  除材P&P_移動完了
+STG @MR2207
+RES MR14302              ; 除材P&P_移動完了
+CON
+ANB MR14302              ; 除材P&P_移動完了
+MPS
+AND R4310                ; PZT除材PP 旋回端(治具側)
+JMP @MR2208
+MPP
+LDB R4310                ; PZT除材PP 旋回端(治具側)
+AND R47114               ; 除材PP 旋回端(治具側)ｴﾗｰ
+ANL
+RES @MR2900              ; PAUSE禁止
+CON
+JMP @MR2212
+STG @MR2212
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+AND R4310                ; PZT除材PP 旋回端(治具側)
+ANB R47114               ; 除材PP 旋回端(治具側)ｴﾗｰ
+SET @MR2900              ; PAUSE禁止
+CON
+JMP @MR2207
+STG @MR2208
+RES R54705               ; L側取りP除材中
+CON
+RES MR6313               ; PZT除材PPﾊﾝﾄﾞ 後退
+CON
+SET MR6312               ; PZT除材PPﾊﾝﾄﾞ 前進（CV側）
+CON
+JMP @MR2209
+STG @MR2209
+MPS
+AND MR14302              ; 除材P&P_移動完了
+JMP @MR2210
+MPP
+MCALL POINT_MOVE #2 #2 #1 MR14311 MR14302;除材P&P_位置決め異常  除材P&P_移動完了
+STG @MR2210
+RES MR14302              ; 除材P&P_移動完了
+CON
+ANB MR14302              ; 除材P&P_移動完了
+RES @MR2900              ; PAUSE禁止
+CON
+AND R4306                ; PZT除材PP 前進端
+JMP @MR2307
+;-------
+STG @MR2408
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+MPS
+AND R4604                ; PZT除材PP Vac検出
+SET R54710               ; R側 PZT吸着OK
+CON
+RES @MR2115              ; R側除材動作
+CON
+JMP @MR2300
+MRD
+AND @MR3708              ; STEP停止
+RES MR8008
+CON
+SET R54710               ; R側 PZT吸着OK
+CON
+RES @MR2115              ; R側除材動作
+CON
+JMP @MR2300
+MPP
+LDB R4604                ; PZT除材PP Vac検出
+ANB @MR3708              ; STEP停止
+ANL
+JMP @MR2409
+STG @MR2409
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+SET MR6508               ; ｾｯﾄ治具2 位置決Y 閉
+CON
+TMR @2 #5
+CON
+AND @T2
+SET MR6510               ; ｾｯﾄ治具2 位置決X 閉
+CON
+TMR @3 #5
+CON
+AND @T3
+JMP @MR2410
+STG @MR2410
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+SET MR7104               ; PZT除材PP Vac OFF
+CON
+RES MR7105               ; PZT除材PP Vacﾊｶｲ ON
+CON
+RES MR7103               ; PZT除材PP Vac ON
+CON
+SET MR6310               ; PZT除材PPﾊﾝﾄﾞ 下降
+CON
+AND R4308                ; PZT除材PP ﾊﾝﾄﾞ下降端
+RES MR6508               ; ｾｯﾄ治具2 位置決Y 閉
+CON
+RES MR6510               ; ｾｯﾄ治具2 位置決X 閉
+CON
+MPS
+ANB @MR3706
+JMP @MR2200
+MPP
+AND @MR3706
+@SET MR8008
+CON
+JMP @MR2200
+STG @MR2300
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+RES @MR3708              ; STEP停止
+CON
+MPS
+LD R53000                ; 自動運転中
+ANB R54710               ; R側 PZT吸着OK
+ANL
+JMP @MR2301
+MPP
+ANB R53000               ; 自動運転中
+@SET R54710              ; R側 PZT吸着OK
+CON
+JMP @MR2301
+STG @MR2301
+RES MR6309               ; PZT除材PPﾊﾝﾄﾞ 旋回戻
+CON
+SET MR6308               ; PZT除材PPﾊﾝﾄﾞ 旋回
+CON
+RES MR6313               ; PZT除材PPﾊﾝﾄﾞ 後退
+CON
+SET MR6312               ; PZT除材PPﾊﾝﾄﾞ 前進（CV側）
+CON
+SET @MR2900              ; PAUSE禁止
+CON
+JMP @MR2302
+STG @MR2302
+MPS
+AND MR14302              ; 除材P&P_移動完了
+JMP @MR2303
+MPP
+MCALL POINT_MOVE #2 #2 #1 MR14311 MR14302;除材P&P_位置決め異常  除材P&P_移動完了
+STG @MR2303
+RES MR14302              ; 除材P&P_移動完了
+CON
+ANB MR14302              ; 除材P&P_移動完了
+RES @MR2900              ; PAUSE禁止
+CON
+AND R4310                ; PZT除材PP 旋回端(治具側)
+AND R4306                ; PZT除材PP 前進端
+JMP @MR2307
+STG @MR2307
+AND R54507               ; 取りP除材準備OK
+RES R54706               ; R側取りP除材中
+CON
+RES R54507               ; 取りP除材準備OK
+CON
+JMP @MR2308
+STG @MR2308
+JMP @MR2309
+STG @MR2309
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+SET MR6310               ; PZT除材PPﾊﾝﾄﾞ 下降
+CON
+AND R4308                ; PZT除材PP ﾊﾝﾄﾞ下降端
+JMP @MR2310
+STG @MR2310
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+RES MR7103               ; PZT除材PP Vac ON
+CON
+SET MR7104               ; PZT除材PP Vac OFF
+CON
+SET MR7105               ; PZT除材PP Vacﾊｶｲ ON
+CON
+AND R4605                ; PZT除材PP Vac OFF検出
+TMR #911 #50             ; 除材P&P 真空ﾊｶｲ時間
+CON
+AND T911                 ; 除材P&P 真空ﾊｶｲ時間
+ANB MR914
+JMP @MR2311
+STG @MR2311
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+RES MR6310               ; PZT除材PPﾊﾝﾄﾞ 下降
+CON
+AND R4309                ; PZT除材PP ﾊﾝﾄﾞ上昇端
+SET R54604               ; 取りPｺﾝﾍﾞｱ排出完了
+CON
+RES MR7105               ; PZT除材PP Vacﾊｶｲ ON
+CON
+JMP @MR2312
+STG @MR2312
+MPS
+LDB R53002               ; STEP動作中
+ANB R54604               ; 取りPｺﾝﾍﾞｱ排出完了
+ANL
+@INC.D DM352             ; OUTPUT
+CON
+JMP @MR2313
+MPP
+AND R53002               ; STEP動作中
+JMP @MR2314
+STG @MR2313
+RES R54706               ; R側取りP除材中
+CON
+RES R54705               ; L側取りP除材中
+CON
+SET @MR2000
+CON
+ENDS
+STG @MR2314
+RES R54706               ; R側取りP除材中
+CON
+RES R54705               ; L側取りP除材中
+CON
+SET @MR3615              ; STEP終了
+CON
+ENDS
+;-------
+STG @MR2700              ; 終了処理へ
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+RES R54701               ; 除材PP AUTO 動作中
+CON
+SET R54702               ; 除材PP AUTO 動作終了
+CON
+ENDS
+LD @MR2107               ; L側除材動作
+OR @MR2115               ; R側除材動作
+OUT R54703               ; 除材動作中
+;STEP /
+;-------
+LD LR41102               ; STEP L側取りP除材
+ANB R53210               ; STEPｻｲｸﾙ終了
+ANP R53211               ; STEP動作開始
+RES R53211               ; STEP動作開始
+CON
+SET @MR3000              ; STEP-2、3　動作開始
+STG @MR3000              ; STEP-2、3　動作開始
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+MPS
+AND R4407                ; 治具1COF旋回戻り端
+SET MR6104               ; 除材部ﾊﾞｯｸｱｯﾌﾟ 上昇
+CON
+AND R4112                ; 除材部ﾊﾞｯｸｱｯﾌﾟ 上昇端
+OUT R53400               ; Call Post
+CON
+AND R53402               ; Post Ok
+JMP @MR3001
+MPP
+ANB R4407                ; 治具1COF旋回戻り端
+JMP @MR3201
+STG @MR3001
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+SET MR6100               ; 除材部ｸﾗﾝﾌﾟ 前進
+CON
+AND R4200                ; 除材部ｸﾗﾝﾌﾟ 前進端
+OUT R53400               ; Call Post
+CON
+AND R53402               ; Post Ok
+JMP @MR3006
+STG @MR3006
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+RES MR6600               ; ｾｯﾄ治具1 位置決Y 閉
+CON
+RES MR6602               ; ｾｯﾄ治具1 位置決X 閉
+CON
+TMR #823 #3
+CON
+AND T823
+OUT R53400               ; Call Post
+CON
+AND R53402               ; Post Ok
+JMP @MR3011
+STG @MR3011
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+RES MR6312               ; PZT除材PPﾊﾝﾄﾞ 前進（CV側）
+CON
+SET MR6313               ; PZT除材PPﾊﾝﾄﾞ 後退
+CON
+AND R4307                ; PZT除材PP 後退端
+OUT R53400               ; Call Post
+CON
+AND R53402               ; Post Ok
+JMP @MR3013
+STG @MR3013
+MPS
+AND MR14302              ; 除材P&P_移動完了
+JMP @MR3014
+MPP
+MCALL POINT_MOVE #2 #2 #4 MR14311 MR14302;除材P&P_位置決め異常  除材P&P_移動完了
+STG @MR3014
+RES MR14302              ; 除材P&P_移動完了
+CON
+ANB MR14302              ; 除材P&P_移動完了
+OUT R53400               ; Call Post
+CON
+AND R53402               ; Post Ok
+JMP @MR3015
+STG @MR3015
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+RES MR6308               ; PZT除材PPﾊﾝﾄﾞ 旋回
+CON
+SET MR6309               ; PZT除材PPﾊﾝﾄﾞ 旋回戻
+CON
+AND R4311                ; PZT除材PP 旋回端(CV側)
+OUT R53400               ; Call Post
+CON
+AND R53402               ; Post Ok
+JMP @MR3100
+STG @MR3100
+MPS
+AND MR14302              ; 除材P&P_移動完了
+JMP @MR3101
+MPP
+MCALL POINT_MOVE #2 #2 #2 MR14311 MR14302;除材P&P_位置決め異常  除材P&P_移動完了
+STG @MR3101
+RES MR14302              ; 除材P&P_移動完了
+CON
+ANB MR14302              ; 除材P&P_移動完了
+OUT R53400               ; Call Post
+CON
+AND R53402               ; Post Ok
+JMP @MR3102
+STG @MR3102
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+SET MR6310               ; PZT除材PPﾊﾝﾄﾞ 下降
+CON
+AND R4308                ; PZT除材PP ﾊﾝﾄﾞ下降端
+OUT R53400               ; Call Post
+CON
+AND R53402               ; Post Ok
+JMP @MR3103
+STG @MR3103
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+RES MR7104               ; PZT除材PP Vac OFF
+CON
+RES MR7105               ; PZT除材PP Vacﾊｶｲ ON
+CON
+SET MR7103               ; PZT除材PP Vac ON
+CON
+TMR #828 #3
+CON
+AND T828
+OUT R53400               ; Call Post
+CON
+AND R53402               ; Post Ok
+JMP @MR3104
+STG @MR3104
+RES MR6905               ; ｾｯﾄ治具1 COF Vac ON
+CON
+SET MR6904               ; ｾｯﾄ治具1 COF Vac ﾊｶｲ
+CON
+TMR #829 #3
+CON
+AND T829
+OUT R53400               ; Call Post
+CON
+AND R53402               ; Post Ok
+JMP @MR3105
+STG @MR3105
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+RES MR6310               ; PZT除材PPﾊﾝﾄﾞ 下降
+CON
+AND R4309                ; PZT除材PP ﾊﾝﾄﾞ上昇端
+RES MR6903               ; ｾｯﾄ治具2 COF Vac ON
+CON
+RES MR6904               ; ｾｯﾄ治具1 COF Vac ﾊｶｲ
+CON
+OUT R53400               ; Call Post
+CON
+AND R53402               ; Post Ok
+JMP @MR3107
+STG @MR3107
+MPS
+AND MR14302              ; 除材P&P_移動完了
+JMP @MR3108
+MPP
+MCALL POINT_MOVE #2 #2 #4 MR14311 MR14302;除材P&P_位置決め異常  除材P&P_移動完了
+STG @MR3108
+RES MR14302              ; 除材P&P_移動完了
+CON
+ANB MR14302              ; 除材P&P_移動完了
+OUT R53400               ; Call Post
+CON
+AND R53402               ; Post Ok
+JMP @MR3106
+STG @MR3106
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+RES MR6309               ; PZT除材PPﾊﾝﾄﾞ 旋回戻
+CON
+SET MR6308               ; PZT除材PPﾊﾝﾄﾞ 旋回
+CON
+AND R4310                ; PZT除材PP 旋回端(治具側)
+OUT R53400               ; Call Post
+CON
+AND R53402               ; Post Ok
+JMP @MR3109
+STG @MR3109
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+RES MR6313               ; PZT除材PPﾊﾝﾄﾞ 後退
+CON
+SET MR6312               ; PZT除材PPﾊﾝﾄﾞ 前進（CV側）
+CON
+AND R4306                ; PZT除材PP 前進端
+OUT R53400               ; Call Post
+CON
+AND R53402               ; Post Ok
+JMP @MR3110
+STG @MR3110
+MPS
+AND MR14302              ; 除材P&P_移動完了
+JMP @MR3111
+MPP
+MCALL POINT_MOVE #2 #2 #1 MR14311 MR14302;除材P&P_位置決め異常  除材P&P_移動完了
+STG @MR3111
+RES MR14302              ; 除材P&P_移動完了
+CON
+ANB MR14302              ; 除材P&P_移動完了
+OUT R53400               ; Call Post
+CON
+AND R53402               ; Post Ok
+JMP @MR3112
+STG @MR3112
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+SET MR6310               ; PZT除材PPﾊﾝﾄﾞ 下降
+CON
+AND R4308                ; PZT除材PP ﾊﾝﾄﾞ下降端
+OUT R53400               ; Call Post
+CON
+AND R53402               ; Post Ok
+JMP @MR3113
+STG @MR3113
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+SET MR7104               ; PZT除材PP Vac OFF
+CON
+SET MR7105               ; PZT除材PP Vacﾊｶｲ ON
+CON
+RES MR7103               ; PZT除材PP Vac ON
+CON
+TMR #831 #3
+CON
+AND T831
+OUT R53400               ; Call Post
+CON
+AND R53402               ; Post Ok
+JMP @MR3114
+STG @MR3114
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+RES MR6310               ; PZT除材PPﾊﾝﾄﾞ 下降
+CON
+AND R4309                ; PZT除材PP ﾊﾝﾄﾞ上昇端
+RES MR7105               ; PZT除材PP Vacﾊｶｲ ON
+CON
+OUT R53400               ; Call Post
+CON
+AND R53402               ; Post Ok
+JMP @MR3115
+STG @MR3115
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+RES MR6100               ; 除材部ｸﾗﾝﾌﾟ 前進
+CON
+AND R4201                ; 除材部ｸﾗﾝﾌﾟ 後退端
+OUT R53400               ; Call Post
+CON
+AND R53402               ; Post Ok
+JMP @MR3200
+STG @MR3200
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+RES MR6104               ; 除材部ﾊﾞｯｸｱｯﾌﾟ 上昇
+CON
+AND R4113                ; 除材部ﾊﾞｯｸｱｯﾌﾟ 下降端
+OUT R53400               ; Call Post
+CON
+AND R53402               ; Post Ok
+JMP @MR3201
+STG @MR3201
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+SET R53210               ; STEPｻｲｸﾙ終了
+CON
+ENDS
+LD LR41103               ; STEP R側取りP除材
+ANB R53210               ; STEPｻｲｸﾙ終了
+ANP R53211               ; STEP動作開始
+RES R53211               ; STEP動作開始
+CON
+SET @MR3300
+STG @MR3300
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+MPS
+AND R4415                ; 治具2COF旋回戻り端
+SET MR6104               ; 除材部ﾊﾞｯｸｱｯﾌﾟ 上昇
+CON
+AND R4112                ; 除材部ﾊﾞｯｸｱｯﾌﾟ 上昇端
+OUT R53400               ; Call Post
+CON
+AND R53402               ; Post Ok
+JMP @MR3301
+MPP
+ANB R4415                ; 治具2COF旋回戻り端
+JMP @MR3407
+STG @MR3301
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+SET MR6100               ; 除材部ｸﾗﾝﾌﾟ 前進
+CON
+AND R4200                ; 除材部ｸﾗﾝﾌﾟ 前進端
+OUT R53400               ; Call Post
+CON
+AND R53402               ; Post Ok
+JMP @MR3305
+STG @MR3305
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+RES MR6508               ; ｾｯﾄ治具2 位置決Y 閉
+CON
+RES MR6510               ; ｾｯﾄ治具2 位置決X 閉
+CON
+TMR #827 #3
+CON
+AND T827
+OUT R53400               ; Call Post
+CON
+AND R53402               ; Post Ok
+JMP @MR3306
+STG @MR3306
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+RES MR6308               ; PZT除材PPﾊﾝﾄﾞ 旋回
+CON
+SET MR6309               ; PZT除材PPﾊﾝﾄﾞ 旋回戻
+CON
+AND R4311                ; PZT除材PP 旋回端(CV側)
+OUT R53400               ; Call Post
+CON
+AND R53402               ; Post Ok
+JMP @MR3307
+STG @MR3307
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+RES MR6312               ; PZT除材PPﾊﾝﾄﾞ 前進（CV側）
+CON
+SET MR6313               ; PZT除材PPﾊﾝﾄﾞ 後退
+CON
+AND R4307                ; PZT除材PP 後退端
+OUT R53400               ; Call Post
+CON
+AND R53402               ; Post Ok
+JMP @MR3308
+STG @MR3308
+MPS
+AND MR14302              ; 除材P&P_移動完了
+JMP @MR3309
+MPP
+MCALL POINT_MOVE #2 #2 #3 MR14311 MR14302;除材P&P_位置決め異常  除材P&P_移動完了
+STG @MR3309
+RES MR14302              ; 除材P&P_移動完了
+CON
+ANB MR14302              ; 除材P&P_移動完了
+OUT R53400               ; Call Post
+CON
+AND R53402               ; Post Ok
+JMP @MR3310
+STG @MR3310
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+SET MR6310               ; PZT除材PPﾊﾝﾄﾞ 下降
+CON
+AND R4308                ; PZT除材PP ﾊﾝﾄﾞ下降端
+OUT R53400               ; Call Post
+CON
+AND R53402               ; Post Ok
+JMP @MR3311
+STG @MR3311
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+RES MR7104               ; PZT除材PP Vac OFF
+CON
+RES MR7105               ; PZT除材PP Vacﾊｶｲ ON
+CON
+SET MR7103               ; PZT除材PP Vac ON
+CON
+TMR #814 #3
+CON
+AND T814
+OUT R53400               ; Call Post
+CON
+AND R53402               ; Post Ok
+JMP @MR3312
+STG @MR3312
+RES MR6903               ; ｾｯﾄ治具2 COF Vac ON
+CON
+SET MR6902               ; ｾｯﾄ治具2 COF Vac ﾊｶｲ
+CON
+TMR #830 #3
+CON
+AND T830
+OUT R53400               ; Call Post
+CON
+AND R53402               ; Post Ok
+JMP @MR3313
+STG @MR3313
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+RES MR6310               ; PZT除材PPﾊﾝﾄﾞ 下降
+CON
+AND R4309                ; PZT除材PP ﾊﾝﾄﾞ上昇端
+RES MR6903               ; ｾｯﾄ治具2 COF Vac ON
+CON
+RES MR6902               ; ｾｯﾄ治具2 COF Vac ﾊｶｲ
+CON
+OUT R53400               ; Call Post
+CON
+AND R53402               ; Post Ok
+JMP @MR3315
+STG @MR3315
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+RES MR6313               ; PZT除材PPﾊﾝﾄﾞ 後退
+CON
+SET MR6312               ; PZT除材PPﾊﾝﾄﾞ 前進（CV側）
+CON
+AND R4306                ; PZT除材PP 前進端
+OUT R53400               ; Call Post
+CON
+AND R53402               ; Post Ok
+JMP @MR3314
+STG @MR3314
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+RES MR6309               ; PZT除材PPﾊﾝﾄﾞ 旋回戻
+CON
+SET MR6308               ; PZT除材PPﾊﾝﾄﾞ 旋回
+CON
+AND R4310                ; PZT除材PP 旋回端(治具側)
+OUT R53400               ; Call Post
+CON
+AND R53402               ; Post Ok
+JMP @MR3400
+STG @MR3400
+MPS
+AND MR14302              ; 除材P&P_移動完了
+JMP @MR3401
+MPP
+MCALL POINT_MOVE #2 #2 #1 MR14311 MR14302;除材P&P_位置決め異常  除材P&P_移動完了
+STG @MR3401
+RES MR14302              ; 除材P&P_移動完了
+CON
+ANB MR14302              ; 除材P&P_移動完了
+OUT R53400               ; Call Post
+CON
+AND R53402               ; Post Ok
+JMP @MR3402
+STG @MR3402
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+SET MR6310               ; PZT除材PPﾊﾝﾄﾞ 下降
+CON
+AND R4308                ; PZT除材PP ﾊﾝﾄﾞ下降端
+OUT R53400               ; Call Post
+CON
+AND R53402               ; Post Ok
+JMP @MR3403
+STG @MR3403
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+SET MR7104               ; PZT除材PP Vac OFF
+CON
+SET MR7105               ; PZT除材PP Vacﾊｶｲ ON
+CON
+RES MR7103               ; PZT除材PP Vac ON
+CON
+TMR #815 #3
+CON
+AND T815
+OUT R53400               ; Call Post
+CON
+AND R53402               ; Post Ok
+JMP @MR3404
+STG @MR3404
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+RES MR6310               ; PZT除材PPﾊﾝﾄﾞ 下降
+CON
+AND R4309                ; PZT除材PP ﾊﾝﾄﾞ上昇端
+RES MR7105               ; PZT除材PP Vacﾊｶｲ ON
+CON
+OUT R53400               ; Call Post
+CON
+AND R53402               ; Post Ok
+JMP @MR3405
+STG @MR3405
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+RES MR6100               ; 除材部ｸﾗﾝﾌﾟ 前進
+CON
+AND R4201                ; 除材部ｸﾗﾝﾌﾟ 後退端
+OUT R53400               ; Call Post
+CON
+AND R53402               ; Post Ok
+JMP @MR3406
+STG @MR3406
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+RES MR6104               ; 除材部ﾊﾞｯｸｱｯﾌﾟ 上昇
+CON
+AND R4113                ; 除材部ﾊﾞｯｸｱｯﾌﾟ 下降端
+OUT R53400               ; Call Post
+CON
+AND R53402               ; Post Ok
+JMP @MR3407
+STG @MR3407
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+SET R53210               ; STEPｻｲｸﾙ終了
+CON
+ENDS
+;-------
+LD LR41107               ; STEP 7
+ANB R53210               ; STEPｻｲｸﾙ終了
+ANP R53211               ; STEP動作開始
+RES R53211               ; STEP動作開始
+CON
+SET @MR3500
+STG @MR3500
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+MPS
+AND R4407                ; 治具1COF旋回戻り端
+RES MR6904               ; ｾｯﾄ治具1 COF Vac ﾊｶｲ
+CON
+SET MR6905               ; ｾｯﾄ治具1 COF Vac ON
+CON
+TMR #1004 #5
+CON
+AND T1004
+JMP @MR3501
+MPP
+ANB R4407                ; 治具1COF旋回戻り端
+JMP @MR3507
+STG @MR3501
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+SET MR6104               ; 除材部ﾊﾞｯｸｱｯﾌﾟ 上昇
+CON
+AND R4112                ; 除材部ﾊﾞｯｸｱｯﾌﾟ 上昇端
+JMP @MR3502
+STG @MR3502
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+SET MR6100               ; 除材部ｸﾗﾝﾌﾟ 前進
+CON
+AND R4200                ; 除材部ｸﾗﾝﾌﾟ 前進端
+SET R54507               ; 取りP除材準備OK
+CON
+JMP @MR3503
+STG @MR3503
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+RES MR6904               ; ｾｯﾄ治具1 COF Vac ﾊｶｲ
+CON
+SET MR6905               ; ｾｯﾄ治具1 COF Vac ON
+CON
+TMR #1000 #5
+CON
+AND T1000
+JMP @MR3504
+STG @MR3504
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+SET MR6600               ; ｾｯﾄ治具1 位置決Y 閉
+CON
+TMR #1001 #5
+CON
+AND T1001
+JMP @MR3505
+STG @MR3505
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+SET MR6602               ; ｾｯﾄ治具1 位置決X 閉
+CON
+TMR #1002 #5
+CON
+AND T1002
+SET @MR3600
+CON
+SET @MR2100              ; L側取りP除材開始
+CON
+JMP @MR3506
+STG @MR3506
+MPS
+AND @MR3615              ; STEP終了
+RES MR6600               ; ｾｯﾄ治具1 位置決Y 閉
+CON
+RES MR6602               ; ｾｯﾄ治具1 位置決X 閉
+CON
+RES MR6104               ; 除材部ﾊﾞｯｸｱｯﾌﾟ 上昇
+CON
+RES MR6100               ; 除材部ｸﾗﾝﾌﾟ 前進
+CON
+RES @MR3615              ; STEP終了
+CON
+SET R53210               ; STEPｻｲｸﾙ終了
+CON
+ENDS
+MPP
+ANP R201                 ; ﾊﾟﾈﾙ内 停止ｽｲｯﾁ
+SET @MR3508              ; STEP停止
+STG @MR3507
+RES MR6600               ; ｾｯﾄ治具1 位置決Y 閉
+CON
+RES MR6602               ; ｾｯﾄ治具1 位置決X 閉
+CON
+RES MR6104               ; 除材部ﾊﾞｯｸｱｯﾌﾟ 上昇
+CON
+RES MR6100               ; 除材部ｸﾗﾝﾌﾟ 前進
+CON
+RES @MR3615              ; STEP終了
+CON
+SET R53210               ; STEPｻｲｸﾙ終了
+CON
+ENDS
+;-------
+LD LR41108               ; STEP 8
+ANB R53210               ; STEPｻｲｸﾙ終了
+ANP R53211               ; STEP動作開始
+RES R53211               ; STEP動作開始
+CON
+SET @MR3700
+STG @MR3700
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+MPS
+AND R4415                ; 治具2COF旋回戻り端
+RES MR6902               ; ｾｯﾄ治具2 COF Vac ﾊｶｲ
+CON
+SET MR6903               ; ｾｯﾄ治具2 COF Vac ON
+CON
+TMR #1010 #5
+CON
+AND T1010
+JMP @MR3701
+MPP
+ANB R4415                ; 治具2COF旋回戻り端
+JMP @MR3707
+STG @MR3701
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+SET MR6104               ; 除材部ﾊﾞｯｸｱｯﾌﾟ 上昇
+CON
+AND R4112                ; 除材部ﾊﾞｯｸｱｯﾌﾟ 上昇端
+JMP @MR3702
+STG @MR3702
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+SET MR6100               ; 除材部ｸﾗﾝﾌﾟ 前進
+CON
+AND R4200                ; 除材部ｸﾗﾝﾌﾟ 前進端
+SET R54507               ; 取りP除材準備OK
+CON
+JMP @MR3703
+STG @MR3703
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+RES MR6902               ; ｾｯﾄ治具2 COF Vac ﾊｶｲ
+CON
+SET MR6903               ; ｾｯﾄ治具2 COF Vac ON
+CON
+TMR #1011 #5
+CON
+AND T1011
+JMP @MR3704
+STG @MR3704
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+SET MR6508               ; ｾｯﾄ治具2 位置決Y 閉
+CON
+TMR #1012 #5
+CON
+AND T1012
+JMP @MR3705
+STG @MR3705
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+SET MR6510               ; ｾｯﾄ治具2 位置決X 閉
+CON
+TMR #1013 #5
+CON
+AND T1013
+SET @MR3607
+CON
+SET @MR2108              ; R側取りP除材開始
+CON
+JMP @MR3706
+STG @MR3706
+MPS
+AND @MR3615              ; STEP終了
+RES MR6508               ; ｾｯﾄ治具2 位置決Y 閉
+CON
+RES MR6510               ; ｾｯﾄ治具2 位置決X 閉
+CON
+RES MR6104               ; 除材部ﾊﾞｯｸｱｯﾌﾟ 上昇
+CON
+RES MR6100               ; 除材部ｸﾗﾝﾌﾟ 前進
+CON
+RES @MR3615              ; STEP終了
+CON
+SET R53210               ; STEPｻｲｸﾙ終了
+CON
+ENDS
+MPP
+ANP R201                 ; ﾊﾟﾈﾙ内 停止ｽｲｯﾁ
+SET @MR3708              ; STEP停止
+STG @MR3707
+RES MR6508               ; ｾｯﾄ治具2 位置決Y 閉
+CON
+RES MR6510               ; ｾｯﾄ治具2 位置決X 閉
+CON
+RES MR6104               ; 除材部ﾊﾞｯｸｱｯﾌﾟ 上昇
+CON
+RES MR6100               ; 除材部ｸﾗﾝﾌﾟ 前進
+CON
+RES @MR3615              ; STEP終了
+CON
+SET R53210               ; STEPｻｲｸﾙ終了
+CON
+ENDS
+STG @MR3600
+ANB R54806               ; L側ｱﾗｲﾒﾝﾄ除材要求
+AND R54705               ; L側取りP除材中
+JMP @MR3601
+STG @MR3601
+AND R54614               ; L側ｱﾗｲﾒﾝﾄﾊｶｲON要求
+RES MR6600               ; ｾｯﾄ治具1 位置決Y 閉
+CON
+RES MR6602               ; ｾｯﾄ治具1 位置決X 閉
+CON
+TMR #1003 #2
+CON
+AND T1003
+RES MR6905               ; ｾｯﾄ治具1 COF Vac ON
+CON
+SET MR6904               ; ｾｯﾄ治具1 COF Vac ﾊｶｲ
+CON
+JMP @MR3602
+STG @MR3602
+RES R54614               ; L側ｱﾗｲﾒﾝﾄﾊｶｲON要求
+CON
+AND R4309                ; PZT除材PP ﾊﾝﾄﾞ上昇端
+RES MR6904               ; ｾｯﾄ治具1 COF Vac ﾊｶｲ
+CON
+RES MR6905               ; ｾｯﾄ治具1 COF Vac ON
+CON
+ENDS
+STG @MR3607
+ANB R54906               ; R側ｱﾗｲﾒﾝﾄ除材要求
+AND R54706               ; R側取りP除材中
+JMP @MR3608
+STG @MR3608
+AND R54615               ; R側ｱﾗｲﾒﾝﾄﾊｶｲON要求
+RES MR6508               ; ｾｯﾄ治具2 位置決Y 閉
+CON
+RES MR6510               ; ｾｯﾄ治具2 位置決X 閉
+CON
+TMR #1014 #2
+CON
+AND T1014
+RES MR6903               ; ｾｯﾄ治具2 COF Vac ON
+CON
+SET MR6902               ; ｾｯﾄ治具2 COF Vac ﾊｶｲ
+CON
+JMP @MR3609
+STG @MR3609
+RES R54615               ; R側ｱﾗｲﾒﾝﾄﾊｶｲON要求
+CON
+AND R4309                ; PZT除材PP ﾊﾝﾄﾞ上昇端
+RES MR6902               ; ｾｯﾄ治具2 COF Vac ﾊｶｲ
+CON
+RES MR6903               ; ｾｯﾄ治具2 COF Vac ON
+CON
+ENDS
+;ｱﾗｰﾑ / ALARM
+;-------　（PACK管理）
+LD @MR2900               ; PAUSE禁止
+OUT R54402               ; 除材P&P部 PACK
+END
+ENDH

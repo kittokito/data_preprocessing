@@ -1,0 +1,692 @@
+DEVICE:128
+;MODULE:MAIN
+;MODULE_TYPE:0
+;SCRIPT_TYPE:
+;□□　　ダミー接点　　□□
+LD CR2003                ; 常時OFF
+OUT M0                   ; 常時OFF
+LD CR3905                ; 重度ｴﾗｰ発生中
+INV
+OUT M1                   ; CPU正常
+LD CR2008                ; 運転開始時1ｽｷｬﾝON
+OUT M2                   ; 1ｽｷｬﾝON
+LD CR2002                ; 常時ON
+ANB T2                   ; 0.3Secｸﾛｯｸ
+TMH K1 K30               ; 0.3Secｸﾛｯｸ
+LD T1                    ; 0.3Secｸﾛｯｸ
+TMH K2 K30               ; 0.3Secｸﾛｯｸ
+LD CR2002                ; 常時ON
+ANB T5                   ; ﾌﾞｻﾞｰ音程ﾀｲﾏ
+TMH K4 K5                ; ﾌﾞｻﾞｰ音程ﾀｲﾏ1
+LD T4                    ; ﾌﾞｻﾞｰ音程ﾀｲﾏ1
+TMH K5 K25               ; ﾌﾞｻﾞｰ音程ﾀｲﾏ
+;□□　安全関連入力受け　□□
+;使用しない部分は常時ON
+LD CR2002                ; 常時ON
+OUT M128                 ; 圧空正常
+LD X00                   ; 非常停止(ON正常)
+OUT M129                 ; 非常停止正常
+LD CR2002                ; 常時ON
+OUT M130                 ; 外部非常停止正常
+LD CR2002                ; 常時ON
+OUT M131                 ; 安全扉正常
+LD X01                   ; ﾗｲﾄｶｰﾃﾝ(OUT1)
+AND X02                  ; ﾗｲﾄｶｰﾃﾝ(OUT2)
+OR CR2002                ; 常時ON
+OUT M132                 ; ｴﾘｱｾﾝｻ正常
+LD X01                   ; ﾗｲﾄｶｰﾃﾝ(OUT1)
+AND X02                  ; ﾗｲﾄｶｰﾃﾝ(OUT2)
+TMR K150 K5              ; ﾗｲﾄｶｰﾃﾝOK
+;<h1/>__□ ｽｲｯﾁ変換
+;操作系の入力は一旦ここで受ける。
+LD CR2003                ; 常時OFF
+OUT M7                   ; 空運転PB
+LD B1001                 ; 自動SW(TP)
+ANB B1003                ; 手動SW(TP)
+OUT M10                  ; 自動PB
+LD B1003                 ; 手動SW(TP)
+ANB B1001                ; 自動SW(TP)
+OUT M11                  ; 手動PB
+LD CR2002                ; 常時ON
+OUT M12                  ; 運転準備入PB
+LD CR2003                ; 常時OFF
+OUT M13                  ; 運転準備切PB
+LD X04                   ; NGﾘｾｯﾄSW
+OR B1002                 ; ﾌﾞｻﾞｰ停止SW(TP)
+OUT M15                  ; ﾌﾞｻﾞｰ停止PB
+LD X04                   ; NGﾘｾｯﾄSW
+OUT M16                  ; ﾘｾｯﾄPB
+LD B1000                 ; 原点復帰SW(TP)
+OUT M17                  ; 原点復帰PB
+LD CR2002                ; 常時ON
+OUT M18                  ; 起動PB
+LD CR2003                ; 常時OFF
+TMR K15 K50              ; 強制停止
+OUT M19                  ; 停止PB
+LD CR2003                ; 常時OFF
+MPS
+TMR K16 K20              ; 終了PB_ONﾃﾞｨﾚｲ
+MPP
+AND T16                  ; 終了PB_ONﾃﾞｨﾚｲ
+OUT M20                  ; 終了PB
+LD CR2003                ; 常時OFF
+MPS
+TMR K17 K20              ; 払出PB_ONﾃﾞｨﾚｲ
+MPP
+AND T17                  ; 払出PB_ONﾃﾞｨﾚｲ
+OUT M21                  ; 払出PB
+;治具ＩＤ入力受け
+LD CR2002                ; 常時ON
+MPS
+AND X07                  ; 治具ID1
+TMR K405 K3              ; 治具ID_1
+MRD
+AND T405                 ; 治具ID_1
+OUT D2012.0
+MRD
+AND X08                  ; 治具ID2
+TMR K406 K3              ; 治具ID_2
+MRD
+AND T406                 ; 治具ID_2
+OUT D2012.1
+MRD
+AND X09                  ; 治具ID3
+TMR K407 K3              ; 治具ID_3
+MPP
+AND T407                 ; 治具ID_3
+OUT D2012.2
+LD CR2002                ; 常時ON
+ANB M49                  ; 全ﾕﾆｯﾄ起動中
+LD>= D2012 K1            ; 治具ID_No.
+AND<= D2012 K7           ; 治具ID_No.
+OR= D2012 K0             ; 治具ID_No.
+ANL
+MOV D2012 D2020          ; 治具ID_No.  動作設定No (自動ﾓｰﾄﾞで確定)
+LD CR2002                ; 常時ON
+MPS
+AND<> D2012 K0           ; 治具ID_No.
+LDA D2020                ; 動作設定No (自動ﾓｰﾄﾞで確定)
+CON
+SUB K0
+CON
+MUL K10
+CON
+STA D290                 ; JIGNO.間接指定
+MRD
+AND= D2012 K0            ; 治具ID_No.
+DW K0 D290               ; JIGNO.間接指定
+MPP
+SMOV "less" D190
+;□□　　各モード選択　　□□
+;自動・手動モード
+LDP M10                  ; 自動PB
+ANB M66                  ; 主幹異常(ｻｲｸﾙ停止)
+ANB M32                  ; 自動ﾓｰﾄﾞ
+AND M48                  ; 全ﾕﾆｯﾄ原点
+ANB M103                 ; 原点復帰要求
+LD M32                   ; 自動ﾓｰﾄﾞ
+ANB M33                  ; 手動ﾓｰﾄﾞ
+AND M63                  ; 運転準備完了
+ORL
+OUT M32                  ; 自動ﾓｰﾄﾞ
+LDP M11                  ; 手動PB
+ANB M49                  ; 全ﾕﾆｯﾄ起動中
+ANB M33                  ; 手動ﾓｰﾄﾞ
+OR T51                   ; 手動ﾓｰﾄﾞ移行ﾀｲﾏ
+OR= D2012 K0             ; 治具ID_No.
+LD M33                   ; 手動ﾓｰﾄﾞ
+ANB M32                  ; 自動ﾓｰﾄﾞ
+ORL
+OUT M33                  ; 手動ﾓｰﾄﾞ
+LDB M48                  ; 全ﾕﾆｯﾄ原点
+ANB M81                  ; 自動運転開始BZ
+ANB M49                  ; 全ﾕﾆｯﾄ起動中
+AND CR2003               ; 常時OFF
+TMR K51 K10              ; 手動ﾓｰﾄﾞ移行ﾀｲﾏ
+;この手動操作可条件はメインのみの条件
+;ユニット毎に必要な条件は各ユニットへ追加する
+LD M128                  ; 圧空正常
+AND M129                 ; 非常停止正常
+AND M130                 ; 外部非常停止正常
+AND M131                 ; 安全扉正常
+AND M132                 ; ｴﾘｱｾﾝｻ正常
+OUT M34                  ; ﾒｲﾝ手動操作可能条件
+;□□　　装置状態集約　　□□
+;■装置原点
+LD M2384                 ; ﾕﾆｯﾄ1原点
+LDB X06                  ; ﾜｰｸ在席確認(ON=有)
+OR M999                  ; 暫定修正　小池
+ANL
+ANB X05                  ; NGﾜｰｸ確認(ON=有)
+AND X0A                  ; ﾜｰｸ浮き確認(手前)(OFF=浮き)
+AND X0B                  ; ﾜｰｸ浮き確認(奥)(OFF=浮き)
+OUT M48                  ; 全ﾕﾆｯﾄ原点
+;■起動中
+LDB M2389                ; ﾕﾆｯﾄ1起動中
+INV
+OUT M49                  ; 全ﾕﾆｯﾄ起動中
+;■原点復帰中
+LDB M2388                ; ﾕﾆｯﾄ1原点復帰中
+INV
+OUT M50                  ; 全ﾕﾆｯﾄ原点復帰中
+;■装置停止中
+LDB M49                  ; 全ﾕﾆｯﾄ起動中
+ANB M50                  ; 全ﾕﾆｯﾄ原点復帰中
+OUT M51                  ; 装置停止中
+;■運転準備
+LD CR2007                ; 運転開始時1ｽｷｬﾝOFF
+TMR K0 K20               ; 電源投入0Nﾃﾞｨﾚｲ
+LD T0                    ; 電源投入0Nﾃﾞｨﾚｲ
+ANB M65                  ; 即停止異常(緊急停止)
+AND X0C                  ; 運転準備ON確認
+OUT M5                   ; 運転準備補助
+LD M5                    ; 運転準備補助
+TMR K10 K10              ; 運転準備ﾃﾞｨﾚｲ
+OUT M64                  ; 運転準備
+LD M5                    ; 運転準備補助
+AND M64                  ; 運転準備
+OR M63                   ; 運転準備完了
+AND W00.7                ; #01_圧入RB_ZONE1
+AND W00.12               ; #01_圧入RB_SV
+ANB M999                 ; 暫定修正　小池
+OUT M63                  ; 運転準備完了
+;□□　　異常検出まとめ　　□□
+;■即停止異常(全ﾕﾆｯﾄ即停止)
+LDB B00                  ; 非常停止異常
+ANB B01                  ; 圧空低下異常
+ANB B02                  ; 安全扉開異常
+ANB B03                  ; 原点復帰ｻｲｸﾙﾀｲﾑｵｰﾊﾞｰ
+ANB B04                  ; 外部非常停止
+ANB B05                  ; PLC異常
+ANB B06                  ; ﾘﾝｸ異常
+ANB B07                  ; ｴﾘｱｾﾝｻ異常
+ANB B08                  ; 治具ID異常
+INV
+OUT M65                  ; 即停止異常(緊急停止)
+;■ﾕﾆｯﾄ異常検出(該当ﾕﾆｯﾄ以外ｻｲｸﾙ停止)
+LDB M2385                ; ﾕﾆｯﾄ1全異常
+INV
+OUT M66                  ; 主幹異常(ｻｲｸﾙ停止)
+;■ﾕﾆｯﾄ毎各種警報検出(ﾜｰｸ不足･ｵﾍﾟｺｰﾙ等)
+LDB M2392                ; ﾕﾆｯﾄ1警報補助
+INV
+OUT M67                  ; 警報(ﾜｰｸ不足等)
+;■ﾕﾆｯﾄ毎異常ﾌﾞｻﾞｰ検出
+LDB M159                 ; ﾒｲﾝ異常BZ　まとめ
+ANB M2393                ; ﾕﾆｯﾄ1異常BZ補助
+INV
+OUT M68                  ; 異常ﾌﾞｻﾞｰ
+;□□　　自動運転停止指令(ｻｲｸﾙ停止)　　□□
+LD M66                   ; 主幹異常(ｻｲｸﾙ停止)
+OR M19                   ; 停止PB
+OR M70                   ; 自動起動停止指令(ｻｲｸﾙ停止)
+AND M49                  ; 全ﾕﾆｯﾄ起動中
+OUT M70                  ; 自動起動停止指令(ｻｲｸﾙ停止)
+;□□　　自動起動回路　　□□
+LD M32                   ; 自動ﾓｰﾄﾞ
+AND M2384                ; ﾕﾆｯﾄ1原点
+ANB M49                  ; 全ﾕﾆｯﾄ起動中
+ANB M50                  ; 全ﾕﾆｯﾄ原点復帰中
+AND M64                  ; 運転準備
+ANB M103                 ; 原点復帰要求
+ANB M97                  ; 原点復帰動作中
+AND>= D2012 K1           ; 治具ID_No.
+AND<= D2012 K7           ; 治具ID_No.
+OUT M80                  ; 自動起動条件
+LD M32                   ; 自動ﾓｰﾄﾞ
+AND M80                  ; 自動起動条件
+ANB M65                  ; 即停止異常(緊急停止)
+ANB M70                  ; 自動起動停止指令(ｻｲｸﾙ停止)
+OUT M81                  ; 自動運転開始BZ
+TMR K20 K20              ; 起動前BZ_ONﾀｲﾏ
+LD T20                   ; 起動前BZ_ONﾀｲﾏ
+OUT M82                  ; 自動運転開始
+TMR K21 K10              ; 自動起動ﾃﾞｨﾚｲ
+LD M82                   ; 自動運転開始
+AND T21                  ; 自動起動ﾃﾞｨﾚｲ
+OUT M83                  ; 各工程起動指令
+;□□　　原点復帰回路　　□□
+LDB M49                  ; 全ﾕﾆｯﾄ起動中
+ANB M50                  ; 全ﾕﾆｯﾄ原点復帰中
+AND M64                  ; 運転準備
+ANB M65                  ; 即停止異常(緊急停止)
+ANB M66                  ; 主幹異常(ｻｲｸﾙ停止)
+LD M33                   ; 手動ﾓｰﾄﾞ
+ORB M999                 ; 暫定修正　小池
+ANL
+ANB W00.9                ; #01_圧入RB_RMDS
+AND W00.12               ; #01_圧入RB_SV
+AND T150                 ; ﾗｲﾄｶｰﾃﾝOK
+OUT M96                  ; 原点復帰可能条件
+LD M17                   ; 原点復帰PB
+AND M96                  ; 原点復帰可能条件
+OR M97                   ; 原点復帰動作中
+ANB M102                 ; 装置全原点確認
+ANB M65                  ; 即停止異常(緊急停止)
+ANB M66                  ; 主幹異常(ｻｲｸﾙ停止)
+OUT M97                  ; 原点復帰動作中
+MPS
+TMR K22 K5               ; 原点復帰開始ﾃﾞｨﾚｲ
+MPP
+LD CR2003                ; 常時OFF
+ORB M999                 ; 暫定修正　小池
+ANB W00.6                ; #01_圧入RB_MOVE
+ANL
+TMR K23 K100             ; 原点復帰ﾀｲﾑｵｰﾊﾞｰ
+LDP T22                  ; 原点復帰開始ﾃﾞｨﾚｲ
+OR M98                   ; 原点復帰開始
+AND M97                  ; 原点復帰動作中
+ANB M100                 ; 原点復帰起動確認
+OUT M98                  ; 原点復帰開始
+LD M98                   ; 原点復帰開始
+AND M2388                ; ﾕﾆｯﾄ1原点復帰中
+OUT M99                  ; 原点復帰全起動確認補助
+LD M98                   ; 原点復帰開始
+AND M99                  ; 原点復帰全起動確認補助
+OR M100                  ; 原点復帰起動確認
+AND M97                  ; 原点復帰動作中
+ANB M101                 ; 原点復帰完了
+OUT M100                 ; 原点復帰起動確認
+LD M100                  ; 原点復帰起動確認
+ANB M50                  ; 全ﾕﾆｯﾄ原点復帰中
+OR M101                  ; 原点復帰完了
+AND M97                  ; 原点復帰動作中
+ANB M102                 ; 装置全原点確認
+OUT M101                 ; 原点復帰完了
+LD M101                  ; 原点復帰完了
+AND M48                  ; 全ﾕﾆｯﾄ原点
+OR M102                  ; 装置全原点確認
+AND M97                  ; 原点復帰動作中
+OUT M102                 ; 装置全原点確認
+LD M96                   ; 原点復帰可能条件
+ANB M2384                ; ﾕﾆｯﾄ1原点
+ANB M999                 ; 暫定修正　小池
+OUT M103                 ; 原点復帰要求
+;□□　　ﾌﾞｻﾞｰ補助回路　　□□
+LD M68                   ; 異常ﾌﾞｻﾞｰ
+MPS
+ANB T30                  ; 異常ﾌﾞｻﾞｰ自動停止
+OUT M112                 ; 異常ﾌﾞｻﾞｰON
+MPP
+AND CR2003               ; 常時OFF
+TMR K30 K100             ; 異常ﾌﾞｻﾞｰ自動停止
+LD M67                   ; 警報(ﾜｰｸ不足等)
+MPS
+ANB T31                  ; 警報ﾌﾞｻﾞｰ自動停止
+OUT M113                 ; 警報ﾌﾞｻﾞｰON
+MPP
+AND CR2003               ; 常時OFF
+TMR K31 K100             ; 警報ﾌﾞｻﾞｰ自動停止
+LDP M15                  ; ﾌﾞｻﾞｰ停止PB
+OUT M122                 ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+LDP M16                  ; ﾘｾｯﾄPB
+OUT M123                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+;<h1/>__□ その他補助回路
+;ﾕﾆｯﾄ別動作停止、ﾕﾆｯﾄﾊﾟｽ設定､生産ｶｳﾝﾀ等装置固有の回路がある場合はここ。
+;□□　ﾕｰｻﾞｰｱﾗｰﾑ表示　□□
+LD B00                   ; 非常停止異常
+@SET CR3300              ; ﾕｰｻﾞｱﾗｰﾑ0
+LDB B00                  ; 非常停止異常
+@RES CR3300              ; ﾕｰｻﾞｱﾗｰﾑ0
+LD B03                   ; 原点復帰ｻｲｸﾙﾀｲﾑｵｰﾊﾞｰ
+@SET CR3301              ; ﾕｰｻﾞｱﾗｰﾑ1
+LDB B03                  ; 原点復帰ｻｲｸﾙﾀｲﾑｵｰﾊﾞｰ
+@RES CR3301              ; ﾕｰｻﾞｱﾗｰﾑ1
+LD B05                   ; PLC異常
+@SET CR3302              ; ﾕｰｻﾞｱﾗｰﾑ2
+LDB B05                  ; PLC異常
+@RES CR3302              ; ﾕｰｻﾞｱﾗｰﾑ2
+LD B06                   ; ﾘﾝｸ異常
+@SET CR3303              ; ﾕｰｻﾞｱﾗｰﾑ3
+LDB B06                  ; ﾘﾝｸ異常
+@RES CR3303              ; ﾕｰｻﾞｱﾗｰﾑ3
+LD B07                   ; ｴﾘｱｾﾝｻ異常
+@SET CR3304              ; ﾕｰｻﾞｱﾗｰﾑ4
+LDB B07                  ; ｴﾘｱｾﾝｻ異常
+@RES CR3304              ; ﾕｰｻﾞｱﾗｰﾑ4
+;<h1/>__□ 出力回路
+LD M32                   ; 自動ﾓｰﾄﾞ
+OUT B1501                ; 自動/手動ﾗﾝﾌﾟ
+LD M65                   ; 即停止異常(緊急停止)
+OR M66                   ; 主幹異常(ｻｲｸﾙ停止)
+OR M1685                 ; 圧入NGﾗﾝﾌﾟON
+LD W00.7                 ; #01_圧入RB_ZONE1
+AND W00.12               ; #01_圧入RB_SV
+INV
+AND M64                  ; 運転準備
+AND CR2006               ; 1sｸﾛｯｸﾊﾟﾙｽ
+ORL
+OR M16                   ; ﾘｾｯﾄPB
+OUT Y51                  ; NGﾗﾝﾌﾟ
+LD M112                  ; 異常ﾌﾞｻﾞｰON
+OR M113                  ; 警報ﾌﾞｻﾞｰON
+LDB M97                  ; 原点復帰動作中
+ANB M2130                ; 手動操作中
+AND M33                  ; 手動ﾓｰﾄﾞ
+ORL
+OUT Y52                  ; ﾌﾞｻﾞｰ
+LD M112                  ; 異常ﾌﾞｻﾞｰON
+OR M113                  ; 警報ﾌﾞｻﾞｰON
+OR B1002                 ; ﾌﾞｻﾞｰ停止SW(TP)
+OUT B1502                ; ﾌﾞｻﾞｰOFFSWPL（TP）
+LD M97                   ; 原点復帰動作中
+LD W00.12                ; #01_圧入RB_SV
+ANB M63                  ; 運転準備完了
+AND M96                  ; 原点復帰可能条件
+ANB M103                 ; 原点復帰要求
+ORL
+AND CR2006               ; 1sｸﾛｯｸﾊﾟﾙｽ
+OR M48                   ; 全ﾕﾆｯﾄ原点
+OUT B1500                ; 原点復帰SWPL(TP)
+;<h1/>__□ 主幹異常
+;ﾒｲﾝ回路に関連する異常はここにまとめる。
+;非常停止異常
+LD CR2007                ; 運転開始時1ｽｷｬﾝOFF
+ANB M129                 ; 非常停止正常
+LDB M123                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B00                  ; 非常停止異常
+ORL
+OUT B00                  ; 非常停止異常
+;圧空低下異常
+LD M64                   ; 運転準備
+ANB M128                 ; 圧空正常
+LDB M123                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B01                  ; 圧空低下異常
+ORL
+MPS
+AND T80                  ; 圧空低下確認
+OUT B01                  ; 圧空低下異常
+MPP
+TMR K80 K50              ; 圧空低下確認
+;安全扉開異常
+LD M64                   ; 運転準備
+ANB M131                 ; 安全扉正常
+LDB M123                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B02                  ; 安全扉開異常
+ORL
+OUT B02                  ; 安全扉開異常
+;原点復帰ｻｲｸﾙﾀｲﾑｵｰﾊﾞｰ
+LD T23                   ; 原点復帰ﾀｲﾑｵｰﾊﾞｰ
+LDB M123                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+OR X06                   ; ﾜｰｸ在席確認(ON=有)
+AND B03                  ; 原点復帰ｻｲｸﾙﾀｲﾑｵｰﾊﾞｰ
+ORL
+OUT B03                  ; 原点復帰ｻｲｸﾙﾀｲﾑｵｰﾊﾞｰ
+;外部非常停止
+LD M64                   ; 運転準備
+ANB M130                 ; 外部非常停止正常
+LDB M123                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B04                  ; 外部非常停止
+ORL
+OUT B04                  ; 外部非常停止
+;PLC異常
+LDB M1                   ; CPU正常
+LDB M123                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B05                  ; PLC異常
+ORL
+OUT B05                  ; PLC異常
+;ﾘﾝｸ異常
+LD CR2003                ; 常時OFF
+LDB M123                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B06                  ; ﾘﾝｸ異常
+ORL
+OUT B06                  ; ﾘﾝｸ異常
+;ｴﾘｱｾﾝｻ異常
+LDB M2081                ; ﾍﾞﾝﾄ圧入   RB_下降
+ANB M2086                ; ﾍﾞﾝﾄ圧入   RB_圧入
+ANB M2388                ; ﾕﾆｯﾄ1原点復帰中
+ANB M2389                ; ﾕﾆｯﾄ1起動中
+INV
+AND M64                  ; 運転準備
+ANB M132                 ; ｴﾘｱｾﾝｻ正常
+LDB M123                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B07                  ; ｴﾘｱｾﾝｻ異常
+ORL
+OUT B07                  ; ｴﾘｱｾﾝｻ異常
+;治具ID異常
+LD M49                   ; 全ﾕﾆｯﾄ起動中
+AND<> D2012 D2020        ; 治具ID_No.  動作設定No (自動ﾓｰﾄﾞで確定)
+LDB M123                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B08                  ; 治具ID異常
+ORL
+OUT B08                  ; 治具ID異常
+;異常ﾌﾞｻﾞｰまとめ
+LD<> B00 @D12            ; 非常停止異常  異常BzOFF記憶
+AND<> B00 K0             ; 非常停止異常
+OUT M159                 ; ﾒｲﾝ異常BZ　まとめ
+LDB M122                 ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+ANB M123                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+INV
+MOV B00 @D12             ; 非常停止異常  異常BzOFF記憶
+LD= B00 K0               ; 非常停止異常
+MOV K0 @D12              ; 異常BzOFF記憶
+;<h1/>__□ ﾀｯﾁﾊﾟﾈﾙ処理
+;ｽﾃｰﾀｽ表示
+LD CR2002                ; 常時ON
+MOV K0 D50               ; ｽﾃｰﾀｽ表示
+MPS
+AND T150                 ; ﾗｲﾄｶｰﾃﾝOK
+MPS
+AND M49                  ; 全ﾕﾆｯﾄ起動中
+MOV K1 D50               ; ｽﾃｰﾀｽ表示
+MRD
+AND M97                  ; 原点復帰動作中
+MOV K2 D50               ; ｽﾃｰﾀｽ表示
+MPP
+LD M51                   ; 装置停止中
+ANB M97                  ; 原点復帰動作中
+ANL
+MOV K3 D50               ; ｽﾃｰﾀｽ表示
+MPP
+ANB T150                 ; ﾗｲﾄｶｰﾃﾝOK
+MOV K4 D50               ; ｽﾃｰﾀｽ表示
+;ﾒｯｾｰｼﾞ表示
+;0:MessageOFF
+;1:AUTO
+;2:ORIGIN
+;3:STOP
+;4:PAUSE
+;10:ﾜｰｸ取出し要求
+;11:原点復帰要求
+;12:ﾜｰｸ供給要求
+;13NG排出部ﾜｰｸ要求
+;14:運転準備ON要求
+;15:ﾊﾟﾚｯﾄｾｯﾄ要求
+;16:ﾍﾞﾝﾄﾌﾟﾗｸﾞ供給要求
+;17:NG排出部ﾜｰｸ除去要求
+;18:調整冶具供給要求
+;19:NGﾘｾｯﾄｽｲｯﾁ要求
+;20:ﾜｰｸ除去要求
+;21:ﾗｲﾄｶｰﾃﾝ遮光中
+;25：冶具動作選択中
+LD CR2002                ; 常時ON
+MOV K0 D52               ; ﾒｯｾｰｼﾞ表示
+MPS
+AND B1004                ; 冶具動作中(TP)
+MOV K25 D52              ; ﾒｯｾｰｼﾞ表示
+MRD
+LD M10                   ; 自動PB
+OR M40                   ; ﾜｰｸ除去確認
+ANB M66                  ; 主幹異常(ｻｲｸﾙ停止)
+ANB M32                  ; 自動ﾓｰﾄﾞ
+ANB M48                  ; 全ﾕﾆｯﾄ原点
+ANB M103                 ; 原点復帰要求
+LD X06                   ; ﾜｰｸ在席確認(ON=有)
+OR X05                   ; NGﾜｰｸ確認(ON=有)
+ANL
+ANL
+MOV K20 D52              ; ﾒｯｾｰｼﾞ表示
+OUT M40                  ; ﾜｰｸ除去確認
+MRD
+LD M1605                 ; S05 圧入失敗
+ANB X05                  ; NGﾜｰｸ確認(ON=有)
+OR M1626                 ; S26 判定OK
+LD M1627                 ; S27 OK取出開始確認(遮光)
+AND X06                  ; ﾜｰｸ在席確認(ON=有)
+ORL
+LDB M2384                ; ﾕﾆｯﾄ1原点
+OR M97                   ; 原点復帰動作中
+ANB M2389                ; ﾕﾆｯﾄ1起動中
+AND X06                  ; ﾜｰｸ在席確認(ON=有)
+AND T150                 ; ﾗｲﾄｶｰﾃﾝOK
+ORL
+ANL
+MOV K10 D52              ; ﾒｯｾｰｼﾞ表示
+MRD
+LD M103                  ; 原点復帰要求
+ANB M2384                ; ﾕﾆｯﾄ1原点
+ANB M2389                ; ﾕﾆｯﾄ1起動中
+ANB M50                  ; 全ﾕﾆｯﾄ原点復帰中
+AND T150                 ; ﾗｲﾄｶｰﾃﾝOK
+ANL
+MOV K11 D52              ; ﾒｯｾｰｼﾞ表示
+MRD
+LD M2384                 ; ﾕﾆｯﾄ1原点
+ANB M2389                ; ﾕﾆｯﾄ1起動中
+ANB X06                  ; ﾜｰｸ在席確認(ON=有)
+ANB B1004                ; 冶具動作中(TP)
+AND M32                  ; 自動ﾓｰﾄﾞ
+ANL
+MOV K12 D52              ; ﾒｯｾｰｼﾞ表示
+MRD
+LD M1632                 ; S32 NG取出開始待ち
+OR M1633                 ; S33 NG取出開始確認(遮光)
+OR M1634                 ; S34 NG取出完了確認(受光)
+ANL
+MOV K13 D52              ; ﾒｯｾｰｼﾞ表示
+MRD
+ANB M64                  ; 運転準備
+MOV K14 D52              ; ﾒｯｾｰｼﾞ表示
+MRD
+LD= D2012 K0             ; 治具ID_No.
+ANB M97                  ; 原点復帰動作中
+ANL
+MOV K15 D52              ; ﾒｯｾｰｼﾞ表示
+MRD
+LD M32                   ; 自動ﾓｰﾄﾞ
+AND M2391                ; ｽﾀｰﾄ要求
+ANL
+MPS
+ANB B1004                ; 冶具動作中(TP)
+MOV K16 D52              ; ﾒｯｾｰｼﾞ表示
+MPP
+AND B1004                ; 冶具動作中(TP)
+MOV K18 D52              ; ﾒｯｾｰｼﾞ表示
+MRD
+LD M1605                 ; S05 圧入失敗
+AND X05                  ; NGﾜｰｸ確認(ON=有)
+ANL
+MOV K17 D52              ; ﾒｯｾｰｼﾞ表示
+MRD
+LD M1605                 ; S05 圧入失敗
+LDB T120                 ; NGﾘｾｯﾄ復帰処理開始
+LDB M998                 ; ﾘｾｯﾄsw長押し無効要望20180108
+ANB X04                  ; NGﾘｾｯﾄSW
+ORL
+ANL
+ANL
+MOV K19 D52              ; ﾒｯｾｰｼﾞ表示
+MPP
+LDB X01                  ; ﾗｲﾄｶｰﾃﾝ(OUT1)
+ORB X02                  ; ﾗｲﾄｶｰﾃﾝ(OUT2)
+ANL
+MOV K21 D52              ; ﾒｯｾｰｼﾞ表示
+;画面移動
+LD CR2008                ; 運転開始時1ｽｷｬﾝON
+DW K0 D18                ; 画面切替NO.
+LD T0                    ; 電源投入0Nﾃﾞｨﾚｲ
+@DW K10 D18              ; 画面切替NO.
+LD T0                    ; 電源投入0Nﾃﾞｨﾚｲ
+MPS
+ANP M81                  ; 自動運転開始BZ
+@MOV K10 D18             ; 画面切替NO.
+MRD
+LDP M65                  ; 即停止異常(緊急停止)
+ORP M66                  ; 主幹異常(ｻｲｸﾙ停止)
+ANL
+MPS
+@MOV K1000 D18           ; 画面切替NO.
+MPP
+AND<> D10 D40            ; 表示中ﾍﾟｰｼﾞNO.  異常時画面記憶
+@MOV D10 D40             ; 表示中ﾍﾟｰｼﾞNO.  異常時画面記憶
+MPP
+LDF M65                  ; 即停止異常(緊急停止)
+ORF M66                  ; 主幹異常(ｻｲｸﾙ停止)
+ANL
+MOV D40 D18              ; 異常時画面記憶  画面切替NO.
+;TP_PRODUCT NAME 処理
+;'//// プロダクトネーム呼出処理 ////
+;BMOV(D200:((D292-K1)*10) , D270 ,  K10 )  
+;RES(B1011)
+;
+;
+;
+;
+LD= D10 K210             ; 表示中ﾍﾟｰｼﾞNO.
+AND B1011                ; Jig_NO選択処理
+AND>= D292 K1            ; JIGNO.入力ｴﾘｱ
+AND<= D292 K7            ; JIGNO.入力ｴﾘｱ
+NCJ K1001
+;'//// プロダクトネーム呼出処理 ////
+;
+;BMOV(D200:((D292-K1)*10) , D270 ,  K10 )  
+;
+LD CR2002                ; 常時ON
+LDA D292                 ; JIGNO.入力ｴﾘｱ
+CON
+EXT
+CON
+SUB.L +1
+CON
+MUL.L +10
+CON
+STA.L Z12
+BMOV D200:Z12 D270 K10   ; 品種1名前  品種入力ｴﾘｱ
+;RES(B1011)
+;
+LD CR2002                ; 常時ON
+RES B1011                ; Jig_NO選択処理
+LABEL K1001
+;
+;'//// プロダクトネーム処理登録 ////
+;BMOV( D270 , D200:((D292-K1)*10) , K10 )  
+;RES(B1010)
+;
+;
+;
+;
+LD= D10 K210             ; 表示中ﾍﾟｰｼﾞNO.
+AND B1010                ; Name変更通知FLG
+AND>= D292 K1            ; JIGNO.入力ｴﾘｱ
+AND<= D292 K7            ; JIGNO.入力ｴﾘｱ
+NCJ K1000
+;'//// プロダクトネーム処理登録 ////
+;
+;BMOV( D270 , D200:((D292-K1)*10) , K10 )  
+;
+LD CR2002                ; 常時ON
+LDA D292                 ; JIGNO.入力ｴﾘｱ
+CON
+EXT
+CON
+SUB.L +1
+CON
+MUL.L +10
+CON
+STA.L Z12
+BMOV D270 D200:Z12 K10   ; 品種入力ｴﾘｱ  品種1名前
+;RES(B1010)
+;
+LD CR2002                ; 常時ON
+RES B1010                ; Name変更通知FLG
+LABEL K1000
+;
+LD CR2002                ; 常時ON
+MPS
+AND< D292 K1             ; JIGNO.入力ｴﾘｱ
+DW K1 D292               ; JIGNO.入力ｴﾘｱ
+MPP
+AND> D292 K7             ; JIGNO.入力ｴﾘｱ
+DW K7 D292               ; JIGNO.入力ｴﾘｱ
+END
+ENDH

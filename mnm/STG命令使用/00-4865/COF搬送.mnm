@@ -1,0 +1,794 @@
+DEVICE:53
+;MODULE:COF搬送
+;MODULE_TYPE:0
+;非常停止
+LD R53010                ; 非常停止
+OR R54200                ; TRAP
+ZRES @MR011 @MR3015      ; 左ｱｰﾑに給材
+LD R55515                ; ﾓｼﾞｭｰﾙｽﾃｰｼﾞﾘｾｯﾄ
+ZRES @MR011 @MR3015      ; 左ｱｰﾑに給材
+;条件ﾌﾗｸﾞ / Flug
+LDB R53300               ; PAUSE中
+ANB R53200               ; COF搬送給材部ｴﾗｰ中
+ANB R53108               ; ｴﾗｰ発生中
+OUT @MR010               ; COF搬送部 一時停止ｴﾗｰ無し
+;AUTO動作 / AUTO OPERATION
+LD R53011                ; AUTO MODE
+ANB R55201               ; COF搬送部 AUTO 動作中
+AND R55200               ; COF搬送部 AUTO ｽﾀｰﾄ
+LD LR41000               ; 自動ﾊﾟﾗﾒｰﾀ0　通常動作
+OR LR41001               ; 自動ﾊﾟﾗﾒｰﾀ1　払出動作
+OR LR41003               ; 自動ﾊﾟﾗﾒｰﾀ3　左ｱﾗｲﾒﾝﾄのみ動作
+OR LR41006               ; 自動ﾊﾟﾗﾒｰﾀ6　右ｱﾗｲﾒﾝﾄのみ動作
+LD LR41008               ; 自動ﾊﾟﾗﾒｰﾀ8
+LD LR41009               ; L側動作
+OR LR41010               ; R側動作
+ANL
+ORL
+LD LR41007               ; 自動ﾊﾟﾗﾒｰﾀ7　基準測定ﾓｰﾄﾞ
+LD LR41014               ; L側動作
+OR LR41015               ; R側動作
+ANL
+ORL
+ANL
+RES R55202               ; COF搬送部 AUTO 動作終了
+CON
+SET R55201               ; COF搬送部 AUTO 動作中
+CON
+RES R55200               ; COF搬送部 AUTO ｽﾀｰﾄ
+CON
+SET @MR2000
+LD R53011                ; AUTO MODE
+LD LR41000               ; 自動ﾊﾟﾗﾒｰﾀ0　通常動作
+OR LR41001               ; 自動ﾊﾟﾗﾒｰﾀ1　払出動作
+OR LR41003               ; 自動ﾊﾟﾗﾒｰﾀ3　左ｱﾗｲﾒﾝﾄのみ動作
+OR LR41006               ; 自動ﾊﾟﾗﾒｰﾀ6　右ｱﾗｲﾒﾝﾄのみ動作
+LD LR41008               ; 自動ﾊﾟﾗﾒｰﾀ8
+LD LR41009               ; L側動作
+OR LR41010               ; R側動作
+ANL
+ORL
+ANL
+OR R53002                ; STEP動作中
+MPS
+LD R55004                ; 左ｱｰﾑCOF給材要求
+ANB @MR012               ; 右ｱｰﾑに給材
+ANL
+SET @MR011               ; 左ｱｰﾑに給材
+MPP
+LD R55104                ; 右ｱｰﾑCOF給材要求
+ANB @MR011               ; 左ｱｰﾑに給材
+ANL
+SET @MR012               ; 右ｱｰﾑに給材
+STG @MR2000
+AND @MR010               ; COF搬送部 一時停止ｴﾗｰ無し
+ANB @MR015               ; COF有り
+ANB R55307               ; COF仮置き動作中
+MPS
+AND R55207               ; COF取出し要求
+MPS
+ANB R55302               ; COF給材部 AUTO 動作終了
+JMP @MR2002
+MPP
+AND R55302               ; COF給材部 AUTO 動作終了
+RES R55207               ; COF取出し要求
+CON
+JMP @MR2700              ; 終了処理へ
+MPP
+LD R55002                ; L側ﾜｰｸｾｯﾄ部 AUTO 動作終了
+AND R55102               ; R側ﾜｰｸｾｯﾄ部 AUTO 動作終了
+AND R55302               ; COF給材部 AUTO 動作終了
+ANL
+JMP @MR2700              ; 終了処理へ
+STG @MR2002
+ANB R43504               ; COF給材 Y軸 P4
+AND>=.D DM3398 DM2006    ; COF給材_Y軸RB P5 位置ﾃﾞｰﾀ  COF給材_Y軸RB 現在値
+RES R55207               ; COF取出し要求
+CON
+SET R55209               ; COF取出中
+CON
+SET @MR2900              ; PAUSE禁止
+CON
+JMP @MR2003
+STG @MR2003
+MPS
+AND MR14902              ; COF搬送X_移動完了
+JMP @MR2004
+MPP
+MCALL POINT_MOVE #3 #1 #1 MR14911 MR14902;COF搬送X_位置決め異常  COF搬送X_移動完了
+STG @MR2004
+RES MR14902              ; COF搬送X_移動完了
+CON
+ANB MR14902              ; COF搬送X_移動完了
+RES @MR2900              ; PAUSE禁止
+CON
+JMP @MR2008
+STG @MR2008
+AND @MR010               ; COF搬送部 一時停止ｴﾗｰ無し
+JMP @MR2009
+STG @MR2009
+SET @MR2900              ; PAUSE禁止
+CON
+JMP @MR2010
+STG @MR2010
+AND R43301               ; COF搬送 X軸 P1
+MPS
+AND MR15102              ; COF搬送Z_移動完了
+JMP @MR2011
+MPP
+MCALL POINT_MOVE #3 #2 #2 MR15111 MR15102;COF搬送Z_位置決め異常  COF搬送Z_移動完了
+STG @MR2011
+RES MR15102              ; COF搬送Z_移動完了
+CON
+ANB MR15102              ; COF搬送Z_移動完了
+RES @MR2900              ; PAUSE禁止
+CON
+JMP @MR2100
+STG @MR2100
+RES MR7201               ; COF搬送PP Vac OFF
+CON
+RES MR7202               ; COF搬送PP Vacﾊｶｲ ON
+CON
+SET MR7200               ; COF搬送PP Vac ON
+CON
+MPS
+LD R4612                 ; COF搬送PP Vac検出
+OR R53002                ; STEP動作中
+ANL
+JMP @MR2200
+MRD
+LD LR41008               ; 自動ﾊﾟﾗﾒｰﾀ8
+LD LR41009               ; L側動作
+OR LR41010               ; R側動作
+ANL
+AND R53000               ; 自動運転中
+ANL
+TMR @4 #5
+CON
+AND @T4
+SET @MR015               ; COF有り
+CON
+JMP @MR2200
+MPP
+LDB R4612                ; COF搬送PP Vac検出
+ANB R53002               ; STEP動作中
+LDB LR41008              ; 自動ﾊﾟﾗﾒｰﾀ8
+ORB R53000               ; 自動運転中
+ANL
+ANL
+TMR @1 #20
+CON
+AND @T1
+JMP @MR2101
+STG @MR2101
+RES @MR015               ; COF有り
+CON
+SET MR7201               ; COF搬送PP Vac OFF
+CON
+SET MR7202               ; COF搬送PP Vacﾊｶｲ ON
+CON
+RES MR7200               ; COF搬送PP Vac ON
+CON
+SET @MR2900              ; PAUSE禁止
+CON
+JMP @MR2102
+STG @MR2102
+MPS
+AND MR15102              ; COF搬送Z_移動完了
+JMP @MR2103
+MPP
+MCALL POINT_MOVE #3 #2 #1 MR15111 MR15102;COF搬送Z_位置決め異常  COF搬送Z_移動完了
+STG @MR2103
+RES MR15102              ; COF搬送Z_移動完了
+CON
+ANB MR15102              ; COF搬送Z_移動完了
+RES MR7202               ; COF搬送PP Vacﾊｶｲ ON
+CON
+RES @MR2900              ; PAUSE禁止
+CON
+SET @MR1000              ; COF搬送P&P COF吸着ｴﾗｰ
+CON
+JMP @MR2104
+STG @MR2104
+AND @MR1007              ; ｱﾗｰﾑ解除
+RES @MR1007              ; ｱﾗｰﾑ解除
+CON
+JMP @MR2105
+STG @MR2105
+MPS
+ANB R310                 ; ﾊﾟｽｽｲｯﾁON
+SET R55311               ; 仮置き台動作ﾘﾄﾗｲ
+CON
+JMP @MR2000
+MPP
+AND R310                 ; ﾊﾟｽｽｲｯﾁON
+JMP @MR2106
+STG @MR2106
+SET @MR2900              ; PAUSE禁止
+CON
+JMP @MR2107
+STG @MR2107
+MPS
+AND MR14902              ; COF搬送X_移動完了
+JMP @MR2108
+MPP
+MCALL POINT_MOVE #3 #1 #4 MR14911 MR14902;COF搬送X_位置決め異常  COF搬送X_移動完了
+STG @MR2108
+RES MR14902              ; COF搬送X_移動完了
+CON
+ANB MR14902              ; COF搬送X_移動完了
+RES @MR2900              ; PAUSE禁止
+CON
+JMP @MR2109
+STG @MR2109
+AND @MR010               ; COF搬送部 一時停止ｴﾗｰ無し
+RES R55310               ; 仮置き台 COF有り
+CON
+RES R310                 ; ﾊﾟｽｽｲｯﾁON
+CON
+RES R55209               ; COF取出中
+CON
+SET R55208               ; 仮置台ﾊｶｲ要求
+CON
+SET @MR2000
+CON
+ENDS
+;-------
+STG @MR2200
+SET R55208               ; 仮置台ﾊｶｲ要求
+CON
+TMR @0 #5
+CON
+AND @T0
+JMP @MR2201
+STG @MR2201
+MPS
+ANB R55208               ; 仮置台ﾊｶｲ要求
+SET @MR2900              ; PAUSE禁止
+CON
+JMP @MR2202
+MPP
+LD R55002                ; L側ﾜｰｸｾｯﾄ部 AUTO 動作終了
+AND R55102               ; R側ﾜｰｸｾｯﾄ部 AUTO 動作終了
+ANL
+RES @MR2900              ; PAUSE禁止
+CON
+RES R55208               ; 仮置台ﾊｶｲ要求
+CON
+JMP @MR2700              ; 終了処理へ
+STG @MR2202
+MPS
+AND MR15102              ; COF搬送Z_移動完了
+JMP @MR2203
+MPP
+MCALL POINT_MOVE #3 #2 #1 MR15111 MR15102;COF搬送Z_位置決め異常  COF搬送Z_移動完了
+STG @MR2203
+RES MR15102              ; COF搬送Z_移動完了
+CON
+ANB MR15102              ; COF搬送Z_移動完了
+JMP @MR2204
+STG @MR2204
+MPS
+AND MR14902              ; COF搬送X_移動完了
+JMP @MR2205
+MPP
+MCALL POINT_MOVE #3 #1 #4 MR14911 MR14902;COF搬送X_位置決め異常  COF搬送X_移動完了
+STG @MR2205
+RES MR14902              ; COF搬送X_移動完了
+CON
+ANB MR14902              ; COF搬送X_移動完了
+RES @MR2900              ; PAUSE禁止
+CON
+JMP @MR2410
+STG @MR2410
+AND @MR010               ; COF搬送部 一時停止ｴﾗｰ無し
+MPS
+LD R4612                 ; COF搬送PP Vac検出
+LD R53000                ; 自動運転中
+AND LR41008              ; 自動ﾊﾟﾗﾒｰﾀ8
+LD LR41009               ; L側動作
+OR LR41010               ; R側動作
+ANL
+ORL
+ANL
+SET @MR015               ; COF有り
+CON
+RES R55310               ; 仮置き台 COF有り
+CON
+RES R55209               ; COF取出中
+CON
+JMP @MR2206
+MPP
+LDB R4612                ; COF搬送PP Vac検出
+LDB LR41008              ; 自動ﾊﾟﾗﾒｰﾀ8
+ORB R53000               ; 自動運転中
+ANL
+ANL
+TMR @2 #20
+CON
+AND @T2
+JMP @MR2411
+STG @MR2411
+SET @MR1000              ; COF搬送P&P COF吸着ｴﾗｰ
+CON
+JMP @MR2412
+STG @MR2412
+AND @MR1007              ; ｱﾗｰﾑ解除
+RES @MR1007              ; ｱﾗｰﾑ解除
+CON
+JMP @MR2500
+STG @MR2500
+MPS
+ANB R310                 ; ﾊﾟｽｽｲｯﾁON
+SET R55311               ; 仮置き台動作ﾘﾄﾗｲ
+CON
+JMP @MR2000
+MPP
+AND R310                 ; ﾊﾟｽｽｲｯﾁON
+JMP @MR2501
+STG @MR2501
+AND @MR010               ; COF搬送部 一時停止ｴﾗｰ無し
+RES R55310               ; 仮置き台 COF有り
+CON
+RES R310                 ; ﾊﾟｽｽｲｯﾁON
+CON
+RES R55209               ; COF取出中
+CON
+SET @MR2000
+CON
+ENDS
+;-------
+STG @MR2206
+AND @MR010               ; COF搬送部 一時停止ｴﾗｰ無し
+MPS
+LD R55004                ; 左ｱｰﾑCOF給材要求
+AND R55104               ; 右ｱｰﾑCOF給材要求
+ANL
+MPS
+LD @MR011                ; 左ｱｰﾑに給材
+AND R42808               ; L側ｱﾗｲﾒﾝﾄ P1
+AND R4407                ; 治具1COF旋回戻り端
+ANL
+RES R55215               ; 右側ｱｰﾑCOF給材ﾌﾗｸﾞ
+CON
+SET R55214               ; 左側ｱｰﾑCOF給材ﾌﾗｸﾞ
+CON
+ANB @MR2300
+RES @MR011               ; 左ｱｰﾑに給材
+CON
+JMP @MR2207
+MPP
+LD @MR012                ; 右ｱｰﾑに給材
+AND R42908               ; R側ｱﾗｲﾒﾝﾄ P1
+AND R4415                ; 治具2COF旋回戻り端
+ANL
+RES R55214               ; 左側ｱｰﾑCOF給材ﾌﾗｸﾞ
+CON
+SET R55215               ; 右側ｱｰﾑCOF給材ﾌﾗｸﾞ
+CON
+ANB @MR2207
+RES @MR012               ; 右ｱｰﾑに給材
+CON
+JMP @MR2300
+MRD
+LD R55004                ; 左ｱｰﾑCOF給材要求
+ANB R55104               ; 右ｱｰﾑCOF給材要求
+AND R42808               ; L側ｱﾗｲﾒﾝﾄ P1
+AND R4407                ; 治具1COF旋回戻り端
+ANL
+RES R55215               ; 右側ｱｰﾑCOF給材ﾌﾗｸﾞ
+CON
+SET R55214               ; 左側ｱｰﾑCOF給材ﾌﾗｸﾞ
+CON
+ANB @MR2300
+RES @MR011               ; 左ｱｰﾑに給材
+CON
+JMP @MR2207
+MRD
+LD R55104                ; 右ｱｰﾑCOF給材要求
+ANB R55004               ; 左ｱｰﾑCOF給材要求
+AND R42908               ; R側ｱﾗｲﾒﾝﾄ P1
+AND R4415                ; 治具2COF旋回戻り端
+ANL
+RES R55214               ; 左側ｱｰﾑCOF給材ﾌﾗｸﾞ
+CON
+SET R55215               ; 右側ｱｰﾑCOF給材ﾌﾗｸﾞ
+CON
+ANB @MR2207
+RES @MR012               ; 右ｱｰﾑに給材
+CON
+JMP @MR2300
+MPP
+LDB R55004               ; 左ｱｰﾑCOF給材要求
+ANB R55104               ; 右ｱｰﾑCOF給材要求
+AND R55002               ; L側ﾜｰｸｾｯﾄ部 AUTO 動作終了
+AND R55102               ; R側ﾜｰｸｾｯﾄ部 AUTO 動作終了
+ANL
+JMP @MR2700              ; 終了処理へ
+;-------
+STG @MR2207
+MPS
+LD R4612                 ; COF搬送PP Vac検出
+LD R53000                ; 自動運転中
+AND LR41008              ; 自動ﾊﾟﾗﾒｰﾀ8
+LD LR41009               ; L側動作
+OR LR41010               ; R側動作
+ANL
+ORL
+ANL
+RES R55004               ; 左ｱｰﾑCOF給材要求
+CON
+SET @MR2900              ; PAUSE禁止
+CON
+JMP @MR2208
+MPP
+LDB R4612                ; COF搬送PP Vac検出
+LDB R53000               ; 自動運転中
+ORB LR41008              ; 自動ﾊﾟﾗﾒｰﾀ8
+ANL
+ANL
+RES R55214               ; 左側ｱｰﾑCOF給材ﾌﾗｸﾞ
+CON
+RES @MR015               ; COF有り
+CON
+SET @MR2000
+CON
+ENDS
+STG @MR2208
+MPS
+AND MR14902              ; COF搬送X_移動完了
+JMP @MR2209
+MPP
+MCALL POINT_MOVE #3 #1 #2 MR14911 MR14902;COF搬送X_位置決め異常  COF搬送X_移動完了
+STG @MR2209
+RES MR14902              ; COF搬送X_移動完了
+CON
+ANB MR14902              ; COF搬送X_移動完了
+RES @MR2900              ; PAUSE禁止
+CON
+JMP @MR2210
+STG @MR2210
+AND @MR010               ; COF搬送部 一時停止ｴﾗｰ無し
+JMP @MR2211
+STG @MR2211
+SET @MR2900              ; PAUSE禁止
+CON
+JMP @MR2212
+STG @MR2212
+AND R42808               ; L側ｱﾗｲﾒﾝﾄ P1
+AND R4407                ; 治具1COF旋回戻り端
+AND R43302               ; COF搬送 X軸 P2
+MPS
+AND MR15102              ; COF搬送Z_移動完了
+JMP @MR2213
+MPP
+MCALL POINT_MOVE #3 #2 #3 MR15111 MR15102;COF搬送Z_位置決め異常  COF搬送Z_移動完了
+STG @MR2213
+RES MR15102              ; COF搬送Z_移動完了
+CON
+ANB MR15102              ; COF搬送Z_移動完了
+RES @MR2900              ; PAUSE禁止
+CON
+JMP @MR2214
+STG @MR2214
+SET R55205               ; L側ｱｰﾑ吸着ON要求
+CON
+JMP @MR2215
+STG @MR2215
+ANB R55205               ; L側ｱｰﾑ吸着ON要求
+LD MR7106                ; ｾｯﾄ治具1旋回ｱｰﾑ Vac ON
+AND CR2003               ; 常時OFF
+OR R55006                ; COF給材完了
+OR R55007                ; L側旋回ｱｰﾑ吸着NG
+ANL
+MPS
+LD R4210                 ; L側旋回ｱｰﾑVac検出
+ANB R55007               ; L側旋回ｱｰﾑ吸着NG
+ANL
+SET MR7201               ; COF搬送PP Vac OFF
+CON
+SET MR7202               ; COF搬送PP Vacﾊｶｲ ON
+CON
+RES MR7200               ; COF搬送PP Vac ON
+CON
+AND R4613                ; COF搬送PP Vac OFF検出
+RES R55006               ; COF給材完了
+CON
+JMP @MR2400
+MRD
+LDB R4210                ; L側旋回ｱｰﾑVac検出
+ANB R55007               ; L側旋回ｱｰﾑ吸着NG
+ANL
+TMR #888 #5
+CON
+AND T888
+SET MR7201               ; COF搬送PP Vac OFF
+CON
+SET MR7202               ; COF搬送PP Vacﾊｶｲ ON
+CON
+RES MR7200               ; COF搬送PP Vac ON
+CON
+AND R4613                ; COF搬送PP Vac OFF検出
+RES R55006               ; COF給材完了
+CON
+JMP @MR2400
+MPP
+AND R55007               ; L側旋回ｱｰﾑ吸着NG
+SET MR7201               ; COF搬送PP Vac OFF
+CON
+SET MR7202               ; COF搬送PP Vacﾊｶｲ ON
+CON
+RES MR7200               ; COF搬送PP Vac ON
+CON
+AND R4613                ; COF搬送PP Vac OFF検出
+RES R55006               ; COF給材完了
+CON
+JMP @MR2400
+;-------
+STG @MR2300
+MPS
+LD R4612                 ; COF搬送PP Vac検出
+LD R53000                ; 自動運転中
+AND LR41008              ; 自動ﾊﾟﾗﾒｰﾀ8
+LD LR41009               ; L側動作
+OR LR41010               ; R側動作
+ANL
+ORL
+ANL
+RES R55104               ; 右ｱｰﾑCOF給材要求
+CON
+SET @MR2900              ; PAUSE禁止
+CON
+JMP @MR2301
+MPP
+LDB R4612                ; COF搬送PP Vac検出
+LDB R53000               ; 自動運転中
+ORB LR41008              ; 自動ﾊﾟﾗﾒｰﾀ8
+ANL
+ANL
+RES R55215               ; 右側ｱｰﾑCOF給材ﾌﾗｸﾞ
+CON
+RES @MR015               ; COF有り
+CON
+SET @MR2000
+CON
+ENDS
+STG @MR2301
+MPS
+AND MR14902              ; COF搬送X_移動完了
+JMP @MR2302
+MPP
+MCALL POINT_MOVE #3 #1 #3 MR14911 MR14902;COF搬送X_位置決め異常  COF搬送X_移動完了
+STG @MR2302
+RES MR14902              ; COF搬送X_移動完了
+CON
+ANB MR14902              ; COF搬送X_移動完了
+RES R55209               ; COF取出中
+CON
+RES @MR2900              ; PAUSE禁止
+CON
+JMP @MR2303
+STG @MR2303
+AND @MR010               ; COF搬送部 一時停止ｴﾗｰ無し
+JMP @MR2304
+STG @MR2304
+SET @MR2900              ; PAUSE禁止
+CON
+JMP @MR2305
+STG @MR2305
+AND R42908               ; R側ｱﾗｲﾒﾝﾄ P1
+AND R4415                ; 治具2COF旋回戻り端
+AND R43303               ; COF搬送 X軸 P3
+MPS
+AND MR15102              ; COF搬送Z_移動完了
+JMP @MR2306
+MPP
+MCALL POINT_MOVE #3 #2 #4 MR15111 MR15102;COF搬送Z_位置決め異常  COF搬送Z_移動完了
+STG @MR2306
+RES MR15102              ; COF搬送Z_移動完了
+CON
+ANB MR15102              ; COF搬送Z_移動完了
+RES @MR2900              ; PAUSE禁止
+CON
+JMP @MR2307
+STG @MR2307
+AND @MR010               ; COF搬送部 一時停止ｴﾗｰ無し
+SET R55206               ; R側ｱｰﾑ吸着ON要求
+CON
+JMP @MR2308
+STG @MR2308
+ANB R55206               ; R側ｱｰﾑ吸着ON要求
+LD MR7109                ; ｾｯﾄ治具2旋回ｱｰﾑ Vac ON
+AND CR2003               ; 常時OFF
+OR R55106                ; COF給材完了
+OR R55107                ; R側旋回ｱｰﾑ吸着NG
+ANL
+MPS
+LD R4212                 ; R治具2 COF反転ｱｰﾑVac検出
+ANB R55107               ; R側旋回ｱｰﾑ吸着NG
+ANL
+SET MR7201               ; COF搬送PP Vac OFF
+CON
+SET MR7202               ; COF搬送PP Vacﾊｶｲ ON
+CON
+RES MR7200               ; COF搬送PP Vac ON
+CON
+AND R4613                ; COF搬送PP Vac OFF検出
+RES R55106               ; COF給材完了
+CON
+JMP @MR2400
+MRD
+LDB R4212                ; R治具2 COF反転ｱｰﾑVac検出
+ANB R55107               ; R側旋回ｱｰﾑ吸着NG
+ANL
+TMR #889 #5
+CON
+AND T889
+SET MR7201               ; COF搬送PP Vac OFF
+CON
+SET MR7202               ; COF搬送PP Vacﾊｶｲ ON
+CON
+RES MR7200               ; COF搬送PP Vac ON
+CON
+AND R4613                ; COF搬送PP Vac OFF検出
+RES R55106               ; COF給材完了
+CON
+JMP @MR2400
+MPP
+AND R55107               ; R側旋回ｱｰﾑ吸着NG
+SET MR7201               ; COF搬送PP Vac OFF
+CON
+SET MR7202               ; COF搬送PP Vacﾊｶｲ ON
+CON
+RES MR7200               ; COF搬送PP Vac ON
+CON
+AND R4613                ; COF搬送PP Vac OFF検出
+RES R55106               ; COF給材完了
+CON
+JMP @MR2400
+;-------
+STG @MR2400
+TMR #916 #0
+CON
+AND T916
+RES R55214               ; 左側ｱｰﾑCOF給材ﾌﾗｸﾞ
+CON
+RES R55215               ; 右側ｱｰﾑCOF給材ﾌﾗｸﾞ
+CON
+JMP @MR2401
+STG @MR2401
+SET @MR2900              ; PAUSE禁止
+CON
+JMP @MR2402
+STG @MR2402
+MPS
+AND MR15102              ; COF搬送Z_移動完了
+JMP @MR2403
+MPP
+MCALL POINT_MOVE #3 #2 #1 MR15111 MR15102;COF搬送Z_位置決め異常  COF搬送Z_移動完了
+STG @MR2403
+RES MR15102              ; COF搬送Z_移動完了
+CON
+ANB MR15102              ; COF搬送Z_移動完了
+RES @MR2900              ; PAUSE禁止
+CON
+JMP @MR2404
+STG @MR2404
+AND @MR010               ; COF搬送部 一時停止ｴﾗｰ無し
+RES R55007               ; L側旋回ｱｰﾑ吸着NG
+CON
+RES R55107               ; R側旋回ｱｰﾑ吸着NG
+CON
+RES MR7201               ; COF搬送PP Vac OFF
+CON
+RES MR7202               ; COF搬送PP Vacﾊｶｲ ON
+CON
+RES MR7200               ; COF搬送PP Vac ON
+CON
+JMP @MR2405
+STG @MR2405
+AND @MR010               ; COF搬送部 一時停止ｴﾗｰ無し
+RES @MR015               ; COF有り
+CON
+JMP @MR2406
+STG @MR2406
+SET @MR2900              ; PAUSE禁止
+CON
+JMP @MR2407
+STG @MR2407
+MPS
+AND MR14902              ; COF搬送X_移動完了
+JMP @MR2408
+MPP
+MCALL POINT_MOVE #3 #1 #4 MR14911 MR14902;COF搬送X_位置決め異常  COF搬送X_移動完了
+STG @MR2408
+RES MR14902              ; COF搬送X_移動完了
+CON
+ANB MR14902              ; COF搬送X_移動完了
+RES @MR2900              ; PAUSE禁止
+CON
+JMP @MR2409
+STG @MR2409
+AND @MR010               ; COF搬送部 一時停止ｴﾗｰ無し
+MPS
+ANB R53002               ; STEP動作中
+JMP @MR2000
+MPP
+AND R53002               ; STEP動作中
+SET R55701               ; COF搬送完了
+CON
+ENDS
+;-------
+STG @MR2700              ; 終了処理へ
+AND @MR010               ; COF搬送部 一時停止ｴﾗｰ無し
+RES R55201               ; COF搬送部 AUTO 動作中
+CON
+SET R55202               ; COF搬送部 AUTO 動作終了
+CON
+ENDS
+;ｱﾗｰﾑ / ALARM
+;-------ERR11
+STG @MR1000              ; COF搬送P&P COF吸着ｴﾗｰ
+ANB R53008               ; 全体ｴﾗｰ発生
+SET R53008               ; 全体ｴﾗｰ発生
+CON
+SET R53200               ; COF搬送給材部ｴﾗｰ中
+CON
+SET R54306               ; COF搬送部ｴﾗｰ 表示
+CON
+SET R53708               ; ERR40
+CON
+SET R210                 ; RETRY SW　目隠し解除
+CON
+JMP @MR1001
+MOV #40 DM400            ; 表示画面No.
+STG @MR1001
+AND R53008               ; 全体ｴﾗｰ発生
+JMP @MR1002
+STG @MR1002
+ANB R53008               ; 全体ｴﾗｰ発生
+SET @MR1007              ; ｱﾗｰﾑ解除
+CON
+ENDS
+;-------　（PACK管理）
+LD @MR2900               ; PAUSE禁止
+OUT R54403               ; COF搬送部 PACK
+;-------
+LD R53411                ; 強制終了1
+OR R53412                ; 強制終了2
+RES @MR015               ; COF有り
+CON
+RES R55700               ; STEP/仮置き台準備要求
+CON
+RES R55703               ; STEP_COF搬送完了
+CON
+ZRES @MR100 @MR2915      ; 初回1回のみ動作
+CON
+ZRES @MR3000 @MR3015
+LD LR41110               ; 連続 L側ｱｰﾑ COF給材
+OR LR41111               ; 連続 R側ｱｰﾑ COF給材
+ANB R55701               ; COF搬送完了
+ANB R55703               ; STEP_COF搬送完了
+ANP R55702               ; COF搬送動作
+RES R55702               ; COF搬送動作
+CON
+SET @MR3000
+STG @MR3000
+AND @MR010               ; COF搬送部 一時停止ｴﾗｰ無し
+SET R55700               ; STEP/仮置き台準備要求
+CON
+JMP @MR3001
+STG @MR3001
+AND R55207               ; COF取出し要求
+SET @MR2000
+CON
+JMP @MR3002
+STG @MR3002
+AND R55701               ; COF搬送完了
+SET R55703               ; STEP_COF搬送完了
+CON
+RES R55701               ; COF搬送完了
+CON
+ENDS
+END
+ENDH

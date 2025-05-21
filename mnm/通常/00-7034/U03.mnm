@@ -1,0 +1,1154 @@
+DEVICE:128
+;MODULE:U03
+;MODULE_TYPE:0
+;SCRIPT_TYPE:
+;  ▽_入力受け
+LD X05                   ; 集塵機差圧計 OUT1
+OR T349                  ; 暫定
+TMR K311 K40             ; 集塵機吸引圧OK
+LD Y58                   ; 集塵機 Power ON
+AND Y308                 ; 集塵機 運転
+TMR K349 K30             ; 暫定
+;<h1/>□_装置状態・動作条件
+;  搬送P&P
+LD W1017.0               ; RBC3 PEND
+AND W1017.1              ; RBC3 HEND
+ANB W1017.2              ; RBC3 MOVE
+ANB W1017.3              ; RBC3 ALM
+AND W1017.4              ; RBC3 SV
+ANB W1017.15             ; RBC3 EMGS
+ANB M3771                ; ﾉｽﾞﾙθ 移動完了
+TMH K310 K10             ; 動作許可遅延
+CON
+AND T310                 ; 動作許可遅延
+OUT M3779                ; ﾉｽﾞﾙθ 動作可能
+;
+;  ▽_原点
+LD M3800                 ; Cycle1原点
+LD M3820                 ; Cycle2原点
+OR CR2002                ; 常時ON
+ANL
+OUT M3980                ; ﾕﾆｯﾄ3原点
+;  ▽_即停止異常
+LDB M3801                ; Cycle1即停止異常
+ANB M3821                ; Cycle2即停止異常
+INV
+OUT M3981                ; ﾕﾆｯﾄ3即停止異常
+;  ▽_原点復帰OFF
+LDB M50                  ; 運転準備
+LDB M51                  ; 即停止異常(緊急停止)
+ANB M52                  ; ｻｲｸﾙ停止異常(ｻｲｸﾙ停止)
+ANB M60                  ; ｴﾗｰ発生
+INV
+ORL
+OR T15                   ; 強制停止ONﾀｲﾏ
+OUT M3983                ; ﾕﾆｯﾄ3_原点復帰起動OFF
+;  ▽_原点復帰中
+LD M82                   ; 原点復帰開始
+ANB M3984                ; ﾕﾆｯﾄ3原点復帰中
+OR M3984                 ; ﾕﾆｯﾄ3原点復帰中
+ANB M3983                ; ﾕﾆｯﾄ3_原点復帰起動OFF
+ANB M3969                ; U3org_StepEnd
+OUT M3984                ; ﾕﾆｯﾄ3原点復帰中
+;  ▽_サイクル起動中
+LDB M3804                ; Cycle1起動中
+ANB M3824                ; Cycle2起動中
+OUB M3985                ; ﾕﾆｯﾄ3起動中
+;  ▽_サイクル停止異常
+LDB M3805                ; Cycle1ｻｲｸﾙ停止異常
+ANB M3825                ; Cycle2ｻｲｸﾙ停止異常
+OUB M3986                ; ﾕﾆｯﾄ3ｻｲｸﾙ停止異常
+;  ▽_払い出し後に停止する異常
+LDB CR2003               ; 常時OFF
+OUB M3987                ; ﾕﾆｯﾄ3払出後停止異常
+;  ▽_警報ﾌﾞｻﾞｰ
+LDB B065                 ; 101)RBC3 Manualﾓｰﾄﾞ
+OUB M3988                ; ﾕﾆｯﾄ3警報補助
+;  ▽_機器準備完了
+LDB M50                  ; 運転準備
+DW K0 W1017              ; RBC3 状態信号
+LD W1017.14              ; RBC3 PWR
+OUT M3990                ; ﾕﾆｯﾄ3機器準備完了
+;  ▽_一時停止異常
+LDB M3806                ; Cycle1ｴﾗｰ発生(一時停止処理)
+ANB M3826                ; Cycle2ｴﾗｰ発生(一時停止処理)
+OUB M3991                ; ﾕﾆｯﾄ3ｴﾗｰ発生
+;  ▽_ﾕﾆｯﾄ停止中ﾌﾗｸﾞ
+LD M3809                 ; Cycle1動作無し完了
+LD M3827                 ; Cycle2動作無し
+OR CR2002                ; 常時ON
+ANL
+OUT M3992                ; ﾕﾆｯﾄ3動作無し確認
+;  ▽_ﾕﾆｯﾄ3ﾜｰｸ無確認
+LDB X10B                 ; ﾊﾟﾙｽﾌﾞﾛｰ位置ﾜｰｸ検出
+OUT M3993                ; ﾕﾆｯﾄ3ﾜｰｸ無し
+;<h1/>□_自動回路
+;<h1/>▽_Cycle1
+LD W1017.0               ; RBC3 PEND
+AND W1017.1              ; RBC3 HEND
+ANB W1017.2              ; RBC3 MOVE
+AND W1017.4              ; RBC3 SV
+AND= D3051 K1            ; RBC3 移動完了No.
+OUT M3800                ; Cycle1原点
+LDB B060                 ; 096)RBC3ｺﾝﾄﾛｰﾗ異常
+ANB B061                 ; 097)RBC3位置決め異常
+ANB B062                 ; 098)集塵機異常
+ANB B063                 ; 099)集塵機吸引圧異常
+ANB B064                 ; 100)ﾊﾟﾚｯﾄID異常
+INV
+OUT M3801                ; Cycle1即停止異常
+LD M50                   ; 運転準備
+ANB M3803                ; Cycle1起動OFF
+ANB M3804                ; Cycle1起動中
+ANB M130                 ; 一時停止
+ANB M56                  ; 自動起動停止指令(ｻｲｸﾙ停止)
+ANB M3808                ; U3_Cycle1払出完了
+OUT M3802                ; Cycle1起動条件
+LDB M50                  ; 運転準備
+OR M3986                 ; ﾕﾆｯﾄ3ｻｲｸﾙ停止異常
+OR M51                   ; 即停止異常(緊急停止)
+OR T15                   ; 強制停止ONﾀｲﾏ
+OUT M3803                ; Cycle1起動OFF
+LD M73                   ; 各工程起動指令
+AND M3802                ; Cycle1起動条件
+OR M3804                 ; Cycle1起動中
+AND M50                  ; 運転準備
+ANB M3803                ; Cycle1起動OFF
+ANB M3199                ; U3C1_S199__動作終了
+OUT M3804                ; Cycle1起動中
+LDB CR2003               ; 常時OFF
+INV
+OUT M3805                ; Cycle1ｻｲｸﾙ停止異常
+LDB CR2003               ; 常時OFF
+INV
+OUT M3806                ; Cycle1ｴﾗｰ発生(一時停止処理)
+LD CR2002                ; 常時ON
+OUT M3895                ; UT3 ｼﾘﾝﾀﾞ動作中無し
+LDB M3000                ; U3C1_S000
+ANB M3002                ; U3C1_S002
+ANB M3003                ; U3C1_S003
+ANB M3013                ; U3C1_S013
+ANB M3190                ; U3C1_S190
+INV
+AND M130                 ; 一時停止
+OUT M3807                ; Cycle1動作無し
+LD M3807                 ; Cycle1動作無し
+OR M3809                 ; Cycle1動作無し完了
+AND M130                 ; 一時停止
+OUT M3809                ; Cycle1動作無し完了
+;ｻｲｸﾙﾀｲﾑ計測
+LD M3804                 ; Cycle1起動中
+AND>= D3000 K4           ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+AND CR2004               ; 10msｸﾛｯｸﾊﾟﾙｽ
+@INC D3900               ; ｻｲｸﾙﾀｲﾑ
+LDF M3804                ; Cycle1起動中
+BMOV D3900 D3901 K10     ; ｻｲｸﾙﾀｲﾑ  ｻｲｸﾙﾀｲﾑ Log1
+DW K0 D3900              ; ｻｲｸﾙﾀｲﾑ
+;  ▽_Cycle1ｽﾃｯﾌﾟ回路
+LD CR2002                ; 常時ON
+ZRES M3000 M3199         ; U3C1_S000  U3C1_S199__動作終了
+LDB M3804                ; Cycle1起動中
+MOV K0 D3000             ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+LD M3804                 ; Cycle1起動中
+MOV D3000 Z1             ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+SET M3000:Z1             ; U3C1_S000
+;<h1/>▽_Cycle1動作回路
+LD M3000                 ; U3C1_S000
+MPS
+ANB M52                  ; ｻｲｸﾙ停止異常(ｻｲｸﾙ停止)
+INC D3000                ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+MPP
+AND M52                  ; ｻｲｸﾙ停止異常(ｻｲｸﾙ停止)
+MOV K190 D3000           ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+;集塵機ON / Dust collector ON
+LD M3001                 ; U3C1_S001
+MPS
+AND T311                 ; 集塵機吸引圧OK
+INC D3000                ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+MPP
+OUT M3661                ; 集塵機ON
+;<h1/>  ▽_S001 ﾌﾞﾛｰ要求待ち / Waiting for Blow request
+LD M3002                 ; U3C1_S002
+MPS
+ANB M130                 ; 一時停止
+MPS
+LDB M36                  ; 払出ﾓｰﾄﾞ
+ORB M2808                ; U2_Cycle1払出完了
+ANL
+MPS
+AND M2510                ; U2→U3 ﾌﾞﾛｰ要求
+MOV K10 D3000            ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+MPP
+LDB M2510                ; U2→U3 ﾌﾞﾛｰ要求
+ANB Y308                 ; 集塵機 運転
+AND X10A                 ; 投入CV 移載位置ﾜｰｸ到達確認
+ANL
+MOV K1 D3000             ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+MRD
+LD M36                   ; 払出ﾓｰﾄﾞ
+AND M2808                ; U2_Cycle1払出完了
+ANL
+MOV K190 D3000           ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+MPP
+ANB M301                 ; ﾊﾟﾚｯﾄID OK
+TMR K313 K30             ; Error delay
+CON
+AND T313                 ; Error delay
+MOV K5 D3000             ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+MPP
+LD Y308                  ; 集塵機 運転
+ANB X10A                 ; 投入CV 移載位置ﾜｰｸ到達確認
+ANB X10C                 ; 排出CV 受取位置ﾜｰｸ到達確認
+ANL
+TMR K312 K1200           ; 動作無し集塵機停止時間
+CON
+AND T312                 ; 動作無し集塵機停止時間
+INC D3000                ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+;動作無し集塵機停止 / Dustcollector stop
+LD M3003                 ; U3C1_S003
+MPS
+ANB M130                 ; 一時停止
+MPS
+LDB M36                  ; 払出ﾓｰﾄﾞ
+ORB M2808                ; U2_Cycle1払出完了
+ANB X05                  ; 集塵機差圧計 OUT1
+ANL
+MOV K2 D3000             ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+MPP
+LD M36                   ; 払出ﾓｰﾄﾞ
+AND M2808                ; U2_Cycle1払出完了
+ANL
+MOV K190 D3000           ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+MPP
+OUT M3672                ; 集塵機OFF
+;◇ﾊﾟﾚｯﾄID異常 / Palette ID error
+LD M3005                 ; U3C1_S005
+AND B064                 ; 100)ﾊﾟﾚｯﾄID異常
+MOV K190 D3000           ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+;<h1/>  ▽_S010 ﾌﾞﾛｰ開始 / Blow start
+;集塵機ON / Dust collector ON
+LD M3010                 ; U3C1_S010
+MPS
+AND T311                 ; 集塵機吸引圧OK
+INC D3000                ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+MPP
+OUT M3662                ; 集塵機ON
+;Blow動作 / Blow routine
+LD M3011                 ; U3C1_S011
+MPS
+AND M3401                ; 異物除去完了
+INC D3000                ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+MPP
+OUT M3403                ; 異物除去動作
+LD M3012                 ; U3C1_S012
+ANB M3401                ; 異物除去完了
+INC D3000                ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+;U2 H/S
+LD M3013                 ; U3C1_S013
+MPS
+LDB M130                 ; 一時停止
+ANB M2510                ; U2→U3 ﾌﾞﾛｰ要求
+ANL
+INC D3000                ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+MPP
+OUT M3510                ; U3→U2 ﾌﾞﾛｰ完了
+;P1 move
+LD M3014                 ; U3C1_S014
+MPS
+AND= D3051 K1            ; RBC3 移動完了No.
+MOV K190 D3000           ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+MPP
+LD<> D3051 K1            ; RBC3 移動完了No.
+AND M3779                ; ﾉｽﾞﾙθ 動作可能
+ANL
+DW K1 D3050              ; RBC3 移動No.
+CON
+INC D3000                ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+LD M3015                 ; U3C1_S015
+MPS
+AND M3771                ; ﾉｽﾞﾙθ 移動完了
+MOV K190 D3000           ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+MPP
+OUT M3745                ; ﾌﾞﾛｰﾍｯﾄﾞ 移動
+;<h1/>  ▽_ｻｲｸﾙ終了
+LD M3190                 ; U3C1_S190
+AND M2808                ; U2_Cycle1払出完了
+OR M3803                 ; Cycle1起動OFF
+OR M3808                 ; U3_Cycle1払出完了
+AND M36                  ; 払出ﾓｰﾄﾞ
+OUT M3808                ; U3_Cycle1払出完了
+LD M3190                 ; U3C1_S190
+ANB M130                 ; 一時停止
+AND M123                 ; 安全扉正常
+MPS
+ANB M3808                ; U3_Cycle1払出完了
+MOV K199 D3000           ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+MPP
+AND M3808                ; U3_Cycle1払出完了
+INC D3000                ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+LD M3191                 ; U3C1_S191
+MPS
+LDB Y308                 ; 集塵機 運転
+ANB X05                  ; 集塵機差圧計 OUT1
+ANL
+MOV K199 D3000           ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+MPP
+OUT M3673                ; 集塵機OFF
+;<h1/>□_原点復帰回路
+LD CR2002                ; 常時ON
+ZRES M3900 M3969         ; U3org_S000  U3org_StepEnd
+LDB M3984                ; ﾕﾆｯﾄ3原点復帰中
+MOV K0 D3010             ; 原点復帰ｽﾃｯﾌﾟ
+LD M3984                 ; ﾕﾆｯﾄ3原点復帰中
+MOV D3010 Z1             ; 原点復帰ｽﾃｯﾌﾟ
+SET M3900:Z1             ; U3org_S000
+;搬送RB 原点復帰完了待ち
+LD M3900                 ; U3org_S000
+AND M2520                ; U2→U1-4 Origin動作許可
+INC D3010                ; 原点復帰ｽﾃｯﾌﾟ
+LD M3901                 ; U3org_S001
+MPS
+ANB M2520                ; U2→U1-4 Origin動作許可
+INC D3010                ; 原点復帰ｽﾃｯﾌﾟ
+MPP
+OUT M3520                ; U3→U2 Origin許可受領
+;Blow head RB HOME
+LD M3902                 ; U3org_S002
+ANB W1017.2              ; RBC3 MOVE
+ANB W1017.3              ; RBC3 ALM
+AND W1017.4              ; RBC3 SV
+ANB W1017.15             ; RBC3 EMGS
+ANB M3771                ; ﾉｽﾞﾙθ 移動完了
+INC D3010                ; 原点復帰ｽﾃｯﾌﾟ
+LD M3903                 ; U3org_S003
+MPS
+LDB W1017.0              ; RBC3 PEND
+ANB W1017.1              ; RBC3 HEND
+AND W1017.2              ; RBC3 MOVE
+ANL
+INC D3010                ; 原点復帰ｽﾃｯﾌﾟ
+MPP
+OUT M3760                ; RBC3 HOME
+LD M3904                 ; U3org_S004
+AND W1017.0              ; RBC3 PEND
+AND W1017.1              ; RBC3 HEND
+ANB W1017.2              ; RBC3 MOVE
+INC D3010                ; 原点復帰ｽﾃｯﾌﾟ
+;Blow head RB move to P1
+LD M3905                 ; U3org_S005
+AND M3779                ; ﾉｽﾞﾙθ 動作可能
+DW K1 D3050              ; RBC3 移動No.
+CON
+INC D3010                ; 原点復帰ｽﾃｯﾌﾟ
+LD M3906                 ; U3org_S006
+MPS
+AND M3771                ; ﾉｽﾞﾙθ 移動完了
+MOV K65 D3010            ; 原点復帰ｽﾃｯﾌﾟ
+MPP
+OUT M3744                ; ﾌﾞﾛｰﾍｯﾄﾞ 移動
+;終了
+LD M3965                 ; U3org_S065
+AND M3980                ; ﾕﾆｯﾄ3原点
+ANB M82                  ; 原点復帰開始
+MOV K69 D3010            ; 原点復帰ｽﾃｯﾌﾟ
+LD M3968                 ; U3org_S068
+OUT M3994                ; ﾕﾆｯﾄ3原点復帰時ﾜｰｸ有り
+;<h1/>□_手動回路
+LD M31                   ; 手動ﾓｰﾄﾞ
+AND M162                 ; 安全扉除外手動操作可能条件
+ANB M3984                ; ﾕﾆｯﾄ3原点復帰中
+ANB M3985                ; ﾕﾆｯﾄ3起動中
+ANB T15                  ; 強制停止ONﾀｲﾏ
+MC
+;ｴｱﾌﾞﾛｰ / Air blow
+LD CR2002                ; 常時ON
+OUT M3680                ; ｴｱﾌﾞﾛｰON条件
+LDP B10C0                ; UNIT3-1-1 TP-PB
+ANB B10C1                ; UNIT3-1-2 TP-PB
+AND M3680                ; ｴｱﾌﾞﾛｰON条件
+LD M3681                 ; MUN_ｴｱﾌﾞﾛｰON指令
+ANB M3683                ; MUN_ｴｱﾌﾞﾛｰOFF指令
+ORL
+OUT M3681                ; MUN_ｴｱﾌﾞﾛｰON指令
+LD CR2002                ; 常時ON
+OUT M3682                ; ｴｱﾌﾞﾛｰOFF条件
+LDP B10C1                ; UNIT3-1-2 TP-PB
+ANB B10C0                ; UNIT3-1-1 TP-PB
+AND M3682                ; ｴｱﾌﾞﾛｰOFF条件
+OUT M3683                ; MUN_ｴｱﾌﾞﾛｰOFF指令
+;集塵機 / Dust collector
+LD CR2002                ; 常時ON
+OUT M3684                ; 集塵機 ON条件
+LDP B10C2                ; UNIT3-1-3 TP-PB
+ANB B10C3                ; UNIT3-1-4 TP-PB
+AND M3684                ; 集塵機 ON条件
+LD M3685                 ; MUN_集塵機 ON
+ANB M3687                ; MUN_集塵機 OFF
+ORL
+ANB M3503                ; 集塵機稼動OK
+OUT M3685                ; MUN_集塵機 ON
+LD CR2002                ; 常時ON
+OUT M3686                ; 集塵機 OFF条件
+LDP B10C3                ; UNIT3-1-4 TP-PB
+ANB B10C2                ; UNIT3-1-3 TP-PB
+AND M3686                ; 集塵機 OFF条件
+OUT M3687                ; MUN_集塵機 OFF
+MCR
+;
+LD M31                   ; 手動ﾓｰﾄﾞ
+AND Y51                  ; 安全ﾄﾞｱﾛｯｸ
+AND M123                 ; 安全扉正常
+AND M32                  ; ﾒｲﾝ手動操作可能条件
+ANB M3984                ; ﾕﾆｯﾄ3原点復帰中
+ANB M3985                ; ﾕﾆｯﾄ3起動中
+ANB T15                  ; 強制停止ONﾀｲﾏ
+MC
+;<h1/>    RB
+LD M3779                 ; ﾉｽﾞﾙθ 動作可能
+ANB M3702                ; MUN_移動要求
+ANB M3770                ; ﾉｽﾞﾙθ Move
+ANB W1017.2              ; RBC3 MOVE
+AND W1017.0              ; RBC3 PEND
+AND W1017.1              ; RBC3 HEND
+OUT M3700                ; ﾌﾞﾛｰﾍｯﾄﾞ動作可
+;Transfer
+LDP B10D0                ; UNIT3-2-1 TP-PB
+AND M3700                ; ﾌﾞﾛｰﾍｯﾄﾞ動作可
+OR M3704                 ; ﾌﾞﾛｰﾍｯﾄﾞ移動要求
+ANB M3703                ; 移動完了
+OUT M3704                ; ﾌﾞﾛｰﾍｯﾄﾞ移動要求
+MOV K1 D3050             ; RBC3 移動No.
+LDP B10D1                ; UNIT3-2-2 TP-PB
+AND M3700                ; ﾌﾞﾛｰﾍｯﾄﾞ動作可
+OR M3705                 ; ﾌﾞﾛｰﾍｯﾄﾞ移動要求
+ANB M3703                ; 移動完了
+OUT M3705                ; ﾌﾞﾛｰﾍｯﾄﾞ移動要求
+MOV K2 D3050             ; RBC3 移動No.
+;
+LDB M3704                ; ﾌﾞﾛｰﾍｯﾄﾞ移動要求
+ANB M3705                ; ﾌﾞﾛｰﾍｯﾄﾞ移動要求
+INV
+OUT M3701                ; 移動要求まとめ
+LD M3701                 ; 移動要求まとめ
+OR M3702                 ; MUN_移動要求
+ANB M3703                ; 移動完了
+OUT M3702                ; MUN_移動要求
+LD M3771                 ; ﾉｽﾞﾙθ 移動完了
+OR M3703                 ; 移動完了
+AND M3702                ; MUN_移動要求
+OUT M3703                ; 移動完了
+;Blow 1cycle
+LD M3779                 ; ﾉｽﾞﾙθ 動作可能
+OUT M3500                ; ﾌﾞﾛｰ1cycle可
+LDP B10DE                ; UNIT3-2-15 TP-PB
+AND M3500                ; ﾌﾞﾛｰ1cycle可
+OR M3501                 ; ﾌﾞﾛｰ1cycle開始
+ANB M3502                ; ﾌﾞﾛｰ1cycle終了
+MPS
+OUT M3501                ; ﾌﾞﾛｰ1cycle開始
+MPP
+ANB M3503                ; 集塵機稼動OK
+OUT M3660                ; 集塵機ON
+LD T311                  ; 集塵機吸引圧OK
+OR M3503                 ; 集塵機稼動OK
+AND M3501                ; ﾌﾞﾛｰ1cycle開始
+MPS
+OUT M3503                ; 集塵機稼動OK
+MPP
+ANB M3504                ; ﾌﾞﾛｰ完了
+OUT M3402                ; 異物除去動作
+LD M3503                 ; 集塵機稼動OK
+AND M3401                ; 異物除去完了
+OR M3504                 ; ﾌﾞﾛｰ完了
+AND M3501                ; ﾌﾞﾛｰ1cycle開始
+MPS
+OUT M3504                ; ﾌﾞﾛｰ完了
+MPP
+ANB M3505                ; P1 move
+OUT M3671                ; 集塵機OFF
+LD M3504                 ; ﾌﾞﾛｰ完了
+ANB M3401                ; 異物除去完了
+ANB Y308                 ; 集塵機 運転
+ANB X05                  ; 集塵機差圧計 OUT1
+AND M3779                ; ﾉｽﾞﾙθ 動作可能
+OR M3505                 ; P1 move
+AND M3501                ; ﾌﾞﾛｰ1cycle開始
+MPS
+OUT M3505                ; P1 move
+MPP
+LDB M3502                ; ﾌﾞﾛｰ1cycle終了
+AND<> D3051 K1           ; RBC3 移動完了No.
+ANL
+@DW K1 D3050             ; RBC3 移動No.
+CON
+OUT M3743                ; ﾌﾞﾛｰﾍｯﾄﾞ 移動
+LD M3505                 ; P1 move
+LD M3771                 ; ﾉｽﾞﾙθ 移動完了
+OR= D3051 K1             ; RBC3 移動完了No.
+ANL
+OUT M3502                ; ﾌﾞﾛｰ1cycle終了
+;
+LD B121B                 ; RBC3_jog-
+OUT W2017.7              ; RBC3 JOG-
+LD B121A                 ; RBC3_jog+
+OUT W2017.8              ; RBC3 JOG+
+MCR
+;<h1/>○  Subﾙｰﾁﾝ  ○
+;<h1/>  異物除去ｴｱﾌﾞﾛｰ / Blow operation
+LD CR2002                ; 常時ON
+ZRES M3300 M3329         ; U3Sb1_S00  U3Sb1_S29 完了
+LDB M3402                ; 異物除去動作
+ANB M3403                ; 異物除去動作
+INV
+OUT M3400                ; 異物除去中
+LDB M3400                ; 異物除去中
+MOV K0 D3005             ; sub1ｽﾃｯﾌﾟｶｳﾝﾀ
+LD M3400                 ; 異物除去中
+MOV D3005 Z3             ; sub1ｽﾃｯﾌﾟｶｳﾝﾀ
+MPS
+SET M3300:Z3             ; U3Sb1_S00
+MPP
+AND M3329                ; U3Sb1_S29 完了
+OUT M3401                ; 異物除去完了
+; / Initial routine
+LD M3300                 ; U3Sb1_S00
+DW K0 D3100              ; ﾌﾞﾛｰ回数ｶｳﾝﾄ
+CON
+INC D3005                ; sub1ｽﾃｯﾌﾟｶｳﾝﾀ
+;P1 move
+LD M3301                 ; U3Sb1_S01
+MPS
+AND= D3051 K1            ; RBC3 移動完了No.
+MOV K3 D3005             ; sub1ｽﾃｯﾌﾟｶｳﾝﾀ
+MPP
+LD<> D3051 K1            ; RBC3 移動完了No.
+AND M3779                ; ﾉｽﾞﾙθ 動作可能
+ANL
+DW K1 D3050              ; RBC3 移動No.
+CON
+INC D3005                ; sub1ｽﾃｯﾌﾟｶｳﾝﾀ
+LD M3302                 ; U3Sb1_S02
+MPS
+AND M3771                ; ﾉｽﾞﾙθ 移動完了
+INC D3005                ; sub1ｽﾃｯﾌﾟｶｳﾝﾀ
+MPP
+OUT M3740                ; ﾌﾞﾛｰﾍｯﾄﾞ 移動
+;Blow ON
+LD M3303                 ; U3Sb1_S03
+MPS
+AND Y309                 ; 除電 ON
+TMR K330 D20812          ; 移動開始ﾃﾞｨﾚｲ  ﾌﾞﾛｰ移動開始ﾃﾞｨﾚｲ
+CON
+AND T330                 ; 移動開始ﾃﾞｨﾚｲ
+INC D3005                ; sub1ｽﾃｯﾌﾟｶｳﾝﾀ
+MPP
+OUT M3640                ; ﾌﾞﾛｰON
+;P2 move
+LD M3304                 ; U3Sb1_S04
+AND M3779                ; ﾉｽﾞﾙθ 動作可能
+DW K2 D3050              ; RBC3 移動No.
+CON
+INC D3005                ; sub1ｽﾃｯﾌﾟｶｳﾝﾀ
+LD M3305                 ; U3Sb1_S05
+MPS
+AND M3771                ; ﾉｽﾞﾙθ 移動完了
+INC D3100                ; ﾌﾞﾛｰ回数ｶｳﾝﾄ
+CON
+INC D3005                ; sub1ｽﾃｯﾌﾟｶｳﾝﾀ
+MPP
+OUT M3741                ; ﾌﾞﾛｰﾍｯﾄﾞ 移動
+;終了判断 / Judge of blow complete
+LD M3306                 ; U3Sb1_S06
+MPS
+AND< D3100 D20810        ; ﾌﾞﾛｰ回数ｶｳﾝﾄ  ﾌﾞﾛｰ回数
+MOV K10 D3005            ; sub1ｽﾃｯﾌﾟｶｳﾝﾀ
+MPP
+AND>= D3100 D20810       ; ﾌﾞﾛｰ回数ｶｳﾝﾄ  ﾌﾞﾛｰ回数
+MOV K20 D3005            ; sub1ｽﾃｯﾌﾟｶｳﾝﾀ
+;継続 / Continue
+LD M3310                 ; U3Sb1_S10
+TMR K331 D20814          ; 移動ﾃﾞｨﾚｲ  ﾌﾞﾛｰ移動折り返しﾃﾞｨﾚｲ
+CON
+AND T331                 ; 移動ﾃﾞｨﾚｲ
+INC D3005                ; sub1ｽﾃｯﾌﾟｶｳﾝﾀ
+;P1 move
+LD M3311                 ; U3Sb1_S11
+AND M3779                ; ﾉｽﾞﾙθ 動作可能
+DW K1 D3050              ; RBC3 移動No.
+CON
+INC D3005                ; sub1ｽﾃｯﾌﾟｶｳﾝﾀ
+LD M3312                 ; U3Sb1_S12
+MPS
+AND M3771                ; ﾉｽﾞﾙθ 移動完了
+INC D3100                ; ﾌﾞﾛｰ回数ｶｳﾝﾄ
+CON
+INC D3005                ; sub1ｽﾃｯﾌﾟｶｳﾝﾀ
+MPP
+OUT M3742                ; ﾌﾞﾛｰﾍｯﾄﾞ 移動
+;終了判断 / Judge of blow complete
+LD M3313                 ; U3Sb1_S13
+MPS
+AND< D3100 D20810        ; ﾌﾞﾛｰ回数ｶｳﾝﾄ  ﾌﾞﾛｰ回数
+INC D3005                ; sub1ｽﾃｯﾌﾟｶｳﾝﾀ
+MPP
+AND>= D3100 D20810       ; ﾌﾞﾛｰ回数ｶｳﾝﾄ  ﾌﾞﾛｰ回数
+MOV K20 D3005            ; sub1ｽﾃｯﾌﾟｶｳﾝﾀ
+;継続 / Continue
+LD M3314                 ; U3Sb1_S14
+TMR K332 D20814          ; 移動ﾃﾞｨﾚｲ  ﾌﾞﾛｰ移動折り返しﾃﾞｨﾚｲ
+CON
+AND T332                 ; 移動ﾃﾞｨﾚｲ
+MOV K4 D3005             ; sub1ｽﾃｯﾌﾟｶｳﾝﾀ
+;ﾌﾞﾛｰ終了 / Blow complete
+LD M3320                 ; U3Sb1_S20
+TMR K333 D20816          ; ﾌﾞﾛｰ終了ﾃﾞｨﾚｲ  ﾌﾞﾛｰ移動終了ﾃﾞｨﾚｲ
+CON
+AND T333                 ; ﾌﾞﾛｰ終了ﾃﾞｨﾚｲ
+INC D3005                ; sub1ｽﾃｯﾌﾟｶｳﾝﾀ
+LD M3321                 ; U3Sb1_S21
+MPS
+LDB Y30A                 ; ｸﾘｰﾆﾝｸﾞｴｱﾌﾞﾛｰON
+ANB Y309                 ; 除電 ON
+ANL
+MOV K28 D3005            ; sub1ｽﾃｯﾌﾟｶｳﾝﾀ
+MPP
+OUT M3651                ; ﾌﾞﾛｰOFF
+;End
+LD M3328                 ; U3Sb1_S28
+MOV K29 D3005            ; sub1ｽﾃｯﾌﾟｶｳﾝﾀ
+;<h1/>□_出力回路
+;<h1/>____▼_SOL
+;Blow
+LD Y309                  ; 除電 ON
+FLIK D20010 D20012 M3649 ; ﾊﾟﾙｽﾌﾞﾛｰON時間  ﾊﾟﾙｽﾌﾞﾛｰOFF時間  ﾌﾞﾛｰﾊﾟﾙｽ化
+LDB M3640                ; ﾌﾞﾛｰON
+ANB M3641                ; ﾌﾞﾛｰON
+ANB M3642                ; ﾌﾞﾛｰON
+ANB M3643                ; ﾌﾞﾛｰON
+ANB M3644                ; ﾌﾞﾛｰON
+ANB M3645                ; ﾌﾞﾛｰON
+ANB M3646                ; ﾌﾞﾛｰON
+INV
+LDB M3647                ; ﾌﾞﾛｰON
+ANB M3681                ; MUN_ｴｱﾌﾞﾛｰON指令
+INV
+ORL
+LD Y309                  ; 除電 ON
+ANB M3650                ; ﾌﾞﾛｰOFF補助
+ORL
+MPS
+OUT Y309                 ; 除電 ON
+MPP
+AND M3649                ; ﾌﾞﾛｰﾊﾟﾙｽ化
+OUT Y30A                 ; ｸﾘｰﾆﾝｸﾞｴｱﾌﾞﾛｰON
+LDB M3651                ; ﾌﾞﾛｰOFF
+ANB M3652                ; ﾌﾞﾛｰOFF
+ANB M3653                ; ﾌﾞﾛｰOFF
+ANB M3654                ; ﾌﾞﾛｰOFF
+ANB M3655                ; ﾌﾞﾛｰOFF
+ANB M3656                ; ﾌﾞﾛｰOFF
+ANB M3657                ; ﾌﾞﾛｰOFF
+ANB M3658                ; ﾌﾞﾛｰOFF
+INV
+LDB T15                  ; 強制停止ONﾀｲﾏ
+INV
+ORL
+LDB M3683                ; MUN_ｴｱﾌﾞﾛｰOFF指令
+INV
+ORL
+OUT M3650                ; ﾌﾞﾛｰOFF補助
+;
+LD M50                   ; 運転準備
+AND M123                 ; 安全扉正常
+ANB M51                  ; 即停止異常(緊急停止)
+MC
+;<h1/>____▼_RBC3 (BlowHead θ axis)
+LDB M3740                ; ﾌﾞﾛｰﾍｯﾄﾞ 移動
+ANB M3741                ; ﾌﾞﾛｰﾍｯﾄﾞ 移動
+ANB M3742                ; ﾌﾞﾛｰﾍｯﾄﾞ 移動
+ANB M3743                ; ﾌﾞﾛｰﾍｯﾄﾞ 移動
+ANB M3744                ; ﾌﾞﾛｰﾍｯﾄﾞ 移動
+ANB M3745                ; ﾌﾞﾛｰﾍｯﾄﾞ 移動
+ANB M3746                ; ﾌﾞﾛｰﾍｯﾄﾞ 移動
+ANB M3747                ; ﾌﾞﾛｰﾍｯﾄﾞ 移動
+INV
+LDB M3702                ; MUN_移動要求
+INV
+ORL
+OUT M3770                ; ﾉｽﾞﾙθ Move
+;Z1 = (D3050-1) * 4					'ﾃﾞｰﾀ先頭ｲﾝﾃﾞｯｸｽ 1Point 4Data
+;Z2 = Z1 + 2							'速度は2ﾜｰﾄﾞ後
+;D3052.L = D20700.L:Z1				'目標位置ﾃﾞｰﾀｾｯﾄ
+;D3054.D = #3						'位置決め完了幅0.03mm固定
+;D3056.U = (D20700.L:Z2)*D141/100	'速度ﾃﾞｰﾀｾｯﾄ
+;D3057.U = 30						'加減速ﾃﾞｰﾀｾｯﾄ 0.3G
+;D3051 = D3050						'移動ﾎﾟｲﾝﾄNo.記憶
+;SET(M3774)							'ﾃﾞｰﾀｾｯﾄ完了ﾌﾗｸﾞ
+LDP M3770                ; ﾉｽﾞﾙθ Move
+NCJ K1000
+;Z1 = (D3050-1) * 4					'ﾃﾞｰﾀ先頭ｲﾝﾃﾞｯｸｽ 1Point 4Data
+;
+LD CR2002                ; 常時ON
+LDA D3050                ; RBC3 移動No.
+CON
+EXT
+CON
+SUB.L +1
+CON
+MUL.L +4
+CON
+STA.L Z1
+;Z2 = Z1 + 2							'速度は2ﾜｰﾄﾞ後
+;
+LD CR2002                ; 常時ON
+LDA.L Z1
+CON
+ADD.L +2
+CON
+STA.L Z2
+;D3052.L = D20700.L:Z1				'目標位置ﾃﾞｰﾀｾｯﾄ
+;
+LD CR2002                ; 常時ON
+MOV.L D20700:Z1 D3052    ; RBC3 目標位置
+;D3054.D = #3						'位置決め完了幅0.03mm固定
+;
+LD CR2002                ; 常時ON
+MOV.D K3 D3054           ; RBC3 位置決め幅
+;D3056.U = (D20700.L:Z2)*D141/100	'速度ﾃﾞｰﾀｾｯﾄ
+;
+LD CR2002                ; 常時ON
+LDA D141                 ; IAI Speed  Override
+CON
+EXT
+CON
+MUL.L D20700:Z2
+CON
+DIV.L +100
+CON
+STA D3056                ; RBC3 位置決め速度
+;D3057.U = 30						'加減速ﾃﾞｰﾀｾｯﾄ 0.3G
+;
+LD CR2002                ; 常時ON
+MOV K30 D3057            ; RBC3 加減速度
+;D3051 = D3050						'移動ﾎﾟｲﾝﾄNo.記憶
+;
+LD CR2002                ; 常時ON
+MOV D3050 D3051          ; RBC3 移動No.  RBC3 移動完了No.
+;SET(M3774)							'ﾃﾞｰﾀｾｯﾄ完了ﾌﾗｸﾞ
+LD CR2002                ; 常時ON
+SET M3774                ; RBC3ﾃﾞｰﾀｾｯﾄ完了
+LABEL K1000
+;
+LD M3774                 ; RBC3ﾃﾞｰﾀｾｯﾄ完了
+MSTRT IAI_CON_MOVE_3 D3052 D3054 D3056 W1010 W2010 M3775 D3058 M3770 K600 D3057;RBC3 目標位置  RBC3 位置決め幅  RBC3 位置決め速度  RBC3 現在位置  RBC3 目標位置  RBC3 Move end  RBC3 C-CODE  ﾉｽﾞﾙθ Move  RBC3 加減速度
+RES M3774                ; RBC3ﾃﾞｰﾀｾｯﾄ完了
+LD M3775                 ; RBC3 Move end
+ANB _IAI_CON_MOVE_3
+OR M3771                 ; ﾉｽﾞﾙθ 移動完了
+AND M3770                ; ﾉｽﾞﾙθ Move
+RES M3775                ; RBC3 Move end
+CON
+OUT M3771                ; ﾉｽﾞﾙθ 移動完了
+LDB M3770                ; ﾉｽﾞﾙθ Move
+RES M3775                ; RBC3 Move end
+;制御出力
+LD B1230                 ; RBC1 REMOTE
+OUT W2017.14             ; RBC3 RMOD
+LD B1210                 ; IAI_INCHING
+OUT W2017.5              ; RBC3 JISL
+LDB B1210                ; IAI_INCHING
+AND B1211                ; IAI_High speed
+LD B1210                 ; IAI_INCHING
+ANB B1211                ; IAI_High speed
+ORL
+OUT W2017.6              ; RBC3 JVEL
+LD B121C                 ; RBC3_HOME
+AND M3990                ; ﾕﾆｯﾄ3機器準備完了
+AND M123                 ; 安全扉正常
+AND Y51                  ; 安全ﾄﾞｱﾛｯｸ
+AND M415                 ; 動作中無し
+LD M3760                 ; RBC3 HOME
+ANB W1017.2              ; RBC3 MOVE
+ANB W1017.3              ; RBC3 ALM
+AND W1017.4              ; RBC3 SV
+ANB W1017.15             ; RBC3 EMGS
+ORL
+OUT W2017.1              ; RBC3 HOME
+MCR
+;RBCｻｰﾎﾞON信号
+LD M50                   ; 運転準備
+AND M121                 ; 非常停止正常
+LD M123                  ; 安全扉正常
+OR W1017.2               ; RBC3 MOVE
+OR M130                  ; 一時停止
+ANL
+AND W1017.14             ; RBC3 PWR
+MPS
+AND W1017.3              ; RBC3 ALM
+OUT W2017.3              ; RBC3 RES
+MPP
+LDB W1017.3              ; RBC3 ALM
+ANB W1017.15             ; RBC3 EMGS
+ANL
+TMH K317 K45             ; ｻｰﾎﾞONﾃﾞｨﾚｲ
+CON
+AND T317                 ; ｻｰﾎﾞONﾃﾞｨﾚｲ
+OUT W2017.4              ; RBC3 SON
+;<h1/>____▼_集塵機 Dustcollector
+LD M50                   ; 運転準備
+ANB M51                  ; 即停止異常(緊急停止)
+MC
+;集塵機 / Dust collector
+LDB M3660                ; 集塵機ON
+ANB M3661                ; 集塵機ON
+ANB M3662                ; 集塵機ON
+ANB M3663                ; 集塵機ON
+ANB M3664                ; 集塵機ON
+ANB M3665                ; 集塵機ON
+ANB M3666                ; 集塵機ON
+ANB M3667                ; 集塵機ON
+INV
+LDB M3685                ; MUN_集塵機 ON
+INV
+ORL
+LD Y308                  ; 集塵機 運転
+ANB M3670                ; 集塵機OFF補助
+ORL
+OUT Y308                 ; 集塵機 運転
+LDB M3671                ; 集塵機OFF
+ANB M3672                ; 集塵機OFF
+ANB M3673                ; 集塵機OFF
+ANB M3674                ; 集塵機OFF
+ANB M3675                ; 集塵機OFF
+ANB M3676                ; 集塵機OFF
+ANB M3677                ; 集塵機OFF
+ANB M3678                ; 集塵機OFF
+INV
+LDB T15                  ; 強制停止ONﾀｲﾏ
+INV
+ORL
+LDB X108                 ; 集塵機 警報出力
+ANB M3687                ; MUN_集塵機 OFF
+INV
+ORL
+OUT M3670                ; 集塵機OFF補助
+MCR
+;<h1/>____▼_Tp出力
+LD M3681                 ; MUN_ｴｱﾌﾞﾛｰON指令
+AND Y309                 ; 除電 ON
+OUT B15C0                ; UNIT3-1-1 TP-PL
+LDB Y309                 ; 除電 ON
+OUT B15C1                ; UNIT3-1-2 TP-PL
+LD Y58                   ; 集塵機 Power ON
+AND Y308                 ; 集塵機 運転
+LD X05                   ; 集塵機差圧計 OUT1
+LDB X05                  ; 集塵機差圧計 OUT1
+AND M2699                ; 0.5sｸﾛｯｸﾊﾟﾙｽ
+ORL
+ANL
+OUT B15C2                ; UNIT3-1-3 TP-PL
+LDB Y58                  ; 集塵機 Power ON
+ORB Y308                 ; 集塵機 運転
+OUT B15C3                ; UNIT3-1-4 TP-PL
+;
+LDB M3770                ; ﾉｽﾞﾙθ Move
+LD M3770                 ; ﾉｽﾞﾙθ Move
+AND CR2006               ; 1sｸﾛｯｸﾊﾟﾙｽ
+ORL
+MPS
+AND= D3050 K1            ; RBC3 移動No.
+OUT B15D0                ; UNIT3-2-1 TP-PL
+MPP
+AND= D3050 K2            ; RBC3 移動No.
+OUT B15D1                ; UNIT3-2-2 TP-PL
+LD M3501                 ; ﾌﾞﾛｰ1cycle開始
+OUT B15DE                ; UNIT3-2-15 TP-PL
+;<h1/>□_異常回路
+;
+LD W1017.3               ; RBC3 ALM
+AND M360                 ; RBC 監視中
+LD B060                  ; 096)RBC3ｺﾝﾄﾛｰﾗ異常
+ANB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+ORL
+OUT B060                 ; 096)RBC3ｺﾝﾄﾛｰﾗ異常
+LDP B060                 ; 096)RBC3ｺﾝﾄﾛｰﾗ異常
+AND< D13510 K64          ; 発生ｴﾗｰｺｰﾄﾞ格納先
+MOV H0060 D13500         ; ｴﾗｰｺｰﾄﾞ
+FIFOW D13500 D13510      ; ｴﾗｰｺｰﾄﾞ  発生ｴﾗｰｺｰﾄﾞ格納先
+;
+LD M3771                 ; ﾉｽﾞﾙθ 移動完了
+AND<> D3058 K20          ; RBC3 C-CODE
+LD B061                  ; 097)RBC3位置決め異常
+ANB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+ORL
+OUT B061                 ; 097)RBC3位置決め異常
+LDP B061                 ; 097)RBC3位置決め異常
+AND< D13510 K64          ; 発生ｴﾗｰｺｰﾄﾞ格納先
+MOV H0061 D13500         ; ｴﾗｰｺｰﾄﾞ
+FIFOW D13500 D13510      ; ｴﾗｰｺｰﾄﾞ  発生ｴﾗｰｺｰﾄﾞ格納先
+;
+LD Y58                   ; 集塵機 Power ON
+AND X108                 ; 集塵機 警報出力
+LD B062                  ; 098)集塵機異常
+ANB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+ORL
+OUT B062                 ; 098)集塵機異常
+LDP B062                 ; 098)集塵機異常
+AND< D13510 K64          ; 発生ｴﾗｰｺｰﾄﾞ格納先
+MOV H0062 D13500         ; ｴﾗｰｺｰﾄﾞ
+FIFOW D13500 D13510      ; ｴﾗｰｺｰﾄﾞ  発生ｴﾗｰｺｰﾄﾞ格納先
+;
+LD M74                   ; 自動運転中
+AND Y58                  ; 集塵機 Power ON
+AND Y308                 ; 集塵機 運転
+ANB X05                  ; 集塵機差圧計 OUT1
+LD B063                  ; 099)集塵機吸引圧異常
+ANB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+ORL
+MPS
+TMR K390 K50             ; ｴﾗｰﾃﾞｨﾚｲ
+MPP
+AND T390                 ; ｴﾗｰﾃﾞｨﾚｲ
+OUT B063                 ; 099)集塵機吸引圧異常
+LDP B063                 ; 099)集塵機吸引圧異常
+AND< D13510 K64          ; 発生ｴﾗｰｺｰﾄﾞ格納先
+MOV H0063 D13500         ; ｴﾗｰｺｰﾄﾞ
+FIFOW D13500 D13510      ; ｴﾗｰｺｰﾄﾞ  発生ｴﾗｰｺｰﾄﾞ格納先
+;
+LD M3005                 ; U3C1_S005
+LD B064                  ; 100)ﾊﾟﾚｯﾄID異常
+ANB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+ORL
+OUT B064                 ; 100)ﾊﾟﾚｯﾄID異常
+LDP B064                 ; 100)ﾊﾟﾚｯﾄID異常
+AND< D13510 K64          ; 発生ｴﾗｰｺｰﾄﾞ格納先
+MOV H0064 D13500         ; ｴﾗｰｺｰﾄﾞ
+FIFOW D13500 D13510      ; ｴﾗｰｺｰﾄﾞ  発生ｴﾗｰｺｰﾄﾞ格納先
+;
+LD M50                   ; 運転準備
+AND W1017.8              ; RBC3 RMDS
+LD B065                  ; 101)RBC3 Manualﾓｰﾄﾞ
+ANB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+ORL
+OUT B065                 ; 101)RBC3 Manualﾓｰﾄﾞ
+LDP B065                 ; 101)RBC3 Manualﾓｰﾄﾞ
+AND< D13510 K64          ; 発生ｴﾗｰｺｰﾄﾞ格納先
+MOV H0065 D13500         ; ｴﾗｰｺｰﾄﾞ
+FIFOW D13500 D13510      ; ｴﾗｰｺｰﾄﾞ  発生ｴﾗｰｺｰﾄﾞ格納先
+;
+LD CR2003                ; 常時OFF
+LD B066                  ; 102)
+ANB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+ORL
+OUT B066                 ; 102)
+LDP B066                 ; 102)
+AND< D13510 K64          ; 発生ｴﾗｰｺｰﾄﾞ格納先
+MOV H0066 D13500         ; ｴﾗｰｺｰﾄﾞ
+FIFOW D13500 D13510      ; ｴﾗｰｺｰﾄﾞ  発生ｴﾗｰｺｰﾄﾞ格納先
+;
+LD CR2003                ; 常時OFF
+LD B067                  ; 103)
+ANB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+ORL
+MPS
+TMH K397 K5              ; CLS監視ﾀｲﾏ
+MPP
+AND T397                 ; CLS監視ﾀｲﾏ
+OUT B067                 ; 103)
+LDP B067                 ; 103)
+AND< D13510 K64          ; 発生ｴﾗｰｺｰﾄﾞ格納先
+MOV H0067 D13500         ; ｴﾗｰｺｰﾄﾞ
+FIFOW D13500 D13510      ; ｴﾗｰｺｰﾄﾞ  発生ｴﾗｰｺｰﾄﾞ格納先
+;
+LD CR2003                ; 常時OFF
+LD B068                  ; 104)
+ANB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+ORL
+MPS
+TMR K399 K20             ; ｴﾗｰﾃﾞｨﾚｲ
+MPP
+AND T399                 ; ｴﾗｰﾃﾞｨﾚｲ
+OUT B068                 ; 104)
+LDP B068                 ; 104)
+AND< D13510 K64          ; 発生ｴﾗｰｺｰﾄﾞ格納先
+MOV H0068 D13500         ; ｴﾗｰｺｰﾄﾞ
+FIFOW D13500 D13510      ; ｴﾗｰｺｰﾄﾞ  発生ｴﾗｰｺｰﾄﾞ格納先
+;
+LD CR2003                ; 常時OFF
+LD B069                  ; 105)
+ANB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+ORL
+OUT B069                 ; 105)
+LDP B069                 ; 105)
+AND< D13510 K64          ; 発生ｴﾗｰｺｰﾄﾞ格納先
+MOV H0069 D13500         ; ｴﾗｰｺｰﾄﾞ
+FIFOW D13500 D13510      ; ｴﾗｰｺｰﾄﾞ  発生ｴﾗｰｺｰﾄﾞ格納先
+;
+LD CR2003                ; 常時OFF
+LD B06A                  ; 106)
+ANB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+ORL
+MPS
+TMR K398 K10             ; ｴﾗｰﾃﾞｨﾚｲ
+MPP
+AND T398                 ; ｴﾗｰﾃﾞｨﾚｲ
+OUT B06A                 ; 106)
+LDP B06A                 ; 106)
+AND< D13510 K64          ; 発生ｴﾗｰｺｰﾄﾞ格納先
+MOV H006A D13500         ; ｴﾗｰｺｰﾄﾞ
+FIFOW D13500 D13510      ; ｴﾗｰｺｰﾄﾞ  発生ｴﾗｰｺｰﾄﾞ格納先
+;
+LD CR2003                ; 常時OFF
+LD B06B                  ; 107)
+ANB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+ORL
+MPS
+TMR K380 K30
+MPP
+AND T380
+OUT B06B                 ; 107)
+LDP B06B                 ; 107)
+AND< D13510 K64          ; 発生ｴﾗｰｺｰﾄﾞ格納先
+MOV H006B D13500         ; ｴﾗｰｺｰﾄﾞ
+FIFOW D13500 D13510      ; ｴﾗｰｺｰﾄﾞ  発生ｴﾗｰｺｰﾄﾞ格納先
+;
+LD CR2003                ; 常時OFF
+LD B06C                  ; 108)
+ANB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+ORL
+MPS
+TMR K381 K30
+MPP
+AND T381
+OUT B06C                 ; 108)
+LDP B06C                 ; 108)
+AND< D13510 K64          ; 発生ｴﾗｰｺｰﾄﾞ格納先
+MOV H006C D13500         ; ｴﾗｰｺｰﾄﾞ
+FIFOW D13500 D13510      ; ｴﾗｰｺｰﾄﾞ  発生ｴﾗｰｺｰﾄﾞ格納先
+;
+LD CR2003                ; 常時OFF
+LD B06D                  ; 109)
+ANB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+ORL
+MPS
+TMR K382 K30
+MPP
+AND T382
+OUT B06D                 ; 109)
+LDP B06D                 ; 109)
+AND< D13510 K64          ; 発生ｴﾗｰｺｰﾄﾞ格納先
+MOV H006D D13500         ; ｴﾗｰｺｰﾄﾞ
+FIFOW D13500 D13510      ; ｴﾗｰｺｰﾄﾞ  発生ｴﾗｰｺｰﾄﾞ格納先
+;
+LD CR2003                ; 常時OFF
+LD B06E                  ; 110)
+ANB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+ORL
+MPS
+TMR K383 K20
+MPP
+AND T383
+OUT B06E                 ; 110)
+LDP B06E                 ; 110)
+AND< D13510 K64          ; 発生ｴﾗｰｺｰﾄﾞ格納先
+MOV H006E D13500         ; ｴﾗｰｺｰﾄﾞ
+FIFOW D13500 D13510      ; ｴﾗｰｺｰﾄﾞ  発生ｴﾗｰｺｰﾄﾞ格納先
+;
+LD CR2003                ; 常時OFF
+LD B06F                  ; 111)
+ANB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+ORL
+MPS
+TMH K384 K10
+MPP
+AND T384
+OUT B06F                 ; 111)
+LDP B06F                 ; 111)
+AND< D13510 K64          ; 発生ｴﾗｰｺｰﾄﾞ格納先
+MOV H006F D13500         ; ｴﾗｰｺｰﾄﾞ
+FIFOW D13500 D13510      ; ｴﾗｰｺｰﾄﾞ  発生ｴﾗｰｺｰﾄﾞ格納先
+;
+LD CR2003                ; 常時OFF
+LD B070                  ; 112)
+ANB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+ORL
+OUT B070                 ; 112)
+LDP B070                 ; 112)
+AND< D13510 K64          ; 発生ｴﾗｰｺｰﾄﾞ格納先
+MOV H0070 D13500         ; ｴﾗｰｺｰﾄﾞ
+FIFOW D13500 D13510      ; ｴﾗｰｺｰﾄﾞ  発生ｴﾗｰｺｰﾄﾞ格納先
+;
+LD CR2003                ; 常時OFF
+LD B071                  ; 113)
+ANB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+ORL
+OUT B071                 ; 113)
+LDP B071                 ; 113)
+AND< D13510 K64          ; 発生ｴﾗｰｺｰﾄﾞ格納先
+MOV H0071 D13500         ; ｴﾗｰｺｰﾄﾞ
+FIFOW D13500 D13510      ; ｴﾗｰｺｰﾄﾞ  発生ｴﾗｰｺｰﾄﾞ格納先
+;
+LD CR2003                ; 常時OFF
+LD B072                  ; 114)
+ANB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+ORL
+OUT B072                 ; 114)
+LDP B072                 ; 114)
+AND< D13510 K64          ; 発生ｴﾗｰｺｰﾄﾞ格納先
+MOV H0072 D13500         ; ｴﾗｰｺｰﾄﾞ
+FIFOW D13500 D13510      ; ｴﾗｰｺｰﾄﾞ  発生ｴﾗｰｺｰﾄﾞ格納先
+;
+LD CR2003                ; 常時OFF
+LD B073                  ; 115)
+ANB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+ORL
+OUT B073                 ; 115)
+LDP B073                 ; 115)
+AND< D13510 K64          ; 発生ｴﾗｰｺｰﾄﾞ格納先
+MOV H0073 D13500         ; ｴﾗｰｺｰﾄﾞ
+FIFOW D13500 D13510      ; ｴﾗｰｺｰﾄﾞ  発生ｴﾗｰｺｰﾄﾞ格納先
+;
+LD CR2003                ; 常時OFF
+LD B074                  ; 116)
+ANB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+ORL
+MPS
+TMH K389 K100
+MPP
+AND T389
+OUT B074                 ; 116)
+LDP B074                 ; 116)
+AND< D13510 K64          ; 発生ｴﾗｰｺｰﾄﾞ格納先
+MOV H0074 D13500         ; ｴﾗｰｺｰﾄﾞ
+FIFOW D13500 D13510      ; ｴﾗｰｺｰﾄﾞ  発生ｴﾗｰｺｰﾄﾞ格納先
+;■■■  警告
+LD CR2003                ; 常時OFF
+LD B07A                  ; 122)
+ANB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+ORL
+OUT B07A                 ; 122)
+LDP B07A                 ; 122)
+AND< D13510 K64          ; 発生ｴﾗｰｺｰﾄﾞ格納先
+MOV H007A D13500         ; ｴﾗｰｺｰﾄﾞ
+FIFOW D13500 D13510      ; ｴﾗｰｺｰﾄﾞ  発生ｴﾗｰｺｰﾄﾞ格納先
+;
+LD CR2003                ; 常時OFF
+LD B07B                  ; 123)
+ANB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+ORL
+OUT B07B                 ; 123)
+LDP B07B                 ; 123)
+AND< D13510 K64          ; 発生ｴﾗｰｺｰﾄﾞ格納先
+MOV H007B D13500         ; ｴﾗｰｺｰﾄﾞ
+FIFOW D13500 D13510      ; ｴﾗｰｺｰﾄﾞ  発生ｴﾗｰｺｰﾄﾞ格納先
+;ﾌﾞｻﾞｰ発生回路
+LD<>.D B060 D3012        ; 096)RBC3ｺﾝﾄﾛｰﾗ異常  ﾌﾞｻﾞｰSTOP監視ｴﾘｱ
+AND<>.D B060 K0          ; 096)RBC3ｺﾝﾄﾛｰﾗ異常
+OUT M3989                ; ﾕﾆｯﾄ3異常BZ補助
+LD M110                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR M111                  ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+MOV.D B060 D3012         ; 096)RBC3ｺﾝﾄﾛｰﾗ異常  ﾌﾞｻﾞｰSTOP監視ｴﾘｱ
+LD=.D B060 K0            ; 096)RBC3ｺﾝﾄﾛｰﾗ異常
+@MOV.D K0 D3012          ; ﾌﾞｻﾞｰSTOP監視ｴﾘｱ
+END
+ENDH

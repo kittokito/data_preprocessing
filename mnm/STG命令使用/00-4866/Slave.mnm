@@ -1,0 +1,252 @@
+DEVICE:53
+;MODULE:Slave
+;MODULE_TYPE:0
+LD R50000                ; 即停止
+OR R50415                ; TRAP
+OR R50010                ; 非常停止
+ZRES @MR000 @MR1215      ; PAUSE条件確認へ
+LDB R50000               ; 即停止
+ANB R50415               ; TRAP
+AND T200                 ; 遅延ﾀｲﾏ－200　3s
+TMR @0 #10               ; 遅延
+CON
+AND @T0                  ; 遅延
+@SET @MR000              ; PAUSE条件確認へ
+CON
+@SET @MR300              ; ﾄﾚﾁｪﾝPAUSE条件確認へ
+;<h1/>■■■　Main part PAUSE process ■■■
+;***** Pause 判断 / Pause Judge  *****
+;
+STG @MR000               ; PAUSE条件確認へ
+ANB R50300               ; PAUSE中
+LD R202                  ; TP PAUSE SW
+OR R1111                 ; 背面PASUEsw入力
+ORB R1103                ; 安全ｶﾊﾞｰ入力
+ANL
+SET R50300               ; PAUSE中
+CON
+JMP @MR001               ; 001
+;一時停止確認
+LDB R51100               ; ｺﾝﾍﾞﾔ PACK
+ANB R51101               ; 給材PP PACK
+ANB R51102               ; 容量測定1 PACK
+ANB R51103               ; 容量測定2 PACK
+ANB R51104               ; 容量測定3 PACK
+ANB R51105               ; 容量測定4 PACK
+ANB R51106               ; 容量測定5 PACK
+ANB R51107               ; 容量測定6 PACK
+ANB R51108               ; 容量測定7 PACK
+ANB R51109               ; 除材P&P PACK
+ANB R51111               ; HOME PACK
+ANB R51112               ; ﾄﾚﾁｪﾝ_A   PACK
+ANB R51113               ; ﾄﾚﾁｪﾝ_B   PACK
+ANB R51114               ; NGﾄﾚｲ PACK
+OUB R51115               ; PACK中
+LD R1103                 ; 安全ｶﾊﾞｰ入力
+AND R1104                ; ﾄﾚｲﾁｪﾝｼﾞｬｰ扉
+LD R200                  ; ﾊﾟﾈﾙ内 ｽﾀｰﾄSW
+OR R1110                 ; 背面STARTsw入力
+ANL
+OUT @MR200               ; PAUSEｷｬﾝｾﾙ条件
+STG @MR001               ; 001
+MPS
+ANB R51115               ; PACK中
+JMP @MR002               ; 002
+MPP
+LD R51115                ; PACK中
+AND @MR200               ; PAUSEｷｬﾝｾﾙ条件
+ANL
+RES R50300               ; PAUSE中
+CON
+JMP @MR000               ; PAUSE条件確認へ
+STG @MR002               ; 002
+MPS
+AND MR3111               ; 供給側ｺﾝﾍﾞｱ ON
+SET @MR201               ; COV1動作中FLG.
+MRD
+AND MR3112               ; 戻し側ｺﾝﾍﾞｱ ON
+SET @MR202               ; COV2動作中FLG.
+MRD
+AND MR3113               ; ｴﾚﾍﾞｰﾀｺﾝﾍﾞｱ ON
+SET @MR203               ; COV3動作中FLG.
+MPP
+JMP @MR003
+STG @MR003
+RES MR3111               ; 供給側ｺﾝﾍﾞｱ ON
+CON
+RES MR3112               ; 戻し側ｺﾝﾍﾞｱ ON
+CON
+RES MR3113               ; ｴﾚﾍﾞｰﾀｺﾝﾍﾞｱ ON
+CON
+JMP @MR004
+STG @MR004
+TMR @1 #10               ; 遅延
+CON
+AND @T1                  ; 遅延
+SET MR3009               ; Safty Cover Open
+CON
+SET MR3010               ; Traychanger Door Open
+CON
+JMP @MR100               ; 003
+;***** Pause 条件復帰待ち / Pause Clear  Judge  *****
+;
+STG @MR100               ; 003
+ANB R202                 ; TP PAUSE SW
+ANB R1111                ; 背面PASUEsw入力
+OUT MR610                ; 一時停止解除待ち表示
+CON
+LD R200                  ; ﾊﾟﾈﾙ内 ｽﾀｰﾄSW
+OR R1110                 ; 背面STARTsw入力
+ANL
+SET MR611                ; 一時停止解除中
+CON
+RES MR3009               ; Safty Cover Open
+CON
+JMP @MR101               ; 004
+STG @MR101               ; 004
+MPS
+ANB R50302               ; ﾄﾚﾁｪﾝ     PAUSE処理中
+RES MR3010               ; Traychanger Door Open
+CON
+JMP @MR102
+MPP
+AND R50302               ; ﾄﾚﾁｪﾝ     PAUSE処理中
+JMP @MR102
+STG @MR102
+TMR @2 #5                ; 遅延
+CON
+AND @T2                  ; 遅延
+MPS
+LD R1103                 ; 安全ｶﾊﾞｰ入力
+LD R1104                 ; ﾄﾚｲﾁｪﾝｼﾞｬｰ扉
+OR R50302                ; ﾄﾚﾁｪﾝ     PAUSE処理中
+ANL
+ANL
+JMP @MR103
+MPP
+LDB R1103                ; 安全ｶﾊﾞｰ入力
+LDB R1104                ; ﾄﾚｲﾁｪﾝｼﾞｬｰ扉
+ANB R50302               ; ﾄﾚﾁｪﾝ     PAUSE処理中
+ORL
+ANL
+SET MR3009               ; Safty Cover Open
+CON
+SET MR3010               ; Traychanger Door Open
+CON
+JMP @MR100               ; 003
+STG @MR103
+MPS
+ANB R50302               ; ﾄﾚﾁｪﾝ     PAUSE処理中
+RES MR3010               ; Traychanger Door Open
+CON
+JMP @MR104
+MPP
+AND R50302               ; ﾄﾚﾁｪﾝ     PAUSE処理中
+JMP @MR104
+STG @MR104
+MPS
+AND @MR201               ; COV1動作中FLG.
+SET MR3111               ; 供給側ｺﾝﾍﾞｱ ON
+MRD
+AND @MR202               ; COV2動作中FLG.
+SET MR3112               ; 戻し側ｺﾝﾍﾞｱ ON
+MRD
+AND @MR203               ; COV3動作中FLG.
+SET MR3113               ; ｴﾚﾍﾞｰﾀｺﾝﾍﾞｱ ON
+MPP
+JMP @MR105
+STG @MR105
+ZRES @MR201 @MR203       ; COV1動作中FLG.  COV3動作中FLG.
+CON
+RES R50300               ; PAUSE中
+CON
+RES MR611                ; 一時停止解除中
+CON
+JMP @MR000               ; PAUSE条件確認へ
+;<h1/>■■■　Traychanger part PAUSE process ■■■
+;***** Pause 判断 / Pause Judge  *****
+;
+STG @MR300               ; ﾄﾚﾁｪﾝPAUSE条件確認へ
+LDP R1113                ; ﾄﾚｲ除材扉PASUEsw入力
+ORP R1115                ; 背面ﾄﾚｲ給材扉PASUEsw入力
+ORP R212                 ; TP ﾄﾚｲﾁｪﾝｼﾞｬPAUSE sw
+LDB R50300               ; PAUSE中
+ANB R1104                ; ﾄﾚｲﾁｪﾝｼﾞｬｰ扉
+ORL
+ANL
+SET R50302               ; ﾄﾚﾁｪﾝ     PAUSE処理中
+CON
+JMP @MR301
+;一時停止確認
+LD R1104                 ; ﾄﾚｲﾁｪﾝｼﾞｬｰ扉
+LD R1113                 ; ﾄﾚｲ除材扉PASUEsw入力
+OR R1115                 ; 背面ﾄﾚｲ給材扉PASUEsw入力
+OR R212                  ; TP ﾄﾚｲﾁｪﾝｼﾞｬPAUSE sw
+ANL
+OUT @MR208               ; ﾄﾚﾁｪﾝPAUSEｷｬﾝｾﾙ条件
+STG @MR301
+MPS
+ANB R51110
+JMP @MR302
+MPP
+LD R51110
+AND @MR208               ; ﾄﾚﾁｪﾝPAUSEｷｬﾝｾﾙ条件
+ANL
+RES R50302               ; ﾄﾚﾁｪﾝ     PAUSE処理中
+CON
+JMP @MR300               ; ﾄﾚﾁｪﾝPAUSE条件確認へ
+STG @MR302
+TMR @3 #10
+CON
+AND @T3
+SET MR3010               ; Traychanger Door Open
+CON
+JMP @MR308
+;***** Pause 条件復帰待ち / Pause Clear  Judge  *****
+;
+STG @MR308
+ANB R1113                ; ﾄﾚｲ除材扉PASUEsw入力
+ANB R1115                ; 背面ﾄﾚｲ給材扉PASUEsw入力
+ANB R212                 ; TP ﾄﾚｲﾁｪﾝｼﾞｬPAUSE sw
+OUT MR613                ; TC一時停止解除待ち 表示
+CON
+LD R1112                 ; ﾄﾚｲ除材扉STARTsw入力
+OR R1114                 ; 背面ﾄﾚｲ給材扉STARTsw入力
+OR R211                  ; TP ﾄﾚｲﾁｪﾝｼﾞｬSTART sw
+ANL
+SET MR614                ; TC一時停止解除中
+CON
+JMP @MR309
+STG @MR309
+MPS
+ANB R50300               ; PAUSE中
+RES MR3010               ; Traychanger Door Open
+CON
+JMP @MR310
+MPP
+AND R50300               ; PAUSE中
+JMP @MR311
+STG @MR310
+TMR @4 #5
+CON
+AND @T4
+MPS
+AND R1104                ; ﾄﾚｲﾁｪﾝｼﾞｬｰ扉
+JMP @MR311
+MPP
+ANB R1104                ; ﾄﾚｲﾁｪﾝｼﾞｬｰ扉
+SET MR3010               ; Traychanger Door Open
+CON
+JMP @MR308
+STG @MR311
+RES R50302               ; ﾄﾚﾁｪﾝ     PAUSE処理中
+CON
+RES MR614                ; TC一時停止解除中
+CON
+JMP @MR300               ; ﾄﾚﾁｪﾝPAUSE条件確認へ
+;ﾄﾚｲﾁｪﾝｼﾞ部PAUSE処理 / Traychanger PAUSE process
+LD R50300                ; PAUSE中
+OR R50302                ; ﾄﾚﾁｪﾝ     PAUSE処理中
+OUT R50301               ; ﾄﾚﾁｪﾝ     PAUSE中
+END
+ENDH

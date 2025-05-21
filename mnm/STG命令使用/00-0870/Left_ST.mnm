@@ -1,0 +1,5351 @@
+DEVICE:52
+;MODULE:Left_ST
+;MODULE_TYPE:0
+LD R50000                ; 即停止
+OR R50900                ; TRAP
+OR R50914                ; HOMEsw ON
+ZRES @MR000 @MR9715      ; X1-Y1 同時動作完了
+LDB LR200                ; 自動ﾓｰﾄﾞ　   選択
+LDB R51011               ; ｽｷｰｼﾞ(L)部SETP選択
+ANB R51012               ; 転写部(L)部STEP選択
+ANB R52011               ; ｽｷｰｼﾞ(R)部SETP選択
+ANB R52012               ; 転写部(R)部STEP選択
+ORB LR201                ; 手動ﾓｰﾄﾞ　   選択
+ANL
+ANB R50003               ; 原点復帰中
+ZRES R50500 R50815       ; AUTO動作     終了
+;***** ｽｷｰｼﾞ 部 ﾜｰｸset reset処理  / work FLG set reset  ******
+;
+LDP R51100               ; ｽｷｰｼﾞ(L)原点復帰完了
+ORF R50001               ; 自動中
+SET R51500               ; ｽｷｰｼﾞ(L)糊添付未確認FLG
+CON
+ZRES @MR900 @MR901       ; 900  901
+LDP R50001               ; 自動中
+@SET @MR900              ; 900
+STG @MR900               ; 900
+AND R6103                ; ｽｷｰｼﾞ台(L) 後退(塗布側)
+AND R4103                ; ｽｷｰｼﾞ台(L) 後退限(塗布側)
+AND R4813                ; ｽｷｰｼﾞ(L)側 ｴﾘｱｾﾝｻ (ｼｬｯﾀｰ2)
+SET R51500               ; ｽｷｰｼﾞ(L)糊添付未確認FLG
+CON
+JMP @MR901               ; 901
+STG @MR901               ; 901
+AND R6103                ; ｽｷｰｼﾞ台(L) 後退(塗布側)
+AND R4103                ; ｽｷｰｼﾞ台(L) 後退限(塗布側)
+ANB R4813                ; ｽｷｰｼﾞ(L)側 ｴﾘｱｾﾝｻ (ｼｬｯﾀｰ2)
+RES R51500               ; ｽｷｰｼﾞ(L)糊添付未確認FLG
+CON
+JMP @MR902               ; 902
+STG @MR902               ; 902
+AND R50001               ; 自動中
+AND R50004               ; 動作中
+MPS
+LD R6102                 ; ｽｷｰｼﾞ台(L) 前進(転写側)
+AND R4102                ; ｽｷｰｼﾞ台(L) 前進端(転写側)
+ANL
+JMP @MR903               ; 903
+MPP
+AND T0                   ; (L)転写待ちﾀｲﾑｵｰﾊﾞ
+JMP @MR900               ; 900
+STG @MR903               ; 903
+AND R6103                ; ｽｷｰｼﾞ台(L) 後退(塗布側)
+AND R4103                ; ｽｷｰｼﾞ台(L) 後退限(塗布側)
+AND R4813                ; ｽｷｰｼﾞ(L)側 ｴﾘｱｾﾝｻ (ｼｬｯﾀｰ2)
+JMP @MR900               ; 900
+;***** PACK FLAG 処理  / PACK FLAG   ******
+;
+LD @MR2900               ; ｽｷｰｼﾞ pack1
+OR @MR2901               ; ｽｷｰｼﾞ pack2
+OR @MR2902               ; ｽｷｰｼﾞ pack3
+OUT R50612               ; Pack ｽｷｰｼﾞ(L)
+LD @MR2908               ; ﾜｰｸ pack1
+OR @MR2909               ; ﾜｰｸ pack2
+OR @MR2910               ; ﾜｰｸ pack3
+OUT R50613               ; Pack 転写(L)
+LD @MR2908               ; ﾜｰｸ pack1
+OUT R56000               ; PACK L1
+LD @MR2909               ; ﾜｰｸ pack2
+OUT R56001               ; PACK L2
+LD @MR2910               ; ﾜｰｸ pack3
+OUT R56002               ; PACK L3
+;WF治具(L)吸着確認
+;WF Jig(L) Adsorp Confirmation
+LDB MR2311               ; ｳｪﾊｰ治具(L)真空破壊
+AND MR2310               ; ｳｪﾊｰ治具(L)吸着
+MPS
+AND R4802                ; 治具(L)吸着 OUT1
+TMR @56 #10              ; ｳｪﾊｰ吸着   検出時間
+CON
+AND @T56                 ; ｳｪﾊｰ吸着   検出時間
+OUT @MR004               ; ｳｪﾊｰ治具  吸着検出
+MRD
+ANB R4802                ; 治具(L)吸着 OUT1
+TMR @57 #10              ; ｳｪﾊｰ吸着   未検出時間
+CON
+AND @T57                 ; ｳｪﾊｰ吸着   未検出時間
+OUT @MR005               ; ｳｪﾊｰ治具  未吸着検出
+MRD
+AND R4803                ; 治具(L)吸着 OUT2
+TMR @58 #5
+CON
+AND @T58
+OUT @MR006               ; ｳｪﾊｰ治具  除材検出
+MPP
+ANB R4803                ; 治具(L)吸着 OUT2
+TMR @59 #10
+CON
+AND @T59
+OUT @MR007               ; ｳｪﾊｰ治具  未除材検出
+;反転ﾊﾝﾄﾞ吸着確認
+;Reverser Hand Adsorp Confirmation
+LDB MR2313               ; 反転ﾊﾝﾄﾞ 真空破壊
+AND MR2312               ; 反転ﾊﾝﾄﾞ 吸着
+MPS
+AND R4804                ; 反転ﾊﾝﾄﾞ吸着 OUT1
+TMR @60 #10              ; ｳｪﾊｰ吸着   検出時間
+CON
+AND @T60                 ; ｳｪﾊｰ吸着   検出時間
+OUT @MR008               ; 反転ﾊﾝﾄﾞ 吸着検出
+MRD
+ANB R4804                ; 反転ﾊﾝﾄﾞ吸着 OUT1
+TMR @61 #10              ; ｳｪﾊｰ吸着   未検出時間
+CON
+AND @T61                 ; ｳｪﾊｰ吸着   未検出時間
+OUT @MR009               ; 反転ﾊﾝﾄﾞ 未吸着検出
+MRD
+AND R4805                ; 反転ﾊﾝﾄﾞ吸着 OUT2
+TMR @62 #10
+CON
+AND @T62
+OUT @MR010               ; 反転ﾊﾝﾄﾞ 除材検出
+MPP
+ANB R4805                ; 反転ﾊﾝﾄﾞ吸着 OUT2
+TMR @63 #10
+CON
+AND @T63
+OUT @MR011               ; 反転ﾊﾝﾄﾞ 未除材検出
+;ｽｷｰｼﾞ台移動確認
+;Squeegee Base Move Confirmation
+LDB MR6014               ; ｽｷｰｼﾞ(L)(子)下降
+ANB R4014                ; ｽｷｰｼﾞ(子)(L)下降限
+AND R4015                ; ｽｷｰｼﾞ(子)(L)上昇限
+AND MR6003               ; ｳｪﾊｰ治具(L)RB側行(左側)
+ANB R4002                ; 治具(L) 転写限（右限）
+AND R4003                ; 治具(L) RB側限(左限)
+AND R6111                ; ｼｬｯﾀｰ2　閉
+ANB R4202                ; ｼｬｯﾀｰ2 開限(ｽｷｰｼﾞ(L)
+AND R4203                ; ｼｬｯﾀｰ2 閉限(ｽｷｰｼﾞ(L)
+OUT @MR100               ; ｽｷｰｼﾞ台(L) 移動OKFLG
+;ｳｪﾊｰ治具移動確認
+;WF Jig Move Confirmation
+LDB MR6102               ; ｽｷｰｼﾞ台(L) 前進
+AND MR6103               ; ｽｷｰｼﾞ台(L) 後退
+ANB R4102                ; ｽｷｰｼﾞ台(L) 前進端(転写側)
+LD R4103                 ; ｽｷｰｼﾞ台(L) 後退限(塗布側)
+OR R4104                 ; ｽｷｰｼﾞ台(L) 中間
+ANL
+ANB MR6001               ; ｳｪﾊｰ治具(L) 後退
+AND MR6000               ; ｳｪﾊｰ治具(L) 前進
+ANB R4001                ; 治具(L) 後退限
+AND R4000                ; 治具(L) 前進限(RB側)
+OUT @MR102               ; ｳｪﾊｰ治具(L) 右行OKFLG
+LD R6109                 ; ｼｬｯﾀｰ1　閉
+ANB R4200                ; ｼｬｯﾀｰ1 開限(治具(L)側)
+AND R4201                ; ｼｬｯﾀｰ1 閉限(治具(L)側)
+AND MR6003               ; ｳｪﾊｰ治具(L)RB側行(左側)
+ANB R4002                ; 治具(L) 転写限（右限）
+AND R4003                ; 治具(L) RB側限(左限)
+OUT @MR103               ; ｳｪﾊｰ治具(L) 戻りOKFLG
+;ｽｷｰｼﾞ下降移動確認
+;Squeegee Down Confirmation
+LDB MR6102               ; ｽｷｰｼﾞ台(L) 前進
+AND MR6103               ; ｽｷｰｼﾞ台(L) 後退
+ANB R4102                ; ｽｷｰｼﾞ台(L) 前進端(転写側)
+AND R4103                ; ｽｷｰｼﾞ台(L) 後退限(塗布側)
+ANB MR6110               ; ｼｬｯﾀｰ2　開
+AND MR6111               ; ｼｬｯﾀｰ2　閉
+ANB R4202                ; ｼｬｯﾀｰ2 開限(ｽｷｰｼﾞ(L)
+AND R4203                ; ｼｬｯﾀｰ2 閉限(ｽｷｰｼﾞ(L)
+OUT @MR104               ; ｽｷｰｼﾞ(L)下降   OKFLG
+;転写動作可否確認
+;Transcription Condituion Confirmation
+LDB MR6310               ; 反転上下 上昇
+AND MR6311               ; 反転上下 下降
+ANB R4510                ; 反転 上昇限
+AND R4511                ; 反転 下降限
+ANB MR6314               ; 反転 CW((R)ｾｯﾄ側)
+AND MR6315               ; 反転 CCW((L)取出側)
+ANB R4514                ; 反転 CW側限（(R)ｾｯﾄ側)
+AND R4515                ; 反転 CCW側限（(L)取出し側)
+LDB MR6312               ; 反転左右　左行((L)側)
+AND MR6313               ; 反転左右　右行((R)側)
+ANB R4512                ; 反転 (L)側限
+AND R4513                ; 反転 (R)側限
+ORL
+OUT @MR105               ; DRV-12動作可能
+;■■■■■■■■■■■■■■■■■■■■  STEP  ■■■■■■■■■■■■■■■■■■■■
+;********* STEP動作ﾓｰﾄﾞ選択 *********
+;********* STEP MODE SELECTION *********
+LDB LR000                ; ｽｷｰｼﾞ(L)   ｽﾃｯﾌﾟ選択
+ANB LR001                ; ﾌｨﾙﾑ転写(L) ｽﾃｯﾌﾟ選択
+ANB LR005                ; ｽｸﾚｰﾊﾟ(L)交換　選択
+ANB LR006                ; ｽｷｰｼﾞ台(L)交換　選択
+ANB LR007                ; ﾌｨﾙﾑ(L)採取　選択
+OUB R51011               ; ｽｷｰｼﾞ(L)部SETP選択
+LDB LR002                ; ﾜｰｸ転写(L)  ｽﾃｯﾌﾟ選択
+ANB LR003                ; ﾌｨﾙﾑ(L)交換   選択
+ANB LR004                ; ﾌｨﾙﾑ(L)切取   選択
+ANB LR100                ; 通常動作
+ANB LR101                ; ｳｪﾊｰ取出し
+ANB LR102                ; ｱﾗｲﾒﾝﾄ
+ANB LR103                ; ｳｪﾊｰｾｯﾄ
+ANB LR107                ; ｱﾗｲﾒﾝﾄ開閉
+ANB LR108                ; 反転ﾊﾝﾄﾞ  ｳｪﾊｰ受取
+OUB R51012               ; 転写部(L)部STEP選択
+LD R50002                ; 手動中
+AND R50012               ; 手動   動作選択済
+ANB R50006               ; 異常発生中
+LD R51011                ; ｽｷｰｼﾞ(L)部SETP選択
+OR R51012                ; 転写部(L)部STEP選択
+ANL
+RES R51600               ; 自動動作  (L) 初回
+CON
+DIFU @MR3000             ; 手動ｽﾀｰﾄPLS
+LD @MR3000               ; 手動ｽﾀｰﾄPLS
+AND R50012               ; 手動   動作選択済
+MPS
+LD LR000                 ; ｽｷｰｼﾞ(L)   ｽﾃｯﾌﾟ選択
+ANB R50700               ; ｽｷｰｼﾞ(L)ｽﾃｯﾌﾟ 実行中
+ANL
+@SET @MR3100             ; ｽｷｰｼﾞｽﾃｯﾌﾟﾒｲﾝへ
+MOV #0 @DM10             ; ｽｷｰｼﾞ回数
+MRD
+LD LR001                 ; ﾌｨﾙﾑ転写(L) ｽﾃｯﾌﾟ選択
+ANB R50701               ; ﾌｨﾙﾑ転写(L)ｽﾃｯﾌﾟ実行中
+ANL
+@SET @MR3200             ; ﾌｨﾙﾑ転写ｽﾃｯﾌﾟﾒｲﾝへ
+MRD
+LD LR002                 ; ﾜｰｸ転写(L)  ｽﾃｯﾌﾟ選択
+ANB R50702               ; ﾜｰｸ転写(L)ｽﾃｯﾌﾟ実行中
+ANL
+@SET @MR3300             ; ﾜｰｸ転写ｽﾃｯﾌﾟﾒｲﾝへ
+MRD
+LD LR003                 ; ﾌｨﾙﾑ(L)交換   選択
+ANB R50703               ; ﾌｨﾙﾑ(L)巻取り  交換中
+ANL
+@SET @MR3400             ; ﾌｨﾙﾑ交換ﾒｲﾝへ
+MRD
+LD LR004                 ; ﾌｨﾙﾑ(L)切取   選択
+ANB R50704               ; ﾌｨﾙﾑ(L)巻取り送り実行中
+ANL
+@SET @MR3500             ; ﾌｨﾙﾑ巻取り/送り ﾒｲﾝへ
+MRD
+LD LR005                 ; ｽｸﾚｰﾊﾟ(L)交換　選択
+ANB R50705               ; ｽｸﾚｰﾊﾟ(L)交換 実行中
+ANL
+@SET @MR3700             ; ｽｸﾚｰﾊﾟ交換ﾒｲﾝへ
+MRD
+LD LR006                 ; ｽｷｰｼﾞ台(L)交換　選択
+ANB R50706               ; ｽｷｰｼﾞ台(L)交換 実行中
+ANL
+@SET @MR3800             ; ｽｷｰｼﾞ台交換ﾒｲﾝへ
+MRD
+LD LR007                 ; ﾌｨﾙﾑ(L)採取　選択
+ANB R50707               ; ﾌｨﾙﾑ採取(L)　実行中
+ANL
+MPS
+@SET R50408              ; POST PASS
+CON
+@SET R50707              ; ﾌｨﾙﾑ採取(L)　実行中
+CON
+@SET @MR4300             ; ｽｷｰｼﾞ処理へ
+MPP
+MOV #0 @DM10             ; ｽｷｰｼﾞ回数
+MRD
+LD LR100                 ; 通常動作
+ANB R50800               ; RB通常STEP動作 実行中
+ANL
+@SET R50800              ; RB通常STEP動作 実行中
+CON
+@SET @MR2000             ; RB通常動作 ﾒｲﾝへ
+MRD
+LD LR101                 ; ｳｪﾊｰ取出し
+ANB R50801               ; RB ｳｴﾊｰ取出STEP実行中
+ANL
+@SET R50801              ; RB ｳｴﾊｰ取出STEP実行中
+CON
+@SET @MR2000             ; RB通常動作 ﾒｲﾝへ
+MRD
+LD LR102                 ; ｱﾗｲﾒﾝﾄ
+ANB R50802               ; RB ｱﾗｲﾒﾝﾄSTEP実行中
+ANL
+@SET R50802              ; RB ｱﾗｲﾒﾝﾄSTEP実行中
+CON
+@SET @MR2008             ; RB ｱﾗｲﾒﾝﾄ
+MRD
+LD LR103                 ; ｳｪﾊｰｾｯﾄ
+ANB R50803               ; RB ｳｪﾊｰｾｯﾄSTEP実行中
+ANL
+@SET R50803              ; RB ｳｪﾊｰｾｯﾄSTEP実行中
+CON
+@SET @MR2100             ; WF 給材
+MRD
+LD LR107                 ; ｱﾗｲﾒﾝﾄ開閉
+ANB R50807               ; WFｱﾗｲﾒﾝﾄ開閉STEP実行中
+ANL
+@SET R50807              ; WFｱﾗｲﾒﾝﾄ開閉STEP実行中
+CON
+@SET @MR2400             ; ｱﾗｲﾒﾝﾄ 開閉
+MRD
+LD LR108                 ; 反転ﾊﾝﾄﾞ  ｳｪﾊｰ受取
+ANB R50808               ; (L)→反転ﾊﾝﾄﾞ 実行中
+ANL
+@SET @MR3600             ; (L)→反転ﾊﾝﾄﾞｳｪﾊｰ受渡し STEP
+MPP
+LDB R51011               ; ｽｷｰｼﾞ(L)部SETP選択
+ANB R51012               ; 転写部(L)部STEP選択
+ANL
+@SET @MR3915             ; STEP 終了へ
+;********* 手動動作ﾒｲﾝ *********
+;********* STEP MODE MAIN *********
+;********* 給材ﾛﾎﾞｯﾄ 通常動作 STEP *********
+;********* Supply Robot Normal Operation STEP *********
+STG @MR2000              ; RB通常動作 ﾒｲﾝへ
+ANB R50301               ; ｽｷｰｼﾞ部(L) Pause
+ANB R50109               ; Err ｽｷｰｼﾞ(L)UT
+JMP @MR2001              ; RB WF取出し
+;WF 取出し  /  WF Take out
+STG @MR2001              ; RB WF取出し
+RES R53215               ; RB WF取出しcall 完了
+CON
+ANB R53214               ; RB WF取出しcall 実行中
+JMP @MR2002              ; 2002
+STG @MR2002              ; 2002
+@SET R53200              ; RB WF取出し   call
+CON
+AND R53214               ; RB WF取出しcall 実行中
+JMP @MR2003              ; 2003
+STG @MR2003              ; 2003
+ANB R53214               ; RB WF取出しcall 実行中
+MPS
+AND R53215               ; RB WF取出しcall 完了
+JMP @MR2004              ; 2004
+MPP
+AND R53213               ; RB WF取出しcall 異常(除材済)
+JMP @MR2005              ; 2005
+STG @MR2004              ; 2004
+RES R53215               ; RB WF取出しcall 完了
+CON
+ANB R53215               ; RB WF取出しcall 完了
+MPS
+AND LR100                ; 通常動作
+JMP @MR2008              ; RB ｱﾗｲﾒﾝﾄ
+MPP
+AND LR101                ; ｳｪﾊｰ取出し
+RES R50801               ; RB ｳｴﾊｰ取出STEP実行中
+CON
+JMP @MR2500              ; RB_STEP終了共通動作
+STG @MR2005              ; 2005
+RES R53213               ; RB WF取出しcall 異常(除材済)
+CON
+ANB R53213               ; RB WF取出しcall 異常(除材済)
+RES R50800               ; RB通常STEP動作 実行中
+CON
+RES R50801               ; RB ｳｴﾊｰ取出STEP実行中
+CON
+JMP @MR2500              ; RB_STEP終了共通動作
+;WF ｱﾗｲﾒﾝﾄ  /  WF Alignment
+STG @MR2008              ; RB ｱﾗｲﾒﾝﾄ
+RES R53315               ; RB ｱﾗｲﾒﾝﾄ call 完了
+CON
+ANB R53314               ; RB ｱﾗｲﾒﾝﾄ call 実行中
+JMP @MR2009              ; 2009
+STG @MR2009              ; 2009
+@SET R53300              ; RB ｱﾗｲﾒﾝﾄ call
+CON
+AND R53314               ; RB ｱﾗｲﾒﾝﾄ call 実行中
+JMP @MR2010              ; 2010
+STG @MR2010              ; 2010
+ANB R53314               ; RB ｱﾗｲﾒﾝﾄ call 実行中
+MPS
+AND R53315               ; RB ｱﾗｲﾒﾝﾄ call 完了
+JMP @MR2011              ; 2011
+MPP
+AND R53313               ; RB ｱﾗｲﾒﾝﾄ call 異常(除材済)
+JMP @MR2012              ; 2012
+STG @MR2011              ; 2011
+RES R53315               ; RB ｱﾗｲﾒﾝﾄ call 完了
+CON
+ANB R53315               ; RB ｱﾗｲﾒﾝﾄ call 完了
+MPS
+AND LR100                ; 通常動作
+JMP @MR2100              ; WF 給材
+MPP
+AND LR102                ; ｱﾗｲﾒﾝﾄ
+RES R50802               ; RB ｱﾗｲﾒﾝﾄSTEP実行中
+CON
+JMP @MR2500              ; RB_STEP終了共通動作
+STG @MR2012              ; 2012
+RES R53313               ; RB ｱﾗｲﾒﾝﾄ call 異常(除材済)
+CON
+ANB R53313               ; RB ｱﾗｲﾒﾝﾄ call 異常(除材済)
+RES R50800               ; RB通常STEP動作 実行中
+CON
+RES R50802               ; RB ｱﾗｲﾒﾝﾄSTEP実行中
+CON
+JMP @MR2500              ; RB_STEP終了共通動作
+;WF 給材  /  WF Supply
+STG @MR2100              ; WF 給材
+ANB R50302               ; 転写部(L) Pause
+ANB R50110               ; Err 転写(L)UT
+SET R51200               ; 治具(L)部ｴﾘｱｾﾝｻｰ有効FLG
+CON
+JMP @MR2101              ; 2101
+STG @MR2101              ; 2101
+RES MR6108               ; ｼｬｯﾀｰ1　開
+CON
+MPS
+AND R4812                ; 治具(L)側 ｴﾘｱｾﾝｻ (ｼｬｯﾀｰ1)
+SET MR6109               ; ｼｬｯﾀｰ1　閉
+CON
+ANB R4200                ; ｼｬｯﾀｰ1 開限(治具(L)側)
+AND R4201                ; ｼｬｯﾀｰ1 閉限(治具(L)側)
+RES R51200               ; 治具(L)部ｴﾘｱｾﾝｻｰ有効FLG
+CON
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+JMP @MR2102              ; 2102
+MPP
+ANB R4812                ; 治具(L)側 ｴﾘｱｾﾝｻ (ｼｬｯﾀｰ1)
+RES MR6109               ; ｼｬｯﾀｰ1　閉
+CON
+JMP @MR2100              ; WF 給材
+STG @MR2102              ; 2102
+ANB R50302               ; 転写部(L) Pause
+ANB R50110               ; Err 転写(L)UT
+RES MR6001               ; ｳｪﾊｰ治具(L) 後退
+CON
+SET MR6000               ; ｳｪﾊｰ治具(L) 前進
+CON
+ANB R4001                ; 治具(L) 後退限
+AND R4000                ; 治具(L) 前進限(RB側)
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+JMP @MR2103              ; 2103
+STG @MR2103              ; 2103
+RES R53415               ; RB WF給材 call 完了
+CON
+ANB R53414               ; RB WF給材 call 実行中
+JMP @MR2104              ; 2104
+STG @MR2104              ; 2104
+@SET R53400              ; RB WF給材 call
+CON
+AND R53414               ; RB WF給材 call 実行中
+JMP @MR2105              ; 2105
+STG @MR2105              ; 2105
+ANB R53414               ; RB WF給材 call 実行中
+LD R53415                ; RB WF給材 call 完了
+OR R53413                ; RB WF給材 call 異常(除材済)
+ANL
+JMP @MR2106              ; 2106
+STG @MR2106              ; 2106
+ANB R50302               ; 転写部(L) Pause
+ANB R50110               ; Err 転写(L)UT
+RES MR6000               ; ｳｪﾊｰ治具(L) 前進
+CON
+SET MR6001               ; ｳｪﾊｰ治具(L) 後退
+CON
+ANB R4000                ; 治具(L) 前進限(RB側)
+AND R4001                ; 治具(L) 後退限
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+JMP @MR2107              ; 2107
+STG @MR2107              ; 2107
+ANB R50302               ; 転写部(L) Pause
+ANB R50110               ; Err 転写(L)UT
+SET R51200               ; 治具(L)部ｴﾘｱｾﾝｻｰ有効FLG
+CON
+JMP @MR2108              ; 2108
+STG @MR2108              ; 2108
+RES MR6109               ; ｼｬｯﾀｰ1　閉
+CON
+MPS
+AND R4812                ; 治具(L)側 ｴﾘｱｾﾝｻ (ｼｬｯﾀｰ1)
+SET MR6108               ; ｼｬｯﾀｰ1　開
+CON
+ANB R4201                ; ｼｬｯﾀｰ1 閉限(治具(L)側)
+AND R4200                ; ｼｬｯﾀｰ1 開限(治具(L)側)
+RES R51200               ; 治具(L)部ｴﾘｱｾﾝｻｰ有効FLG
+CON
+JMP @MR2109              ; 2109
+MPP
+ANB R4812                ; 治具(L)側 ｴﾘｱｾﾝｻ (ｼｬｯﾀｰ1)
+RES MR6108               ; ｼｬｯﾀｰ1　開
+CON
+JMP @MR2107              ; 2107
+STG @MR2109              ; 2109
+ANB R50302               ; 転写部(L) Pause
+ANB R50110               ; Err 転写(L)UT
+MPS
+AND R53415               ; RB WF給材 call 完了
+JMP @MR2110              ; 2110
+MPP
+AND R53413               ; RB WF給材 call 異常(除材済)
+JMP @MR2111              ; 2111
+STG @MR2110              ; 2110
+RES R53415               ; RB WF給材 call 完了
+CON
+RES MR2310               ; ｳｪﾊｰ治具(L)吸着
+CON
+ANB R53415               ; RB WF給材 call 完了
+MPS
+AND LR100                ; 通常動作
+RES R50800               ; RB通常STEP動作 実行中
+CON
+JMP @MR2500              ; RB_STEP終了共通動作
+MPP
+AND LR103                ; ｳｪﾊｰｾｯﾄ
+RES R50803               ; RB ｳｪﾊｰｾｯﾄSTEP実行中
+CON
+JMP @MR2500              ; RB_STEP終了共通動作
+STG @MR2111              ; 2111
+RES R53413               ; RB WF給材 call 異常(除材済)
+CON
+ANB R53413               ; RB WF給材 call 異常(除材済)
+RES MR2310               ; ｳｪﾊｰ治具(L)吸着
+CON
+RES R50800               ; RB通常STEP動作 実行中
+CON
+RES R50803               ; RB ｳｪﾊｰｾｯﾄSTEP実行中
+CON
+JMP @MR2500              ; RB_STEP終了共通動作
+;********* 手動動作ﾒｲﾝ *********
+;********* STEP MODE MAIN *********
+;********* ｷｬﾘｱ(L)交換 STEP *********
+;********* Carrier(L) Change STEP *********
+STG @MR2200              ; ｷｬﾘﾔ(L)交換
+ANB R50302               ; 転写部(L) Pause
+ANB R50110               ; Err 転写(L)UT
+RES MR6304               ; ｳｪﾊｰ取出しｼｬｯﾀｰ 開
+CON
+SET MR6305               ; ｳｪﾊｰ取出しｼｬｯﾀｰ 閉
+CON
+ANB R4600                ; ｳｪﾊｰ取出しｼｬｯﾀｰ 開限
+AND R4601                ; ｳｪﾊｰ取出しｼｬｯﾀｰ 閉限
+JMP @MR2201              ; 2201
+STG @MR2201              ; 2201
+ANB R50302               ; 転写部(L) Pause
+ANB R50110               ; Err 転写(L)UT
+SET MR501                ; ｷｬﾘｱ扉  ﾛｯｸ解除
+CON
+SET R53901               ; ｷｬﾘﾔ交換中
+CON
+SET R53903               ; ｷｬﾘｱ交換確認
+CON
+JMP @MR2202              ; 2202
+STG @MR2202              ; 2202
+ANB R50302               ; 転写部(L) Pause
+ANB R50110               ; Err 転写(L)UT
+ANB R53901               ; ｷｬﾘﾔ交換中
+RES R50804               ; RB 左ｷｬﾘｱ交換STEP実行中
+CON
+JMP @MR3915              ; STEP 終了へ
+;********* 手動動作ﾒｲﾝ *********
+;********* STEP MODE MAIN *********
+;********* ｱﾗｲﾒﾝﾄ開閉 STEP *********
+;********* Alignment Open/*Close STEP *********
+STG @MR2400              ; ｱﾗｲﾒﾝﾄ 開閉
+ANB R50302               ; 転写部(L) Pause
+ANB R50110               ; Err 転写(L)UT
+SET MR6106               ; ｱﾗｲﾒﾝﾄ　閉
+CON
+ANB R4107                ; ｱﾗｲﾒﾝﾄ1 開限
+ANB R4109                ; ｱﾗｲﾒﾝﾄ2 開限
+ANB R4111                ; ｱﾗｲﾒﾝﾄ3 開限
+AND R4106                ; ｱﾗｲﾒﾝﾄ1 閉限
+AND R4108                ; ｱﾗｲﾒﾝﾄ2 閉限
+AND R4110                ; ｱﾗｲﾒﾝﾄ3 閉限
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+TMR @25 #5
+CON
+AND @T25
+JMP @MR2401              ; 2401
+STG @MR2401              ; 2401
+ANB R50302               ; 転写部(L) Pause
+ANB R50110               ; Err 転写(L)UT
+RES MR6106               ; ｱﾗｲﾒﾝﾄ　閉
+CON
+ANB R4106                ; ｱﾗｲﾒﾝﾄ1 閉限
+ANB R4108                ; ｱﾗｲﾒﾝﾄ2 閉限
+ANB R4110                ; ｱﾗｲﾒﾝﾄ3 閉限
+AND R4107                ; ｱﾗｲﾒﾝﾄ1 開限
+AND R4109                ; ｱﾗｲﾒﾝﾄ2 開限
+AND R4111                ; ｱﾗｲﾒﾝﾄ3 開限
+RES R50807               ; WFｱﾗｲﾒﾝﾄ開閉STEP実行中
+CON
+JMP @MR3915              ; STEP 終了へ
+;********* 手動動作ﾒｲﾝ *********
+;********* STEP MODE MAIN *********
+;********* RB終了共通動作 *********
+;********* RB common end process *********
+STG @MR2500              ; RB_STEP終了共通動作
+MPS
+AND R4800                ; RBﾊﾝﾄﾞ吸着 OUT1
+JMP @MR3915              ; STEP 終了へ
+MPP
+ANB R4800                ; RBﾊﾝﾄﾞ吸着 OUT1
+RES MR2308               ; ﾛﾎﾞｯﾄﾊﾝﾄﾞ吸着
+CON
+RES MR2309               ; ﾛﾎﾞｯﾄﾊﾝﾄﾞ真空破壊
+CON
+JMP @MR3915              ; STEP 終了へ
+;********* 手動動作ﾒｲﾝ *********
+;********* STEP MODE MAIN *********
+;********* ｽｷｰｼﾞ STEP *********
+;********* SQUEEGEE STEP *********
+STG @MR3100              ; ｽｷｰｼﾞｽﾃｯﾌﾟﾒｲﾝへ
+ANB R50301               ; ｽｷｰｼﾞ部(L) Pause
+ANB R50109               ; Err ｽｷｰｼﾞ(L)UT
+SET R50700               ; ｽｷｰｼﾞ(L)ｽﾃｯﾌﾟ 実行中
+CON
+JMP @MR4300              ; ｽｷｰｼﾞ処理へ
+;///// Squeegee Operation /////
+STG @MR3109              ; 3109
+ANB R50301               ; ｽｷｰｼﾞ部(L) Pause
+ANB R50109               ; Err ｽｷｰｼﾞ(L)UT
+SET MR6012               ; ｽｷｰｼﾞ(L)(親)　上昇
+CON
+AND R4012                ; ｽｷｰｼﾞ(親)(L)上昇限
+JMP @MR3110              ; 3110
+STG @MR3110              ; 3110
+ANB R50301               ; ｽｷｰｼﾞ部(L) Pause
+ANB R50109               ; Err ｽｷｰｼﾞ(L)UT
+MPS
+AND LR007                ; ﾌｨﾙﾑ(L)採取　選択
+JMP @MR4706              ; ﾜｰｸ後退   ﾁｪｯｸへ
+MPP
+ANB LR007                ; ﾌｨﾙﾑ(L)採取　選択
+JMP @MR3111              ; 3111
+STG @MR3111              ; 3111
+ANB R50301               ; ｽｷｰｼﾞ部(L) Pause
+ANB R50109               ; Err ｽｷｰｼﾞ(L)UT
+SET R51201               ; ｽｷｰｼﾞ(L)ｴﾘｱｾﾝｻｰ有効FLG
+CON
+JMP @MR3112              ; 3112
+STG @MR3112              ; 3112
+RES MR6111               ; ｼｬｯﾀｰ2　閉
+CON
+MPS
+AND R4813                ; ｽｷｰｼﾞ(L)側 ｴﾘｱｾﾝｻ (ｼｬｯﾀｰ2)
+SET MR6110               ; ｼｬｯﾀｰ2　開
+CON
+ANB R4203                ; ｼｬｯﾀｰ2 閉限(ｽｷｰｼﾞ(L)
+AND R4202                ; ｼｬｯﾀｰ2 開限(ｽｷｰｼﾞ(L)
+RES R51201               ; ｽｷｰｼﾞ(L)ｴﾘｱｾﾝｻｰ有効FLG
+CON
+JMP @MR3113              ; 3113
+MPP
+ANB R4813                ; ｽｷｰｼﾞ(L)側 ｴﾘｱｾﾝｻ (ｼｬｯﾀｰ2)
+RES MR6110               ; ｼｬｯﾀｰ2　開
+CON
+JMP @MR3111              ; 3111
+STG @MR3113              ; 3113
+RES R51201               ; ｽｷｰｼﾞ(L)ｴﾘｱｾﾝｻｰ有効FLG
+CON
+RES R50700               ; ｽｷｰｼﾞ(L)ｽﾃｯﾌﾟ 実行中
+CON
+JMP @MR3915              ; STEP 終了へ
+;********* 手動動作ﾒｲﾝ *********
+;********* STEP MODE MAIN *********
+;********* ﾌｨﾙﾑ転写 STEP *********
+;********* FILM  STEP *********
+STG @MR3200              ; ﾌｨﾙﾑ転写ｽﾃｯﾌﾟﾒｲﾝへ
+ANB R50301               ; ｽｷｰｼﾞ部(L) Pause
+ANB R50109               ; Err ｽｷｰｼﾞ(L)UT
+SET R51201               ; ｽｷｰｼﾞ(L)ｴﾘｱｾﾝｻｰ有効FLG
+CON
+SET R50701               ; ﾌｨﾙﾑ転写(L)ｽﾃｯﾌﾟ実行中
+CON
+JMP @MR3201              ; 3201
+STG @MR3201              ; 3201
+RES MR6110               ; ｼｬｯﾀｰ2　開
+CON
+MPS
+AND R4813                ; ｽｷｰｼﾞ(L)側 ｴﾘｱｾﾝｻ (ｼｬｯﾀｰ2)
+SET MR6111               ; ｼｬｯﾀｰ2　閉
+CON
+ANB R4202                ; ｼｬｯﾀｰ2 開限(ｽｷｰｼﾞ(L)
+AND R4203                ; ｼｬｯﾀｰ2 閉限(ｽｷｰｼﾞ(L)
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+RES R51201               ; ｽｷｰｼﾞ(L)ｴﾘｱｾﾝｻｰ有効FLG
+CON
+JMP @MR4706              ; ﾜｰｸ後退   ﾁｪｯｸへ
+MPP
+ANB R4813                ; ｽｷｰｼﾞ(L)側 ｴﾘｱｾﾝｻ (ｼｬｯﾀｰ2)
+RES MR6111               ; ｼｬｯﾀｰ2　閉
+CON
+JMP @MR3200              ; ﾌｨﾙﾑ転写ｽﾃｯﾌﾟﾒｲﾝへ
+;///// Film Transcription Operation /////
+STG @MR3210              ; 3210
+ANB R50301               ; ｽｷｰｼﾞ部(L) Pause
+ANB R50109               ; Err ｽｷｰｼﾞ(L)UT
+ANB R4102                ; ｽｷｰｼﾞ台(L) 前進端(転写側)
+ANB R4104                ; ｽｷｰｼﾞ台(L) 中間
+AND R4103                ; ｽｷｰｼﾞ台(L) 後退限(塗布側)
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+JMP @MR3211              ; 3211
+STG @MR3211              ; 3211
+ANB R50301               ; ｽｷｰｼﾞ部(L) Pause
+ANB R50109               ; Err ｽｷｰｼﾞ(L)UT
+SET R51201               ; ｽｷｰｼﾞ(L)ｴﾘｱｾﾝｻｰ有効FLG
+CON
+JMP @MR3212              ; 3212
+STG @MR3212              ; 3212
+RES MR6111               ; ｼｬｯﾀｰ2　閉
+CON
+MPS
+AND R4813                ; ｽｷｰｼﾞ(L)側 ｴﾘｱｾﾝｻ (ｼｬｯﾀｰ2)
+SET MR6110               ; ｼｬｯﾀｰ2　開
+CON
+ANB R4203                ; ｼｬｯﾀｰ2 閉限(ｽｷｰｼﾞ(L)
+AND R4202                ; ｼｬｯﾀｰ2 開限(ｽｷｰｼﾞ(L)
+RES R51201               ; ｽｷｰｼﾞ(L)ｴﾘｱｾﾝｻｰ有効FLG
+CON
+JMP @MR3213              ; 3213
+MPP
+ANB R4813                ; ｽｷｰｼﾞ(L)側 ｴﾘｱｾﾝｻ (ｼｬｯﾀｰ2)
+RES MR6110               ; ｼｬｯﾀｰ2　開
+CON
+JMP @MR3211              ; 3211
+STG @MR3213              ; 3213
+RES R51200               ; 治具(L)部ｴﾘｱｾﾝｻｰ有効FLG
+CON
+MPS
+ANB LR007                ; ﾌｨﾙﾑ(L)採取　選択
+RES R50701               ; ﾌｨﾙﾑ転写(L)ｽﾃｯﾌﾟ実行中
+CON
+JMP @MR3915              ; STEP 終了へ
+MPP
+AND LR007                ; ﾌｨﾙﾑ(L)採取　選択
+RES R50408               ; POST PASS
+CON
+JMP @MR3401              ; 3401
+;********* 手動動作ﾒｲﾝ *********
+;********* STEP MODE MAIN *********
+;********* ﾜｰｸ転写 STEP *********
+;********* WORK  STEP *********
+;ｼｬｯﾀｰ2開閉条件ﾁｪｯｸ  /  Shutter2 Close states Check
+STG @MR3300              ; ﾜｰｸ転写ｽﾃｯﾌﾟﾒｲﾝへ
+ANB R50302               ; 転写部(L) Pause
+ANB R50110               ; Err 転写(L)UT
+SET R50702               ; ﾜｰｸ転写(L)ｽﾃｯﾌﾟ実行中
+CON
+MPS
+LD R6103                 ; ｽｷｰｼﾞ台(L) 後退(塗布側)
+ANB R4102                ; ｽｷｰｼﾞ台(L) 前進端(転写側)
+ANB R4104                ; ｽｷｰｼﾞ台(L) 中間
+AND R4103                ; ｽｷｰｼﾞ台(L) 後退限(塗布側)
+ANL
+JMP @MR3301              ; 3301
+MPP
+LDB R6103                ; ｽｷｰｼﾞ台(L) 後退(塗布側)
+OR R4102                 ; ｽｷｰｼﾞ台(L) 前進端(転写側)
+OR R4104                 ; ｽｷｰｼﾞ台(L) 中間
+ORB R4103                ; ｽｷｰｼﾞ台(L) 後退限(塗布側)
+ANL
+SET @MR300               ; ｽｷｰｼﾞ台移動有り
+CON
+SET @MR3303              ; ｼｬｯﾀｰ2　閉へ
+CON
+JMP @MR3301              ; 3301
+;ｼｬｯﾀｰ1閉  /  Shutter1 Close
+STG @MR3301              ; 3301
+ANB R50302               ; 転写部(L) Pause
+ANB R50110               ; Err 転写(L)UT
+RES MR2311               ; ｳｪﾊｰ治具(L)真空破壊
+CON
+SET MR2310               ; ｳｪﾊｰ治具(L)吸着
+CON
+SET R51200               ; 治具(L)部ｴﾘｱｾﾝｻｰ有効FLG
+CON
+JMP @MR3302              ; 3302
+STG @MR3302              ; 3302
+RES MR6108               ; ｼｬｯﾀｰ1　開
+CON
+MPS
+AND R4812                ; 治具(L)側 ｴﾘｱｾﾝｻ (ｼｬｯﾀｰ1)
+SET MR6109               ; ｼｬｯﾀｰ1　閉
+CON
+ANB R4200                ; ｼｬｯﾀｰ1 開限(治具(L)側)
+AND R4201                ; ｼｬｯﾀｰ1 閉限(治具(L)側)
+RES R51200               ; 治具(L)部ｴﾘｱｾﾝｻｰ有効FLG
+CON
+JMP @MR3305              ; 3305
+MPP
+ANB R4812                ; 治具(L)側 ｴﾘｱｾﾝｻ (ｼｬｯﾀｰ1)
+RES MR6109               ; ｼｬｯﾀｰ1　閉
+CON
+JMP @MR3301              ; 3301
+;ｼｬｯﾀｰ2閉  /  Shutter2 Close
+STG @MR3303              ; ｼｬｯﾀｰ2　閉へ
+ANB R50301               ; ｽｷｰｼﾞ部(L) Pause
+ANB R50109               ; Err ｽｷｰｼﾞ(L)UT
+SET R51201               ; ｽｷｰｼﾞ(L)ｴﾘｱｾﾝｻｰ有効FLG
+CON
+JMP @MR3304              ; 3304
+STG @MR3304              ; 3304
+RES MR6110               ; ｼｬｯﾀｰ2　開
+CON
+MPS
+AND R4813                ; ｽｷｰｼﾞ(L)側 ｴﾘｱｾﾝｻ (ｼｬｯﾀｰ2)
+SET MR6111               ; ｼｬｯﾀｰ2　閉
+CON
+ANB R4202                ; ｼｬｯﾀｰ2 開限(ｽｷｰｼﾞ(L)
+AND R4203                ; ｼｬｯﾀｰ2 閉限(ｽｷｰｼﾞ(L)
+RES R51201               ; ｽｷｰｼﾞ(L)ｴﾘｱｾﾝｻｰ有効FLG
+CON
+SET @MR301               ; ｼｬｯﾀｰ2閉完了
+CON
+ENDS
+MPP
+ANB R4813                ; ｽｷｰｼﾞ(L)側 ｴﾘｱｾﾝｻ (ｼｬｯﾀｰ2)
+RES MR6111               ; ｼｬｯﾀｰ2　閉
+CON
+JMP @MR3303              ; ｼｬｯﾀｰ2　閉へ
+STG @MR3305              ; 3305
+ANB R50302               ; 転写部(L) Pause
+ANB R50110               ; Err 転写(L)UT
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+MPS
+ANB @MR300               ; ｽｷｰｼﾞ台移動有り
+JMP @MR3306              ; 3306
+MPP
+LD @MR300                ; ｽｷｰｼﾞ台移動有り
+AND @MR301               ; ｼｬｯﾀｰ2閉完了
+ANL
+RES @MR301               ; ｼｬｯﾀｰ2閉完了
+CON
+JMP @MR3306              ; 3306
+;治具(L)前進  /  Jig(L) Advance
+STG @MR3306              ; 3306
+ANB R50302               ; 転写部(L) Pause
+ANB R50110               ; Err 転写(L)UT
+RES MR6001               ; ｳｪﾊｰ治具(L) 後退
+CON
+SET MR6000               ; ｳｪﾊｰ治具(L) 前進
+CON
+AND R4000                ; 治具(L) 前進限(RB側)
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+JMP @MR6900              ; ｽｷｰｼﾞ台   後退へ
+;///// Wafer Transcription Operation /////
+;治具(L)左行  /  Jig(L) Left
+STG @MR3307              ; 3307
+ANB R50302               ; 転写部(L) Pause
+ANB R50110               ; Err 転写(L)UT
+RES MR6002               ; ｳｪﾊｰ治具(L) 転写側行(右側)
+CON
+SET MR6003               ; ｳｪﾊｰ治具(L)RB側行(左側)
+CON
+AND R4003                ; 治具(L) RB側限(左限)
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+JMP @MR3308              ; 3308
+;治具(L)後退  /  Jig(L) Back
+STG @MR3308              ; 3308
+ANB R50302               ; 転写部(L) Pause
+ANB R50110               ; Err 転写(L)UT
+AND @MR103               ; ｳｪﾊｰ治具(L) 戻りOKFLG
+RES MR6000               ; ｳｪﾊｰ治具(L) 前進
+CON
+SET MR6001               ; ｳｪﾊｰ治具(L) 後退
+CON
+AND R4001                ; 治具(L) 後退限
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+JMP @MR3309              ; 3309
+;ｼｬｯﾀｰ1開  /  Shutter1 Open
+STG @MR3309              ; 3309
+ANB R50302               ; 転写部(L) Pause
+ANB R50110               ; Err 転写(L)UT
+SET @MR3313              ; 3313
+CON
+RES MR2310               ; ｳｪﾊｰ治具(L)吸着
+CON
+SET MR2311               ; ｳｪﾊｰ治具(L)真空破壊
+CON
+TMR @5 #15
+CON
+AND @T5
+JMP @MR3311              ; 3311
+STG @MR3310              ; 3310
+ANB R50302               ; 転写部(L) Pause
+ANB R50110               ; Err 転写(L)UT
+RES MR2310               ; ｳｪﾊｰ治具(L)吸着
+CON
+RES MR2311               ; ｳｪﾊｰ治具(L)真空破壊
+CON
+JMP @MR3311              ; 3311
+STG @MR3311              ; 3311
+ANB R50302               ; 転写部(L) Pause
+ANB R50110               ; Err 転写(L)UT
+SET R51200               ; 治具(L)部ｴﾘｱｾﾝｻｰ有効FLG
+CON
+JMP @MR3312              ; ｼｬｯﾀｰ2開へ
+STG @MR3312              ; ｼｬｯﾀｰ2開へ
+RES MR6109               ; ｼｬｯﾀｰ1　閉
+CON
+MPS
+AND R4812                ; 治具(L)側 ｴﾘｱｾﾝｻ (ｼｬｯﾀｰ1)
+SET MR6108               ; ｼｬｯﾀｰ1　開
+CON
+ANB R4201                ; ｼｬｯﾀｰ1 閉限(治具(L)側)
+AND R4200                ; ｼｬｯﾀｰ1 開限(治具(L)側)
+RES R51200               ; 治具(L)部ｴﾘｱｾﾝｻｰ有効FLG
+CON
+JMP @MR3315
+MPP
+ANB R4812                ; 治具(L)側 ｴﾘｱｾﾝｻ (ｼｬｯﾀｰ1)
+RES MR6108               ; ｼｬｯﾀｰ1　開
+CON
+JMP @MR3311              ; 3311
+;ｼｬｯﾀｰ2開  /  Shutter2 Open
+STG @MR3313              ; 3313
+ANB R50301               ; ｽｷｰｼﾞ部(L) Pause
+ANB R50109               ; Err ｽｷｰｼﾞ(L)UT
+SET R51201               ; ｽｷｰｼﾞ(L)ｴﾘｱｾﾝｻｰ有効FLG
+CON
+JMP @MR3314              ; 3314
+STG @MR3314              ; 3314
+RES MR6111               ; ｼｬｯﾀｰ2　閉
+CON
+MPS
+AND R4813                ; ｽｷｰｼﾞ(L)側 ｴﾘｱｾﾝｻ (ｼｬｯﾀｰ2)
+SET MR6110               ; ｼｬｯﾀｰ2　開
+CON
+ANB R4203                ; ｼｬｯﾀｰ2 閉限(ｽｷｰｼﾞ(L)
+AND R4202                ; ｼｬｯﾀｰ2 開限(ｽｷｰｼﾞ(L)
+RES R51201               ; ｽｷｰｼﾞ(L)ｴﾘｱｾﾝｻｰ有効FLG
+CON
+SET @MR302               ; ｼｬｯﾀｰ2開OK
+CON
+ENDS
+MPP
+ANB R4813                ; ｽｷｰｼﾞ(L)側 ｴﾘｱｾﾝｻ (ｼｬｯﾀｰ2)
+RES MR6110               ; ｼｬｯﾀｰ2　開
+CON
+JMP @MR3313              ; 3313
+STG @MR3315
+ANB R50302               ; 転写部(L) Pause
+ANB R50110               ; Err 転写(L)UT
+RES MR2310               ; ｳｪﾊｰ治具(L)吸着
+CON
+RES MR2311               ; ｳｪﾊｰ治具(L)真空破壊
+CON
+AND @MR302               ; ｼｬｯﾀｰ2開OK
+RES @MR302               ; ｼｬｯﾀｰ2開OK
+CON
+RES @MR300               ; ｽｷｰｼﾞ台移動有り
+CON
+RES R50702               ; ﾜｰｸ転写(L)ｽﾃｯﾌﾟ実行中
+CON
+JMP @MR3915              ; STEP 終了へ
+;********* 手動動作ﾒｲﾝ *********
+;********* STEP MODE MAIN *********
+;********* ﾌｨﾙﾑ交換 STEP *********
+;********* FILM CHANGE   STEP *********
+STG @MR3400              ; ﾌｨﾙﾑ交換ﾒｲﾝへ
+ANB R50302               ; 転写部(L) Pause
+ANB R50110               ; Err 転写(L)UT
+SET R50703               ; ﾌｨﾙﾑ(L)巻取り  交換中
+CON
+JMP @MR3401              ; 3401
+STG @MR3401              ; 3401
+RES @MR7915              ; ﾌｨﾙﾑ交換   call 完了
+CON
+ANB @MR7914              ; ﾌｨﾙﾑ交換   call実行中
+JMP @MR3402              ; 3402
+STG @MR3402              ; 3402
+@SET @MR7900             ; ﾌｨﾙﾑ交換   call
+CON
+AND @MR7914              ; ﾌｨﾙﾑ交換   call実行中
+JMP @MR3403              ; 3403
+STG @MR3403              ; 3403
+AND @MR7915              ; ﾌｨﾙﾑ交換   call 完了
+ANB @MR7914              ; ﾌｨﾙﾑ交換   call実行中
+JMP @MR3404              ; 3404
+STG @MR3404              ; 3404
+RES @MR7915              ; ﾌｨﾙﾑ交換   call 完了
+CON
+ANB @MR7915              ; ﾌｨﾙﾑ交換   call 完了
+JMP @MR5200              ; ﾌｨﾙﾑ巻取り.送り
+STG @MR3405              ; 3405
+MPS
+ANB @MR7502              ; 段差ﾛｰﾗ下限  検出
+SET R51113               ; ﾌｨﾙﾑ(L)巻取り/送り完了
+CON
+JMP @MR3406              ; 3406
+MPP
+AND @MR7502              ; 段差ﾛｰﾗ下限  検出
+RES R51113               ; ﾌｨﾙﾑ(L)巻取り/送り完了
+CON
+JMP @MR3406              ; 3406
+STG @MR3406              ; 3406
+RES R51200               ; 治具(L)部ｴﾘｱｾﾝｻｰ有効FLG
+CON
+MPS
+AND LR003                ; ﾌｨﾙﾑ(L)交換   選択
+RES R50703               ; ﾌｨﾙﾑ(L)巻取り  交換中
+CON
+JMP @MR3915              ; STEP 終了へ
+MPP
+AND LR007                ; ﾌｨﾙﾑ(L)採取　選択
+RES R50707               ; ﾌｨﾙﾑ採取(L)　実行中
+CON
+JMP @MR3915              ; STEP 終了へ
+;********* 手動動作ﾒｲﾝ *********
+;********* STEP MODE MAIN *********
+;********* ﾌｨﾙﾑ巻取り、送り STEP *********
+;********* FILM role up　or send  STEP *********
+STG R51112               ; 転写RB原点後ﾌｲﾙﾑ巻取り(L)
+AND R4103                ; ｽｷｰｼﾞ台(L) 後退限(塗布側)
+AND R4003                ; 治具(L) RB側限(左限)
+TMR @37 #5               ; 転写ﾛﾎﾞｯﾄ原点復帰完了
+CON
+ANP @T37                 ; 転写ﾛﾎﾞｯﾄ原点復帰完了
+ANB R51113               ; ﾌｨﾙﾑ(L)巻取り/送り完了
+JMP @MR3500              ; ﾌｨﾙﾑ巻取り/送り ﾒｲﾝへ
+STG @MR3500              ; ﾌｨﾙﾑ巻取り/送り ﾒｲﾝへ
+ANB R50302               ; 転写部(L) Pause
+ANB R50110               ; Err 転写(L)UT
+SET R50704               ; ﾌｨﾙﾑ(L)巻取り送り実行中
+CON
+JMP @MR5200              ; ﾌｨﾙﾑ巻取り.送り
+STG @MR3513              ; 3513
+MPS
+ANB @MR7502              ; 段差ﾛｰﾗ下限  検出
+SET R51113               ; ﾌｨﾙﾑ(L)巻取り/送り完了
+CON
+RES R50704               ; ﾌｨﾙﾑ(L)巻取り送り実行中
+CON
+JMP @MR3915              ; STEP 終了へ
+MPP
+AND @MR7502              ; 段差ﾛｰﾗ下限  検出
+RES R51113               ; ﾌｨﾙﾑ(L)巻取り/送り完了
+CON
+RES R50704               ; ﾌｨﾙﾑ(L)巻取り送り実行中
+CON
+JMP @MR3915              ; STEP 終了へ
+;********* 手動動作ﾒｲﾝ *********
+;********* STEP MODE MAIN *********
+;********* (L)→反転ﾊﾝﾄﾞｳｪﾊｰ受渡し STEP *********
+;********* Reverser receive Wafer STEP *********
+STG @MR3600              ; (L)→反転ﾊﾝﾄﾞｳｪﾊｰ受渡し STEP
+ANB R50302               ; 転写部(L) Pause
+ANB R50110               ; Err 転写(L)UT
+SET MR2310               ; ｳｪﾊｰ治具(L)吸着
+CON
+SET R50808               ; (L)→反転ﾊﾝﾄﾞ 実行中
+CON
+SET R51200               ; 治具(L)部ｴﾘｱｾﾝｻｰ有効FLG
+CON
+JMP @MR3601              ; 3601
+STG @MR3601              ; 3601
+RES MR6108               ; ｼｬｯﾀｰ1　開
+CON
+MPS
+AND R4812                ; 治具(L)側 ｴﾘｱｾﾝｻ (ｼｬｯﾀｰ1)
+SET MR6109               ; ｼｬｯﾀｰ1　閉
+CON
+ANB R4200                ; ｼｬｯﾀｰ1 開限(治具(L)側)
+AND R4201                ; ｼｬｯﾀｰ1 閉限(治具(L)側)
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+RES R51200               ; 治具(L)部ｴﾘｱｾﾝｻｰ有効FLG
+CON
+JMP @MR3602              ; 3602
+MPP
+ANB R4812                ; 治具(L)側 ｴﾘｱｾﾝｻ (ｼｬｯﾀｰ1)
+RES MR6109               ; ｼｬｯﾀｰ1　閉
+CON
+JMP @MR3600              ; (L)→反転ﾊﾝﾄﾞｳｪﾊｰ受渡し STEP
+STG @MR3602              ; 3602
+ANB R50302               ; 転写部(L) Pause
+ANB R50110               ; Err 転写(L)UT
+RES MR6001               ; ｳｪﾊｰ治具(L) 後退
+CON
+SET MR6000               ; ｳｪﾊｰ治具(L) 前進
+CON
+AND R4000                ; 治具(L) 前進限(RB側)
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+JMP @MR3603              ; 3603
+STG @MR3603              ; 3603
+ANB R50302               ; 転写部(L) Pause
+ANB R50110               ; Err 転写(L)UT
+AND @MR102               ; ｳｪﾊｰ治具(L) 右行OKFLG
+RES MR6003               ; ｳｪﾊｰ治具(L)RB側行(左側)
+CON
+SET MR6002               ; ｳｪﾊｰ治具(L) 転写側行(右側)
+CON
+AND R4002                ; 治具(L) 転写限（右限）
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+JMP @MR3604              ; 3604
+STG @MR3604              ; 3604
+ANB R50302               ; 転写部(L) Pause
+ANB R50110               ; Err 転写(L)UT
+SET MR2310               ; ｳｪﾊｰ治具(L)吸着
+CON
+SET R54100               ; 反転部取出し要求
+CON
+JMP @MR3605              ; 3605
+STG @MR3605              ; 3605
+ANB R50302               ; 転写部(L) Pause
+ANB R50110               ; Err 転写(L)UT
+AND R54115               ; 反転部取出し完了
+RES R54115               ; 反転部取出し完了
+CON
+JMP @MR3606              ; 3606
+STG @MR3606              ; 3606
+ANB R50302               ; 転写部(L) Pause
+ANB R50110               ; Err 転写(L)UT
+RES MR6002               ; ｳｪﾊｰ治具(L) 転写側行(右側)
+CON
+SET MR6003               ; ｳｪﾊｰ治具(L)RB側行(左側)
+CON
+AND R4003                ; 治具(L) RB側限(左限)
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+JMP @MR3607              ; 3607
+STG @MR3607              ; 3607
+ANB R50302               ; 転写部(L) Pause
+ANB R50110               ; Err 転写(L)UT
+AND @MR103               ; ｳｪﾊｰ治具(L) 戻りOKFLG
+RES MR6000               ; ｳｪﾊｰ治具(L) 前進
+CON
+SET MR6001               ; ｳｪﾊｰ治具(L) 後退
+CON
+AND R4001                ; 治具(L) 後退限
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+JMP @MR3608              ; 3608
+STG @MR3608              ; 3608
+ANB R50302               ; 転写部(L) Pause
+ANB R50110               ; Err 転写(L)UT
+RES MR6310               ; 反転上下 上昇
+CON
+SET MR6311               ; 反転上下 下降
+CON
+ANB R4510                ; 反転 上昇限
+AND R4511                ; 反転 下降限
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+JMP @MR3609              ; 3609
+STG @MR3609              ; 3609
+ANB R50302               ; 転写部(L) Pause
+ANB R50110               ; Err 転写(L)UT
+SET R51200               ; 治具(L)部ｴﾘｱｾﾝｻｰ有効FLG
+CON
+JMP @MR3610              ; 3610
+STG @MR3610              ; 3610
+RES MR6109               ; ｼｬｯﾀｰ1　閉
+CON
+MPS
+AND R4812                ; 治具(L)側 ｴﾘｱｾﾝｻ (ｼｬｯﾀｰ1)
+SET MR6108               ; ｼｬｯﾀｰ1　開
+CON
+ANB R4201                ; ｼｬｯﾀｰ1 閉限(治具(L)側)
+AND R4200                ; ｼｬｯﾀｰ1 開限(治具(L)側)
+RES R51200               ; 治具(L)部ｴﾘｱｾﾝｻｰ有効FLG
+CON
+JMP @MR3611              ; 3611
+MPP
+ANB R4812                ; 治具(L)側 ｴﾘｱｾﾝｻ (ｼｬｯﾀｰ1)
+RES MR6108               ; ｼｬｯﾀｰ1　開
+CON
+JMP @MR3609              ; 3609
+STG @MR3611              ; 3611
+ANB R50302               ; 転写部(L) Pause
+ANB R50110               ; Err 転写(L)UT
+RES MR2312               ; 反転ﾊﾝﾄﾞ 吸着
+CON
+RES MR2313               ; 反転ﾊﾝﾄﾞ 真空破壊
+CON
+RES R50808               ; (L)→反転ﾊﾝﾄﾞ 実行中
+CON
+JMP @MR3915              ; STEP 終了へ
+;********* 手動動作ﾒｲﾝ *********
+;********* STEP MODE MAIN *********
+;********* ｽｸﾚｰﾊﾟ交換 STEP *********
+;********* Scraper Change STEP *********
+STG @MR3700              ; ｽｸﾚｰﾊﾟ交換ﾒｲﾝへ
+ANB R50301               ; ｽｷｰｼﾞ部(L) Pause
+ANB R50109               ; Err ｽｷｰｼﾞ(L)UT
+SET R50705               ; ｽｸﾚｰﾊﾟ(L)交換 実行中
+CON
+JMP @MR3701              ; 3701
+;*** ｼｬｯﾀｰ2 閉  /  Shutter2 Close  ***
+STG @MR3701              ; 3701
+ANB R50301               ; ｽｷｰｼﾞ部(L) Pause
+ANB R50109               ; Err ｽｷｰｼﾞ(L)UT
+SET R51201               ; ｽｷｰｼﾞ(L)ｴﾘｱｾﾝｻｰ有効FLG
+CON
+JMP @MR3702              ; 3702
+STG @MR3702              ; 3702
+RES MR6110               ; ｼｬｯﾀｰ2　開
+CON
+MPS
+AND R4813                ; ｽｷｰｼﾞ(L)側 ｴﾘｱｾﾝｻ (ｼｬｯﾀｰ2)
+SET MR6111               ; ｼｬｯﾀｰ2　閉
+CON
+ANB R4202                ; ｼｬｯﾀｰ2 開限(ｽｷｰｼﾞ(L)
+AND R4203                ; ｼｬｯﾀｰ2 閉限(ｽｷｰｼﾞ(L)
+RES R51201               ; ｽｷｰｼﾞ(L)ｴﾘｱｾﾝｻｰ有効FLG
+CON
+JMP @MR3703              ; 3703
+MPP
+ANB R4813                ; ｽｷｰｼﾞ(L)側 ｴﾘｱｾﾝｻ (ｼｬｯﾀｰ2)
+RES MR6111               ; ｼｬｯﾀｰ2　閉
+CON
+JMP @MR3701              ; 3701
+;*** ｽｸﾚｰﾊﾟ 前進&上昇  /  Scraper Up & Advance  ***
+STG @MR3703              ; 3703
+ANB R50301               ; ｽｷｰｼﾞ部(L) Pause
+ANB R50109               ; Err ｽｷｰｼﾞ(L)UT
+SET MR6012               ; ｽｷｰｼﾞ(L)(親)　上昇
+CON
+SET MR6100               ; ｽｸﾚｰﾊﾟ(L) 前進
+CON
+AND R4012                ; ｽｷｰｼﾞ(親)(L)上昇限
+AND R4100                ; ｽｸﾚｰﾊﾟ(L) 前進限（作業者側）
+JMP @MR3704              ; 3704
+;*** ｼｬｯﾀｰ2 開  /  Shutter2 Open  ***
+STG @MR3704              ; 3704
+ANB R50301               ; ｽｷｰｼﾞ部(L) Pause
+ANB R50109               ; Err ｽｷｰｼﾞ(L)UT
+SET R51201               ; ｽｷｰｼﾞ(L)ｴﾘｱｾﾝｻｰ有効FLG
+CON
+JMP @MR3705              ; 3705
+STG @MR3705              ; 3705
+RES MR6111               ; ｼｬｯﾀｰ2　閉
+CON
+MPS
+AND R4813                ; ｽｷｰｼﾞ(L)側 ｴﾘｱｾﾝｻ (ｼｬｯﾀｰ2)
+SET MR6110               ; ｼｬｯﾀｰ2　開
+CON
+ANB R4203                ; ｼｬｯﾀｰ2 閉限(ｽｷｰｼﾞ(L)
+AND R4202                ; ｼｬｯﾀｰ2 開限(ｽｷｰｼﾞ(L)
+RES R51201               ; ｽｷｰｼﾞ(L)ｴﾘｱｾﾝｻｰ有効FLG
+CON
+JMP @MR3706              ; 3706
+MPP
+ANB R4813                ; ｽｷｰｼﾞ(L)側 ｴﾘｱｾﾝｻ (ｼｬｯﾀｰ2)
+RES MR6110               ; ｼｬｯﾀｰ2　開
+CON
+JMP @MR3704              ; 3704
+STG @MR3706              ; 3706
+ANB R50301               ; ｽｷｰｼﾞ部(L) Pause
+ANB R50109               ; Err ｽｷｰｼﾞ(L)UT
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+JMP @MR3707              ; 3707
+;*** ｼｬｯﾀｰ2 閉  /  Shutter2 Close  ***
+STG @MR3707              ; 3707
+ANB R50301               ; ｽｷｰｼﾞ部(L) Pause
+ANB R50109               ; Err ｽｷｰｼﾞ(L)UT
+SET R51201               ; ｽｷｰｼﾞ(L)ｴﾘｱｾﾝｻｰ有効FLG
+CON
+JMP @MR3708              ; 3708
+STG @MR3708              ; 3708
+RES MR6110               ; ｼｬｯﾀｰ2　開
+CON
+MPS
+AND R4813                ; ｽｷｰｼﾞ(L)側 ｴﾘｱｾﾝｻ (ｼｬｯﾀｰ2)
+SET MR6111               ; ｼｬｯﾀｰ2　閉
+CON
+ANB R4202                ; ｼｬｯﾀｰ2 開限(ｽｷｰｼﾞ(L)
+AND R4203                ; ｼｬｯﾀｰ2 閉限(ｽｷｰｼﾞ(L)
+RES R51201               ; ｽｷｰｼﾞ(L)ｴﾘｱｾﾝｻｰ有効FLG
+CON
+JMP @MR3709              ; 3709
+MPP
+ANB R4813                ; ｽｷｰｼﾞ(L)側 ｴﾘｱｾﾝｻ (ｼｬｯﾀｰ2)
+RES MR6111               ; ｼｬｯﾀｰ2　閉
+CON
+JMP @MR3707              ; 3707
+;*** ｽｸﾚｰﾊﾟ 下降&後退  /  Scraper Down & Back  ***
+STG @MR3709              ; 3709
+ANB R50301               ; ｽｷｰｼﾞ部(L) Pause
+ANB R50109               ; Err ｽｷｰｼﾞ(L)UT
+RES MR6012               ; ｽｷｰｼﾞ(L)(親)　上昇
+CON
+RES MR6100               ; ｽｸﾚｰﾊﾟ(L) 前進
+CON
+AND R4013                ; ｽｷｰｼﾞ(親)(L)下降限
+AND R4101                ; ｽｸﾚｰﾊﾟ(L) 後退限（奥側)
+JMP @MR3710              ; 3710
+;*** ｼｬｯﾀｰ2 開  /  Shutter2 Open  ***
+STG @MR3710              ; 3710
+ANB R50301               ; ｽｷｰｼﾞ部(L) Pause
+ANB R50109               ; Err ｽｷｰｼﾞ(L)UT
+SET R51201               ; ｽｷｰｼﾞ(L)ｴﾘｱｾﾝｻｰ有効FLG
+CON
+JMP @MR3711              ; 3711
+STG @MR3711              ; 3711
+RES MR6111               ; ｼｬｯﾀｰ2　閉
+CON
+MPS
+AND R4813                ; ｽｷｰｼﾞ(L)側 ｴﾘｱｾﾝｻ (ｼｬｯﾀｰ2)
+SET MR6110               ; ｼｬｯﾀｰ2　開
+CON
+ANB R4203                ; ｼｬｯﾀｰ2 閉限(ｽｷｰｼﾞ(L)
+AND R4202                ; ｼｬｯﾀｰ2 開限(ｽｷｰｼﾞ(L)
+RES R51201               ; ｽｷｰｼﾞ(L)ｴﾘｱｾﾝｻｰ有効FLG
+CON
+JMP @MR3712              ; 3712
+MPP
+ANB R4813                ; ｽｷｰｼﾞ(L)側 ｴﾘｱｾﾝｻ (ｼｬｯﾀｰ2)
+RES MR6110               ; ｼｬｯﾀｰ2　開
+CON
+JMP @MR3710              ; 3710
+STG @MR3712              ; 3712
+ANB R50301               ; ｽｷｰｼﾞ部(L) Pause
+ANB R50109               ; Err ｽｷｰｼﾞ(L)UT
+RES R50705               ; ｽｸﾚｰﾊﾟ(L)交換 実行中
+CON
+JMP @MR3915              ; STEP 終了へ
+;********* 手動動作ﾒｲﾝ *********
+;********* STEP MODE MAIN *********
+;********* ｽｷｰｼﾞ台交換 STEP *********
+;********* Squeegee Base  Change STEP *********
+STG @MR3800              ; ｽｷｰｼﾞ台交換ﾒｲﾝへ
+ANB R50301               ; ｽｷｰｼﾞ部(L) Pause
+ANB R50109               ; Err ｽｷｰｼﾞ(L)UT
+SET R50706               ; ｽｷｰｼﾞ台(L)交換 実行中
+CON
+JMP @MR3801              ; 3801
+;*** ｼｬｯﾀｰ2 閉  /  Shutter2 Close  ***
+STG @MR3801              ; 3801
+ANB R50301               ; ｽｷｰｼﾞ部(L) Pause
+ANB R50109               ; Err ｽｷｰｼﾞ(L)UT
+SET R51201               ; ｽｷｰｼﾞ(L)ｴﾘｱｾﾝｻｰ有効FLG
+CON
+JMP @MR3802              ; 3802
+STG @MR3802              ; 3802
+RES MR6110               ; ｼｬｯﾀｰ2　開
+CON
+MPS
+AND R4813                ; ｽｷｰｼﾞ(L)側 ｴﾘｱｾﾝｻ (ｼｬｯﾀｰ2)
+SET MR6111               ; ｼｬｯﾀｰ2　閉
+CON
+ANB R4202                ; ｼｬｯﾀｰ2 開限(ｽｷｰｼﾞ(L)
+AND R4203                ; ｼｬｯﾀｰ2 閉限(ｽｷｰｼﾞ(L)
+RES R51201               ; ｽｷｰｼﾞ(L)ｴﾘｱｾﾝｻｰ有効FLG
+CON
+JMP @MR3803              ; 3803
+MPP
+ANB R4813                ; ｽｷｰｼﾞ(L)側 ｴﾘｱｾﾝｻ (ｼｬｯﾀｰ2)
+RES MR6111               ; ｼｬｯﾀｰ2　閉
+CON
+JMP @MR3801              ; 3801
+;*** ｽｸﾚｰﾊﾟ 上昇  /  Scraper Up  ***
+STG @MR3803              ; 3803
+ANB R50301               ; ｽｷｰｼﾞ部(L) Pause
+ANB R50109               ; Err ｽｷｰｼﾞ(L)UT
+SET MR6012               ; ｽｷｰｼﾞ(L)(親)　上昇
+CON
+AND R4012                ; ｽｷｰｼﾞ(親)(L)上昇限
+JMP @MR3804              ; 3804
+;*** ｼｬｯﾀｰ2 開  /  Shutter2 Open  ***
+STG @MR3804              ; 3804
+ANB R50301               ; ｽｷｰｼﾞ部(L) Pause
+ANB R50109               ; Err ｽｷｰｼﾞ(L)UT
+SET R51201               ; ｽｷｰｼﾞ(L)ｴﾘｱｾﾝｻｰ有効FLG
+CON
+JMP @MR3805              ; 3805
+STG @MR3805              ; 3805
+RES MR6111               ; ｼｬｯﾀｰ2　閉
+CON
+MPS
+AND R4813                ; ｽｷｰｼﾞ(L)側 ｴﾘｱｾﾝｻ (ｼｬｯﾀｰ2)
+SET MR6110               ; ｼｬｯﾀｰ2　開
+CON
+ANB R4203                ; ｼｬｯﾀｰ2 閉限(ｽｷｰｼﾞ(L)
+AND R4202                ; ｼｬｯﾀｰ2 開限(ｽｷｰｼﾞ(L)
+RES R51201               ; ｽｷｰｼﾞ(L)ｴﾘｱｾﾝｻｰ有効FLG
+CON
+JMP @MR3806              ; 3806
+MPP
+ANB R4813                ; ｽｷｰｼﾞ(L)側 ｴﾘｱｾﾝｻ (ｼｬｯﾀｰ2)
+RES MR6110               ; ｼｬｯﾀｰ2　開
+CON
+JMP @MR3804              ; 3804
+STG @MR3806              ; 3806
+ANB R50301               ; ｽｷｰｼﾞ部(L) Pause
+ANB R50109               ; Err ｽｷｰｼﾞ(L)UT
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+JMP @MR3807              ; 3807
+;*** ｼｬｯﾀｰ2 閉  /  Shutter2 Close  ***
+STG @MR3807              ; 3807
+ANB R50301               ; ｽｷｰｼﾞ部(L) Pause
+ANB R50109               ; Err ｽｷｰｼﾞ(L)UT
+SET R51201               ; ｽｷｰｼﾞ(L)ｴﾘｱｾﾝｻｰ有効FLG
+CON
+JMP @MR3808              ; 3808
+STG @MR3808              ; 3808
+RES MR6110               ; ｼｬｯﾀｰ2　開
+CON
+MPS
+AND R4813                ; ｽｷｰｼﾞ(L)側 ｴﾘｱｾﾝｻ (ｼｬｯﾀｰ2)
+SET MR6111               ; ｼｬｯﾀｰ2　閉
+CON
+ANB R4202                ; ｼｬｯﾀｰ2 開限(ｽｷｰｼﾞ(L)
+AND R4203                ; ｼｬｯﾀｰ2 閉限(ｽｷｰｼﾞ(L)
+RES R51201               ; ｽｷｰｼﾞ(L)ｴﾘｱｾﾝｻｰ有効FLG
+CON
+JMP @MR3809              ; 3809
+MPP
+ANB R4813                ; ｽｷｰｼﾞ(L)側 ｴﾘｱｾﾝｻ (ｼｬｯﾀｰ2)
+RES MR6111               ; ｼｬｯﾀｰ2　閉
+CON
+JMP @MR3807              ; 3807
+;*** ｽｸﾚｰﾊﾟ 下降  /  Scraper Down  ***
+STG @MR3809              ; 3809
+ANB R50301               ; ｽｷｰｼﾞ部(L) Pause
+ANB R50109               ; Err ｽｷｰｼﾞ(L)UT
+RES MR6012               ; ｽｷｰｼﾞ(L)(親)　上昇
+CON
+AND R4013                ; ｽｷｰｼﾞ(親)(L)下降限
+JMP @MR3810              ; 3810
+;*** ｼｬｯﾀｰ2 開  /  Shutter2 Open  ***
+STG @MR3810              ; 3810
+ANB R50301               ; ｽｷｰｼﾞ部(L) Pause
+ANB R50109               ; Err ｽｷｰｼﾞ(L)UT
+SET R51201               ; ｽｷｰｼﾞ(L)ｴﾘｱｾﾝｻｰ有効FLG
+CON
+JMP @MR3811              ; 3811
+STG @MR3811              ; 3811
+RES MR6111               ; ｼｬｯﾀｰ2　閉
+CON
+MPS
+AND R4813                ; ｽｷｰｼﾞ(L)側 ｴﾘｱｾﾝｻ (ｼｬｯﾀｰ2)
+SET MR6110               ; ｼｬｯﾀｰ2　開
+CON
+ANB R4203                ; ｼｬｯﾀｰ2 閉限(ｽｷｰｼﾞ(L)
+AND R4202                ; ｼｬｯﾀｰ2 開限(ｽｷｰｼﾞ(L)
+RES R51201               ; ｽｷｰｼﾞ(L)ｴﾘｱｾﾝｻｰ有効FLG
+CON
+JMP @MR3812              ; 3812
+MPP
+ANB R4813                ; ｽｷｰｼﾞ(L)側 ｴﾘｱｾﾝｻ (ｼｬｯﾀｰ2)
+RES MR6110               ; ｼｬｯﾀｰ2　開
+CON
+JMP @MR3810              ; 3810
+STG @MR3812              ; 3812
+ANB R50301               ; ｽｷｰｼﾞ部(L) Pause
+ANB R50109               ; Err ｽｷｰｼﾞ(L)UT
+RES R50706               ; ｽｷｰｼﾞ台(L)交換 実行中
+CON
+JMP @MR3915              ; STEP 終了へ
+;********* 手動動作終了操作  *********
+;********* STEP End process *********
+STG @MR3915              ; STEP 終了へ
+OUT @MR2914              ; 手動終了   ﾌﾞｻﾞｰON
+CON
+RES R51004               ; ｽｷｰｼﾞ(L)ｽﾀｰﾄﾗﾝﾌﾟ点滅
+CON
+RES R51005               ; ｽｷｰｼﾞ(L)ｽﾀｰﾄﾗﾝﾌﾟ点灯
+CON
+RES R51006               ; 治具(L)ｽﾀｰﾄﾗﾝﾌﾟ点滅
+CON
+RES R51007               ; 治具(L)ｽﾀｰﾄﾗﾝﾌﾟ点灯
+CON
+MPS
+ANB R42503               ; 連続STEP許可
+RES LR201                ; 手動ﾓｰﾄﾞ　   選択
+CON
+ENDS
+MPP
+AND R42503               ; 連続STEP許可
+ENDS
+;■■■■■■■■■■■■■■■■■■■■  AUTO  ■■■■■■■■■■■■■■■■■■■■
+;********* AUTO動作ﾓｰﾄﾞ選択 *********
+;********* AUTO MODE SELECTION *********
+LD R50001                ; 自動中
+AND R50011               ; 自動      動作選択済
+ANB R51600               ; 自動動作  (L) 初回
+DIFU @MR4000             ; 自動ｽﾀｰﾄPLS
+LD R50412                ; AUTO初期ｽｷｰｼﾞSWｽﾀｰﾄPLS
+@SET @MR4014             ; 初期ｽｷｰｼﾞ SWｽﾀｰﾄ記憶
+LD R50413                ; AUTO初期ﾜｰｸSWｽﾀｰﾄPLS
+@SET @MR4015             ; 初期ﾜｰｸ  SWｽﾀｰﾄ記憶
+;***** Auto,STEP mode *****
+;
+;***** 定停止 ﾌﾗｸﾞﾘｾｯﾄ / Cycle stop Flag reset *****
+;
+;***** 定停止 ﾌﾗｸﾞﾘｾｯﾄ / Cycle stop Flag reset *****
+;
+LDF R49807               ; 全ﾕﾆｯﾄ払出し完了
+DW #0 @DM11              ; 清掃後転写回数
+CON
+DW #0 @DM12              ; 清掃後ｽｷｰｼﾞ回数
+CON
+RES R49401               ; Jig(L)清掃要求中
+CON
+RES @MR111               ; 要ｽｷｰｼﾞ台清掃FLG
+CON
+RES R51600               ; 自動動作  (L) 初回
+CON
+RES R51601               ; ｽｷｰｼﾞ動作 (L)  完了
+CON
+RES R51615               ; 転写(L)  動作完了
+;***** Auto,STEP mode *****
+;
+;***** ﾊﾟﾗﾒｰﾀ選択 / parametar sellection *****
+;
+LD @MR4000               ; 自動ｽﾀｰﾄPLS
+AND R50011               ; 自動      動作選択済
+MPS
+LD LR1000                ; AUTO PARA0 通常動作選択
+OR LR1001                ; AUTO PARA1 1枚流動選択
+OR LR1002                ; AUTO PARA2 指定段流動選択
+OR LR1003                ; AUTO PARA3 S.RB無し動作選択
+ANL
+SET R51600               ; 自動動作  (L) 初回
+CON
+@SET @MR4100             ; ｽｷｰｼﾞ起動   確認へ
+MPS
+SET R51007               ; 治具(L)ｽﾀｰﾄﾗﾝﾌﾟ点灯
+CON
+@SET @MR4400             ; ﾜｰｸ起動    確認へ
+MRD
+@SET @MR4001             ; AUTO初回ﾌｨﾙﾑ巻取りへ
+MRD
+DW #0 @DM11              ; 清掃後転写回数
+MPP
+DW #0 @DM12              ; 清掃後ｽｷｰｼﾞ回数
+MPP
+LDB LR1000               ; AUTO PARA0 通常動作選択
+ANB LR1001               ; AUTO PARA1 1枚流動選択
+ANB LR1002               ; AUTO PARA2 指定段流動選択
+ANB LR1003               ; AUTO PARA3 S.RB無し動作選択
+ANL
+@SET @MR4008
+;***** ﾊﾟﾗﾒｰﾀ選択異常の時 / when parametar error *****
+STG @MR4008
+SET R49801               ; RB払出し完了
+CON
+SET R49802               ; （L)払出し完了
+CON
+SET R49803               ; ｽｷｰｼﾞ（L)最終塗布完了
+CON
+RES R51005               ; ｽｷｰｼﾞ(L)ｽﾀｰﾄﾗﾝﾌﾟ点灯
+CON
+RES R51007               ; 治具(L)ｽﾀｰﾄﾗﾝﾌﾟ点灯
+CON
+RES R51004               ; ｽｷｰｼﾞ(L)ｽﾀｰﾄﾗﾝﾌﾟ点滅
+CON
+RES R51006               ; 治具(L)ｽﾀｰﾄﾗﾝﾌﾟ点滅
+CON
+RES R51600               ; 自動動作  (L) 初回
+CON
+SET R50500               ; AUTO動作     終了
+CON
+JMP @MR4009
+STG @MR4009
+AND R49807               ; 全ﾕﾆｯﾄ払出し完了
+RES R49801               ; RB払出し完了
+CON
+RES R49802               ; （L)払出し完了
+CON
+RES R49803               ; ｽｷｰｼﾞ（L)最終塗布完了
+CON
+ENDS
+;***** Auto mode *****
+;
+;***** AUTO初回ﾌｨﾙﾑ巻取り / Film Rewind when AUTO 1st Operation *****
+;
+STG @MR4001              ; AUTO初回ﾌｨﾙﾑ巻取りへ
+ANB R51602               ; ｽｷｰｼﾞ(L)処理  実行中
+ANB R50110               ; Err 転写(L)UT
+RES @MR7515              ; ﾌｨﾙﾑ巻取り送りcall     完了
+CON
+ANB @MR7514              ; ﾌｨﾙﾑ巻取り送りcall   実行中
+SET @MR2910              ; ﾜｰｸ pack3
+CON
+JMP @MR4002              ; 4002
+STG @MR4002              ; 4002
+@SET @MR7500             ; ﾌｨﾙﾑ巻取り送りcall
+CON
+AND @MR7514              ; ﾌｨﾙﾑ巻取り送りcall   実行中
+JMP @MR4003              ; 4003
+STG @MR4003              ; 4003
+AND @MR7515              ; ﾌｨﾙﾑ巻取り送りcall     完了
+ANB @MR7514              ; ﾌｨﾙﾑ巻取り送りcall   実行中
+JMP @MR4004              ; 4004
+STG @MR4004              ; 4004
+RES @MR7515              ; ﾌｨﾙﾑ巻取り送りcall     完了
+CON
+ANB @MR7515              ; ﾌｨﾙﾑ巻取り送りcall     完了
+RES @MR2910              ; ﾜｰｸ pack3
+CON
+RES R51601               ; ｽｷｰｼﾞ動作 (L)  完了
+CON
+ENDS
+;***** Auto mode *****
+;
+;***** ｽｷｰｼﾞstart 確認 / Sqeegee start check *****
+;
+LDB R50014               ; 異常発生ｴﾗｰﾘｾｯﾄsw ON
+ANB R51601               ; ｽｷｰｼﾞ動作 (L)  完了
+ANB R51602               ; ｽｷｰｼﾞ(L)処理  実行中
+ANB MR6102               ; ｽｷｰｼﾞ台(L) 前進
+AND R4103                ; ｽｷｰｼﾞ台(L) 後退限(塗布側)
+ANB MR6100               ; ｽｸﾚｰﾊﾟ(L) 前進
+AND R4101                ; ｽｸﾚｰﾊﾟ(L) 後退限（奥側)
+OUT @MR109               ; ｽｷｰｼﾞｽﾀｰﾄ条件
+LD @MR4100               ; ｽｷｰｼﾞ起動   確認へ
+AND @MR109               ; ｽｷｰｼﾞｽﾀｰﾄ条件
+MPS
+OUT R49402               ; ｽｷｰｼﾞ(L)接着剤要求中
+MPP
+AND @MR111               ; 要ｽｷｰｼﾞ台清掃FLG
+OUT R49403               ; ｽｷｰｼﾞ(L)清掃要求中
+STG @MR4100              ; ｽｷｰｼﾞ起動   確認へ
+ANB R51602               ; ｽｷｰｼﾞ(L)処理  実行中
+ANB R50110               ; Err 転写(L)UT
+MPS
+AND @MR4014              ; 初期ｽｷｰｼﾞ SWｽﾀｰﾄ記憶
+SET R51004               ; ｽｷｰｼﾞ(L)ｽﾀｰﾄﾗﾝﾌﾟ点滅
+CON
+MPS
+LDP R51001               ; ｽｷｰｼﾞ(L)ｽﾀｰﾄsw ON
+ANB R51601               ; ｽｷｰｼﾞ動作 (L)  完了
+ANB @MR108               ; 元圧空異常
+ANL
+MPS
+AND R002                 ; 元圧検出
+JMP @MR4201              ; ｽｷｰｼﾞ台後退確認へ
+MPP
+ANB R002                 ; 元圧検出
+JMP @MR4103              ; 元圧空低下
+MPP
+LD R49801                ; RB払出し完了
+AND R49800               ; ｻｲｸﾙ停止・払出し開始
+ANB R49711               ; （L)再ｽｷｰｼﾞ要求
+ANL
+JMP @MR4107              ; 4107
+MPP
+ANB @MR4014              ; 初期ｽｷｰｼﾞ SWｽﾀｰﾄ記憶
+MPS
+AND @MR109               ; ｽｷｰｼﾞｽﾀｰﾄ条件
+SET R51004               ; ｽｷｰｼﾞ(L)ｽﾀｰﾄﾗﾝﾌﾟ点滅
+CON
+ANP R51001               ; ｽｷｰｼﾞ(L)ｽﾀｰﾄsw ON
+ANB @MR108               ; 元圧空異常
+MPS
+AND R002                 ; 元圧検出
+JMP @MR4200              ; ｽｷｰｼﾞ処理 ﾌｨﾙﾑ転写完了待ちへ
+MPP
+ANB R002                 ; 元圧検出
+JMP @MR4103              ; 元圧空低下
+MRD
+LDB @MR109               ; ｽｷｰｼﾞｽﾀｰﾄ条件
+AND T0                   ; (L)転写待ちﾀｲﾑｵｰﾊﾞ
+ANL
+JMP @MR4108              ; 4108
+MPP
+LD R49801                ; RB払出し完了
+ANB T0                   ; (L)転写待ちﾀｲﾑｵｰﾊﾞ
+AND R49800               ; ｻｲｸﾙ停止・払出し開始
+ANB R49711               ; （L)再ｽｷｰｼﾞ要求
+ANL
+JMP @MR4107              ; 4107
+STG @MR4103              ; 元圧空低下
+SET R51005               ; ｽｷｰｼﾞ(L)ｽﾀｰﾄﾗﾝﾌﾟ点灯
+CON
+TMR @48 #2               ; 元圧空低下
+CON
+AND @T48                 ; 元圧空低下
+SET MR200                ; 元圧空異状
+CON
+SET @MR108               ; 元圧空異常
+CON
+JMP @MR4104              ; 4104
+STG @MR4104              ; 4104
+AND @MR108               ; 元圧空異常
+AND R50111               ; Err 全体
+AND R50014               ; 異常発生ｴﾗｰﾘｾｯﾄsw ON
+SET R51004               ; ｽｷｰｼﾞ(L)ｽﾀｰﾄﾗﾝﾌﾟ点滅
+CON
+JMP @MR4105              ; 4105
+STG @MR4105              ; 4105
+ANB MR200                ; 元圧空異状
+AND R51300               ; ｽｷｰｼﾞ(L) ｴﾗｰﾘｾｯﾄsw ON
+JMP @MR4106              ; 4106
+STG @MR4106              ; 4106
+ANB R50111               ; Err 全体
+ANB R50014               ; 異常発生ｴﾗｰﾘｾｯﾄsw ON
+ANB R51300               ; ｽｷｰｼﾞ(L) ｴﾗｰﾘｾｯﾄsw ON
+RES R51201               ; ｽｷｰｼﾞ(L)ｴﾘｱｾﾝｻｰ有効FLG
+CON
+RES @MR108               ; 元圧空異常
+CON
+JMP @MR4100              ; ｽｷｰｼﾞ起動   確認へ
+;***** Auto mode *****
+;
+STG @MR4107              ; 4107
+RES @MR111               ; 要ｽｷｰｼﾞ台清掃FLG
+CON
+RES R51601               ; ｽｷｰｼﾞ動作 (L)  完了
+CON
+SET R49803               ; ｽｷｰｼﾞ（L)最終塗布完了
+CON
+JMP @MR4313              ; 4313
+;***** Auto mode *****
+;
+;***** ﾜｰｸ待ちﾀｲﾑｵｰﾊﾞｰ処理 / Wafer Wait Time Over Routine *****
+;
+STG @MR4108              ; 4108
+ANB R51602               ; ｽｷｰｼﾞ(L)処理  実行中
+ANB R50110               ; Err 転写(L)UT
+RES @MR7515              ; ﾌｨﾙﾑ巻取り送りcall     完了
+CON
+ANB @MR7514              ; ﾌｨﾙﾑ巻取り送りcall   実行中
+SET @MR2910              ; ﾜｰｸ pack3
+CON
+JMP @MR4109              ; 4109
+STG @MR4109              ; 4109
+@SET @MR7500             ; ﾌｨﾙﾑ巻取り送りcall
+CON
+AND @MR7514              ; ﾌｨﾙﾑ巻取り送りcall   実行中
+JMP @MR4110              ; 4110
+STG @MR4110              ; 4110
+AND @MR7515              ; ﾌｨﾙﾑ巻取り送りcall     完了
+ANB @MR7514              ; ﾌｨﾙﾑ巻取り送りcall   実行中
+JMP @MR4111              ; 4111
+STG @MR4111              ; 4111
+RES @MR7515              ; ﾌｨﾙﾑ巻取り送りcall     完了
+CON
+ANB @MR7515              ; ﾌｨﾙﾑ巻取り送りcall     完了
+RES @MR2910              ; ﾜｰｸ pack3
+CON
+RES R51601               ; ｽｷｰｼﾞ動作 (L)  完了
+CON
+JMP @MR4100              ; ｽｷｰｼﾞ起動   確認へ
+;***** Auto,STEP mode *****
+;
+;***** ｽｷｰｼﾞ処理ﾙｰﾁﾝ / Sqeegee rutin  *****
+;
+;***** ｼｬｯﾀｰ2 閉 / Shutter2 Close  *****
+;
+STG @MR4200              ; ｽｷｰｼﾞ処理 ﾌｨﾙﾑ転写完了待ちへ
+RES @MR111               ; 要ｽｷｰｼﾞ台清掃FLG
+CON
+SET R51602               ; ｽｷｰｼﾞ(L)処理  実行中
+CON
+LD R4104                 ; ｽｷｰｼﾞ台(L) 中間
+OR R4103                 ; ｽｷｰｼﾞ台(L) 後退限(塗布側)
+ANL
+MPS
+AND R50001               ; 自動中
+SET R51005               ; ｽｷｰｼﾞ(L)ｽﾀｰﾄﾗﾝﾌﾟ点灯
+CON
+JMP @MR4201              ; ｽｷｰｼﾞ台後退確認へ
+MPP
+AND R50002               ; 手動中
+JMP @MR4201              ; ｽｷｰｼﾞ台後退確認へ
+STG @MR4201              ; ｽｷｰｼﾞ台後退確認へ
+SET R51005               ; ｽｷｰｼﾞ(L)ｽﾀｰﾄﾗﾝﾌﾟ点灯
+CON
+SET R51602               ; ｽｷｰｼﾞ(L)処理  実行中
+CON
+ANB R50301               ; ｽｷｰｼﾞ部(L) Pause
+ANB R50109               ; Err ｽｷｰｼﾞ(L)UT
+RES R51615               ; 転写(L)  動作完了
+CON
+RES @MR4014              ; 初期ｽｷｰｼﾞ SWｽﾀｰﾄ記憶
+CON
+JMP @MR4202              ; 4202
+STG @MR4202              ; 4202
+ANB R50301               ; ｽｷｰｼﾞ部(L) Pause
+ANB R50109               ; Err ｽｷｰｼﾞ(L)UT
+MPS
+LD R6103                 ; ｽｷｰｼﾞ台(L) 後退(塗布側)
+ANB R4102                ; ｽｷｰｼﾞ台(L) 前進端(転写側)
+ANB R4104                ; ｽｷｰｼﾞ台(L) 中間
+AND R4103                ; ｽｷｰｼﾞ台(L) 後退限(塗布側)
+ANL
+MPS
+AND R50001               ; 自動中
+RES R51201               ; ｽｷｰｼﾞ(L)ｴﾘｱｾﾝｻｰ有効FLG
+CON
+JMP @MR4207              ; ｽｷｰｼﾞ台ﾜｰｸ除材ﾁｪｯｸへ
+MPP
+AND R50002               ; 手動中
+JMP @MR4300              ; ｽｷｰｼﾞ処理へ
+MPP
+LDB R6103                ; ｽｷｰｼﾞ台(L) 後退(塗布側)
+OR R4102                 ; ｽｷｰｼﾞ台(L) 前進端(転写側)
+OR R4104                 ; ｽｷｰｼﾞ台(L) 中間
+ORB R4103                ; ｽｷｰｼﾞ台(L) 後退限(塗布側)
+ANL
+SET R51201               ; ｽｷｰｼﾞ(L)ｴﾘｱｾﾝｻｰ有効FLG
+CON
+JMP @MR4203              ; 4203
+STG @MR4203              ; 4203
+RES MR6110               ; ｼｬｯﾀｰ2　開
+CON
+MPS
+AND R4813                ; ｽｷｰｼﾞ(L)側 ｴﾘｱｾﾝｻ (ｼｬｯﾀｰ2)
+SET MR6111               ; ｼｬｯﾀｰ2　閉
+CON
+ANB R4202                ; ｼｬｯﾀｰ2 開限(ｽｷｰｼﾞ(L)
+AND R4203                ; ｼｬｯﾀｰ2 閉限(ｽｷｰｼﾞ(L)
+RES R51201               ; ｽｷｰｼﾞ(L)ｴﾘｱｾﾝｻｰ有効FLG
+CON
+JMP @MR4204              ; ｽｷｰｼﾞ後退へ
+MPP
+ANB R4813                ; ｽｷｰｼﾞ(L)側 ｴﾘｱｾﾝｻ (ｼｬｯﾀｰ2)
+RES MR6111               ; ｼｬｯﾀｰ2　閉
+CON
+JMP @MR4202              ; 4202
+;***** Auto,STEP mode *****
+;
+;***** ｽｷｰｼﾞ処理ﾙｰﾁﾝ / Sqeegee rutin  *****
+;
+;***** ｽｷｰｼﾞ後退 / SQEEGEE back *****
+;
+STG @MR4204              ; ｽｷｰｼﾞ後退へ
+ANB R50301               ; ｽｷｰｼﾞ部(L) Pause
+ANB R50109               ; Err ｽｷｰｼﾞ(L)UT
+ANB R4014                ; ｽｷｰｼﾞ(子)(L)下降限
+RES MR6102               ; ｽｷｰｼﾞ台(L) 前進
+CON
+SET MR6103               ; ｽｷｰｼﾞ台(L) 後退
+CON
+ANB R4102                ; ｽｷｰｼﾞ台(L) 前進端(転写側)
+ANB R4104                ; ｽｷｰｼﾞ台(L) 中間
+AND R4103                ; ｽｷｰｼﾞ台(L) 後退限(塗布側)
+SET R51005               ; ｽｷｰｼﾞ(L)ｽﾀｰﾄﾗﾝﾌﾟ点灯
+CON
+JMP @MR4207              ; ｽｷｰｼﾞ台ﾜｰｸ除材ﾁｪｯｸへ
+;***** Auto,STEP mode *****
+;
+;***** ｽｷｰｼﾞ処理ﾙｰﾁﾝ / Sqeegee rutin  *****
+;
+;***** ｼｬｯﾀｰ2 開 / Shutter2 Open  *****
+;
+STG @MR4205              ; 4205
+ANB R50301               ; ｽｷｰｼﾞ部(L) Pause
+ANB R50109               ; Err ｽｷｰｼﾞ(L)UT
+SET R51201               ; ｽｷｰｼﾞ(L)ｴﾘｱｾﾝｻｰ有効FLG
+CON
+JMP @MR4206              ; 4206
+STG @MR4206              ; 4206
+RES MR6111               ; ｼｬｯﾀｰ2　閉
+CON
+MPS
+AND R4813                ; ｽｷｰｼﾞ(L)側 ｴﾘｱｾﾝｻ (ｼｬｯﾀｰ2)
+SET MR6110               ; ｼｬｯﾀｰ2　開
+CON
+ANB R4203                ; ｼｬｯﾀｰ2 閉限(ｽｷｰｼﾞ(L)
+AND R4202                ; ｼｬｯﾀｰ2 開限(ｽｷｰｼﾞ(L)
+RES R51201               ; ｽｷｰｼﾞ(L)ｴﾘｱｾﾝｻｰ有効FLG
+CON
+JMP @MR4300              ; ｽｷｰｼﾞ処理へ
+MPP
+ANB R4813                ; ｽｷｰｼﾞ(L)側 ｴﾘｱｾﾝｻ (ｼｬｯﾀｰ2)
+RES MR6110               ; ｼｬｯﾀｰ2　開
+CON
+JMP @MR4205              ; 4205
+;***** Auto,STEP mode *****
+;
+;***** ｽｷｰｼﾞ処理ﾙｰﾁﾝ / Sqeegee rutin  *****
+;
+;***** ｽｷｰｼﾞ台接着剤塗布ﾁｪｯｸ / SQEEGEE work check *****
+;
+STG @MR4207              ; ｽｷｰｼﾞ台ﾜｰｸ除材ﾁｪｯｸへ
+ANB R50302               ; 転写部(L) Pause
+ANB R50109               ; Err ｽｷｰｼﾞ(L)UT
+MPS
+ANB R51500               ; ｽｷｰｼﾞ(L)糊添付未確認FLG
+RES MR306                ; ｽｷｰｼﾞ台(L)接着剤未塗布  FLG
+CON
+ANB @MR4209              ; ｽｷｰｼﾞ台ﾜｰｸ除材異常へ
+JMP @MR4300              ; ｽｷｰｼﾞ処理へ
+MPP
+AND R51500               ; ｽｷｰｼﾞ(L)糊添付未確認FLG
+SET MR306                ; ｽｷｰｼﾞ台(L)接着剤未塗布  FLG
+CON
+ANB @MR4300              ; ｽｷｰｼﾞ処理へ
+JMP @MR4209              ; ｽｷｰｼﾞ台ﾜｰｸ除材異常へ
+;***** Auto,STEP mode *****
+;
+;***** ｽｷｰｼﾞ処理ﾙｰﾁﾝ / Sqeegee rutin  *****
+;
+;***** ｽｷｰｼﾞ台接着剤未塗布の時 / When work non set detection  *****
+;
+STG @MR4209              ; ｽｷｰｼﾞ台ﾜｰｸ除材異常へ
+ANB MR306                ; ｽｷｰｼﾞ台(L)接着剤未塗布  FLG
+AND R50109               ; Err ｽｷｰｼﾞ(L)UT
+AND R50014               ; 異常発生ｴﾗｰﾘｾｯﾄsw ON
+@SET R51004              ; ｽｷｰｼﾞ(L)ｽﾀｰﾄﾗﾝﾌﾟ点滅
+CON
+JMP @MR4210              ; 4210
+STG @MR4210              ; 4210
+AND R51300               ; ｽｷｰｼﾞ(L) ｴﾗｰﾘｾｯﾄsw ON
+RES MR306                ; ｽｷｰｼﾞ台(L)接着剤未塗布  FLG
+CON
+JMP @MR4211              ; 4211
+STG @MR4211              ; 4211
+ANB R50109               ; Err ｽｷｰｼﾞ(L)UT
+ANB R50014               ; 異常発生ｴﾗｰﾘｾｯﾄsw ON
+ANB R51300               ; ｽｷｰｼﾞ(L) ｴﾗｰﾘｾｯﾄsw ON
+SET R51005               ; ｽｷｰｼﾞ(L)ｽﾀｰﾄﾗﾝﾌﾟ点灯
+CON
+ANB R51004               ; ｽｷｰｼﾞ(L)ｽﾀｰﾄﾗﾝﾌﾟ点滅
+AND R51005               ; ｽｷｰｼﾞ(L)ｽﾀｰﾄﾗﾝﾌﾟ点灯
+JMP @MR4207              ; ｽｷｰｼﾞ台ﾜｰｸ除材ﾁｪｯｸへ
+;***** Auto,STEP mode *****
+;
+;***** ｽｷｰｼﾞ処理ﾙｰﾁﾝ / Sqeegee rutin  *****
+;
+;***** ｽｷｰｼﾞ処理 / SQEEGEE operation *****
+;
+STG @MR4300              ; ｽｷｰｼﾞ処理へ
+RES @MR6415              ; ｽｷｰｼﾞcall   完了
+CON
+ANB @MR6414              ; ｽｷｰｼﾞcall  実行中
+JMP @MR4301              ; 4301
+STG @MR4301              ; 4301
+@SET @MR6400             ; ｽｷｰｼﾞcall
+CON
+AND @MR6414              ; ｽｷｰｼﾞcall  実行中
+JMP @MR4302              ; 4302
+STG @MR4302              ; 4302
+AND @MR6415              ; ｽｷｰｼﾞcall   完了
+ANB @MR6414              ; ｽｷｰｼﾞcall  実行中
+JMP @MR4303              ; 4303
+STG @MR4303              ; 4303
+RES @MR6415              ; ｽｷｰｼﾞcall   完了
+CON
+ANB @MR6415              ; ｽｷｰｼﾞcall   完了
+@INC @DM10               ; ｽｷｰｼﾞ回数
+CON
+JMP @MR4304              ; 4304
+STG @MR4304              ; 4304
+MPS
+LDB R50002               ; 手動中
+ORB LR000                ; ｽｷｰｼﾞ(L)   ｽﾃｯﾌﾟ選択
+AND>= @DM10 DM200        ; ｽｷｰｼﾞ回数  CNT100 ｽｷｰｼﾞ回数ORG
+LD R50002                ; 手動中
+AND LR000                ; ｽｷｰｼﾞ(L)   ｽﾃｯﾌﾟ選択
+AND>= @DM10 DM206        ; ｽｷｰｼﾞ回数  CNT103 STEPｽｷｰｼﾞ回数
+ORL
+ANL
+JMP @MR4305              ; 4305
+MPP
+LDB R50002               ; 手動中
+ORB LR000                ; ｽｷｰｼﾞ(L)   ｽﾃｯﾌﾟ選択
+AND< @DM10 DM200         ; ｽｷｰｼﾞ回数  CNT100 ｽｷｰｼﾞ回数ORG
+LD R50002                ; 手動中
+AND LR000                ; ｽｷｰｼﾞ(L)   ｽﾃｯﾌﾟ選択
+AND< @DM10 DM206         ; ｽｷｰｼﾞ回数  CNT103 STEPｽｷｰｼﾞ回数
+ORL
+ANL
+JMP @MR4300              ; ｽｷｰｼﾞ処理へ
+STG @MR4305              ; 4305
+RES R51602               ; ｽｷｰｼﾞ(L)処理  実行中
+CON
+MPS
+AND R50001               ; 自動中
+RES R49711               ; （L)再ｽｷｰｼﾞ要求
+CON
+SET R51601               ; ｽｷｰｼﾞ動作 (L)  完了
+CON
+RES R51201               ; ｽｷｰｼﾞ(L)ｴﾘｱｾﾝｻｰ有効FLG
+CON
+JMP @MR4306              ; 4306
+MRD
+ANB R50001               ; 自動中
+JMP @MR3109              ; 3109
+MPP
+MOV #0 @DM10             ; ｽｷｰｼﾞ回数
+;ｽｷｰｼﾞ台前進待ち  /  waiting for Squeegee Base Advance                             
+STG @MR4306              ; 4306
+MPS
+LDB R49800               ; ｻｲｸﾙ停止・払出し開始
+ORB R49802               ; （L)払出し完了
+ANL
+MPS
+LDB T0                   ; (L)転写待ちﾀｲﾑｵｰﾊﾞ
+AND R4102                ; ｽｷｰｼﾞ台(L) 前進端(転写側)
+ANB R4104                ; ｽｷｰｼﾞ台(L) 中間
+ANB R4103                ; ｽｷｰｼﾞ台(L) 後退限(塗布側)
+ANL
+JMP @MR4309              ; 4309
+MPP
+AND T0                   ; (L)転写待ちﾀｲﾑｵｰﾊﾞ
+RES MR6102               ; ｽｷｰｼﾞ台(L) 前進
+CON
+SET MR6101               ; （ｽｸﾚｰﾊﾟ後退） ｼﾝｸﾞﾙ
+CON
+RES R51601               ; ｽｷｰｼﾞ動作 (L)  完了
+CON
+SET @MR4108              ; 4108
+CON
+JMP @MR4100              ; ｽｷｰｼﾞ起動   確認へ
+MPP
+LD R49800                ; ｻｲｸﾙ停止・払出し開始
+AND R49802               ; （L)払出し完了
+ANB R6102                ; ｽｷｰｼﾞ台(L) 前進(転写側)
+AND R4103                ; ｽｷｰｼﾞ台(L) 後退限(塗布側)
+ANL
+RES R51601               ; ｽｷｰｼﾞ動作 (L)  完了
+CON
+SET R49803               ; ｽｷｰｼﾞ（L)最終塗布完了
+CON
+JMP @MR4310              ; 4310
+;ﾜｰｸ進入ﾀｲﾑｱｳﾄ処理  /  Wafer wait time out process
+;*** ｽｷｰｼﾞ台後退  /  Squeegee Base Back ***
+STG @MR4307              ; 4307
+ANB R50301               ; ｽｷｰｼﾞ部(L) Pause
+ANB R50109               ; Err ｽｷｰｼﾞ(L)UT
+ANB R4102                ; ｽｷｰｼﾞ台(L) 前進端(転写側)
+ANB R4104                ; ｽｷｰｼﾞ台(L) 中間
+AND R4103                ; ｽｷｰｼﾞ台(L) 後退限(塗布側)
+SET R51201               ; ｽｷｰｼﾞ(L)ｴﾘｱｾﾝｻｰ有効FLG
+CON
+JMP @MR4308              ; 4308
+;*** ｼｬｯﾀｰ2 開  /  Shutter2 Open ***
+STG @MR4308              ; 4308
+RES MR6111               ; ｼｬｯﾀｰ2　閉
+CON
+MPS
+AND R4813                ; ｽｷｰｼﾞ(L)側 ｴﾘｱｾﾝｻ (ｼｬｯﾀｰ2)
+SET MR6110               ; ｼｬｯﾀｰ2　開
+CON
+ANB R4203                ; ｼｬｯﾀｰ2 閉限(ｽｷｰｼﾞ(L)
+AND R4202                ; ｼｬｯﾀｰ2 開限(ｽｷｰｼﾞ(L)
+RES R51201               ; ｽｷｰｼﾞ(L)ｴﾘｱｾﾝｻｰ有効FLG
+CON
+ENDS
+MPP
+ANB R4813                ; ｽｷｰｼﾞ(L)側 ｴﾘｱｾﾝｻ (ｼｬｯﾀｰ2)
+RES MR6110               ; ｼｬｯﾀｰ2　開
+CON
+JMP @MR4307              ; 4307
+;ｽｷｰｼﾞ台後退待ち  /  waiting for Squeegee Base Back                             
+STG @MR4309              ; 4309
+MPS
+LDB R49800               ; ｻｲｸﾙ停止・払出し開始
+ANB R4102                ; ｽｷｰｼﾞ台(L) 前進端(転写側)
+ANB R4104                ; ｽｷｰｼﾞ台(L) 中間
+AND R4103                ; ｽｷｰｼﾞ台(L) 後退限(塗布側)
+ANL
+MPS
+ANB @MR111               ; 要ｽｷｰｼﾞ台清掃FLG
+JMP @MR4310              ; 4310
+MPP
+LD @MR111                ; 要ｽｷｰｼﾞ台清掃FLG
+AND R4012                ; ｽｷｰｼﾞ(親)(L)上昇限
+ANL
+JMP @MR4310              ; 4310
+MPP
+AND R49800               ; ｻｲｸﾙ停止・払出し開始
+SET R49803               ; ｽｷｰｼﾞ（L)最終塗布完了
+CON
+JMP @MR4310              ; 4310
+;ｼｬｯﾀｰ2 開  /  Shutter2 Open 
+STG @MR4310              ; 4310
+ANB R50301               ; ｽｷｰｼﾞ部(L) Pause
+ANB R50109               ; Err ｽｷｰｼﾞ(L)UT
+MPS
+ANB R49803               ; ｽｷｰｼﾞ（L)最終塗布完了
+JMP @MR4311              ; 4311
+MPP
+AND R49803               ; ｽｷｰｼﾞ（L)最終塗布完了
+SET MR6012               ; ｽｷｰｼﾞ(L)(親)　上昇
+CON
+AND R4012                ; ｽｷｰｼﾞ(親)(L)上昇限
+ANB R4013                ; ｽｷｰｼﾞ(親)(L)下降限
+AND R4103                ; ｽｷｰｼﾞ台(L) 後退限(塗布側)
+JMP @MR4311              ; 4311
+STG @MR4311              ; 4311
+ANB R50301               ; ｽｷｰｼﾞ部(L) Pause
+ANB R50109               ; Err ｽｷｰｼﾞ(L)UT
+SET R51201               ; ｽｷｰｼﾞ(L)ｴﾘｱｾﾝｻｰ有効FLG
+CON
+JMP @MR4312              ; 4312
+STG @MR4312              ; 4312
+RES MR6111               ; ｼｬｯﾀｰ2　閉
+CON
+MPS
+AND R4813                ; ｽｷｰｼﾞ(L)側 ｴﾘｱｾﾝｻ (ｼｬｯﾀｰ2)
+SET MR6110               ; ｼｬｯﾀｰ2　開
+CON
+ANB R4203                ; ｼｬｯﾀｰ2 閉限(ｽｷｰｼﾞ(L)
+AND R4202                ; ｼｬｯﾀｰ2 開限(ｽｷｰｼﾞ(L)
+RES R51201               ; ｽｷｰｼﾞ(L)ｴﾘｱｾﾝｻｰ有効FLG
+CON
+MPS
+ANB R49803               ; ｽｷｰｼﾞ（L)最終塗布完了
+JMP @MR4100              ; ｽｷｰｼﾞ起動   確認へ
+MPP
+AND R49803               ; ｽｷｰｼﾞ（L)最終塗布完了
+JMP @MR4313              ; 4313
+MPP
+ANB R4813                ; ｽｷｰｼﾞ(L)側 ｴﾘｱｾﾝｻ (ｼｬｯﾀｰ2)
+RES MR6110               ; ｼｬｯﾀｰ2　開
+CON
+JMP @MR4311              ; 4311
+;払出し完了or再ｽｷｰｼﾞ要求待ち  /  Wafer Eject Complete or Resqueegee Request wait
+STG @MR4313              ; 4313
+SET R51005               ; ｽｷｰｼﾞ(L)ｽﾀｰﾄﾗﾝﾌﾟ点灯
+CON
+MPS
+LD R49711                ; （L)再ｽｷｰｼﾞ要求
+ANB R4102                ; ｽｷｰｼﾞ台(L) 前進端(転写側)
+ANB R4104                ; ｽｷｰｼﾞ台(L) 中間
+AND R4103                ; ｽｷｰｼﾞ台(L) 後退限(塗布側)
+ANL
+RES R49803               ; ｽｷｰｼﾞ（L)最終塗布完了
+CON
+JMP @MR4100              ; ｽｷｰｼﾞ起動   確認へ
+MPP
+LDB R49711               ; （L)再ｽｷｰｼﾞ要求
+AND R49807               ; 全ﾕﾆｯﾄ払出し完了
+ANL
+JMP @MR4314              ; 4314
+;ｽｷｰｼﾞ処理終了処理  /  Squeegee process end routine
+STG @MR4314              ; 4314
+RES R49803               ; ｽｷｰｼﾞ（L)最終塗布完了
+CON
+RES R51005               ; ｽｷｰｼﾞ(L)ｽﾀｰﾄﾗﾝﾌﾟ点灯
+CON
+RES R51004               ; ｽｷｰｼﾞ(L)ｽﾀｰﾄﾗﾝﾌﾟ点滅
+CON
+@SET R49808              ; ｽｷｰｼﾞ(L)処理ｻｲｸﾙ停止FLG
+CON
+ENDS
+;*****************************************************************************************************************************
+;***** Auto mode *****
+;
+;***** 転写処理ﾙｰﾁﾝ /  rutin  *****
+;
+;***** 転写 部 start 確認 / FILM start check *****
+;
+STG @MR4400              ; ﾜｰｸ起動    確認へ
+RES MR2311               ; ｳｪﾊｰ治具(L)真空破壊
+CON
+ANB R50109               ; Err ｽｷｰｼﾞ(L)UT
+MPS
+AND @MR4015              ; 初期ﾜｰｸ  SWｽﾀｰﾄ記憶
+MPS
+AND R002                 ; 元圧検出
+MPS
+ANB LR1003               ; AUTO PARA3 S.RB無し動作選択
+SET @MR8000              ; RB 動作開始
+CON
+JMP @MR4408              ; 4408
+MPP
+AND LR1003               ; AUTO PARA3 S.RB無し動作選択
+SET @MR9000              ; 手投入MODE　開始
+CON
+JMP @MR4408              ; 4408
+MPP
+ANB R002                 ; 元圧検出
+JMP @MR4404              ; 元圧空低下
+MPP
+ANB @MR4015              ; 初期ﾜｰｸ  SWｽﾀｰﾄ記憶
+MPS
+LD R51601                ; ｽｷｰｼﾞ動作 (L)  完了
+OR R51602                ; ｽｷｰｼﾞ(L)処理  実行中
+ORB R49800               ; ｻｲｸﾙ停止・払出し開始
+ORB R49801               ; RB払出し完了
+ANB R50014               ; 異常発生ｴﾗｰﾘｾｯﾄsw ON
+ANL
+MPS
+AND R002                 ; 元圧検出
+SET R51603               ; 転写(L)処理 実行中
+CON
+JMP @MR4506              ; 巻き取り   ﾓｰﾀｰ 扉   閉ﾁｪｯｸ
+MPP
+ANB R002                 ; 元圧検出
+JMP @MR4404              ; 元圧空低下
+MPP
+LDB R51601               ; ｽｷｰｼﾞ動作 (L)  完了
+ANB R51602               ; ｽｷｰｼﾞ(L)処理  実行中
+AND R49800               ; ｻｲｸﾙ停止・払出し開始
+AND R49801               ; RB払出し完了
+ANL
+SET R51007               ; 治具(L)ｽﾀｰﾄﾗﾝﾌﾟ点灯
+CON
+SET @MR113               ; ﾌｨﾙﾑ使用前終了
+CON
+JMP @MR5500              ; 5500
+;***** 元圧ｴﾗｰの時 / Air Pressure Down Error  *****
+;
+STG @MR4404              ; 元圧空低下
+SET R51007               ; 治具(L)ｽﾀｰﾄﾗﾝﾌﾟ点灯
+CON
+TMR @49 #2               ; 元圧空低下
+CON
+AND @T49                 ; 元圧空低下
+SET MR200                ; 元圧空異状
+CON
+SET @MR4402              ; 元圧空異状
+CON
+JMP @MR4405              ; 4405
+STG @MR4405              ; 4405
+AND @MR4402              ; 元圧空異状
+AND R50111               ; Err 全体
+AND R50014               ; 異常発生ｴﾗｰﾘｾｯﾄsw ON
+SET R51006               ; 治具(L)ｽﾀｰﾄﾗﾝﾌﾟ点滅
+CON
+JMP @MR4406              ; 4406
+STG @MR4406              ; 4406
+ANB MR200                ; 元圧空異状
+AND R51301               ; 治具(L)ｴﾗｰﾘｾｯﾄsw ON
+JMP @MR4407              ; 4407
+STG @MR4407              ; 4407
+ANB R50111               ; Err 全体
+ANB R50014               ; 異常発生ｴﾗｰﾘｾｯﾄsw ON
+ANB R51301               ; 治具(L)ｴﾗｰﾘｾｯﾄsw ON
+RES @MR4402              ; 元圧空異状
+CON
+JMP @MR4400              ; ﾜｰｸ起動    確認へ
+;***** ｳｪﾊｰ残りﾁｪｯｸ / Wafer Remain Check  *****
+;
+STG @MR4408              ; 4408
+ANB R50302               ; 転写部(L) Pause
+ANB R50110               ; Err 転写(L)UT
+RES MR2311               ; ｳｪﾊｰ治具(L)真空破壊
+CON
+SET MR2310               ; ｳｪﾊｰ治具(L)吸着
+CON
+MPS
+AND @MR006               ; ｳｪﾊｰ治具  除材検出
+RES MR2310               ; ｳｪﾊｰ治具(L)吸着
+CON
+JMP @MR4412              ; 4412
+MPP
+AND @MR007               ; ｳｪﾊｰ治具  未除材検出
+RES MR2310               ; ｳｪﾊｰ治具(L)吸着
+CON
+RES R40009               ; ｴﾗｰｳｨﾝﾄﾞｩ YES sw
+CON
+SET MR309                ; 治具(L)上WF残り（初期確認）
+CON
+JMP @MR4409              ; 4409
+;***** ｳｪﾊｰ残りの時 / when Wafer Remain   *****
+;Yes : Replace   /   NO : Check Retry
+STG @MR4409              ; 4409
+ANB MR309                ; 治具(L)上WF残り（初期確認）
+AND R50110               ; Err 転写(L)UT
+AND R50014               ; 異常発生ｴﾗｰﾘｾｯﾄsw ON
+SET R51006               ; 治具(L)ｽﾀｰﾄﾗﾝﾌﾟ点滅
+CON
+JMP @MR4410              ; 4410
+STG @MR4410              ; 4410
+AND R51301               ; 治具(L)ｴﾗｰﾘｾｯﾄsw ON
+JMP @MR4411              ; 4411
+STG @MR4411              ; 4411
+ANB R50110               ; Err 転写(L)UT
+ANB R50014               ; 異常発生ｴﾗｰﾘｾｯﾄsw ON
+ANB R51301               ; 治具(L)ｴﾗｰﾘｾｯﾄsw ON
+RES MR2310               ; ｳｪﾊｰ治具(L)吸着
+CON
+SET R51007               ; 治具(L)ｽﾀｰﾄﾗﾝﾌﾟ点灯
+CON
+MPS
+ANB R40009               ; ｴﾗｰｳｨﾝﾄﾞｩ YES sw
+RES @MR204               ; 治具(L)上WFﾘﾌﾟﾚｲｽFLG
+CON
+JMP @MR4400              ; ﾜｰｸ起動    確認へ
+MPP
+AND R40009               ; ｴﾗｰｳｨﾝﾄﾞｩ YES sw
+SET @MR204               ; 治具(L)上WFﾘﾌﾟﾚｲｽFLG
+CON
+JMP @MR4412              ; 4412
+STG @MR4412              ; 4412
+ANB R50302               ; 転写部(L) Pause
+ANB R50110               ; Err 転写(L)UT
+SET R51603               ; 転写(L)処理 実行中
+CON
+JMP @MR4500              ; AUTO開始初回動作
+;***** Auto,STEP mode *****
+;
+;***** 転写処理ﾙｰﾁﾝ /  rutin  *****
+;
+;***** ｼｬｯﾀｰ1 閉 / Shutter1 Close  *****
+;
+STG @MR4500              ; AUTO開始初回動作
+ANB R50302               ; 転写部(L) Pause
+ANB R50110               ; Err 転写(L)UT
+ANB R31501               ; RB無し仮接点
+MPS
+ANB LR1003               ; AUTO PARA3 S.RB無し動作選択
+SET R51200               ; 治具(L)部ｴﾘｱｾﾝｻｰ有効FLG
+CON
+JMP @MR4501              ; 4501
+MPP
+AND LR1003               ; AUTO PARA3 S.RB無し動作選択
+JMP @MR4503              ; 4503
+STG @MR4501              ; 4501
+RES MR6108               ; ｼｬｯﾀｰ1　開
+CON
+MPS
+AND R4812                ; 治具(L)側 ｴﾘｱｾﾝｻ (ｼｬｯﾀｰ1)
+SET MR6109               ; ｼｬｯﾀｰ1　閉
+CON
+ANB R4200                ; ｼｬｯﾀｰ1 開限(治具(L)側)
+AND R4201                ; ｼｬｯﾀｰ1 閉限(治具(L)側)
+RES R51200               ; 治具(L)部ｴﾘｱｾﾝｻｰ有効FLG
+CON
+JMP @MR4502              ; 4502
+MPP
+ANB R4812                ; 治具(L)側 ｴﾘｱｾﾝｻ (ｼｬｯﾀｰ1)
+RES MR6109               ; ｼｬｯﾀｰ1　閉
+CON
+JMP @MR4500              ; AUTO開始初回動作
+;***** ｳｪﾊｰ治具(L) 前進 / Wafer Jig(L) Advance  *****
+;
+STG @MR4502              ; 4502
+ANB R50302               ; 転写部(L) Pause
+ANB R50110               ; Err 転写(L)UT
+LD< DM1005 #11           ; RB ﾓｰﾄﾞNo.ｱﾝｻ
+OR> DM1005 #13           ; RB ﾓｰﾄﾞNo.ｱﾝｻ
+ANL
+RES MR6001               ; ｳｪﾊｰ治具(L) 後退
+CON
+SET MR6000               ; ｳｪﾊｰ治具(L) 前進
+CON
+ANB R4001                ; 治具(L) 後退限
+AND R4000                ; 治具(L) 前進限(RB側)
+JMP @MR4503              ; 4503
+STG @MR4503              ; 4503
+ANB R50302               ; 転写部(L) Pause
+ANB R50110               ; Err 転写(L)UT
+MPS
+ANB @MR204               ; 治具(L)上WFﾘﾌﾟﾚｲｽFLG
+MPS
+ANB LR1003               ; AUTO PARA3 S.RB無し動作選択
+SET R53800               ; RBへ給材要求
+CON
+JMP @MR4506              ; 巻き取り   ﾓｰﾀｰ 扉   閉ﾁｪｯｸ
+MPP
+AND LR1003               ; AUTO PARA3 S.RB無し動作選択
+SET R53808               ; 手動給材要求
+CON
+JMP @MR4506              ; 巻き取り   ﾓｰﾀｰ 扉   閉ﾁｪｯｸ
+MPP
+AND @MR204               ; 治具(L)上WFﾘﾌﾟﾚｲｽFLG
+RES @MR204               ; 治具(L)上WFﾘﾌﾟﾚｲｽFLG
+CON
+JMP @MR4506              ; 巻き取り   ﾓｰﾀｰ 扉   閉ﾁｪｯｸ
+;***** Auto,STEP mode *****
+;
+;***** 転写処理ﾙｰﾁﾝ /  rutin  *****
+;
+;***** 巻き取りﾓｰﾀｰ扉 閉 ﾁｪｯｸ / Film feed door check *****
+;
+STG @MR4506              ; 巻き取り   ﾓｰﾀｰ 扉   閉ﾁｪｯｸ
+SET R51007               ; 治具(L)ｽﾀｰﾄﾗﾝﾌﾟ点灯
+CON
+SET R51603               ; 転写(L)処理 実行中
+CON
+ANB R50302               ; 転写部(L) Pause
+ANB R50110               ; Err 転写(L)UT
+JMP @MR4507              ; 4507
+STG @MR4507              ; 4507
+ANB R50302               ; 転写部(L) Pause
+ANB R50110               ; Err 転写(L)UT
+MPS
+AND R4214                ; 巻取りﾓｰﾀ扉(L)閉検出
+RES MR308                ; 巻取りﾓｰﾀ(L)扉 開FLG
+CON
+ANB @MR4508              ; 巻き取り   ﾓｰﾀｰ 扉   開 表示へ
+JMP @MR4511              ; ﾌｨﾙﾑ有無ﾁｪｯｸへ
+MPP
+ANB R4214                ; 巻取りﾓｰﾀ扉(L)閉検出
+SET MR308                ; 巻取りﾓｰﾀ(L)扉 開FLG
+CON
+ANB @MR4511              ; ﾌｨﾙﾑ有無ﾁｪｯｸへ
+SET R51007               ; 治具(L)ｽﾀｰﾄﾗﾝﾌﾟ点灯
+CON
+JMP @MR4508              ; 巻き取り   ﾓｰﾀｰ 扉   開 表示へ
+;***** 巻き取りﾓｰﾀｰ 扉 開の時 /when Film supply door open *****
+;
+STG @MR4508              ; 巻き取り   ﾓｰﾀｰ 扉   開 表示へ
+ANB MR308                ; 巻取りﾓｰﾀ(L)扉 開FLG
+AND R50110               ; Err 転写(L)UT
+AND R50014               ; 異常発生ｴﾗｰﾘｾｯﾄsw ON
+SET R51006               ; 治具(L)ｽﾀｰﾄﾗﾝﾌﾟ点滅
+CON
+JMP @MR4509              ; 4509
+STG @MR4509              ; 4509
+AND R51301               ; 治具(L)ｴﾗｰﾘｾｯﾄsw ON
+JMP @MR4510              ; 4510
+STG @MR4510              ; 4510
+ANB R50110               ; Err 転写(L)UT
+ANB R50014               ; 異常発生ｴﾗｰﾘｾｯﾄsw ON
+ANB R51301               ; 治具(L)ｴﾗｰﾘｾｯﾄsw ON
+SET R51007               ; 治具(L)ｽﾀｰﾄﾗﾝﾌﾟ点灯
+CON
+JMP @MR4507              ; 4507
+;***** Auto,STEP mode *****
+;
+;***** 転写処理ﾙｰﾁﾝ /  rutin  *****
+;
+;***** ﾌｨﾙﾑ有無ﾁｪｯｸ /  Film ckeck *****
+;
+STG @MR4511              ; ﾌｨﾙﾑ有無ﾁｪｯｸへ
+SET R51007               ; 治具(L)ｽﾀｰﾄﾗﾝﾌﾟ点灯
+CON
+SET R51603               ; 転写(L)処理 実行中
+CON
+ANB R50302               ; 転写部(L) Pause
+ANB R50110               ; Err 転写(L)UT
+SET @MR7800              ; ﾌｨﾙﾑ有無ﾁｪｯｸ
+CON
+JMP @MR4512              ; 4512
+STG @MR4512              ; 4512
+ANB R50302               ; 転写部(L) Pause
+ANB R50110               ; Err 転写(L)UT
+AND @MR7815              ; ﾌｨﾙﾑ有無ﾁｪｯｸ完了
+RES @MR7815              ; ﾌｨﾙﾑ有無ﾁｪｯｸ完了
+CON
+JMP @MR4700              ; ﾜｰｸ転写   ｽｷｰｼﾞ  完了待ちへ
+;***** Auto,STEP mode *****
+;
+;***** 転写処理ﾙｰﾁﾝ /  rutin  *****
+;
+;***** ｼｬｯﾀｰ1　Close / Shutter1 Close  *****
+;
+STG @MR4700              ; ﾜｰｸ転写   ｽｷｰｼﾞ  完了待ちへ
+ANB R50110               ; Err 転写(L)UT
+SET R51007               ; 治具(L)ｽﾀｰﾄﾗﾝﾌﾟ点灯
+CON
+SET R51603               ; 転写(L)処理 実行中
+CON
+RES @MR4015              ; 初期ﾜｰｸ  SWｽﾀｰﾄ記憶
+CON
+JMP @MR4701              ; 4701
+STG @MR4701              ; 4701
+ANB R50301               ; ｽｷｰｼﾞ部(L) Pause
+ANB R50109               ; Err ｽｷｰｼﾞ(L)UT
+ANB R31501               ; RB無し仮接点
+MPS
+ANB LR1003               ; AUTO PARA3 S.RB無し動作選択
+SET R51200               ; 治具(L)部ｴﾘｱｾﾝｻｰ有効FLG
+CON
+JMP @MR4702              ; 4702
+MPP
+AND LR1003               ; AUTO PARA3 S.RB無し動作選択
+JMP @MR4703              ; 4703
+STG @MR4702              ; 4702
+RES MR6108               ; ｼｬｯﾀｰ1　開
+CON
+MPS
+AND R4812                ; 治具(L)側 ｴﾘｱｾﾝｻ (ｼｬｯﾀｰ1)
+SET MR6109               ; ｼｬｯﾀｰ1　閉
+CON
+ANB R4200                ; ｼｬｯﾀｰ1 開限(治具(L)側)
+AND R4201                ; ｼｬｯﾀｰ1 閉限(治具(L)側)
+RES R51200               ; 治具(L)部ｴﾘｱｾﾝｻｰ有効FLG
+CON
+MPS
+AND R50001               ; 自動中
+JMP @MR4703              ; 4703
+MPP
+AND R50002               ; 手動中
+JMP @MR5000              ; ｳｪﾊｰ治具右へ
+MPP
+ANB R4812                ; 治具(L)側 ｴﾘｱｾﾝｻ (ｼｬｯﾀｰ1)
+RES MR6109               ; ｼｬｯﾀｰ1　閉
+CON
+JMP @MR4701              ; 4701
+;***** Auto,STEP mode *****
+;
+;***** 転写処理ﾙｰﾁﾝ /  rutin  *****
+;
+;***** ｽｷｰｼﾞ処理待ち / Sqeegee  *****
+;
+STG @MR4703              ; 4703
+ANB R50302               ; 転写部(L) Pause
+ANB R50110               ; Err 転写(L)UT
+MPS
+LD R51601                ; ｽｷｰｼﾞ動作 (L)  完了
+ANB @MR7514              ; ﾌｨﾙﾑ巻取り送りcall   実行中
+ANL
+JMP @MR4706              ; ﾜｰｸ後退   ﾁｪｯｸへ
+MPP
+LDB R51601               ; ｽｷｰｼﾞ動作 (L)  完了
+ANB R51602               ; ｽｷｰｼﾞ(L)処理  実行中
+ANL
+MPS
+LDB R49801               ; RB払出し完了
+ANB R49711               ; （L)再ｽｷｰｼﾞ要求
+ANL
+TMR @24 #10
+CON
+AND @T24
+JMP @MR4705              ; 4705
+MPP
+LD R49801                ; RB払出し完了
+ANB R4802                ; 治具(L)吸着 OUT1
+ANB R4002                ; 治具(L) 転写限（右限）
+AND R4003                ; 治具(L) RB側限(左限)
+ANL
+JMP @MR4704              ; 4704
+STG @MR4704              ; 4704
+ANB R50302               ; 転写部(L) Pause
+ANB R50110               ; Err 転写(L)UT
+SET @MR113               ; ﾌｨﾙﾑ使用前終了
+CON
+RES R53800               ; RBへ給材要求
+CON
+RES R49711               ; （L)再ｽｷｰｼﾞ要求
+CON
+RES R51603               ; 転写(L)処理 実行中
+CON
+JMP @MR5500              ; 5500
+STG @MR4705              ; 4705
+ANB R50302               ; 転写部(L) Pause
+ANB R50110               ; Err 転写(L)UT
+SET R49711               ; （L)再ｽｷｰｼﾞ要求
+CON
+JMP @MR4703              ; 4703
+;***** Auto,STEP mode *****
+;
+;***** 転写処理ﾙｰﾁﾝ /  rutin  *****
+;
+;***** ﾜｰｸ台後退ﾁｪｯｸ / WORK back check *****
+;
+STG @MR4706              ; ﾜｰｸ後退   ﾁｪｯｸへ
+ANB R50302               ; 転写部(L) Pause
+ANB R50110               ; Err 転写(L)UT
+RES R51601               ; ｽｷｰｼﾞ動作 (L)  完了
+CON
+MPS
+LD MR6003                ; ｳｪﾊｰ治具(L)RB側行(左側)
+AND R4003                ; 治具(L) RB側限(左限)
+ANL
+JMP @MR4708              ; 4708
+MPP
+ANB MR6003               ; ｳｪﾊｰ治具(L)RB側行(左側)
+JMP @MR4707              ; ﾜｰｸ後退へ
+STG @MR4707              ; ﾜｰｸ後退へ
+AND @MR102               ; ｳｪﾊｰ治具(L) 右行OKFLG
+RES MR6002               ; ｳｪﾊｰ治具(L) 転写側行(右側)
+CON
+SET MR6003               ; ｳｪﾊｰ治具(L)RB側行(左側)
+CON
+ANB R4002                ; 治具(L) 転写限（右限）
+AND R4003                ; 治具(L) RB側限(左限)
+JMP @MR4708              ; 4708
+;***** Auto,STEP mode *****
+;
+;***** 転写処理ﾙｰﾁﾝ /  rutin  *****
+;
+;***** ｽｷｰｼﾞ台前進 / SQEEGEE forward *****
+;
+STG @MR4708              ; 4708
+ANB R50302               ; 転写部(L) Pause
+ANB R50110               ; Err 転写(L)UT
+MPS
+LD MR6102                ; ｽｷｰｼﾞ台(L) 前進
+AND R4102                ; ｽｷｰｼﾞ台(L) 前進端(転写側)
+ANL
+JMP @MR4710              ; ｻｰﾎﾞ他ｴﾗｰﾁｪｯｸへ
+MPP
+LDB MR6102               ; ｽｷｰｼﾞ台(L) 前進
+AND @MR100               ; ｽｷｰｼﾞ台(L) 移動OKFLG
+ANL
+JMP @MR4709              ; 4709
+STG @MR4709              ; 4709
+RES MR6103               ; ｽｷｰｼﾞ台(L) 後退
+CON
+SET MR6102               ; ｽｷｰｼﾞ台(L) 前進
+CON
+ANB R4103                ; ｽｷｰｼﾞ台(L) 後退限(塗布側)
+ANB R4104                ; ｽｷｰｼﾞ台(L) 中間
+AND R4102                ; ｽｷｰｼﾞ台(L) 前進端(転写側)
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+JMP @MR4710              ; ｻｰﾎﾞ他ｴﾗｰﾁｪｯｸへ
+;***** Auto,STEP mode *****
+;
+;***** 転写処理ﾙｰﾁﾝ /  rutin  *****
+;
+;***** ｻｰﾎﾞ他ｴﾗｰﾁｪｯｸ / Sarbo else error check *****
+;
+STG @MR4710              ; ｻｰﾎﾞ他ｴﾗｰﾁｪｯｸへ
+RES @MR6015              ; ｻｰﾎﾞ他ｴﾗｰ  ﾁｪｯｸcall     完了
+CON
+ANB @MR6014              ; ｻｰﾎﾞ他ｴﾗｰﾁｪｯｸcall 実行中
+@SET @MR6000             ; ｻｰﾎﾞ他ｴﾗｰﾁｪｯｸcall
+CON
+JMP @MR4711              ; 4711
+STG @MR4711              ; 4711
+AND @MR6014              ; ｻｰﾎﾞ他ｴﾗｰﾁｪｯｸcall 実行中
+JMP @MR4712              ; 4712
+STG @MR4712              ; 4712
+AND @MR6015              ; ｻｰﾎﾞ他ｴﾗｰ  ﾁｪｯｸcall     完了
+ANB @MR6014              ; ｻｰﾎﾞ他ｴﾗｰﾁｪｯｸcall 実行中
+JMP @MR4713              ; 4713
+STG @MR4713              ; 4713
+RES @MR6015              ; ｻｰﾎﾞ他ｴﾗｰ  ﾁｪｯｸcall     完了
+CON
+ANB @MR6015              ; ｻｰﾎﾞ他ｴﾗｰ  ﾁｪｯｸcall     完了
+JMP @MR4800              ; ﾌｨﾙﾑ転写へ
+;***** Auto,STEP mode *****
+;
+;***** 転写処理ﾙｰﾁﾝ /  rutin  *****
+;
+;***** ﾌｨﾙﾑ転写 / FILM *****
+;
+STG @MR4800              ; ﾌｨﾙﾑ転写へ
+ANB @MR7514              ; ﾌｨﾙﾑ巻取り送りcall   実行中
+JMP @MR4801              ; 4801
+STG @MR4801              ; 4801
+RES @MR6615              ; ﾌｨﾙﾑ転写   call 完了
+CON
+ANB @MR6614              ; ﾌｨﾙﾑ転写    実行中
+JMP @MR4802              ; 4802
+STG @MR4802              ; 4802
+@SET @MR6600             ; ﾌｨﾙﾑ転写    call
+CON
+AND @MR6614              ; ﾌｨﾙﾑ転写    実行中
+JMP @MR4803              ; 4803
+STG @MR4803              ; 4803
+ANB @MR6614              ; ﾌｨﾙﾑ転写    実行中
+AND @MR6615              ; ﾌｨﾙﾑ転写   call 完了
+JMP @MR4804              ; 4804
+STG @MR4804              ; 4804
+RES @MR6615              ; ﾌｨﾙﾑ転写   call 完了
+CON
+ANB @MR6615              ; ﾌｨﾙﾑ転写   call 完了
+RES @MR2908              ; ﾜｰｸ pack1
+CON
+MPS
+AND R50001               ; 自動中
+SET R51615               ; 転写(L)  動作完了
+CON
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+JMP @MR4900              ; RB給材完了待ち
+MPP
+AND R50002               ; 手動中
+JMP @MR3210              ; 3210
+;***** Auto,STEP mode *****
+;
+;***** 転写処理ﾙｰﾁﾝ /  rutin  *****
+;
+;***** RB WF 給材完了待ち / Robot Wafer supply complete wait *****　　払出しだったら再取出要求
+;
+STG @MR4900              ; RB給材完了待ち
+MPS
+ANB T6                   ; (L)ｳｪﾊｰ待ちﾀｲﾑｵｰﾊﾞ
+MPS
+LDB LR1003               ; AUTO PARA3 S.RB無し動作選択
+AND R53815               ; RB WF給材完了
+LD LR1003                ; AUTO PARA3 S.RB無し動作選択
+AND R53814               ; 手動WF給材完了
+ORL
+ANL
+RES R51615               ; 転写(L)  動作完了
+CON
+RES R53815               ; RB WF給材完了
+CON
+RES R53814               ; 手動WF給材完了
+CON
+JMP @MR4908              ; ﾜｰｸ吸着    ﾁｪｯｸへ
+MPP
+LDB R53815               ; RB WF給材完了
+OR LR1003                ; AUTO PARA3 S.RB無し動作選択
+LDB R53814               ; 手動WF給材完了
+ORB LR1003               ; AUTO PARA3 S.RB無し動作選択
+ANL
+AND R49801               ; RB払出し完了
+ANB R49710               ; WF 再取出し要求
+ANL
+TMR @22 #10
+CON
+AND @T22
+JMP @MR4901              ; 4901
+MPP
+AND T6                   ; (L)ｳｪﾊｰ待ちﾀｲﾑｵｰﾊﾞ
+RES R51615               ; 転写(L)  動作完了
+CON
+JMP @MR4902              ; 4902
+STG @MR4901              ; 4901
+ANB R50302               ; 転写部(L) Pause
+ANB R50110               ; Err 転写(L)UT
+RES R53800               ; RBへ給材要求
+CON
+SET @MR5200              ; ﾌｨﾙﾑ巻取り.送り
+CON
+JMP @MR5303              ; 治具(L)清掃要求確認へ
+STG @MR4902              ; 4902
+ANB R51602               ; ｽｷｰｼﾞ(L)処理  実行中
+ANB R50110               ; Err 転写(L)UT
+RES @MR7515              ; ﾌｨﾙﾑ巻取り送りcall     完了
+CON
+ANB @MR7514              ; ﾌｨﾙﾑ巻取り送りcall   実行中
+SET @MR2910              ; ﾜｰｸ pack3
+CON
+JMP @MR4903              ; 4903
+STG @MR4903              ; 4903
+@SET @MR7500             ; ﾌｨﾙﾑ巻取り送りcall
+CON
+AND @MR7514              ; ﾌｨﾙﾑ巻取り送りcall   実行中
+JMP @MR4904              ; 4904
+STG @MR4904              ; 4904
+AND @MR7515              ; ﾌｨﾙﾑ巻取り送りcall     完了
+ANB @MR7514              ; ﾌｨﾙﾑ巻取り送りcall   実行中
+JMP @MR4905              ; 4905
+STG @MR4905              ; 4905
+RES @MR7515              ; ﾌｨﾙﾑ巻取り送りcall     完了
+CON
+ANB @MR7515              ; ﾌｨﾙﾑ巻取り送りcall     完了
+RES @MR2910              ; ﾜｰｸ pack3
+CON
+RES R51601               ; ｽｷｰｼﾞ動作 (L)  完了
+CON
+JMP @MR4703              ; 4703
+;***** Auto,STEP mode *****
+;
+;***** 転写処理ﾙｰﾁﾝ /  rutin  *****
+;
+;***** ｳｪﾊｰ治具吸着ﾁｪｯｸ / WORK absorption check *****
+;
+STG @MR4908              ; ﾜｰｸ吸着    ﾁｪｯｸへ
+ANB R50302               ; 転写部(L) Pause
+ANB R50110               ; Err 転写(L)UT
+JMP @MR4909              ; 4909
+STG @MR4909              ; 4909
+ANB R50302               ; 転写部(L) Pause
+ANB R50110               ; Err 転写(L)UT
+RES MR2311               ; ｳｪﾊｰ治具(L)真空破壊
+CON
+SET MR2310               ; ｳｪﾊｰ治具(L)吸着
+CON
+MPS
+AND @MR004               ; ｳｪﾊｰ治具  吸着検出
+RES MR201                ; 治具(L)吸着  異常FLG
+CON
+RES @MR203               ; ﾜｰｸ台吸着  異常FLG
+CON
+JMP @MR5000              ; ｳｪﾊｰ治具右へ
+MPP
+AND @MR005               ; ｳｪﾊｰ治具  未吸着検出
+SET MR201                ; 治具(L)吸着  異常FLG
+CON
+SET @MR203               ; ﾜｰｸ台吸着  異常FLG
+CON
+JMP @MR4910              ; ﾜｰｸ台吸着異常の時
+;***** Auto,STEP mode *****
+;
+;***** 転写処理ﾙｰﾁﾝ /  rutin  *****
+;
+;***** ﾜｰｸ台吸着異常の時 /when  WORK absorption NG *****
+;
+STG @MR4910              ; ﾜｰｸ台吸着異常の時
+AND @MR203               ; ﾜｰｸ台吸着  異常FLG
+AND R50110               ; Err 転写(L)UT
+AND R50014               ; 異常発生ｴﾗｰﾘｾｯﾄsw ON
+SET R51006               ; 治具(L)ｽﾀｰﾄﾗﾝﾌﾟ点滅
+CON
+JMP @MR4911              ; 4911
+STG @MR4911              ; 4911
+ANB MR201                ; 治具(L)吸着  異常FLG
+AND R51301               ; 治具(L)ｴﾗｰﾘｾｯﾄsw ON
+JMP @MR4912              ; 4912
+STG @MR4912              ; 4912
+ANB R50110               ; Err 転写(L)UT
+ANB R50014               ; 異常発生ｴﾗｰﾘｾｯﾄsw ON
+ANB R51301               ; 治具(L)ｴﾗｰﾘｾｯﾄsw ON
+SET R51007               ; 治具(L)ｽﾀｰﾄﾗﾝﾌﾟ点灯
+CON
+RES @MR203               ; ﾜｰｸ台吸着  異常FLG
+CON
+JMP @MR4909              ; 4909
+;***** Auto,STEP mode *****
+;
+;***** 転写処理ﾙｰﾁﾝ /  rutin  *****
+;
+;***** ｳｪﾊｰ治具(L)右行 / Wafer Jig Right *****
+;
+STG @MR5000              ; ｳｪﾊｰ治具右へ
+ANB R50302               ; 転写部(L) Pause
+ANB R50110               ; Err 転写(L)UT
+AND @MR102               ; ｳｪﾊｰ治具(L) 右行OKFLG
+RES MR6003               ; ｳｪﾊｰ治具(L)RB側行(左側)
+CON
+SET MR6002               ; ｳｪﾊｰ治具(L) 転写側行(右側)
+CON
+ANB R4003                ; 治具(L) RB側限(左限)
+AND R4002                ; 治具(L) 転写限（右限）
+JMP @MR5100              ; ｻｰﾎﾞ他ｴﾗｰ  ﾁｪｯｸへ
+;***** Auto,STEP mode *****
+;
+;***** 転写処理ﾙｰﾁﾝ /  rutin  *****
+;
+;***** ｻｰﾎﾞ他ｴﾗｰﾁｪｯｸ / Sarbo else error check *****
+;
+STG @MR5100              ; ｻｰﾎﾞ他ｴﾗｰ  ﾁｪｯｸへ
+RES @MR6015              ; ｻｰﾎﾞ他ｴﾗｰ  ﾁｪｯｸcall     完了
+CON
+ANB @MR6014              ; ｻｰﾎﾞ他ｴﾗｰﾁｪｯｸcall 実行中
+JMP @MR5101              ; 5101
+STG @MR5101              ; 5101
+@SET @MR6000             ; ｻｰﾎﾞ他ｴﾗｰﾁｪｯｸcall
+CON
+AND @MR6014              ; ｻｰﾎﾞ他ｴﾗｰﾁｪｯｸcall 実行中
+JMP @MR5102              ; 5102
+STG @MR5102              ; 5102
+AND @MR6015              ; ｻｰﾎﾞ他ｴﾗｰ  ﾁｪｯｸcall     完了
+ANB @MR6014              ; ｻｰﾎﾞ他ｴﾗｰﾁｪｯｸcall 実行中
+JMP @MR5103              ; 5103
+STG @MR5103              ; 5103
+RES @MR6015              ; ｻｰﾎﾞ他ｴﾗｰ  ﾁｪｯｸcall     完了
+CON
+ANB @MR6015              ; ｻｰﾎﾞ他ｴﾗｰ  ﾁｪｯｸcall     完了
+JMP @MR5108              ; ﾜｰｸ転写へ
+;***** Auto,STEP mode *****
+;
+;***** 転写処理ﾙｰﾁﾝ /  rutin  *****
+;
+;***** ﾜｰｸ転写 / WORK  *****
+;
+STG @MR5108              ; ﾜｰｸ転写へ
+ANB R50302               ; 転写部(L) Pause
+ANB R50110               ; Err 転写(L)UT
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+JMP @MR5109              ; 5109
+STG @MR5109              ; 5109
+RES @MR7015              ; ﾜｰｸ転写    call 完了
+CON
+ANB @MR7014              ; ﾜｰｸ転写    call 実行中
+DW #15 DM1010            ; (L)WF転写ｽﾃｰﾀｽ
+CON
+SET @MR2909              ; ﾜｰｸ pack2
+CON
+JMP @MR5110              ; 5110
+STG @MR5110              ; 5110
+@SET @MR7000             ; ﾜｰｸ転写    call
+CON
+AND @MR7014              ; ﾜｰｸ転写    call 実行中
+JMP @MR5111              ; 5111
+STG @MR5111              ; 5111
+AND @MR7015              ; ﾜｰｸ転写    call 完了
+ANB @MR7014              ; ﾜｰｸ転写    call 実行中
+DW #0 DM1010             ; (L)WF転写ｽﾃｰﾀｽ
+CON
+JMP @MR5112              ; 5112
+STG @MR5112              ; 5112
+RES @MR7015              ; ﾜｰｸ転写    call 完了
+CON
+ANB @MR7015              ; ﾜｰｸ転写    call 完了
+RES @MR2909              ; ﾜｰｸ pack2
+CON
+SET @MR5200              ; ﾌｨﾙﾑ巻取り.送り
+CON
+MPS
+AND R50001               ; 自動中
+JMP @MR5300              ; 反転部へ受渡し
+MPP
+AND R50002               ; 手動中
+ENDS
+;***** Auto,STEP mode *****
+;
+;***** 転写処理ﾙｰﾁﾝ /  rutin  *****
+;
+;***** ﾌｨﾙﾑ巻取り、送り / Film role up & send  *****
+;
+STG @MR5200              ; ﾌｨﾙﾑ巻取り.送り
+ANB R50302               ; 転写部(L) Pause
+ANB R50110               ; Err 転写(L)UT
+JMP @MR5201              ; 5201
+STG @MR5201              ; 5201
+RES @MR7515              ; ﾌｨﾙﾑ巻取り送りcall     完了
+CON
+ANB @MR7514              ; ﾌｨﾙﾑ巻取り送りcall   実行中
+SET @MR2910              ; ﾜｰｸ pack3
+CON
+JMP @MR5202              ; 5202
+STG @MR5202              ; 5202
+@SET @MR7500             ; ﾌｨﾙﾑ巻取り送りcall
+CON
+AND @MR7514              ; ﾌｨﾙﾑ巻取り送りcall   実行中
+JMP @MR5203              ; 5203
+STG @MR5203              ; 5203
+AND @MR7515              ; ﾌｨﾙﾑ巻取り送りcall     完了
+ANB @MR7514              ; ﾌｨﾙﾑ巻取り送りcall   実行中
+JMP @MR5204              ; 5204
+STG @MR5204              ; 5204
+RES @MR7515              ; ﾌｨﾙﾑ巻取り送りcall     完了
+CON
+ANB @MR7515              ; ﾌｨﾙﾑ巻取り送りcall     完了
+RES @MR2910              ; ﾜｰｸ pack3
+CON
+MPS
+LD R50001                ; 自動中
+ANB @MR7502              ; 段差ﾛｰﾗ下限  検出
+ANB @MR7503              ; 段差ﾛｰﾗ上限  未検出
+ANL
+SET @MR5215              ; ﾌｨﾙﾑ巻取り完了
+CON
+ENDS
+MRD
+LD R51109                ; 転写部(L) 原点復帰中
+ANB @MR7503              ; 段差ﾛｰﾗ上限  未検出
+ANL
+JMP @MR3513              ; 3513
+MPP
+AND R50002               ; 手動中
+MPS
+AND LR002                ; ﾜｰｸ転写(L)  ｽﾃｯﾌﾟ選択
+JMP @MR3307              ; 3307
+MRD
+AND LR004                ; ﾌｨﾙﾑ(L)切取   選択
+JMP @MR3513              ; 3513
+MPP
+LD LR003                 ; ﾌｨﾙﾑ(L)交換   選択
+OR LR007                 ; ﾌｨﾙﾑ(L)採取　選択
+ANL
+JMP @MR3405              ; 3405
+;***** Auto,STEP mode *****
+;
+;***** 転写処理ﾙｰﾁﾝ /  rutin  *****
+;
+;***** 反転部へ受渡し / Transport to Reverser  *****
+;
+STG @MR5300              ; 反転部へ受渡し
+ANB R50302               ; 転写部(L) Pause
+ANB R50110               ; Err 転写(L)UT
+MPS
+AND R50001               ; 自動中
+SET R54100               ; 反転部取出し要求
+CON
+JMP @MR5301              ; 5301
+MPP
+AND R50002               ; 手動中
+JMP @MR5302              ; 5302
+STG @MR5301              ; 5301
+ANB R50302               ; 転写部(L) Pause
+ANB R50110               ; Err 転写(L)UT
+AND R54115               ; 反転部取出し完了
+RES R54115               ; 反転部取出し完了
+CON
+JMP @MR5302              ; 5302
+STG @MR5302              ; 5302
+ANB R50302               ; 転写部(L) Pause
+ANB R50110               ; Err 転写(L)UT
+RES MR6002               ; ｳｪﾊｰ治具(L) 転写側行(右側)
+CON
+SET MR6003               ; ｳｪﾊｰ治具(L)RB側行(左側)
+CON
+ANB R4002                ; 治具(L) 転写限（右限）
+AND R4003                ; 治具(L) RB側限(左限)
+MPS
+AND R50001               ; 自動中
+JMP @MR5303              ; 治具(L)清掃要求確認へ
+MPP
+AND R50002               ; 手動中
+JMP @MR5500              ; 5500
+;***** Auto,STEP mode *****
+;
+;***** 転写処理ﾙｰﾁﾝ /  rutin  *****
+;
+;***** 要治具(L)清掃確認 / Check to Cleaning for Jig(L)  *****
+;
+STG @MR5303              ; 治具(L)清掃要求確認へ
+ANB R50302               ; 転写部(L) Pause
+ANB R50110               ; Err 転写(L)UT
+MPS
+AND< @DM11 DM202         ; 清掃後転写回数  CNT101WF治具清掃回数ORG
+JMP @MR5400              ; 5400
+MPP
+AND>= @DM11 DM202        ; 清掃後転写回数  CNT101WF治具清掃回数ORG
+MPS
+ANB LR1003               ; AUTO PARA3 S.RB無し動作選択
+JMP @MR5304              ; 5304
+MPP
+AND LR1003               ; AUTO PARA3 S.RB無し動作選択
+DW #0 @DM11              ; 清掃後転写回数
+CON
+SET R49401               ; Jig(L)清掃要求中
+CON
+JMP @MR5400              ; 5400
+STG @MR5304              ; 5304
+ANB R50302               ; 転写部(L) Pause
+ANB R50110               ; Err 転写(L)UT
+RES MR6000               ; ｳｪﾊｰ治具(L) 前進
+CON
+SET MR6001               ; ｳｪﾊｰ治具(L) 後退
+CON
+ANB R4000                ; 治具(L) 前進限(RB側)
+AND R4001                ; 治具(L) 後退限
+JMP @MR5305              ; 5305
+STG @MR5305              ; 5305
+ANB R50302               ; 転写部(L) Pause
+ANB R50110               ; Err 転写(L)UT
+SET R51200               ; 治具(L)部ｴﾘｱｾﾝｻｰ有効FLG
+CON
+JMP @MR5306              ; 5306
+STG @MR5306              ; 5306
+RES MR6109               ; ｼｬｯﾀｰ1　閉
+CON
+MPS
+AND R4812                ; 治具(L)側 ｴﾘｱｾﾝｻ (ｼｬｯﾀｰ1)
+SET MR6108               ; ｼｬｯﾀｰ1　開
+CON
+ANB R4201                ; ｼｬｯﾀｰ1 閉限(治具(L)側)
+AND R4200                ; ｼｬｯﾀｰ1 開限(治具(L)側)
+RES R51200               ; 治具(L)部ｴﾘｱｾﾝｻｰ有効FLG
+CON
+SET R51006               ; 治具(L)ｽﾀｰﾄﾗﾝﾌﾟ点滅
+CON
+SET R49401               ; Jig(L)清掃要求中
+CON
+JMP @MR5307              ; 5307
+MPP
+ANB R4812                ; 治具(L)側 ｴﾘｱｾﾝｻ (ｼｬｯﾀｰ1)
+RES MR6108               ; ｼｬｯﾀｰ1　開
+CON
+JMP @MR5305              ; 5305
+;***** 治具(L)清掃要求 / Cleaning Request for Jig(L)  *****
+;
+STG @MR5307              ; 5307
+ANB R50302               ; 転写部(L) Pause
+ANB R50110               ; Err 転写(L)UT
+AND R51002               ; 治具(L)ｽﾀｰﾄsw ON PLS
+JMP @MR5308              ; 5308
+STG @MR5308              ; 5308
+ANB R50301               ; ｽｷｰｼﾞ部(L) Pause
+ANB R50109               ; Err ｽｷｰｼﾞ(L)UT
+MPS
+AND @MR5315              ; 治具(L)清掃確認
+SET R51007               ; 治具(L)ｽﾀｰﾄﾗﾝﾌﾟ点灯
+CON
+JMP @MR5311              ; 5311
+MPP
+ANB @MR5315              ; 治具(L)清掃確認
+JMP @MR5307              ; 5307
+STG @MR5311              ; 5311
+ANB R50302               ; 転写部(L) Pause
+ANB R50110               ; Err 転写(L)UT
+DW #0 @DM11              ; 清掃後転写回数
+CON
+RES R49401               ; Jig(L)清掃要求中
+CON
+RES @MR5315              ; 治具(L)清掃確認
+CON
+JMP @MR5312              ; 5312
+STG @MR5312              ; 5312
+ANB R50302               ; 転写部(L) Pause
+ANB R50110               ; Err 転写(L)UT
+SET R51200               ; 治具(L)部ｴﾘｱｾﾝｻｰ有効FLG
+CON
+JMP @MR5313              ; 5313
+STG @MR5313              ; 5313
+RES MR6108               ; ｼｬｯﾀｰ1　開
+CON
+MPS
+AND R4812                ; 治具(L)側 ｴﾘｱｾﾝｻ (ｼｬｯﾀｰ1)
+SET MR6109               ; ｼｬｯﾀｰ1　閉
+CON
+ANB R4200                ; ｼｬｯﾀｰ1 開限(治具(L)側)
+AND R4201                ; ｼｬｯﾀｰ1 閉限(治具(L)側)
+RES R51200               ; 治具(L)部ｴﾘｱｾﾝｻｰ有効FLG
+CON
+JMP @MR5400              ; 5400
+MPP
+ANB R4812                ; 治具(L)側 ｴﾘｱｾﾝｻ (ｼｬｯﾀｰ1)
+RES MR6109               ; ｼｬｯﾀｰ1　閉
+CON
+JMP @MR5312              ; 5312
+;***** 清掃監視 / Cleaning check  *****
+;
+LDP @MR5307              ; 5307
+SET @MR5314              ; 5314
+STG @MR5314              ; 5314
+ANB R4812                ; 治具(L)側 ｴﾘｱｾﾝｻ (ｼｬｯﾀｰ1)
+SET @MR5315              ; 治具(L)清掃確認
+CON
+ENDS
+;***** Auto,STEP mode *****
+;
+;***** 転写処理ﾙｰﾁﾝ /  rutin  *****
+;
+;***** ｻｲｸﾙ終了処理 / Cycle End process  *****
+;
+STG @MR5400              ; 5400
+ANB R50302               ; 転写部(L) Pause
+ANB R50110               ; Err 転写(L)UT
+RES R51603               ; 転写(L)処理 実行中
+CON
+MPS
+LDB R49801               ; RB払出し完了
+OR R51601                ; ｽｷｰｼﾞ動作 (L)  完了
+ORB R49803               ; ｽｷｰｼﾞ（L)最終塗布完了
+ANL
+JMP @MR5401              ; 5401
+MPP
+LD R49801                ; RB払出し完了
+ANB R51601               ; ｽｷｰｼﾞ動作 (L)  完了
+AND R49803               ; ｽｷｰｼﾞ（L)最終塗布完了
+ANL
+TMR @23 #10
+CON
+AND @T23
+JMP @MR5500              ; 5500
+;***** ｳｪﾊｰ治具(L)前進 / Wafer Jig Advance *****
+;
+STG @MR5401              ; 5401
+ANB R50302               ; 転写部(L) Pause
+ANB R50110               ; Err 転写(L)UT
+RES MR6001               ; ｳｪﾊｰ治具(L) 後退
+CON
+SET MR6000               ; ｳｪﾊｰ治具(L) 前進
+CON
+ANB R4001                ; 治具(L) 後退限
+AND R4000                ; 治具(L) 前進限(RB側)
+JMP @MR5402              ; 5402
+;***** ﾌｨﾙﾑ巻取り完了待ち / Waiting for film feed end *****     
+;
+STG @MR5402              ; 5402
+ANB R50302               ; 転写部(L) Pause
+ANB R50110               ; Err 転写(L)UT
+AND @MR5215              ; ﾌｨﾙﾑ巻取り完了
+RES @MR5215              ; ﾌｨﾙﾑ巻取り完了
+CON
+MPS
+ANB LR1003               ; AUTO PARA3 S.RB無し動作選択
+SET R53800               ; RBへ給材要求
+CON
+JMP @MR4400              ; ﾜｰｸ起動    確認へ
+MPP
+AND LR1003               ; AUTO PARA3 S.RB無し動作選択
+SET R53808               ; 手動給材要求
+CON
+JMP @MR4400              ; ﾜｰｸ起動    確認へ
+;***** ｻｲｸﾙ終了処理 / Cycle End process  *****
+;
+;***** ｳｪﾊｰ治具(L)後退 / Wafer Jig back *****
+;
+STG @MR5500              ; 5500
+ANB R50302               ; 転写部(L) Pause
+ANB R50110               ; Err 転写(L)UT
+RES MR6000               ; ｳｪﾊｰ治具(L) 前進
+CON
+SET MR6001               ; ｳｪﾊｰ治具(L) 後退
+CON
+ANB R4000                ; 治具(L) 前進限(RB側)
+AND R4001                ; 治具(L) 後退限
+JMP @MR5501              ; 5501
+STG @MR5501              ; 5501
+ANB R50302               ; 転写部(L) Pause
+ANB R50110               ; Err 転写(L)UT
+SET R51200               ; 治具(L)部ｴﾘｱｾﾝｻｰ有効FLG
+CON
+JMP @MR5502              ; 5502
+STG @MR5502              ; 5502
+RES MR6109               ; ｼｬｯﾀｰ1　閉
+CON
+MPS
+AND R4812                ; 治具(L)側 ｴﾘｱｾﾝｻ (ｼｬｯﾀｰ1)
+SET MR6108               ; ｼｬｯﾀｰ1　開
+CON
+ANB R4201                ; ｼｬｯﾀｰ1 閉限(治具(L)側)
+AND R4200                ; ｼｬｯﾀｰ1 開限(治具(L)側)
+RES R51200               ; 治具(L)部ｴﾘｱｾﾝｻｰ有効FLG
+CON
+JMP @MR5503              ; 5503
+MPP
+ANB R4812                ; 治具(L)側 ｴﾘｱｾﾝｻ (ｼｬｯﾀｰ1)
+RES MR6108               ; ｼｬｯﾀｰ1　開
+CON
+JMP @MR5501              ; 5501
+STG @MR5503              ; 5503
+ANB R50302               ; 転写部(L) Pause
+ANB R50110               ; Err 転写(L)UT
+LD @MR5215               ; ﾌｨﾙﾑ巻取り完了
+OR @MR113                ; ﾌｨﾙﾑ使用前終了
+ANL
+SET R49802               ; （L)払出し完了
+CON
+RES @MR113               ; ﾌｨﾙﾑ使用前終了
+CON
+RES @MR5215              ; ﾌｨﾙﾑ巻取り完了
+CON
+JMP @MR5504              ; 5504
+STG @MR5504              ; 5504
+ANB R50302               ; 転写部(L) Pause
+ANB R50110               ; Err 転写(L)UT
+MPS
+AND R49807               ; 全ﾕﾆｯﾄ払出し完了
+JMP @MR5508              ; 5508
+MPP
+LDB R49807               ; 全ﾕﾆｯﾄ払出し完了
+AND R49710               ; WF 再取出し要求
+ANL
+RES R49802               ; （L)払出し完了
+CON
+JMP @MR5505              ; 5505
+STG @MR5505              ; 5505
+ANB R50302               ; 転写部(L) Pause
+ANB R50110               ; Err 転写(L)UT
+SET R51200               ; 治具(L)部ｴﾘｱｾﾝｻｰ有効FLG
+CON
+JMP @MR5506              ; 5506
+STG @MR5506              ; 5506
+RES MR6108               ; ｼｬｯﾀｰ1　開
+CON
+MPS
+AND R4812                ; 治具(L)側 ｴﾘｱｾﾝｻ (ｼｬｯﾀｰ1)
+SET MR6109               ; ｼｬｯﾀｰ1　閉
+CON
+ANB R4200                ; ｼｬｯﾀｰ1 開限(治具(L)側)
+AND R4201                ; ｼｬｯﾀｰ1 閉限(治具(L)側)
+RES R51200               ; 治具(L)部ｴﾘｱｾﾝｻｰ有効FLG
+CON
+JMP @MR5507              ; 5507
+MPP
+ANB R4812                ; 治具(L)側 ｴﾘｱｾﾝｻ (ｼｬｯﾀｰ1)
+RES MR6109               ; ｼｬｯﾀｰ1　閉
+CON
+JMP @MR5505              ; 5505
+STG @MR5507              ; 5507
+ANB R50302               ; 転写部(L) Pause
+ANB R50110               ; Err 転写(L)UT
+RES MR6001               ; ｳｪﾊｰ治具(L) 後退
+CON
+SET MR6000               ; ｳｪﾊｰ治具(L) 前進
+CON
+ANB R4001                ; 治具(L) 後退限
+AND R4000                ; 治具(L) 前進限(RB側)
+MPS
+ANB LR1003               ; AUTO PARA3 S.RB無し動作選択
+SET R53800               ; RBへ給材要求
+CON
+JMP @MR4400              ; ﾜｰｸ起動    確認へ
+MPP
+AND LR1003               ; AUTO PARA3 S.RB無し動作選択
+SET R53808               ; 手動給材要求
+CON
+JMP @MR4400              ; ﾜｰｸ起動    確認へ
+STG @MR5508              ; 5508
+ANB R50302               ; 転写部(L) Pause
+ANB R50110               ; Err 転写(L)UT
+SET R51200               ; 治具(L)部ｴﾘｱｾﾝｻｰ有効FLG
+CON
+JMP @MR5509              ; 5509
+STG @MR5509              ; 5509
+RES MR6109               ; ｼｬｯﾀｰ1　閉
+CON
+MPS
+AND R4812                ; 治具(L)側 ｴﾘｱｾﾝｻ (ｼｬｯﾀｰ1)
+SET MR6108               ; ｼｬｯﾀｰ1　開
+CON
+ANB R4201                ; ｼｬｯﾀｰ1 閉限(治具(L)側)
+AND R4200                ; ｼｬｯﾀｰ1 開限(治具(L)側)
+RES R51200               ; 治具(L)部ｴﾘｱｾﾝｻｰ有効FLG
+CON
+JMP @MR5510              ; 5510
+MPP
+ANB R4812                ; 治具(L)側 ｴﾘｱｾﾝｻ (ｼｬｯﾀｰ1)
+RES MR6108               ; ｼｬｯﾀｰ1　開
+CON
+JMP @MR5508              ; 5508
+STG @MR5510              ; 5510
+ANB R50302               ; 転写部(L) Pause
+ANB R50110               ; Err 転写(L)UT
+RES R49802               ; （L)払出し完了
+CON
+RES R51006               ; 治具(L)ｽﾀｰﾄﾗﾝﾌﾟ点滅
+CON
+RES R51007               ; 治具(L)ｽﾀｰﾄﾗﾝﾌﾟ点灯
+CON
+@SET R49809              ; 転写(L)処理ｻｲｸﾙ停止FLG
+CON
+ENDS
+;■■■■■■■■■■■■■■■■■■■■  SUBROUTINE  ■■■■■■■■■■■■■■■■■■■■
+;******* ｴﾗｰﾁｪｯｸ ｻﾌﾞﾙｰﾁﾝ  /  Error check Subroutine ********
+;
+;*****　ｻｰﾎﾞ他ｴﾗｰﾁｪｯｸ / Serbo else error check　　*****
+;　
+;　
+STG @MR6000              ; ｻｰﾎﾞ他ｴﾗｰﾁｪｯｸcall
+JMP @MR6100              ; 6100
+;***** J2S ﾊﾞｯﾃﾘｰﾁｪｯｸ / J2S Battry ﾁｪｯｸ *****
+;
+STG @MR6100              ; 6100
+SET @MR6014              ; ｻｰﾎﾞ他ｴﾗｰﾁｪｯｸcall 実行中
+CON
+ANB R50302               ; 転写部(L) Pause
+ANB R50110               ; Err 転写(L)UT
+ANB R2006                ; (L)ABS転送ﾓｰﾄﾞ
+MPS
+ANB R1004                ; DRV-12 ﾊﾞｯﾃﾘ警告/(L)ABS bit1
+RES MR212                ; DRV-12 ﾊﾞｯﾃﾘｰ警告FLG
+CON
+ANB @MR6101              ; J2S ﾊﾞｯﾃﾘｰ警告へ
+JMP @MR6108              ; 6108
+MPP
+AND R1004                ; DRV-12 ﾊﾞｯﾃﾘ警告/(L)ABS bit1
+SET MR212                ; DRV-12 ﾊﾞｯﾃﾘｰ警告FLG
+CON
+ANB @MR6108              ; 6108
+JMP @MR6101              ; J2S ﾊﾞｯﾃﾘｰ警告へ
+;***** J2S ﾊﾞｯﾃﾘｰ警告の時 /when  J2S Battry error NG *****
+;
+STG @MR6101              ; J2S ﾊﾞｯﾃﾘｰ警告へ
+ANB MR212                ; DRV-12 ﾊﾞｯﾃﾘｰ警告FLG
+AND R50110               ; Err 転写(L)UT
+AND R50014               ; 異常発生ｴﾗｰﾘｾｯﾄsw ON
+SET R51006               ; 治具(L)ｽﾀｰﾄﾗﾝﾌﾟ点滅
+CON
+JMP @MR6102              ; 6102
+STG @MR6102              ; 6102
+AND R51301               ; 治具(L)ｴﾗｰﾘｾｯﾄsw ON
+JMP @MR6103              ; 6103
+STG @MR6103              ; 6103
+ANB R50110               ; Err 転写(L)UT
+ANB R50014               ; 異常発生ｴﾗｰﾘｾｯﾄsw ON
+ANB R51301               ; 治具(L)ｴﾗｰﾘｾｯﾄsw ON
+SET R51007               ; 治具(L)ｽﾀｰﾄﾗﾝﾌﾟ点灯
+CON
+JMP @MR6100              ; 6100
+;***** J2S ｻｰﾎﾞ異常ﾁｪｯｸ /when  J2S Serbo error check *****
+;
+STG @MR6108              ; 6108
+ANB R50302               ; 転写部(L) Pause
+ANB R50110               ; Err 転写(L)UT
+MPS
+ANB R10012               ; X1 Driver Alarm入力状態
+RES MR210                ; DEV-12 ｻｰﾎﾞ異常FLG
+CON
+ANB @MR6109              ; J2S ｻｰﾎﾞl異常へ
+JMP @MR6200              ; 6200
+MPP
+AND R10012               ; X1 Driver Alarm入力状態
+SET MR210                ; DEV-12 ｻｰﾎﾞ異常FLG
+CON
+ANB @MR6200              ; 6200
+JMP @MR6109              ; J2S ｻｰﾎﾞl異常へ
+;***** J2S ｻｰﾎﾞ異常の時 /when  J2S Serbo error NG *****
+;
+STG @MR6109              ; J2S ｻｰﾎﾞl異常へ
+ANB MR210                ; DEV-12 ｻｰﾎﾞ異常FLG
+AND R50110               ; Err 転写(L)UT
+AND R50014               ; 異常発生ｴﾗｰﾘｾｯﾄsw ON
+SET R51006               ; 治具(L)ｽﾀｰﾄﾗﾝﾌﾟ点滅
+CON
+JMP @MR6110              ; 6110
+STG @MR6110              ; 6110
+AND R51301               ; 治具(L)ｴﾗｰﾘｾｯﾄsw ON
+JMP @MR6111              ; 6111
+STG @MR6111              ; 6111
+ANB R50110               ; Err 転写(L)UT
+ANB R50014               ; 異常発生ｴﾗｰﾘｾｯﾄsw ON
+ANB R51301               ; 治具(L)ｴﾗｰﾘｾｯﾄsw ON
+SET R51007               ; 治具(L)ｽﾀｰﾄﾗﾝﾌﾟ点灯
+CON
+JMP @MR6108              ; 6108
+;***** HC 異常ﾁｪｯｸ /HC error check *****
+;
+STG @MR6200              ; 6200
+ANB R50302               ; 転写部(L) Pause
+ANB R50110               ; Err 転写(L)UT
+MPS
+ANB R1104
+RES MR301                ; HC-11 異常FLG
+CON
+ANB @MR6201              ; HC 異常の時へ
+JMP @MR6208              ; 6208
+MPP
+AND R1104
+SET MR301                ; HC-11 異常FLG
+CON
+ANB @MR6208              ; 6208
+JMP @MR6201              ; HC 異常の時へ
+;***** HC 異常の時 /when  HC error NG *****
+;
+STG @MR6201              ; HC 異常の時へ
+ANB MR301                ; HC-11 異常FLG
+AND R50110               ; Err 転写(L)UT
+AND R50014               ; 異常発生ｴﾗｰﾘｾｯﾄsw ON
+SET R51006               ; 治具(L)ｽﾀｰﾄﾗﾝﾌﾟ点滅
+CON
+JMP @MR6202              ; 6202
+STG @MR6202              ; 6202
+AND R51301               ; 治具(L)ｴﾗｰﾘｾｯﾄsw ON
+JMP @MR6203              ; 6203
+STG @MR6203              ; 6203
+ANB R50110               ; Err 転写(L)UT
+ANB R50014               ; 異常発生ｴﾗｰﾘｾｯﾄsw ON
+ANB R51301               ; 治具(L)ｴﾗｰﾘｾｯﾄsw ON
+SET R51007               ; 治具(L)ｽﾀｰﾄﾗﾝﾌﾟ点灯
+CON
+JMP @MR6200              ; 6200
+;***** ﾛｰﾗｰｻｰﾎﾞﾁｪｯｸ / roler serbo check *****
+;
+STG @MR6208              ; 6208
+ANB R50302               ; 転写部(L) Pause
+ANB R50110               ; Err 転写(L)UT
+MPS
+AND R10300               ; Y1 動作可能
+RES MR211                ; DRV-13  異常FLG
+CON
+ANB @MR6209              ; 駆動ﾛｰﾗ ｻｰﾎﾞ異常へ
+JMP @MR6300              ; ﾌｨﾙﾑ部     ｲｵﾅｲｻﾞｰ   警報ﾁｪｯｸへ
+MPP
+ANB R10300               ; Y1 動作可能
+SET MR211                ; DRV-13  異常FLG
+CON
+ANB @MR6300              ; ﾌｨﾙﾑ部     ｲｵﾅｲｻﾞｰ   警報ﾁｪｯｸへ
+JMP @MR6209              ; 駆動ﾛｰﾗ ｻｰﾎﾞ異常へ
+;***** ﾛｰﾗｰｻｰﾎﾞ異常の時 /when  roler Serbo error NG *****
+;
+STG @MR6209              ; 駆動ﾛｰﾗ ｻｰﾎﾞ異常へ
+ANB MR211                ; DRV-13  異常FLG
+AND R50110               ; Err 転写(L)UT
+AND R50014               ; 異常発生ｴﾗｰﾘｾｯﾄsw ON
+SET R51006               ; 治具(L)ｽﾀｰﾄﾗﾝﾌﾟ点滅
+CON
+JMP @MR6210              ; 6210
+STG @MR6210              ; 6210
+AND R51301               ; 治具(L)ｴﾗｰﾘｾｯﾄsw ON
+JMP @MR6211              ; 6211
+STG @MR6211              ; 6211
+ANB R50110               ; Err 転写(L)UT
+ANB R50014               ; 異常発生ｴﾗｰﾘｾｯﾄsw ON
+ANB R51301               ; 治具(L)ｴﾗｰﾘｾｯﾄsw ON
+SET R51007               ; 治具(L)ｽﾀｰﾄﾗﾝﾌﾟ点灯
+CON
+JMP @MR6208              ; 6208
+;***** ﾌｨﾙﾑ部ｲｵﾅｲｻﾞｰ ｱﾗｰﾑ ﾁｪｯｸ / Ion Alarm check *****
+;
+STG @MR6300              ; ﾌｨﾙﾑ部     ｲｵﾅｲｻﾞｰ   警報ﾁｪｯｸへ
+ANB R50302               ; 転写部(L) Pause
+ANB R50110               ; Err 転写(L)UT
+MPS
+AND R004                 ; ﾌｨﾙﾑ除電ﾊﾞｰﾊﾟﾜｰﾕﾆｯﾄ  警報出力
+RES MR214                ; ﾌｨﾙﾑ除電ﾊﾞｰﾊﾟﾜｰﾕﾆｯﾄ  警報FLG
+CON
+ANB @MR6301              ; ﾌｨﾙﾑ部     ｲｵﾅｲｻﾞｰ   警報へ
+JMP @MR6314              ; 6314
+MPP
+ANB R004                 ; ﾌｨﾙﾑ除電ﾊﾞｰﾊﾟﾜｰﾕﾆｯﾄ  警報出力
+SET MR214                ; ﾌｨﾙﾑ除電ﾊﾞｰﾊﾟﾜｰﾕﾆｯﾄ  警報FLG
+CON
+ANB @MR6314              ; 6314
+JMP @MR6301              ; ﾌｨﾙﾑ部     ｲｵﾅｲｻﾞｰ   警報へ
+;***** ﾌｨﾙﾑ部 ｲｵﾅｲｻﾞｰ ｱﾗｰﾑ 異常の時 /when  Alarm error NG *****
+;
+STG @MR6301              ; ﾌｨﾙﾑ部     ｲｵﾅｲｻﾞｰ   警報へ
+ANB MR214                ; ﾌｨﾙﾑ除電ﾊﾞｰﾊﾟﾜｰﾕﾆｯﾄ  警報FLG
+AND R50110               ; Err 転写(L)UT
+AND R50014               ; 異常発生ｴﾗｰﾘｾｯﾄsw ON
+SET R51006               ; 治具(L)ｽﾀｰﾄﾗﾝﾌﾟ点滅
+CON
+JMP @MR6302              ; 6302
+STG @MR6302              ; 6302
+AND R51301               ; 治具(L)ｴﾗｰﾘｾｯﾄsw ON
+JMP @MR6303              ; 6303
+STG @MR6303              ; 6303
+ANB R50110               ; Err 転写(L)UT
+ANB R50014               ; 異常発生ｴﾗｰﾘｾｯﾄsw ON
+ANB R51301               ; 治具(L)ｴﾗｰﾘｾｯﾄsw ON
+SET R51007               ; 治具(L)ｽﾀｰﾄﾗﾝﾌﾟ点灯
+CON
+JMP @MR6300              ; ﾌｨﾙﾑ部     ｲｵﾅｲｻﾞｰ   警報ﾁｪｯｸへ
+;*****　ｻｰﾎﾞ他ｴﾗｰﾁｪｯｸ 終了処理 / Serbo else error check End process　　*****
+;
+STG @MR6314              ; 6314
+TMR @1 #1                ; ｻｰﾎﾞ他ｴﾗｰ  ﾁｪｯｸcall     完了
+CON
+AND @T1                  ; ｻｰﾎﾞ他ｴﾗｰ  ﾁｪｯｸcall     完了
+SET @MR6015              ; ｻｰﾎﾞ他ｴﾗｰ  ﾁｪｯｸcall     完了
+CON
+RES @MR6014              ; ｻｰﾎﾞ他ｴﾗｰﾁｪｯｸcall 実行中
+CON
+ENDS
+;******* ｻﾌﾞﾙｰﾁﾝ  /  Subroutine ********
+;
+;******* ｽｷｰｼﾞ動作  / Sqeegee Subroutine ********
+;
+;******* ｽｷｰｼﾞ開始  / Sqeegee Start ********
+;
+STG @MR6400              ; ｽｷｰｼﾞcall
+SET @MR6414              ; ｽｷｰｼﾞcall  実行中
+CON
+ANB R50301               ; ｽｷｰｼﾞ部(L) Pause
+ANB R50109               ; Err ｽｷｰｼﾞ(L)UT
+JMP @MR6500              ; 6500
+;******* ｽｷｰｼﾞ動作  / Sqeegee Subroutine ********
+;
+;***** ｼｬｯﾀｰ2 閉 / Shutter2 Close  *****
+;
+STG @MR6500              ; 6500
+ANB R50301               ; ｽｷｰｼﾞ部(L) Pause
+ANB R50109               ; Err ｽｷｰｼﾞ(L)UT
+MPS
+LD R4202                 ; ｼｬｯﾀｰ2 開限(ｽｷｰｼﾞ(L)
+ORB R4203                ; ｼｬｯﾀｰ2 閉限(ｽｷｰｼﾞ(L)
+ANL
+SET R51201               ; ｽｷｰｼﾞ(L)ｴﾘｱｾﾝｻｰ有効FLG
+CON
+JMP @MR6501              ; 6501
+MPP
+LDB R4202                ; ｼｬｯﾀｰ2 開限(ｽｷｰｼﾞ(L)
+AND R4203                ; ｼｬｯﾀｰ2 閉限(ｽｷｰｼﾞ(L)
+ANL
+SET MR6111               ; ｼｬｯﾀｰ2　閉
+CON
+RES R51201               ; ｽｷｰｼﾞ(L)ｴﾘｱｾﾝｻｰ有効FLG
+CON
+JMP @MR6502              ; 6502
+STG @MR6501              ; 6501
+RES MR6110               ; ｼｬｯﾀｰ2　開
+CON
+MPS
+AND R4813                ; ｽｷｰｼﾞ(L)側 ｴﾘｱｾﾝｻ (ｼｬｯﾀｰ2)
+SET MR6111               ; ｼｬｯﾀｰ2　閉
+CON
+ANB R4202                ; ｼｬｯﾀｰ2 開限(ｽｷｰｼﾞ(L)
+AND R4203                ; ｼｬｯﾀｰ2 閉限(ｽｷｰｼﾞ(L)
+RES R51201               ; ｽｷｰｼﾞ(L)ｴﾘｱｾﾝｻｰ有効FLG
+CON
+JMP @MR6502              ; 6502
+MPP
+ANB R4813                ; ｽｷｰｼﾞ(L)側 ｴﾘｱｾﾝｻ (ｼｬｯﾀｰ2)
+RES MR6111               ; ｼｬｯﾀｰ2　閉
+CON
+JMP @MR6500              ; 6500
+;******* ｽｷｰｼﾞ動作  / Sqeegee Subroutine ********
+;
+;******* ｽｷｰｼﾞ(親）　下降  / Sqeegee (abov)Down ********
+;
+STG @MR6502              ; 6502
+ANB R50301               ; ｽｷｰｼﾞ部(L) Pause
+ANB R50109               ; Err ｽｷｰｼﾞ(L)UT
+ANB @MR5815              ; ｼﾘﾝﾀﾞｰｴﾗｰ中ｼｬｯﾀｰ2開中
+RES MR6012               ; ｽｷｰｼﾞ(L)(親)　上昇
+CON
+ANB R4012                ; ｽｷｰｼﾞ(親)(L)上昇限
+AND R4013                ; ｽｷｰｼﾞ(親)(L)下降限
+JMP @MR6503              ; 6503
+;******* ｽｷｰｼﾞ動作  / Sqeegee Subroutine ********
+;
+;******* ｽｷｰｼﾞ　下降  / Sqeegee Down ********
+;
+STG @MR6503              ; 6503
+ANB R50301               ; ｽｷｰｼﾞ部(L) Pause
+ANB R50109               ; Err ｽｷｰｼﾞ(L)UT
+ANB @MR5815              ; ｼﾘﾝﾀﾞｰｴﾗｰ中ｼｬｯﾀｰ2開中
+SET MR6014               ; ｽｷｰｼﾞ(L)(子)下降
+CON
+ANB R4015                ; ｽｷｰｼﾞ(子)(L)上昇限
+AND R4014                ; ｽｷｰｼﾞ(子)(L)下降限
+TMR @30 #2               ; ｽｷｰｼﾞ下降   確認
+CON
+AND @T30                 ; ｽｷｰｼﾞ下降   確認
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+JMP @MR6504              ; 6504
+;******* ｽｷｰｼﾞ動作  / Sqeegee Subroutine ********
+;
+;******* ｽｸﾚｰﾊﾟｰ 前進  / Suqurepor forward ********
+;
+STG @MR6504              ; 6504
+ANB R50301               ; ｽｷｰｼﾞ部(L) Pause
+ANB R50109               ; Err ｽｷｰｼﾞ(L)UT
+ANB @MR5815              ; ｼﾘﾝﾀﾞｰｴﾗｰ中ｼｬｯﾀｰ2開中
+SET MR6100               ; ｽｸﾚｰﾊﾟ(L) 前進
+CON
+ANB R4101                ; ｽｸﾚｰﾊﾟ(L) 後退限（奥側)
+AND R4100                ; ｽｸﾚｰﾊﾟ(L) 前進限（作業者側）
+TMR @31 #2               ; ｽｷｰｼﾞ前進   確認
+CON
+AND @T31                 ; ｽｷｰｼﾞ前進   確認
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+JMP @MR6505              ; 6505
+;******* ｽｷｰｼﾞ動作  / Sqeegee Subroutine ********
+;
+;******* ｽｷｰｼﾞ上昇  / Sqeegee UP ********
+;
+STG @MR6505              ; 6505
+ANB R50301               ; ｽｷｰｼﾞ部(L) Pause
+ANB R50109               ; Err ｽｷｰｼﾞ(L)UT
+ANB @MR5815              ; ｼﾘﾝﾀﾞｰｴﾗｰ中ｼｬｯﾀｰ2開中
+RES MR6014               ; ｽｷｰｼﾞ(L)(子)下降
+CON
+ANB R4014                ; ｽｷｰｼﾞ(子)(L)下降限
+AND R4015                ; ｽｷｰｼﾞ(子)(L)上昇限
+TMR @32 #2               ; ｽｷｰｼﾞ上昇   確認
+CON
+AND @T32                 ; ｽｷｰｼﾞ上昇   確認
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+JMP @MR6506              ; 6506
+;******* ｽｷｰｼﾞ動作  / Sqeegee Subroutine ********
+;
+;******* ｽｸﾚｰﾊﾟｰ 後退  / Suqurepor back ********
+;
+STG @MR6506              ; 6506
+ANB R50301               ; ｽｷｰｼﾞ部(L) Pause
+ANB R50109               ; Err ｽｷｰｼﾞ(L)UT
+ANB @MR5815              ; ｼﾘﾝﾀﾞｰｴﾗｰ中ｼｬｯﾀｰ2開中
+RES MR6100               ; ｽｸﾚｰﾊﾟ(L) 前進
+CON
+ANB R4100                ; ｽｸﾚｰﾊﾟ(L) 前進限（作業者側）
+AND R4101                ; ｽｸﾚｰﾊﾟ(L) 後退限（奥側)
+TMR @33 #2               ; ｽｸﾚｰﾊﾟｰ後退
+CON
+AND @T33                 ; ｽｸﾚｰﾊﾟｰ後退
+JMP @MR6507              ; 6507
+STG @MR6507              ; 6507
+RES @MR6414              ; ｽｷｰｼﾞcall  実行中
+CON
+SET @MR6415              ; ｽｷｰｼﾞcall   完了
+CON
+ENDS
+;******* ｼﾘﾝﾀﾞｴﾗｰ監視  / cylinder error checkk ********
+;
+LD @MR6414               ; ｽｷｰｼﾞcall  実行中
+LD MR4014                ; ｽｷｰｼﾞ(子)(L)下降異常
+OR MR4015                ; ｽｷｰｼﾞ(子)(L)上昇異常
+OR MR4100                ; ｽｸﾚｰﾊﾟ(L) 前進異常
+OR MR4101                ; ｽｸﾚｰﾊﾟ(L) 後退異常
+OR MR4103                ; ｽｷｰｼﾞ台(L) 後退異常
+ANL
+@SET @MR5800             ; ｼﾘﾝﾀﾞｰｴﾗｰ中ｼｬｯﾀｰ2開処理
+CON
+@SET @MR5815             ; ｼﾘﾝﾀﾞｰｴﾗｰ中ｼｬｯﾀｰ2開中
+STG @MR5800              ; ｼﾘﾝﾀﾞｰｴﾗｰ中ｼｬｯﾀｰ2開処理
+SET MR6110               ; ｼｬｯﾀｰ2　開
+CON
+RES MR6111               ; ｼｬｯﾀｰ2　閉
+CON
+JMP @MR5801              ; 5801
+STG @MR5801              ; 5801
+ANB R50301               ; ｽｷｰｼﾞ部(L) Pause
+ANB R50109               ; Err ｽｷｰｼﾞ(L)UT
+ANB MR4014               ; ｽｷｰｼﾞ(子)(L)下降異常
+ANB MR4015               ; ｽｷｰｼﾞ(子)(L)上昇異常
+ANB MR4100               ; ｽｸﾚｰﾊﾟ(L) 前進異常
+ANB MR4101               ; ｽｸﾚｰﾊﾟ(L) 後退異常
+ANB MR4103               ; ｽｷｰｼﾞ台(L) 後退異常
+SET R51201               ; ｽｷｰｼﾞ(L)ｴﾘｱｾﾝｻｰ有効FLG
+CON
+JMP @MR5802              ; 5802
+STG @MR5802              ; 5802
+RES MR6110               ; ｼｬｯﾀｰ2　開
+CON
+MPS
+AND R4813                ; ｽｷｰｼﾞ(L)側 ｴﾘｱｾﾝｻ (ｼｬｯﾀｰ2)
+SET MR6111               ; ｼｬｯﾀｰ2　閉
+CON
+ANB R4202                ; ｼｬｯﾀｰ2 開限(ｽｷｰｼﾞ(L)
+AND R4203                ; ｼｬｯﾀｰ2 閉限(ｽｷｰｼﾞ(L)
+RES @MR5815              ; ｼﾘﾝﾀﾞｰｴﾗｰ中ｼｬｯﾀｰ2開中
+CON
+RES R51201               ; ｽｷｰｼﾞ(L)ｴﾘｱｾﾝｻｰ有効FLG
+CON
+ENDS
+MPP
+ANB R4813                ; ｽｷｰｼﾞ(L)側 ｴﾘｱｾﾝｻ (ｼｬｯﾀｰ2)
+RES MR6111               ; ｼｬｯﾀｰ2　閉
+CON
+JMP @MR5801              ; 5801
+;******* ｻﾌﾞﾙｰﾁﾝ  /  Subroutine ********
+;
+;******* Film 転写動作  / Film  Subroutine ********
+;
+STG @MR6600              ; ﾌｨﾙﾑ転写    call
+SET @MR6614              ; ﾌｨﾙﾑ転写    実行中
+CON
+JMP @MR6601              ; 6601
+;ﾌｨﾙﾑ転写開始位置へ移動　ﾛﾎﾞｯﾄ:3 ﾛｰﾗ:3
+;Film Transcription Start Position  Robot:3  Roller:3
+STG @MR6601              ; 6601
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+JMP @MR6602              ; 6602
+MOV.D DM616 DM11080      ; RB(L)ﾌｨﾙﾑ転写開始位置  RB(L) 位置(INDEX 0)
+MOV.D DM612 DM11082      ; RB(L)開始位置移動速度  RB(L) 速度(INDEX 1)
+DW #6 DM11056            ; Y1 開始・読出しPoint番号
+MOV.D DM612 DM11086      ; RB(L)開始位置移動速度  M-13 速度(INDEX 3)
+STG @MR6602              ; 6602
+TMH @15 #5               ; 転写RB開始位置移動2    開始
+CON
+AND @T15                 ; 転写RB開始位置移動2    開始
+AND @MR105               ; DRV-12動作可能
+SET @MR2908              ; ﾜｰｸ pack1
+CON
+SET @MR9700              ; X1-Y1 同時動作開始
+CON
+JMP @MR6603              ; 6603
+STG @MR6603              ; 6603
+AND @MR9715              ; X1-Y1 同時動作完了
+RES @MR9715              ; X1-Y1 同時動作完了
+CON
+JMP @MR6604              ; 6604
+STG @MR6604              ; 6604
+TMH @16 #20
+CON
+AND @T16
+RES @MR2908              ; ﾜｰｸ pack1
+CON
+JMP @MR6605              ; 6605
+;******* 送りﾛｰﾗｰ下降  / Send Roller Down ********
+;
+STG @MR6605              ; 6605
+ANB R50302               ; 転写部(L) Pause
+ANB R50110               ; Err 転写(L)UT
+RES MR6010               ; 転写(L)ﾛｰﾗｰ押え上昇
+CON
+ANB R4010                ; ﾌｨﾙﾑ(L)送りﾛｰﾗ 上昇端
+AND R4011                ; ﾌｨﾙﾑ(L)送りﾛｰﾗ 下降端
+AND R4003                ; 治具(L) RB側限(左限)
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+JMP @MR6700              ; 6700
+;******* Film 転写動作  / Film  Subroutine ********
+;
+;ﾌｨﾙﾑ転写前ﾌｨﾙﾑ弛み動作　ﾛｰﾗ:1
+;Sag Film Before Film Transcription   Roller:1
+STG @MR6700              ; 6700
+AND R4102                ; ｽｷｰｼﾞ台(L) 前進端(転写側)
+MPS
+SET @MR2908              ; ﾜｰｸ pack1
+CON
+SET MR6004               ; ﾘｰﾙ(L)ﾃﾝｼｮﾝ　上昇
+CON
+JMP @MR6701              ; 6701
+MRD
+MOV.D DM608 DM11084      ; RB(L)転写前弛み長さ  M-13 位置(INDEX 2)
+MPP
+MOV.D DM610 DM11086      ; RB(L)転写弛み速度  M-13 速度(INDEX 3)
+STG @MR6701              ; 6701
+TMH @6 #5                ; 弛み動作1    開始
+CON
+AND @T6                  ; 弛み動作1    開始
+SET @MR9600              ; Y1単独 動作開始
+CON
+JMP @MR6702              ; 6702
+STG @MR6702              ; 6702
+AND @MR9615              ; Y1単独　動作完了
+RES R51113               ; ﾌｨﾙﾑ(L)巻取り/送り完了
+CON
+RES @MR9615              ; Y1単独　動作完了
+CON
+JMP @MR6703              ; 6703
+;******* Film 転写動作  / Film  Subroutine ********
+;
+;ﾌｨﾙﾑ転写動作　ﾛﾎﾞｯﾄ:4  ﾛｰﾗ:2
+;Film Transcription   Robot:4  Roller:2
+STG @MR6703              ; 6703
+TMR #8 DM16              ; (L)ﾌｨﾙﾑ転写開始待ち  TIM08設定値
+CON
+AND T8                   ; (L)ﾌｨﾙﾑ転写開始待ち
+AND R4004                ; ﾘｰﾙ(L)ﾃﾝｼｮﾝ 上限
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+JMP @MR6704              ; 6704
+MOV.D DM618 DM11080      ; RB(L)ﾌｨﾙﾑ転写終了位置  RB(L) 位置(INDEX 0)
+MOV.D DM614 DM11082      ; RB(L)転写速度  RB(L) 速度(INDEX 1)
+DW #6 DM11056            ; Y1 開始・読出しPoint番号
+MOV.D DM614 DM11086      ; RB(L)転写速度  M-13 速度(INDEX 3)
+STG @MR6704              ; 6704
+TMH @7 #2                ; 転写動作1  ﾛｰﾗｻｰﾎﾞ起動
+CON
+AND @T7                  ; 転写動作1  ﾛｰﾗｻｰﾎﾞ起動
+AND @MR105               ; DRV-12動作可能
+SET @MR9700              ; X1-Y1 同時動作開始
+CON
+JMP @MR6705              ; 6705
+STG @MR6705              ; 6705
+AND @MR9715              ; X1-Y1 同時動作完了
+RES MR6004               ; ﾘｰﾙ(L)ﾃﾝｼｮﾝ　上昇
+CON
+RES @MR9715              ; X1-Y1 同時動作完了
+CON
+JMP @MR6708              ; 6708
+;******* Film 転写動作  / Film  Subroutine ********
+;
+;ﾌｨﾙﾑ転写後剥ぎ取り　ﾛﾎﾞｯﾄ:5
+;Tear Off Film After Film Transcription   Robot:5
+STG @MR6708              ; 6708
+TMR #10 DM20             ; (L)ﾌｨﾙﾑ転写剥取待ち  TIM10設定値
+CON
+AND T10                  ; (L)ﾌｨﾙﾑ転写剥取待ち
+AND R4005                ; ﾘｰﾙ(L)ﾃﾝｼｮﾝ 下限
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+JMP @MR6709              ; 6709
+MOV.D DM620 DM11080      ; RB(L)ﾌｨﾙﾑ転写剥取位置  RB(L) 位置(INDEX 0)
+MOV.D DM622 DM11082      ; RB(L)ﾌｨﾙﾑ転写剥取速度  RB(L) 速度(INDEX 1)
+STG @MR6709              ; 6709
+TMH @8 #5                ; ﾌｨﾙﾑ剥ぎ取り1開始
+CON
+AND @T8                  ; ﾌｨﾙﾑ剥ぎ取り1開始
+AND @MR105               ; DRV-12動作可能
+SET @MR9500              ; X1単独　動作開始
+CON
+JMP @MR6710              ; 6710
+STG @MR6710              ; 6710
+AND @MR9515              ; X1単独　動作完了
+RES @MR2908              ; ﾜｰｸ pack1
+CON
+RES @MR9515              ; X1単独　動作完了
+CON
+JMP @MR6711              ; 6711
+STG @MR6711              ; 6711
+ANB R50302               ; 転写部(L) Pause
+ANB R50110               ; Err 転写(L)UT
+SET MR6010               ; 転写(L)ﾛｰﾗｰ押え上昇
+CON
+AND R4010                ; ﾌｨﾙﾑ(L)送りﾛｰﾗ 上昇端
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+JMP @MR6800              ; 6800
+;******* Film 転写動作  / Film  Subroutine ********
+;
+;ﾌｨﾙﾑ転写後上移動　ﾛﾎﾞｯﾄ:2  ﾛｰﾗ:5
+;Robot Move Up After Film Transcription   Robot:2  Roller:5
+STG @MR6800              ; 6800
+@SET @MR6900             ; ｽｷｰｼﾞ台   後退へ
+CON
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+MPS
+SET @MR2908              ; ﾜｰｸ pack1
+CON
+JMP @MR6801              ; 6801
+MRD
+MOV.D DM604 DM11080      ; RB(L)ヘッド待機位置  RB(L) 位置(INDEX 0)
+MRD
+MOV.D DM606 DM11082      ; RB(L)待機位置移動速度  RB(L) 速度(INDEX 1)
+MRD
+DW #5 DM11056            ; Y1 開始・読出しPoint番号
+MPP
+MOV.D DM606 DM11086      ; RB(L)待機位置移動速度  M-13 速度(INDEX 3)
+STG @MR6801              ; 6801
+TMH @9 #5                ; 転写RB上移動1開始
+CON
+AND @T9                  ; 転写RB上移動1開始
+AND @MR105               ; DRV-12動作可能
+SET @MR9700              ; X1-Y1 同時動作開始
+CON
+JMP @MR6802              ; 6802
+STG @MR6802              ; 6802
+AND @MR9715              ; X1-Y1 同時動作完了
+RES @MR6614              ; ﾌｨﾙﾑ転写    実行中
+CON
+RES @MR9715              ; X1-Y1 同時動作完了
+CON
+JMP @MR6803              ; 6803
+STG @MR6803              ; 6803
+TMR @35 #1               ; ﾌｨﾙﾑ転写call完了
+CON
+AND @T35                 ; ﾌｨﾙﾑ転写call完了
+SET @MR6615              ; ﾌｨﾙﾑ転写   call 完了
+CON
+ENDS
+;***** Auto,STEP mode *****
+;
+;***** 転写処理ﾙｰﾁﾝ /  rutin  *****
+;
+;***** ｽｷｰｼﾞ台後退 / SQEEGEE back *****
+;
+STG @MR6900              ; ｽｷｰｼﾞ台   後退へ
+INC @DM12                ; 清掃後ｽｷｰｼﾞ回数
+CON
+JMP @MR6901              ; 6901
+STG @MR6901              ; 6901
+MPS
+AND R50002               ; 手動中
+JMP @MR6902              ; 6902
+MPP
+ANB R50002               ; 手動中
+MPS
+AND< @DM12 DM204         ; 清掃後ｽｷｰｼﾞ回数  CNT102ｽｸﾚｰﾊﾟｰ清掃回数ORG
+JMP @MR6902              ; 6902
+MPP
+AND>= @DM12 DM204        ; 清掃後ｽｷｰｼﾞ回数  CNT102ｽｸﾚｰﾊﾟｰ清掃回数ORG
+SET MR6012               ; ｽｷｰｼﾞ(L)(親)　上昇
+CON
+RES MR6100               ; ｽｸﾚｰﾊﾟ(L) 前進
+CON
+SET @MR111               ; 要ｽｷｰｼﾞ台清掃FLG
+CON
+JMP @MR6902              ; 6902
+STG @MR6902              ; 6902
+ANB R50302               ; 転写部(L) Pause
+ANB R50110               ; Err 転写(L)UT
+RES MR6102               ; ｽｷｰｼﾞ台(L) 前進
+CON
+SET MR6103               ; ｽｷｰｼﾞ台(L) 後退
+CON
+ANB R4102                ; ｽｷｰｼﾞ台(L) 前進端(転写側)
+ANB R4104                ; ｽｷｰｼﾞ台(L) 中間
+AND R4103                ; ｽｷｰｼﾞ台(L) 後退限(塗布側)
+JMP @MR6903              ; 6903
+;***** 要ｽｷｰｼﾞ台(L)清掃確認 / Check to Cleaning for Squeegee Base(L)  *****
+;
+STG @MR6903              ; 6903
+ANB R50301               ; ｽｷｰｼﾞ部(L) Pause
+ANB R50109               ; Err ｽｷｰｼﾞ(L)UT
+MPS
+AND R50002               ; 手動中
+MPS
+AND LR001                ; ﾌｨﾙﾑ転写(L) ｽﾃｯﾌﾟ選択
+ENDS
+MPP
+AND LR002                ; ﾜｰｸ転写(L)  ｽﾃｯﾌﾟ選択
+JMP @MR5000              ; ｳｪﾊｰ治具右へ
+MPP
+ANB R50002               ; 手動中
+MPS
+ANB @MR111               ; 要ｽｷｰｼﾞ台清掃FLG
+ENDS
+MPP
+LD @MR111                ; 要ｽｷｰｼﾞ台清掃FLG
+ANB R4013                ; ｽｷｰｼﾞ(親)(L)下降限
+AND R4012                ; ｽｷｰｼﾞ(親)(L)上昇限
+AND R4101                ; ｽｸﾚｰﾊﾟ(L) 後退限（奥側)
+ANB R4100                ; ｽｸﾚｰﾊﾟ(L) 前進限（作業者側）
+ANL
+JMP @MR7300
+STG @MR7300
+DW #0 @DM12              ; 清掃後ｽｷｰｼﾞ回数
+CON
+ENDS
+;以下未使用の予定
+STG @MR6904              ; 6904
+ANB R50301               ; ｽｷｰｼﾞ部(L) Pause
+ANB R50109               ; Err ｽｷｰｼﾞ(L)UT
+SET R51201               ; ｽｷｰｼﾞ(L)ｴﾘｱｾﾝｻｰ有効FLG
+CON
+JMP @MR6905              ; 6905
+STG @MR6905              ; 6905
+RES MR6111               ; ｼｬｯﾀｰ2　閉
+CON
+MPS
+AND R4813                ; ｽｷｰｼﾞ(L)側 ｴﾘｱｾﾝｻ (ｼｬｯﾀｰ2)
+SET MR6110               ; ｼｬｯﾀｰ2　開
+CON
+ANB R4203                ; ｼｬｯﾀｰ2 閉限(ｽｷｰｼﾞ(L)
+AND R4202                ; ｼｬｯﾀｰ2 開限(ｽｷｰｼﾞ(L)
+SET MR305                ; ｽｸﾚｰﾊﾟ(L)清掃要求FLG
+CON
+RES R51201               ; ｽｷｰｼﾞ(L)ｴﾘｱｾﾝｻｰ有効FLG
+CON
+JMP @MR6906              ; 6906
+MPP
+ANB R4813                ; ｽｷｰｼﾞ(L)側 ｴﾘｱｾﾝｻ (ｼｬｯﾀｰ2)
+RES MR6110               ; ｼｬｯﾀｰ2　開
+CON
+JMP @MR6904              ; 6904
+;***** ｽｷｰｼﾞ台(L)清掃要求 / Cleaning Request for Squeegee Base(L)  *****
+;
+STG @MR6906              ; 6906
+ANB MR305                ; ｽｸﾚｰﾊﾟ(L)清掃要求FLG
+AND R50109               ; Err ｽｷｰｼﾞ(L)UT
+AND R50014               ; 異常発生ｴﾗｰﾘｾｯﾄsw ON
+SET R51004               ; ｽｷｰｼﾞ(L)ｽﾀｰﾄﾗﾝﾌﾟ点滅
+CON
+JMP @MR6907              ; 6907
+STG @MR6907              ; 6907
+AND R51300               ; ｽｷｰｼﾞ(L) ｴﾗｰﾘｾｯﾄsw ON
+JMP @MR6908              ; 6908
+STG @MR6908              ; 6908
+ANB R50109               ; Err ｽｷｰｼﾞ(L)UT
+ANB R50014               ; 異常発生ｴﾗｰﾘｾｯﾄsw ON
+ANB R51300               ; ｽｷｰｼﾞ(L) ｴﾗｰﾘｾｯﾄsw ON
+SET R51005               ; ｽｷｰｼﾞ(L)ｽﾀｰﾄﾗﾝﾌﾟ点灯
+CON
+JMP @MR6909              ; 6909
+STG @MR6909              ; 6909
+ANB R50301               ; ｽｷｰｼﾞ部(L) Pause
+ANB R50109               ; Err ｽｷｰｼﾞ(L)UT
+MPS
+AND @MR6915              ; ｽｷｰｼﾞ台(L)清掃確認
+DW #0 @DM12              ; 清掃後ｽｷｰｼﾞ回数
+CON
+JMP @MR6910              ; 6910
+MPP
+ANB @MR6915              ; ｽｷｰｼﾞ台(L)清掃確認
+SET MR305                ; ｽｸﾚｰﾊﾟ(L)清掃要求FLG
+CON
+JMP @MR6906              ; 6906
+STG @MR6910              ; 6910
+ANB R50301               ; ｽｷｰｼﾞ部(L) Pause
+ANB R50109               ; Err ｽｷｰｼﾞ(L)UT
+MPS
+ANB R49803               ; ｽｷｰｼﾞ（L)最終塗布完了
+SET R51201               ; ｽｷｰｼﾞ(L)ｴﾘｱｾﾝｻｰ有効FLG
+CON
+JMP @MR6911              ; 6911
+MPP
+AND R49803               ; ｽｷｰｼﾞ（L)最終塗布完了
+JMP @MR6913              ; 6913
+STG @MR6911              ; 6911
+RES MR6110               ; ｼｬｯﾀｰ2　開
+CON
+MPS
+AND R4813                ; ｽｷｰｼﾞ(L)側 ｴﾘｱｾﾝｻ (ｼｬｯﾀｰ2)
+SET MR6111               ; ｼｬｯﾀｰ2　閉
+CON
+ANB R4202                ; ｼｬｯﾀｰ2 開限(ｽｷｰｼﾞ(L)
+AND R4203                ; ｼｬｯﾀｰ2 閉限(ｽｷｰｼﾞ(L)
+RES R51201               ; ｽｷｰｼﾞ(L)ｴﾘｱｾﾝｻｰ有効FLG
+CON
+JMP @MR6912              ; 6912
+MPP
+ANB R4813                ; ｽｷｰｼﾞ(L)側 ｴﾘｱｾﾝｻ (ｼｬｯﾀｰ2)
+RES MR6111               ; ｼｬｯﾀｰ2　閉
+CON
+JMP @MR6910              ; 6910
+STG @MR6912              ; 6912
+ANB R50301               ; ｽｷｰｼﾞ部(L) Pause
+ANB R50109               ; Err ｽｷｰｼﾞ(L)UT
+RES MR6012               ; ｽｷｰｼﾞ(L)(親)　上昇
+CON
+RES MR6100               ; ｽｸﾚｰﾊﾟ(L) 前進
+CON
+ANB R4012                ; ｽｷｰｼﾞ(親)(L)上昇限
+AND R4013                ; ｽｷｰｼﾞ(親)(L)下降限
+ANB R4100                ; ｽｸﾚｰﾊﾟ(L) 前進限（作業者側）
+AND R4101                ; ｽｸﾚｰﾊﾟ(L) 後退限（奥側)
+JMP @MR6913              ; 6913
+STG @MR6913              ; 6913
+ANB R50301               ; ｽｷｰｼﾞ部(L) Pause
+ANB R50109               ; Err ｽｷｰｼﾞ(L)UT
+RES @MR111               ; 要ｽｷｰｼﾞ台清掃FLG
+CON
+RES @MR6915              ; ｽｷｰｼﾞ台(L)清掃確認
+CON
+ENDS
+;***** 清掃監視 / Cleaning check  *****
+;
+LDP @MR6906              ; 6906
+SET @MR6914              ; 6914
+STG @MR6914              ; 6914
+ANB R4813                ; ｽｷｰｼﾞ(L)側 ｴﾘｱｾﾝｻ (ｼｬｯﾀｰ2)
+SET @MR6915              ; ｽｷｰｼﾞ台(L)清掃確認
+CON
+ENDS
+;******* ｻﾌﾞﾙｰﾁﾝ  /  Subroutine ********
+;
+;******* ﾜｰｸ 転写動作  / Film  Subroutine ********
+;
+STG @MR7000              ; ﾜｰｸ転写    call
+SET @MR7014              ; ﾜｰｸ転写    call 実行中
+CON
+AND R4002                ; 治具(L) 転写限（右限）
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+JMP @MR7001              ; 7001
+;ﾜｰｸ転写開始位置へ移動　ﾛﾎﾞｯﾄ:9  ﾛｰﾗ:3
+;Film Transcription Start Position   Robot:9  Roller:3
+STG @MR7001              ; 7001
+AND R4103                ; ｽｷｰｼﾞ台(L) 後退限(塗布側)
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+JMP @MR7002              ; 7002
+MOV.D DM624 DM11080      ; RB(L)ﾜｰｸ転写開始位置  RB(L) 位置(INDEX 0)
+MOV.D DM614 DM11082      ; RB(L)転写速度  RB(L) 速度(INDEX 1)
+DW #6 DM11056            ; Y1 開始・読出しPoint番号
+MOV.D DM614 DM11086      ; RB(L)転写速度  M-13 速度(INDEX 3)
+STG @MR7002              ; 7002
+TMH @10 #2               ; 転写RB開始位置移動1    開始
+CON
+AND @T10                 ; 転写RB開始位置移動1    開始
+AND @MR105               ; DRV-12動作可能
+SET @MR9700              ; X1-Y1 同時動作開始
+CON
+JMP @MR7003              ; 7003
+STG @MR7003              ; 7003
+AND @MR9715              ; X1-Y1 同時動作完了
+RES @MR9715              ; X1-Y1 同時動作完了
+CON
+JMP @MR7004              ; 7004
+STG @MR7004              ; 7004
+TMR @17 #1
+CON
+AND @T17
+RES @MR2909              ; ﾜｰｸ pack2
+CON
+JMP @MR7005              ; 7005
+STG @MR7005              ; 7005
+ANB R50302               ; 転写部(L) Pause
+ANB R50110               ; Err 転写(L)UT
+RES MR6010               ; 転写(L)ﾛｰﾗｰ押え上昇
+CON
+ANB R4010                ; ﾌｨﾙﾑ(L)送りﾛｰﾗ 上昇端
+AND R4011                ; ﾌｨﾙﾑ(L)送りﾛｰﾗ 下降端
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+JMP @MR7100              ; 7100
+;******* ﾜｰｸ 転写動作  / Film  Subroutine ********
+;
+;ﾜｰｸ転写前弛み動作　ﾛｰﾗ:1
+;Sag Film Before Work Transcription   Roller:1
+STG @MR7100              ; 7100
+SET @MR2909              ; ﾜｰｸ pack2
+CON
+SET MR6004               ; ﾘｰﾙ(L)ﾃﾝｼｮﾝ　上昇
+CON
+JMP @MR7101              ; 7101
+MOV.D DM608 DM11084      ; RB(L)転写前弛み長さ  M-13 位置(INDEX 2)
+MOV.D DM610 DM11086      ; RB(L)転写弛み速度  M-13 速度(INDEX 3)
+STG @MR7101              ; 7101
+TMH @11 #2               ; 弛み動作2  開始
+CON
+AND @T11                 ; 弛み動作2  開始
+SET @MR9600              ; Y1単独 動作開始
+CON
+JMP @MR7102              ; 7102
+STG @MR7102              ; 7102
+AND @MR9615              ; Y1単独　動作完了
+RES @MR9615              ; Y1単独　動作完了
+CON
+JMP @MR7103              ; 7103
+;******* ﾜｰｸ 転写動作  / Film  Subroutine ********
+;
+;ﾜｰｸ転写動作　ﾛﾎﾞｯﾄ:7 ﾛｰﾗ:2
+;Work Transcription  Robot:7  Roller:2
+STG @MR7103              ; 7103
+TMR #12 DM24             ; (L)ﾜｰｸ転写開始待ち  TIM12設定値
+CON
+AND T12                  ; (L)ﾜｰｸ転写開始待ち
+AND R4004                ; ﾘｰﾙ(L)ﾃﾝｼｮﾝ 上限
+JMP @MR7104              ; 7104
+MOV.D DM626 DM11080      ; RB(L)ﾜｰｸ転写終了位置  RB(L) 位置(INDEX 0)
+MOV.D DM614 DM11082      ; RB(L)転写速度  RB(L) 速度(INDEX 1)
+DW #6 DM11056            ; Y1 開始・読出しPoint番号
+MOV.D DM614 DM11086      ; RB(L)転写速度  M-13 速度(INDEX 3)
+STG @MR7104              ; 7104
+TMH @12 #5               ; 転写動作2  ﾛｰﾗｻｰﾎﾞ起動
+CON
+AND @T12                 ; 転写動作2  ﾛｰﾗｻｰﾎﾞ起動
+AND @MR105               ; DRV-12動作可能
+SET @MR9700              ; X1-Y1 同時動作開始
+CON
+JMP @MR7105              ; 7105
+STG @MR7105              ; 7105
+AND @MR9715              ; X1-Y1 同時動作完了
+RES MR6004               ; ﾘｰﾙ(L)ﾃﾝｼｮﾝ　上昇
+CON
+RES @MR9715              ; X1-Y1 同時動作完了
+CON
+JMP @MR7108              ; 7108
+;******* ﾜｰｸ 転写動作  / Film  Subroutine ********
+;
+;ﾜｰｸ転写後剥ぎ取り　ﾛﾎﾞｯﾄ:8
+;Tear Off Film After Work Transcription  Robot:8
+STG @MR7108              ; 7108
+TMR #14 DM28             ; (L)ﾜｰｸ転写剥取待ち  TIM14設定値
+CON
+AND T14                  ; (L)ﾜｰｸ転写剥取待ち
+AND R4005                ; ﾘｰﾙ(L)ﾃﾝｼｮﾝ 下限
+JMP @MR7109              ; 7109
+MOV.D DM628 DM11080      ; RB(L)ﾜｰｸ転写剥取位置  RB(L) 位置(INDEX 0)
+MOV.D DM630 DM11082      ; RB(L)ﾜｰｸ転写剥取速度  RB(L) 速度(INDEX 1)
+STG @MR7109              ; 7109
+TMH @13 #2               ; ﾌｨﾙﾑ剥ぎ取り2開始
+CON
+AND @T13                 ; ﾌｨﾙﾑ剥ぎ取り2開始
+AND @MR105               ; DRV-12動作可能
+SET @MR9500              ; X1単独　動作開始
+CON
+JMP @MR7110              ; 7110
+STG @MR7110              ; 7110
+AND @MR9515              ; X1単独　動作完了
+RES @MR2909              ; ﾜｰｸ pack2
+CON
+RES @MR9515              ; X1単独　動作完了
+CON
+JMP @MR7111              ; 7111
+STG @MR7111              ; 7111
+ANB R50302               ; 転写部(L) Pause
+ANB R50110               ; Err 転写(L)UT
+SET MR6010               ; 転写(L)ﾛｰﾗｰ押え上昇
+CON
+AND R4010                ; ﾌｨﾙﾑ(L)送りﾛｰﾗ 上昇端
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+SET @MR2909              ; ﾜｰｸ pack2
+CON
+JMP @MR7200              ; 7200
+;******* ﾜｰｸ 転写動作  / Film  Subroutine ********
+;
+;ﾜｰｸ転写後ﾛﾎﾞｯﾄ上移動　ﾛﾎﾞｯﾄ:2　ﾛｰﾗ:5
+;Robot Move Up Afetr Work Transcription
+STG @MR7200              ; 7200
+JMP @MR7201              ; 7201
+MOV.D DM604 DM11080      ; RB(L)ヘッド待機位置  RB(L) 位置(INDEX 0)
+MOV.D DM606 DM11082      ; RB(L)待機位置移動速度  RB(L) 速度(INDEX 1)
+DW #5 DM11056            ; Y1 開始・読出しPoint番号
+MOV.D DM606 DM11086      ; RB(L)待機位置移動速度  M-13 速度(INDEX 3)
+STG @MR7201              ; 7201
+TMH @14 #5               ; 転写RB    上移動2開始
+CON
+AND @T14                 ; 転写RB    上移動2開始
+AND @MR105               ; DRV-12動作可能
+SET @MR9700              ; X1-Y1 同時動作開始
+CON
+JMP @MR7202              ; 7202
+STG @MR7202              ; 7202
+AND @MR9715              ; X1-Y1 同時動作完了
+RES @MR9715              ; X1-Y1 同時動作完了
+CON
+JMP @MR7203              ; 7203
+STG @MR7203              ; 7203
+TMH @18 #10
+CON
+AND @T18
+RES @MR2909              ; ﾜｰｸ pack2
+CON
+JMP @MR7204              ; 7204
+STG @MR7204              ; 7204
+ANB R50302               ; 転写部(L) Pause
+ANB R50110               ; Err 転写(L)UT
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+INC @DM11                ; 清掃後転写回数
+CON
+RES @MR7014              ; ﾜｰｸ転写    call 実行中
+CON
+SET @MR7015              ; ﾜｰｸ転写    call 完了
+CON
+ENDS
+;******* ｻﾌﾞﾙｰﾁﾝ  /  Subroutine ********
+;
+;******* ﾌｨﾙﾑ巻取り/送り動作  / Film  Subroutine ********
+;
+;******* ﾌｨﾙﾑ巻取りｽﾄｯﾊﾟｰ 上昇  / Film  role up stopper up ********
+;
+STG @MR7500              ; ﾌｨﾙﾑ巻取り送りcall
+SET @MR7514              ; ﾌｨﾙﾑ巻取り送りcall   実行中
+CON
+SET MR6006               ; (L)巻取りｽﾄｯﾊﾟｰ上昇
+CON
+ANB R4007                ; (L)巻取りｽﾄｯﾊﾟｰ 下降端
+AND R4006                ; (L)巻取ｽﾄｯﾊﾟｰ上昇限
+JMP @MR7600              ; 7600
+STG @MR7600              ; 7600
+MPS
+AND R4213                ; ﾌｨﾙﾑ(L)検出
+JMP @MR7602              ; ﾌｨﾙﾑ(L)巻上げ
+MPP
+ANB R4213                ; ﾌｨﾙﾑ(L)検出
+RES @MR2910              ; ﾜｰｸ pack3
+CON
+SET @MR7800              ; ﾌｨﾙﾑ有無ﾁｪｯｸ
+CON
+JMP @MR7601              ; 7601
+STG @MR7601              ; 7601
+ANB R50302               ; 転写部(L) Pause
+ANB R50110               ; Err 転写(L)UT
+AND @MR7815              ; ﾌｨﾙﾑ有無ﾁｪｯｸ完了
+SET @MR2910              ; ﾜｰｸ pack3
+CON
+RES @MR7815              ; ﾌｨﾙﾑ有無ﾁｪｯｸ完了
+CON
+JMP @MR7600              ; 7600
+STG @MR7602              ; ﾌｨﾙﾑ(L)巻上げ
+SET MR2000               ; M11(Rewind) CW
+CON
+MPS
+AND R4211                ; 段差ﾛｰﾗ(L)下限(B接か確認して)
+MPS
+AND R4209                ; 段差ﾛｰﾗ(L)上限
+RES @MR7513              ; 段差ﾛｰﾗ(L)上死点検出
+CON
+JMP @MR7700              ; 7700
+MPP
+ANB R4209                ; 段差ﾛｰﾗ(L)上限
+MPS
+AND R4208                ; 段差ﾛｰﾗ(L)上死点(B接確認して)
+TMR #2 DM4               ; ﾌｨﾙﾑ(L)巻取り異常  TIM02設定値
+CON
+AND T2                   ; ﾌｨﾙﾑ(L)巻取り異常
+JMP @MR7603              ; 7603
+MPP
+ANB R4208                ; 段差ﾛｰﾗ(L)上死点(B接確認して)
+MPS
+AND @MR7513              ; 段差ﾛｰﾗ(L)上死点検出
+JMP @MR7603              ; 7603
+MPP
+ANB @MR7513              ; 段差ﾛｰﾗ(L)上死点検出
+SET @MR7513              ; 段差ﾛｰﾗ(L)上死点検出
+CON
+JMP @MR7700              ; 7700
+MPP
+ANB R4211                ; 段差ﾛｰﾗ(L)下限(B接か確認して)
+TMR @47 #30              ; ﾌｨﾙﾑ切れ検出
+CON
+AND @T47                 ; ﾌｨﾙﾑ切れ検出
+JMP @MR7609              ; 7609
+;***** ﾀﾞﾝｻｰﾛｰﾗｰ上限異常の時 /when  danser roler position error NG *****
+;
+STG @MR7603              ; 7603
+RES @MR7513              ; 段差ﾛｰﾗ(L)上死点検出
+CON
+RES @MR2910              ; ﾜｰｸ pack3
+CON
+@SET @MR7503             ; 段差ﾛｰﾗ上限  未検出
+CON
+SET MR6008               ; ﾘｰﾙ(L)巻出しｽﾄｯﾊﾟ下降
+CON
+RES MR2000               ; M11(Rewind) CW
+CON
+JMP @MR7604              ; 7604
+STG @MR7604              ; 7604
+ANB R50302               ; 転写部(L) Pause
+ANB R50110               ; Err 転写(L)UT
+SET R51007               ; 治具(L)ｽﾀｰﾄﾗﾝﾌﾟ点灯
+CON
+SET MR203                ; ﾌｨﾙﾑ(L)巻取Err
+CON
+JMP @MR7605              ; 7605
+STG @MR7605              ; 7605
+ANB MR203                ; ﾌｨﾙﾑ(L)巻取Err
+AND R50110               ; Err 転写(L)UT
+AND R50014               ; 異常発生ｴﾗｰﾘｾｯﾄsw ON
+RES @MR7503              ; 段差ﾛｰﾗ上限  未検出
+CON
+SET R51006               ; 治具(L)ｽﾀｰﾄﾗﾝﾌﾟ点滅
+CON
+JMP @MR7606              ; 7606
+STG @MR7606              ; 7606
+AND R51301               ; 治具(L)ｴﾗｰﾘｾｯﾄsw ON
+JMP @MR7607              ; 7607
+STG @MR7607              ; 7607
+ANB R50110               ; Err 転写(L)UT
+ANB R50014               ; 異常発生ｴﾗｰﾘｾｯﾄsw ON
+ANB R51301               ; 治具(L)ｴﾗｰﾘｾｯﾄsw ON
+SET @MR2910              ; ﾜｰｸ pack3
+CON
+JMP @MR7608              ; 7608
+STG @MR7608              ; 7608
+RES MR6008               ; ﾘｰﾙ(L)巻出しｽﾄｯﾊﾟ下降
+CON
+AND R4009                ; (L)巻出しｽﾄｯﾊﾟｰ 上昇端
+JMP @MR7602              ; ﾌｨﾙﾑ(L)巻上げ
+;***** ﾀﾞﾝｻｰﾛｰﾗｰ下限異常の時 /when  danser roler position error NG *****
+;
+STG @MR7609              ; 7609
+RES @MR2910              ; ﾜｰｸ pack3
+CON
+@SET @MR7502             ; 段差ﾛｰﾗ下限  検出
+CON
+SET MR6008               ; ﾘｰﾙ(L)巻出しｽﾄｯﾊﾟ下降
+CON
+RES MR2000               ; M11(Rewind) CW
+CON
+JMP @MR7610              ; 7610
+STG @MR7610              ; 7610
+ANB R50302               ; 転写部(L) Pause
+ANB R50110               ; Err 転写(L)UT
+SET R51007               ; 治具(L)ｽﾀｰﾄﾗﾝﾌﾟ点灯
+CON
+SET MR206                ; ﾀﾞﾝｻｰﾛｰﾗ(L位置異常FLG
+CON
+JMP @MR7611              ; 7611
+STG @MR7611              ; 7611
+AND R50110               ; Err 転写(L)UT
+AND R50014               ; 異常発生ｴﾗｰﾘｾｯﾄsw ON
+RES @MR7502              ; 段差ﾛｰﾗ下限  検出
+CON
+SET R51006               ; 治具(L)ｽﾀｰﾄﾗﾝﾌﾟ点滅
+CON
+JMP @MR7612              ; 7612
+STG @MR7612              ; 7612
+ANB MR206                ; ﾀﾞﾝｻｰﾛｰﾗ(L位置異常FLG
+AND R51301               ; 治具(L)ｴﾗｰﾘｾｯﾄsw ON
+JMP @MR7613              ; 7613
+STG @MR7613              ; 7613
+ANB R50110               ; Err 転写(L)UT
+ANB R50014               ; 異常発生ｴﾗｰﾘｾｯﾄsw ON
+ANB R51301               ; 治具(L)ｴﾗｰﾘｾｯﾄsw ON
+JMP @MR7614              ; 7614
+STG @MR7614              ; 7614
+ANB R50302               ; 転写部(L) Pause
+ANB R50110               ; Err 転写(L)UT
+RES MR6008               ; ﾘｰﾙ(L)巻出しｽﾄｯﾊﾟ下降
+CON
+AND R4008                ; (L)巻出しｽﾄｯﾊﾟｰ 下降端
+MPS
+ANB R50002               ; 手動中
+SET @MR2910              ; ﾜｰｸ pack3
+CON
+JMP @MR7602              ; ﾌｨﾙﾑ(L)巻上げ
+MPP
+AND R50002               ; 手動中
+RES @MR7514              ; ﾌｨﾙﾑ巻取り送りcall   実行中
+CON
+SET @MR7515              ; ﾌｨﾙﾑ巻取り送りcall     完了
+CON
+ENDS
+;******* ﾌｨﾙﾑ巻取り/送り動作  / Film  Subroutine ********
+;
+;ﾌｨﾙﾑ送り出し　ﾛｰﾗ:4
+;Film Feed Out   Roller:4
+STG @MR7700              ; 7700
+RES MR2000               ; M11(Rewind) CW
+CON
+RES MR6006               ; (L)巻取りｽﾄｯﾊﾟｰ上昇
+CON
+ANB R4006                ; (L)巻取ｽﾄｯﾊﾟｰ上昇限
+AND R4007                ; (L)巻取りｽﾄｯﾊﾟｰ 下降端
+AND R10300               ; Y1 動作可能
+ANB R10301               ; Y1 移動中
+ANB R10310               ; Y1 運転開始要求受理
+JMP @MR7701              ; 7701
+STG @MR7701              ; 7701
+SET MR6008               ; ﾘｰﾙ(L)巻出しｽﾄｯﾊﾟ下降
+CON
+AND R4008                ; (L)巻出しｽﾄｯﾊﾟｰ 下降端
+JMP @MR7702              ; 7702
+STG @MR7702              ; 7702
+SET MR6010               ; 転写(L)ﾛｰﾗｰ押え上昇
+CON
+AND R4010                ; ﾌｨﾙﾑ(L)送りﾛｰﾗ 上昇端
+RES MR11613              ; Y1 高速JOG
+CON
+SET MR11612              ; Y1 JOG-
+CON
+JMP @MR7703              ; 7703
+STG @MR7703              ; 7703
+MPS
+AND R4210                ; 段差ﾛｰﾗ(L)中間
+RES MR11613              ; Y1 高速JOG
+CON
+RES MR11612              ; Y1 JOG-
+CON
+JMP @MR7704              ; 7704
+MPP
+ANB R4210                ; 段差ﾛｰﾗ(L)中間
+TMR #4 DM8               ; ﾌｨﾙﾑ(L)送出し異常  TIM04設定値
+CON
+AND T4                   ; ﾌｨﾙﾑ(L)送出し異常
+RES MR11613              ; Y1 高速JOG
+CON
+RES MR11612              ; Y1 JOG-
+CON
+JMP @MR7706              ; 7706
+STG @MR7704              ; 7704
+RES MR6008               ; ﾘｰﾙ(L)巻出しｽﾄｯﾊﾟ下降
+CON
+ANB R4008                ; (L)巻出しｽﾄｯﾊﾟｰ 下降端
+AND R4009                ; (L)巻出しｽﾄｯﾊﾟｰ 上昇端
+TMR @21 #1               ; 送りﾛｰﾗ    上昇端
+CON
+AND @T21                 ; 送りﾛｰﾗ    上昇端
+MPS
+ANB @MR7513              ; 段差ﾛｰﾗ(L)上死点検出
+RES @MR7514              ; ﾌｨﾙﾑ巻取り送りcall   実行中
+CON
+SET @MR7515              ; ﾌｨﾙﾑ巻取り送りcall     完了
+CON
+ENDS
+MPP
+AND @MR7513              ; 段差ﾛｰﾗ(L)上死点検出
+RES @MR7513              ; 段差ﾛｰﾗ(L)上死点検出
+CON
+JMP @MR7500              ; ﾌｨﾙﾑ巻取り送りcall
+;***** ﾀﾞﾝｻｰﾛｰﾗｰ中間異常の時 /when  danser roler position error NG *****
+;
+STG @MR7706              ; 7706
+SET MR6010               ; 転写(L)ﾛｰﾗｰ押え上昇
+CON
+ANB R4011                ; ﾌｨﾙﾑ(L)送りﾛｰﾗ 下降端
+AND R4010                ; ﾌｨﾙﾑ(L)送りﾛｰﾗ 上昇端
+RES @MR2910              ; ﾜｰｸ pack3
+CON
+SET MR204                ; ﾌｨﾙﾑ(L)送出し  ｴﾗｰ
+CON
+JMP @MR7707              ; 7707
+STG @MR7707              ; 7707
+AND R50110               ; Err 転写(L)UT
+AND R50014               ; 異常発生ｴﾗｰﾘｾｯﾄsw ON
+SET R51006               ; 治具(L)ｽﾀｰﾄﾗﾝﾌﾟ点滅
+CON
+JMP @MR7708              ; 7708
+STG @MR7708              ; 7708
+ANB MR204                ; ﾌｨﾙﾑ(L)送出し  ｴﾗｰ
+AND R51301               ; 治具(L)ｴﾗｰﾘｾｯﾄsw ON
+JMP @MR7709              ; 7709
+STG @MR7709              ; 7709
+ANB R50110               ; Err 転写(L)UT
+ANB R50014               ; 異常発生ｴﾗｰﾘｾｯﾄsw ON
+ANB R51301               ; 治具(L)ｴﾗｰﾘｾｯﾄsw ON
+RES @MR7513              ; 段差ﾛｰﾗ(L)上死点検出
+CON
+JMP @MR7710
+STG @MR7710
+ANB R50302               ; 転写部(L) Pause
+ANB R50110               ; Err 転写(L)UT
+SET MR6008               ; ﾘｰﾙ(L)巻出しｽﾄｯﾊﾟ下降
+CON
+AND R4008                ; (L)巻出しｽﾄｯﾊﾟｰ 下降端
+SET MR6010               ; 転写(L)ﾛｰﾗｰ押え上昇
+CON
+AND R4010                ; ﾌｨﾙﾑ(L)送りﾛｰﾗ 上昇端
+SET @MR2910              ; ﾜｰｸ pack3
+CON
+JMP @MR7711
+STG @MR7711
+MPS
+ANB R50002               ; 手動中
+JMP @MR7602              ; ﾌｨﾙﾑ(L)巻上げ
+MPP
+AND R50002               ; 手動中
+RES @MR7514              ; ﾌｨﾙﾑ巻取り送りcall   実行中
+CON
+SET @MR7515              ; ﾌｨﾙﾑ巻取り送りcall     完了
+CON
+ENDS
+;******* ｻﾌﾞﾙｰﾁﾝ  /  Subroutine ********
+;
+;***** ﾌｨﾙﾑ有無ﾁｪｯｸ /  Film ckeck *****
+;
+STG @MR7800              ; ﾌｨﾙﾑ有無ﾁｪｯｸ
+ANB R50302               ; 転写部(L) Pause
+ANB R50110               ; Err 転写(L)UT
+MPS
+AND R4213                ; ﾌｨﾙﾑ(L)検出
+RES @MR202               ; ﾌｨﾙﾑ無検出
+CON
+SET @MR7815              ; ﾌｨﾙﾑ有無ﾁｪｯｸ完了
+CON
+ENDS
+MPP
+ANB R4213                ; ﾌｨﾙﾑ(L)検出
+SET @MR202               ; ﾌｨﾙﾑ無検出
+CON
+JMP @MR7801              ; 7801
+;***** ﾌｨﾙﾑ無検出の時 /when  film non set detection *****
+;
+STG @MR7801              ; 7801
+ANB R50302               ; 転写部(L) Pause
+ANB R50110               ; Err 転写(L)UT
+RES MR6006               ; (L)巻取りｽﾄｯﾊﾟｰ上昇
+CON
+ANB R4006                ; (L)巻取ｽﾄｯﾊﾟｰ上昇限
+JMP @MR7802              ; 7802
+STG @MR7802              ; 7802
+SET MR6006               ; (L)巻取りｽﾄｯﾊﾟｰ上昇
+CON
+SET MR6010               ; 転写(L)ﾛｰﾗｰ押え上昇
+CON
+AND R4006                ; (L)巻取ｽﾄｯﾊﾟｰ上昇限
+AND R4010                ; ﾌｨﾙﾑ(L)送りﾛｰﾗ 上昇端
+SET MR205                ; ﾌｨﾙﾑ(L)無検出
+CON
+JMP @MR7803              ; 7803
+STG @MR7803              ; 7803
+AND @MR202               ; ﾌｨﾙﾑ無検出
+AND R50110               ; Err 転写(L)UT
+AND R50014               ; 異常発生ｴﾗｰﾘｾｯﾄsw ON
+SET R51006               ; 治具(L)ｽﾀｰﾄﾗﾝﾌﾟ点滅
+CON
+JMP @MR7804              ; 7804
+STG @MR7804              ; 7804
+ANB MR205                ; ﾌｨﾙﾑ(L)無検出
+AND R51301               ; 治具(L)ｴﾗｰﾘｾｯﾄsw ON
+JMP @MR7805              ; 7805
+STG @MR7805              ; 7805
+ANB R50110               ; Err 転写(L)UT
+ANB R50014               ; 異常発生ｴﾗｰﾘｾｯﾄsw ON
+ANB R51301               ; 治具(L)ｴﾗｰﾘｾｯﾄsw ON
+SET R51007               ; 治具(L)ｽﾀｰﾄﾗﾝﾌﾟ点灯
+CON
+RES @MR202               ; ﾌｨﾙﾑ無検出
+CON
+JMP @MR7806              ; 7806
+STG @MR7806              ; 7806
+ANB R50302               ; 転写部(L) Pause
+ANB R50110               ; Err 転写(L)UT
+RES MR6006               ; (L)巻取りｽﾄｯﾊﾟｰ上昇
+CON
+RES MR6010               ; 転写(L)ﾛｰﾗｰ押え上昇
+CON
+AND R4007                ; (L)巻取りｽﾄｯﾊﾟｰ 下降端
+AND R4011                ; ﾌｨﾙﾑ(L)送りﾛｰﾗ 下降端
+JMP @MR7800              ; ﾌｨﾙﾑ有無ﾁｪｯｸ
+LD R4910                 ; ﾌｨﾙﾑ(L)巻取りsw
+AND R4006                ; (L)巻取ｽﾄｯﾊﾟｰ上昇限
+AND R4010                ; ﾌｨﾙﾑ(L)送りﾛｰﾗ 上昇端
+AND @MR202               ; ﾌｨﾙﾑ無検出
+SET MR2000               ; M11(Rewind) CW
+LDF R4910                ; ﾌｨﾙﾑ(L)巻取りsw
+ORF R4006                ; (L)巻取ｽﾄｯﾊﾟｰ上昇限
+ORF R4010                ; ﾌｨﾙﾑ(L)送りﾛｰﾗ 上昇端
+AND @MR202               ; ﾌｨﾙﾑ無検出
+ORF @MR202               ; ﾌｨﾙﾑ無検出
+RES MR2000               ; M11(Rewind) CW
+;******* ｴﾗｰﾁｪｯｸ ｻﾌﾞﾙｰﾁﾝ  /  Error check Subroutine ********
+;
+;******* ｻﾌﾞﾙｰﾁﾝ  /  Subroutine ********
+;
+;******* ﾌｨﾙﾑ交換  / Film  chenge ********
+;
+STG @MR7900              ; ﾌｨﾙﾑ交換   call
+ANB @MR7914              ; ﾌｨﾙﾑ交換   call実行中
+SET @MR7914              ; ﾌｨﾙﾑ交換   call実行中
+CON
+JMP @MR7901              ; 7901
+STG @MR7901              ; 7901
+SET MR6006               ; (L)巻取りｽﾄｯﾊﾟｰ上昇
+CON
+SET MR6010               ; 転写(L)ﾛｰﾗｰ押え上昇
+CON
+SET MR6206               ; ﾘｰﾙ(R)巻取りｽﾄｯﾊﾟｰ上昇
+CON
+SET MR6210               ; 転写(R)ﾛｰﾗｰ押え上昇
+CON
+AND R4006                ; (L)巻取ｽﾄｯﾊﾟｰ上昇限
+AND R4010                ; ﾌｨﾙﾑ(L)送りﾛｰﾗ 上昇端
+AND R4406                ; (R)巻取りｽﾄｯﾊﾟｰ 上昇端
+AND R4410                ; ﾌｨﾙﾑ(R)送りﾛｰﾗ 上昇端
+DIFU R50105              ; PAUSE sw
+CON
+JMP @MR7902              ; 7902
+STG @MR7902              ; 7902
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+JMP @MR7903              ; 7903
+STG @MR7903              ; 7903
+RES MR6006               ; (L)巻取りｽﾄｯﾊﾟｰ上昇
+CON
+RES MR6010               ; 転写(L)ﾛｰﾗｰ押え上昇
+CON
+RES MR6206               ; ﾘｰﾙ(R)巻取りｽﾄｯﾊﾟｰ上昇
+CON
+RES MR6210               ; 転写(R)ﾛｰﾗｰ押え上昇
+CON
+AND R4007                ; (L)巻取りｽﾄｯﾊﾟｰ 下降端
+AND R4011                ; ﾌｨﾙﾑ(L)送りﾛｰﾗ 下降端
+AND R4407                ; (R)巻取りｽﾄｯﾊﾟｰ 下降端
+AND R4411                ; ﾌｨﾙﾑ(R)送りﾛｰﾗ 下降端
+RES @MR7914              ; ﾌｨﾙﾑ交換   call実行中
+CON
+SET @MR7915              ; ﾌｨﾙﾑ交換   call 完了
+CON
+ENDS
+LD R4910                 ; ﾌｨﾙﾑ(L)巻取りsw
+AND R4006                ; (L)巻取ｽﾄｯﾊﾟｰ上昇限
+AND R4010                ; ﾌｨﾙﾑ(L)送りﾛｰﾗ 上昇端
+AND @MR7914              ; ﾌｨﾙﾑ交換   call実行中
+SET MR2000               ; M11(Rewind) CW
+LD R50012                ; 手動   動作選択済
+LD LR003                 ; ﾌｨﾙﾑ(L)交換   選択
+OR LR007                 ; ﾌｨﾙﾑ(L)採取　選択
+OR LR011                 ; ﾌｨﾙﾑ(R)交換 選択
+OR LR015                 ; ﾌｨﾙﾑ(R)採取　選択
+ANL
+ANF R4910                ; ﾌｨﾙﾑ(L)巻取りsw
+ANB R51109               ; 転写部(L) 原点復帰中
+RES MR2000               ; M11(Rewind) CW
+LD R4911                 ; ﾌｨﾙﾑ(R)巻取りsw
+AND R4406                ; (R)巻取りｽﾄｯﾊﾟｰ 上昇端
+AND R4410                ; ﾌｨﾙﾑ(R)送りﾛｰﾗ 上昇端
+AND @MR7914              ; ﾌｨﾙﾑ交換   call実行中
+SET MR2003               ; M21(Rewind) CCW
+LD R50012                ; 手動   動作選択済
+LD LR003                 ; ﾌｨﾙﾑ(L)交換   選択
+OR LR007                 ; ﾌｨﾙﾑ(L)採取　選択
+OR LR011                 ; ﾌｨﾙﾑ(R)交換 選択
+OR LR015                 ; ﾌｨﾙﾑ(R)採取　選択
+ANL
+ANF R4911                ; ﾌｨﾙﾑ(R)巻取りsw
+ANB R52109               ; 転写部(R) 原点復帰中
+RES MR2003               ; M21(Rewind) CCW
+;******* ｻﾌﾞﾙｰﾁﾝ  /  Subroutine ********
+;
+;********* 給材ﾛﾎﾞｯﾄ 動作 *********
+;
+;RB 動作開始  /  RB Operation Start
+;
+STG @MR8000              ; RB 動作開始
+ANB @MR8014              ; RB 動作中
+SET @MR8014              ; RB 動作中
+CON
+JMP @MR8100              ; 取出し開始条件ﾁｪｯｸ
+STG @MR8100              ; 取出し開始条件ﾁｪｯｸ
+ANB R50302               ; 転写部(L) Pause
+ANB R50110               ; Err 転写(L)UT
+MPS
+LDB R49800               ; ｻｲｸﾙ停止・払出し開始
+OR R49710                ; WF 再取出し要求
+ANL
+JMP @MR8200              ; WF 取出し
+MPP
+LD R49800                ; ｻｲｸﾙ停止・払出し開始
+ANB R49710               ; WF 再取出し要求
+ANL
+SET R49801               ; RB払出し完了
+CON
+JMP @MR8101              ; 8101
+STG @MR8101              ; 8101
+ANB R50302               ; 転写部(L) Pause
+ANB R50110               ; Err 転写(L)UT
+MPS
+LDB R49710               ; WF 再取出し要求
+AND R49807               ; 全ﾕﾆｯﾄ払出し完了
+ANL
+JMP @MR8102              ; 8102
+MPP
+AND R49710               ; WF 再取出し要求
+RES R49801               ; RB払出し完了
+CON
+JMP @MR8200              ; WF 取出し
+STG @MR8102              ; 8102
+ANB R50302               ; 転写部(L) Pause
+ANB R50110               ; Err 転写(L)UT
+RES R49801               ; RB払出し完了
+CON
+RES @MR8014              ; RB 動作中
+CON
+MPS
+ANB LR1002               ; AUTO PARA2 指定段流動選択
+ENDS
+MPP
+AND LR1002               ; AUTO PARA2 指定段流動選択
+JMP @MR8103              ; 8103
+STG @MR8103              ; 8103
+ANB R50302               ; 転写部(L) Pause
+ANB R50110               ; Err 転写(L)UT
+DW #1 DM1003             ; 開始段数
+CON
+DW #25 DM1004            ; 終了段数
+CON
+RES LR1002               ; AUTO PARA2 指定段流動選択
+CON
+SET LR1000               ; AUTO PARA0 通常動作選択
+CON
+ENDS
+;WF 取出し  /  WF Take out
+STG @MR8200              ; WF 取出し
+RES R53215               ; RB WF取出しcall 完了
+CON
+ANB R53214               ; RB WF取出しcall 実行中
+JMP @MR8201              ; 8201
+STG @MR8201              ; 8201
+@SET R53200              ; RB WF取出し   call
+CON
+AND R53214               ; RB WF取出しcall 実行中
+JMP @MR8202              ; 8202
+STG @MR8202              ; 8202
+ANB R53214               ; RB WF取出しcall 実行中
+MPS
+AND R53215               ; RB WF取出しcall 完了
+JMP @MR8204              ; 8204
+MPP
+AND R53213               ; RB WF取出しcall 異常(除材済)
+JMP @MR8203              ; 8203
+STG @MR8203              ; 8203
+ANB R50302               ; 転写部(L) Pause
+ANB R50110               ; Err 転写(L)UT
+RES R53213               ; RB WF取出しcall 異常(除材済)
+CON
+ANB R53213               ; RB WF取出しcall 異常(除材済)
+JMP @MR8100              ; 取出し開始条件ﾁｪｯｸ
+STG @MR8204              ; 8204
+RES R53215               ; RB WF取出しcall 完了
+CON
+ANB R53215               ; RB WF取出しcall 完了
+JMP @MR8208              ; WF ｱﾗｲﾒﾝﾄ
+;WF ｱﾗｲﾒﾝﾄ  /  WF Alignment
+STG @MR8208              ; WF ｱﾗｲﾒﾝﾄ
+RES R53315               ; RB ｱﾗｲﾒﾝﾄ call 完了
+CON
+ANB R53314               ; RB ｱﾗｲﾒﾝﾄ call 実行中
+JMP @MR8209              ; 8209
+STG @MR8209              ; 8209
+@SET R53300              ; RB ｱﾗｲﾒﾝﾄ call
+CON
+AND R53314               ; RB ｱﾗｲﾒﾝﾄ call 実行中
+JMP @MR8210              ; 8210
+STG @MR8210              ; 8210
+ANB R53314               ; RB ｱﾗｲﾒﾝﾄ call 実行中
+MPS
+AND R53315               ; RB ｱﾗｲﾒﾝﾄ call 完了
+JMP @MR8212              ; 8212
+MPP
+AND R53313               ; RB ｱﾗｲﾒﾝﾄ call 異常(除材済)
+JMP @MR8211              ; 8211
+STG @MR8211              ; 8211
+ANB R50302               ; 転写部(L) Pause
+ANB R50110               ; Err 転写(L)UT
+RES R53313               ; RB ｱﾗｲﾒﾝﾄ call 異常(除材済)
+CON
+ANB R53313               ; RB ｱﾗｲﾒﾝﾄ call 異常(除材済)
+JMP @MR8100              ; 取出し開始条件ﾁｪｯｸ
+STG @MR8212              ; 8212
+RES R53315               ; RB ｱﾗｲﾒﾝﾄ call 完了
+CON
+ANB R53315               ; RB ｱﾗｲﾒﾝﾄ call 完了
+JMP @MR8300              ; WF 給材
+;WF 給材  /  WF Supply
+STG @MR8300              ; WF 給材
+ANB R50302               ; 転写部(L) Pause
+ANB R50110               ; Err 転写(L)UT
+AND R53800               ; RBへ給材要求
+RES R53415               ; RB WF給材 call 完了
+CON
+ANB R53414               ; RB WF給材 call 実行中
+JMP @MR8301              ; 8301
+STG @MR8301              ; 8301
+@SET R53400              ; RB WF給材 call
+CON
+AND R53414               ; RB WF給材 call 実行中
+JMP @MR8302              ; 8302
+STG @MR8302              ; 8302
+ANB R53414               ; RB WF給材 call 実行中
+MPS
+AND R53415               ; RB WF給材 call 完了
+RES R53800               ; RBへ給材要求
+CON
+JMP @MR8304              ; 8304
+MPP
+AND R53413               ; RB WF給材 call 異常(除材済)
+JMP @MR8303              ; 8303
+STG @MR8303              ; 8303
+ANB R50302               ; 転写部(L) Pause
+ANB R50110               ; Err 転写(L)UT
+RES R53413               ; RB WF給材 call 異常(除材済)
+CON
+ANB R53413               ; RB WF給材 call 異常(除材済)
+JMP @MR8305
+STG @MR8304              ; 8304
+RES R53415               ; RB WF給材 call 完了
+CON
+ANB R53415               ; RB WF給材 call 完了
+RES R49710               ; WF 再取出し要求
+CON
+SET R53815               ; RB WF給材完了
+CON
+JMP @MR8305
+STG @MR8305
+MPS
+LDB LR1001               ; AUTO PARA1 1枚流動選択
+ANB LR1002               ; AUTO PARA2 指定段流動選択
+LD LR1002                ; AUTO PARA2 指定段流動選択
+AND<= DM1000 DM1004      ; ｷｬﾘｱ段No.  終了段数
+AND<> DM1000 #1          ; ｷｬﾘｱ段No.
+ORL
+ANL
+JMP @MR8100              ; 取出し開始条件ﾁｪｯｸ
+MPP
+LD LR1001                ; AUTO PARA1 1枚流動選択
+LD LR1002                ; AUTO PARA2 指定段流動選択
+LD> DM1000 DM1004        ; ｷｬﾘｱ段No.  終了段数
+OR= DM1000 #1            ; ｷｬﾘｱ段No.
+ANL
+ORL
+ANL
+@SET R50100              ; 自動ﾓｰﾄﾞ停止PLS
+CON
+JMP @MR8100              ; 取出し開始条件ﾁｪｯｸ
+;******* ｻﾌﾞﾙｰﾁﾝ  /  Subroutine ********
+;
+;********* 手動給材動作 *********
+;
+STG @MR9000              ; 手投入MODE　開始
+ANB R50302               ; 転写部(L) Pause
+ANB R50110               ; Err 転写(L)UT
+MPS
+LDB R49800               ; ｻｲｸﾙ停止・払出し開始
+OR R49710                ; WF 再取出し要求
+AND R53808               ; 手動給材要求
+ANB @MR9014              ; 手動投入動作中
+ANL
+RES R53808               ; 手動給材要求
+CON
+SET @MR9014              ; 手動投入動作中
+CON
+JMP @MR9200
+MPP
+LD R49800                ; ｻｲｸﾙ停止・払出し開始
+ANB R49710               ; WF 再取出し要求
+ANL
+SET R49801               ; RB払出し完了
+CON
+JMP @MR9100              ; 投入処理停止
+STG @MR9100              ; 投入処理停止
+ANB R50302               ; 転写部(L) Pause
+ANB R50110               ; Err 転写(L)UT
+MPS
+LDB R49710               ; WF 再取出し要求
+AND R49807               ; 全ﾕﾆｯﾄ払出し完了
+ANL
+JMP @MR9101
+MPP
+AND R49710               ; WF 再取出し要求
+RES R49801               ; RB払出し完了
+CON
+JMP @MR9200
+STG @MR9101
+ANB R50302               ; 転写部(L) Pause
+ANB R50110               ; Err 転写(L)UT
+RES R49801               ; RB払出し完了
+CON
+RES @MR9014              ; 手動投入動作中
+CON
+ENDS
+;治具(L)　後退  /  Jig(L) Back
+STG @MR9200
+ANB R50302               ; 転写部(L) Pause
+ANB R50110               ; Err 転写(L)UT
+RES MR6000               ; ｳｪﾊｰ治具(L) 前進
+CON
+SET MR6001               ; ｳｪﾊｰ治具(L) 後退
+CON
+AND R4001                ; 治具(L) 後退限
+JMP @MR9201
+;ｼｬｯﾀｰ1 開  /  Shutter1 Open
+STG @MR9201
+ANB R50302               ; 転写部(L) Pause
+ANB R50110               ; Err 転写(L)UT
+SET R51200               ; 治具(L)部ｴﾘｱｾﾝｻｰ有効FLG
+CON
+JMP @MR9202
+STG @MR9202
+RES MR6109               ; ｼｬｯﾀｰ1　閉
+CON
+MPS
+AND R4812                ; 治具(L)側 ｴﾘｱｾﾝｻ (ｼｬｯﾀｰ1)
+SET MR6108               ; ｼｬｯﾀｰ1　開
+CON
+ANB R4201                ; ｼｬｯﾀｰ1 閉限(治具(L)側)
+AND R4200                ; ｼｬｯﾀｰ1 開限(治具(L)側)
+SET R49400               ; Jig(L)WF要求中
+CON
+RES R51200               ; 治具(L)部ｴﾘｱｾﾝｻｰ有効FLG
+CON
+JMP @MR9203
+MPP
+ANB R4812                ; 治具(L)側 ｴﾘｱｾﾝｻ (ｼｬｯﾀｰ1)
+RES MR6108               ; ｼｬｯﾀｰ1　開
+CON
+JMP @MR9201
+;給材完了待ち / Waiting for WF supply complete
+STG @MR9203
+ANB R50302               ; 転写部(L) Pause
+ANB R50110               ; Err 転写(L)UT
+MPS
+LDB R49800               ; ｻｲｸﾙ停止・払出し開始
+OR R49710                ; WF 再取出し要求
+ANL
+RES R51007               ; 治具(L)ｽﾀｰﾄﾗﾝﾌﾟ点灯
+CON
+SET R51006               ; 治具(L)ｽﾀｰﾄﾗﾝﾌﾟ点滅
+CON
+ANP R51003               ; 治具(L)ｽﾀｰﾄswON
+RES R49400               ; Jig(L)WF要求中
+CON
+JMP @MR9204
+MPP
+LD R49800                ; ｻｲｸﾙ停止・払出し開始
+ANB R49710               ; WF 再取出し要求
+ANL
+RES R49400               ; Jig(L)WF要求中
+CON
+SET R49801               ; RB払出し完了
+CON
+JMP @MR9100              ; 投入処理停止
+;WF確認 / WF Check
+STG @MR9204
+ANB R50302               ; 転写部(L) Pause
+ANB R50110               ; Err 転写(L)UT
+SET R51007               ; 治具(L)ｽﾀｰﾄﾗﾝﾌﾟ点灯
+CON
+RES MR2311               ; ｳｪﾊｰ治具(L)真空破壊
+CON
+SET MR2310               ; ｳｪﾊｰ治具(L)吸着
+CON
+MPS
+LD @MR004                ; ｳｪﾊｰ治具  吸着検出
+ANB R31501               ; RB無し仮接点
+ANL
+RES R49401               ; Jig(L)清掃要求中
+CON
+JMP @MR9209
+MPP
+AND @MR005               ; ｳｪﾊｰ治具  未吸着検出
+RES MR2310               ; ｳｪﾊｰ治具(L)吸着
+CON
+JMP @MR9205
+;吸着異常処理 / Adsorption Error process
+STG @MR9205
+SET MR314                ; 治具(L)上WF無し
+CON
+JMP @MR9206
+STG @MR9206
+ANB MR314                ; 治具(L)上WF無し
+AND R50110               ; Err 転写(L)UT
+AND R50014               ; 異常発生ｴﾗｰﾘｾｯﾄsw ON
+SET R51006               ; 治具(L)ｽﾀｰﾄﾗﾝﾌﾟ点滅
+CON
+JMP @MR9207
+STG @MR9207
+AND R51301               ; 治具(L)ｴﾗｰﾘｾｯﾄsw ON
+JMP @MR9208
+STG @MR9208
+ANB R50115               ; Err RB UT
+ANB R50014               ; 異常発生ｴﾗｰﾘｾｯﾄsw ON
+ANB R51301               ; 治具(L)ｴﾗｰﾘｾｯﾄsw ON
+SET R49400               ; Jig(L)WF要求中
+CON
+RES R51006               ; 治具(L)ｽﾀｰﾄﾗﾝﾌﾟ点滅
+CON
+JMP @MR9203
+;ｼｬｯﾀｰ1 閉  /  Shutter1 Close
+STG @MR9209
+ANB R50302               ; 転写部(L) Pause
+ANB R50110               ; Err 転写(L)UT
+SET R51200               ; 治具(L)部ｴﾘｱｾﾝｻｰ有効FLG
+CON
+JMP @MR9210
+STG @MR9210
+RES MR6108               ; ｼｬｯﾀｰ1　開
+CON
+MPS
+AND R4812                ; 治具(L)側 ｴﾘｱｾﾝｻ (ｼｬｯﾀｰ1)
+SET MR6109               ; ｼｬｯﾀｰ1　閉
+CON
+ANB R4200                ; ｼｬｯﾀｰ1 開限(治具(L)側)
+AND R4201                ; ｼｬｯﾀｰ1 閉限(治具(L)側)
+RES R51200               ; 治具(L)部ｴﾘｱｾﾝｻｰ有効FLG
+CON
+JMP @MR9211
+MPP
+ANB R4812                ; 治具(L)側 ｴﾘｱｾﾝｻ (ｼｬｯﾀｰ1)
+RES MR6109               ; ｼｬｯﾀｰ1　閉
+CON
+JMP @MR9209
+;治具(L)　前進  /  Jig(L) Advance
+STG @MR9211
+ANB R50302               ; 転写部(L) Pause
+ANB R50110               ; Err 転写(L)UT
+RES MR6001               ; ｳｪﾊｰ治具(L) 後退
+CON
+SET MR6000               ; ｳｪﾊｰ治具(L) 前進
+CON
+AND R4000                ; 治具(L) 前進限(RB側)
+JMP @MR9212
+STG @MR9212
+ANB R50302               ; 転写部(L) Pause
+ANB R50110               ; Err 転写(L)UT
+RES R49710               ; WF 再取出し要求
+CON
+SET R53814               ; 手動WF給材完了
+CON
+RES @MR9014              ; 手動投入動作中
+CON
+JMP @MR9000              ; 手投入MODE　開始
+;******* ｻﾌﾞﾙｰﾁﾝ？  /  Subroutine? ********
+;
+;******* STEP終了時ﾌﾞｻﾞｰ制御  / Buzzer Control when STEP End ********
+;
+LDP @MR2914              ; 手動終了   ﾌﾞｻﾞｰON
+ANB R50003               ; 原点復帰中
+OR R51010                ; （L) 手動終了   ﾌﾞｻﾞｰON
+ANB T21                  ; （L) 手動終了   ﾌﾞｻﾞｰON
+OUT R51010               ; （L) 手動終了   ﾌﾞｻﾞｰON
+TMR #21 #6               ; （L) 手動終了   ﾌﾞｻﾞｰON
+;******* ｻﾌﾞﾙｰﾁﾝ  /  Subroutine ********
+;
+;******* Transcription RB Move ********
+;
+STG @MR9500              ; X1単独　動作開始
+MPS
+LDB @MR9514              ; X1単独　動作中
+ANB @MR9614              ; Y1単独　動作中
+ANB @MR9714              ; X1-Y1 同時動作中
+AND R10000               ; X1 動作可能
+ANB R10001               ; X1 移動中
+ANB R10010               ; X1 運転開始要求受理
+ANL
+SET @MR9514              ; X1単独　動作中
+CON
+JMP @MR9501
+MPP
+LD @MR9514               ; X1単独　動作中
+OR @MR9614               ; Y1単独　動作中
+OR @MR9714               ; X1-Y1 同時動作中
+ANL
+TMH @27 #5
+CON
+AND @T27
+SET MR313                ; 転写RB(L)2重起動
+CON
+ENDS
+STG @MR9501
+ANB R10012               ; X1 Driver Alarm入力状態
+DW #1 DM11048            ; X1 開始・読出しPoint番号
+CON
+SET MR11203              ; X1 運転開始
+CON
+JMP @MR9502
+STG @MR9502
+MPS
+AND R10010               ; X1 運転開始要求受理
+RES MR11203              ; X1 運転開始
+CON
+JMP @MR9503
+MPP
+ANB R10010               ; X1 運転開始要求受理
+TMR @64 #30
+CON
+AND @T64
+SET MR300                ; RB位置決め異常
+CON
+ENDS
+STG @MR9503
+ANB R10010               ; X1 運転開始要求受理
+JMP @MR9504
+STG @MR9504
+MPS
+AND R10005               ; X1 位置決め完了
+RES @MR9514              ; X1単独　動作中
+CON
+SET @MR9515              ; X1単独　動作完了
+CON
+ENDS
+MPP
+ANB R10005               ; X1 位置決め完了
+TMR @65 #450
+CON
+AND @T65
+SET MR300                ; RB位置決め異常
+CON
+ENDS
+;******* Film Feed Motor Move ********
+;
+STG @MR9600              ; Y1単独 動作開始
+MPS
+LDB @MR9514              ; X1単独　動作中
+ANB @MR9614              ; Y1単独　動作中
+ANB @MR9714              ; X1-Y1 同時動作中
+AND R10300               ; Y1 動作可能
+ANB R10301               ; Y1 移動中
+ANB R10310               ; Y1 運転開始要求受理
+ANL
+SET @MR9614              ; Y1単独　動作中
+CON
+JMP @MR9601
+MPP
+LD @MR9514               ; X1単独　動作中
+OR @MR9614               ; Y1単独　動作中
+OR @MR9714               ; X1-Y1 同時動作中
+ANL
+TMH @28 #5
+CON
+AND @T28
+SET MR313                ; 転写RB(L)2重起動
+CON
+ENDS
+STG @MR9601
+ANB R10312               ; Y1 ﾄﾞﾗｲﾊﾞｰｱﾗｰﾑ入力状態
+DW #2 DM11056            ; Y1 開始・読出しPoint番号
+CON
+SET MR11503              ; Y1 運転開始
+CON
+JMP @MR9602
+STG @MR9602
+MPS
+AND R10310               ; Y1 運転開始要求受理
+RES MR11503              ; Y1 運転開始
+CON
+JMP @MR9603
+MPP
+ANB R10310               ; Y1 運転開始要求受理
+TMR @66 #30
+CON
+AND @T66
+SET MR300                ; RB位置決め異常
+CON
+ENDS
+STG @MR9603
+ANB R10310               ; Y1 運転開始要求受理
+JMP @MR9604
+STG @MR9604
+MPS
+AND R10305               ; Y1 位置決め完了
+RES @MR9614              ; Y1単独　動作中
+CON
+SET @MR9615              ; Y1単独　動作完了
+CON
+ENDS
+MPP
+ANB R10305               ; Y1 位置決め完了
+TMR @67 #450
+CON
+AND @T67
+SET MR300                ; RB位置決め異常
+CON
+ENDS
+;******* Transcription RB & Feed Motor Move ********
+;
+LDB @MR9514              ; X1単独　動作中
+ANB @MR9614              ; Y1単独　動作中
+ANB @MR9714              ; X1-Y1 同時動作中
+OUT @MR9712              ; X1Y1動作中無し
+STG @MR9700              ; X1-Y1 同時動作開始
+MPS
+LD @MR9712               ; X1Y1動作中無し
+AND R10000               ; X1 動作可能
+ANB R10001               ; X1 移動中
+ANB R10010               ; X1 運転開始要求受理
+AND R10300               ; Y1 動作可能
+ANB R10301               ; Y1 移動中
+ANB R10310               ; Y1 運転開始要求受理
+ANL
+SET @MR9714              ; X1-Y1 同時動作中
+CON
+JMP @MR9701
+MPP
+ANB @MR9712              ; X1Y1動作中無し
+TMH @29 #5
+CON
+AND @T29
+SET MR313                ; 転写RB(L)2重起動
+CON
+ENDS
+STG @MR9701
+ANB R10012               ; X1 Driver Alarm入力状態
+ANB R10312               ; Y1 ﾄﾞﾗｲﾊﾞｰｱﾗｰﾑ入力状態
+DW #1 DM11048            ; X1 開始・読出しPoint番号
+CON
+SET MR11503              ; Y1 運転開始
+CON
+JMP @MR9702
+STG @MR9702
+MPS
+AND R10310               ; Y1 運転開始要求受理
+RES MR11503              ; Y1 運転開始
+CON
+SET MR11203              ; X1 運転開始
+CON
+JMP @MR9703
+MPP
+ANB R10310               ; Y1 運転開始要求受理
+TMR @68 #30
+CON
+AND @T68
+SET MR300                ; RB位置決め異常
+CON
+ENDS
+STG @MR9703
+MPS
+AND R10010               ; X1 運転開始要求受理
+RES MR11203              ; X1 運転開始
+CON
+JMP @MR9704
+MPP
+ANB R10010               ; X1 運転開始要求受理
+TMR @69 #450
+CON
+AND @T69
+RES MR11203              ; X1 運転開始
+CON
+SET MR300                ; RB位置決め異常
+CON
+ENDS
+STG @MR9704
+ANB R10010               ; X1 運転開始要求受理
+JMP @MR9705
+STG @MR9705
+MPS
+AND R10005               ; X1 位置決め完了
+SET MR2010               ; Y1 STOP
+CON
+JMP @MR9706
+MPP
+ANB R10005               ; X1 位置決め完了
+TMR @70 #450
+CON
+AND @T70
+SET MR300                ; RB位置決め異常
+CON
+ENDS
+STG @MR9706
+MPS
+AND R10305               ; Y1 位置決め完了
+RES MR2010               ; Y1 STOP
+CON
+RES @MR9714              ; X1-Y1 同時動作中
+CON
+SET @MR9715              ; X1-Y1 同時動作完了
+CON
+ENDS
+MPP
+ANB R10305               ; Y1 位置決め完了
+TMR @71 #450
+CON
+AND @T71
+RES MR2010               ; Y1 STOP
+CON
+SET MR300                ; RB位置決め異常
+CON
+ENDS
+END
+ENDH

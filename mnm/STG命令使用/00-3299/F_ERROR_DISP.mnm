@@ -1,0 +1,57 @@
+DEVICE:53
+;MODULE:F_ERROR_DISP
+;MODULE_TYPE:1
+;OneSystem SupportMacro
+;
+;-----------------------------------------
+;Macro Name 	: 	F_ERROR_DISP
+;Macro Type	:	Self Holding
+;Function	:	優先ｴﾗｰ要求
+;-----------------------------------------
+;
+;Copylight(C) 2011 SEIKO EPSON Corp. All rights reserved.
+;引数：
+;	V0	=	優先ｴﾗｰ番号			#0～#63
+;	
+;機能：
+;	指定ｴﾗｰ番号にて優先ｴﾗｰを出力する
+LD Run_Mode              ; _運転ﾓｰﾄﾞ指定
+MEND
+;<h1/>Argumant Range Check/引数範囲ﾁｪｯｸ
+LD< V0 #0                ; FirstErrNo
+OR> V0 #63               ; FirstErrNo
+SET MacroDown            ; _ｻﾎﾟｰﾄﾏｸﾛ引数異常発生
+CON
+SET @R015                ; ﾏｸﾛ異常発生
+;<h1/>First Error Code Storage/優先ｴﾗｰ番号格納
+LD @CR2008
+ANB Run_Mode             ; _運転ﾓｰﾄﾞ指定
+MOV V0 KtoV_FERR_ERR     ; FirstErrNo  _優先ｴﾗｰ　ｴﾗｰ番号
+MOV V0 KtoV_FERR_MSG     ; FirstErrNo  _優先ｴﾗｰ　ﾒｯｾｰｼﾞ番号
+SET @R000                ; ﾏｸﾛ実行中
+;<h1/>First Error Display/優先ｴﾗｰ画面表示
+;・画面表示要求
+;・Estop制御部ﾌﾗｸﾞSET
+;・安全回路への非常停止出力
+LDB Run_Mode             ; _運転ﾓｰﾄﾞ指定
+ANB TRAPDO               ; _非常停止中　ﾓｰﾄﾞﾌﾗｸﾞ
+SET KtoV_FERR_OPN        ; _優先ｴﾗｰ画面表示
+CON
+SET ESTOP_FERR           ; _優先ｴﾗｰ発生要求
+CON
+SET F_ESTOP              ; *非常停止出力
+CON
+SET @R001                ; 優先ｴﾗｰ通知待ち
+STG @R001                ; 優先ｴﾗｰ通知待ち
+BAND Estop_Factor #1     ; _非常停止要因
+JMP @R002                ; 優先ｴﾗｰ解除待ち
+;<h1/>First Error Release Waiting/優先ｴﾗｰ解除待ち
+STG @R002                ; 優先ｴﾗｰ解除待ち
+BANB Estop_Factor #1     ; _非常停止要因
+AND<> DM3000 #1000       ; _MainTP　表示中ﾍﾟｰｼﾞNo
+MEND
+RES @R000                ; ﾏｸﾛ実行中
+CON
+ENDS
+END
+ENDH

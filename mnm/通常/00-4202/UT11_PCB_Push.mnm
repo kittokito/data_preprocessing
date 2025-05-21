@@ -1,0 +1,632 @@
+DEVICE:53
+;MODULE:UT11_PCB_Push
+;MODULE_TYPE:0
+;□□　　入力受け　　□□
+LD CR2003                ; 常時OFF
+TMR K1110 K3
+LD CR2003                ; 常時OFF
+TMR K1111 K3
+;■ロボット等機器入力受け
+;押付ﾛﾎﾞｯﾄ現在値
+;Push_RB_Current_Position
+LD X364A                 ; Push_RB_HEND
+AND X364B                ; Push_RB_PEND
+MPS
+AND X3640                ; Push_RB_PM1
+OUT D6028.0              ; Push_RB_POS1
+MRD
+AND X3641                ; Push_RB_PM2
+OUT D6028.1              ; Push_RB_POS2
+MRD
+AND X3642                ; Push_RB_PM4
+OUT D6028.2              ; Push_RB_POS4
+MRD
+AND X3643                ; Push_RB_PM8
+OUT D6028.3              ; Push_RB_POS8
+MRD
+AND X3644                ; Push_RB_PM16
+OUT D6028.4              ; Push_RB_POS16
+MRD
+AND X3645                ; Push_RB_PM32
+OUT D6028.5              ; Push_RB_POS32
+MRD
+AND X3646                ; Push_RB_PM64
+OUT D6028.6              ; Push_RB_POS64
+MRD
+AND X3647                ; Push_RB_PM128
+OUT D6028.7              ; Push_RB_POS128
+MPP
+INV
+MOV K0 D6028             ; Push_RB_完了POS
+LD= D6028 D6030          ; Push_RB_完了POS  Push_RB_指令計算
+AND<= K51 D6030          ; Push_RB_指令計算
+AND>= K82 D6030          ; Push_RB_指令計算
+OUT M6410                ; 基板押込RB押込端
+;基板押込治具No
+LD CR2002                ; 常時ON
+MPS
+LD X125A                 ; 基板押込ID-1
+OR CR2002                ; 常時ON
+ANL
+OUT D6040.0              ; 基板押込治具ID1
+MRD
+LD X125B                 ; 基板押込ID-2
+OR CR2002                ; 常時ON
+ANL
+OUT D6040.1              ; 基板押込治具ID2
+MPP
+LD X125C                 ; 基板押込ID-3
+OR CR2002                ; 常時ON
+ANL
+OUT D6040.2              ; 基板押込治具ID4
+;□ ﾕﾆｯﾄ原点
+LD= D6028 K1             ; Push_RB_完了POS
+OR= D6028 K2             ; Push_RB_完了POS
+OUT M6480                ; ﾕﾆｯﾄ11原点
+;□ 非常停止
+LDB CR2003               ; 常時OFF
+INV
+OUT M6481                ; ﾕﾆｯﾄ11全異常
+;□ 起動条件
+LD M6480                 ; ﾕﾆｯﾄ11原点
+OUT M6482                ; ﾕﾆｯﾄ11起動条件
+;□ 起動OFF
+LDB M50                  ; 運転準備
+OR M6486                 ; ﾕﾆｯﾄ11ｻｲｸﾙ停止異常
+OR T15                   ; 強制停止
+OUT M6483                ; ﾕﾆｯﾄ11起動OFF
+;□ 原点復帰
+LD M82                   ; 原点復帰開始
+LDB M82                  ; 原点復帰開始
+AND CR2003               ; 常時OFF
+ORL
+ANB M6484                ; ﾕﾆｯﾄ11原点復帰中
+OR M6484                 ; ﾕﾆｯﾄ11原点復帰中
+ANB M6483                ; ﾕﾆｯﾄ11起動OFF
+ANB M6491                ; ﾕﾆｯﾄ11ｴﾗｰ発生
+ANB M6299                ; ﾕﾆｯﾄ11原点終了
+OUT M6484                ; ﾕﾆｯﾄ11原点復帰中
+;□ 起動中
+LD M73                   ; 各工程起動指令
+AND M3104                ; 基板押込作業開始
+ANB M130                 ; 全体PAUSE
+LD M31                   ; 手動ﾓｰﾄﾞ
+AND M32                  ; ﾒｲﾝ手動操作可能条件
+AND CR2003               ; 常時OFF
+ORL
+AND M6482                ; ﾕﾆｯﾄ11起動条件
+OR M6485                 ; ﾕﾆｯﾄ11起動中
+ANB M6483                ; ﾕﾆｯﾄ11起動OFF
+ANB M6049                ; ﾕﾆｯﾄ11ｻｲｸﾙ終了
+OUT M6485                ; ﾕﾆｯﾄ11起動中
+;□ ｻｲｸﾙ停止異常
+LDB B0160                ; 基板押込RB異常
+INV
+OUT M6486                ; ﾕﾆｯﾄ11ｻｲｸﾙ停止異常
+;□ 払出停止異常
+LDB CR2003               ; 常時OFF
+INV
+OUT M6487                ; ﾕﾆｯﾄ11払出停止異常
+;□ 警報補助
+LDB CR2003               ; 常時OFF
+INV
+OUT M6488                ; ﾕﾆｯﾄ11警報補助
+;□ 機器準備確認
+LD X364C                 ; Push_RB_SV
+OUT M6490                ; ﾕﾆｯﾄ11機器準備完了
+;□ ｴﾗｰ発生　一時停止
+LDB CR2003               ; 常時OFF
+INV
+OUT M6491                ; ﾕﾆｯﾄ11ｴﾗｰ発生
+;□ 動作中ﾕﾆｯﾄ無し
+LDB M6485                ; ﾕﾆｯﾄ11起動中
+ANB M6484                ; ﾕﾆｯﾄ11原点復帰中
+TMR K1101 K20            ; ﾕﾆｯﾄ11動作無し判定ﾀｲﾏ
+LD CR2002                ; 常時ON
+MOV D6000 D6005          ; ﾕﾆｯﾄ11自動運転ｽﾃｯﾌﾟ  ﾕﾆｯﾄ11動作中判定
+LD T1101                 ; ﾕﾆｯﾄ11動作無し判定ﾀｲﾏ
+OUT M6492                ; ﾕﾆｯﾄ11動作無し確認
+;□ 払出しﾜｰｸ無し
+LD CR2002                ; 常時ON
+MPS
+WSUM D16400 K80          ; UT11ﾌﾚｰﾑ投入ﾊﾟﾚｯﾄID
+CON
+STA D6050                ; 基板押込ﾜｰｸ情報(ﾜｰｸ有無)
+MPP
+LD= D6050 K0             ; 基板押込ﾜｰｸ情報(ﾜｰｸ有無)
+ANB X1244                ; 基板押込ﾜｰｸ確認
+ANL
+TMR K1105 K10            ; UNIT11払出処理ﾜｰｸ無し
+LD T1105                 ; UNIT11払出処理ﾜｰｸ無し
+OUT M6493                ; ﾕﾆｯﾄ11ﾜｰｸ無し
+;□ ｽﾃｯﾌﾟ起動
+LD M30                   ; 自動ﾓｰﾄﾞ
+LD M31                   ; 手動ﾓｰﾄﾞ
+AND CR2003               ; 常時OFF
+ORL
+OUT M6479                ; ﾕﾆｯﾄ11ｽﾃｯﾌﾟ動作
+;□□□□□□□□□□□□□□□
+;□　　 　UNIT11自動回路 　　□
+;□□□□□□□□□□□□□□□
+;<h1/>■自動回路 
+;運転開始・ステッパ初期化・補助接点へ展開
+LD CR2002                ; 常時ON
+ZRES M6000 M6049         ; ﾕﾆｯﾄ11ｽﾃｯﾌﾟ開始  ﾕﾆｯﾄ11ｻｲｸﾙ終了
+LDB M6485                ; ﾕﾆｯﾄ11起動中
+MOV K0 D6000             ; ﾕﾆｯﾄ11自動運転ｽﾃｯﾌﾟ
+DW K0 D6200              ; UT11 main STEP monitor
+LD M6485                 ; ﾕﾆｯﾄ11起動中
+MOV D6000 Z1             ; ﾕﾆｯﾄ11自動運転ｽﾃｯﾌﾟ
+SET M6000:Z1             ; ﾕﾆｯﾄ11ｽﾃｯﾌﾟ開始
+CAL+ D6000 K6000 D6200   ; ﾕﾆｯﾄ11自動運転ｽﾃｯﾌﾟ  UT11 main STEP monitor
+;自動運転ステップ開始
+;ﾌﾚｰﾑ有無判定
+;ﾌﾚｰﾑが無い場合は作業完了処理
+LD M6000                 ; ﾕﾆｯﾄ11ｽﾃｯﾌﾟ開始
+MPS
+LD X1244                 ; 基板押込ﾜｰｸ確認
+AND<> D16417 K0          ; UT11基板押込ﾛﾎﾞｯﾄNo.
+ANL
+@INC D6000               ; ﾕﾆｯﾄ11自動運転ｽﾃｯﾌﾟ
+MPP
+LDB X1244                ; 基板押込ﾜｰｸ確認
+OR= D16417 K0            ; UT11基板押込ﾛﾎﾞｯﾄNo.
+ANL
+MOV K33 D6000            ; ﾕﾆｯﾄ11自動運転ｽﾃｯﾌﾟ
+;ﾜｰｸ情報確認(OK or NG品)
+LD M6001                 ; ﾌﾚｰﾑ有､製品情報確認
+MPS
+LD= D16462 K1            ; UT11ﾜｰｸOK/NGﾃﾞｰﾀ
+OR= D16462 K2            ; UT11ﾜｰｸOK/NGﾃﾞｰﾀ
+ANL
+@INC D6000               ; ﾕﾆｯﾄ11自動運転ｽﾃｯﾌﾟ
+MPP
+AND= D16462 K0           ; UT11ﾜｰｸOK/NGﾃﾞｰﾀ
+MOV K33 D6000            ; ﾕﾆｯﾄ11自動運転ｽﾃｯﾌﾟ
+;処理有無判定
+LD M6002                 ; 処理有無判定
+MPS
+AND D16463.4             ; UT11基板押込有無
+@INC D6000               ; ﾕﾆｯﾄ11自動運転ｽﾃｯﾌﾟ
+MPP
+ANB D16463.4             ; UT11基板押込有無
+MOV K33 D6000            ; ﾕﾆｯﾄ11自動運転ｽﾃｯﾌﾟ
+;作業開始
+LD M6003                 ; OK品処理有､処理開始ｾｯﾄ
+AND W0105.6              ; 基板押込開始
+AND W05.6                ; 基板押込受付
+@INC D6000               ; ﾕﾆｯﾄ11自動運転ｽﾃｯﾌﾟ
+;処理有効･無効判定(ﾃﾞﾊﾞｯｸﾞﾓｰﾄﾞで必要になるかも)
+LD M6004                 ; 処理有効･無効判定
+MPS
+AND CR2002               ; 常時ON
+@INC D6000               ; ﾕﾆｯﾄ11自動運転ｽﾃｯﾌﾟ
+MPP
+AND CR2003               ; 常時OFF
+MOV K30 D6000            ; ﾕﾆｯﾄ11自動運転ｽﾃｯﾌﾟ
+;基板押込治具照合
+LD M6005                 ; 処理有効
+MPS
+AND<> D6040 D16416       ; 基板押込治具ID  UT11基板押込治具ID
+@INC D6000               ; ﾕﾆｯﾄ11自動運転ｽﾃｯﾌﾟ
+MPP
+AND= D6040 D16416        ; 基板押込治具ID  UT11基板押込治具ID
+MOV K10 D6000            ; ﾕﾆｯﾄ11自動運転ｽﾃｯﾌﾟ
+;治具照合NG
+LD M6006                 ; 治具照合NG
+AND= D200 K0             ; ｴﾗｰｺｰﾄﾞNo.
+DW K1101 D200            ; ｴﾗｰｺｰﾄﾞNo.
+CON
+@INC D6000               ; ﾕﾆｯﾄ11自動運転ｽﾃｯﾌﾟ
+LD M6007                 ; 治具照合NG確認
+AND<> D200 K0            ; ｴﾗｰｺｰﾄﾞNo.
+@INC D6000               ; ﾕﾆｯﾄ11自動運転ｽﾃｯﾌﾟ
+LD M6008                 ; 治具照合NG(ﾀﾞｲｱﾛｸﾞ)
+AND CR2003               ; 常時OFF
+AND= D6040 D16416        ; 基板押込治具ID  UT11基板押込治具ID
+DW K0 D200               ; ｴﾗｰｺｰﾄﾞNo.
+CON
+MOV K0 D6000             ; ﾕﾆｯﾄ11自動運転ｽﾃｯﾌﾟ
+;基板押込RB下降
+LD M6010                 ; 治具照合OK
+AND X364B                ; Push_RB_PEND
+ANB M6491                ; ﾕﾆｯﾄ11ｴﾗｰ発生
+@INC D6000               ; ﾕﾆｯﾄ11自動運転ｽﾃｯﾌﾟ
+@CAL+ D16417 K50 D6024   ; UT11基板押込ﾛﾎﾞｯﾄNo.  Push_RB_POS_確定
+LD M6011                 ; 基板押込RB下降
+ANB X364B                ; Push_RB_PEND
+@INC D6000               ; ﾕﾆｯﾄ11自動運転ｽﾃｯﾌﾟ
+LD M6012                 ; 位置決完了OFF確認
+AND X364B                ; Push_RB_PEND
+ANB M6491                ; ﾕﾆｯﾄ11ｴﾗｰ発生
+@INC D6000               ; ﾕﾆｯﾄ11自動運転ｽﾃｯﾌﾟ
+;基板押込後待機
+LD M6013                 ; 位置決完了確認
+ANB M6491                ; ﾕﾆｯﾄ11ｴﾗｰ発生
+MOV D16418 D6050         ; UT11基板押込時間  基板押込ﾜｰｸ情報(ﾜｰｸ有無)
+MPS
+TMR K1150 D6050          ; 基板押込待機時間  基板押込ﾜｰｸ情報(ﾜｰｸ有無)
+MPP
+AND T1150                ; 基板押込待機時間
+@INC D6000               ; ﾕﾆｯﾄ11自動運転ｽﾃｯﾌﾟ
+;基板押込RB上昇
+LD M6014                 ; 基板押込待機時間経過
+AND X364B                ; Push_RB_PEND
+@INC D6000               ; ﾕﾆｯﾄ11自動運転ｽﾃｯﾌﾟ
+MOV K1 D6024             ; Push_RB_POS_確定
+LD M6015                 ; 基板押込RB上昇
+ANB X364B                ; Push_RB_PEND
+@INC D6000               ; ﾕﾆｯﾄ11自動運転ｽﾃｯﾌﾟ
+LD M6016                 ; 位置決完了OFF確認
+AND X364B                ; Push_RB_PEND
+MOV K30 D6000            ; ﾕﾆｯﾄ11自動運転ｽﾃｯﾌﾟ
+;結果をPCへ送信
+LD M6030                 ; 基板押込結果ON
+AND W0105.7              ; 基板押込結果
+@INC D6000               ; ﾕﾆｯﾄ11自動運転ｽﾃｯﾌﾟ
+LD M6031                 ; 基板押込開始OFF
+ANB W0105.6              ; 基板押込開始
+ANB W05.6                ; 基板押込受付
+@INC D6000               ; ﾕﾆｯﾄ11自動運転ｽﾃｯﾌﾟ
+LD M6032                 ; 基板押込結果OFF
+ANB W0105.7              ; 基板押込結果
+@INC D6000               ; ﾕﾆｯﾄ11自動運転ｽﾃｯﾌﾟ
+;基板押込作業完了
+LD M6033                 ; 基板押込作業完了ON
+AND M3154                ; 基板押込作業完了
+@INC D6000               ; ﾕﾆｯﾄ11自動運転ｽﾃｯﾌﾟ
+LD M6034                 ; 基板押込終了
+ANB M3104                ; 基板押込作業開始
+@INC D6000               ; ﾕﾆｯﾄ11自動運転ｽﾃｯﾌﾟ
+;ｻｲｸﾙ停止処理
+LD M56                   ; 自動起動停止指令(ｻｲｸﾙ停止)
+AND CR2003               ; 常時OFF
+MOV K48 D6000            ; ﾕﾆｯﾄ11自動運転ｽﾃｯﾌﾟ
+;ｻｲｸﾙ終了
+LD M6035                 ; 基板押込要求OFF確認
+OR M6048                 ; ﾕﾆｯﾄ11ｻｲｸﾙ停止
+@MOV K49 D6000           ; ﾕﾆｯﾄ11自動運転ｽﾃｯﾌﾟ
+;<h1/>■工程処理 PLC→PC I/F
+;基板押込開始･結果
+LD M6003                 ; OK品処理有､処理開始ｾｯﾄ
+OR W0105.6               ; 基板押込開始
+ANB M6031                ; 基板押込開始OFF
+AND M6485                ; ﾕﾆｯﾄ11起動中
+OUT W0105.6              ; 基板押込開始
+LD M6030                 ; 基板押込結果ON
+OR W0105.7               ; 基板押込結果
+ANB M6032                ; 基板押込結果OFF
+AND M6485                ; ﾕﾆｯﾄ11起動中
+OUT W0105.7              ; 基板押込結果
+;<h1/>■原点復帰
+;□□□□□□□□□□□□□□□
+;□　　 UNIT11原点復帰回路 　□
+;□□□□□□□□□□□□□□□
+LD CR2002                ; 常時ON
+ZRES M6250 M6299         ; 原点復帰開始  ﾕﾆｯﾄ11原点終了
+LDB M6484                ; ﾕﾆｯﾄ11原点復帰中
+MOV K0 D6010             ; ﾕﾆｯﾄ11原点復帰ｽﾃｯﾌﾟ
+DW K0 D6210              ; UT11 origin STEP monitor
+LD M6484                 ; ﾕﾆｯﾄ11原点復帰中
+MOV D6010 Z1             ; ﾕﾆｯﾄ11原点復帰ｽﾃｯﾌﾟ
+SET M6250:Z1             ; 原点復帰開始
+CAL+ D6010 K6250 D6210   ; ﾕﾆｯﾄ11原点復帰ｽﾃｯﾌﾟ  UT11 origin STEP monitor
+;原点復帰ｻｲｸﾙ監視
+LD M6484                 ; ﾕﾆｯﾄ11原点復帰中
+TMR K1100 K300           ; UNIT11原点復帰ﾀｲﾑｱｳﾄ
+;原点復帰ステップ開始
+LD M6250                 ; 原点復帰開始
+@FMOV K0 D16400 K100     ; UT11ﾌﾚｰﾑ投入ﾊﾟﾚｯﾄID
+@INC D6010               ; ﾕﾆｯﾄ11原点復帰ｽﾃｯﾌﾟ
+LD M6251                 ; 基板押込RB動作無確認
+AND X364B                ; Push_RB_PEND
+@INC D6010               ; ﾕﾆｯﾄ11原点復帰ｽﾃｯﾌﾟ
+MOV K1 D6024             ; Push_RB_POS_確定
+LD M6252                 ; 基板押込RB上昇
+ANB X364B                ; Push_RB_PEND
+@INC D6010               ; ﾕﾆｯﾄ11原点復帰ｽﾃｯﾌﾟ
+LD M6253                 ; 位置決完了OFF確認
+AND X364B                ; Push_RB_PEND
+ANB M6491                ; ﾕﾆｯﾄ11ｴﾗｰ発生
+@INC D6010               ; ﾕﾆｯﾄ11原点復帰ｽﾃｯﾌﾟ
+;原点復帰終了
+LD M6254                 ; 位置決完了確認
+AND M6480                ; ﾕﾆｯﾄ11原点
+@MOV K48 D6010           ; ﾕﾆｯﾄ11原点復帰ｽﾃｯﾌﾟ
+LD M6298                 ; ﾕﾆｯﾄ10原点確認
+ANB M82                  ; 原点復帰開始
+@MOV K49 D6010           ; ﾕﾆｯﾄ11原点復帰ｽﾃｯﾌﾟ
+;<h1/>■手動回路
+;□□□□□□□□□□□□□□□
+;□　　 　UNIT11手動回路 　　□
+;□□□□□□□□□□□□□□□
+LD M31                   ; 手動ﾓｰﾄﾞ
+AND M32                  ; ﾒｲﾝ手動操作可能条件
+ANB M6485                ; ﾕﾆｯﾄ11起動中
+ANB M6484                ; ﾕﾆｯﾄ11原点復帰中
+MC
+;基板押込RB押込
+LD CR2002                ; 常時ON
+OUT M6300                ; 基板押込下降可
+LD B11C0                 ; UNIT11-1-1 TP-PB
+AND M6300                ; 基板押込下降可
+OR M6301                 ; 基板押込下降開始
+ANB M6304                ; 位置決完了
+OUT M6301                ; 基板押込下降開始
+CAL+ D6022 K50 D6030     ; Push_RB_Manu_POS  Push_RB_指令計算
+MPS
+MOV D6030 D6024          ; Push_RB_指令計算  Push_RB_POS_確定
+MPP
+ANB M6303                ; 位置決完了OFF確認
+OUT M6302                ; 基板押込下降
+LD M6302                 ; 基板押込下降
+ANB X364B                ; Push_RB_PEND
+OR M6303                 ; 位置決完了OFF確認
+AND M6301                ; 基板押込下降開始
+OUT M6303                ; 位置決完了OFF確認
+LD M6303                 ; 位置決完了OFF確認
+AND X364B                ; Push_RB_PEND
+OR M6304                 ; 位置決完了
+AND M6301                ; 基板押込下降開始
+OUT M6304                ; 位置決完了
+;基板押込RB上昇
+LD CR2002                ; 常時ON
+OUT M6305                ; 基板押込上昇可
+LD B11C1                 ; UNIT11-1-2 TP-PB
+AND M6305                ; 基板押込上昇可
+OR M6306                 ; 基板押込上昇開始
+ANB M6309                ; 位置決完了
+OUT M6306                ; 基板押込上昇開始
+MPS
+MOV K1 D6024             ; Push_RB_POS_確定
+MPP
+ANB M6308                ; 位置決完了OFF確認
+OUT M6307                ; 基板押込上昇
+LD M6307                 ; 基板押込上昇
+ANB X364B                ; Push_RB_PEND
+OR M6308                 ; 位置決完了OFF確認
+AND M6306                ; 基板押込上昇開始
+OUT M6308                ; 位置決完了OFF確認
+LD M6308                 ; 位置決完了OFF確認
+AND X364B                ; Push_RB_PEND
+OR M6309                 ; 位置決完了
+AND M6306                ; 基板押込上昇開始
+OUT M6309                ; 位置決完了
+;基板押込RB段取上昇
+LD CR2002                ; 常時ON
+OUT M6310                ; 基板押込段取上昇可
+LD B11C2                 ; UNIT11-1-3 TP-PB
+AND M6310                ; 基板押込段取上昇可
+OR M6311                 ; 基板押込段取上昇開始
+ANB M6314                ; 位置決完了
+OUT M6311                ; 基板押込段取上昇開始
+MPS
+MOV K2 D6024             ; Push_RB_POS_確定
+MPP
+ANB M6313                ; 位置決完了OFF確認
+OUT M6312                ; 基板押込段取上昇
+LD M6312                 ; 基板押込段取上昇
+ANB X364B                ; Push_RB_PEND
+OR M6313                 ; 位置決完了OFF確認
+AND M6311                ; 基板押込段取上昇開始
+OUT M6313                ; 位置決完了OFF確認
+LD M6313                 ; 位置決完了OFF確認
+AND X364B                ; Push_RB_PEND
+OR M6314                 ; 位置決完了
+AND M6311                ; 基板押込段取上昇開始
+OUT M6314                ; 位置決完了
+MCR
+;ROBOT AUTO/MANU
+LDP B11DF                ; UNIT11-2-16 TP-PB
+AND M6320                ; MANUAL_ON
+OUT M6321                ; MANUAL_OFF
+LDP B11DF                ; UNIT11-2-16 TP-PB
+ANB M6320                ; MANUAL_ON
+OR M6320                 ; MANUAL_ON
+ANB M6321                ; MANUAL_OFF
+AND M31                  ; 手動ﾓｰﾄﾞ
+ANB M51                  ; 即停止異常(緊急停止)
+OUT M6320                ; MANUAL_ON
+;<h1/>■出力
+;基板押込RB
+LDB M6011                ; 基板押込RB下降
+ANB M6015                ; 基板押込RB上昇
+ANB M6252                ; 基板押込RB上昇
+INV
+LDB M6302                ; 基板押込下降
+ANB M6307                ; 基板押込上昇
+ANB M6312                ; 基板押込段取上昇
+INV
+ORL
+@MOV D6024 D6026         ; Push_RB_POS_確定  Push_RB_指令POS
+MPS
+TMH K1191 K10            ; 基板押込RB_POS確定ﾃﾞｨﾚｲ
+MPP
+AND T1191                ; 基板押込RB_POS確定ﾃﾞｨﾚｲ
+OUT Y494D                ; Push_RB_CSTR
+LD CR2002                ; 常時ON
+MPS
+AND D6026.0              ; Push_RB_指令POS1
+OUT Y4940                ; Push_RB_PC1
+MRD
+AND D6026.1              ; Push_RB_指令POS2
+OUT Y4941                ; Push_RB_PC2
+MRD
+AND D6026.2              ; Push_RB_指令POS4
+OUT Y4942                ; Push_RB_PC4
+MRD
+AND D6026.3              ; Push_RB_指令POS8
+OUT Y4943                ; Push_RB_PC8
+MRD
+AND D6026.4              ; Push_RB_指令POS16
+OUT Y4944                ; Push_RB_PC16
+MRD
+AND D6026.5              ; Push_RB_指令POS32
+OUT Y4945                ; Push_RB_PC32
+MRD
+AND D6026.6              ; Push_RB_指令POS64
+OUT Y4946                ; Push_RB_PC64
+MPP
+AND D6026.7              ; Push_RB_指令POS128
+OUT Y4947                ; Push_RB_PC128
+LD M6320                 ; MANUAL_ON
+OUT Y494A                ; Push_RB_RMOD
+LD CR2002                ; 常時ON
+OUT Y494C                ; Push_RB_STP
+LD M16                   ; ﾘｾｯﾄPB
+ANB X364E                ; Push_RB_ALM
+OUT Y494E                ; Push_RB_RES
+LD M50                   ; 運転準備
+OUT Y494F                ; Push_RB_SON
+;■ｾｯﾄ中治具信号
+LD CR2002                ; 常時ON
+MPS
+AND D6040.0              ; 基板押込治具ID1
+OUT B300A                ; 基板押込み治具ID　1
+CON
+OUT W0123.0              ; 基板押込治具_ID_0
+MRD
+AND D6040.1              ; 基板押込治具ID2
+OUT B300B                ; 基板押込み治具ID　2
+CON
+OUT W0123.1              ; 基板押込治具_ID_1
+MPP
+AND D6040.2              ; 基板押込治具ID4
+OUT B300C                ; 基板押込み治具ID　3
+CON
+OUT W0123.2              ; 基板押込治具_ID_2
+;<h1/>■表示
+;□□　　パネル表示　　□□
+LD= D6028 D6030          ; Push_RB_完了POS  Push_RB_指令計算
+AND<= K51 D6030          ; Push_RB_指令計算
+AND>= K82 D6030          ; Push_RB_指令計算
+LD CR2003                ; 常時OFF
+AND CR2006               ; 1sｸﾛｯｸﾊﾟﾙｽ
+ORL
+OUT B16C0                ; UNIT11-1-1 TP-PL
+LD= D6028 K1             ; Push_RB_完了POS
+LD CR2003                ; 常時OFF
+AND CR2006               ; 1sｸﾛｯｸﾊﾟﾙｽ
+ORL
+OUT B16C1                ; UNIT11-1-2 TP-PL
+LD= D6028 K2             ; Push_RB_完了POS
+LD CR2003                ; 常時OFF
+AND CR2006               ; 1sｸﾛｯｸﾊﾟﾙｽ
+ORL
+OUT B16C2                ; UNIT11-1-3 TP-PL
+LD M6320                 ; MANUAL_ON
+OUT B16DF                ; UNIT11-2-16 TP-PL
+;<h1/>■異常
+;□□　　異常検出　　□□
+;B160(K353)--B16F(K368)  B170(K369)--B17F(K384)
+LDB X364E                ; Push_RB_ALM
+LDB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B0160                ; 基板押込RB異常
+ORL
+AND M50                  ; 運転準備
+OUT B0160                ; 基板押込RB異常
+@DW K352 D0
+CON
+@FIFOW D0 D900           ; 異常内容
+LD M110                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B0660
+AND B0160                ; 基板押込RB異常
+OUT B0660
+LD CR2003                ; 常時OFF
+LDB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B0161                ; UNIT11異常2
+ORL
+AND M50                  ; 運転準備
+OUT B0161                ; UNIT11異常2
+@DW K353 D0
+CON
+@FIFOW D0 D900           ; 異常内容
+LD M110                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B0661
+AND B0161                ; UNIT11異常2
+OUT B0661
+LD CR2003                ; 常時OFF
+LDB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B0162                ; UNIT11異常3
+ORL
+AND M50                  ; 運転準備
+OUT B0162                ; UNIT11異常3
+@DW K354 D0
+CON
+@FIFOW D0 D900           ; 異常内容
+LD M110                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B0662
+AND B0162                ; UNIT11異常3
+OUT B0662
+LD CR2003                ; 常時OFF
+LDB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B0163                ; UNIT11異常4
+ORL
+AND M50                  ; 運転準備
+OUT B0163                ; UNIT11異常4
+@DW K355 D0
+CON
+@FIFOW D0 D900           ; 異常内容
+LD M110                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B0663
+AND B0163                ; UNIT11異常4
+OUT B0663
+LD CR2003                ; 常時OFF
+LDB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B0164                ; UNIT11異常5
+ORL
+AND M50                  ; 運転準備
+OUT B0164                ; UNIT11異常5
+@DW K356 D0
+CON
+@FIFOW D0 D900           ; 異常内容
+LD M110                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B0664
+AND B0164                ; UNIT11異常5
+OUT B0664
+LD CR2003                ; 常時OFF
+LDB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B0165                ; UNIT11異常6
+ORL
+AND M50                  ; 運転準備
+OUT B0165                ; UNIT11異常6
+@DW K357 D0
+CON
+@FIFOW D0 D900           ; 異常内容
+LD M110                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B0665
+AND B0165                ; UNIT11異常6
+OUT B0665
+;D200警報
+LD= K1101 D200           ; ｴﾗｰｺｰﾄﾞNo.
+OUT B017F                ; Err1101:基板押込治具ID照合NG
+@DW H017F D0
+CON
+@FIFOW D0 D900           ; 異常内容
+;異常ﾌﾞｻﾞｰまとめ
+LDB B0160                ; 基板押込RB異常
+OR B0660
+LDB B0161                ; UNIT11異常2
+OR B0661
+ANL
+LDB B0162                ; UNIT11異常3
+OR B0662
+ANL
+LDB B0163                ; UNIT11異常4
+OR B0663
+ANL
+LDB B0164                ; UNIT11異常5
+OR B0664
+ANL
+LDB B0165                ; UNIT11異常6
+OR B0665
+ANL
+INV
+OUT M6489                ; ﾕﾆｯﾄ11異常BZ補助
+;Error location display
+LDB B0160                ; 基板押込RB異常
+ANB B0A6                 ; 原点復帰基板押込ﾜｰｸ有異常
+INV
+OUT B090B                ; UT11 Error
+END
+ENDH

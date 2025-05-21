@@ -1,0 +1,205 @@
+DEVICE:53
+;MODULE:OneSystem5_Cover
+;MODULE_TYPE:0
+;OneSystem Master-Module
+;
+;-----------------------------------------
+;ModuleName	:	OneSystem5_Cover
+;ModuleType	:	Master Module
+;Function	:	Safety Cover/Pause
+;-----------------------------------------
+;
+;Copylight(C) 2011 SEIKO EPSON Corp. All rights reserved.
+;<h1/>Safety Cover1/安全ｶﾊﾞｰ1処理
+;●安全ｶﾊﾞｰ有効sig出力
+LD>= EntryTask #1        ; _Group1ﾀｽｸ登録数
+AND EntryCover           ; _安全ｶﾊﾞｰ1使用有無
+MPS
+OUT CoverUse             ; _安全ｶﾊﾞｰ1使用時出力
+MPP
+AND CR2008               ; 運転開始時1ｽｷｬﾝON
+SET LockRequest          ; _安全ｶﾊﾞｰ閉要求sig
+CON
+SET @R009                ; 電源投入時ﾛｯｸ確認
+;●電源投入時安全ｶﾊﾞｰﾛｯｸ&確認
+;(ﾛｯｸしたのにﾛｯｸ入力が入らなければﾛｯｸ要求処理へ)
+STG @R009                ; 電源投入時ﾛｯｸ確認
+MPS
+ANB COVER_SQ1            ; *Group1　安全ｶﾊﾞｰ入力
+SET PACKED1              ; _安全ｶﾊﾞｰ1開処理中
+CON
+SET OPEN1                ; _安全ｶﾊﾞｰ1開中
+CON
+JMP @R005                ; 安全ｶﾊﾞｰﾛｯｸ要求待ち
+MPP
+AND COVER_SQ1            ; *Group1　安全ｶﾊﾞｰ入力
+ENDS
+;●ｶﾊﾞｰ開要求ｽｲｯﾁ(COVER_SW)待ち
+;●安全ｶﾊﾞｰ不正開監視
+;	安全ｶﾊﾞｰ開要求が出ていないのに安全ｶﾊﾞｰ入力がOFFした
+LD CoverUse              ; _安全ｶﾊﾞｰ1使用時出力
+ANB PACKED1              ; _安全ｶﾊﾞｰ1開処理中
+ANB START_SW1            ; *Group1　ｽﾀｰﾄSW
+ANB STOP_SW1             ; *Group1　ｽﾄｯﾌﾟSW
+MPS
+LD COVER_SQ1             ; *Group1　安全ｶﾊﾞｰ入力
+ANP COVER_SW1            ; *Group1　ｶﾊﾞｰ開要求SW
+ANL
+SET PACKED1              ; _安全ｶﾊﾞｰ1開処理中
+CON
+SET OpenWait1            ; _安全ｶﾊﾞｰ1開待ち状態
+CON
+SET @R000                ; PAUSE出力
+MRD
+LD @R010                 ; 安全ｶﾊﾞｰ不正開出力済
+ANB COVER_SQ1            ; *Group1　安全ｶﾊﾞｰ入力
+ANL
+SET PACKED1              ; _安全ｶﾊﾞｰ1開処理中
+CON
+SET OPEN1                ; _安全ｶﾊﾞｰ1開中
+CON
+SET @R005                ; 安全ｶﾊﾞｰﾛｯｸ要求待ち
+MPP
+LDB @R010                ; 安全ｶﾊﾞｰ不正開出力済
+ORB STOPDO               ; _停止中　ﾓｰﾄﾞﾌﾗｸﾞ
+ANB COVER_SQ1            ; *Group1　安全ｶﾊﾞｰ入力
+ANL
+MOV #65 SysErrorCode     ; _ｼｽﾃﾑｴﾗｰｺｰﾄﾞ
+SET @R010                ; 安全ｶﾊﾞｰ不正開出力済
+CON
+SET SystemErr            ; _OneSystem優先ｴﾗｰ要求
+LDF STOPDO               ; _停止中　ﾓｰﾄﾞﾌﾗｸﾞ
+RES @R010                ; 安全ｶﾊﾞｰ不正開出力済
+;●各Taskへﾎﾟｰｽﾞ要求通知(PAUSE)
+STG @R000                ; PAUSE出力
+MPS
+LDB TRAPDO               ; _非常停止中　ﾓｰﾄﾞﾌﾗｸﾞ
+ANB STOPDO               ; _停止中　ﾓｰﾄﾞﾌﾗｸﾞ
+ANB AirState1            ; _Group1 ｴｱｰ元圧状態
+ANL
+SET PAUSE1               ; _Grp1 ﾎﾟｰｽﾞ要求
+CON
+JMP @R001                ; 全ﾀｽｸHALT待ち
+MPP
+LD STOPDO                ; _停止中　ﾓｰﾄﾞﾌﾗｸﾞ
+OR TRAPDO                ; _非常停止中　ﾓｰﾄﾞﾌﾗｸﾞ
+OR AirState1             ; _Group1 ｴｱｰ元圧状態
+ANL
+SET SC1_Before           ; _安全ｶﾊﾞｰ1解除ﾕｰｻﾞｰSTG
+CON
+JMP @R002                ; 安全ｶﾊﾞｰﾛｯｸ解除OK待ち
+;●各TaskからのHALT出力待ち
+;・起動中全TaskからのHALT待ち
+STG @R001                ; 全ﾀｽｸHALT待ち
+AND=.D HALT1 TASKDO1     ; _Grp1_Task0_ﾎﾟｰｽﾞ許可  _Grp1_Task0_起動中ﾌﾗｸﾞ
+SET SC1_Before           ; _安全ｶﾊﾞｰ1解除ﾕｰｻﾞｰSTG
+CON
+JMP @R002                ; 安全ｶﾊﾞｰﾛｯｸ解除OK待ち
+;●SC_Before
+;ｶﾊﾞｰﾛｯｸ解除可／不可確認(ﾕｰｻﾞｰ解放)
+STG @R002                ; 安全ｶﾊﾞｰﾛｯｸ解除OK待ち
+ANB SC1_Before           ; _安全ｶﾊﾞｰ1解除ﾕｰｻﾞｰSTG
+MPS
+AND SC1_OpenOK           ; _安全ｶﾊﾞｰ1ﾛｯｸ解除OK
+RES SC1_OpenOK           ; _安全ｶﾊﾞｰ1ﾛｯｸ解除OK
+CON
+JMP @R003                ; 安全ｶﾊﾞｰﾛｯｸ解除
+MPP
+AND SC1_OpenNG           ; _安全ｶﾊﾞｰ1ﾛｯｸ解除NG
+RES SC1_OpenNG           ; _安全ｶﾊﾞｰ1ﾛｯｸ解除NG
+CON
+ZRES HALT1:#0 HALT1:#31  ; _Grp1_Task0_ﾎﾟｰｽﾞ許可  _Grp1_Task31_ﾎﾟｰｽﾞ許可
+CON
+RES OpenWait1            ; _安全ｶﾊﾞｰ1開待ち状態
+CON
+RES PAUSE1               ; _Grp1 ﾎﾟｰｽﾞ要求
+CON
+RES PACKED1              ; _安全ｶﾊﾞｰ1開処理中
+CON
+ENDS
+;●安全ｶﾊﾞｰﾛｯｸ解除
+STG @R003                ; 安全ｶﾊﾞｰﾛｯｸ解除
+RES LockRequest          ; _安全ｶﾊﾞｰ閉要求sig
+CON
+JMP @R004                ; 安全ｶﾊﾞｰﾛｯｸ解除待ち
+STG @R004                ; 安全ｶﾊﾞｰﾛｯｸ解除待ち
+RES OpenWait1            ; _安全ｶﾊﾞｰ1開待ち状態
+CON
+SET OPEN1                ; _安全ｶﾊﾞｰ1開中
+CON
+JMP @R005                ; 安全ｶﾊﾞｰﾛｯｸ要求待ち
+;●安全ｶﾊﾞｰﾛｯｸ要求(操作BOXｽﾀｰﾄSW or 3連BOXｽﾀｰﾄSW)待ち
+STG @R005                ; 安全ｶﾊﾞｰﾛｯｸ要求待ち
+LDP START_SW1            ; *Group1　ｽﾀｰﾄSW
+ORP MSTART_SW1           ; *Group1　ｶﾊﾞｰ継続実行SW
+ANL
+SET LockRequest          ; _安全ｶﾊﾞｰ閉要求sig
+CON
+JMP @R006                ; 安全ｶﾊﾞｰﾛｯｸ待ち
+;●安全ｶﾊﾞｰﾛｯｸ～入力確認
+;(ﾛｯｸ入力入らなければ再度ﾛｯｸ要求待ちへ)
+STG @R006                ; 安全ｶﾊﾞｰﾛｯｸ待ち
+MPS
+AND COVER_SQ1            ; *Group1　安全ｶﾊﾞｰ入力
+SET SC1_After            ; _安全ｶﾊﾞｰ1ﾛｯｸﾕｰｻﾞｰSTG
+CON
+JMP @R007                ; SC_After処理
+MPP
+ANB COVER_SQ1            ; *Group1　安全ｶﾊﾞｰ入力
+TMR @0 OS_cover_wait     ; 安全ｶﾊﾞｰﾛｯｸ確認時間  _安全ｶﾊﾞｰﾛｯｸ確認時間
+CON
+AND @T0                  ; 安全ｶﾊﾞｰﾛｯｸ確認時間
+RES LockRequest          ; _安全ｶﾊﾞｰ閉要求sig
+CON
+JMP @R005                ; 安全ｶﾊﾞｰﾛｯｸ要求待ち
+;●SC_After
+;ｶﾊﾞｰﾛｯｸ可／不可確認(ﾕｰｻﾞｰ解放)
+STG @R007                ; SC_After処理
+ANB SC1_After            ; _安全ｶﾊﾞｰ1ﾛｯｸﾕｰｻﾞｰSTG
+MPS
+AND SC1_CloseOK          ; _安全ｶﾊﾞｰ1ﾛｯｸOK
+RES OPEN1                ; _安全ｶﾊﾞｰ1開中
+CON
+RES SC1_CloseOK          ; _安全ｶﾊﾞｰ1ﾛｯｸOK
+CON
+JMP @R008                ; 安全ｶﾊﾞｰ処理終了
+MPP
+AND SC1_CloseNG          ; _安全ｶﾊﾞｰ1ﾛｯｸNG
+RES SC1_CloseNG          ; _安全ｶﾊﾞｰ1ﾛｯｸNG
+CON
+JMP @R003                ; 安全ｶﾊﾞｰﾛｯｸ解除
+STG @R008                ; 安全ｶﾊﾞｰ処理終了
+ANB START_SW1            ; *Group1　ｽﾀｰﾄSW
+ANB Air1_Invalid         ; _元圧検出1無効宣言
+ZRES HALT1:#0 HALT1:#31  ; _Grp1_Task0_ﾎﾟｰｽﾞ許可  _Grp1_Task31_ﾎﾟｰｽﾞ許可
+CON
+RES PAUSE1               ; _Grp1 ﾎﾟｰｽﾞ要求
+CON
+RES PACKED1              ; _安全ｶﾊﾞｰ1開処理中
+CON
+ENDS
+;<h1/>Safety Cover Open Sig Logic/安全ｶﾊﾞｰ出力論理設定
+;LockRequest = 安全ｶﾊﾞｰ処理ｼｰｹﾝｽ内でｶﾊﾞｰ閉時にSET/ｶﾊﾞｰ開時にRESする中間sig
+;
+;ﾕｰｻﾞｰ設定(CoverOUT_Logic)の設定により、実ｺｲﾙ(COVER_LOCK*)出力の反転を行う
+;OFF：A接点でｶﾊﾞｰ開出力
+;ON：B接点でｶﾊﾞｰ開出力
+;ｶﾊﾞｰ開出力をA接点に(ONでｶﾊﾞｰ開)
+LDB CoverOUT_Logic       ; _安全ｶﾊﾞｰ出力論理設定
+MPS
+AND LockRequest          ; _安全ｶﾊﾞｰ閉要求sig
+SET COVER_LOCK1          ; *Group1　安全ｶﾊﾞｰﾛｯｸ
+MPP
+ANB LockRequest          ; _安全ｶﾊﾞｰ閉要求sig
+RES COVER_LOCK1          ; *Group1　安全ｶﾊﾞｰﾛｯｸ
+;ｶﾊﾞｰ開出力をB接点に(OFFでｶﾊﾞｰ開)
+LD CoverOUT_Logic        ; _安全ｶﾊﾞｰ出力論理設定
+MPS
+AND LockRequest          ; _安全ｶﾊﾞｰ閉要求sig
+RES COVER_LOCK1          ; *Group1　安全ｶﾊﾞｰﾛｯｸ
+MPP
+ANB LockRequest          ; _安全ｶﾊﾞｰ閉要求sig
+SET COVER_LOCK1          ; *Group1　安全ｶﾊﾞｰﾛｯｸ
+;
+END
+ENDH

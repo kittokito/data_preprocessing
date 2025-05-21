@@ -1,0 +1,1643 @@
+DEVICE:53
+;MODULE:Sensor
+;MODULE_TYPE:0
+;<h1/>TASK 0　ｼﾘﾝﾀﾞｰ ｾﾝｻｰ監視
+LD R41000                ; _Grp1_Task0_起動中ﾌﾗｸﾞ
+ANB @R000                ; Task0
+ANB R59915               ; _運転ﾓｰﾄﾞ指定
+MC
+;ﾌｨﾙﾀ 吸着ﾊﾝﾄﾞ開閉(左)
+LD MR7202                ; ﾌｨﾙﾀ 吸着ﾊﾝﾄﾞ開
+ANB MR7203               ; ﾌｨﾙﾀ 吸着ﾊﾝﾄﾞ閉
+LDB R4104                ; ﾌｨﾙﾀ 吸着ﾊﾝﾄﾞ (左)開
+LD R4104                 ; ﾌｨﾙﾀ 吸着ﾊﾝﾄﾞ (左)開
+AND R4105                ; ﾌｨﾙﾀ 吸着ﾊﾝﾄﾞ (左)閉
+ORL
+ANL
+TMR @8 #30
+CON
+AND @T8
+DW #4104 DM60009         ; Sensor ERROR No.
+CON
+SET MR4104               ; ﾌｨﾙﾀ 吸着ﾊﾝﾄﾞ (左)開Err
+LDB MR7202               ; ﾌｨﾙﾀ 吸着ﾊﾝﾄﾞ開
+AND MR7203               ; ﾌｨﾙﾀ 吸着ﾊﾝﾄﾞ閉
+LDB R4105                ; ﾌｨﾙﾀ 吸着ﾊﾝﾄﾞ (左)閉
+LD R4104                 ; ﾌｨﾙﾀ 吸着ﾊﾝﾄﾞ (左)開
+AND R4105                ; ﾌｨﾙﾀ 吸着ﾊﾝﾄﾞ (左)閉
+ORL
+ANL
+TMR @9 #30
+CON
+AND @T9
+DW #4105 DM60009         ; Sensor ERROR No.
+CON
+SET MR4105               ; ﾌｨﾙﾀ 吸着ﾊﾝﾄﾞ (左)閉Err
+;ﾌｨﾙﾀ 吸着ﾊﾝﾄﾞ開閉(右)
+LD MR7202                ; ﾌｨﾙﾀ 吸着ﾊﾝﾄﾞ開
+ANB MR7203               ; ﾌｨﾙﾀ 吸着ﾊﾝﾄﾞ閉
+LDB R4106                ; ﾌｨﾙﾀ 吸着ﾊﾝﾄﾞ (右)開
+LD R4106                 ; ﾌｨﾙﾀ 吸着ﾊﾝﾄﾞ (右)開
+AND R4107                ; ﾌｨﾙﾀ 吸着ﾊﾝﾄﾞ (右)閉
+ORL
+ANL
+TMR @26 #30
+CON
+AND @T26
+AND MR9000               ; 機種CL
+DW #4106 DM60009         ; Sensor ERROR No.
+CON
+SET MR4106               ; ﾌｨﾙﾀ 吸着ﾊﾝﾄﾞ (右)開Err
+LDB MR7202               ; ﾌｨﾙﾀ 吸着ﾊﾝﾄﾞ開
+AND MR7203               ; ﾌｨﾙﾀ 吸着ﾊﾝﾄﾞ閉
+LDB R4107                ; ﾌｨﾙﾀ 吸着ﾊﾝﾄﾞ (右)閉
+LD R4106                 ; ﾌｨﾙﾀ 吸着ﾊﾝﾄﾞ (右)開
+AND R4107                ; ﾌｨﾙﾀ 吸着ﾊﾝﾄﾞ (右)閉
+ORL
+ANL
+TMR @27 #30
+CON
+AND @T27
+AND MR9000               ; 機種CL
+DW #4107 DM60009         ; Sensor ERROR No.
+CON
+SET MR4107               ; ﾌｨﾙﾀ 吸着ﾊﾝﾄﾞ (右)閉Err
+MCR
+;//*Error Sample
+;[使用方法]
+;・@DM1にERROR番号を代入
+;・@DM2にSensor番号を代入(センサ無しエラーの場合は0)
+;・@DM9に復帰SW番号(1～9、0はSW無し)をdegit単位で4桁入力
+;・Task0 ERROR SET(@MR100)でエラー処理開始
+;・エラー復帰でTask0 ERROR END(@MR101)がON
+;・押下復帰SW番号により左から対応した@MR105,@MR106,@MR107,@MR108のいずれかがON
+;・上記ONが成立したらJMPするSTGに対応する処理を記述
+;Error0を左側から1,2,3,4の番号に対応した復帰選択SWを出力する
+;＠DM1のSW内容
+;1:「ErrorReset」
+;2:「再検出」
+;3:「再検査」
+;4:「動作継続」
+;5:「定停止」
+;6:「ﾜｰｸ除去」
+;7:「電源断要求」
+;8:「Retry」
+;9:「再確認」
+;TASK0 Sensor ERROR
+LD>= DM60009 #4100       ; Sensor ERROR No.
+AND<= DM60009 #4115      ; Sensor ERROR No.
+ANB R39004               ; ｴﾗｰ中
+SET R39004               ; ｴﾗｰ中
+CON
+DW #1 @DM1               ; ErrorNo /ERROR_DISP
+CON
+DW #1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+LDA DM60009              ; Sensor ERROR No.
+CON
+STA @DM2                 ; SensorNo /ERROR_DISP
+CON
+SET @R100                ; Task0 ERROR
+CON
+SET @R110
+STG @R110
+AND @R101                ; Task0 ERROR_End
+RES @R101                ; Task0 ERROR_End
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+ZRES MR4000 MR6915       ; Err
+CON
+DW #0 DM60009            ; Sensor ERROR No.
+CON
+OUT @R000                ; Task0
+CON
+ENDS
+;MyTask0 Error Process Substance/エラー処理実体
+STG @R100                ; Task0 ERROR
+ANB R39002               ; ERROR_DISP Busy
+MPS
+ZRES @R105 @R108         ; SW1  SW4
+CON
+LDA @DM9                 ; ReturnSW /ERROR_DISP
+CON
+TBCD
+CON
+STA @DM10
+CON
+DISN @DM10 @DM3 #4
+MRD
+DW #0 @DM0               ; TaskNo /ERROR_DISP
+CON
+BMOV @DM0 DM60000 #7     ; TaskNo /ERROR_DISP  TaskNo /ERROR_DISP
+MPP
+SET R39000               ; ERROR_DISP Start
+CON
+SET @R102                ; Task0 ERROR Busy
+CON
+JMP @R103
+STG @R103
+AND R39002               ; ERROR_DISP Busy
+AND= DM60008 @DM1        ; ReturnNo /ERROR_DISP  ErrorNo /ERROR_DISP
+JMP @R104
+STG @R104
+ANB R39002               ; ERROR_DISP Busy
+RES @R102                ; Task0 ERROR Busy
+CON
+SET @R101                ; Task0 ERROR_End
+CON
+ENDS
+;<h1/>TASK 1　ｼﾘﾝﾀﾞｰ ｾﾝｻｰ監視
+LD R41001                ; _Grp1_Task1_起動中ﾌﾗｸﾞ
+ANB @R001                ; Task1
+ANB R59915               ; _運転ﾓｰﾄﾞ指定
+MC
+;段ﾊﾞﾗｼ前後(奥)
+LD MR7210                ; 段ﾊﾞﾗｼ前後 前進
+ANB MR7211               ; 段ﾊﾞﾗｼ前後 後退
+LDB R4212                ; 段ﾊﾞﾗｼ前後(奥) 前進限
+LD R4212                 ; 段ﾊﾞﾗｼ前後(奥) 前進限
+AND R4213                ; 段ﾊﾞﾗｼ前後(奥) 後退側
+ORL
+ANL
+TMR @0 #30
+CON
+AND @T0
+DW #4212 DM60009         ; Sensor ERROR No.
+CON
+SET MR4212               ; 段ﾊﾞﾗｼ前後(奥) 前進Err
+LDB MR7210               ; 段ﾊﾞﾗｼ前後 前進
+AND MR7211               ; 段ﾊﾞﾗｼ前後 後退
+LDB R4213                ; 段ﾊﾞﾗｼ前後(奥) 後退側
+LD R4212                 ; 段ﾊﾞﾗｼ前後(奥) 前進限
+AND R4213                ; 段ﾊﾞﾗｼ前後(奥) 後退側
+ORL
+ANL
+TMR @1 #30
+CON
+AND @T1
+DW #4213 DM60009         ; Sensor ERROR No.
+CON
+SET MR4213               ; 段ﾊﾞﾗｼ前後(奥) 後退Err
+;段ﾊﾞﾗｼ前後(前)
+LD MR7210                ; 段ﾊﾞﾗｼ前後 前進
+ANB MR7211               ; 段ﾊﾞﾗｼ前後 後退
+LDB R4214                ; 段ﾊﾞﾗｼ前後(前) 前進限
+LD R4214                 ; 段ﾊﾞﾗｼ前後(前) 前進限
+AND R4215                ; 段ﾊﾞﾗｼ前後(前) 後退側
+ORL
+ANL
+TMR @2 #30
+CON
+AND @T2
+DW #4214 DM60009         ; Sensor ERROR No.
+CON
+SET MR4214               ; 段ﾊﾞﾗｼ前後(前) 前進Err
+LDB MR7210               ; 段ﾊﾞﾗｼ前後 前進
+AND MR7211               ; 段ﾊﾞﾗｼ前後 後退
+LDB R4215                ; 段ﾊﾞﾗｼ前後(前) 後退側
+LD R4214                 ; 段ﾊﾞﾗｼ前後(前) 前進限
+AND R4215                ; 段ﾊﾞﾗｼ前後(前) 後退側
+ORL
+ANL
+TMR @3 #30
+CON
+AND @T3
+DW #4215 DM60009         ; Sensor ERROR No.
+CON
+SET MR4215               ; 段ﾊﾞﾗｼ前後(前) 後退Err
+;段ﾊﾞﾗｼ上下（奥）
+LDB MR7208               ; 段ﾊﾞﾗｼ上下 下降
+AND MR7209               ; 段ﾊﾞﾗｼ上下 上昇
+LDB R4209                ; 段ﾊﾞﾗｼ上下(奥) 上昇限
+LD R4208                 ; 段ﾊﾞﾗｼ上下(奥) 下降限
+AND R4209                ; 段ﾊﾞﾗｼ上下(奥) 上昇限
+ORL
+ANL
+TMR @4 #30
+CON
+AND @T4
+DW #4208 DM60009         ; Sensor ERROR No.
+CON
+SET MR4208               ; 段ﾊﾞﾗｼ上下(奥) 上昇Err
+LD MR7208                ; 段ﾊﾞﾗｼ上下 下降
+ANB MR7209               ; 段ﾊﾞﾗｼ上下 上昇
+LDB R4208                ; 段ﾊﾞﾗｼ上下(奥) 下降限
+LD R4208                 ; 段ﾊﾞﾗｼ上下(奥) 下降限
+AND R4209                ; 段ﾊﾞﾗｼ上下(奥) 上昇限
+ORL
+ANL
+TMR @5 #30
+CON
+AND @T5
+DW #4209 DM60009         ; Sensor ERROR No.
+CON
+SET MR4209               ; 段ﾊﾞﾗｼ上下(奥) 下降Err
+;段ﾊﾞﾗｼ上下（前）
+LDB MR7208               ; 段ﾊﾞﾗｼ上下 下降
+AND MR7209               ; 段ﾊﾞﾗｼ上下 上昇
+LDB R4211                ; 段ﾊﾞﾗｼ上下(前) 上昇限
+LD R4210                 ; 段ﾊﾞﾗｼ上下(前) 下降限
+AND R4211                ; 段ﾊﾞﾗｼ上下(前) 上昇限
+ORL
+ANL
+TMR @6 #30
+CON
+AND @T6
+DW #4210 DM60009         ; Sensor ERROR No.
+CON
+SET MR4210               ; 段ﾊﾞﾗｼ上下(前) 上昇Err
+LD MR7208                ; 段ﾊﾞﾗｼ上下 下降
+ANB MR7209               ; 段ﾊﾞﾗｼ上下 上昇
+LDB R4210                ; 段ﾊﾞﾗｼ上下(前) 下降限
+LD R4210                 ; 段ﾊﾞﾗｼ上下(前) 下降限
+AND R4211                ; 段ﾊﾞﾗｼ上下(前) 上昇限
+ORL
+ANL
+TMR @7 #30
+CON
+AND @T7
+DW #4211 DM60009         ; Sensor ERROR No.
+CON
+SET MR4211               ; 段ﾊﾞﾗｼ上下(前) 下降Err
+MCR
+;//*Error Sample
+;[使用方法]
+;・@DM1にERROR番号を代入
+;・@DM2にSensor番号を代入(センサ無しエラーの場合は0)
+;・@DM9に復帰SW番号(1～9、0はSW無し)をdegit単位で4桁入力
+;・Task0 ERROR SET(@MR100)でエラー処理開始
+;・エラー復帰でTask0 ERROR END(@MR101)がON
+;・押下復帰SW番号により左から対応した@MR105,@MR106,@MR107,@MR108のいずれかがON
+;・上記ONが成立したらJMPするSTGに対応する処理を記述
+;Error0を左側から1,2,3,4の番号に対応した復帰選択SWを出力する
+;＠DM1のSW内容
+;1:「ErrorReset」
+;2:「再検出」
+;3:「再検査」
+;4:「動作継続」
+;5:「定停止」
+;6:「ﾜｰｸ除去」
+;7:「電源断要求」
+;8:「Retry」
+;9:「再確認」
+;TASK1 Sensor ERROR
+LD>= DM60009 #4200       ; Sensor ERROR No.
+AND<= DM60009 #4315      ; Sensor ERROR No.
+ANB R39004               ; ｴﾗｰ中
+SET R39004               ; ｴﾗｰ中
+CON
+DW #1 @DM1               ; ErrorNo /ERROR_DISP
+CON
+DW #1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+LDA DM60009              ; Sensor ERROR No.
+CON
+STA @DM2                 ; SensorNo /ERROR_DISP
+CON
+SET @R200                ; Task1 ERROR
+CON
+SET @R210
+STG @R210
+AND @R201                ; Task1 ERROR_End
+RES @R201                ; Task1 ERROR_End
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+ZRES MR4000 MR6915       ; Err
+CON
+DW #0 DM60009            ; Sensor ERROR No.
+CON
+OUT @R001                ; Task1
+CON
+ENDS
+;MyTask1 Error Process Substance/エラー処理実体
+STG @R200                ; Task1 ERROR
+ANB R39002               ; ERROR_DISP Busy
+MPS
+ZRES @R205 @R208
+CON
+LDA @DM9                 ; ReturnSW /ERROR_DISP
+CON
+TBCD
+CON
+STA @DM10
+CON
+DISN @DM10 @DM3 #4
+MRD
+DW #1 @DM0               ; TaskNo /ERROR_DISP
+CON
+BMOV @DM0 DM60000 #7     ; TaskNo /ERROR_DISP  TaskNo /ERROR_DISP
+MPP
+SET R39000               ; ERROR_DISP Start
+CON
+SET @R202                ; Task1 ERROR Busy
+CON
+JMP @R203
+STG @R203
+AND R39002               ; ERROR_DISP Busy
+AND= DM60008 @DM1        ; ReturnNo /ERROR_DISP  ErrorNo /ERROR_DISP
+JMP @R204
+STG @R204
+ANB R39002               ; ERROR_DISP Busy
+RES @R202                ; Task1 ERROR Busy
+CON
+SET @R201                ; Task1 ERROR_End
+CON
+ENDS
+;<h1/>TASK 2　ｼﾘﾝﾀﾞｰ ｾﾝｻｰ監視
+LD R41002                ; _Grp1_Task2_起動中ﾌﾗｸﾞ
+ANB @R002                ; Task2
+ANB R59915               ; _運転ﾓｰﾄﾞ指定
+MC
+;ﾄﾚｲｸﾗﾝﾌﾟ(左)
+LD MR7212                ; ﾄﾚｲｸﾗﾝﾌﾟ 下降
+ANB MR7213               ; ﾄﾚｲｸﾗﾝﾌﾟ 上昇
+LDB R4300                ; ﾄﾚｲｸﾗﾝﾌﾟ(左) 下降限
+LD R4300                 ; ﾄﾚｲｸﾗﾝﾌﾟ(左) 下降限
+AND R4301                ; ﾄﾚｲｸﾗﾝﾌﾟ(左) 上昇限
+ORL
+ANL
+TMR @10 #30
+CON
+AND @T10
+DW #4300 DM60009         ; Sensor ERROR No.
+CON
+SET MR4300               ; ﾄﾚｲｸﾗﾝﾌﾟ(奥) 下降Err
+LDB MR7212               ; ﾄﾚｲｸﾗﾝﾌﾟ 下降
+AND MR7213               ; ﾄﾚｲｸﾗﾝﾌﾟ 上昇
+LDB R4301                ; ﾄﾚｲｸﾗﾝﾌﾟ(左) 上昇限
+LD R4300                 ; ﾄﾚｲｸﾗﾝﾌﾟ(左) 下降限
+AND R4301                ; ﾄﾚｲｸﾗﾝﾌﾟ(左) 上昇限
+ORL
+ANL
+TMR @11 #30
+CON
+AND @T11
+DW #4301 DM60009         ; Sensor ERROR No.
+CON
+SET MR4301               ; ﾄﾚｲｸﾗﾝﾌﾟ(奥) 上昇Err
+;ﾄﾚｲｸﾗﾝﾌﾟ(右)
+LD MR7212                ; ﾄﾚｲｸﾗﾝﾌﾟ 下降
+ANB MR7213               ; ﾄﾚｲｸﾗﾝﾌﾟ 上昇
+LDB R4302                ; ﾄﾚｲｸﾗﾝﾌﾟ(右) 下降限
+LD R4302                 ; ﾄﾚｲｸﾗﾝﾌﾟ(右) 下降限
+AND R4303                ; ﾄﾚｲｸﾗﾝﾌﾟ(右) 上昇限
+ORL
+ANL
+TMR @12 #30
+CON
+AND @T12
+DW #4302 DM60009         ; Sensor ERROR No.
+CON
+SET MR4302               ; ﾄﾚｲｸﾗﾝﾌﾟ(右) 下降Err
+LDB MR7212               ; ﾄﾚｲｸﾗﾝﾌﾟ 下降
+AND MR7213               ; ﾄﾚｲｸﾗﾝﾌﾟ 上昇
+LDB R4303                ; ﾄﾚｲｸﾗﾝﾌﾟ(右) 上昇限
+LD R4302                 ; ﾄﾚｲｸﾗﾝﾌﾟ(右) 下降限
+AND R4303                ; ﾄﾚｲｸﾗﾝﾌﾟ(右) 上昇限
+ORL
+ANL
+TMR @13 #30
+CON
+AND @T13
+DW #4303 DM60009         ; Sensor ERROR No.
+CON
+SET MR4303               ; ﾄﾚｲｸﾗﾝﾌﾟ(右) 上昇Err
+;ﾄﾚｲﾁｬｯｸ開閉(奥)
+LD MR7204                ; ﾄﾚｲﾁｬｯｸ 閉
+ANB MR7205               ; ﾄﾚｲﾁｬｯｸ 開
+LDB R4200                ; ﾄﾚｲﾁｬｯｸ(奥) 閉限
+LD R4200                 ; ﾄﾚｲﾁｬｯｸ(奥) 閉限
+AND R4201                ; ﾄﾚｲﾁｬｯｸ(奥) 開限
+ORL
+ANL
+TMR @14 #30
+CON
+AND @T14
+DW #4200 DM60009         ; Sensor ERROR No.
+CON
+SET MR4200               ; ﾄﾚｲﾁｬｯｸ(奥) 閉Err
+LDB MR7204               ; ﾄﾚｲﾁｬｯｸ 閉
+AND MR7205               ; ﾄﾚｲﾁｬｯｸ 開
+LDB R4201                ; ﾄﾚｲﾁｬｯｸ(奥) 開限
+LD R4200                 ; ﾄﾚｲﾁｬｯｸ(奥) 閉限
+AND R4201                ; ﾄﾚｲﾁｬｯｸ(奥) 開限
+ORL
+ANL
+TMR @15 #30
+CON
+AND @T15
+DW #4201 DM60009         ; Sensor ERROR No.
+CON
+SET MR4201               ; ﾄﾚｲﾁｬｯｸ(奥) 開Err
+;ﾄﾚｲﾁｬｯｸ開閉(前)
+LD MR7204                ; ﾄﾚｲﾁｬｯｸ 閉
+ANB MR7205               ; ﾄﾚｲﾁｬｯｸ 開
+LDB R4202                ; ﾄﾚｲﾁｬｯｸ(前) 閉限
+LD R4202                 ; ﾄﾚｲﾁｬｯｸ(前) 閉限
+AND R4203                ; ﾄﾚｲﾁｬｯｸ(前) 開限
+ORL
+ANL
+TMR @16 #30
+CON
+AND @T16
+DW #4202 DM60009         ; Sensor ERROR No.
+CON
+SET MR4202               ; ﾄﾚｲﾁｬｯｸ(前) 閉Err
+LDB MR7204               ; ﾄﾚｲﾁｬｯｸ 閉
+AND MR7205               ; ﾄﾚｲﾁｬｯｸ 開
+LDB R4203                ; ﾄﾚｲﾁｬｯｸ(前) 開限
+LD R4202                 ; ﾄﾚｲﾁｬｯｸ(前) 閉限
+AND R4203                ; ﾄﾚｲﾁｬｯｸ(前) 開限
+ORL
+ANL
+TMR @17 #30
+CON
+AND @T17
+DW #4203 DM60009         ; Sensor ERROR No.
+CON
+SET MR4203               ; ﾄﾚｲﾁｬｯｸ(前) 開Err
+;ﾄﾚｲﾁｬｯｸ前後(奥)
+LD MR7206                ; ﾄﾚｲﾁｬｯｸ 前進
+ANB MR7207               ; ﾄﾚｲﾁｬｯｸ 後退
+LDB R4204                ; ﾁｬｯｸ前後(奥) 前進限
+LD R4204                 ; ﾁｬｯｸ前後(奥) 前進限
+AND R4205                ; ﾁｬｯｸ前後(奥) 後退限
+ORL
+ANL
+TMR @18 #30
+CON
+AND @T18
+DW #4204 DM60009         ; Sensor ERROR No.
+CON
+SET MR4204               ; ﾁｬｯｸ前後(奥) 前進Err
+LDB MR7206               ; ﾄﾚｲﾁｬｯｸ 前進
+AND MR7207               ; ﾄﾚｲﾁｬｯｸ 後退
+LDB R4205                ; ﾁｬｯｸ前後(奥) 後退限
+LD R4204                 ; ﾁｬｯｸ前後(奥) 前進限
+AND R4205                ; ﾁｬｯｸ前後(奥) 後退限
+ORL
+ANL
+TMR @19 #30
+CON
+AND @T19
+DW #4205 DM60009         ; Sensor ERROR No.
+CON
+SET MR4205               ; ﾁｬｯｸ前後(奥) 後退Err
+;ﾄﾚｲﾁｬｯｸ前後(前)
+LD MR7206                ; ﾄﾚｲﾁｬｯｸ 前進
+ANB MR7207               ; ﾄﾚｲﾁｬｯｸ 後退
+LDB R4206                ; ﾁｬｯｸ前後(前) 前進限
+LD R4206                 ; ﾁｬｯｸ前後(前) 前進限
+AND R4207                ; ﾁｬｯｸ前後(前) 後退限
+ORL
+ANL
+TMR @20 #30
+CON
+AND @T20
+DW #4206 DM60009         ; Sensor ERROR No.
+CON
+SET MR4206               ; ﾁｬｯｸ前後(前) 前進Err
+LDB MR7206               ; ﾄﾚｲﾁｬｯｸ 前進
+AND MR7207               ; ﾄﾚｲﾁｬｯｸ 後退
+LDB R4207                ; ﾁｬｯｸ前後(前) 後退限
+LD R4206                 ; ﾁｬｯｸ前後(前) 前進限
+AND R4207                ; ﾁｬｯｸ前後(前) 後退限
+ORL
+ANL
+TMR @21 #30
+CON
+AND @T21
+DW #4207 DM60009         ; Sensor ERROR No.
+CON
+SET MR4207               ; ﾁｬｯｸ前後(奥) 後退Err
+MCR
+;//*Error Sample
+;[使用方法]
+;・@DM1にERROR番号を代入
+;・@DM2にSensor番号を代入(センサ無しエラーの場合は0)
+;・@DM9に復帰SW番号(1～9、0はSW無し)をdegit単位で4桁入力
+;・Task0 ERROR SET(@MR100)でエラー処理開始
+;・エラー復帰でTask0 ERROR END(@MR101)がON
+;・押下復帰SW番号により左から対応した@MR105,@MR106,@MR107,@MR108のいずれかがON
+;・上記ONが成立したらJMPするSTGに対応する処理を記述
+;Error0を左側から1,2,3,4の番号に対応した復帰選択SWを出力する
+;＠DM1のSW内容
+;1:「ErrorReset」
+;2:「再検出」
+;3:「再検査」
+;4:「動作継続」
+;5:「定停止」
+;6:「ﾜｰｸ除去」
+;7:「電源断要求」
+;8:「Retry」
+;9:「再確認」
+;TASK2 Sensor ERROR
+LD>= DM60009 #4200       ; Sensor ERROR No.
+AND<= DM60009 #4315      ; Sensor ERROR No.
+ANB R39004               ; ｴﾗｰ中
+SET R39004               ; ｴﾗｰ中
+CON
+DW #1 @DM1               ; ErrorNo /ERROR_DISP
+CON
+DW #1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+LDA DM60009              ; Sensor ERROR No.
+CON
+STA @DM2                 ; SensorNo /ERROR_DISP
+CON
+SET @R300                ; Task2 ERROR
+CON
+SET @R310
+STG @R310
+AND @R301                ; Task2 ERROR_End
+RES @R301                ; Task2 ERROR_End
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+ZRES MR4000 MR6915       ; Err
+CON
+DW #0 DM60009            ; Sensor ERROR No.
+CON
+OUT @R002                ; Task2
+CON
+ENDS
+;MyTask2 Error Process Substance/エラー処理実体
+STG @R300                ; Task2 ERROR
+ANB R39002               ; ERROR_DISP Busy
+MPS
+ZRES @R305 @R308
+CON
+LDA @DM9                 ; ReturnSW /ERROR_DISP
+CON
+TBCD
+CON
+STA @DM10
+CON
+DISN @DM10 @DM3 #4
+MRD
+DW #2 @DM0               ; TaskNo /ERROR_DISP
+CON
+BMOV @DM0 DM60000 #7     ; TaskNo /ERROR_DISP  TaskNo /ERROR_DISP
+MPP
+SET R39000               ; ERROR_DISP Start
+CON
+SET @R302                ; Task2 ERROR Busy
+CON
+JMP @R303
+STG @R303
+AND R39002               ; ERROR_DISP Busy
+AND= DM60008 @DM1        ; ReturnNo /ERROR_DISP  ErrorNo /ERROR_DISP
+JMP @R304
+STG @R304
+ANB R39002               ; ERROR_DISP Busy
+RES @R302                ; Task2 ERROR Busy
+CON
+SET @R301                ; Task2 ERROR_End
+CON
+ENDS
+;<h1/>TASK 3　ｼﾘﾝﾀﾞｰ ｾﾝｻｰ監視
+LD R41003                ; _Grp1_Task3_起動中ﾌﾗｸﾞ
+ANB @R003                ; Task3
+ANB R59915               ; _運転ﾓｰﾄﾞ指定
+MC
+MCR
+;//*Error Sample
+;[使用方法]
+;・@DM1にERROR番号を代入
+;・@DM2にSensor番号を代入(センサ無しエラーの場合は0)
+;・@DM9に復帰SW番号(1～9、0はSW無し)をdegit単位で4桁入力
+;・Task0 ERROR SET(@MR100)でエラー処理開始
+;・エラー復帰でTask0 ERROR END(@MR101)がON
+;・押下復帰SW番号により左から対応した@MR105,@MR106,@MR107,@MR108のいずれかがON
+;・上記ONが成立したらJMPするSTGに対応する処理を記述
+;Error0を左側から1,2,3,4の番号に対応した復帰選択SWを出力する
+;＠DM1のSW内容
+;1:「ErrorReset」
+;2:「再検出」
+;3:「再検査」
+;4:「動作継続」
+;5:「定停止」
+;6:「ﾜｰｸ除去」
+;7:「電源断要求」
+;8:「Retry」
+;9:「再確認」
+;TASK3 Sensor ERROR
+LD CR2003                ; 常時OFF
+ANB R39004               ; ｴﾗｰ中
+SET R39004               ; ｴﾗｰ中
+CON
+DW #1 @DM1               ; ErrorNo /ERROR_DISP
+CON
+DW #1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+LDA DM60009              ; Sensor ERROR No.
+CON
+STA @DM2                 ; SensorNo /ERROR_DISP
+CON
+SET @R400                ; Task3 ERROR
+CON
+SET @R410
+STG @R410
+AND @R401                ; Task3 ERROR_End
+RES @R401                ; Task3 ERROR_End
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+ZRES MR4000 MR6915       ; Err
+CON
+DW #0 DM60009            ; Sensor ERROR No.
+CON
+OUT @R003                ; Task3
+CON
+ENDS
+;MyTask3 Error Process Substance/エラー処理実体
+STG @R400                ; Task3 ERROR
+ANB R39002               ; ERROR_DISP Busy
+MPS
+ZRES @R405 @R408
+CON
+LDA @DM9                 ; ReturnSW /ERROR_DISP
+CON
+TBCD
+CON
+STA @DM10
+CON
+DISN @DM10 @DM3 #4
+MRD
+DW #3 @DM0               ; TaskNo /ERROR_DISP
+CON
+BMOV @DM0 DM60000 #7     ; TaskNo /ERROR_DISP  TaskNo /ERROR_DISP
+MPP
+SET R39000               ; ERROR_DISP Start
+CON
+SET @R402                ; Task3 ERROR Busy
+CON
+JMP @R403
+STG @R403
+AND R39002               ; ERROR_DISP Busy
+AND= DM60008 @DM1        ; ReturnNo /ERROR_DISP  ErrorNo /ERROR_DISP
+JMP @R404
+STG @R404
+ANB R39002               ; ERROR_DISP Busy
+RES @R402                ; Task3 ERROR Busy
+CON
+SET @R401                ; Task3 ERROR_End
+CON
+ENDS
+;<h1/>TASK 4　ｼﾘﾝﾀﾞｰ ｾﾝｻｰ監視
+LD R41004                ; _Grp1_Task4_起動中ﾌﾗｸﾞ
+ANB @R004                ; Task4
+ANB R59915               ; _運転ﾓｰﾄﾞ指定
+MC
+;ﾌﾟﾚｽ上下
+LD MR7400                ; ﾌｨﾙﾀ ﾌﾟﾚｽ切断 上昇
+ANB MR7401               ; ﾌｨﾙﾀ ﾌﾟﾚｽ切断 下降
+LDB R4700                ; ﾌｨﾙﾀ ﾌﾟﾚｽ切断 上限
+LD R4700                 ; ﾌｨﾙﾀ ﾌﾟﾚｽ切断 上限
+AND R4701                ; ﾌｨﾙﾀ ﾌﾟﾚｽ切断 下限
+ORL
+ANL
+TMR @22 #30
+CON
+AND @T22
+DW #4700 DM60009         ; Sensor ERROR No.
+CON
+SET MR4700               ; ﾌﾟﾚｽ上昇Err
+LDB MR7400               ; ﾌｨﾙﾀ ﾌﾟﾚｽ切断 上昇
+AND MR7401               ; ﾌｨﾙﾀ ﾌﾟﾚｽ切断 下降
+LDB R4701                ; ﾌｨﾙﾀ ﾌﾟﾚｽ切断 下限
+LD R4700                 ; ﾌｨﾙﾀ ﾌﾟﾚｽ切断 上限
+AND R4701                ; ﾌｨﾙﾀ ﾌﾟﾚｽ切断 下限
+ORL
+ANL
+TMR @23 #30
+CON
+AND @T23
+DW #4701 DM60009         ; Sensor ERROR No.
+CON
+SET MR4701               ; ﾌﾟﾚｽ下降Err
+;ﾌｨﾙﾀ厚み検査
+LD MR7200                ; ﾌｨﾙﾀ 厚み検査 下降
+LDB R4602                ; ﾌｨﾙﾀ 厚み検査 下限
+LD R4602                 ; ﾌｨﾙﾀ 厚み検査 下限
+AND R4603                ; ﾌｨﾙﾀ 厚み検査 上限
+ORL
+ANL
+TMR @24 #30
+CON
+AND @T24
+DW #4602 DM60009         ; Sensor ERROR No.
+CON
+SET MR4602               ; ﾌｨﾙﾀ 厚み検査 下降Err
+LDB MR7200               ; ﾌｨﾙﾀ 厚み検査 下降
+LDB R4603                ; ﾌｨﾙﾀ 厚み検査 上限
+LD R4602                 ; ﾌｨﾙﾀ 厚み検査 下限
+AND R4603                ; ﾌｨﾙﾀ 厚み検査 上限
+ORL
+ANL
+TMR @25 #30
+CON
+AND @T25
+DW #4603 DM60009         ; Sensor ERROR No.
+CON
+SET MR4603               ; ﾌｨﾙﾀ 厚み検査 上昇Err
+;ﾌﾟﾚｽ部ﾌﾞﾛｰ前後
+LD MR7600                ; ﾌﾟﾚｽ部ﾌﾞﾛｰ 前進
+ANB MR7601               ; ﾌﾟﾚｽ部ﾌﾞﾛｰ 後退
+LDB R4704                ; ﾌﾟﾚｽ部ﾌﾞﾛｰ 前進限
+LD R4704                 ; ﾌﾟﾚｽ部ﾌﾞﾛｰ 前進限
+AND R4705                ; ﾌﾟﾚｽ部ﾌﾞﾛｰ 後退限
+ORL
+ANL
+TMR @28 #30
+CON
+AND @T28
+DW #4704 DM60009         ; Sensor ERROR No.
+CON
+SET MR4704               ; ﾌﾟﾚｽ部ﾌﾞﾛｰ 前進Err
+LDB MR7600               ; ﾌﾟﾚｽ部ﾌﾞﾛｰ 前進
+AND MR7601               ; ﾌﾟﾚｽ部ﾌﾞﾛｰ 後退
+LDB R4705                ; ﾌﾟﾚｽ部ﾌﾞﾛｰ 後退限
+LD R4704                 ; ﾌﾟﾚｽ部ﾌﾞﾛｰ 前進限
+AND R4705                ; ﾌﾟﾚｽ部ﾌﾞﾛｰ 後退限
+ORL
+ANL
+TMR @29 #30
+CON
+AND @T29
+DW #4705 DM60009         ; Sensor ERROR No.
+CON
+SET MR4705               ; ﾌﾟﾚｽ部ﾌﾞﾛｰ 後退Err
+;ﾌﾟﾚｽ部ﾌﾞﾛｰ上下
+LD MR7602                ; ﾌﾟﾚｽ部ﾌﾞﾛｰ 下降
+LDB R4706                ; ﾌﾟﾚｽ部ﾌﾞﾛｰ 下限
+LD R4706                 ; ﾌﾟﾚｽ部ﾌﾞﾛｰ 下限
+AND R4707                ; ﾌﾟﾚｽ部ﾌﾞﾛｰ 上限
+ORL
+ANL
+TMR @30 #30
+CON
+AND @T30
+DW #4706 DM60009         ; Sensor ERROR No.
+CON
+SET MR4706               ; ﾌﾟﾚｽ部ﾌﾞﾛｰ 下限Err
+LDB MR7602               ; ﾌﾟﾚｽ部ﾌﾞﾛｰ 下降
+LDB R4707                ; ﾌﾟﾚｽ部ﾌﾞﾛｰ 上限
+LD R4706                 ; ﾌﾟﾚｽ部ﾌﾞﾛｰ 下限
+AND R4707                ; ﾌﾟﾚｽ部ﾌﾞﾛｰ 上限
+ORL
+ANL
+TMR @31 #30
+CON
+AND @T31
+DW #4707 DM60009         ; Sensor ERROR No.
+CON
+SET MR4707               ; ﾌﾟﾚｽ部ﾌﾞﾛｰ 上限Err
+;ﾌﾟﾚｽ部ﾌﾞﾛｰ前後
+LD MR7214                ; 集塵切替開
+ANB MR7215               ; 集塵切替閉
+LDB R4614                ; 集塵切替 開限
+LD R4614                 ; 集塵切替 開限
+AND R4615                ; 集塵切替 閉限
+ORL
+ANL
+TMR @32 #30
+CON
+AND @T32
+DW #4614 DM60009         ; Sensor ERROR No.
+CON
+SET MR4614               ; 集塵切替開 Err
+LDB MR7214               ; 集塵切替開
+AND MR7215               ; 集塵切替閉
+LDB R4615                ; 集塵切替 閉限
+LD R4614                 ; 集塵切替 開限
+AND R4615                ; 集塵切替 閉限
+ORL
+ANL
+TMR @33 #30
+CON
+AND @T33
+DW #4615 DM60009         ; Sensor ERROR No.
+CON
+SET MR4615               ; 集塵切替閉 Err
+MCR
+;//*Error Sample
+;[使用方法]
+;・@DM1にERROR番号を代入
+;・@DM2にSensor番号を代入(センサ無しエラーの場合は0)
+;・@DM9に復帰SW番号(1～9、0はSW無し)をdegit単位で4桁入力
+;・Task0 ERROR SET(@MR100)でエラー処理開始
+;・エラー復帰でTask0 ERROR END(@MR101)がON
+;・押下復帰SW番号により左から対応した@MR105,@MR106,@MR107,@MR108のいずれかがON
+;・上記ONが成立したらJMPするSTGに対応する処理を記述
+;Error0を左側から1,2,3,4の番号に対応した復帰選択SWを出力する
+;＠DM1のSW内容
+;1:「ErrorReset」
+;2:「再検出」
+;3:「再検査」
+;4:「動作継続」
+;5:「定停止」
+;6:「ﾜｰｸ除去」
+;7:「電源断要求」
+;8:「Retry」
+;9:「再確認」
+;TASK4 Sensor ERROR
+LD>= DM60009 #4700       ; Sensor ERROR No.
+AND<= DM60009 #4701      ; Sensor ERROR No.
+LD>= DM60009 #4602       ; Sensor ERROR No.
+AND<= DM60009 #4603      ; Sensor ERROR No.
+ORL
+ANB R39004               ; ｴﾗｰ中
+SET R39004               ; ｴﾗｰ中
+CON
+DW #1 @DM1               ; ErrorNo /ERROR_DISP
+CON
+DW #1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+LDA DM60009              ; Sensor ERROR No.
+CON
+STA @DM2                 ; SensorNo /ERROR_DISP
+CON
+SET @R500                ; Task4 ERROR
+CON
+SET @R510
+STG @R510
+AND @R501                ; Task4 ERROR_End
+RES @R501                ; Task4 ERROR_End
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+ZRES MR4000 MR6915       ; Err
+CON
+DW #0 DM60009            ; Sensor ERROR No.
+CON
+OUT @R004                ; Task4
+CON
+ENDS
+;MyTask4 Error Process Substance/エラー処理実体
+STG @R500                ; Task4 ERROR
+ANB R39002               ; ERROR_DISP Busy
+MPS
+ZRES @R505 @R508
+CON
+LDA @DM9                 ; ReturnSW /ERROR_DISP
+CON
+TBCD
+CON
+STA @DM10
+CON
+DISN @DM10 @DM3 #4
+MRD
+DW #4 @DM0               ; TaskNo /ERROR_DISP
+CON
+BMOV @DM0 DM60000 #7     ; TaskNo /ERROR_DISP  TaskNo /ERROR_DISP
+MPP
+SET R39000               ; ERROR_DISP Start
+CON
+SET @R502                ; Task4 ERROR Busy
+CON
+JMP @R503
+STG @R503
+AND R39002               ; ERROR_DISP Busy
+AND= DM60008 @DM1        ; ReturnNo /ERROR_DISP  ErrorNo /ERROR_DISP
+JMP @R504
+STG @R504
+ANB R39002               ; ERROR_DISP Busy
+RES @R502                ; Task4 ERROR Busy
+CON
+SET @R501                ; Task4 ERROR_End
+CON
+ENDS
+;状態まとめ
+LDB R4300                ; ﾄﾚｲｸﾗﾝﾌﾟ(左) 下降限
+AND R4301                ; ﾄﾚｲｸﾗﾝﾌﾟ(左) 上昇限
+ANB R4302                ; ﾄﾚｲｸﾗﾝﾌﾟ(右) 下降限
+AND R4303                ; ﾄﾚｲｸﾗﾝﾌﾟ(右) 上昇限
+OUT @MR001               ; ﾄﾚｲｸﾗﾝﾌﾟ 上昇限
+LDB R4200                ; ﾄﾚｲﾁｬｯｸ(奥) 閉限
+AND R4201                ; ﾄﾚｲﾁｬｯｸ(奥) 開限
+ANB R4202                ; ﾄﾚｲﾁｬｯｸ(前) 閉限
+AND R4203                ; ﾄﾚｲﾁｬｯｸ(前) 開限
+OUT @MR002               ; ﾄﾚｲﾁｬｯｸ 開限
+LDB R4204                ; ﾁｬｯｸ前後(奥) 前進限
+AND R4205                ; ﾁｬｯｸ前後(奥) 後退限
+ANB R4206                ; ﾁｬｯｸ前後(前) 前進限
+AND R4207                ; ﾁｬｯｸ前後(前) 後退限
+OUT @MR003               ; ﾄﾚｲﾁｬｯｸ 後退限
+LDB R4212                ; 段ﾊﾞﾗｼ前後(奥) 前進限
+AND R4213                ; 段ﾊﾞﾗｼ前後(奥) 後退側
+ANB R4214                ; 段ﾊﾞﾗｼ前後(前) 前進限
+AND R4215                ; 段ﾊﾞﾗｼ前後(前) 後退側
+OUT @MR004               ; 段ﾊﾞﾗｼ 後退限
+LD R4208                 ; 段ﾊﾞﾗｼ上下(奥) 下降限
+ANB R4209                ; 段ﾊﾞﾗｼ上下(奥) 上昇限
+AND R4210                ; 段ﾊﾞﾗｼ上下(前) 下降限
+ANB R4211                ; 段ﾊﾞﾗｼ上下(前) 上昇限
+OUT @MR005               ; 段ﾊﾞﾗｼ 下降限
+LD R4200                 ; ﾄﾚｲﾁｬｯｸ(奥) 閉限
+ANB R4201                ; ﾄﾚｲﾁｬｯｸ(奥) 開限
+AND R4202                ; ﾄﾚｲﾁｬｯｸ(前) 閉限
+ANB R4203                ; ﾄﾚｲﾁｬｯｸ(前) 開限
+OUT @MR007               ; ﾄﾚｲﾁｬｯｸ 閉限
+LD R4204                 ; ﾁｬｯｸ前後(奥) 前進限
+ANB R4205                ; ﾁｬｯｸ前後(奥) 後退限
+AND R4206                ; ﾁｬｯｸ前後(前) 前進限
+ANB R4207                ; ﾁｬｯｸ前後(前) 後退限
+OUT @MR008               ; ﾄﾚｲﾁｬｯｸ 前進限
+;<h1/>RB1 ｲﾝﾀｰﾛｯｸ回路
+LD DM10507.0             ; RB1 PEND
+ANB DM10507.2            ; RB1 MOVE
+ANB DM10507.3            ; RB1 ALM
+ANB R35002               ; During RB1 MOVE 
+ANB R35003               ; RB1 Alarm
+ANB R35006               ; During RB1 PUSH 
+ANB R35010               ; During RB1 HOME
+ANB R1004                ; ｶﾊﾞｰ閉確認
+AND R1007                ; 給材側ﾄﾞｱ lock and close
+AND R4405                ; 給材ﾃｰﾌﾞﾙ戻端(D-On)
+MC
+LD CR2002                ; 常時ON
+OUT MR3308               ; RB1 原点復帰起動I/L(ON=起動可)
+LD MR22004               ; TPSW RB1 ﾄﾚｲｻｰﾁﾗﾝﾌﾟ
+AND T2039                ; RB1 ﾄﾚｲｻｰﾁ許可
+LD<> DM3000 #2150        ; _MainTP　表示中ﾍﾟｰｼﾞNo
+AND= EM1300 #1           ; RB1 Target Pos
+ORL
+LD= DM3000 #2150         ; _MainTP　表示中ﾍﾟｰｼﾞNo
+AND= DM50312 #0          ; RB選択
+AND= DM50300 #1          ; Position No
+ORL
+LD<> DM3000 #2150        ; _MainTP　表示中ﾍﾟｰｼﾞNo
+AND= EM1300 #11          ; RB1 Target Pos
+LD= DM3000 #2150         ; _MainTP　表示中ﾍﾟｰｼﾞNo
+AND= DM50312 #0          ; RB選択
+AND= DM50300 #11         ; Position No
+ORL
+AND T2011                ; RB1 Pos12(段ﾊﾞﾗｼ)
+ORL
+LD= EM1300 #12           ; RB1 Target Pos
+AND MR10109              ; T1 給材EV ﾄﾚｲｻｰﾁ完了
+AND T2070                ; RB3 Pos1(段ﾊﾞﾗｼ)
+ANB R4404                ; 給材ﾄﾚｲ上昇端(D-On)
+AND @MR002               ; ﾄﾚｲﾁｬｯｸ 開限
+AND @MR003               ; ﾄﾚｲﾁｬｯｸ 後退限
+ORL
+AND DM10507.1            ; RB1 HEND
+OUT MR3300               ; RB1 起動I/L(ON=起動可)
+MCR
+;<h1/>RB2 ｲﾝﾀｰﾛｯｸ回路
+LD DM10515.0             ; RB2 PEND
+ANB DM10515.2            ; RB2 MOVE
+ANB DM10515.3            ; RB2 ALM
+ANB R35102               ; During RB2 MOVE
+ANB R35103               ; RB2 Alarm
+ANB R35106               ; During RB2 PUSH
+ANB R35110               ; During RB2 HOME
+ANB R1004                ; ｶﾊﾞｰ閉確認
+AND R1006                ; 除材側ﾄﾞｱ lock and close
+AND R4411                ; 除材ﾃｰﾌﾞﾙ戻端(D-On)
+MC
+LD CR2002                ; 常時ON
+OUT MR3309               ; RB2 原点復帰起動I/L(ON=起動可)
+LD MR22104               ; TPSW RB2 ﾄﾚｲｻｰﾁﾗﾝﾌﾟ
+AND T2069                ; RB2 ﾄﾚｲサーチ許可
+LD<> DM3000 #2150        ; _MainTP　表示中ﾍﾟｰｼﾞNo
+AND= EM1302 #1           ; RB2 Target Pos
+ORL
+LD= DM3000 #2150         ; _MainTP　表示中ﾍﾟｰｼﾞNo
+AND= DM50312 #1          ; RB選択
+AND= DM50300 #1          ; Position No
+ORL
+LD<> DM3000 #2150        ; _MainTP　表示中ﾍﾟｰｼﾞNo
+AND= EM1302 #11          ; RB2 Target Pos
+LD= DM3000 #2150         ; _MainTP　表示中ﾍﾟｰｼﾞNo
+AND= DM50312 #1          ; RB選択
+AND= DM50300 #11         ; Position No
+ORL
+AND T2051                ; RB2 Pos12(段積)
+ORL
+LD= EM1302 #12           ; RB2 Target Pos
+AND MR10309              ; T3 除材EV ﾄﾚｲｻｰﾁ完了
+AND T2072                ; RB3 Pos3(段積み)
+LD @MR002                ; ﾄﾚｲﾁｬｯｸ 開限
+AND @MR003               ; ﾄﾚｲﾁｬｯｸ 後退限
+LD @MR007                ; ﾄﾚｲﾁｬｯｸ 閉限
+AND @MR008               ; ﾄﾚｲﾁｬｯｸ 前進限
+ORL
+ANL
+ORL
+AND DM10515.1            ; RB2 HEND
+OUT MR3301               ; RB2 起動I/L(ON=起動可)
+MCR
+;<h1/>RB3 ｲﾝﾀｰﾛｯｸ回路
+LDB DM10525.3            ; RB4 ﾄﾚｰ付近
+OR DM10525.4             ; RB4 上昇位置
+AND DM10523.0            ; RB3 PEND
+ANB DM10523.2            ; RB3 MOVE
+ANB DM10523.3            ; RB3 ALM
+ANB R35202               ; During RB3 MOVE
+ANB R35203               ; RB3 Alarm
+ANB R35206               ; During RB3 PUSH
+ANB R35210               ; During RB3 HOME
+ANB R1004                ; ｶﾊﾞｰ閉確認
+AND @MR001               ; ﾄﾚｲｸﾗﾝﾌﾟ 上昇限
+AND @MR005               ; 段ﾊﾞﾗｼ 下降限
+LD R4006                 ; 給材側ｴﾘｱｾﾝｻ(L-On)
+OR R1007                 ; 給材側ﾄﾞｱ lock and close
+ANL
+LD R4007                 ; 除材側ｴﾘｱｾﾝｻ(L-On)
+OR R1006                 ; 除材側ﾄﾞｱ lock and close
+ANL
+LD @MR002                ; ﾄﾚｲﾁｬｯｸ 開限
+OR @MR007                ; ﾄﾚｲﾁｬｯｸ 閉限
+ANL
+LD @MR003                ; ﾄﾚｲﾁｬｯｸ 後退限
+OR @MR008                ; ﾄﾚｲﾁｬｯｸ 前進限
+ANL
+MC
+LDB DM10525.3            ; RB4 ﾄﾚｰ付近
+OR DM10525.4             ; RB4 上昇位置
+OUT MR3310               ; RB3 原点復帰起動I/L(ON=起動可)
+LD<> DM3000 #2150        ; _MainTP　表示中ﾍﾟｰｼﾞNo
+AND= EM1304 #1           ; RB3 Target Pos
+LD= DM3000 #2150         ; _MainTP　表示中ﾍﾟｰｼﾞNo
+AND= DM50312 #2          ; RB選択
+AND= DM50300 #1          ; Position No
+ORL
+ANB R35002               ; During RB1 MOVE 
+LDB T2072                ; RB3 Pos3(段積み)
+LD T2072                 ; RB3 Pos3(段積み)
+LD T2040                 ; RB2 Pos1(下端)
+OR T2050                 ; RB2 Pos11(段積後戻)
+OR MR10309               ; T3 除材EV ﾄﾚｲｻｰﾁ完了
+ANL
+ORL
+ANL
+LD T2000                 ; RB1 Pos1(下端)
+OR T2010                 ; RB1 Pos11(段ﾊﾞﾗｼ後戻)
+OR MR10109               ; T1 給材EV ﾄﾚｲｻｰﾁ完了
+ANL
+LD<> DM3000 #2150        ; _MainTP　表示中ﾍﾟｰｼﾞNo
+AND= EM1304 #2           ; RB3 Target Pos
+LD= DM3000 #2150         ; _MainTP　表示中ﾍﾟｰｼﾞNo
+AND= DM50312 #2          ; RB選択
+AND= DM50300 #2          ; Position No
+ORL
+LD T2070                 ; RB3 Pos1(段ﾊﾞﾗｼ)
+LD T2000                 ; RB1 Pos1(下端)
+OR T2010                 ; RB1 Pos11(段ﾊﾞﾗｼ後戻)
+OR T2039                 ; RB1 ﾄﾚｲｻｰﾁ許可
+ANL
+LD T2072                 ; RB3 Pos3(段積み)
+LD T2040                 ; RB2 Pos1(下端)
+OR T2050                 ; RB2 Pos11(段積後戻)
+ANL
+ORL
+OR T2071                 ; RB3 Pos2(ﾜｰｸ取出)
+ANL
+LD<> DM3000 #2150        ; _MainTP　表示中ﾍﾟｰｼﾞNo
+AND= EM1304 #3           ; RB3 Target Pos
+LD= DM3000 #2150         ; _MainTP　表示中ﾍﾟｰｼﾞNo
+AND= DM50312 #2          ; RB選択
+AND= DM50300 #3          ; Position No
+ORL
+ANB R35102               ; During RB2 MOVE
+LD T2040                 ; RB2 Pos1(下端)
+OR T2050                 ; RB2 Pos11(段積後戻)
+OR MR10311               ; ﾄﾚｲｻｰﾁ時 ﾄﾚｲ無記憶
+OR MR10309               ; T3 除材EV ﾄﾚｲｻｰﾁ完了
+ANL
+ORL
+LDB DM10525.3            ; RB4 ﾄﾚｰ付近
+OR DM10525.4             ; RB4 上昇位置
+ANL
+ORL
+AND DM10523.1            ; RB3 HEND
+OUT MR3302               ; RB3 起動I/L(ON=起動可)
+MCR
+;<h1/>RB4 ｲﾝﾀｰﾛｯｸ回路
+LD DM10525.8             ; RB4 RB_READY (RB起動中)
+ANB DM10525.9            ; RB4 RB_BUSY (RB動作中)
+AND DM10525.13           ; RB4 RB_COMP (RB動作完了)
+ANB DM10525.11           ; RB4 Ctr_READY (Ctr起動完了)
+ANB R35902               ; During RB4 MOVE
+ANB R35903               ; RB4 Status Alarm
+ANB R35906               ; During RB4 RECOVERY MOVE
+ANB R35910               ; During RB4 HOME
+MC
+LD CR2002                ; 常時ON
+OUT MR3400               ; RB4 待機位置IL
+LD MR24500               ; RB4 待機位置
+OR MR24502               ; RB4 ﾌｨﾙﾀ取出 上昇位置
+OR MR24503               ; RB4 ﾌｨﾙﾀ取出 下降位置
+OR MR24506               ; RB4 集塵上昇位置
+ANB R4704                ; ﾌﾟﾚｽ部ﾌﾞﾛｰ 前進限
+AND R4705                ; ﾌﾟﾚｽ部ﾌﾞﾛｰ 後退限
+OUT MR3402               ; RB4 ﾌｨﾙﾀ取出 上昇位置IL
+LD MR24502               ; RB4 ﾌｨﾙﾀ取出 上昇位置
+ANB R4104                ; ﾌｨﾙﾀ 吸着ﾊﾝﾄﾞ (左)開
+AND R4105                ; ﾌｨﾙﾀ 吸着ﾊﾝﾄﾞ (左)閉
+LDB R4106                ; ﾌｨﾙﾀ 吸着ﾊﾝﾄﾞ (右)開
+AND R4107                ; ﾌｨﾙﾀ 吸着ﾊﾝﾄﾞ (右)閉
+OR MR9001                ; 機種BK
+ANL
+ANB R4704                ; ﾌﾟﾚｽ部ﾌﾞﾛｰ 前進限
+AND R4705                ; ﾌﾟﾚｽ部ﾌﾞﾛｰ 後退限
+OUT MR3403               ; RB4 ﾌｨﾙﾀ取出 下降位置IL
+LD MR24500               ; RB4 待機位置
+OR MR24502               ; RB4 ﾌｨﾙﾀ取出 上昇位置
+OR MR24504               ; RB4 ﾄﾚｲ 上昇位置
+OR MR24505               ; RB4 ﾄﾚｲ 下降位置
+OR MR24506               ; RB4 集塵上昇位置
+OUT MR3404               ; RB4 ﾄﾚｲ 上昇位置IL
+LD MR24504               ; RB4 ﾄﾚｲ 上昇位置
+AND T2071                ; RB3 Pos2(ﾜｰｸ取出)
+AND R4300                ; ﾄﾚｲｸﾗﾝﾌﾟ(左) 下降限
+AND R4302                ; ﾄﾚｲｸﾗﾝﾌﾟ(右) 下降限
+AND R4104                ; ﾌｨﾙﾀ 吸着ﾊﾝﾄﾞ (左)開
+ANB R4105                ; ﾌｨﾙﾀ 吸着ﾊﾝﾄﾞ (左)閉
+LD R4106                 ; ﾌｨﾙﾀ 吸着ﾊﾝﾄﾞ (右)開
+ANB R4107                ; ﾌｨﾙﾀ 吸着ﾊﾝﾄﾞ (右)閉
+OR MR9001                ; 機種BK
+ANL
+OUT MR3405               ; RB4 ﾄﾚｲ 下降位置IL
+LD MR24500               ; RB4 待機位置
+OR MR24502               ; RB4 ﾌｨﾙﾀ取出 上昇位置
+OR MR24504               ; RB4 ﾄﾚｲ 上昇位置
+OR MR24507               ; RB4 集塵下降位置
+LD R46100                ; _自動運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+LD MR9000                ; 機種CL
+AND>= DM55000 #1         ; ﾌｨﾙﾀ　投入位置
+AND<= DM55000 #12        ; ﾌｨﾙﾀ　投入位置
+LD MR9001                ; 機種BK
+AND>= DM55000 #1         ; ﾌｨﾙﾀ　投入位置
+AND<= DM55000 #18        ; ﾌｨﾙﾀ　投入位置
+ORL
+ANL
+LD R46102                ; _ﾒﾝﾃﾅﾝｽ運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+LD MR9000                ; 機種CL
+AND>= DM50950 #1         ; TP ﾄﾚｲ詰め 位置設定
+AND<= DM50950 #12        ; TP ﾄﾚｲ詰め 位置設定
+LD MR9001                ; 機種BK
+AND>= DM50950 #1         ; TP ﾄﾚｲ詰め 位置設定
+AND<= DM50950 #18        ; TP ﾄﾚｲ詰め 位置設定
+ORL
+ANL
+ORL
+ANL
+OUT MR3406               ; RB4 集塵 上昇位置IL
+LD MR24506               ; RB4 集塵上昇位置
+ANB R4104                ; ﾌｨﾙﾀ 吸着ﾊﾝﾄﾞ (左)開
+AND R4105                ; ﾌｨﾙﾀ 吸着ﾊﾝﾄﾞ (左)閉
+LDB R4106                ; ﾌｨﾙﾀ 吸着ﾊﾝﾄﾞ (右)開
+AND R4107                ; ﾌｨﾙﾀ 吸着ﾊﾝﾄﾞ (右)閉
+OR MR9001                ; 機種BK
+ANL
+LD R46100                ; _自動運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+LD MR9000                ; 機種CL
+AND>= DM55000 #1         ; ﾌｨﾙﾀ　投入位置
+AND<= DM55000 #12        ; ﾌｨﾙﾀ　投入位置
+LD MR9001                ; 機種BK
+AND>= DM55000 #1         ; ﾌｨﾙﾀ　投入位置
+AND<= DM55000 #18        ; ﾌｨﾙﾀ　投入位置
+ORL
+ANL
+LD R46102                ; _ﾒﾝﾃﾅﾝｽ運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+LD MR9000                ; 機種CL
+AND>= DM50950 #1         ; TP ﾄﾚｲ詰め 位置設定
+AND<= DM50950 #12        ; TP ﾄﾚｲ詰め 位置設定
+LD MR9001                ; 機種BK
+AND>= DM50950 #1         ; TP ﾄﾚｲ詰め 位置設定
+AND<= DM50950 #18        ; TP ﾄﾚｲ詰め 位置設定
+ORL
+ANL
+ORL
+ANL
+OUT MR3407               ; RB4 集塵 下降位置IL
+LD MR24500               ; RB4 待機位置
+OR MR24502               ; RB4 ﾌｨﾙﾀ取出 上昇位置
+OR MR24504               ; RB4 ﾄﾚｲ 上昇位置
+OR MR24506               ; RB4 集塵上昇位置
+OR MR24508               ; RB4 仮置ﾄﾚｲ 上昇位置
+OR MR24509               ; RB4 仮置ﾄﾚｲ 下降位置
+ANB MR12100              ; 仮置ﾄﾚｰ満杯
+ANB MR12101              ; 仮置ﾄﾚｰ無
+ANB MR12102              ; 仮置ﾄﾚｰ機種不一致
+ANB MR12103              ; 仮置ﾄﾚｰ 逆入れ
+LD R46100                ; _自動運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+LD MR9000                ; 機種CL
+AND>= DM55002 #1         ; 仮置ﾄﾚｰ 投入位置
+AND<= DM55002 #12        ; 仮置ﾄﾚｰ 投入位置
+LD MR9001                ; 機種BK
+AND>= DM55002 #1         ; 仮置ﾄﾚｰ 投入位置
+AND<= DM55002 #18        ; 仮置ﾄﾚｰ 投入位置
+ORL
+ANL
+LD R46102                ; _ﾒﾝﾃﾅﾝｽ運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+LD MR9000                ; 機種CL
+AND>= DM50954 #1         ; TP 仮置ﾄﾚｲ 位置設定
+AND<= DM50954 #12        ; TP 仮置ﾄﾚｲ 位置設定
+LD MR9001                ; 機種BK
+AND>= DM50954 #1         ; TP 仮置ﾄﾚｲ 位置設定
+AND<= DM50954 #18        ; TP 仮置ﾄﾚｲ 位置設定
+ORL
+ANL
+ORL
+ANL
+OUT MR3408               ; RB4 仮置ﾄﾚｲ 上昇位置IL
+LD MR24508               ; RB4 仮置ﾄﾚｲ 上昇位置
+AND R4104                ; ﾌｨﾙﾀ 吸着ﾊﾝﾄﾞ (左)開
+ANB R4105                ; ﾌｨﾙﾀ 吸着ﾊﾝﾄﾞ (左)閉
+LD R4106                 ; ﾌｨﾙﾀ 吸着ﾊﾝﾄﾞ (右)開
+ANB R4107                ; ﾌｨﾙﾀ 吸着ﾊﾝﾄﾞ (右)閉
+OR MR9001                ; 機種BK
+ANL
+LD MR9000                ; 機種CL
+AND R4412                ; 仮置ﾄﾚｲ 確認1
+ANB R4413                ; 仮置ﾄﾚｲ 確認2
+LD MR9001                ; 機種BK
+ANB R4412                ; 仮置ﾄﾚｲ 確認1
+AND R4413                ; 仮置ﾄﾚｲ 確認2
+ORL
+ANL
+ANB MR12100              ; 仮置ﾄﾚｰ満杯
+ANB MR12101              ; 仮置ﾄﾚｰ無
+ANB MR12102              ; 仮置ﾄﾚｰ機種不一致
+ANB MR12103              ; 仮置ﾄﾚｰ 逆入れ
+LD R46100                ; _自動運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+LD MR9000                ; 機種CL
+AND>= DM55002 #1         ; 仮置ﾄﾚｰ 投入位置
+AND<= DM55002 #12        ; 仮置ﾄﾚｰ 投入位置
+LD MR9001                ; 機種BK
+AND>= DM55002 #1         ; 仮置ﾄﾚｰ 投入位置
+AND<= DM55002 #18        ; 仮置ﾄﾚｰ 投入位置
+ORL
+ANL
+LD R46102                ; _ﾒﾝﾃﾅﾝｽ運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+LD MR9000                ; 機種CL
+AND>= DM50954 #1         ; TP 仮置ﾄﾚｲ 位置設定
+AND<= DM50954 #12        ; TP 仮置ﾄﾚｲ 位置設定
+LD MR9001                ; 機種BK
+AND>= DM50954 #1         ; TP 仮置ﾄﾚｲ 位置設定
+AND<= DM50954 #18        ; TP 仮置ﾄﾚｲ 位置設定
+ORL
+ANL
+ORL
+ANL
+OUT MR3409               ; RB4 仮置ﾄﾚｲ 下降位置IL
+MCR
+;<h1/>ｼﾘﾝﾀﾞｰ ｲﾝﾀｰﾛｯｸ回路
+LDB CR3009               ; X軸ﾊﾟﾙｽ出力中/緊急停止
+ANB MR10412              ; ﾌｰﾌﾟﾋﾟｯﾁ送り動作中
+AND R4010                ; ﾌﾟﾚｽ用 圧力検出
+OUT MR3000               ; ﾌｨﾙﾀ ﾌﾟﾚｽ切断 上昇IL
+LD CR2002                ; 常時ON
+ANB CR3009               ; X軸ﾊﾟﾙｽ出力中/緊急停止
+OUT MR3001               ; ﾌｨﾙﾀ ﾌﾟﾚｽ切断 下降IL
+LD CR2002                ; 常時ON
+OUT MR3002               ; ﾌｨﾙﾀ 厚み検査 上昇IL
+LD CR2002                ; 常時ON
+OUT MR3003               ; ﾌｨﾙﾀ 厚み検査 下降IL
+LD CR2002                ; 常時ON
+OUT MR3004               ; 巻出側 ﾄﾙｸﾓｰﾀｰIL
+LD CR2002                ; 常時ON
+OUT MR3005               ; 巻取側 ﾄﾙｸﾓｰﾀｰIL
+LD CR2002                ; 常時ON
+OUT MR3006               ; 集塵切替開IL
+LD CR2002                ; 常時ON
+OUT MR3007               ; 集塵切替閉IL
+LD R4707                 ; ﾌﾟﾚｽ部ﾌﾞﾛｰ 上限
+ANB DM10525.0            ; RB4 ﾌﾟﾚｽ付近
+LD<> EM1072 #60          ; RB4 動作ｺﾏﾝﾄﾞ
+ORB DM10525.9            ; RB4 RB_BUSY (RB動作中)
+ANL
+OUT MR3008               ; ﾌﾟﾚｽ部ﾌﾞﾛｰ前進IL
+LD R4707                 ; ﾌﾟﾚｽ部ﾌﾞﾛｰ 上限
+OUT MR3009               ; ﾌﾟﾚｽ部ﾌﾞﾛｰ後退IL
+LD CR2002                ; 常時ON
+OUT MR3010               ; ﾌﾟﾚｽ部ﾌﾞﾛｰ上昇IL
+LD R4704                 ; ﾌﾟﾚｽ部ﾌﾞﾛｰ 前進限
+OUT MR3011               ; ﾌﾟﾚｽ部ﾌﾞﾛｰ下降IL
+LD DM10525.4             ; RB4 上昇位置
+ANB DM10525.9            ; RB4 RB_BUSY (RB動作中)
+OUT MR3012               ; ﾌｨﾙﾀ 吸着ﾊﾝﾄﾞ開IL
+LD DM10525.4             ; RB4 上昇位置
+ANB DM10525.9            ; RB4 RB_BUSY (RB動作中)
+OUT MR3013               ; ﾌｨﾙﾀ 吸着ﾊﾝﾄﾞ閉IL
+LD R4204                 ; ﾁｬｯｸ前後(奥) 前進限
+ANB R4205                ; ﾁｬｯｸ前後(奥) 後退限
+AND R4206                ; ﾁｬｯｸ前後(前) 前進限
+ANB R4207                ; ﾁｬｯｸ前後(前) 後退限
+OUT MR3014               ; I/L ﾄﾚｲﾁｬｯｸ 閉
+LD CR2002                ; 常時ON
+OUT MR3015               ; I/L ﾄﾚｲﾁｬｯｸ 開
+LDB R4208                ; 段ﾊﾞﾗｼ上下(奥) 下降限
+AND R4209                ; 段ﾊﾞﾗｼ上下(奥) 上昇限
+ANB R4210                ; 段ﾊﾞﾗｼ上下(前) 下降限
+AND R4211                ; 段ﾊﾞﾗｼ上下(前) 上昇限
+OUT MR3100               ; I/L 段ﾊﾞﾗｼ 前進
+LD CR2002                ; 常時ON
+OUT MR3101               ; I/L 段ﾊﾞﾗｼ 後退
+LDB R4212                ; 段ﾊﾞﾗｼ前後(奥) 前進限
+AND R4213                ; 段ﾊﾞﾗｼ前後(奥) 後退側
+ANB R4214                ; 段ﾊﾞﾗｼ前後(前) 前進限
+AND R4215                ; 段ﾊﾞﾗｼ前後(前) 後退側
+OUT MR3102               ; I/L 段ﾊﾞﾗｼ 上昇
+LD CR2002                ; 常時ON
+OUT MR3103               ; I/L 段ﾊﾞﾗｼ 下降
+LDB R4200                ; ﾄﾚｲﾁｬｯｸ(奥) 閉限
+AND R4201                ; ﾄﾚｲﾁｬｯｸ(奥) 開限
+ANB R4202                ; ﾄﾚｲﾁｬｯｸ(前) 閉限
+AND R4203                ; ﾄﾚｲﾁｬｯｸ(前) 開限
+OUT MR3104               ; I/L ﾄﾚｲﾁｬｯｸ 前進
+LDB R4200                ; ﾄﾚｲﾁｬｯｸ(奥) 閉限
+AND R4201                ; ﾄﾚｲﾁｬｯｸ(奥) 開限
+ANB R4202                ; ﾄﾚｲﾁｬｯｸ(前) 閉限
+AND R4203                ; ﾄﾚｲﾁｬｯｸ(前) 開限
+OUT MR3105               ; I/L ﾄﾚｲﾁｬｯｸ 後退
+LD T2071                 ; RB3 Pos2(ﾜｰｸ取出)
+OUT MR3106               ; I/L ﾄﾚｲｸﾗﾝﾌﾟ 下降
+LD CR2002                ; 常時ON
+OUT MR3107               ; I/L ﾄﾚｲｸﾗﾝﾌﾟ 上昇
+;    ﾌｰﾌﾟ送りﾓｰﾀ 動作条件
+LD MR2100                ; 巻出側 ﾄﾙｸﾓｰﾀｰ CW
+OR MR2101                ; 巻出側 ﾄﾙｸﾓｰﾀｰ CCW
+LD MR2104                ; 巻取側 ﾄﾙｸﾓｰﾀｰ CW
+OR MR2105                ; 巻取側 ﾄﾙｸﾓｰﾀｰ CCW
+ANL
+AND R4701                ; ﾌｨﾙﾀ ﾌﾟﾚｽ切断 下限
+ANB R4700                ; ﾌｨﾙﾀ ﾌﾟﾚｽ切断 上限
+ANB R4602                ; ﾌｨﾙﾀ 厚み検査 下限
+AND R4603                ; ﾌｨﾙﾀ 厚み検査 上限
+AND R4607                ; ﾌｰﾌﾟ押さえ 確認
+ANB CR3009               ; X軸ﾊﾟﾙｽ出力中/緊急停止
+OUT MR3202               ; ﾌｰﾌﾟ送りﾓｰﾀIL
+;<h1/>RB ZONE設定
+;RB1
+LDB CR2002               ; 常時ON
+OUT MR11200              ; RB1 ZONE1
+LDB CR2002               ; 常時ON
+OUT MR11201              ; RB1 ZONE2
+LDB CR2002               ; 常時ON
+OUT MR11202              ; RB1 ZONE3
+LDB CR2002               ; 常時ON
+OUT MR11203              ; RB1 ZONE4
+LDB CR2002               ; 常時ON
+OUT MR11204              ; RB1 ZONE5
+;RB2
+LDB CR2002               ; 常時ON
+OUT MR11205              ; RB2 ZONE1
+LDB CR2002               ; 常時ON
+OUT MR11206              ; RB2 ZONE2
+LDB CR2002               ; 常時ON
+OUT MR11207              ; RB2 ZONE3
+LDB CR2002               ; 常時ON
+OUT MR11208              ; RB2 ZONE4
+LDB CR2002               ; 常時ON
+OUT MR11209              ; RB2 ZONE5
+;RB3
+LDB CR2002               ; 常時ON
+OUT MR11210              ; RB3 ZONE1
+LDB CR2002               ; 常時ON
+OUT MR11211              ; RB3 ZONE2
+LDB CR2002               ; 常時ON
+OUT MR11212              ; RB3 ZONE3
+LDB CR2002               ; 常時ON
+OUT MR11213              ; RB3 ZONE4
+LDB CR2002               ; 常時ON
+OUT MR11214              ; RB3 ZONE5
+;RB4
+LDB CR2002               ; 常時ON
+OUT MR11215              ; RB4 ZONE1
+LDB CR2002               ; 常時ON
+OUT MR11300              ; RB4 ZONE2
+LDB CR2002               ; 常時ON
+OUT MR11301              ; RB4 ZONE3
+LDB CR2002               ; 常時ON
+OUT MR11302              ; RB4 ZONE4
+LDB CR2002               ; 常時ON
+OUT MR11303              ; RB4 ZONE5
+;RB5
+LDB CR2002               ; 常時ON
+OUT MR11304              ; RB5 ZONE1
+LDB CR2002               ; 常時ON
+OUT MR11305              ; RB5 ZONE2
+LDB CR2002               ; 常時ON
+OUT MR11306              ; RB5 ZONE3
+LDB CR2002               ; 常時ON
+OUT MR11307              ; RB5 ZONE4
+LDB CR2002               ; 常時ON
+OUT MR11308              ; RB5 ZONE5
+;RB6
+LDB CR2002               ; 常時ON
+OUT MR11309              ; RB6 ZONE1
+LDB CR2002               ; 常時ON
+OUT MR11310              ; RB6 ZONE2
+LDB CR2002               ; 常時ON
+OUT MR11311              ; RB6 ZONE3
+LDB CR2002               ; 常時ON
+OUT MR11312              ; RB6 ZONE4
+LDB CR2002               ; 常時ON
+OUT MR11313              ; RB6 ZONE5
+;RB7
+LDB CR2002               ; 常時ON
+OUT MR11314              ; RB7 ZONE1
+LDB CR2002               ; 常時ON
+OUT MR11315              ; RB7 ZONE2
+LDB CR2002               ; 常時ON
+OUT MR11400              ; RB7 ZONE3
+LDB CR2002               ; 常時ON
+OUT MR11401              ; RB7 ZONE4
+LDB CR2002               ; 常時ON
+OUT MR11402              ; RB7 ZONE5
+;RB8
+LDB CR2002               ; 常時ON
+OUT MR11403              ; RB8 ZONE1
+LDB CR2002               ; 常時ON
+OUT MR11404              ; RB8 ZONE2
+LDB CR2002               ; 常時ON
+OUT MR11405              ; RB8 ZONE3
+LDB CR2002               ; 常時ON
+OUT MR11406              ; RB8 ZONE4
+LDB CR2002               ; 常時ON
+OUT MR11407              ; RB8 ZONE5
+;RB9
+LDB CR2002               ; 常時ON
+OUT MR11408              ; RB9 ZONE1
+LDB CR2002               ; 常時ON
+OUT MR11409              ; RB9 ZONE2
+LDB CR2002               ; 常時ON
+OUT MR11410              ; RB9 ZONE3
+LDB CR2002               ; 常時ON
+OUT MR11411              ; RB9 ZONE4
+LDB CR2002               ; 常時ON
+OUT MR11412              ; RB9 ZONE5
+;RB10
+LDB CR2002               ; 常時ON
+OUT MR11413              ; RB10 ZONE1
+LDB CR2002               ; 常時ON
+OUT MR11414              ; RB10 ZONE2
+LDB CR2002               ; 常時ON
+OUT MR11415              ; RB10 ZONE3
+LDB CR2002               ; 常時ON
+OUT MR11500              ; RB10 ZONE4
+LDB CR2002               ; 常時ON
+OUT MR11501              ; RB10 ZONE5
+;RB11
+LDB CR2002               ; 常時ON
+OUT MR11502              ; RB11 ZONE1
+LDB CR2002               ; 常時ON
+OUT MR11503              ; RB11 ZONE2
+LDB CR2002               ; 常時ON
+OUT MR11504              ; RB11 ZONE3
+LDB CR2002               ; 常時ON
+OUT MR11505              ; RB11 ZONE4
+LDB CR2002               ; 常時ON
+OUT MR11506              ; RB11 ZONE5
+;RB12
+LDB CR2002               ; 常時ON
+OUT MR11507              ; RB12 ZONE1
+LDB CR2002               ; 常時ON
+OUT MR11508              ; RB12 ZONE2
+LDB CR2002               ; 常時ON
+OUT MR11509              ; RB12 ZONE3
+LDB CR2002               ; 常時ON
+OUT MR11510              ; RB12 ZONE4
+LDB CR2002               ; 常時ON
+OUT MR11511              ; RB12 ZONE5
+;RB13
+LDB CR2002               ; 常時ON
+OUT MR11512              ; RB13 ZONE1
+LDB CR2002               ; 常時ON
+OUT MR11513              ; RB13 ZONE2
+LDB CR2002               ; 常時ON
+OUT MR11514              ; RB13 ZONE3
+LDB CR2002               ; 常時ON
+OUT MR11515              ; RB13 ZONE4
+LDB CR2002               ; 常時ON
+OUT MR11600              ; RB13 ZONE5
+;RB14
+LDB CR2002               ; 常時ON
+OUT MR11601              ; RB14 ZONE1
+LDB CR2002               ; 常時ON
+OUT MR11602              ; RB14 ZONE2
+LDB CR2002               ; 常時ON
+OUT MR11603              ; RB14 ZONE3
+LDB CR2002               ; 常時ON
+OUT MR11604              ; RB14 ZONE4
+LDB CR2002               ; 常時ON
+OUT MR11605              ; RB14 ZONE5
+;RB15
+LDB CR2002               ; 常時ON
+OUT MR11606              ; RB15 ZONE1
+LDB CR2002               ; 常時ON
+OUT MR11607              ; RB15 ZONE2
+LDB CR2002               ; 常時ON
+OUT MR11608              ; RB15 ZONE3
+LDB CR2002               ; 常時ON
+OUT MR11609              ; RB15 ZONE4
+LDB CR2002               ; 常時ON
+OUT MR11610              ; RB15 ZONE5
+;RB16
+LDB CR2002               ; 常時ON
+OUT MR11611              ; RB16 ZONE1
+LDB CR2002               ; 常時ON
+OUT MR11612              ; RB16 ZONE2
+LDB CR2002               ; 常時ON
+OUT MR11613              ; RB16 ZONE3
+LDB CR2002               ; 常時ON
+OUT MR11614              ; RB16 ZONE4
+LDB CR2002               ; 常時ON
+OUT MR11615              ; RB16 ZONE5
+;RB17
+LDB CR2002               ; 常時ON
+OUT MR11700              ; RB17 ZONE1
+LDB CR2002               ; 常時ON
+OUT MR11701              ; RB17 ZONE2
+LDB CR2002               ; 常時ON
+OUT MR11702              ; RB17 ZONE3
+LDB CR2002               ; 常時ON
+OUT MR11703              ; RB17 ZONE4
+LDB CR2002               ; 常時ON
+OUT MR11704              ; RB17 ZONE5
+;RB18
+LDB CR2002               ; 常時ON
+OUT MR11705              ; RB18 ZONE1
+LDB CR2002               ; 常時ON
+OUT MR11706              ; RB18 ZONE2
+LDB CR2002               ; 常時ON
+OUT MR11707              ; RB18 ZONE3
+LDB CR2002               ; 常時ON
+OUT MR11708              ; RB18 ZONE4
+LDB CR2002               ; 常時ON
+OUT MR11709              ; RB18 ZONE5
+;RB19
+LDB CR2002               ; 常時ON
+OUT MR11710              ; RB19 ZONE1
+LDB CR2002               ; 常時ON
+OUT MR11711              ; RB19 ZONE2
+LDB CR2002               ; 常時ON
+OUT MR11712              ; RB19 ZONE3
+LDB CR2002               ; 常時ON
+OUT MR11713              ; RB19 ZONE4
+LDB CR2002               ; 常時ON
+OUT MR11714              ; RB19 ZONE5
+;RB20
+LDB CR2002               ; 常時ON
+OUT MR11715              ; RB20 ZONE1
+LDB CR2002               ; 常時ON
+OUT MR11800              ; RB20 ZONE2
+LDB CR2002               ; 常時ON
+OUT MR11801              ; RB20 ZONE3
+LDB CR2002               ; 常時ON
+OUT MR11802              ; RB20 ZONE4
+LDB CR2002               ; 常時ON
+OUT MR11803              ; RB20 ZONE5
+;RB21
+LDB CR2002               ; 常時ON
+OUT MR11804              ; RB21 ZONE1
+LDB CR2002               ; 常時ON
+OUT MR11805              ; RB21 ZONE2
+LDB CR2002               ; 常時ON
+OUT MR11806              ; RB21 ZONE3
+LDB CR2002               ; 常時ON
+OUT MR11807              ; RB21 ZONE4
+LDB CR2002               ; 常時ON
+OUT MR11808              ; RB21 ZONE5
+;RB22
+LDB CR2002               ; 常時ON
+OUT MR11809              ; RB22 ZONE1
+LDB CR2002               ; 常時ON
+OUT MR11810              ; RB22 ZONE2
+LDB CR2002               ; 常時ON
+OUT MR11811              ; RB22 ZONE3
+LDB CR2002               ; 常時ON
+OUT MR11812              ; RB22 ZONE4
+LDB CR2002               ; 常時ON
+OUT MR11813              ; RB22 ZONE5
+;RB23
+LDB CR2002               ; 常時ON
+OUT MR11814              ; RB23 ZONE1
+LDB CR2002               ; 常時ON
+OUT MR11815              ; RB23 ZONE2
+LDB CR2002               ; 常時ON
+OUT MR11900              ; RB23 ZONE3
+LDB CR2002               ; 常時ON
+OUT MR11901              ; RB23 ZONE4
+LDB CR2002               ; 常時ON
+OUT MR11902              ; RB23 ZONE5
+;<h1/>0.5秒　フリッカ回路
+LD CR2002                ; 常時ON
+MPS
+ANB T200                 ; ﾌﾘｯｶ用1
+OUT R100                 ; 0.5s ｸﾛｯｸ
+MRD
+ANB T201                 ; ﾌﾘｯｶ用2
+TMR #200 #5              ; ﾌﾘｯｶ用1
+MPP
+AND T200                 ; ﾌﾘｯｶ用1
+TMR #201 #5              ; ﾌﾘｯｶ用2
+END
+ENDH

@@ -1,0 +1,1378 @@
+DEVICE:53
+;MODULE:給材PP
+;MODULE_TYPE:0
+;非常停止
+LD R53010                ; 非常停止
+OR R54200                ; TRAP
+ZRES @MR100 @MR3315
+LD R55515                ; ﾓｼﾞｭｰﾙｽﾃｰｼﾞﾘｾｯﾄ
+ZRES @MR100 @MR3315
+;条件ﾌﾗｸﾞ / Flug
+LDB R4300                ; PZT給材PP 前進端
+AND R4301                ; PZT給材PP 後退端(CV側)
+ANB R4302                ; PZT給材PP ﾊﾝﾄﾞ下降端
+AND R4303                ; PZT給材PP ﾊﾝﾄﾞ上昇端
+ANB R4304                ; PZT給材PP 旋回端(治具側)
+AND R4305                ; PZT給材PP 旋回戻り端(CV側)
+AND R56001               ; 給材P&P P1位置表示
+OUT @MR005               ; 給材PP部ｼﾘﾝﾀﾞ RB原位置
+LDB R53300               ; PAUSE中
+ANB R53112               ; 給除材PPｴﾗｰ中
+ANB R53108               ; ｴﾗｰ発生中
+OUT @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+;AUTO動作 / AUTO OPERATION
+LD R53011                ; AUTO MODE
+ANB R54601               ; 給材PP AUTO 動作中
+AND R54600               ; 給材PP AUTO ｽﾀｰﾄ
+LD LR41000               ; 自動ﾊﾟﾗﾒｰﾀ0　通常動作
+OR LR41001               ; 自動ﾊﾟﾗﾒｰﾀ1　払出動作
+OR LR41003               ; 自動ﾊﾟﾗﾒｰﾀ3　左ｱﾗｲﾒﾝﾄのみ動作
+OR LR41006               ; 自動ﾊﾟﾗﾒｰﾀ6　右ｱﾗｲﾒﾝﾄのみ動作
+LD LR41008               ; 自動ﾊﾟﾗﾒｰﾀ8
+LD LR41009               ; L側動作
+OR LR41010               ; R側動作
+ANL
+ORL
+LD LR41007               ; 自動ﾊﾟﾗﾒｰﾀ7　基準測定ﾓｰﾄﾞ
+LD LR41014               ; L側動作
+OR LR41015               ; R側動作
+ANL
+ORL
+ANL
+RES R54602               ; 給材PP AUTO 動作終了
+CON
+SET R54601               ; 給材PP AUTO 動作中
+CON
+RES R54600               ; 給材PP AUTO ｽﾀｰﾄ
+CON
+SET @MR2000
+STG @MR2000
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+RES R54606               ; 取りP給材動作開始
+CON
+MPS
+LDB R54603               ; 固体ﾊﾟﾚｯﾄ排出中
+AND R54505               ; 供給ｺﾝﾍﾞｱ取りP取出し要求
+ANL
+SET R54607               ; 取りP給材動作中
+CON
+RES R54505               ; 供給ｺﾝﾍﾞｱ取りP取出し要求
+CON
+JMP @MR2001              ; @mr2001
+MPP
+LDB R54505               ; 供給ｺﾝﾍﾞｱ取りP取出し要求
+AND R54502               ; ｺﾝﾍﾞｱAUTO 給材動作終了
+ANL
+JMP @MR2700              ; 終了処理へ
+STG @MR2001              ; @mr2001
+MPS
+AND R43001               ; 給除材RB 給材側 P1
+JMP @MR2005
+MPP
+LDB R43001               ; 給除材RB 給材側 P1
+ANB R54705               ; L側取りP除材中
+ANL
+TMR @1 #2                ; ﾃﾞｨﾚｰﾀｲﾏ1
+CON
+AND @T1                  ; ﾃﾞｨﾚｰﾀｲﾏ1
+RES MR6400               ; PZT給材PPﾊﾝﾄﾞ 下降
+CON
+AND R4303                ; PZT給材PP ﾊﾝﾄﾞ上昇端
+SET @MR2900              ; PAUSE禁止
+CON
+JMP @MR2002
+STG @MR2002
+MPS
+AND MR14102              ; 給材P&P_移動完了
+JMP @MR2003
+MPP
+MCALL POINT_MOVE #2 #1 #1 MR14111 MR14102;給材P&P_位置決め異常  給材P&P_移動完了
+STG @MR2003
+RES MR14102              ; 給材P&P_移動完了
+CON
+ANB MR14102              ; 給材P&P_移動完了
+RES @MR2900              ; PAUSE禁止
+CON
+SET @MR2001              ; @mr2001
+CON
+ENDS
+;-------
+STG @MR2005
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+SET MR6400               ; PZT給材PPﾊﾝﾄﾞ 下降
+CON
+AND R4302                ; PZT給材PP ﾊﾝﾄﾞ下降端
+RES MR7101               ; PZT給材PP Vac OFF
+CON
+RES MR7102               ; PZT給材PP Vacﾊｶｲ ON
+CON
+SET MR7100               ; PZT給材PP Vac ON
+CON
+JMP @MR2006
+STG @MR2006
+MPS
+AND R4602                ; PZT給材PP Vac検出
+JMP @MR2100
+MPP
+ANB R4602                ; PZT給材PP Vac検出
+TMR @2 #20               ; 吸着ｴﾗｰ検出時間
+CON
+AND @T2                  ; 吸着ｴﾗｰ検出時間
+JMP @MR2007
+STG @MR2007
+RES MR7100               ; PZT給材PP Vac ON
+CON
+SET MR7101               ; PZT給材PP Vac OFF
+CON
+SET MR7102               ; PZT給材PP Vacﾊｶｲ ON
+CON
+TMR #910 #2
+CON
+AND T910
+JMP @MR2008
+STG @MR2008
+RES MR6400               ; PZT給材PPﾊﾝﾄﾞ 下降
+CON
+AND R4303                ; PZT給材PP ﾊﾝﾄﾞ上昇端
+RES MR7100               ; PZT給材PP Vac ON
+CON
+SET MR7101               ; PZT給材PP Vac OFF
+CON
+RES MR7102               ; PZT給材PP Vacﾊｶｲ ON
+CON
+JMP @MR2009
+STG @MR2009
+RES MR6403               ; PZT給材PPﾊﾝﾄﾞ 後退
+CON
+RES MR6402               ; PZT給材PPﾊﾝﾄﾞ 前進
+CON
+SET @MR1000              ; 給材PP 吸着NG
+CON
+JMP @MR2010
+STG @MR2010
+ANB @MR1000              ; 給材PP 吸着NG
+AND @MR1007              ; ｱﾗｰﾑ解除
+RES @MR1007              ; ｱﾗｰﾑ解除
+CON
+JMP @MR2011
+STG @MR2011
+MPS
+ANB R310                 ; ﾊﾟｽｽｲｯﾁON
+RES MR6402               ; PZT給材PPﾊﾝﾄﾞ 前進
+CON
+SET MR6403               ; PZT給材PPﾊﾝﾄﾞ 後退
+CON
+AND R4301                ; PZT給材PP 後退端(CV側)
+JMP @MR2005
+MPP
+AND R310                 ; ﾊﾟｽｽｲｯﾁON
+JMP @MR2012
+STG @MR2012
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+MPS
+ANB R4204                ; 給材側位置決め ﾜｰｸ確認ｾﾝｻ
+RES MR6402               ; PZT給材PPﾊﾝﾄﾞ 前進
+CON
+SET MR6403               ; PZT給材PPﾊﾝﾄﾞ 後退
+CON
+AND R4301                ; PZT給材PP 後退端(CV側)
+JMP @MR2014
+MPP
+AND R4204                ; 給材側位置決め ﾜｰｸ確認ｾﾝｻ
+TMR @3 #5                ; ﾃﾞｨﾚｰﾀｲﾏ3
+CON
+AND @T3                  ; ﾃﾞｨﾚｰﾀｲﾏ3
+RES MR6108               ; 供給部ｸﾗﾝﾌﾟ 前進
+CON
+ANB R4108                ; 供給部ｸﾗﾝﾌﾟ前進端
+RES MR6112               ; 供給部_ﾊﾞｯｸｱｯﾌﾟ 上昇
+CON
+AND R4109                ; 供給部ｸﾗﾝﾌﾟ後退端
+AND R4105                ; 供給_ﾊﾞｯｸｱｯﾌﾟ 下降端
+SET @MR1008              ; 固体ﾊﾟﾚｯﾄ除材要求
+CON
+JMP @MR2013
+STG @MR2013
+ANB @MR1008              ; 固体ﾊﾟﾚｯﾄ除材要求
+AND @MR1015              ; ｱﾗｰﾑ解除
+SET MR6403               ; PZT給材PPﾊﾝﾄﾞ 後退
+CON
+RES @MR1015              ; ｱﾗｰﾑ解除
+CON
+SET @MR2012
+CON
+ENDS
+STG @MR2014
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+RES R310                 ; ﾊﾟｽｽｲｯﾁON
+CON
+RES R54607               ; 取りP給材動作中
+CON
+SET R54605               ; 取りP除材完了
+CON
+JMP @MR2015
+STG @MR2015
+ANB R54605               ; 取りP除材完了
+JMP @MR2000
+;-------
+STG @MR2100
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+RES MR6400               ; PZT給材PPﾊﾝﾄﾞ 下降
+CON
+AND R4303                ; PZT給材PP ﾊﾝﾄﾞ上昇端
+@INC.D DM350             ; IINPUT
+CON
+RES R54607               ; 取りP給材動作中
+CON
+SET R54605               ; 取りP除材完了
+CON
+JMP @MR2101
+STG @MR2101
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+MPS
+LD R54805                ; L側ｱﾗｲﾒﾝﾄ給材要求
+AND R54905               ; R側ｱﾗｲﾒﾝﾄ給材要求
+ANL
+MPS
+LD= DM4800 #0
+ANB R54705               ; L側取りP除材中
+ANL
+SET R54612               ; L側搬送中
+CON
+ANB @MR2112              ; R側搬送
+JMP @MR2107              ; L側搬送
+MPP
+LD= DM4800 #1
+ANB R54706               ; R側取りP除材中
+ANL
+SET R54613               ; R側搬送中
+CON
+ANB @MR2107              ; L側搬送
+JMP @MR2112              ; R側搬送
+MRD
+LD R54805                ; L側ｱﾗｲﾒﾝﾄ給材要求
+ANB R54905               ; R側ｱﾗｲﾒﾝﾄ給材要求
+ANB R54705               ; L側取りP除材中
+ANL
+SET R54612               ; L側搬送中
+CON
+ANB @MR2112              ; R側搬送
+JMP @MR2107              ; L側搬送
+MPP
+LDB R54805               ; L側ｱﾗｲﾒﾝﾄ給材要求
+AND R54905               ; R側ｱﾗｲﾒﾝﾄ給材要求
+ANB R54706               ; R側取りP除材中
+ANL
+SET R54613               ; R側搬送中
+CON
+ANB @MR2107              ; L側搬送
+JMP @MR2112              ; R側搬送
+;-------
+;-------
+STG @MR2107              ; L側搬送
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+ANB R54705               ; L側取りP除材中
+SET R54711               ; 給材P&P L側給材中 
+CON
+DW #1 DM4800
+CON
+AND R4407                ; 治具1COF旋回戻り端
+JMP @MR2108
+STG @MR2108
+RES MR6400               ; PZT給材PPﾊﾝﾄﾞ 下降
+CON
+AND R4303                ; PZT給材PP ﾊﾝﾄﾞ上昇端
+RES R54805               ; L側ｱﾗｲﾒﾝﾄ給材要求
+CON
+RES MR6315               ; PZT給材PPﾊﾝﾄﾞ 旋回戻
+CON
+SET MR6314               ; PZT給材PPﾊﾝﾄﾞ 旋回
+CON
+RES MR6403               ; PZT給材PPﾊﾝﾄﾞ 後退
+CON
+SET MR6402               ; PZT給材PPﾊﾝﾄﾞ 前進
+CON
+SET @MR2900              ; PAUSE禁止
+CON
+JMP @MR2109
+STG @MR2109
+MPS
+AND MR14102              ; 給材P&P_移動完了
+JMP @MR2111
+MPP
+MCALL POINT_MOVE #2 #1 #2 MR14111 MR14102;給材P&P_位置決め異常  給材P&P_移動完了
+STG @MR2111
+RES MR14102              ; 給材P&P_移動完了
+CON
+ANB MR14102              ; 給材P&P_移動完了
+RES @MR2900              ; PAUSE禁止
+CON
+AND R4304                ; PZT給材PP 旋回端(治具側)
+AND R4300                ; PZT給材PP 前進端
+TMH @0 #20
+CON
+AND @T0
+SET @MR2110              ; L側供給ﾌﾗｸﾞ
+CON
+JMP @MR2204
+;-------
+STG @MR2112              ; R側搬送
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+ANB R54705               ; L側取りP除材中
+ANB R54706               ; R側取りP除材中
+AND R4306                ; PZT除材PP 前進端
+AND R4310                ; PZT除材PP 旋回端(治具側)
+AND R43101               ; 給除材RB 除材側 P1
+SET R54712               ; 給材P&P R側給材中 
+CON
+DW #0 DM4800
+CON
+RES R54905               ; R側ｱﾗｲﾒﾝﾄ給材要求
+CON
+RES MR6403               ; PZT給材PPﾊﾝﾄﾞ 後退
+CON
+SET MR6402               ; PZT給材PPﾊﾝﾄﾞ 前進
+CON
+JMP @MR2113
+STG @MR2113
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+JMP @MR2114
+STG @MR2114
+RES MR6400               ; PZT給材PPﾊﾝﾄﾞ 下降
+CON
+AND R4303                ; PZT給材PP ﾊﾝﾄﾞ上昇端
+SET @MR2900              ; PAUSE禁止
+CON
+JMP @MR2200
+STG @MR2200
+MPS
+AND MR14102              ; 給材P&P_移動完了
+JMP @MR2201
+MPP
+MCALL POINT_MOVE #2 #1 #4 MR14111 MR14102;給材P&P_位置決め異常  給材P&P_移動完了
+STG @MR2201
+RES MR14102              ; 給材P&P_移動完了
+CON
+ANB MR14102              ; 給材P&P_移動完了
+MPS
+LD R4300                 ; PZT給材PP 前進端
+AND R4415                ; 治具2COF旋回戻り端
+ANL
+RES MR6400               ; PZT給材PPﾊﾝﾄﾞ 下降
+CON
+MPS
+AND R4303                ; PZT給材PP ﾊﾝﾄﾞ上昇端
+RES MR6315               ; PZT給材PPﾊﾝﾄﾞ 旋回戻
+CON
+SET MR6314               ; PZT給材PPﾊﾝﾄﾞ 旋回
+CON
+JMP @MR2202
+MPP
+LDB R4303                ; PZT給材PP ﾊﾝﾄﾞ上昇端
+AND R47107               ; PZT給材PP ﾊﾝﾄﾞ上昇端ｴﾗｰ
+ANL
+RES @MR2900              ; PAUSE禁止
+CON
+JMP @MR2214
+MRD
+LDB R4300                ; PZT給材PP 前進端
+AND R47110               ; 給材PP 前進端ｴﾗｰ
+ANL
+RES @MR2900              ; PAUSE禁止
+CON
+JMP @MR2214
+MPP
+LDB R4415                ; 治具2COF旋回戻り端
+AND R47305               ; 治具2COF旋回戻り端ｴﾗｰ
+ANL
+RES @MR2900              ; PAUSE禁止
+CON
+JMP @MR2214
+STG @MR2214
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+MPS
+LD R4300                 ; PZT給材PP 前進端
+ANB R47110               ; 給材PP 前進端ｴﾗｰ
+ANL
+SET @MR2900              ; PAUSE禁止
+CON
+JMP @MR2201
+MRD
+LD R4415                 ; 治具2COF旋回戻り端
+ANB R47305               ; 治具2COF旋回戻り端ｴﾗｰ
+ANL
+SET @MR2900              ; PAUSE禁止
+CON
+JMP @MR2201
+MPP
+LD R4303                 ; PZT給材PP ﾊﾝﾄﾞ上昇端
+ANB R47107               ; PZT給材PP ﾊﾝﾄﾞ上昇端ｴﾗｰ
+ANL
+SET @MR2900              ; PAUSE禁止
+CON
+JMP @MR2201
+STG @MR2202
+MPS
+AND MR14102              ; 給材P&P_移動完了
+JMP @MR2203
+MPP
+MCALL POINT_MOVE #2 #1 #3 MR14111 MR14102;給材P&P_位置決め異常  給材P&P_移動完了
+STG @MR2203
+AND R4304                ; PZT給材PP 旋回端(治具側)
+RES MR14102              ; 給材P&P_移動完了
+CON
+ANB MR14102              ; 給材P&P_移動完了
+RES @MR2900              ; PAUSE禁止
+CON
+SET @MR2115              ; R側供給ﾌﾗｸﾞ
+CON
+JMP @MR2204
+;-------
+STG @MR2204
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+JMP @MR2205
+STG @MR2205
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+SET MR6400               ; PZT給材PPﾊﾝﾄﾞ 下降
+CON
+AND R4302                ; PZT給材PP ﾊﾝﾄﾞ下降端
+JMP @MR2206
+STG @MR2206
+MPS
+LDB @MR2115              ; R側供給ﾌﾗｸﾞ
+AND @MR2110              ; L側供給ﾌﾗｸﾞ
+ANL
+SET R54608               ; L側ｱﾗｲﾒﾝﾄ吸着ON要求
+CON
+JMP @MR2207
+MPP
+LDB @MR2110              ; L側供給ﾌﾗｸﾞ
+AND @MR2115              ; R側供給ﾌﾗｸﾞ
+ANL
+SET R54609               ; R側ｱﾗｲﾒﾝﾄ吸着ON要求
+CON
+JMP @MR2400
+STG @MR2207
+ANB R54608               ; L側ｱﾗｲﾒﾝﾄ吸着ON要求
+RES MR7100               ; PZT給材PP Vac ON
+CON
+SET MR7101               ; PZT給材PP Vac OFF
+CON
+SET MR7102               ; PZT給材PP Vacﾊｶｲ ON
+CON
+AND R4603                ; PZT給材PP Vac OFF検出
+JMP @MR2208
+STG @MR2400
+ANB R54609               ; R側ｱﾗｲﾒﾝﾄ吸着ON要求
+RES MR7100               ; PZT給材PP Vac ON
+CON
+SET MR7101               ; PZT給材PP Vac OFF
+CON
+SET MR7102               ; PZT給材PP Vacﾊｶｲ ON
+CON
+AND R4603                ; PZT給材PP Vac OFF検出
+JMP @MR2401
+STG @MR2208
+RES MR7102               ; PZT給材PP Vacﾊｶｲ ON
+CON
+RES MR6400               ; PZT給材PPﾊﾝﾄﾞ 下降
+CON
+AND R4303                ; PZT給材PP ﾊﾝﾄﾞ上昇端
+JMP @MR2209
+STG @MR2401
+RES MR7102               ; PZT給材PP Vacﾊｶｲ ON
+CON
+RES MR6400               ; PZT給材PPﾊﾝﾄﾞ 下降
+CON
+AND R4303                ; PZT給材PP ﾊﾝﾄﾞ上昇端
+JMP @MR2402
+STG @MR2209
+RES MR7102               ; PZT給材PP Vacﾊｶｲ ON
+CON
+SET R54610               ; L側ｱﾗｲﾒﾝﾄ 取りPｾｯﾄ完了
+CON
+RES @MR2110              ; L側供給ﾌﾗｸﾞ
+CON
+JMP @MR2210
+STG @MR2402
+RES MR7102               ; PZT給材PP Vacﾊｶｲ ON
+CON
+SET R54611               ; R側ｱﾗｲﾒﾝﾄ 取りPｾｯﾄ完了
+CON
+RES @MR2115              ; R側供給ﾌﾗｸﾞ
+CON
+JMP @MR2300
+STG @MR2210
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+RES MR6400               ; PZT給材PPﾊﾝﾄﾞ 下降
+CON
+AND R4303                ; PZT給材PP ﾊﾝﾄﾞ上昇端
+RES MR6402               ; PZT給材PPﾊﾝﾄﾞ 前進
+CON
+SET MR6403               ; PZT給材PPﾊﾝﾄﾞ 後退
+CON
+RES MR6314               ; PZT給材PPﾊﾝﾄﾞ 旋回
+CON
+SET MR6315               ; PZT給材PPﾊﾝﾄﾞ 旋回戻
+CON
+SET @MR2900              ; PAUSE禁止
+CON
+JMP @MR2211
+STG @MR2211
+MPS
+AND MR14102              ; 給材P&P_移動完了
+JMP @MR2212
+MPP
+MCALL POINT_MOVE #2 #1 #1 MR14111 MR14102;給材P&P_位置決め異常  給材P&P_移動完了
+STG @MR2212
+RES MR14102              ; 給材P&P_移動完了
+CON
+ANB MR14102              ; 給材P&P_移動完了
+RES @MR2900              ; PAUSE禁止
+CON
+JMP @MR2213
+STG @MR2213
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+AND R4305                ; PZT給材PP 旋回戻り端(CV側)
+AND R4301                ; PZT給材PP 後退端(CV側)
+JMP @MR2215
+STG @MR2215
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+RES R54711               ; 給材P&P L側給材中 
+CON
+RES R54612               ; L側搬送中
+CON
+RES R54613               ; R側搬送中
+CON
+JMP @MR2000
+;-------
+STG @MR2300
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+RES MR6400               ; PZT給材PPﾊﾝﾄﾞ 下降
+CON
+AND R4303                ; PZT給材PP ﾊﾝﾄﾞ上昇端
+SET @MR2900              ; PAUSE禁止
+CON
+JMP @MR2301
+STG @MR2301
+MPS
+AND MR14102              ; 給材P&P_移動完了
+JMP @MR2302
+MPP
+MCALL POINT_MOVE #2 #1 #4 MR14111 MR14102;給材P&P_位置決め異常  給材P&P_移動完了
+STG @MR2302
+RES MR14102              ; 給材P&P_移動完了
+CON
+ANB MR14102              ; 給材P&P_移動完了
+RES MR6400               ; PZT給材PPﾊﾝﾄﾞ 下降
+CON
+MPS
+AND R4303                ; PZT給材PP ﾊﾝﾄﾞ上昇端
+RES MR6402               ; PZT給材PPﾊﾝﾄﾞ 前進
+CON
+SET MR6403               ; PZT給材PPﾊﾝﾄﾞ 後退
+CON
+RES MR6314               ; PZT給材PPﾊﾝﾄﾞ 旋回
+CON
+SET MR6315               ; PZT給材PPﾊﾝﾄﾞ 旋回戻
+CON
+MPS
+AND R4301                ; PZT給材PP 後退端(CV側)
+JMP @MR2303
+MPP
+LDB R4301                ; PZT給材PP 後退端(CV側)
+AND R47111               ; 給材PP 後退端ｴﾗｰ
+ANL
+RES @MR2900              ; PAUSE禁止
+CON
+JMP @MR2308
+MPP
+LDB R4303                ; PZT給材PP ﾊﾝﾄﾞ上昇端
+AND R47107               ; PZT給材PP ﾊﾝﾄﾞ上昇端ｴﾗｰ
+ANL
+RES @MR2900              ; PAUSE禁止
+CON
+JMP @MR2308
+STG @MR2308
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+MPS
+LD R4303                 ; PZT給材PP ﾊﾝﾄﾞ上昇端
+ANB R47107               ; PZT給材PP ﾊﾝﾄﾞ上昇端ｴﾗｰ
+ANL
+SET @MR2900              ; PAUSE禁止
+CON
+JMP @MR2302
+MPP
+LD R4301                 ; PZT給材PP 後退端(CV側)
+ANB R47111               ; 給材PP 後退端ｴﾗｰ
+ANL
+SET @MR2900              ; PAUSE禁止
+CON
+JMP @MR2302
+STG @MR2303
+JMP @MR2304
+STG @MR2304
+MPS
+AND MR14102              ; 給材P&P_移動完了
+JMP @MR2305
+MPP
+MCALL POINT_MOVE #2 #1 #1 MR14111 MR14102;給材P&P_位置決め異常  給材P&P_移動完了
+STG @MR2305
+RES MR14102              ; 給材P&P_移動完了
+CON
+ANB MR14102              ; 給材P&P_移動完了
+RES @MR2900              ; PAUSE禁止
+CON
+JMP @MR2306
+STG @MR2306
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+AND R4305                ; PZT給材PP 旋回戻り端(CV側)
+AND R4301                ; PZT給材PP 後退端(CV側)
+JMP @MR2307
+STG @MR2307
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+RES R54712               ; 給材P&P R側給材中 
+CON
+RES R54612               ; L側搬送中
+CON
+RES R54613               ; R側搬送中
+CON
+JMP @MR2000
+;-------
+STG @MR2700              ; 終了処理へ
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+RES R54601               ; 給材PP AUTO 動作中
+CON
+SET R54602               ; 給材PP AUTO 動作終了
+CON
+ENDS
+;STEP /
+;-------
+LD LR41100               ; STEP L側取りP給材
+ANB R53210               ; STEPｻｲｸﾙ終了
+ANP R53211               ; STEP動作開始
+RES R53211               ; STEP動作開始
+CON
+SET @MR3000              ; STEP-0、1　動作開始
+STG @MR3000              ; STEP-0、1　動作開始
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+MPS
+AND R4407                ; 治具1COF旋回戻り端
+SET MR6112               ; 供給部_ﾊﾞｯｸｱｯﾌﾟ 上昇
+CON
+AND R4104                ; 供給_ﾊﾞｯｸｱｯﾌﾟ 上昇端
+OUT R53400               ; Call Post
+CON
+AND R53402               ; Post Ok
+JMP @MR3001
+MPP
+ANB R4407                ; 治具1COF旋回戻り端
+JMP @MR3114
+STG @MR3001
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+SET MR6108               ; 供給部ｸﾗﾝﾌﾟ 前進
+CON
+AND R4108                ; 供給部ｸﾗﾝﾌﾟ前進端
+OUT R53400               ; Call Post
+CON
+AND R53402               ; Post Ok
+JMP @MR3002
+STG @MR3002
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+SET MR6400               ; PZT給材PPﾊﾝﾄﾞ 下降
+CON
+AND R4302                ; PZT給材PP ﾊﾝﾄﾞ下降端
+OUT R53400               ; Call Post
+CON
+AND R53402               ; Post Ok
+JMP @MR3003
+STG @MR3003
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+RES MR7101               ; PZT給材PP Vac OFF
+CON
+RES MR7102               ; PZT給材PP Vacﾊｶｲ ON
+CON
+SET MR7100               ; PZT給材PP Vac ON
+CON
+TMR #800 #3
+CON
+AND T800
+OUT R53400               ; Call Post
+CON
+AND R53402               ; Post Ok
+JMP @MR3004
+STG @MR3004
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+RES MR6400               ; PZT給材PPﾊﾝﾄﾞ 下降
+CON
+AND R4303                ; PZT給材PP ﾊﾝﾄﾞ上昇端
+OUT R53400               ; Call Post
+CON
+AND R53402               ; Post Ok
+JMP @MR3005
+STG @MR3005
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+RES MR6315               ; PZT給材PPﾊﾝﾄﾞ 旋回戻
+CON
+SET MR6314               ; PZT給材PPﾊﾝﾄﾞ 旋回
+CON
+AND R4304                ; PZT給材PP 旋回端(治具側)
+OUT R53400               ; Call Post
+CON
+AND R53402               ; Post Ok
+JMP @MR3006
+STG @MR3006
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+RES MR6403               ; PZT給材PPﾊﾝﾄﾞ 後退
+CON
+SET MR6402               ; PZT給材PPﾊﾝﾄﾞ 前進
+CON
+AND R4300                ; PZT給材PP 前進端
+RES MR6400               ; PZT給材PPﾊﾝﾄﾞ 下降
+CON
+AND R4303                ; PZT給材PP ﾊﾝﾄﾞ上昇端
+OUT R53400               ; Call Post
+CON
+AND R53402               ; Post Ok
+JMP @MR3007
+STG @MR3007
+MPS
+AND MR14102              ; 給材P&P_移動完了
+JMP @MR3008
+MPP
+MCALL POINT_MOVE #2 #1 #2 MR14111 MR14102;給材P&P_位置決め異常  給材P&P_移動完了
+STG @MR3008
+RES MR14102              ; 給材P&P_移動完了
+CON
+ANB MR14102              ; 給材P&P_移動完了
+OUT R53400               ; Call Post
+CON
+AND R53402               ; Post Ok
+JMP @MR3009
+STG @MR3009
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+SET MR6400               ; PZT給材PPﾊﾝﾄﾞ 下降
+CON
+AND R4302                ; PZT給材PP ﾊﾝﾄﾞ下降端
+OUT R53400               ; Call Post
+CON
+AND R53402               ; Post Ok
+JMP @MR3010
+STG @MR3010
+JMP @MR3011
+STG @MR3011
+RES MR6904               ; ｾｯﾄ治具1 COF Vac ﾊｶｲ
+CON
+SET MR6905               ; ｾｯﾄ治具1 COF Vac ON
+CON
+TMR #801 #3
+CON
+AND T801
+OUT R53400               ; Call Post
+CON
+AND R53402               ; Post Ok
+JMP @MR3013
+STG @MR3013
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+SET MR7101               ; PZT給材PP Vac OFF
+CON
+SET MR7102               ; PZT給材PP Vacﾊｶｲ ON
+CON
+RES MR7100               ; PZT給材PP Vac ON
+CON
+AND R4603                ; PZT給材PP Vac OFF検出
+TMR #803 #3
+CON
+AND T803
+OUT R53400               ; Call Post
+CON
+AND R53402               ; Post Ok
+JMP @MR3014
+STG @MR3014
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+RES MR6400               ; PZT給材PPﾊﾝﾄﾞ 下降
+CON
+AND R4303                ; PZT給材PP ﾊﾝﾄﾞ上昇端
+RES MR7101               ; PZT給材PP Vac OFF
+CON
+RES MR7102               ; PZT給材PP Vacﾊｶｲ ON
+CON
+RES MR6400               ; PZT給材PPﾊﾝﾄﾞ 下降
+CON
+AND R4303                ; PZT給材PP ﾊﾝﾄﾞ上昇端
+OUT R53400               ; Call Post
+CON
+AND R53402               ; Post Ok
+JMP @MR3015
+STG @MR3015
+MPS
+AND MR14102              ; 給材P&P_移動完了
+JMP @MR3100
+MPP
+MCALL POINT_MOVE #2 #1 #1 MR14111 MR14102;給材P&P_位置決め異常  給材P&P_移動完了
+STG @MR3100
+RES MR14102              ; 給材P&P_移動完了
+CON
+ANB MR14102              ; 給材P&P_移動完了
+OUT R53400               ; Call Post
+CON
+AND R53402               ; Post Ok
+JMP @MR3101
+STG @MR3101
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+RES MR6402               ; PZT給材PPﾊﾝﾄﾞ 前進
+CON
+SET MR6403               ; PZT給材PPﾊﾝﾄﾞ 後退
+CON
+AND R4301                ; PZT給材PP 後退端(CV側)
+OUT R53400               ; Call Post
+CON
+AND R53402               ; Post Ok
+JMP @MR3102
+STG @MR3102
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+RES MR6314               ; PZT給材PPﾊﾝﾄﾞ 旋回
+CON
+SET MR6315               ; PZT給材PPﾊﾝﾄﾞ 旋回戻
+CON
+AND R4305                ; PZT給材PP 旋回戻り端(CV側)
+OUT R53400               ; Call Post
+CON
+AND R53402               ; Post Ok
+JMP @MR2500
+STG @MR2500
+MPS
+AND LR001                ; 吸着OFFしてXY軸位置決め
+JMP @MR3103
+MPP
+ANB LR001                ; 吸着OFFしてXY軸位置決め
+JMP @MR2501
+;-------　　吸着OFFしてX,Y軸位置決め
+STG @MR3103
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+RES MR6905               ; ｾｯﾄ治具1 COF Vac ON
+CON
+SET MR6904               ; ｾｯﾄ治具1 COF Vac ﾊｶｲ
+CON
+AND R4607                ; ﾜｰｸｾｯﾄ治具1 Vac OFF検出
+RES MR6904               ; ｾｯﾄ治具1 COF Vac ﾊｶｲ
+CON
+OUT R53400               ; Call Post
+CON
+AND R53402               ; Post Ok
+JMP @MR3104
+STG @MR3104
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+SET MR6600               ; ｾｯﾄ治具1 位置決Y 閉
+CON
+TMR #804 #3
+CON
+AND T804
+OUT R53400               ; Call Post
+CON
+AND R53402               ; Post Ok
+JMP @MR3105
+STG @MR3105
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+SET MR6602               ; ｾｯﾄ治具1 位置決X 閉
+CON
+TMR #805 #3
+CON
+AND T805
+OUT R53400               ; Call Post
+CON
+AND R53402               ; Post Ok
+JMP @MR3106
+STG @MR3106
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+RES MR6904               ; ｾｯﾄ治具1 COF Vac ﾊｶｲ
+CON
+SET MR6905               ; ｾｯﾄ治具1 COF Vac ON
+CON
+TMR #806 #3
+CON
+AND T806
+OUT R53400               ; Call Post
+CON
+AND R53402               ; Post Ok
+JMP @MR3107
+STG @MR3107
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+RES MR6602               ; ｾｯﾄ治具1 位置決X 閉
+CON
+RES MR6600               ; ｾｯﾄ治具1 位置決Y 閉
+CON
+TMR #807 #3
+CON
+AND T807
+OUT R53400               ; Call Post
+CON
+AND R53402               ; Post Ok
+JMP @MR3108
+STG @MR3108
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+SET MR6602               ; ｾｯﾄ治具1 位置決X 閉
+CON
+SET MR6600               ; ｾｯﾄ治具1 位置決Y 閉
+CON
+TMR #810 #3
+CON
+AND T810
+OUT R53400               ; Call Post
+CON
+AND R53402               ; Post Ok
+JMP @MR3112
+;-------　　吸着ONしてX,Y軸位置決め
+STG @MR2501
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+SET MR6600               ; ｾｯﾄ治具1 位置決Y 閉
+CON
+TMR #818 #3
+CON
+AND T818
+OUT R53400               ; Call Post
+CON
+AND R53402               ; Post Ok
+JMP @MR2502
+STG @MR2502
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+SET MR6602               ; ｾｯﾄ治具1 位置決X 閉
+CON
+TMR #819 #3
+CON
+AND T819
+OUT R53400               ; Call Post
+CON
+AND R53402               ; Post Ok
+JMP @MR3112
+;-------
+STG @MR3112
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+RES MR6108               ; 供給部ｸﾗﾝﾌﾟ 前進
+CON
+AND R4109                ; 供給部ｸﾗﾝﾌﾟ後退端
+OUT R53400               ; Call Post
+CON
+AND R53402               ; Post Ok
+JMP @MR3113
+STG @MR3113
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+RES MR6112               ; 供給部_ﾊﾞｯｸｱｯﾌﾟ 上昇
+CON
+AND R4105                ; 供給_ﾊﾞｯｸｱｯﾌﾟ 下降端
+OUT R53400               ; Call Post
+CON
+AND R53402               ; Post Ok
+JMP @MR3114
+STG @MR3114
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+SET R53210               ; STEPｻｲｸﾙ終了
+CON
+ENDS
+;-------
+LD LR41101               ; STEP R側取りP給材
+ANB R53210               ; STEPｻｲｸﾙ終了
+ANP R53211               ; STEP動作開始
+RES R53211               ; STEP動作開始
+CON
+SET @MR3200              ; STEP-0、1　動作開始
+STG @MR3200              ; STEP-0、1　動作開始
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+MPS
+AND R4415                ; 治具2COF旋回戻り端
+SET MR6112               ; 供給部_ﾊﾞｯｸｱｯﾌﾟ 上昇
+CON
+AND R4104                ; 供給_ﾊﾞｯｸｱｯﾌﾟ 上昇端
+OUT R53400               ; Call Post
+CON
+AND R53402               ; Post Ok
+JMP @MR3201
+MPP
+ANB R4415                ; 治具2COF旋回戻り端
+JMP @MR3315
+STG @MR3201
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+SET MR6108               ; 供給部ｸﾗﾝﾌﾟ 前進
+CON
+AND R4108                ; 供給部ｸﾗﾝﾌﾟ前進端
+OUT R53400               ; Call Post
+CON
+AND R53402               ; Post Ok
+JMP @MR3202
+STG @MR3202
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+SET MR6400               ; PZT給材PPﾊﾝﾄﾞ 下降
+CON
+AND R4302                ; PZT給材PP ﾊﾝﾄﾞ下降端
+OUT R53400               ; Call Post
+CON
+AND R53402               ; Post Ok
+JMP @MR3203
+STG @MR3203
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+RES MR7101               ; PZT給材PP Vac OFF
+CON
+RES MR7102               ; PZT給材PP Vacﾊｶｲ ON
+CON
+SET MR7100               ; PZT給材PP Vac ON
+CON
+TMR #812 #3
+CON
+AND T812
+OUT R53400               ; Call Post
+CON
+AND R53402               ; Post Ok
+JMP @MR3204
+STG @MR3204
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+RES MR6400               ; PZT給材PPﾊﾝﾄﾞ 下降
+CON
+AND R4303                ; PZT給材PP ﾊﾝﾄﾞ上昇端
+OUT R53400               ; Call Post
+CON
+AND R53402               ; Post Ok
+JMP @MR3206
+STG @MR3206
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+RES MR6403               ; PZT給材PPﾊﾝﾄﾞ 後退
+CON
+SET MR6402               ; PZT給材PPﾊﾝﾄﾞ 前進
+CON
+AND R4300                ; PZT給材PP 前進端
+RES MR6400               ; PZT給材PPﾊﾝﾄﾞ 下降
+CON
+AND R4303                ; PZT給材PP ﾊﾝﾄﾞ上昇端
+OUT R53400               ; Call Post
+CON
+AND R53402               ; Post Ok
+JMP @MR3207
+STG @MR3207
+MPS
+AND MR14102              ; 給材P&P_移動完了
+JMP @MR3208
+MPP
+MCALL POINT_MOVE #2 #1 #4 MR14111 MR14102;給材P&P_位置決め異常  給材P&P_移動完了
+STG @MR3208
+RES MR14102              ; 給材P&P_移動完了
+CON
+ANB MR14102              ; 給材P&P_移動完了
+OUT R53400               ; Call Post
+CON
+AND R53402               ; Post Ok
+JMP @MR3209
+STG @MR3209
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+RES MR6315               ; PZT給材PPﾊﾝﾄﾞ 旋回戻
+CON
+SET MR6314               ; PZT給材PPﾊﾝﾄﾞ 旋回
+CON
+AND R4304                ; PZT給材PP 旋回端(治具側)
+RES MR6400               ; PZT給材PPﾊﾝﾄﾞ 下降
+CON
+AND R4303                ; PZT給材PP ﾊﾝﾄﾞ上昇端
+OUT R53400               ; Call Post
+CON
+AND R53402               ; Post Ok
+JMP @MR3210
+STG @MR3210
+MPS
+AND MR14102              ; 給材P&P_移動完了
+JMP @MR3211
+MPP
+MCALL POINT_MOVE #2 #1 #3 MR14111 MR14102;給材P&P_位置決め異常  給材P&P_移動完了
+STG @MR3211
+RES MR14102              ; 給材P&P_移動完了
+CON
+ANB MR14102              ; 給材P&P_移動完了
+OUT R53400               ; Call Post
+CON
+AND R53402               ; Post Ok
+JMP @MR3212
+STG @MR3212
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+SET MR6400               ; PZT給材PPﾊﾝﾄﾞ 下降
+CON
+AND R4302                ; PZT給材PP ﾊﾝﾄﾞ下降端
+OUT R53400               ; Call Post
+CON
+AND R53402               ; Post Ok
+JMP @MR3213
+STG @MR3213
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+RES MR6902               ; ｾｯﾄ治具2 COF Vac ﾊｶｲ
+CON
+SET MR6903               ; ｾｯﾄ治具2 COF Vac ON
+CON
+TMR #802 #3
+CON
+AND T802
+OUT R53400               ; Call Post
+CON
+AND R53402               ; Post Ok
+JMP @MR3214
+STG @MR3214
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+SET MR7101               ; PZT給材PP Vac OFF
+CON
+SET MR7102               ; PZT給材PP Vacﾊｶｲ ON
+CON
+RES MR7100               ; PZT給材PP Vac ON
+CON
+AND R4603                ; PZT給材PP Vac OFF検出
+TMR #813 #3
+CON
+AND T813
+OUT R53400               ; Call Post
+CON
+AND R53402               ; Post Ok
+JMP @MR3215
+STG @MR3215
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+RES MR6400               ; PZT給材PPﾊﾝﾄﾞ 下降
+CON
+AND R4303                ; PZT給材PP ﾊﾝﾄﾞ上昇端
+RES MR7101               ; PZT給材PP Vac OFF
+CON
+RES MR7102               ; PZT給材PP Vacﾊｶｲ ON
+CON
+RES MR6400               ; PZT給材PPﾊﾝﾄﾞ 下降
+CON
+AND R4303                ; PZT給材PP ﾊﾝﾄﾞ上昇端
+OUT R53400               ; Call Post
+CON
+AND R53402               ; Post Ok
+JMP @MR3300
+STG @MR3300
+MPS
+AND MR14102              ; 給材P&P_移動完了
+JMP @MR3301
+MPP
+MCALL POINT_MOVE #2 #1 #4 MR14111 MR14102;給材P&P_位置決め異常  給材P&P_移動完了
+STG @MR3301
+RES MR14102              ; 給材P&P_移動完了
+CON
+ANB MR14102              ; 給材P&P_移動完了
+OUT R53400               ; Call Post
+CON
+AND R53402               ; Post Ok
+JMP @MR3302
+STG @MR3302
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+RES MR6402               ; PZT給材PPﾊﾝﾄﾞ 前進
+CON
+SET MR6403               ; PZT給材PPﾊﾝﾄﾞ 後退
+CON
+AND R4301                ; PZT給材PP 後退端(CV側)
+OUT R53400               ; Call Post
+CON
+AND R53402               ; Post Ok
+JMP @MR3303
+STG @MR3303
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+RES MR6314               ; PZT給材PPﾊﾝﾄﾞ 旋回
+CON
+SET MR6315               ; PZT給材PPﾊﾝﾄﾞ 旋回戻
+CON
+AND R4305                ; PZT給材PP 旋回戻り端(CV側)
+RES MR6400               ; PZT給材PPﾊﾝﾄﾞ 下降
+CON
+AND R4303                ; PZT給材PP ﾊﾝﾄﾞ上昇端
+OUT R53400               ; Call Post
+CON
+AND R53402               ; Post Ok
+JMP @MR3304
+STG @MR3304
+MPS
+AND MR14102              ; 給材P&P_移動完了
+JMP @MR3305
+MPP
+MCALL POINT_MOVE #2 #1 #1 MR14111 MR14102;給材P&P_位置決め異常  給材P&P_移動完了
+STG @MR3305
+RES MR14102              ; 給材P&P_移動完了
+CON
+ANB MR14102              ; 給材P&P_移動完了
+OUT R53400               ; Call Post
+CON
+AND R53402               ; Post Ok
+JMP @MR2507
+STG @MR2507
+MPS
+AND LR001                ; 吸着OFFしてXY軸位置決め
+JMP @MR3309
+MPP
+ANB LR001                ; 吸着OFFしてXY軸位置決め
+JMP @MR2508
+;-------　　吸着OFFしてX,Y軸位置決め
+STG @MR3309
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+RES MR6903               ; ｾｯﾄ治具2 COF Vac ON
+CON
+SET MR6902               ; ｾｯﾄ治具2 COF Vac ﾊｶｲ
+CON
+AND R4609                ; ﾜｰｸｾｯﾄ治具2 Vac OFF検出
+RES MR6902               ; ｾｯﾄ治具2 COF Vac ﾊｶｲ
+CON
+OUT R53400               ; Call Post
+CON
+AND R53402               ; Post Ok
+JMP @MR3307
+STG @MR3307
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+SET MR6508               ; ｾｯﾄ治具2 位置決Y 閉
+CON
+TMR #808 #3
+CON
+AND T808
+OUT R53400               ; Call Post
+CON
+AND R53402               ; Post Ok
+JMP @MR3308
+STG @MR3308
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+SET MR6510               ; ｾｯﾄ治具2 位置決X 閉
+CON
+TMR #809 #3
+CON
+AND T809
+OUT R53400               ; Call Post
+CON
+AND R53402               ; Post Ok
+JMP @MR3310
+STG @MR3310
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+RES MR6902               ; ｾｯﾄ治具2 COF Vac ﾊｶｲ
+CON
+SET MR6903               ; ｾｯﾄ治具2 COF Vac ON
+CON
+TMR #811 #3
+CON
+AND T811
+OUT R53400               ; Call Post
+CON
+AND R53402               ; Post Ok
+JMP @MR3311
+STG @MR3311
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+RES MR6508               ; ｾｯﾄ治具2 位置決Y 閉
+CON
+RES MR6510               ; ｾｯﾄ治具2 位置決X 閉
+CON
+TMR #816 #3
+CON
+AND T816
+OUT R53400               ; Call Post
+CON
+AND R53402               ; Post Ok
+JMP @MR3312
+STG @MR3312
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+SET MR6508               ; ｾｯﾄ治具2 位置決Y 閉
+CON
+SET MR6510               ; ｾｯﾄ治具2 位置決X 閉
+CON
+TMR #817 #3
+CON
+AND T817
+OUT R53400               ; Call Post
+CON
+AND R53402               ; Post Ok
+JMP @MR3313
+;-------　　吸着ONしてX,Y軸位置決め
+STG @MR2508
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+SET MR6508               ; ｾｯﾄ治具2 位置決Y 閉
+CON
+TMR #820 #3
+CON
+AND T820
+OUT R53400               ; Call Post
+CON
+AND R53402               ; Post Ok
+JMP @MR2509
+STG @MR2509
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+SET MR6510               ; ｾｯﾄ治具2 位置決X 閉
+CON
+TMR #821 #3
+CON
+AND T821
+OUT R53400               ; Call Post
+CON
+AND R53402               ; Post Ok
+JMP @MR3313
+;-------
+STG @MR3313
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+RES MR6108               ; 供給部ｸﾗﾝﾌﾟ 前進
+CON
+AND R4109                ; 供給部ｸﾗﾝﾌﾟ後退端
+OUT R53400               ; Call Post
+CON
+AND R53402               ; Post Ok
+JMP @MR3314
+STG @MR3314
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+RES MR6112               ; 供給部_ﾊﾞｯｸｱｯﾌﾟ 上昇
+CON
+AND R4105                ; 供給_ﾊﾞｯｸｱｯﾌﾟ 下降端
+OUT R53400               ; Call Post
+CON
+AND R53402               ; Post Ok
+JMP @MR3315
+STG @MR3315
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+SET R53210               ; STEPｻｲｸﾙ終了
+CON
+ENDS
+;ｱﾗｰﾑ / ALARM
+;-------ERR11
+STG @MR1000              ; 給材PP 吸着NG
+ANB R53008               ; 全体ｴﾗｰ発生
+SET R53008               ; 全体ｴﾗｰ発生
+CON
+SET R53112               ; 給除材PPｴﾗｰ中
+CON
+SET R54302               ; 給除材PPｴﾗｰ 表示
+CON
+SET R53511               ; ERR11
+CON
+SET R210                 ; RETRY SW　目隠し解除
+CON
+JMP @MR1001
+MOV #11 DM400            ; 表示画面No.
+STG @MR1001
+AND R53008               ; 全体ｴﾗｰ発生
+JMP @MR1002
+STG @MR1002
+ANB R53008               ; 全体ｴﾗｰ発生
+SET @MR1007              ; ｱﾗｰﾑ解除
+CON
+ENDS
+;-------ERR12
+STG @MR1008              ; 固体ﾊﾟﾚｯﾄ除材要求
+ANB R53008               ; 全体ｴﾗｰ発生
+SET R53008               ; 全体ｴﾗｰ発生
+CON
+SET R53111               ; ｺﾝﾍﾞｱｴﾗｰ中
+CON
+SET R54301               ; ｺﾝﾍﾞｱｴﾗｰ 表示
+CON
+SET R53512               ; ERR12
+CON
+RES R210                 ; RETRY SW　目隠し解除
+CON
+JMP @MR1009
+MOV #12 DM400            ; 表示画面No.
+STG @MR1009
+AND R53008               ; 全体ｴﾗｰ発生
+JMP @MR1010
+STG @MR1010
+ANB R53008               ; 全体ｴﾗｰ発生
+SET @MR1015              ; ｱﾗｰﾑ解除
+CON
+ENDS
+;-------　（PACK管理）
+LD @MR2900               ; PAUSE禁止
+OUT R54401               ; 給材P&P部 PACK
+END
+ENDH

@@ -1,0 +1,227 @@
+DEVICE:53
+;MODULE:DC-Common
+;MODULE_TYPE:0
+;SCRIPT_TYPE:
+;Data Collection Common module
+; 以下は全セル共通の項目のみ記載すること
+; セル固有はData Collection-Cellへ記載のこと
+;Emergency process
+LD R50010                ; Emergency　Stop
+ZRES B00 B0A4F           ; From C15
+;adjustment address by node number
+;ﾉｰﾄﾞ番号によるﾊﾝﾄﾞｼｪｲｸｱﾄﾞﾚｽ調整
+LD CR2002                ; 常時ON
+UREAD W05 #1569 W00 #1   ; EthernetI/P Unit No.  IPﾉｰﾄﾞｱﾄﾞﾚｽ
+;
+;W01.S = W00 - 20
+;if w01.s >= 0 then
+;	Z9 = 80 * W01 - 80
+;	Z10 = 300 * W01 - 300
+;else
+;	Z9 = 0
+;	Z10 = 0
+;end if
+;W01.S = W00 - 20
+;
+LD CR2002                ; 常時ON
+LDA W00                  ; IPﾉｰﾄﾞｱﾄﾞﾚｽ
+CON
+EXT
+CON
+SUB.L +20
+CON
+STA.S W01                ; ﾉｰﾄﾞ番号-20
+;if w01.s >= 0 then
+;
+LD>=.S W01 +0            ; ﾉｰﾄﾞ番号-20
+NCJ #2000
+;	Z9 = 80 * W01 - 80
+;
+LD CR2002                ; 常時ON
+LDA W01                  ; ﾉｰﾄﾞ番号-20
+CON
+EXT
+CON
+MUL.L +80
+CON
+SUB.L +80
+CON
+STA.L Z9
+;	Z10 = 300 * W01 - 300
+;
+LD CR2002                ; 常時ON
+LDA W01                  ; ﾉｰﾄﾞ番号-20
+CON
+EXT
+CON
+MUL.L +300
+CON
+SUB.L +300
+CON
+STA.L Z10
+;else
+;
+LD CR2002                ; 常時ON
+CJ #2001
+LABEL #2000
+;	Z9 = 0
+;
+LD CR2002                ; 常時ON
+MOV.L +0 Z9
+;	Z10 = 0
+;
+LD CR2002                ; 常時ON
+MOV.L +0 Z10
+;end if
+LABEL #2001
+;
+;Model Clear
+LD B0AD:Z9               ; From Host To C1 Model Cancel
+OR @MR000
+ANB @T0
+FMOV #0 DM200 #100       ; Model No
+OUT @MR000
+TMR @0 #10
+LD @T0
+OR B05AD:Z9              ; From C1 Model Cancel
+AND B0AD:Z9              ; From Host To C1 Model Cancel
+OUT B05AD:Z9             ; From C1 Model Cancel
+;Model Setting
+LD B0AE:Z9               ; From Host To C1 Model Change
+OR @MR001
+ANB @T1
+OUT @MR001
+TMR @1 #10
+LD @T1
+OR B05AE:Z9              ; From C1 Model Change
+AND B0AE:Z9              ; From Host To C1 Model Change
+OUT B05AE:Z9             ; From C1 Model Change
+LD @MR001
+BMOV W064 DM200 #100     ; From Host Model No  Model No
+LD @T1
+OR B05AF:Z9              ; From C1 Model Collation
+ANB B0AF:Z9              ; From Host To C1 Model Collation
+OUT B05AF:Z9             ; From C1 Model Collation
+;Error
+LD<> DM400 #0            ; ﾒｯｾｰｼﾞNo.
+ANP R50108               ; ｴﾗｰ中
+MPS
+LDA DM400                ; ﾒｯｾｰｼﾞNo.
+CON
+STA W0190:Z10            ; From C1 Error No
+MRD
+AND R50110               ; Err INDEX
+DW #1 W0191:Z10          ; From C1 Error Sub No 1
+MRD
+AND R50111               ; Err ST1
+DW #2 W0191:Z10          ; From C1 Error Sub No 1
+MRD
+AND R50112               ; Err ST2
+DW #3 W0191:Z10          ; From C1 Error Sub No 1
+MRD
+AND R50113               ; Err ST3
+DW #4 W0191:Z10          ; From C1 Error Sub No 1
+MRD
+AND R50114               ; Err ST4
+DW #5 W0191:Z10          ; From C1 Error Sub No 1
+MRD
+LD R50110                ; Err INDEX
+AND R50111               ; Err ST1
+AND R50112               ; Err ST2
+AND R50113               ; Err ST3
+AND R50114               ; Err ST4
+ANL
+DW #0 W0191:Z10          ; From C1 Error Sub No 1
+MPP
+LDA DM401                ; TPへ CY Err No.
+CON
+STA W0192:Z10            ; From C1 Error Sub No 2
+;Error
+LD R50108                ; ｴﾗｰ中
+ANB @MR002
+OR B05A0:Z9              ; From C1 Error
+ANB B0A0:Z9              ; From Host To C1 Error
+OUT B05A0:Z9             ; From C1 Error
+CON
+SET @MR002
+LD @MR002
+ANB R50108               ; ｴﾗｰ中
+RES @MR002
+;Error Release
+LD R50109                ; ｴﾗｰ解除
+ANB @MR003
+OR B05A1:Z9              ; From C1 Error Release
+ANB B0A1:Z9              ; From Host To C1 Error Release
+OUT B05A1:Z9             ; From C1 Error Release
+CON
+SET @MR003
+LD @MR003
+ANB R50108               ; ｴﾗｰ中
+RES @MR003
+;During Error
+LD R50108                ; ｴﾗｰ中
+OUT B05A2:Z9             ; From C1 During Error
+;MC Condition / 装置状態
+LD R50008                ; Error
+@MOV #7 W0199:Z10        ; From C1 Operation
+LDB R50008               ; Error
+MPS
+AND R50300               ; Pause
+@MOV #5 W0199:Z10        ; From C1 Operation
+MPP
+ANB R50300               ; Pause
+MPS
+AND R50003               ; HOME
+@MOV #1 W0199:Z10        ; From C1 Operation
+MPP
+ANB R50003               ; HOME
+MPS
+AND R50001               ; AUTO
+@MOV #2 W0199:Z10        ; From C1 Operation
+MPP
+ANB R50001               ; AUTO
+MPS
+AND R50002               ; STEP
+@MOV #3 W0199:Z10        ; From C1 Operation
+MPP
+ANB R50002               ; STEP
+MPS
+AND R50007               ; 原点復帰　完了
+@MOV #4 W0199:Z10        ; From C1 Operation
+MPP
+ANB R50007               ; 原点復帰　完了
+@MOV #11 W0199:Z10       ; From C1 Operation
+LD<> W0199:Z10 W02       ; From C1 Operation  Operation Memory
+OR B05A8:Z9              ; From C1 Operation
+ANB B0A8:Z9              ; From Host To C1 Operation
+OUT B05A8:Z9             ; From C1 Operation
+@MOV W0199:Z10 W02       ; From C1 Operation  Operation Memory
+;Input
+LD B020                  ; DC_Input
+OR B05A4:Z9              ; From C1 Input
+ANB B0A4:Z9              ; From Host To C1 Input
+MOV DM5000 W0196:Z10     ; Input数  From C1 Input
+OUT B05A4:Z9             ; From C1 Input
+CON
+RES B020                 ; DC_Input
+;Output
+LD B021                  ; DC_Output
+OR B05A5:Z9              ; From C1 Output
+ANB B0A5:Z9              ; From Host To C1 Output
+MOV DM5001 W0197:Z10     ; Output数  From C1 Output
+OUT B05A5:Z9             ; From C1 Output
+CON
+RES B021                 ; DC_Output
+;Output
+LD B022                  ; DC_NG
+OR B05A6:Z9              ; From C1 NG
+ANB B0A6:Z9              ; From Host To C1 NG
+MOV DM5002 W0198:Z10     ; NG数  From C1 NG
+OUT B05A6:Z9             ; From C1 NG
+CON
+RES B022                 ; DC_NG
+;Project Name
+LD CR2002                ; 常時ON
+BMOV CM1740 W01AC:Z10 #16; ﾗﾀﾞｰﾌﾟﾛｼﾞｪｸﾄ名  From C1 PLC Project Name 1
+END
+ENDH

@@ -1,0 +1,1063 @@
+DEVICE:53
+;MODULE:AlwaysMonitor
+;MODULE_TYPE:0
+;OneSystem Sub-Module
+;
+;---------------------------------------
+;ModuleName	:	AlwaysMonitor
+;ModuleType	:	Sub Module
+;Function	:	常時監視
+;---------------------------------------
+;<使用方法>
+;常時監視が必要な物は本ﾓｼﾞｭｰﾙ内に記述して下さい
+;・ﾋｰﾀｰ過昇温検知による非常停止
+;・ﾁｬﾝﾊﾞｰ排気量低下によるｴﾗｰ出力
+;など
+;Device net nodo check
+LD DM10514.1             ; ﾉｰﾄﾞ1 通信正常
+AND DM10514.2            ; ﾉｰﾄﾞ2 通信正常
+AND DM10514.3            ; ﾉｰﾄﾞ3 通信正常
+AND DM10514.4            ; ﾉｰﾄﾞ4 通信正常
+AND DM10514.11           ; ﾉｰﾄﾞ11 通信正常
+AND DM10514.12           ; ﾉｰﾄﾞ12 通信正常
+AND DM10514.13           ; ﾉｰﾄﾞ13 通信正常
+AND DM10515.5            ; ﾉｰﾄﾞ21 通信正常
+AND DM10515.6            ; ﾉｰﾄﾞ22 通信正常
+AND DM10515.7            ; ﾉｰﾄﾞ23 通信正常
+AND DM10515.15           ; ﾉｰﾄﾞ31 通信正常
+AND DM10516.0            ; ﾉｰﾄﾞ32 通信正常
+AND DM10516.1            ; ﾉｰﾄﾞ33 通信正常
+TMR #500 #10             ; device net ﾉｰﾄﾞ確認
+;<h1/>ﾋｰﾀｰ出力状態 / Heater State of Output
+LDP DM2000.13            ; ﾋｰﾀ無効
+RES MR2000               ; ﾋｰﾀ1 ON
+CON
+RES MR2001               ; ﾋｰﾀ2 ON
+LDF DM2000.13            ; ﾋｰﾀ無効
+SET MR2000               ; ﾋｰﾀ1 ON
+CON
+SET MR2001               ; ﾋｰﾀ2 ON
+LD R2000                 ; ﾋｰﾀ1 ON
+TMR @0 #10               ; 遅延ﾀｲﾏ
+CON
+AND @T0                  ; 遅延ﾀｲﾏ
+ANB R1002                ; ﾋｰﾀ1動作中  (OFF=過昇)
+TMH @1 #10
+CON
+AND @T1
+OUT MR1902               ; ﾋｰﾀ1過昇温
+LD MR2000                ; ﾋｰﾀ1 ON
+AND R1002                ; ﾋｰﾀ1動作中  (OFF=過昇)
+MPS
+AND R1000                ; ﾋｰﾀ1 ｱﾗｰﾑ1
+OUT MR1900               ; ﾋｰﾀ1断線
+MPP
+LDB R1000                ; ﾋｰﾀ1 ｱﾗｰﾑ1
+AND R1001                ; ﾋｰﾀ1 ｱﾗｰﾑ2
+ANL
+OUT MR1901               ; ﾋｰﾀ1適温
+LD R2001                 ; ﾋｰﾀ2 ON
+TMR @2 #10
+CON
+AND @T2
+ANB R1005                ; ﾋｰﾀ2動作中  (OFF=過昇)
+TMH @3 #10
+CON
+AND @T3
+OUT MR1905               ; ﾋｰﾀ2過昇温
+LD MR2001                ; ﾋｰﾀ2 ON
+AND R1005                ; ﾋｰﾀ2動作中  (OFF=過昇)
+MPS
+AND R1003                ; ﾋｰﾀ2 ｱﾗｰﾑ1
+OUT MR1903               ; ﾋｰﾀ2断線
+MPP
+LDB R1003                ; ﾋｰﾀ2 ｱﾗｰﾑ1
+AND R1004                ; ﾋｰﾀ2 ｱﾗｰﾑ2
+ANL
+OUT MR1904               ; ﾋｰﾀ2適温
+;ﾋｰﾀ1適温外
+;Heater 1 out of suitable temp.
+LDB DM2000.13            ; ﾋｰﾀ無効
+AND R46100               ; _自動運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+AND<> DM5010 #2          ; _AUTO動作番号
+ANB MR1901               ; ﾋｰﾀ1適温
+ANB MR1900               ; ﾋｰﾀ1断線
+ANB R39004               ; ｴﾗｰ中
+TMR @4 #30
+CON
+AND @T4
+@SET @MR200
+STG @MR200
+ANB R39004               ; ｴﾗｰ中
+SET R39004               ; ｴﾗｰ中
+CON
+DW #0 @DM0               ; TaskNo /ERROR_DISP
+CON
+DW #140 @DM1             ; ErrorNo /ERROR_DISP
+CON
+DW #0 @DM2               ; SensorNo /ERROR_DISP
+CON
+DW $1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+SET @MR100               ; ERROR
+CON
+JMP @MR315
+;ﾋｰﾀ1過昇温
+;Heater 1 over heating
+LDB DM2000.13            ; ﾋｰﾀ無効
+AND MR1902               ; ﾋｰﾀ1過昇温
+ANB R39004               ; ｴﾗｰ中
+TMR @5 #5
+CON
+AND @T5
+MPS
+ANB CR2002               ; 常時ON
+RES MR2000               ; ﾋｰﾀ1 ON
+CON
+@SET @MR201
+MPP
+AND CR2002               ; 常時ON
+RES MR2000               ; ﾋｰﾀ1 ON
+CON
+OUT MR10000              ; ﾋｰﾀｰ1 過昇温ﾌﾗｸﾞ
+STG @MR201
+ANB R39004               ; ｴﾗｰ中
+SET R39004               ; ｴﾗｰ中
+CON
+DW #0 @DM0               ; TaskNo /ERROR_DISP
+CON
+DW #141 @DM1             ; ErrorNo /ERROR_DISP
+CON
+DW #0 @DM2               ; SensorNo /ERROR_DISP
+CON
+DW $1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+SET @MR100               ; ERROR
+CON
+JMP @MR315
+;ﾋｰﾀ1断線
+;Heater 1 disconnect.
+LDB DM2000.13            ; ﾋｰﾀ無効
+AND R46100               ; _自動運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+ANB MR1901               ; ﾋｰﾀ1適温
+AND MR1900               ; ﾋｰﾀ1断線
+ANB R39004               ; ｴﾗｰ中
+TMR @19 #30
+CON
+AND @T19
+@SET @MR202
+STG @MR202
+ANB R39004               ; ｴﾗｰ中
+SET R39004               ; ｴﾗｰ中
+CON
+DW #0 @DM0               ; TaskNo /ERROR_DISP
+CON
+DW #142 @DM1             ; ErrorNo /ERROR_DISP
+CON
+DW #0 @DM2               ; SensorNo /ERROR_DISP
+CON
+DW $1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+SET @MR100               ; ERROR
+CON
+JMP @MR315
+;ﾋｰﾀ2適温外
+;Heater 2 out of suitable temp.
+LDB DM2000.13            ; ﾋｰﾀ無効
+AND R46100               ; _自動運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+AND<> DM5010 #2          ; _AUTO動作番号
+ANB MR1904               ; ﾋｰﾀ2適温
+ANB MR1903               ; ﾋｰﾀ2断線
+ANB R39004               ; ｴﾗｰ中
+TMR @6 #30
+CON
+AND @T6
+@SET @MR203
+STG @MR203
+ANB R39004               ; ｴﾗｰ中
+SET R39004               ; ｴﾗｰ中
+CON
+DW #0 @DM0               ; TaskNo /ERROR_DISP
+CON
+DW #143 @DM1             ; ErrorNo /ERROR_DISP
+CON
+DW #0 @DM2               ; SensorNo /ERROR_DISP
+CON
+DW $1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+SET @MR100               ; ERROR
+CON
+JMP @MR315
+;ﾋｰﾀ2過昇温
+;Heater 2 over heating
+LDB DM2000.13            ; ﾋｰﾀ無効
+AND MR1905               ; ﾋｰﾀ2過昇温
+ANB R39004               ; ｴﾗｰ中
+TMR @7 #5
+CON
+AND @T7
+MPS
+ANB CR2002               ; 常時ON
+RES MR2001               ; ﾋｰﾀ2 ON
+CON
+@SET @MR205
+MPP
+AND CR2002               ; 常時ON
+RES MR2001               ; ﾋｰﾀ2 ON
+CON
+OUT MR10001              ; ﾋｰﾀｰ2 過昇温ﾌﾗｸﾞ
+STG @MR205
+ANB R39004               ; ｴﾗｰ中
+SET R39004               ; ｴﾗｰ中
+CON
+DW #0 @DM0               ; TaskNo /ERROR_DISP
+CON
+DW #144 @DM1             ; ErrorNo /ERROR_DISP
+CON
+DW #0 @DM2               ; SensorNo /ERROR_DISP
+CON
+DW $1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+SET @MR100               ; ERROR
+CON
+JMP @MR315
+;ﾋｰﾀ2断線
+;Heater 2 disconnect.
+LDB DM2000.13            ; ﾋｰﾀ無効
+AND R46100               ; _自動運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+ANB MR1904               ; ﾋｰﾀ2適温
+AND MR1903               ; ﾋｰﾀ2断線
+ANB R39004               ; ｴﾗｰ中
+TMR @24 #30
+CON
+AND @T24
+@SET @MR206
+STG @MR206
+ANB R39004               ; ｴﾗｰ中
+SET R39004               ; ｴﾗｰ中
+CON
+DW #0 @DM0               ; TaskNo /ERROR_DISP
+CON
+DW #145 @DM1             ; ErrorNo /ERROR_DISP
+CON
+DW #0 @DM2               ; SensorNo /ERROR_DISP
+CON
+DW $1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+SET @MR100               ; ERROR
+CON
+JMP @MR315
+;清掃回数ﾃﾞｰﾀを消耗品ﾃﾞｰﾀに移管
+LD CR2002                ; 常時ON
+LDA.D DM7038             ; 基礎ﾃﾞｰﾀ20 溶着ﾍｯﾄﾞ清掃回数
+CON
+STA.D DM8720             ; _消耗品1最大値
+CON
+STA.D DM8722             ; _消耗品2最大値
+;<h1/>ｸﾘｰﾝｴｱﾕﾆｯﾄ & ｲｵﾅｲｻﾞ 監視
+LD CR2007                ; 運転開始時1ｽｷｬﾝOFF
+TMR @10 #100
+LD @T10
+ANB R39004               ; ｴﾗｰ中
+MPS
+ANB R1008                ; ｴｱｸﾘｰﾝﾕﾆｯﾄ1 異常1
+TMR @11 #20
+CON
+AND @T11
+@SET @MR300
+MRD
+ANB R1010                ; ｴｱｸﾘｰﾝﾕﾆｯﾄ2 異常1
+TMR @12 #20
+CON
+AND @T12
+@SET @MR301
+MRD
+ANB R1104                ; ｲｵﾅｲｻﾞ1 ｴﾗｰ
+TMR @13 #20
+CON
+AND @T13
+@SET @MR302
+MRD
+ANB R1106                ; ｲｵﾅｲｻﾞ2 ｴﾗｰ
+TMR @14 #20
+CON
+AND @T14
+@SET @MR305
+MPP
+ANB R1108                ; ｲｵﾅｲｻﾞ3 ｴﾗｰ
+TMR @15 #20
+CON
+AND @T15
+@SET @MR308
+;ｴｱｸﾘｰﾝ1ﾕﾆｯﾄｱﾗｰﾑ
+;Air clean unit 1 alarm
+STG @MR300
+ANB R39004               ; ｴﾗｰ中
+SET R39004               ; ｴﾗｰ中
+CON
+DW #0 @DM0               ; TaskNo /ERROR_DISP
+CON
+DW #51 @DM1              ; ErrorNo /ERROR_DISP
+CON
+DW #0 @DM2               ; SensorNo /ERROR_DISP
+CON
+DW $1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+SET @MR100               ; ERROR
+CON
+JMP @MR315
+;ｴｱｸﾘｰﾝ2ﾕﾆｯﾄｱﾗｰﾑ
+;Air clean unit 2 alarm
+STG @MR301
+ANB R39004               ; ｴﾗｰ中
+SET R39004               ; ｴﾗｰ中
+CON
+DW #0 @DM0               ; TaskNo /ERROR_DISP
+CON
+DW #52 @DM1              ; ErrorNo /ERROR_DISP
+CON
+DW #0 @DM2               ; SensorNo /ERROR_DISP
+CON
+DW $1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+SET @MR100               ; ERROR
+CON
+JMP @MR315
+;ｽﾎﾟｯﾄｲｵﾅｲｻﾞ1ｱﾗｰﾑ
+;Ionizer 1 alarm
+STG @MR302
+ANB R39004               ; ｴﾗｰ中
+SET R39004               ; ｴﾗｰ中
+CON
+DW #0 @DM0               ; TaskNo /ERROR_DISP
+CON
+DW #53 @DM1              ; ErrorNo /ERROR_DISP
+CON
+DW #4005 @DM2            ; SensorNo /ERROR_DISP
+CON
+DW $1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+SET @MR100               ; ERROR
+CON
+JMP @MR303
+STG @MR303
+AND @MR101               ;  ｴﾗｰ完了
+SET MR2108               ; ｲｵﾅｲｻﾞ1 放電停止
+CON
+RES @MR101               ;  ｴﾗｰ完了
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+JMP @MR304
+STG @MR304
+TMR @16 #10
+CON
+AND @T16
+RES MR2108               ; ｲｵﾅｲｻﾞ1 放電停止
+CON
+ENDS
+;ｽﾎﾟｯﾄｲｵﾅｲｻﾞ2ｱﾗｰﾑ
+;Ionizer 2 alarm
+STG @MR305
+ANB R39004               ; ｴﾗｰ中
+SET R39004               ; ｴﾗｰ中
+CON
+DW #0 @DM0               ; TaskNo /ERROR_DISP
+CON
+DW #54 @DM1              ; ErrorNo /ERROR_DISP
+CON
+DW #4006 @DM2            ; SensorNo /ERROR_DISP
+CON
+DW $1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+SET @MR100               ; ERROR
+CON
+JMP @MR306
+STG @MR306
+AND @MR101               ;  ｴﾗｰ完了
+SET MR2110               ; ｲｵﾅｲｻﾞ2 放電停止
+CON
+RES @MR101               ;  ｴﾗｰ完了
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+JMP @MR307
+STG @MR307
+TMR @17 #10
+CON
+AND @T17
+RES MR2110               ; ｲｵﾅｲｻﾞ2 放電停止
+CON
+ENDS
+;ｽﾎﾟｯﾄｲｵﾅｲｻﾞ3ｱﾗｰﾑ
+;Ionizer 3 alarm
+STG @MR308
+ANB R39004               ; ｴﾗｰ中
+SET R39004               ; ｴﾗｰ中
+CON
+DW #0 @DM0               ; TaskNo /ERROR_DISP
+CON
+DW #55 @DM1              ; ErrorNo /ERROR_DISP
+CON
+DW #4007 @DM2            ; SensorNo /ERROR_DISP
+CON
+DW $1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+SET @MR100               ; ERROR
+CON
+JMP @MR309
+STG @MR309
+AND @MR101               ;  ｴﾗｰ完了
+SET MR2112               ; ｲｵﾅｲｻﾞ3 放電停止
+CON
+RES @MR101               ;  ｴﾗｰ完了
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+JMP @MR310
+STG @MR310
+TMR @18 #10
+CON
+AND @T18
+RES MR2112               ; ｲｵﾅｲｻﾞ3 放電停止
+CON
+ENDS
+;<h1/>ｴｱｰ関連
+;ｴｱｰ圧低下異常
+LDB R006                 ; ｴｱｰ元圧検出
+ANB R39004               ; ｴﾗｰ中
+TMR @40 #30
+CON
+AND @T40
+SET R39004               ; ｴﾗｰ中
+CON
+DW #0 @DM0               ; TaskNo /ERROR_DISP
+CON
+DW #56 @DM1              ; ErrorNo /ERROR_DISP
+CON
+DW #4012 @DM2            ; SensorNo /ERROR_DISP
+CON
+DW $1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+SET @MR100               ; ERROR
+CON
+@SET @MR315
+;真空１圧低下異常
+LDB R008                 ; 真空元圧確認1
+ANB R39004               ; ｴﾗｰ中
+ANB DM2000.12            ; ﾄﾞﾗｲ運転
+TMR @8 #30
+CON
+AND @T8
+SET R39004               ; ｴﾗｰ中
+CON
+DW #0 @DM0               ; TaskNo /ERROR_DISP
+CON
+DW #57 @DM1              ; ErrorNo /ERROR_DISP
+CON
+DW #4013 @DM2            ; SensorNo /ERROR_DISP
+CON
+DW $1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+SET @MR100               ; ERROR
+CON
+@SET @MR315
+;真空２圧低下異常
+LDB R009                 ; 真空元圧確認2
+ANB R39004               ; ｴﾗｰ中
+ANB DM2000.12            ; ﾄﾞﾗｲ運転
+TMR @9 #30
+CON
+AND @T9
+SET R39004               ; ｴﾗｰ中
+CON
+DW #0 @DM0               ; TaskNo /ERROR_DISP
+CON
+DW #58 @DM1              ; ErrorNo /ERROR_DISP
+CON
+DW #4014 @DM2            ; SensorNo /ERROR_DISP
+CON
+DW $1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+SET @MR100               ; ERROR
+CON
+@SET @MR315
+STG @MR315
+AND @MR101               ;  ｴﾗｰ完了
+RES @MR101               ;  ｴﾗｰ完了
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+ENDS
+LD CR2007                ; 運転開始時1ｽｷｬﾝOFF
+TMR @20 #50
+LD @T20
+MC
+;<h1/>集塵機
+LDB R39004               ; ｴﾗｰ中
+MPS
+LDB R1101                ; 集塵機 運転中
+ANB DM2000.14            ; 集塵機無視
+ANL
+TMR @21 #100
+CON
+AND @T21
+@SET @MR400
+MPP
+AND R1101                ; 集塵機 運転中
+MPS
+AND R1100                ; 集塵機 目詰まり
+TMR @22 #20
+CON
+AND @T22
+@SET @MR401
+MPP
+AND R1102                ; 集塵機 圧力不足
+TMR @23 #20
+CON
+AND @T23
+@SET @MR402
+;集塵機運転異常
+;Dust-collector Running alarm
+STG @MR400
+ANB R39004               ; ｴﾗｰ中
+SET R39004               ; ｴﾗｰ中
+CON
+DW #0 @DM0               ; TaskNo /ERROR_DISP
+CON
+DW #90 @DM1              ; ErrorNo /ERROR_DISP
+CON
+DW #4008 @DM2            ; SensorNo /ERROR_DISP
+CON
+DW $1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+SET @MR100               ; ERROR
+CON
+JMP @MR415
+;集塵機 ﾌｨﾙﾀ目詰まり
+;Dust-collector filter clogging
+STG @MR401
+ANB R39004               ; ｴﾗｰ中
+SET R39004               ; ｴﾗｰ中
+CON
+DW #0 @DM0               ; TaskNo /ERROR_DISP
+CON
+DW #91 @DM1              ; ErrorNo /ERROR_DISP
+CON
+DW #4008 @DM2            ; SensorNo /ERROR_DISP
+CON
+DW $1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+SET @MR100               ; ERROR
+CON
+JMP @MR415
+;集塵機 圧力不足
+;Dust-collector Pressure down
+STG @MR402
+ANB R39004               ; ｴﾗｰ中
+SET R39004               ; ｴﾗｰ中
+CON
+DW #0 @DM0               ; TaskNo /ERROR_DISP
+CON
+DW #92 @DM1              ; ErrorNo /ERROR_DISP
+CON
+DW #4008 @DM2            ; SensorNo /ERROR_DISP
+CON
+DW $1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+SET @MR100               ; ERROR
+CON
+JMP @MR415
+;<h1/>ﾌﾟﾚｽｴｱ
+;ﾌﾟﾚｽ用ｴｱ圧低下異常
+LDB R4412                ; ﾌﾟﾚｽ用圧力検出
+ANB R39004               ; ｴﾗｰ中
+SET R39004               ; ｴﾗｰ中
+CON
+DW #0 @DM0               ; TaskNo /ERROR_DISP
+CON
+DW #87 @DM1              ; ErrorNo /ERROR_DISP
+CON
+DW #4412 @DM2            ; SensorNo /ERROR_DISP
+CON
+DW $1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+SET @MR100               ; ERROR
+CON
+@SET @MR415
+;<h1/>ﾌｰﾌﾟ
+;ﾌｰﾌﾟ押さえ検出異常
+LD R46100                ; _自動運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+ANB R4406                ; ﾌｰﾌﾟ押え ON
+ANB R39004               ; ｴﾗｰ中
+SET R39004               ; ｴﾗｰ中
+CON
+DW #0 @DM0               ; TaskNo /ERROR_DISP
+CON
+DW #88 @DM1              ; ErrorNo /ERROR_DISP
+CON
+DW #4406 @DM2            ; SensorNo /ERROR_DISP
+CON
+DW $1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+SET @MR100               ; ERROR
+CON
+@SET @MR415
+STG @MR415
+AND @MR101               ;  ｴﾗｰ完了
+RES @MR101               ;  ｴﾗｰ完了
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+ENDS
+;ﾌｰﾌﾟ終わり検出異常
+LDB R4402                ; ﾌｰﾌﾟｴﾝﾄﾞ検出
+ANB R4404                ; ﾌｰﾌﾟつなぎ目検出
+ANB R39004               ; ｴﾗｰ中
+ANB MR20803              ; ﾌｰﾌﾟ送り中止
+ANB @MR405               ; ﾌｰﾌﾟｴﾝﾄﾞ検出記憶
+@SET @MR403
+STG @MR403
+ANB R39004               ; ｴﾗｰ中
+MPS
+SET R39004               ; ｴﾗｰ中
+CON
+DW #0 @DM0               ; TaskNo /ERROR_DISP
+CON
+DW #89 @DM1              ; ErrorNo /ERROR_DISP
+CON
+DW #4402 @DM2            ; SensorNo /ERROR_DISP
+CON
+DW $1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+SET @MR100               ; ERROR
+CON
+JMP @MR404
+MRD
+MCALL HOLD_REQUEST #1
+MRD
+SET @MR405               ; ﾌｰﾌﾟｴﾝﾄﾞ検出記憶
+CON
+RES MR2100               ; 巻出しﾄﾙｸﾓｰﾀ　CW
+CON
+RES MR2101               ; 巻出しﾄﾙｸﾓｰﾀ　CCW
+CON
+RES MR2104               ; 巻取りﾄﾙｸﾓｰﾀ　CW
+CON
+RES MR2105               ; 巻取りﾄﾙｸﾓｰﾀ　CCW
+MPP
+LD R46100                ; _自動運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+ANB R46106               ; _定停止移行中
+ANL
+@SET MR20803             ; ﾌｰﾌﾟ送り中止
+STG @MR404
+AND @MR101               ;  ｴﾗｰ完了
+RES @MR101               ;  ｴﾗｰ完了
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+ENDS
+LD @MR405                ; ﾌｰﾌﾟｴﾝﾄﾞ検出記憶
+ANB @MR404
+MPS
+TMR @32 #1200
+MPP
+AND @T32
+RES @MR405               ; ﾌｰﾌﾟｴﾝﾄﾞ検出記憶
+MCR
+;<h1/>ﾃﾞｼﾞﾀﾙｾﾝｻGT2
+;GT1
+LD CR2007                ; 運転開始時1ｽｷｬﾝOFF
+TMR @25 #100
+LD @T25
+ANB R39004               ; ｴﾗｰ中
+MPS
+AND DM11100.15           ; GT1 ｴﾗｰ状態
+TMR @26 #2
+CON
+AND @T26
+@SET @MR500
+MPP
+LDB DM11100.15           ; GT1 ｴﾗｰ状態
+AND DM11107.0            ; GT1 設定値書換えｴﾗｰ
+ANL
+TMR @27 #20
+CON
+AND @T27
+@SET @MR501
+;GT1 ｴﾗｰ
+;GT1 Error
+STG @MR500
+ANB R39004               ; ｴﾗｰ中
+SET R39004               ; ｴﾗｰ中
+CON
+DW #0 @DM0               ; TaskNo /ERROR_DISP
+CON
+DW #80 @DM1              ; ErrorNo /ERROR_DISP
+CON
+DW #4009 @DM2            ; SensorNo /ERROR_DISP
+CON
+DW $1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+SET @MR100               ; ERROR
+CON
+JMP @MR502
+;GT1 設定値書換ｴﾗｰ
+;GT1 Setting Error
+STG @MR501
+ANB R39004               ; ｴﾗｰ中
+SET R39004               ; ｴﾗｰ中
+CON
+DW #0 @DM0               ; TaskNo /ERROR_DISP
+CON
+DW #81 @DM1              ; ErrorNo /ERROR_DISP
+CON
+DW #4009 @DM2            ; SensorNo /ERROR_DISP
+CON
+DW $1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+SET @MR100               ; ERROR
+CON
+JMP @MR502
+;ｴﾗｰ解除後ﾘｾｯﾄ
+STG @MR502
+AND @MR101               ;  ｴﾗｰ完了
+RES @MR101               ;  ｴﾗｰ完了
+CON
+JMP @MR503
+STG @MR503
+SET DM11302.0            ; GT1 RESET要求
+CON
+JMP @MR504
+STG @MR504
+AND DM11106.0            ; GT1 RESET応答
+RES DM11302.0            ; GT1 RESET要求
+CON
+JMP @MR505
+STG @MR505
+ANB DM11106.0            ; GT1 RESET応答
+RES R39004               ; ｴﾗｰ中
+CON
+ENDS
+;GT1上下限設定値変更（表示だけ）
+LD<>.D DM7008 DM11304    ; 基礎ﾃﾞｰﾀ5 ﾌｨﾙﾀ厚み上限  GT1 Hight設定値
+OR<>.D DM7010 DM11307    ; 基礎ﾃﾞｰﾀ6 ﾌｨﾙﾀ厚み下限  GT1 Low設定値
+@SET @MR508
+STG @MR508
+MOV.D DM7008 DM11304     ; 基礎ﾃﾞｰﾀ5 ﾌｨﾙﾀ厚み上限  GT1 Hight設定値
+MOV.D DM7010 DM11307     ; 基礎ﾃﾞｰﾀ6 ﾌｨﾙﾀ厚み下限  GT1 Low設定値
+SET DM11303.0            ; GT1 Hight設定値書換要求
+CON
+JMP @MR509
+STG @MR509
+AND DM11108.0            ; GT1 Hight設定値書換え完了
+RES DM11303.0            ; GT1 Hight設定値書換要求
+CON
+JMP @MR510
+STG @MR510
+TMR @31 #5
+CON
+AND @T31
+SET DM11306.0            ; GT1 Low設定値書換要求
+CON
+JMP @MR511
+STG @MR511
+AND DM11109.0            ; GT1 Low設定値書換え完了
+RES DM11306.0            ; GT1 Low設定値書換要求
+CON
+ENDS
+;-----------------------------------------
+;GT2
+LD @T25
+ANB R39004               ; ｴﾗｰ中
+MPS
+AND DM11114.15           ; GT2/3 ｴﾗｰ状態
+TMR @28 #2
+CON
+AND @T28
+@SET @MR600
+MPP
+ANB DM11114.15           ; GT2/3 ｴﾗｰ状態
+MPS
+AND DM11121.0            ; GT2 設定値書換えｴﾗｰ
+TMR @29 #20
+CON
+AND @T29
+@SET @MR601
+MPP
+AND DM11121.1            ; GT3 設定値書換えｴﾗｰ
+TMR @30 #20
+CON
+AND @T30
+@SET @MR602
+;GT2/3 ｴﾗｰ
+;GT2/3 Error
+STG @MR600
+ANB R39004               ; ｴﾗｰ中
+SET R39004               ; ｴﾗｰ中
+CON
+DW #0 @DM0               ; TaskNo /ERROR_DISP
+CON
+DW #146 @DM1             ; ErrorNo /ERROR_DISP
+CON
+DW #0 @DM2               ; SensorNo /ERROR_DISP
+CON
+DW $1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+SET @MR100               ; ERROR
+CON
+JMP @MR603
+;GT2 設定値書換ｴﾗｰ
+;GT2 Setting Error
+STG @MR601
+ANB R39004               ; ｴﾗｰ中
+SET R39004               ; ｴﾗｰ中
+CON
+DW #0 @DM0               ; TaskNo /ERROR_DISP
+CON
+DW #147 @DM1             ; ErrorNo /ERROR_DISP
+CON
+DW #4010 @DM2            ; SensorNo /ERROR_DISP
+CON
+DW $1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+SET @MR100               ; ERROR
+CON
+JMP @MR603
+;GT3 設定値書換ｴﾗｰ
+;GT3 Setting Error
+STG @MR602
+ANB R39004               ; ｴﾗｰ中
+SET R39004               ; ｴﾗｰ中
+CON
+DW #0 @DM0               ; TaskNo /ERROR_DISP
+CON
+DW #148 @DM1             ; ErrorNo /ERROR_DISP
+CON
+DW #4011 @DM2            ; SensorNo /ERROR_DISP
+CON
+DW $1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+SET @MR100               ; ERROR
+CON
+JMP @MR603
+;ｴﾗｰ解除後ﾘｾｯﾄ
+STG @MR603
+AND @MR101               ;  ｴﾗｰ完了
+RES @MR101               ;  ｴﾗｰ完了
+CON
+JMP @MR604
+STG @MR604
+SET DM11314.0            ; GT2 RESET要求
+CON
+SET DM11314.1            ; GT3 RESET要求
+CON
+JMP @MR605
+STG @MR605
+AND DM11120.0            ; GT2 RESET応答
+AND DM11120.1            ; GT3 RESET応答
+RES DM11314.0            ; GT2 RESET要求
+CON
+RES DM11314.1            ; GT3 RESET要求
+CON
+JMP @MR606
+STG @MR606
+ANB DM11120.0            ; GT2 RESET応答
+ANB DM11120.1            ; GT3 RESET応答
+RES R39004               ; ｴﾗｰ中
+CON
+ENDS
+;<h1/>ｴﾘｱｾﾝｻ遮光による一時停止
+LD MR20701               ; ｴﾘｱｾﾝｻ監視中
+OR DM11007.2             ; RB1 MOVE
+OR DM11015.2             ; RB2 MOVE
+OUT R50900               ; _Group1 ｴﾘｱｾﾝｻ無効宣言
+LD DM11007.2             ; RB1 MOVE
+OR DM11015.2             ; RB2 MOVE
+AND R46300               ; _Group1　ｴﾘｱｾﾝｻ遮断中
+SET DM11207.2            ; RB1 STP
+CON
+SET DM11215.2            ; RB2 STP
+LDB R46300               ; _Group1　ｴﾘｱｾﾝｻ遮断中
+ANB R41203               ; TASK3 PAUSE 要求
+RES DM11207.2            ; RB1 STP
+CON
+RES DM11215.2            ; RB2 STP
+;<h1/>CAV No.画面表示
+LD= DM3000 #10           ; _MainTP　表示中ﾍﾟｰｼﾞNo
+OUT B36F0                ; CAV_No.画面表示
+;<h1/>CELL間 PAUSE 許可
+LD R44200                ; Grp1 ﾎﾟｰｽﾞ要求
+OUT R41200               ; TASK0 PAUSE 要求
+LD R44200                ; Grp1 ﾎﾟｰｽﾞ要求
+OUT R41201               ; TASK1 PAUSE 要求
+LD R44200                ; Grp1 ﾎﾟｰｽﾞ要求
+OUT R41202               ; TASK2 PAUSE 要求
+LD R44200                ; Grp1 ﾎﾟｰｽﾞ要求
+OUT R41203               ; TASK3 PAUSE 要求
+LD R44200                ; Grp1 ﾎﾟｰｽﾞ要求
+OUT R41204               ; TASK4 PAUSE 要求
+LD R44200                ; Grp1 ﾎﾟｰｽﾞ要求
+OUT R41205               ; TASK5 PAUSE 要求
+LD R44200                ; Grp1 ﾎﾟｰｽﾞ要求
+OUT R41206               ; TASK6 PAUSE 要求
+LD R44200                ; Grp1 ﾎﾟｰｽﾞ要求
+OUT R41207               ; TASK7 PAUSE 要求
+LD R44200                ; Grp1 ﾎﾟｰｽﾞ要求
+OUT R41208               ; TASK8 PAUSE 要求
+LD R44200                ; Grp1 ﾎﾟｰｽﾞ要求
+OUT R41209               ; TASK9 PAUSE 要求
+LD R44200                ; Grp1 ﾎﾟｰｽﾞ要求
+OUT R41210               ; TASK10 PAUSE 要求
+;<h1/>※隣接ｾﾙへのPAUSE許可
+;隣接ｾﾙへのPAUSE許可記述例：下流ｾﾙよりﾎﾟｰｽﾞ要求　停止必要TaskがTASK2とした場合は以下のように記述してください。
+;　　　　　　　　　　　　 ：例ではﾛｰｶﾙﾗﾍﾞﾙを使用していますが実際はラベルを使用せず記述してください。
+LD R42602                ; Grp1_Task2_ﾎﾟｰｽﾞ許可
+ORB R41002               ; _Grp1_Task2_起動中ﾌﾗｸﾞ
+OR DM2000.1              ; 上流OFF-LINE
+AND PAUSE_RQ1            ; CELL_1_PAUSE要求
+OUT PAUSE_1_OK           ; CELL_1_PAUSE許可
+LD R42602                ; Grp1_Task2_ﾎﾟｰｽﾞ許可
+ANB R41202               ; TASK2 PAUSE 要求
+RES R42602               ; Grp1_Task2_ﾎﾟｰｽﾞ許可
+;<h1/>サイクルタイム
+;全体 Cycleを取り込みたいﾀｲﾐﾝｸﾞでMR000 SETを実行してください。
+LDB MR000                ; Cycleﾀｲﾑｶｳﾝﾄ
+AND R46100               ; _自動運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+OUT R46115               ; _装置ｻｲｸﾙﾀｲﾑ計測中
+LDF R46115               ; _装置ｻｲｸﾙﾀｲﾑ計測中
+RES MR000                ; Cycleﾀｲﾑｶｳﾝﾄ
+;<h1/>払い出しフラグ：TASKにより停止する順番ある場合使用。
+LD R46106                ; _定停止移行中
+OR R47800                ; _Group1　ﾒﾝﾃ動作定停止移行中
+ANB R46103               ; _停止中　ﾓｰﾄﾞﾌﾗｸﾞ
+MPS
+SET R57306               ; Task6 停止要求
+CON
+SET R57307               ; Task7 停止要求
+CON
+SET R57308               ; Task8 停止要求
+CON
+SET R57309               ; Task9 停止要求
+MRD
+SET R57303               ; Task3 停止要求
+MPP
+ANB R41003               ; _Grp1_Task3_起動中ﾌﾗｸﾞ
+MPS
+SET R57300               ; Task0 停止要求
+CON
+SET R57304               ; Task4 停止要求
+CON
+SET R57305               ; Task5 停止要求
+MPP
+ANB R41000               ; _Grp1_Task0_起動中ﾌﾗｸﾞ
+SET R57301               ; Task1 停止要求
+CON
+SET R57302               ; Task2 停止要求
+LDB R40100               ; _Group1起動中ﾌﾗｸﾞ
+ZRES R57300 R57315       ; Task0 停止要求  受入れTask 受入れ停止要求
+;<h1/>※ Message BBS 必要に応じてPAUSE要求修正してください。
+LD R58500                ; DEVICEﾈｯﾄ登録ﾉｰﾄﾞ一致
+MC
+LD R46114                ; _装置原点復帰待ち
+MEP
+SMOV "原点復帰要求" DM3600     ; _BBS1行目表示文字列
+LD R46100                ; _自動運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+AND R57315               ; 受入れTask 受入れ停止要求
+MEP
+SMOV "停止処理中" DM3600      ; _BBS1行目表示文字列
+LD R46103                ; _停止中　ﾓｰﾄﾞﾌﾗｸﾞ
+ANB R46114               ; _装置原点復帰待ち
+MEP
+SMOV "定停止中" DM3600       ; _BBS1行目表示文字列
+LD R46300                ; _Group1　ｴﾘｱｾﾝｻ遮断中
+MEP
+SMOV "ｴﾘｱｾﾝｻ遮光！" DM3600  ; _BBS1行目表示文字列
+LDB R46114               ; _装置原点復帰待ち
+MEP
+LDB R46103               ; _停止中　ﾓｰﾄﾞﾌﾗｸﾞ
+ANB R46114               ; _装置原点復帰待ち
+MEP
+ORL
+LDB R46300               ; _Group1　ｴﾘｱｾﾝｻ遮断中
+MEP
+ORL
+FMOV #0 DM3600 #20       ; _BBS1行目表示文字列
+;Message3表示
+LDB R46100               ; _自動運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+MEP
+FMOV #0 DM3642 #20       ; _BBS3行目表示文字列
+MCR
+;自動動作選択異常
+STG R54402               ; ﾊﾟﾗﾒｰﾀNG
+ANB R39004               ; ｴﾗｰ中
+SET R39004               ; ｴﾗｰ中
+CON
+DW #0 @DM0               ; TaskNo /ERROR_DISP
+CON
+DW #50 @DM1              ; ErrorNo /ERROR_DISP
+CON
+DW #0 @DM2               ; SensorNo /ERROR_DISP
+CON
+DW $1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+SET @MR100               ; ERROR
+CON
+JMP @MR010
+STG @MR010
+AND @MR101               ;  ｴﾗｰ完了
+RES @MR101               ;  ｴﾗｰ完了
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+SET R54403               ; ﾊﾟﾗﾒｰﾀ設定ｴﾗｰ解除
+CON
+ENDS
+;<h1/>ERROR
+;MyTask Error Process Substance/エラー処理実体
+STG @MR100               ; ERROR
+ANB R39002               ; ERROR_DISP Busy
+MPS
+ZRES @MR105 @MR108       ; SW1  SW4
+CON
+DISN @DM9 @DM3 #4        ; ReturnSW /ERROR_DISP
+MRD
+BMOV @DM0 DM60000 #7     ; TaskNo /ERROR_DISP  TaskNo /ERROR_DISP
+MPP
+SET R39000               ; ERROR_DISP Start
+CON
+SET @MR102               ; Task0 ERROR Busy
+CON
+JMP @MR103
+STG @MR103
+AND R39002               ; ERROR_DISP Busy
+AND= DM60008 @DM1        ; ReturnNo /ERROR_DISP  ErrorNo /ERROR_DISP
+MPS
+AND= DM60007 @DM6        ; ReturnSW /ERROR_DISP
+SET @MR105               ; SW1
+CON
+JMP @MR104
+MRD
+AND= DM60007 @DM5        ; ReturnSW /ERROR_DISP
+SET @MR106               ; SW2
+CON
+JMP @MR104
+MRD
+AND= DM60007 @DM4        ; ReturnSW /ERROR_DISP
+SET @MR107               ; SW3
+CON
+JMP @MR104
+MPP
+AND= DM60007 @DM3        ; ReturnSW /ERROR_DISP
+SET @MR108               ; SW4
+CON
+JMP @MR104
+STG @MR104
+ANB R39002               ; ERROR_DISP Busy
+RES @MR102               ; Task0 ERROR Busy
+CON
+SET @MR101               ;  ｴﾗｰ完了
+CON
+ENDS
+END
+ENDH

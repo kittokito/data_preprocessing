@@ -1,0 +1,1289 @@
+DEVICE:53
+;MODULE:UNIT7_PCB_Remove_T
+;MODULE_TYPE:0
+;SCRIPT_TYPE:
+;
+;UNIT7 Remove-Trasfer 1
+;
+;動作FLG
+LD T1010                 ; ﾗｲﾄｶｰﾃﾝ2 OUT1
+AND T1011                ; ﾗｲﾄｶｰﾃﾝ2 OUT2
+OUT M7950                ; ﾗｲﾄｶｰﾃﾝ  遮光無し
+LD CR2002                ; 常時ON
+MPS
+DW K0 D7030              ; UT7 Case status
+MPP
+LD>= D7000 K20           ; ﾕﾆｯﾄ7自動運転ｽﾃｯﾌﾟ
+AND<= D7000 K49          ; ﾕﾆｯﾄ7自動運転ｽﾃｯﾌﾟ
+ANL
+DW K1 D7030              ; UT7 Case status
+LD CR2002                ; 常時ON
+MPS
+LD M7017                 ; Remove1   NG処理確認ﾌﾗｸﾞｾｯﾄ1
+OR M7966                 ; Case2     NG処理確認
+ANB M7967                ; NG解除確認
+ANL
+OUT M7966                ; Case2     NG処理確認
+MPP
+LD M7966                 ; Case2     NG処理確認
+LD T1713                 ; 除材1_NGｽｲｯﾁ
+OR M7950                 ; ﾗｲﾄｶｰﾃﾝ  遮光無し
+ANL
+ANB T1700                ; 除材1 ｹｰｽ検出
+ANL
+TMH K728 K20             ; NG解除確認ﾃﾞｨﾚｲ
+CON
+AND T728                 ; NG解除確認ﾃﾞｨﾚｲ
+OUT M7967                ; NG解除確認
+;■ロボット等機器入力受け
+;ロボット、検査装置など状態、現在位置などをまとめる信号は一旦ここで受ける。
+LD R3605                 ; 除材1Y    L.C.有効領域
+AND R4802                ; RCA5 MOVE
+OR M7812                 ; PCB排出Y 原点復帰中
+BOR D32539 K2            ; RCA5 制御信号
+ANB M7950                ; ﾗｲﾄｶｰﾃﾝ  遮光無し
+BOUT D32539 K2           ; RCA5 制御信号
+;<h1/>装置状態・動作条件
+LD R3603                 ; 除材1Y    ねじ締め領域
+AND T1611                ; 除材1 案内板 上昇側限
+AND T1613                ; 除材1 案内板ﾌｯｸ 後退限
+AND T1615                ; 除材1_ﾊﾞｯｸｱｯﾌﾟ　下降限
+OUT M7900                ; ﾕﾆｯﾄ7原点
+LDB B0E0                 ; ﾈｼﾞ締めJig1ID異常
+ANB B0E1                 ; 除材1Y軸異常
+ANB B0E2                 ; UT7異常
+ANB B0E3                 ; UT7異常
+ANB B0E4                 ; UT7異常
+ANB B0E5                 ; UT7異常
+ANB B0E6                 ; UT7異常
+ANB B0E7                 ; UT7異常
+INV
+OUT M7901                ; ﾕﾆｯﾄ7全異常
+LD M7900                 ; ﾕﾆｯﾄ7原点
+ANB M7000                ; ﾕﾆｯﾄ7ｽﾃｯﾌﾟ開始
+ANB R4802                ; RCA5 MOVE
+AND R4804                ; RCA5 SV
+AND R4801                ; RCA5 HEND
+ANB R4815                ; RCA5 EMGS
+ANB R4803                ; RCA5 ALM
+OUT M7902                ; ﾕﾆｯﾄ7起動条件
+LDB M64                  ; 運転準備
+OR M65                   ; 即停止異常(緊急停止)
+OR M7901                 ; ﾕﾆｯﾄ7全異常
+OR T15                   ; 強制停止
+OUT M7903                ; ﾕﾆｯﾄ7起動OFF
+LD M98                   ; 原点復帰開始
+ANB M7904                ; ﾕﾆｯﾄ7原点復帰中
+OR M7904                 ; ﾕﾆｯﾄ7原点復帰中
+ANB M7903                ; ﾕﾆｯﾄ7起動OFF
+ANB M7589                ; ﾕﾆｯﾄ7原点復帰完了確認
+OUT M7904                ; ﾕﾆｯﾄ7原点復帰中
+LD M83                   ; 各工程起動指令
+AND M7902                ; ﾕﾆｯﾄ7起動条件
+OR M7905                 ; ﾕﾆｯﾄ7起動中
+ANB M7903                ; ﾕﾆｯﾄ7起動OFF
+ANB M7399                ; ﾕﾆｯﾄ7動作完了
+OUT M7905                ; ﾕﾆｯﾄ7起動中
+LD CR2003                ; 常時OFF
+OUT M7908                ; ﾕﾆｯﾄ7警報補助
+;Pack処理
+LDB M7802                ; PCB排出Y 移動指示中
+ANB M7812                ; PCB排出Y 原点復帰中
+INV
+OUT M7910                ; UNIT7 Pack
+;□エラー発生　一時停止フラグ
+LD CR2002                ; 常時ON
+MPS
+PMOV.D M7920 K0 D7100 K0 K20;Err440:除材搬送1ｹｰｽ残  UT7ｴﾗｰ判別
+MPP
+AND<> D7100 K0           ; UT7ｴﾗｰ判別
+OUT M7912                ; UNIT7 ｴﾗｰ
+LDB M7901                ; ﾕﾆｯﾄ7全異常
+ANB M160                 ; ALL PAUSE
+ANB M7908                ; ﾕﾆｯﾄ7警報補助
+ANB M7911                ; UNIT7 排出ｴﾗｰ
+ANB M7912                ; UNIT7 ｴﾗｰ
+LDB M32                  ; 自動ﾓｰﾄﾞ
+ANB M33                  ; 手動ﾓｰﾄﾞ
+LD M32                   ; 自動ﾓｰﾄﾞ
+AND M7905                ; ﾕﾆｯﾄ7起動中
+ORL
+LD M33                   ; 手動ﾓｰﾄﾞ
+AND M7904                ; ﾕﾆｯﾄ7原点復帰中
+ORL
+ANL
+OUT M7913                ; UNIT7     ｴﾗｰ・PAUSE無し
+;RB interlock
+LD T1607                 ; PCB移載ﾍｯﾄﾞ 上昇限
+LD R3200                 ; PCB-Assy Z 待機領域
+OR R3203                 ; PCB-Assy Z 搬送干渉外
+ANL
+ANB R4802                ; RCA5 MOVE
+AND R4804                ; RCA5 SV
+ANB R4815                ; RCA5 EMGS
+ANB R4803                ; RCA5 ALM
+ANB M7800                ; PCB排出Y 移動完了
+ANB M7802                ; PCB排出Y 移動指示中
+ANB M7810                ; PCB排出Y 原点復帰完了
+OUT M7959                ; PCB除材Y軸 原点復帰可能
+LD T1607                 ; PCB移載ﾍｯﾄﾞ 上昇限
+LD R3200                 ; PCB-Assy Z 待機領域
+OR R3203                 ; PCB-Assy Z 搬送干渉外
+LD R3600                 ; 除材1Y    受取干渉外
+LD R3203                 ; PCB-Assy Z 搬送干渉外
+AND T1607                ; PCB移載ﾍｯﾄﾞ 上昇限
+ORL
+ANL
+LD M7905                 ; ﾕﾆｯﾄ7起動中
+LD M7022                 ; 排出Y　ねじ締め待機位置移動
+OR M7024                 ; 排出Y　ねじ締め位置移動
+ANL
+ORL
+ANL
+ANB R4802                ; RCA5 MOVE
+AND R4804                ; RCA5 SV
+ANB R4815                ; RCA5 EMGS
+ANB R4803                ; RCA5 ALM
+ANB M7800                ; PCB排出Y 移動完了
+ANB M7802                ; PCB排出Y 移動指示中
+ANB M7810                ; PCB排出Y 原点復帰完了
+AND R4801                ; RCA5 HEND
+AND T1611                ; 除材1 案内板 上昇側限
+AND T1615                ; 除材1_ﾊﾞｯｸｱｯﾌﾟ　下降限
+LD T1613                 ; 除材1 案内板ﾌｯｸ 後退限
+OR R3604                 ; 除材1Y    ﾌｯｸ開始可能ｴﾘｱ
+OR T1707                 ; 除材1_案内板ﾕﾆｯﾄ 閉位置検出
+ANL
+OUT M7960                ; PCB除材Y軸 動作可能
+LDF M7905                ; ﾕﾆｯﾄ7起動中
+ZRES M7800 M7859         ; PCB排出Y 移動完了
+;<h1/>■自動回路 
+;
+;運転開始・ステッパ初期化・補助接点へ展開
+LD CR2002                ; 常時ON
+ZRES M7000 M7399         ; ﾕﾆｯﾄ7ｽﾃｯﾌﾟ開始  ﾕﾆｯﾄ7動作完了
+LDB M7905                ; ﾕﾆｯﾄ7起動中
+MOV K0 D7000             ; ﾕﾆｯﾄ7自動運転ｽﾃｯﾌﾟ
+LD M7905                 ; ﾕﾆｯﾄ7起動中
+MOV D7000 Z1             ; ﾕﾆｯﾄ7自動運転ｽﾃｯﾌﾟ
+OUT M7000:Z1             ; ﾕﾆｯﾄ7ｽﾃｯﾌﾟ開始
+;自動運転ステップ開始
+LD M7000                 ; ﾕﾆｯﾄ7ｽﾃｯﾌﾟ開始
+AND M7913                ; UNIT7     ｴﾗｰ・PAUSE無し
+MPS
+ANB M39                  ; 日常点検ﾓｰﾄﾞ
+@INC D7000               ; ﾕﾆｯﾄ7自動運転ｽﾃｯﾌﾟ
+MPP
+LD M39                   ; 日常点検ﾓｰﾄﾞ
+AND M70                  ; 自動起動停止指令(ｻｲｸﾙ停止)
+ANL
+DW K380 D7000            ; ﾕﾆｯﾄ7自動運転ｽﾃｯﾌﾟ
+;運転開始時JIG番号ﾁｪｯｸ
+;Jig No. check when AUTO start.
+LD M7001                 ; JID ID check
+MPS
+LD= D91 E3421            ; PCB-Eject Jig ID  PCB-Eject Jig ID
+AND= D92 E3422           ; PCB-Remove S.A.Plate Jig ID  PCB-Remove S.A.Plate Jig ID
+ANL
+@INC D7000               ; ﾕﾆｯﾄ7自動運転ｽﾃｯﾌﾟ
+MRD
+AND<> E3421 D91          ; PCB-Eject Jig ID  PCB-Eject Jig ID
+OUT M7956                ; PCB排出ｽﾗｲﾀﾞ治具ID異常
+MPP
+AND<> E3422 D92          ; PCB-Remove S.A.Plate Jig ID  PCB-Remove S.A.Plate Jig ID
+OUT M7958                ; PCBねじ締め案内板ID異常
+;ﾛｯｸ解除・ﾌｯｸ解除・ﾊﾞｯｸｱｯﾌﾟ下降
+;Lock release & Hook release & Back-up Down
+LD M7002                 ; ﾛｯｸ解除ﾌｯｸ解除ﾊﾞｯｸｱｯﾌﾟ下降
+AND M7950                ; ﾗｲﾄｶｰﾃﾝ  遮光無し
+MPS
+LD M7913                 ; UNIT7     ｴﾗｰ・PAUSE無し
+AND T1611                ; 除材1 案内板 上昇側限
+AND T1613                ; 除材1 案内板ﾌｯｸ 後退限
+AND T1615                ; 除材1_ﾊﾞｯｸｱｯﾌﾟ　下降限
+ANL
+@INC D7000               ; ﾕﾆｯﾄ7自動運転ｽﾃｯﾌﾟ
+MPP
+OUT M7752                ; PCB案内板 上昇
+CON
+OUT M7772                ; PCB案内板ﾌｯｸ 後退
+CON
+OUT M7792                ; PCBねじ締めﾊﾞｯｸｱｯﾌﾟ　下降
+;Case準備確認
+;Case check
+LD M7003                 ; CASE受取領域進入許可確認
+AND M7913                ; UNIT7     ｴﾗｰ・PAUSE無し
+MPS
+AND M2990                ; CASE除材  準備OK
+DW K10 D7000             ; ﾕﾆｯﾄ7自動運転ｽﾃｯﾌﾟ
+MPP
+ANB M2990                ; CASE除材  準備OK
+@INC D7000               ; ﾕﾆｯﾄ7自動運転ｽﾃｯﾌﾟ
+;Y軸　待機位置移動
+;Move to remove waiting posotion
+LD M7004                 ; 排出Y　受取待機位置移動
+AND M7913                ; UNIT7     ｴﾗｰ・PAUSE無し
+MPS
+AND=.L D128 E3102        ; RCA5_Position Data  除材1Y_TP_Pos2_Data
+DW K6 D7000              ; ﾕﾆｯﾄ7自動運転ｽﾃｯﾌﾟ
+MPP
+LD<>.L D128 E3102        ; RCA5_Position Data  除材1Y_TP_Pos2_Data
+AND M7950                ; ﾗｲﾄｶｰﾃﾝ  遮光無し
+AND M7960                ; PCB除材Y軸 動作可能
+ANL
+@INC D7000               ; ﾕﾆｯﾄ7自動運転ｽﾃｯﾌﾟ
+LD M7005                 ; Y_P2 move
+MPS
+DW K2 D7050              ; PCB排出Y軸 移動No.
+CON
+OUT @M1                  ; PCB排出Y軸移動
+MPP
+AND M7800                ; PCB排出Y 移動完了
+RES M7800                ; PCB排出Y 移動完了
+CON
+@INC D7000               ; ﾕﾆｯﾄ7自動運転ｽﾃｯﾌﾟ
+;除材要求待ち
+;Waiting for remove demand
+LD M7006                 ; 進入許可待ち
+AND M7913                ; UNIT7     ｴﾗｰ・PAUSE無し
+MPS
+AND M2990                ; CASE除材  準備OK
+DW K10 D7000             ; ﾕﾆｯﾄ7自動運転ｽﾃｯﾌﾟ
+MPP
+LDB M2990                ; CASE除材  準備OK
+AND M70                  ; 自動起動停止指令(ｻｲｸﾙ停止)
+AND M2398                ; ﾕﾆｯﾄ2ｻｲｸﾙ停止
+ANL
+DW K380 D7000            ; ﾕﾆｯﾄ7自動運転ｽﾃｯﾌﾟ
+;Y軸　受取位置移動
+;Move to pick up posotion
+LD M7010                 ; 排出Y　受取位置移動
+AND M7913                ; UNIT7     ｴﾗｰ・PAUSE無し
+AND M7960                ; PCB除材Y軸 動作可能
+AND R3104                ; Case搬送Y1嵌合干渉外
+AND R3203                ; PCB-Assy Z 搬送干渉外
+AND T1607                ; PCB移載ﾍｯﾄﾞ 上昇限
+LD M7950                 ; ﾗｲﾄｶｰﾃﾝ  遮光無し
+ORB R3605                ; 除材1Y    L.C.有効領域
+ANL
+@INC D7000               ; ﾕﾆｯﾄ7自動運転ｽﾃｯﾌﾟ
+LD M7011                 ; Y_P3 move
+MPS
+DW K3 D7050              ; PCB排出Y軸 移動No.
+CON
+OUT @M2                  ; PCB排出Y軸移動
+MPP
+AND M7800                ; PCB排出Y 移動完了
+RES M7800                ; PCB排出Y 移動完了
+CON
+@INC D7000               ; ﾕﾆｯﾄ7自動運転ｽﾃｯﾌﾟ
+;CASE給材要求
+;CASE supply request
+LD M7012                 ; CASE給材完了待ち
+MPS
+AND M7913                ; UNIT7     ｴﾗｰ・PAUSE無し
+MPS
+AND M2991                ; CASE受渡完了
+@INC D7000               ; ﾕﾆｯﾄ7自動運転ｽﾃｯﾌﾟ
+MPP
+AND M2992                ; CASE受渡異常
+DW K14 D7000             ; ﾕﾆｯﾄ7自動運転ｽﾃｯﾌﾟ
+MPP
+OUT M7972                ; PCB受渡要求
+LD M7013                 ; OK end
+AND M7913                ; UNIT7     ｴﾗｰ・PAUSE無し
+ANB M2991                ; CASE受渡完了
+DW K20 D7000             ; ﾕﾆｯﾄ7自動運転ｽﾃｯﾌﾟ
+LD M7014                 ; NG end
+AND M7913                ; UNIT7     ｴﾗｰ・PAUSE無し
+ANB M2992                ; CASE受渡異常
+@INC D7000               ; ﾕﾆｯﾄ7自動運転ｽﾃｯﾌﾟ
+;★Y軸　ねじ締め位置移動
+;★Move to Screw point
+LD M7015                 ; 排出Y　ねじ締め位置移動
+AND M7913                ; UNIT7     ｴﾗｰ・PAUSE無し
+AND M7960                ; PCB除材Y軸 動作可能
+AND M7950                ; ﾗｲﾄｶｰﾃﾝ  遮光無し
+@INC D7000               ; ﾕﾆｯﾄ7自動運転ｽﾃｯﾌﾟ
+LD M7016                 ; Y_P7 move
+MPS
+DW K7 D7050              ; PCB排出Y軸 移動No.
+CON
+OUT @M18                 ; PCB排出Y軸移動
+MPP
+AND M7800                ; PCB排出Y 移動完了
+RES M7800                ; PCB排出Y 移動完了
+CON
+@INC D7000               ; ﾕﾆｯﾄ7自動運転ｽﾃｯﾌﾟ
+LD M7017                 ; Remove1   NG処理確認ﾌﾗｸﾞｾｯﾄ1
+AND M7966                ; Case2     NG処理確認
+@INC D7000               ; ﾕﾆｯﾄ7自動運転ｽﾃｯﾌﾟ
+LD M7018                 ; ﾜｰｸ残ﾁｪｯｸ
+AND M7913                ; UNIT7     ｴﾗｰ・PAUSE無し
+ANB M7966                ; Case2     NG処理確認
+DW K1 D7000              ; ﾕﾆｯﾄ7自動運転ｽﾃｯﾌﾟ
+;Y軸　ﾌｯｸ位置移動
+;Move to Hook point
+LD M7020                 ; 排出Y　ﾌｯｸ位置移動
+AND M7913                ; UNIT7     ｴﾗｰ・PAUSE無し
+AND M7960                ; PCB除材Y軸 動作可能
+@INC D7000               ; ﾕﾆｯﾄ7自動運転ｽﾃｯﾌﾟ
+LD M7021                 ; Y_P4 move
+MPS
+DW K4 D7050              ; PCB排出Y軸 移動No.
+CON
+OUT @M3                  ; PCB排出Y軸移動
+MPP
+AND M7800                ; PCB排出Y 移動完了
+RES M7800                ; PCB排出Y 移動完了
+CON
+@INC D7000               ; ﾕﾆｯﾄ7自動運転ｽﾃｯﾌﾟ
+;ねじ締め案内板開位置確認　＆　ﾌｯｸ前進
+;S.A.Plate Open check & Hook Advance
+LD M7022                 ; 排出Y　ねじ締め待機位置移動
+AND M7913                ; UNIT7     ｴﾗｰ・PAUSE無し
+MPS
+AND T1708                ; 除材1_案内板ﾕﾆｯﾄ 開位置検出
+MPS
+AND T1612                ; 除材1 案内板ﾌｯｸ 前進限
+DW K24 D7000             ; ﾕﾆｯﾄ7自動運転ｽﾃｯﾌﾟ
+MPP
+OUT M7762                ; PCB案内板ﾌｯｸ 前進
+MPP
+ANB T1708                ; 除材1_案内板ﾕﾆｯﾄ 開位置検出
+TMH K772 K50             ; ねじ締め案内板開督促
+;Y軸　ねじ締め位置移動
+;Move to Screw point
+LD M7024                 ; 排出Y　ねじ締め位置移動
+AND M7913                ; UNIT7     ｴﾗｰ・PAUSE無し
+AND M7960                ; PCB除材Y軸 動作可能
+AND M7950                ; ﾗｲﾄｶｰﾃﾝ  遮光無し
+@INC D7000               ; ﾕﾆｯﾄ7自動運転ｽﾃｯﾌﾟ
+LD M7025                 ; Y_P7 move
+OR M7600                 ; RE1Y P7  移動中
+ANB M7601                ; RE1Y P7  動作完了
+OUT M7600                ; RE1Y P7  移動中
+LD M7600                 ; RE1Y P7  移動中
+MPS
+DW K7 D7050              ; PCB排出Y軸 移動No.
+CON
+OUT @M5                  ; PCB排出Y軸移動
+MRD
+AND M7800                ; PCB排出Y 移動完了
+RES M7800                ; PCB排出Y 移動完了
+CON
+OUT M7601                ; RE1Y P7  動作完了
+MRD
+LD>= D128 K51000         ; RCA5_Position Data
+AND M7025                ; Y_P7 move
+ANL
+@INC D7000               ; ﾕﾆｯﾄ7自動運転ｽﾃｯﾌﾟ
+MPP
+OUT M7744                ; PCB案内板 下降
+;CASE確認
+;CASE check
+LD M7026                 ; CASE check
+AND M7913                ; UNIT7     ｴﾗｰ・PAUSE無し
+MPS
+AND T1700                ; 除材1 ｹｰｽ検出
+DW K40 D7000             ; ﾕﾆｯﾄ7自動運転ｽﾃｯﾌﾟ
+MPP
+LDB T1700                ; 除材1 ｹｰｽ検出
+ANB M7600                ; RE1Y P7  移動中
+ANL
+TMR K715 K30             ; ｹｰｽ検出時間
+CON
+AND T715                 ; ｹｰｽ検出時間
+DW K30 D7000             ; ﾕﾆｯﾄ7自動運転ｽﾃｯﾌﾟ
+;Err441:No CASE at PCB Screw point 
+LD M7030                 ; ｴﾗｰ発生
+ANB M71                  ; All Error PAUSE
+DW K441 D148             ; 警報No.
+CON
+SET M7921                ; Err441:ねじ締め位置CASE未検出
+CON
+@INC D7000               ; ﾕﾆｯﾄ7自動運転ｽﾃｯﾌﾟ
+LD M7031                 ; ｴﾗｰ中
+AND M71                  ; All Error PAUSE
+RES B1013                ; Remove_FLG
+CON
+@INC D7000               ; ﾕﾆｯﾄ7自動運転ｽﾃｯﾌﾟ
+LD M7032                 ; ｴﾗｰ解除確認
+ANB M71                  ; All Error PAUSE
+MPS
+ANB B1013                ; Remove_FLG
+DW K26 D7000             ; ﾕﾆｯﾄ7自動運転ｽﾃｯﾌﾟ
+MPP
+AND B1013                ; Remove_FLG
+@INC D7000               ; ﾕﾆｯﾄ7自動運転ｽﾃｯﾌﾟ
+LD M7033                 ; ｴﾗｰ発生
+AND M7913                ; UNIT7     ｴﾗｰ・PAUSE無し
+RES B1013                ; Remove_FLG
+CON
+ANB B1013                ; Remove_FLG
+@INC D7000               ; ﾕﾆｯﾄ7自動運転ｽﾃｯﾌﾟ
+LD M7034                 ; ｴﾗｰ中
+AND M7913                ; UNIT7     ｴﾗｰ・PAUSE無し
+MPS
+AND T1612                ; 除材1 案内板ﾌｯｸ 前進限
+@INC D7000               ; ﾕﾆｯﾄ7自動運転ｽﾃｯﾌﾟ
+MPP
+OUT M7775                ; PCB案内板ﾌｯｸ 後退
+LD M7035
+AND M7913                ; UNIT7     ｴﾗｰ・PAUSE無し
+MPS
+ANB T1700                ; 除材1 ｹｰｽ検出
+DW K380 D7000            ; ﾕﾆｯﾄ7自動運転ｽﾃｯﾌﾟ
+MPP
+AND T1700                ; 除材1 ｹｰｽ検出
+@INC D7000               ; ﾕﾆｯﾄ7自動運転ｽﾃｯﾌﾟ
+;Err442:PCB Screw Cover Open 
+LD M7036
+ANB M71                  ; All Error PAUSE
+DW K440 D148             ; 警報No.
+CON
+SET M7920                ; Err440:除材搬送1ｹｰｽ残
+CON
+@INC D7000               ; ﾕﾆｯﾄ7自動運転ｽﾃｯﾌﾟ
+LD M7037
+AND M71                  ; All Error PAUSE
+@INC D7000               ; ﾕﾆｯﾄ7自動運転ｽﾃｯﾌﾟ
+LD M7038
+AND T130                 ; ｴﾗｰﾘﾄﾗｲｳｪｲﾄ
+DW K35 D7000             ; ﾕﾆｯﾄ7自動運転ｽﾃｯﾌﾟ
+;ねじ締めｶﾊﾞｰﾛｯｸ　ﾊﾞｯｸｱｯﾌﾟ上昇
+;PCB Screw-assist-cover lock & Back-up Up
+LD M7040                 ; ﾛｯｸ＆ﾊﾞｯｸｱｯﾌﾟ
+MPS
+LD M7913                 ; UNIT7     ｴﾗｰ・PAUSE無し
+AND T1610                ; 除材1 案内板 下降側限
+AND T1614                ; 除材1_ﾊﾞｯｸｱｯﾌﾟ　上昇限
+AND T722                 ; RESET off delay
+ANL
+@INC D7000               ; ﾕﾆｯﾄ7自動運転ｽﾃｯﾌﾟ
+MPP
+AND T1707                ; 除材1_案内板ﾕﾆｯﾄ 閉位置検出
+MPS
+OUT M7742                ; PCB案内板 下降
+CON
+OUT M7782                ; PCBねじ締めﾊﾞｯｸｱｯﾌﾟ　上昇
+MRD
+TMH K721 K10             ; ｽｸﾘｭｶｳﾝﾀRESET時間
+MRD
+ANB T721                 ; ｽｸﾘｭｶｳﾝﾀRESET時間
+OUT M7674                ; ｽｸﾘｭｶｳﾝﾀ_RESET
+MPP
+AND T721                 ; ｽｸﾘｭｶｳﾝﾀRESET時間
+TMH K722 K5              ; RESET off delay
+;ﾈｼﾞ締め
+;Screw
+LD> D7000 K40            ; ﾕﾆｯﾄ7自動運転ｽﾃｯﾌﾟ
+AND<= D7000 K47          ; ﾕﾆｯﾄ7自動運転ｽﾃｯﾌﾟ
+TMR K770 K600            ; ねじ締め催促
+LD M7041                 ; ｶｳﾝﾄ初期化
+AND M7913                ; UNIT7     ｴﾗｰ・PAUSE無し
+MPS
+DW K0 D7020              ; ねじ締め本数
+CON
+@INC D7000               ; ﾕﾆｯﾄ7自動運転ｽﾃｯﾌﾟ
+MPP
+MOV E3418 D7020          ; PCB ねじ本数  ねじ締め本数
+LD M7042                 ; 終了判断
+AND M7913                ; UNIT7     ｴﾗｰ・PAUSE無し
+MPS
+AND<= D7020 K0           ; ねじ締め本数
+DW K48 D7000             ; ﾕﾆｯﾄ7自動運転ｽﾃｯﾌﾟ
+OUT M7975                ; ねじ締め完了
+MPP
+AND>= D7020 K1           ; ねじ締め本数
+@INC D7000               ; ﾕﾆｯﾄ7自動運転ｽﾃｯﾌﾟ
+LD M7975                 ; ねじ締め完了
+OR M7976                 ; ねじ締め完了ﾌﾞｻﾞｰON
+ANB T736                 ; ねじ締め完了ﾌﾞｻﾞｰ時間
+OUT M7976                ; ねじ締め完了ﾌﾞｻﾞｰON
+TMR K736 K10             ; ねじ締め完了ﾌﾞｻﾞｰ時間
+LD M7043                 ; ｽｸﾘｭｰｶｳﾝﾄ開始
+MPS
+TMH K731 K5              ; SET ON時間
+CON
+AND T731                 ; SET ON時間
+AND T1715                ; 電動ﾄﾞﾗﾝﾊﾞ1　動作中
+@INC D7000               ; ﾕﾆｯﾄ7自動運転ｽﾃｯﾌﾟ
+MPP
+OUT M7670                ; ｽｸﾘｭｶｳﾝﾀ_SET
+LD M7044                 ; ｶｳﾝﾄｱｯﾌﾟ待ち
+AND M7913                ; UNIT7     ｴﾗｰ・PAUSE無し
+MPS
+ANB T1715                ; 電動ﾄﾞﾗﾝﾊﾞ1　動作中
+@INC D7000               ; ﾕﾆｯﾄ7自動運転ｽﾃｯﾌﾟ
+MPP
+LD T1715                 ; 電動ﾄﾞﾗﾝﾊﾞ1　動作中
+AND T2033                ; 除材1_強制解除
+ANL
+DW K47 D7000             ; ﾕﾆｯﾄ7自動運転ｽﾃｯﾌﾟ
+LD M7045                 ; ｶｳﾝﾄﾀﾞｳﾝ
+DEC D7020                ; ねじ締め本数
+CON
+@INC D7000               ; ﾕﾆｯﾄ7自動運転ｽﾃｯﾌﾟ
+LD M7046
+TMH K735 K20             ; 繰り返しｳｪｲﾄ
+CON
+AND T735                 ; 繰り返しｳｪｲﾄ
+DW K42 D7000             ; ﾕﾆｯﾄ7自動運転ｽﾃｯﾌﾟ
+;強制終了
+;Forced end
+LD M7047                 ; 強制解除
+MPS
+AND M7913                ; UNIT7     ｴﾗｰ・PAUSE無し
+TMH K733 K10             ; RESET ON時間
+CON
+AND T733                 ; RESET ON時間
+@INC D7000               ; ﾕﾆｯﾄ7自動運転ｽﾃｯﾌﾟ
+MPP
+OUT M7672                ; ｽｸﾘｭｶｳﾝﾀ_RESET
+;案内板ﾛｯｸ　解除
+;Guide plate release
+LD M7048                 ; PCB案内板解除
+AND M7913                ; UNIT7     ｴﾗｰ・PAUSE無し
+MPS
+LD T1611                 ; 除材1 案内板 上昇側限
+AND T1615                ; 除材1_ﾊﾞｯｸｱｯﾌﾟ　下降限
+AND T1613                ; 除材1 案内板ﾌｯｸ 後退限
+ANL
+@INC D7000               ; ﾕﾆｯﾄ7自動運転ｽﾃｯﾌﾟ
+MRD
+OUT M7754                ; PCB案内板 上昇
+CON
+OUT M7793                ; PCBねじ締めﾊﾞｯｸｱｯﾌﾟ　下降
+MPP
+AND T1616                ; 除材1 案内板 上昇側限　速
+OUT M7773                ; PCB案内板ﾌｯｸ 後退
+;作業者ｹｰｽ除材待ち
+;Waiting for Case remove by operator
+LD M7049                 ; 作業者除材待ち
+AND M7913                ; UNIT7     ｴﾗｰ・PAUSE無し
+MPS
+LD M7950                 ; ﾗｲﾄｶｰﾃﾝ  遮光無し
+ANB T1700                ; 除材1 ｹｰｽ検出
+ANB M7600                ; RE1Y P7  移動中
+ANL
+DW K50 D7000             ; ﾕﾆｯﾄ7自動運転ｽﾃｯﾌﾟ
+MPP
+TMR K771 K300            ; 手動取り出し催促
+;ｶﾊﾞｰ開確認
+;Screw cover open check
+LD M7050                 ; ｶﾊﾞｰ開確認
+AND M7913                ; UNIT7     ｴﾗｰ・PAUSE無し
+MPS
+AND T1708                ; 除材1_案内板ﾕﾆｯﾄ 開位置検出
+DW K380 D7000            ; ﾕﾆｯﾄ7自動運転ｽﾃｯﾌﾟ
+MRD
+ANB T1708                ; 除材1_案内板ﾕﾆｯﾄ 開位置検出
+@INC D7000               ; ﾕﾆｯﾄ7自動運転ｽﾃｯﾌﾟ
+MPP
+MOV E3418 D7020          ; PCB ねじ本数  ねじ締め本数
+;Err442:PCB Screw Cover Close 
+LD M7051                 ; ｴﾗｰ発生
+ANB M71                  ; All Error PAUSE
+DW K443 D148             ; 警報No.
+CON
+SET M7923                ; Err443:PCBねじ締めｶﾊﾞｰ閉
+CON
+@INC D7000               ; ﾕﾆｯﾄ7自動運転ｽﾃｯﾌﾟ
+LD M7052                 ; ｴﾗｰ中
+AND M71                  ; All Error PAUSE
+@INC D7000               ; ﾕﾆｯﾄ7自動運転ｽﾃｯﾌﾟ
+LD M7053                 ; ｴﾗｰ解除確認
+AND T130                 ; ｴﾗｰﾘﾄﾗｲｳｪｲﾄ
+DW K50 D7000             ; ﾕﾆｯﾄ7自動運転ｽﾃｯﾌﾟ
+;■■■
+;サイクル停止条件
+;Cycle end check
+LD M7380                 ; 1ｻｲｸﾙ終了
+MPS
+LDB M70                  ; 自動起動停止指令(ｻｲｸﾙ停止)
+ORB M2398                ; ﾕﾆｯﾄ2ｻｲｸﾙ停止
+ANL
+DW K0 D7000              ; ﾕﾆｯﾄ7自動運転ｽﾃｯﾌﾟ
+MPP
+LD M70                   ; 自動起動停止指令(ｻｲｸﾙ停止)
+AND M2398                ; ﾕﾆｯﾄ2ｻｲｸﾙ停止
+ANL
+@INC D7000               ; ﾕﾆｯﾄ7自動運転ｽﾃｯﾌﾟ
+;Y軸　待機位置移動
+;Move to remove waiting posotion
+LD M7381                 ; 排出Y　受取待機位置移動
+AND M7913                ; UNIT7     ｴﾗｰ・PAUSE無し
+AND M7950                ; ﾗｲﾄｶｰﾃﾝ  遮光無し
+AND M7960                ; PCB除材Y軸 動作可能
+AND M7950                ; ﾗｲﾄｶｰﾃﾝ  遮光無し
+@INC D7000               ; ﾕﾆｯﾄ7自動運転ｽﾃｯﾌﾟ
+LD M7382                 ; Y_P7 move
+MPS
+DW K7 D7050              ; PCB排出Y軸 移動No.
+CON
+OUT @M6                  ; PCB排出Y軸移動
+MPP
+AND M7800                ; PCB排出Y 移動完了
+RES M7800                ; PCB排出Y 移動完了
+CON
+DW K390 D7000            ; ﾕﾆｯﾄ7自動運転ｽﾃｯﾌﾟ
+LD M7390                 ; ｻｲｸﾙ終了へ
+@MOV K398 D7000          ; ﾕﾆｯﾄ7自動運転ｽﾃｯﾌﾟ
+;終了
+;Unit AUTO cycle end
+LD M7398                 ; ﾕﾆｯﾄ7ｻｲｸﾙ停止
+MPS
+LD M70                   ; 自動起動停止指令(ｻｲｸﾙ停止)
+AND M72                  ; 全ﾕﾆｯﾄ停止確認
+ANL
+@MOV K399 D7000          ; ﾕﾆｯﾄ7自動運転ｽﾃｯﾌﾟ
+MPP
+ANB M70                  ; 自動起動停止指令(ｻｲｸﾙ停止)
+DW K0 D7000              ; ﾕﾆｯﾄ7自動運転ｽﾃｯﾌﾟ
+;<h1/>■原点復帰回路
+;
+;運転開始・ステッパ初期化・補助接点へ展開
+LD CR2002                ; 常時ON
+ZRES M7500 M7589         ; ﾕﾆｯﾄ7原点復帰開始  ﾕﾆｯﾄ7原点復帰完了確認
+LDB M7904                ; ﾕﾆｯﾄ7原点復帰中
+MOV K0 D7010             ; ﾕﾆｯﾄ7原点復帰ｽﾃｯﾌﾟ
+LD M7904                 ; ﾕﾆｯﾄ7原点復帰中
+MOV D7010 Z1             ; ﾕﾆｯﾄ7原点復帰ｽﾃｯﾌﾟ
+OUT M7500:Z1             ; ﾕﾆｯﾄ7原点復帰開始
+;原点復帰ステップ開始
+;Origin start
+LD M7500                 ; ﾕﾆｯﾄ7原点復帰開始
+AND M7913                ; UNIT7     ｴﾗｰ・PAUSE無し
+AND M2995                ; PCB嵌合Z軸　原点復帰完了
+AND R3100                ; Case搬送Y1投入領域
+AND M7950                ; ﾗｲﾄｶｰﾃﾝ  遮光無し
+@INC D7010               ; ﾕﾆｯﾄ7原点復帰ｽﾃｯﾌﾟ
+;ﾛｯｸ解除・ﾌｯｸ解除・ﾊﾞｯｸｱｯﾌﾟ下降
+;Lock release / Hook release / Back-up down
+LD M7501                 ; ﾛｯｸ解除・ﾌｯｸ解除・ﾊﾞｯｸｱｯﾌﾟ下降
+AND M7913                ; UNIT7     ｴﾗｰ・PAUSE無し
+AND M7950                ; ﾗｲﾄｶｰﾃﾝ  遮光無し
+MPS
+LD T1611                 ; 除材1 案内板 上昇側限
+AND T1613                ; 除材1 案内板ﾌｯｸ 後退限
+AND T1615                ; 除材1_ﾊﾞｯｸｱｯﾌﾟ　下降限
+ANL
+@INC D7010               ; ﾕﾆｯﾄ7原点復帰ｽﾃｯﾌﾟ
+MRD
+OUT M7755                ; PCB案内板 上昇
+CON
+OUT M7794                ; PCBねじ締めﾊﾞｯｸｱｯﾌﾟ　下降
+MPP
+AND T1616                ; 除材1 案内板 上昇側限　速
+OUT M7774                ; PCB案内板ﾌｯｸ 後退
+;PCB除材Y軸原点復帰
+;PBC-Elect Y axis HOME
+LD M7502                 ; PCB除材Y 原点復帰
+AND M7913                ; UNIT7     ｴﾗｰ・PAUSE無し
+AND M7950                ; ﾗｲﾄｶｰﾃﾝ  遮光無し
+AND M2995                ; PCB嵌合Z軸　原点復帰完了
+@INC D7010               ; ﾕﾆｯﾄ7原点復帰ｽﾃｯﾌﾟ
+LD M7503                 ; RCA5 HOME
+MPS
+OUT @M61                 ; PCB排出Y軸原点復帰
+MPP
+AND M7810                ; PCB排出Y 原点復帰完了
+RES M7810                ; PCB排出Y 原点復帰完了
+CON
+@INC D7010               ; ﾕﾆｯﾄ7原点復帰ｽﾃｯﾌﾟ
+;Y軸　ねじ締め位置（初期位置）移動
+;Move to Screw point
+LD M7504
+AND M7913                ; UNIT7     ｴﾗｰ・PAUSE無し
+AND M7960                ; PCB除材Y軸 動作可能
+AND M7950                ; ﾗｲﾄｶｰﾃﾝ  遮光無し
+@INC D7010               ; ﾕﾆｯﾄ7原点復帰ｽﾃｯﾌﾟ
+LD M7505                 ; RM2Y P7 move
+MPS
+DW K7 D7050              ; PCB排出Y軸 移動No.
+CON
+OUT @M17                 ; PCB排出Y軸移動
+MPP
+AND M7800                ; PCB排出Y 移動完了
+RES M7800                ; PCB排出Y 移動完了
+CON
+DW K10 D7010             ; ﾕﾆｯﾄ7原点復帰ｽﾃｯﾌﾟ
+;ｶﾊﾞｰ開確認
+;Screw cover open check
+LD M7510                 ; ｶﾊﾞｰ開確認
+AND M7913                ; UNIT7     ｴﾗｰ・PAUSE無し
+MPS
+AND T1708                ; 除材1_案内板ﾕﾆｯﾄ 開位置検出
+DW K15 D7010             ; ﾕﾆｯﾄ7原点復帰ｽﾃｯﾌﾟ
+MPP
+ANB T1708                ; 除材1_案内板ﾕﾆｯﾄ 開位置検出
+@INC D7010               ; ﾕﾆｯﾄ7原点復帰ｽﾃｯﾌﾟ
+;Err442:PCB Screw Cover Close 
+LD M7511                 ; ｴﾗｰ発生
+ANB M71                  ; All Error PAUSE
+DW K443 D148             ; 警報No.
+CON
+SET M7923                ; Err443:PCBねじ締めｶﾊﾞｰ閉
+CON
+@INC D7010               ; ﾕﾆｯﾄ7原点復帰ｽﾃｯﾌﾟ
+LD M7512                 ; ｴﾗｰ中
+AND M71                  ; All Error PAUSE
+@INC D7010               ; ﾕﾆｯﾄ7原点復帰ｽﾃｯﾌﾟ
+LD M7513                 ; ｴﾗｰ解除確認
+AND T130                 ; ｴﾗｰﾘﾄﾗｲｳｪｲﾄ
+DW K10 D7010             ; ﾕﾆｯﾄ7原点復帰ｽﾃｯﾌﾟ
+;ｽｸﾘｭｶｳﾝﾀﾘｾｯﾄ
+;Screw counter reset
+LD M7515                 ; 電動ﾄﾞﾗｲﾊﾞﾘｾｯﾄ
+MPS
+AND M7913                ; UNIT7     ｴﾗｰ・PAUSE無し
+TMH K734 K10             ; RESET ON時間
+CON
+AND T734                 ; RESET ON時間
+DW K20 D7010             ; ﾕﾆｯﾄ7原点復帰ｽﾃｯﾌﾟ
+MRD
+OUT M7673                ; ｽｸﾘｭｶｳﾝﾀ_RESET
+MPP
+MOV E3418 D7020          ; PCB ねじ本数  ねじ締め本数
+;ｹｰｽ残確認
+;Case remain check
+LD M7520                 ; ﾜｰｸ残確認
+AND M7913                ; UNIT7     ｴﾗｰ・PAUSE無し
+MPS
+AND T1720                ; 除材1 ｹｰｽ無し検出
+DW K80 D7010             ; ﾕﾆｯﾄ7原点復帰ｽﾃｯﾌﾟ
+MPP
+AND T1700                ; 除材1 ｹｰｽ検出
+@INC D7010               ; ﾕﾆｯﾄ7原点復帰ｽﾃｯﾌﾟ
+;ｴﾗｰ440:Case残 at Remove1
+;Err440:Case remain Remove1
+LD M7521                 ; ｴﾗｰ発生
+ANB M71                  ; All Error PAUSE
+DIFU M7680               ; 除材PAUSE Pls.
+CON
+DW K440 D148             ; 警報No.
+CON
+SET M7920                ; Err440:除材搬送1ｹｰｽ残
+CON
+@INC D7010               ; ﾕﾆｯﾄ7原点復帰ｽﾃｯﾌﾟ
+LD M7522                 ; ｴﾗｰ中
+AND M71                  ; All Error PAUSE
+@INC D7010               ; ﾕﾆｯﾄ7原点復帰ｽﾃｯﾌﾟ
+LD M7523                 ; ｴﾗｰ解除確認
+AND T130                 ; ｴﾗｰﾘﾄﾗｲｳｪｲﾄ
+DW K10 D7010             ; ﾕﾆｯﾄ7原点復帰ｽﾃｯﾌﾟ
+;原点復帰終了
+LD M7580                 ; 原点復帰動作完了
+AND M7900                ; ﾕﾆｯﾄ7原点
+OUT M7588                ; ﾕﾆｯﾄ7原点復帰完了
+LD M7588                 ; ﾕﾆｯﾄ7原点復帰完了
+ANB M98                  ; 原点復帰開始
+@MOV K89 D7010           ; ﾕﾆｯﾄ7原点復帰ｽﾃｯﾌﾟ
+;<h1/>■手動回路 
+;
+LD M33                   ; 手動ﾓｰﾄﾞ
+AND M34                  ; ﾒｲﾝ手動操作可能条件
+ANB M7905                ; ﾕﾆｯﾄ7起動中
+ANB M97                  ; 原点復帰動作中
+MC
+LD M7960                 ; PCB除材Y軸 動作可能
+ANB R4802                ; RCA5 MOVE
+AND R3200                ; PCB-Assy Z 待機領域
+ANB M1803                ; Case搬送Y1移動指示有
+ANB M2802                ; PCB嵌合Z 指示移動中
+AND M7950                ; ﾗｲﾄｶｰﾃﾝ  遮光無し
+ANB Y2168                ; PCB移載ﾍｯﾄﾞ 下降
+AND Y2169                ; PCB移載ﾍｯﾄﾞ 上昇
+AND T1607                ; PCB移載ﾍｯﾄﾞ 上昇限
+TMH K760 K20             ; 手動起動許可ｳｪｲﾄ
+CON
+AND T760                 ; 手動起動許可ｳｪｲﾄ
+OUT M7608                ; 除材1手動Y軸動作可能
+;除材搬送1 Y軸
+;Remove-Transfer 1 Y
+LD CR2002                ; 常時ON
+MPS
+LD B1141                 ; 除材1Y軸　原位置 PB
+AND M7608                ; 除材1手動Y軸動作可能
+LD T1613                 ; 除材1 案内板ﾌｯｸ 後退限
+ORB R3600                ; 除材1Y    受取干渉外
+ANL
+OR M7611                 ; 除材1Y    P1移動
+ANB M7800                ; PCB排出Y 移動完了
+ANL
+OUT M7611                ; 除材1Y    P1移動
+DW K1 D7050              ; PCB排出Y軸 移動No.
+CON
+OUT @M9                  ; PCB排出Y軸移動
+MPP
+ANF M7611                ; 除材1Y    P1移動
+RES M7800                ; PCB排出Y 移動完了
+LD CR2002                ; 常時ON
+MPS
+LD B1142                 ; 除材1Y軸　受取前待機位置 PB
+AND M7608                ; 除材1手動Y軸動作可能
+LD T1613                 ; 除材1 案内板ﾌｯｸ 後退限
+ORB R3600                ; 除材1Y    受取干渉外
+ANL
+OR M7612                 ; 除材1Y    P2移動
+ANB M7800                ; PCB排出Y 移動完了
+ANL
+OUT M7612                ; 除材1Y    P2移動
+DW K2 D7050              ; PCB排出Y軸 移動No.
+CON
+OUT @M10                 ; PCB排出Y軸移動
+MPP
+ANF M7612                ; 除材1Y    P2移動
+RES M7800                ; PCB排出Y 移動完了
+LD CR2002                ; 常時ON
+MPS
+LD B1143                 ; 除材1Y軸　受取位置 PB
+AND M7608                ; 除材1手動Y軸動作可能
+AND R3104                ; Case搬送Y1嵌合干渉外
+LD T1613                 ; 除材1 案内板ﾌｯｸ 後退限
+ORB R3600                ; 除材1Y    受取干渉外
+ANL
+OR M7613                 ; 除材1Y    P3移動
+ANB M7800                ; PCB排出Y 移動完了
+ANL
+OUT M7613                ; 除材1Y    P3移動
+DW K3 D7050              ; PCB排出Y軸 移動No.
+CON
+OUT @M11                 ; PCB排出Y軸移動
+MPP
+ANF M7613                ; 除材1Y    P3移動
+RES M7800                ; PCB排出Y 移動完了
+LD CR2002                ; 常時ON
+MPS
+LD B1144                 ; 除材1Y軸　ﾌｯｸ位置 PB
+AND M7608                ; 除材1手動Y軸動作可能
+LD T1613                 ; 除材1 案内板ﾌｯｸ 後退限
+OR T1707                 ; 除材1_案内板ﾕﾆｯﾄ 閉位置検出
+ORB R3600                ; 除材1Y    受取干渉外
+ANL
+OR M7614                 ; 除材1Y    P4移動
+ANB M7800                ; PCB排出Y 移動完了
+ANL
+OUT M7614                ; 除材1Y    P4移動
+DW K4 D7050              ; PCB排出Y軸 移動No.
+CON
+OUT @M12                 ; PCB排出Y軸移動
+MPP
+ANF M7614                ; 除材1Y    P4移動
+RES M7800                ; PCB排出Y 移動完了
+LD CR2002                ; 常時ON
+MPS
+LD B1147                 ; 除材1Y軸　ねじ締め位置 PB
+AND M7608                ; 除材1手動Y軸動作可能
+OR M7617                 ; 除材1Y    P7移動
+ANB M7800                ; PCB排出Y 移動完了
+ANL
+OUT M7617                ; 除材1Y    P7移動
+DW K7 D7050              ; PCB排出Y軸 移動No.
+CON
+OUT @M14                 ; PCB排出Y軸移動
+MPP
+ANF M7617                ; 除材1Y    P7移動
+RES M7800                ; PCB排出Y 移動完了
+;Jog
+LD R4804                 ; RCA5 SV
+AND R4801                ; RCA5 HEND
+ANB R4815                ; RCA5 EMGS
+ANB R4803                ; RCA5 ALM
+ANB M7800                ; PCB排出Y 移動完了
+ANB M7802                ; PCB排出Y 移動指示中
+ANB M7810                ; PCB排出Y 原点復帰完了
+MPS
+AND B2110                ; 除材1Y軸+JOG PB
+BOUT D32539 K8           ; RCA5 制御信号
+MPP
+AND B2111                ; 除材1Y軸-JOG PB
+BOUT D32539 K7           ; RCA5 制御信号
+;除材搬送1 ﾁｬｯｸ
+;Remove-Transfer 1  Chuck
+LDP B1150                ; 除材1 案内板 下降PB
+AND R3603                ; 除材1Y    ねじ締め領域
+OUT M7741                ; PCB案内板 下降
+LDP B1151                ; 除材1 案内板 上昇 PB
+OUT M7751                ; PCB案内板 上昇
+LDP B1152                ; 除材1 案内板ﾌｯｸ 前進PB
+AND R3604                ; 除材1Y    ﾌｯｸ開始可能ｴﾘｱ
+OUT M7761                ; PCB案内板ﾌｯｸ 前進
+LDP B1153                ; 除材1 案内板ﾌｯｸ 後退PB
+OUT M7771                ; PCB案内板ﾌｯｸ 後退
+LDP B1154                ; 除材1_ﾊﾞｯｸｱｯﾌﾟ　上昇PB
+AND R3603                ; 除材1Y    ねじ締め領域
+OUT M7781                ; PCBねじ締めﾊﾞｯｸｱｯﾌﾟ　上昇
+LDP B1155                ; 除材1_ﾊﾞｯｸｱｯﾌﾟ　下降PB
+OUT M7791                ; PCBねじ締めﾊﾞｯｸｱｯﾌﾟ　下降
+;
+LD M33                   ; 手動ﾓｰﾄﾞ
+AND Y2098                ; 電動ﾄﾞﾗｲﾊﾞ1 電源ON
+ANB T1715                ; 電動ﾄﾞﾗﾝﾊﾞ1　動作中
+TMR K756 K5              ; SET delay
+CON
+AND T756                 ; SET delay
+OUT M7675                ; ｽｸﾘｭｶｳﾝﾀ_SET
+MCR
+;Driver power　ドア開で電源OFF防止のため
+LDP B1158                ; ｸｲｯﾁｬ電源ONPB
+ORP B117F                ; 除材CV2 ON PB
+AND M33                  ; 手動ﾓｰﾄﾞ
+AND M129                 ; 非常停止　正常
+AND M130                 ; 外部非常停止正常
+ANB M7905                ; ﾕﾆｯﾄ7起動中
+ANB M97                  ; 原点復帰動作中
+ALT M7646                ; Driver power ON
+LDF M33                  ; 手動ﾓｰﾄﾞ
+ORP M97                  ; 原点復帰動作中
+RES M7646                ; Driver power ON
+LDF M33                  ; 手動ﾓｰﾄﾞ
+OR M7676                 ; ｽｸﾘｭｶｳﾝﾀ_RESET
+MPS
+ANB T757                 ; Reset delay
+OUT M7676                ; ｽｸﾘｭｶｳﾝﾀ_RESET
+MPP
+TMR K757 K5              ; Reset delay
+;<h1/>出力
+;OUTPUT
+;PCB-Eject Y axis
+LDB @M1                  ; PCB排出Y軸移動
+ANB @M2                  ; PCB排出Y軸移動
+ANB @M3                  ; PCB排出Y軸移動
+ANB @M4                  ; PCB排出Y軸移動
+ANB @M5                  ; PCB排出Y軸移動
+ANB @M6                  ; PCB排出Y軸移動
+ANB @M7                  ; PCB排出Y軸移動
+ANB @M8                  ; PCB排出Y軸移動
+ANB @M9                  ; PCB排出Y軸移動
+ANB @M10                 ; PCB排出Y軸移動
+ANB @M11                 ; PCB排出Y軸移動
+ANB @M12                 ; PCB排出Y軸移動
+ANB @M13                 ; PCB排出Y軸移動
+ANB @M14                 ; PCB排出Y軸移動
+ANB @M15                 ; PCB排出Y軸移動
+ANB @M16                 ; PCB排出Y軸移動
+ANB @M17                 ; PCB排出Y軸移動
+ANB @M18                 ; PCB排出Y軸移動
+INV
+@SET M7804               ; PCB排出Y 移動開始
+OUT M7802                ; PCB排出Y 移動指示中
+;Z1 = (D7050-1) * 4        'ﾃﾞｰﾀ先頭ｲﾝﾃﾞｯｸｽ 1Point 4Data
+;Z2 = Z1 + 2               '速度は2ﾜｰﾄﾞ後
+;D7060.L = E34400.L:Z1     '目標位置ﾃﾞｰﾀｾｯﾄ
+;D7062.D = #3              '位置決め完了幅0.03mm固定
+;D7064.U = E34400.L:Z2     '速度ﾃﾞｰﾀｾｯﾄ
+;SET(M7803)                '低加減速ﾌﾗｸﾞ
+;SET(M7805)                'ﾃﾞｰﾀｾｯﾄ完了ﾌﾗｸﾞ
+LDP M7804                ; PCB排出Y 移動開始
+NCJ K1001
+;Z1 = (D7050-1) * 4        'ﾃﾞｰﾀ先頭ｲﾝﾃﾞｯｸｽ 1Point 4Data
+;
+LD CR2002                ; 常時ON
+LDA D7050                ; PCB排出Y軸 移動No.
+CON
+EXT
+CON
+SUB.L +1
+CON
+MUL.L +4
+CON
+STA.L Z1
+;Z2 = Z1 + 2               '速度は2ﾜｰﾄﾞ後
+;
+LD CR2002                ; 常時ON
+LDA.L Z1
+CON
+ADD.L +2
+CON
+STA.L Z2
+;D7060.L = E34400.L:Z1     '目標位置ﾃﾞｰﾀｾｯﾄ
+;
+LD CR2002                ; 常時ON
+MOV.L E34400:Z1 D7060    ; RCA5 P1 Position data  RCA5 目標位置
+;D7062.D = #3              '位置決め完了幅0.03mm固定
+;
+LD CR2002                ; 常時ON
+MOV.D K3 D7062           ; RCA5 位置決め幅
+;D7064.U = E34400.L:Z2     '速度ﾃﾞｰﾀｾｯﾄ
+;
+LD CR2002                ; 常時ON
+MOV E34400:Z2 D7064      ; RCA5 P1 Position data  RCA5 位置決め速度
+;SET(M7803)                '低加減速ﾌﾗｸﾞ
+;
+LD CR2002                ; 常時ON
+SET M7803                ; PCB排出Y 低減速度指示中
+;SET(M7805)                'ﾃﾞｰﾀｾｯﾄ完了ﾌﾗｸﾞ
+LD CR2002                ; 常時ON
+SET M7805                ; PCB排出Y Data set 完了
+LABEL K1001
+;
+LD M7805                 ; PCB排出Y Data set 完了
+MSTRT IAI_CON_MOVE_5 D7060 D7062 D7064 D32332 D32532 @M0 @D1 M127 K50 M7803;RCA5 目標位置  RCA5 位置決め幅  RCA5 位置決め速度  RCA5 現在位置  RCA5 目標位置  PCB排出Y軸移動完了  RBC 非常停止  PCB排出Y 低減速度指示中
+RES M7805                ; PCB排出Y Data set 完了
+STG M7804                ; PCB排出Y 移動開始
+AND @M0                  ; PCB排出Y軸移動完了
+ANB _IAI_CON_MOVE_5
+RES @M0                  ; PCB排出Y軸移動完了
+CON
+SET M7800                ; PCB排出Y 移動完了
+CON
+ENDS
+;HOME
+LDB @M61                 ; PCB排出Y軸原点復帰
+ANB @M62                 ; PCB排出Y軸原点復帰
+INV
+@SET M7813               ; PCB排出Y 原点復帰開始
+OUT M7812                ; PCB排出Y 原点復帰中
+LD M7813                 ; PCB排出Y 原点復帰開始
+MSTRT IAI_CON_HOME_5 D32332 D32532 @M60 @D1 M127 K50;RCA5 現在位置  RCA5 目標位置  PCB排出Y軸原点復帰完了  RBC 非常停止
+STG M7813                ; PCB排出Y 原点復帰開始
+AND _IAI_CON_HOME_5
+JMP M7814
+STG M7814
+AND @M60                 ; PCB排出Y軸原点復帰完了
+JMP M7815                ; PCB排出Y 原点復帰完了待ち
+STG M7815                ; PCB排出Y 原点復帰完了待ち
+ANB _IAI_CON_HOME_5
+RES @M60                 ; PCB排出Y軸原点復帰完了
+CON
+SET M7810                ; PCB排出Y 原点復帰完了
+CON
+ENDS
+;PCBねじ締め案内板
+;PCB Screw-Assist-Plate
+LDP M7741                ; PCB案内板 下降
+ORP M7742                ; PCB案内板 下降
+ORP M7743                ; PCB案内板 下降
+ORP M7744                ; PCB案内板 下降
+OR M7740                 ; PCB案内板 下降補助
+ANPB M7750               ; PCB案内板 上昇補助
+OUT M7740                ; PCB案内板 下降補助
+LDP M7751                ; PCB案内板 上昇
+ORP M7752                ; PCB案内板 上昇
+ORP M7753                ; PCB案内板 上昇
+ORP M7754                ; PCB案内板 上昇
+ORP M7755                ; PCB案内板 上昇
+OR M65                   ; 即停止異常(緊急停止)
+OR M7750                 ; PCB案内板 上昇補助
+ANPB M7740               ; PCB案内板 下降補助
+OUT M7750                ; PCB案内板 上昇補助
+LD M7740                 ; PCB案内板 下降補助
+OUT Y216E                ; 除材1 案内板 下降
+LD M7750                 ; PCB案内板 上昇補助
+OUT Y216F                ; 除材1 案内板 上昇 
+;PCBねじ締め案内板　フック
+;PCB Screw-Assist-Plate Hook
+LDP M7761                ; PCB案内板ﾌｯｸ 前進
+ORP M7762                ; PCB案内板ﾌｯｸ 前進
+OR M7760                 ; PCB案内板ﾌｯｸ 前進補助
+ANPB M7770               ; PCB案内板ﾌｯｸ 後退補助
+OUT M7760                ; PCB案内板ﾌｯｸ 前進補助
+LDP M7771                ; PCB案内板ﾌｯｸ 後退
+ORP M7772                ; PCB案内板ﾌｯｸ 後退
+ORP M7773                ; PCB案内板ﾌｯｸ 後退
+ORP M7774                ; PCB案内板ﾌｯｸ 後退
+ORP M7775                ; PCB案内板ﾌｯｸ 後退
+OR M7770                 ; PCB案内板ﾌｯｸ 後退補助
+ANPB M7760               ; PCB案内板ﾌｯｸ 前進補助
+OUT M7770                ; PCB案内板ﾌｯｸ 後退補助
+LD M7760                 ; PCB案内板ﾌｯｸ 前進補助
+OUT Y2184                ; 除材1 案内板ﾌｯｸ 前進
+LD M7770                 ; PCB案内板ﾌｯｸ 後退補助
+OUT Y2185                ; 除材1 案内板ﾌｯｸ 後退
+;PCBねじ締めバックアップ
+;PCB Screw tightin back up
+LDP M7781                ; PCBねじ締めﾊﾞｯｸｱｯﾌﾟ　上昇
+ORP M7782                ; PCBねじ締めﾊﾞｯｸｱｯﾌﾟ　上昇
+OR M7780                 ; PCBねじ締めﾊﾞｯｸｱｯﾌﾟ　上昇補助
+ANPB M7790               ; PCBねじ締めﾊﾞｯｸｱｯﾌﾟ　下降補助
+OUT M7780                ; PCBねじ締めﾊﾞｯｸｱｯﾌﾟ　上昇補助
+LDP M7791                ; PCBねじ締めﾊﾞｯｸｱｯﾌﾟ　下降
+ORP M7792                ; PCBねじ締めﾊﾞｯｸｱｯﾌﾟ　下降
+ORP M7793                ; PCBねじ締めﾊﾞｯｸｱｯﾌﾟ　下降
+ORP M7794                ; PCBねじ締めﾊﾞｯｸｱｯﾌﾟ　下降
+OR M7790                 ; PCBねじ締めﾊﾞｯｸｱｯﾌﾟ　下降補助
+ANPB M7780               ; PCBねじ締めﾊﾞｯｸｱｯﾌﾟ　上昇補助
+OUT M7790                ; PCBねじ締めﾊﾞｯｸｱｯﾌﾟ　下降補助
+LD M7780                 ; PCBねじ締めﾊﾞｯｸｱｯﾌﾟ　上昇補助
+OUT Y2186                ; 除材1_ﾊﾞｯｸｱｯﾌﾟ　上昇
+LD M7790                 ; PCBねじ締めﾊﾞｯｸｱｯﾌﾟ　下降補助
+OUT Y2187                ; 除材1_ﾊﾞｯｸｱｯﾌﾟ　下降
+;電動ﾄﾞﾗｲﾊﾞ電源
+;Ele.Driver Power
+LD M32                   ; 自動ﾓｰﾄﾞ
+ANB M39                  ; 日常点検ﾓｰﾄﾞ
+LD M7905                 ; ﾕﾆｯﾄ7起動中
+OR M8905                 ; ﾕﾆｯﾄ8起動中
+ANL
+OR M7646                 ; Driver power ON
+OUT Y2098                ; 電動ﾄﾞﾗｲﾊﾞ1 電源ON
+;Screw counter 
+LD M7670                 ; ｽｸﾘｭｶｳﾝﾀ_SET
+OR M7671                 ; 除材ﾀｲﾐﾝｸﾞNG発生
+OR M7675                 ; ｽｸﾘｭｶｳﾝﾀ_SET
+OUT Y2096                ; ｽｸﾘｭｶｳﾝﾀ1_SET
+LD M7672                 ; ｽｸﾘｭｶｳﾝﾀ_RESET
+OR M7673                 ; ｽｸﾘｭｶｳﾝﾀ_RESET
+OR M7674                 ; ｽｸﾘｭｶｳﾝﾀ_RESET
+OR M7676                 ; ｽｸﾘｭｶｳﾝﾀ_RESET
+OR M7679
+OUT Y2097                ; ｽｸﾘｭｶｳﾝﾀ1_RESET
+;<h1/>異常検出
+;
+LD CR2002                ; 常時ON
+MPS
+LD M7956                 ; PCB排出ｽﾗｲﾀﾞ治具ID異常
+OR M7957                 ; ﾈｼﾞ締め1 Jig No.異常
+OR M7958                 ; PCBねじ締め案内板ID異常
+LDB B05E0                ; ﾈｼﾞ締台1_Jig番号異常 BZ停止
+ORB M123                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B0E0                 ; ﾈｼﾞ締めJig1ID異常
+ORL
+ANL
+OUT B0E0                 ; ﾈｼﾞ締めJig1ID異常
+MPP
+LD M122                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B05E0                 ; ﾈｼﾞ締台1_Jig番号異常 BZ停止
+AND B0E0                 ; ﾈｼﾞ締めJig1ID異常
+ANL
+OUT B05E0                ; ﾈｼﾞ締台1_Jig番号異常 BZ停止
+LD M514                  ; RCA5　起動
+AND R4803                ; RCA5 ALM
+TMR K700 K100            ; RCM5 Error
+LD CR2002                ; 常時ON
+MPS
+LD M64                   ; 運転準備
+AND R4803                ; RCA5 ALM
+OR T700                  ; RCM5 Error
+LDB B05E1                ; 除材1Y軸異常 BZ停止
+ORB M123                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B0E1                 ; 除材1Y軸異常
+ORL
+ANL
+OUT B0E1                 ; 除材1Y軸異常
+MPP
+LD M122                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B05E1                 ; 除材1Y軸異常 BZ停止
+AND B0E1                 ; 除材1Y軸異常
+ANL
+OUT B05E1                ; 除材1Y軸異常 BZ停止
+LD CR2002                ; 常時ON
+MPS
+LD CR2003                ; 常時OFF
+LDB B05E2                ; UT7異常 BZ停止
+ORB M123                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B0E2                 ; UT7異常
+ORL
+ANL
+OUT B0E2                 ; UT7異常
+MPP
+LD M122                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B05E2                 ; UT7異常 BZ停止
+AND B0E2                 ; UT7異常
+ANL
+OUT B05E2                ; UT7異常 BZ停止
+LD CR2002                ; 常時ON
+MPS
+LD CR2003                ; 常時OFF
+LDB B05E3                ; UT7異常 BZ停止
+ORB M123                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B0E3                 ; UT7異常
+ORL
+ANL
+OUT B0E3                 ; UT7異常
+MPP
+LD M122                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B05E3                 ; UT7異常 BZ停止
+AND B0E3                 ; UT7異常
+ANL
+OUT B05E3                ; UT7異常 BZ停止
+LD CR2002                ; 常時ON
+MPS
+LD CR2003                ; 常時OFF
+LDB B05E4                ; UT7異常 BZ停止
+ORB M123                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B0E4                 ; UT7異常
+ORL
+ANL
+OUT B0E4                 ; UT7異常
+MPP
+LD M122                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B05E4                 ; UT7異常 BZ停止
+AND B0E4                 ; UT7異常
+ANL
+OUT B05E4                ; UT7異常 BZ停止
+LD CR2002                ; 常時ON
+MPS
+LD CR2003                ; 常時OFF
+LDB B05E5                ; UT7異常 BZ停止
+ORB M123                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B0E5                 ; UT7異常
+ORL
+ANL
+OUT B0E5                 ; UT7異常
+MPP
+LD M122                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B05E5                 ; UT7異常 BZ停止
+AND B0E5                 ; UT7異常
+ANL
+OUT B05E5                ; UT7異常 BZ停止
+LD CR2002                ; 常時ON
+MPS
+LD CR2003                ; 常時OFF
+LDB B05E6                ; UT7異常 BZ停止
+ORB M123                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B0E6                 ; UT7異常
+ORL
+ANL
+OUT B0E6                 ; UT7異常
+MPP
+LD M122                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B05E6                 ; UT7異常 BZ停止
+AND B0E6                 ; UT7異常
+ANL
+OUT B05E6                ; UT7異常 BZ停止
+LD CR2002                ; 常時ON
+MPS
+LD CR2003                ; 常時OFF
+LDB B05E7                ; UT7異常 BZ停止
+ORB M123                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B0E7                 ; UT7異常
+ORL
+ANL
+OUT B0E7                 ; UT7異常
+MPP
+LD M122                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B05E7                 ; UT7異常 BZ停止
+AND B0E7                 ; UT7異常
+ANL
+OUT B05E7                ; UT7異常 BZ停止
+;異常ﾌﾞｻﾞｰまとめ
+LD B0E0                  ; ﾈｼﾞ締めJig1ID異常
+ANB B05E0                ; ﾈｼﾞ締台1_Jig番号異常 BZ停止
+LD B0E1                  ; 除材1Y軸異常
+ANB B05E1                ; 除材1Y軸異常 BZ停止
+ORL
+LD B0E2                  ; UT7異常
+ANB B05E2                ; UT7異常 BZ停止
+ORL
+LD B0E3                  ; UT7異常
+ANB B05E3                ; UT7異常 BZ停止
+ORL
+LD B0E4                  ; UT7異常
+ANB B05E4                ; UT7異常 BZ停止
+ORL
+LD B0E5                  ; UT7異常
+ANB B05E5                ; UT7異常 BZ停止
+ORL
+LD B0E6                  ; UT7異常
+ANB B05E6                ; UT7異常 BZ停止
+ORL
+LD B0E7                  ; UT7異常
+ANB B05E7                ; UT7異常 BZ停止
+ORL
+OUT M7909                ; ﾕﾆｯﾄ7異常BZ補助
+;Warning
+END
+ENDH

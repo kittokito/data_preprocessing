@@ -1,0 +1,210 @@
+DEVICE:53
+;MODULE:OR_CSK_JDT36
+;MODULE_TYPE:1
+;SCRIPT_TYPE:
+;ﾓｰﾀｰ	ｵﾘｴﾝﾀﾙ　CSK513PAP
+;ﾄﾞﾗｲﾊﾞ	ｵﾘｴﾝﾀﾙ	SD5103P3
+;****各軸JOGﾊﾟﾗﾒｰﾀ転送****
+;軸No　		#1～＃2
+;動作DATA　　4word占有
+;			先頭ﾜｰﾄﾞｱﾄﾞﾚｽ+0   起動速度
+;			先頭ﾜｰﾄﾞｱﾄﾞﾚｽ+1   加減速時間
+;			先頭ﾜｰﾄﾞｱﾄﾞﾚｽ+2   運転速度
+;			先頭ﾜｰﾄﾞｱﾄﾞﾚｽ+3   運転速度			
+;'JOGﾊﾟﾗﾒｰﾀ
+;'基本角0.18度/Pulse
+;
+;@DM10.F = 0.18
+;
+;IF P1:#0 < P1:#2 THEN					'起動速度
+;	@DM0 = INT(FLOAT(P1:#0/9*50))
+;ELSE
+;	@DM0 = INT(FLOAT(P1:#2/9*50))
+;END IF
+;IF @DM0 < 50 THEN
+;	@DM0 = 50
+;END IF
+;IF @DM0 > 50000 THEN
+;	@DM0 = 50000
+;END IF
+;
+;@DM1 = P1:#1							'加減速時間
+;
+;@DM2.D = INT(FLOAT(P1:#2/9*50))		'運転速度
+;IF @DM2.D < 50 THEN
+;	@DM2.D =50
+;END IF
+;IF @DM2.D > 10000 THEN
+;	@DM2.D = 10000
+;END IF
+;
+LD CR2002                ; 常時ON
+NCJ #1000
+;'JOGﾊﾟﾗﾒｰﾀ
+;
+;'基本角0.18度/Pulse
+;
+;@DM10.F = 0.18
+;
+LD CR2002                ; 常時ON
+MOV.F +0.18 @DM10
+;IF P1:#0 < P1:#2 THEN					'起動速度
+;
+LD< P1 P1:#2             ; 動作DATA  動作DATA
+NCJ #2000
+;	@DM0 = INT(FLOAT(P1:#0/9*50))
+;
+LD CR2002                ; 常時ON
+LDA P1                   ; 動作DATA
+CON
+EXT
+CON
+EXT.L
+CON
+DIV.L +9
+CON
+MUL.L +50
+CON
+FLOAT.L
+CON
+INTG.L
+CON
+STA @DM0
+;ELSE
+;
+LD CR2002                ; 常時ON
+CJ #2001
+LABEL #2000
+;	@DM0 = INT(FLOAT(P1:#2/9*50))
+;
+LD CR2002                ; 常時ON
+LDA P1:#2                ; 動作DATA
+CON
+EXT
+CON
+EXT.L
+CON
+DIV.L +9
+CON
+MUL.L +50
+CON
+FLOAT.L
+CON
+INTG.L
+CON
+STA @DM0
+;END IF
+;
+LABEL #2001
+;IF @DM0 < 50 THEN
+;
+LD< @DM0 #50
+NCJ #2002
+;	@DM0 = 50
+;
+LD CR2002                ; 常時ON
+MOV #50 @DM0
+;END IF
+;
+LABEL #2002
+;IF @DM0 > 50000 THEN
+;
+LD> @DM0 #50000
+NCJ #2003
+;	@DM0 = 50000
+;
+LD CR2002                ; 常時ON
+MOV #50000 @DM0
+;END IF
+;
+LABEL #2003
+;@DM1 = P1:#1							'加減速時間
+;
+LD CR2002                ; 常時ON
+MOV P1:#1 @DM1           ; 動作DATA
+;@DM2.D = INT(FLOAT(P1:#2/9*50))		'運転速度
+;
+LD CR2002                ; 常時ON
+LDA P1:#2                ; 動作DATA
+CON
+EXT
+CON
+EXT.L
+CON
+DIV.L +9
+CON
+MUL.L +50
+CON
+FLOAT.L
+CON
+INTG.L
+CON
+STA.D @DM2
+;IF @DM2.D < 50 THEN
+;
+LD<.D @DM2 #50
+NCJ #2004
+;	@DM2.D =50
+;
+LD CR2002                ; 常時ON
+MOV.D #50 @DM2
+;END IF
+;
+LABEL #2004
+;IF @DM2.D > 10000 THEN
+;
+LD>.D @DM2 #10000
+NCJ #2005
+;	@DM2.D = 10000
+;
+LD CR2002                ; 常時ON
+MOV.D #10000 @DM2
+;END IF
+;
+LABEL #2005
+LABEL #1000
+;
+;'X軸JOGﾊﾟﾗﾒｰﾀ転送
+;CM2010 = @DM0		'起動速度
+;CM2011 = @DM1		'加減速時間
+;CM2012.D= @DM2.D	'運転速度
+LD= V0 #1                ; 軸No
+NCJ #1002
+;'X軸JOGﾊﾟﾗﾒｰﾀ転送
+;
+;CM2010 = @DM0		'起動速度
+;
+LD CR2002                ; 常時ON
+MOV @DM0 CM2010          ; X軸JOG動作起動速度
+;CM2011 = @DM1		'加減速時間
+;
+LD CR2002                ; 常時ON
+MOV @DM1 CM2011          ; X軸JOG動作加減速時間
+;CM2012.D= @DM2.D	'運転速度
+LD CR2002                ; 常時ON
+MOV.D @DM2 CM2012        ; X軸JOG動作運転速度
+LABEL #1002
+;
+;'Y軸JOGﾊﾟﾗﾒｰﾀ転送
+;CM2040 = @DM0		'起動速度
+;CM2041 = @DM1		'加減速時間
+;CM2042.D= @DM2.D	'運転速度
+LD= V0 #2                ; 軸No
+NCJ #1003
+;'Y軸JOGﾊﾟﾗﾒｰﾀ転送
+;
+;CM2040 = @DM0		'起動速度
+;
+LD CR2002                ; 常時ON
+MOV @DM0 CM2040          ; Y軸JOG動作起動速度
+;CM2041 = @DM1		'加減速時間
+;
+LD CR2002                ; 常時ON
+MOV @DM1 CM2041          ; Y軸JOG動作加減速時間
+;CM2042.D= @DM2.D	'運転速度
+LD CR2002                ; 常時ON
+MOV.D @DM2 CM2042        ; Y軸JOG動作運転速度
+LABEL #1003
+;
+END
+ENDH

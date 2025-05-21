@@ -1,0 +1,1450 @@
+DEVICE:53
+;MODULE:UT15_High_ST2
+;MODULE_TYPE:0
+;SCRIPT_TYPE:
+;<h1/>□_入力受け
+;関連する入力受け(ｾﾝｻのﾃﾞｨﾚｲﾀｲﾏ等)を必要があれば作成する。
+;通常は入力ﾕﾆｯﾄに入力時定数(ﾃﾞｨﾚｲ)があるので直接使用しても問題は無い。
+LD X1303                 ; 高温槽全扉正常(まとめ)
+OR M37                   ; ｲﾝﾀｰﾛｯｸ解除ﾓｰﾄﾞ
+TMR K1501 K5             ; HiST2扉閉
+;ｺﾝﾀｸﾄﾍｯﾄﾞID
+LD X1374                 ; HiST2_部_ｺﾝﾀｸﾄﾍｯﾄﾞID_1
+OUT D8106.0
+LD X1375                 ; HiST2_部_ｺﾝﾀｸﾄﾍｯﾄﾞID_2
+OUT D8106.1
+LD X1376                 ; HiST2_部_ｺﾝﾀｸﾄﾍｯﾄﾞID_4
+OUT D8106.2
+;ﾊﾟﾚｯﾄID
+LD X1377                 ; HiST2_部_ﾊﾟﾚｯﾄID_1
+OUT D8107.0
+LD X1378                 ; HiST2_部_ﾊﾟﾚｯﾄID_2
+OUT D8107.1
+LD X1379                 ; HiST2_部_ﾊﾟﾚｯﾄID_4
+OUT D8107.2
+;ＩＤ保持
+LD M71                   ; 自動運転開始BZ
+AND L1500                ; Hi検査ST2_有効状態
+LD M9412                 ; HiST2_ID保持ﾄﾘｶﾞ
+ANB M9410                ; HiST2_無効中
+ORL
+AND M71                  ; 自動運転開始BZ
+OUT M9412                ; HiST2_ID保持ﾄﾘｶﾞ
+;____ｺﾝﾀｸﾄﾍｯﾄﾞＩＤ保持
+;※PC送信用は生ﾃﾞｰﾀに変更
+LD L1500                 ; Hi検査ST2_有効状態
+MPS
+TMR K1506 K5             ; HiST2_ｺﾝﾀｸﾄﾍｯﾄﾞID_更新_DLY
+MPP
+AND T1506                ; HiST2_ｺﾝﾀｸﾄﾍｯﾄﾞID_更新_DLY
+@MOV D8106 D8100         ; HiST2_ｺﾝﾀｸﾄﾍｯﾄﾞID_Copy  HiST2_ｺﾝﾀｸﾄﾍｯﾄﾞID
+LD CR2002                ; 常時ON
+MOV D8106 W0139          ; HiST2_ｺﾝﾀｸﾄﾍｯﾄﾞID_Copy  ﾃｽﾄﾍｯﾄﾞID#2
+LDB L1500                ; Hi検査ST2_有効状態
+MOV K0 D8100             ; HiST2_ｺﾝﾀｸﾄﾍｯﾄﾞID
+;____ﾊﾟﾚｯﾄＩＤ保持
+LD L1500                 ; Hi検査ST2_有効状態
+LD M9121                 ; RB13_ﾜｰｸ受取り位置(ID確認位置)
+OR T1507                 ; HiST2_ﾊﾟﾚｯﾄID_更新_DLY
+ANL
+TMR K1507 K5             ; HiST2_ﾊﾟﾚｯﾄID_更新_DLY
+@MOV D8107 D8101         ; HiST2_ﾊﾟﾚｯﾄID_ｾﾝｻ状態  HiST2_ﾊﾟﾚｯﾄID
+LD CR2002                ; 常時ON
+MOV D8101 W0133          ; HiST2_ﾊﾟﾚｯﾄID  ﾊﾟﾚｯﾄID#2
+LDB L1500                ; Hi検査ST2_有効状態
+MOV K0 D8101             ; HiST2_ﾊﾟﾚｯﾄID
+;<h1/>__ST_有効/無効選択
+;段取り状態中ﾌﾗｸﾞの追加
+;自動中は段取り状態中に、ST上のﾜｰｸ無、RBﾊﾝﾄﾞﾜｰｸ無し、供給部ﾜｰｸ無しにて無効状態OKとなる
+LDPB X137F               ; ST2電特検査_有効/無効SW
+ANPB B124A               ; HiST2検査_有効/無効_Tpb
+INV
+ANB L1500                ; Hi検査ST2_有効状態
+OR M9404                 ; HiST2検査_有効確認要求
+LD M300                  ; PC通信正常
+OR M3                    ; OFFLINE_MODE
+ANL
+ANB M9405                ; HiST2検査_有効確認OK
+OUT M9404                ; HiST2検査_有効確認要求
+LD M9404                 ; HiST2検査_有効確認要求
+AND W0107.9              ; Hi_ST2ﾁｪｯｶ-確認要求
+LD W07.9                 ; Hi_ST2ﾁｪｯｶ-確認完了
+OR M3                    ; OFFLINE_MODE
+ANL
+OUT M9405                ; HiST2検査_有効確認OK
+LD M9405                 ; HiST2検査_有効確認OK
+ANB W05.2                ; ｽﾃｰｼﾞ#2 無効切替要求
+LDB X137F                ; ST2電特検査_有効/無効SW
+ANB B124A                ; HiST2検査_有効/無効_Tpb
+ANB W05.2                ; ｽﾃｰｼﾞ#2 無効切替要求
+INV
+AND L1500                ; Hi検査ST2_有効状態
+ORL
+OUT M9406                ; HiST2検査_有効/無効要求
+LD M71                   ; 自動運転開始BZ
+LDB M7981                ; ﾊﾝﾄﾞ1_Hi検査未了品
+ANB M7987                ; ﾊﾝﾄﾞ1_Hi検査ST3再検品
+OR M7983                 ; ﾊﾝﾄﾞ1_OK品
+ANL
+LDB M7991                ; ﾊﾝﾄﾞ2_Hi検査未了品
+ANB M7997                ; ﾊﾝﾄﾞ2_Hi検査ST3再検品
+OR M7993                 ; ﾊﾝﾄﾞ2_OK品
+ANL
+AND= D8201 K0            ; HiST2 ﾜｰｸ有無記憶
+LDB M9485                ; U15_起動中
+LD M9001                 ; U15-1_S01
+ANB M7901                ; 【搬送】搬送→Hi_ST2搬送開始
+ORL
+ANL
+ANB M8032                ; ﾊﾝﾄﾞ1_HiST2給材中ﾌﾗｸﾞ
+ANB M8033                ; ﾊﾝﾄﾞ2_HiST2給材中ﾌﾗｸﾞ
+ANB M7981                ; ﾊﾝﾄﾞ1_Hi検査未了品
+ANB M7991                ; ﾊﾝﾄﾞ2_Hi検査未了品
+OUT M9407                ; HiST2_自動中無効条件OK
+LDB M71                  ; 自動運転開始BZ
+OR M9407                 ; HiST2_自動中無効条件OK
+OUT M9408                ; HiST2_無効OK条件
+LD M9409                 ; HiST2_無効予約(自動運転)
+ANB M9410                ; HiST2_無効中
+ANP M9406                ; HiST2検査_有効/無効要求
+OUT M9411                ; HiST2_予約ｷｬﾝｾﾙ
+LDP M9406                ; HiST2検査_有効/無効要求
+AND L1500                ; Hi検査ST2_有効状態
+AND M71                  ; 自動運転開始BZ
+ANB M9409                ; HiST2_無効予約(自動運転)
+LD M9409                 ; HiST2_無効予約(自動運転)
+ANB M9410                ; HiST2_無効中
+ANB M9411                ; HiST2_予約ｷｬﾝｾﾙ
+ORL
+OUT M9409                ; HiST2_無効予約(自動運転)
+LD M9409                 ; HiST2_無効予約(自動運転)
+AND M9408                ; HiST2_無効OK条件
+LDP M9406                ; HiST2検査_有効/無効要求
+ANB M41                  ; ﾕﾆｯﾄ_起動中
+ORL
+LDB B01E2                ; B1E2_483)HiST2_ﾃｽﾄﾍｯﾄﾞID_不一致
+ANB B01E3                ; B1E3_484)HiST2_ﾊﾟﾚｯﾄID_不一致
+INV
+MEP
+ORL
+LD M9410                 ; HiST2_無効中
+ANB L1500                ; Hi検査ST2_有効状態
+ORL
+OUT M9410                ; HiST2_無効中
+;<h1/>__ST_有効処理
+LDP M9406                ; HiST2検査_有効/無効要求
+LD<> D8106 K0            ; HiST2_ｺﾝﾀｸﾄﾍｯﾄﾞID_Copy
+AND<> D8107 K0           ; HiST2_ﾊﾟﾚｯﾄID_ｾﾝｻ状態
+AND M9121                ; RB13_ﾜｰｸ受取り位置(ID確認位置)
+LD M35                   ; 空運転ﾓｰﾄﾞ
+AND= D8106 K0            ; HiST2_ｺﾝﾀｸﾄﾍｯﾄﾞID_Copy
+AND= D8107 K0            ; HiST2_ﾊﾟﾚｯﾄID_ｾﾝｻ状態
+ORL
+ANL
+ANB L1500                ; Hi検査ST2_有効状態
+LD L1500                 ; Hi検査ST2_有効状態
+ANB M9410                ; HiST2_無効中
+LD M300                  ; PC通信正常
+OR M3                    ; OFFLINE_MODE
+ANL
+ORL
+OUT L1500                ; Hi検査ST2_有効状態
+;JIG_ID一致確認
+LD L1500                 ; Hi検査ST2_有効状態
+MPS
+LD= D8100 D7211          ; HiST2_ｺﾝﾀｸﾄﾍｯﾄﾞID  ﾊﾝﾄﾞ1 高温検査ﾃｽﾄﾍｯﾄﾞID
+AND= D8101 D7210         ; HiST2_ﾊﾟﾚｯﾄID  ﾊﾝﾄﾞ1 高温検査ﾊﾟﾚｯﾄID
+LD M35                   ; 空運転ﾓｰﾄﾞ
+AND= D8100 K0            ; HiST2_ｺﾝﾀｸﾄﾍｯﾄﾞID
+AND= D8101 K0            ; HiST2_ﾊﾟﾚｯﾄID
+ORL
+ANL
+OUT M9401                ; HiST2-搬送ﾊﾝﾄﾞ1ID一致ﾌﾗｸﾞ
+MPP
+LD= D8100 D7311          ; HiST2_ｺﾝﾀｸﾄﾍｯﾄﾞID  ﾊﾝﾄﾞ2 高温検査ﾃｽﾄﾍｯﾄﾞID
+AND= D8101 D7310         ; HiST2_ﾊﾟﾚｯﾄID  ﾊﾝﾄﾞ2 高温検査ﾊﾟﾚｯﾄID
+LD M35                   ; 空運転ﾓｰﾄﾞ
+AND= D8100 K0            ; HiST2_ｺﾝﾀｸﾄﾍｯﾄﾞID
+AND= D8101 K0            ; HiST2_ﾊﾟﾚｯﾄID
+ORL
+ANL
+OUT M9402                ; HiST2-搬送ﾊﾝﾄﾞ2ID一致ﾌﾗｸﾞ
+;<h1/>__ﾛﾎﾞｯﾄ等機器入力受け
+;<h1/>□_装置状態・動作条件
+;ﾕﾆｯﾄまとめ
+LD M9070                 ; U15-1原点
+AND M9230                ; U15-3原点
+OUT M9480                ; U15_原点
+;□ 非常停止
+LDB M9071                ; U15-1全異常
+ANB M9231                ; U15-3全異常
+INV
+OUT M9481                ; U15_即停止異常
+;□ 起動条件
+LD CR2003                ; 常時OFF
+OUT M9482                ; U15_起動条件
+;□ 起動OFF
+LDB M50                  ; 運転準備
+LD M60                   ; ｴﾗｰ発生
+OR M56                   ; 自動起動停止指令(ｻｲｸﾙ停止)
+AND M9484                ; U15_原点復帰中
+ORL
+OR M9486                 ; U15_CYCLE停止異常
+OR T15                   ; 強制停止
+OUT M9483                ; U15_起動OFF
+;□ 原点復帰
+LD M82                   ; 原点復帰開始
+ANB M9484                ; U15_原点復帰中
+OR M9484                 ; U15_原点復帰中
+ANB M9483                ; U15_起動OFF
+ANB M9491                ; U15_ERR発生
+ANB M9297                ; OriStepEND
+OUT M9484                ; U15_原点復帰中
+;□ 起動中
+LDB M9074                ; U15-1起動中
+ANB M9234                ; U15-3(検査SUB)起動中
+INV
+OUT M9485                ; U15_起動中
+;□ ｻｲｸﾙ停止異常
+LDB M9075                ; U15-1ｻｲｸﾙ停止異常
+ANB M9235                ; U15-3ｻｲｸﾙ停止異常
+INV
+OUT M9486                ; U15_CYCLE停止異常
+;□ 払出停止異常
+LDB CR2003               ; 常時OFF
+INV
+OUT M9487                ; U15_払出停止異常
+;□ 警報補助
+LDB CR2003               ; 常時OFF
+INV
+OUT M9488                ; U15_警報補助
+;□ 機器準備確認
+LD X382C                 ; H2st(RB13)ｻｰﾎﾞ状態_SV
+ANB X3829                ; H2st(RB13)運転ﾓｰﾄﾞ_RMDS
+AND X382D                ; H2st(RB13)非常停止_*EMGS
+AND X382E                ; H2st(RB13)ｱﾗｰﾑ_*ALM
+OUT M9490                ; U15_機器準備完了
+;□ ｴﾗｰ発生　一時停止
+LDB M9076                ; U15-1ｴﾗｰ発生
+ANB M9236                ; U15-3ｴﾗｰ発生
+INV
+OUT M9491                ; U15_ERR発生
+;□ 動作中ﾕﾆｯﾄ無し
+LD M9077                 ; U15-1動作無し
+AND M9237                ; U15-3動作無し
+OUT M9492                ; U15_動作無し確認
+;□ 払出しﾜｰｸ無し
+LDB X1372                ; HiST2_部_ﾜｰｸ確認(ON=有)
+ANB M7981                ; ﾊﾝﾄﾞ1_Hi検査未了品
+ANB M7986                ; ﾊﾝﾄﾞ1_Hi検査ST2再検品
+ANB M7991                ; ﾊﾝﾄﾞ2_Hi検査未了品
+ANB M7996                ; ﾊﾝﾄﾞ2_Hi検査ST2再検品
+AND M9121                ; RB13_ﾜｰｸ受取り位置(ID確認位置)
+TMR K1514 K10            ; U15ﾜｰｸ無し判定
+LD T1514                 ; U15ﾜｰｸ無し判定
+OUT M9493                ; U15_WORK無し
+;□ ｽﾃｯﾌﾟ起動
+LD M30                   ; 自動ﾓｰﾄﾞ
+OR M31                   ; 手動ﾓｰﾄﾞ
+AND T1501                ; HiST2扉閉
+ANB M51                  ; 即停止異常(緊急停止)
+ANB M52                  ; ｻｲｸﾙ停止異常(ｻｲｸﾙ停止)
+ANB M57                  ; 全ﾕﾆｯﾄ払出完了
+ANB M59                  ; 払出停止異常まとめ
+ANB M9491                ; U15_ERR発生
+LDB M140                 ; 全一時停止
+ANB M180                 ; 高温検査一時停止
+ORB M9017                ; U15-1_S17(検査SUB)起動確認
+ANL
+OUT M9479                ; U15_STEP動作
+;<h1/>□_自動回路
+;<h1/>◇_状態・動作条件(補助)
+LD X1371                 ; HiST2_部_ﾜｰｸ押_上昇端
+AND M9121                ; RB13_ﾜｰｸ受取り位置(ID確認位置)
+ANB X1372                ; HiST2_部_ﾜｰｸ確認(ON=有)
+AND= D8201 K0            ; HiST2 ﾜｰｸ有無記憶
+OUT M9070                ; U15-1原点
+LDB B01E0                ; B1E0_481)HiST2ｽﾃｰｼﾞ前後RB異常
+ANB B01E2                ; B1E2_483)HiST2_ﾃｽﾄﾍｯﾄﾞID_不一致
+ANB B01E3                ; B1E3_484)HiST2_ﾊﾟﾚｯﾄID_不一致
+ANB B01E4                ; B1E4_485)HiST2_ﾜｰｸ受取異常
+ANB B01E5                ; B1E5_486)HiST2_ﾜｰｸ受渡し異常
+ANB B01E6                ; B1E6_487)HiST2 ﾜｰｸ情報不一致
+INV
+OUT M9071                ; U15-1全異常
+LD M9070                 ; U15-1原点
+ANB M9074                ; U15-1起動中
+AND M9479                ; U15_STEP動作
+LD M9401                 ; HiST2-搬送ﾊﾝﾄﾞ1ID一致ﾌﾗｸﾞ
+OR M9402                 ; HiST2-搬送ﾊﾝﾄﾞ2ID一致ﾌﾗｸﾞ
+ANL
+ANB M9408                ; HiST2_無効OK条件
+OUT M9072                ; U15-1起動条件
+LDB M50                  ; 運転準備
+ORB L1500                ; Hi検査ST2_有効状態
+OR M9486                 ; U15_CYCLE停止異常
+OR T15                   ; 強制停止
+OUT M9073                ; U15-1起動OFF
+LD M73                   ; 各工程起動指令
+AND M9072                ; U15-1起動条件
+ANB B101D                ; 途中投入選択TP(1:単独_0:連動)
+OR M9074                 ; U15-1起動中
+ANB M9073                ; U15-1起動OFF
+ANB M9063                ; U15-1 StepEnd
+OUT M9074                ; U15-1起動中
+;ﾕﾆｯﾄ1-1 ｻｲｸﾙ停止異常
+LDB CR2003               ; 常時OFF
+INV
+OUT M9075                ; U15-1ｻｲｸﾙ停止異常
+;ﾕﾆｯﾄ1-1 ｴﾗｰ発生まとめ
+LDB B01E1                ; B1E1_482)HiST2ｸﾗﾝﾌﾟ開閉CLS異常
+ANB B01FE                ; B1FE_511)HiST2ﾜｰｸ除去要求
+ANB B01FF                ; B1FF_512)HiST2ﾜｰｸ検査中
+INV
+OUT M9076                ; U15-1ｴﾗｰ発生
+;ﾕﾆｯﾄ1-1 停止判定
+LD= D8000 D8005          ; HiST2-1自動運転ｽﾃｯﾌﾟ  HiST2-1動作中判定
+ORB M9074                ; U15-1起動中
+TMR K1510 K20            ; 停止完了判定ﾀｲﾏｰ
+LD CR2002                ; 常時ON
+MOV D8000 D8005          ; HiST2-1自動運転ｽﾃｯﾌﾟ  HiST2-1動作中判定
+LD T1510                 ; 停止完了判定ﾀｲﾏｰ
+OUT M9077                ; U15-1動作無し
+;□
+;□　ﾕﾆｯﾄ1-1 自動運転ステップ開始
+;□
+LD CR2002                ; 常時ON
+FMOV K0 M9000 K4         ; U15-1_S00
+LDB M9074                ; U15-1起動中
+MOV K0 D8000             ; HiST2-1自動運転ｽﾃｯﾌﾟ
+LD M9074                 ; U15-1起動中
+MOV D8000 Z1             ; HiST2-1自動運転ｽﾃｯﾌﾟ
+SET M9000:Z1             ; U15-1_S00
+;ﾜｰｸ有無判定等
+LD M9000                 ; U15-1_S00
+AND M9479                ; U15_STEP動作
+INC D8000                ; HiST2-1自動運転ｽﾃｯﾌﾟ
+;<h1/>__S01_給材要求
+LD M9001                 ; U15-1_S01
+MPS
+ANB M9493                ; U15_WORK無し
+MPS
+AND M7901                ; 【搬送】搬送→Hi_ST2搬送開始
+INC D8000                ; HiST2-1自動運転ｽﾃｯﾌﾟ
+MPP
+LD M9401                 ; HiST2-搬送ﾊﾝﾄﾞ1ID一致ﾌﾗｸﾞ
+OR M9402                 ; HiST2-搬送ﾊﾝﾄﾞ2ID一致ﾌﾗｸﾞ
+ANB X1372                ; HiST2_部_ﾜｰｸ確認(ON=有)
+ANL
+OUT M9420                ; HiST2→搬送ﾜｰｸ供給要求
+MPP
+LD M9493                 ; U15_WORK無し
+AND M36                  ; 払出処理
+ANL
+MOV K63 D8000            ; HiST2-1自動運転ｽﾃｯﾌﾟ
+LD M9002                 ; U15-1_S02
+LD M7906                 ; 【搬送】搬送→Hi_ST2搬送完了
+OR M9422                 ; HiST2→搬送ﾜｰｸ受取り完了
+ANL
+MPS
+LDB M7901                ; 【搬送】搬送→Hi_ST2搬送開始
+ANB M7906                ; 【搬送】搬送→Hi_ST2搬送完了
+ANL
+INC D8000                ; HiST2-1自動運転ｽﾃｯﾌﾟ
+MPP
+OUT M9422                ; HiST2→搬送ﾜｰｸ受取り完了
+LD M9003                 ; U15-1_S03
+AND M9479                ; U15_STEP動作
+AND= D8201 K1            ; HiST2 ﾜｰｸ有無記憶
+MPS
+LD X1372                 ; HiST2_部_ﾜｰｸ確認(ON=有)
+OR M35                   ; 空運転ﾓｰﾄﾞ
+ANL
+INC D8000                ; HiST2-1自動運転ｽﾃｯﾌﾟ
+MPP
+LDB X1372                ; HiST2_部_ﾜｰｸ確認(ON=有)
+ANB M35                  ; 空運転ﾓｰﾄﾞ
+ANL
+MOV K60 D8000            ; HiST2-1自動運転ｽﾃｯﾌﾟ
+LD M9060                 ; U15-1_S60 HiST1_ﾜｰｸ受取異常
+AND B01E4                ; B1E4_485)HiST2_ﾜｰｸ受取異常
+MOV K63 D8000            ; HiST2-1自動運転ｽﾃｯﾌﾟ
+;　　ｸﾗﾝﾌﾟ指令
+LD M9004                 ; U15-1_S04_ｸﾗﾝﾌﾟ指令
+AND M9479                ; U15_STEP動作
+AND X1370                ; HiST2_部_ﾜｰｸ押_下降端
+ANB B01E1                ; B1E1_482)HiST2ｸﾗﾝﾌﾟ開閉CLS異常
+INC D8000                ; HiST2-1自動運転ｽﾃｯﾌﾟ
+;　　Z軸上昇確認
+LD M9005                 ; U15-1_S05_開始確認待ち
+AND T1501                ; HiST2扉閉
+AND M9479                ; U15_STEP動作
+LD L1352                 ; Hi搬送高さ移動完了(HIGH)
+OR L1351                 ; Hi搬送高さ移動完了(MIDLE)
+ANL
+INC D8000                ; HiST2-1自動運転ｽﾃｯﾌﾟ
+@INC D8020               ; HiST2投入回数
+LD M9006                 ; U15-1_S06
+INC D8000                ; HiST2-1自動運転ｽﾃｯﾌﾟ
+LD M9007                 ; U15-1_S07
+INC D8000                ; HiST2-1自動運転ｽﾃｯﾌﾟ
+LD M9008                 ; U15-1_S08
+INC D8000                ; HiST2-1自動運転ｽﾃｯﾌﾟ
+;　　■電特検査前処理
+LD M9009                 ; U15-1_S09
+AND M9479                ; U15_STEP動作
+AND M9102                ; RB13_位置決め条件
+MPS
+@MOV D8050 D8040         ; ｺﾈｸﾀ挿入開始位置指令Pos  RB13_指令Pos
+MPP
+AND= D8050 D8040         ; ｺﾈｸﾀ挿入開始位置指令Pos  RB13_指令Pos
+INC D8000                ; HiST2-1自動運転ｽﾃｯﾌﾟ
+LD M9010                 ; U15-1_S10_ﾌﾟﾛｰﾌﾞｱﾌﾟﾛｰﾁ移動指令
+AND M9104                ; RB13_位置決め起動指令
+INC D8000                ; HiST2-1自動運転ｽﾃｯﾌﾟ
+LD M9011                 ; U15-1_S11_到着確認
+ANB M9104                ; RB13_位置決め起動指令
+AND M9122                ; RB13_ｺﾈｸﾀ挿入開始位置
+AND M9479                ; U15_STEP動作
+INC D8000                ; HiST2-1自動運転ｽﾃｯﾌﾟ
+LD M9012                 ; U15-1_S12_起動条件確認
+AND M9479                ; U15_STEP動作
+AND M9102                ; RB13_位置決め条件
+MPS
+@MOV D8051 D8040         ; ｺﾈｸﾀ挿入押込み量※1指令Pos  RB13_指令Pos
+MPP
+AND= D8051 D8040         ; ｺﾈｸﾀ挿入押込み量※1指令Pos  RB13_指令Pos
+INC D8000                ; HiST2-1自動運転ｽﾃｯﾌﾟ
+LD M9013                 ; U15-1_S13_ｺﾈｸﾀ押込位置移動指指令
+AND M9104                ; RB13_位置決め起動指令
+INC D8000                ; HiST2-1自動運転ｽﾃｯﾌﾟ
+LD M9014                 ; U15-1_S14_到着確認
+ANB M9104                ; RB13_位置決め起動指令
+AND M9123                ; RB13_ｺﾈｸﾀ挿入押込み完了位置
+INC D8000                ; HiST2-1自動運転ｽﾃｯﾌﾟ
+;<h1/>__S15_電特検査処理開始
+LD M9015                 ; U15-1_S15_検査SUB動作無確認
+AND M9479                ; U15_STEP動作
+ANB M9234                ; U15-3(検査SUB)起動中
+INC D8000                ; HiST2-1自動運転ｽﾃｯﾌﾟ
+LD M9016                 ; U15-1_S16_検査SUB開始ﾌﾗｸﾞ
+AND M9479                ; U15_STEP動作
+AND M9234                ; U15-3(検査SUB)起動中
+INC D8000                ; HiST2-1自動運転ｽﾃｯﾌﾟ
+LD M9017                 ; U15-1_S17(検査SUB)起動確認
+AND M9479                ; U15_STEP動作
+ANB M9234                ; U15-3(検査SUB)起動中
+ANB M140                 ; 全一時停止
+ANB M180                 ; 高温検査一時停止
+INC D8000                ; HiST2-1自動運転ｽﾃｯﾌﾟ
+LD M9018                 ; U15-1_S18
+AND M9479                ; U15_STEP動作
+AND M9102                ; RB13_位置決め条件
+MPS
+@MOV D8052 D8040         ; ｺﾈｸﾀ抜き位置Pos  RB13_指令Pos
+MPP
+AND= D8052 D8040         ; ｺﾈｸﾀ抜き位置Pos  RB13_指令Pos
+INC D8000                ; HiST2-1自動運転ｽﾃｯﾌﾟ
+LD M9019                 ; U15-1_S19_ｺﾈｸﾀ抜き位置移動指令
+AND M9104                ; RB13_位置決め起動指令
+INC D8000                ; HiST2-1自動運転ｽﾃｯﾌﾟ
+;　　ｽﾃｰｼﾞ後退
+LD M9020                 ; U15-1_S20_到着確認
+ANB M9104                ; RB13_位置決め起動指令
+AND M9479                ; U15_STEP動作
+AND M9124                ; RB13_ｺﾈｸﾀ抜き位置
+INC D8000                ; HiST2-1自動運転ｽﾃｯﾌﾟ
+LD M9021                 ; U15-1_S21_起動条件確認
+AND M9479                ; U15_STEP動作
+AND M9102                ; RB13_位置決め条件
+MPS
+@MOV K1 D8040            ; RB13_指令Pos
+MPP
+AND= K1 D8040            ; RB13_指令Pos
+INC D8000                ; HiST2-1自動運転ｽﾃｯﾌﾟ
+LD M9022                 ; U15-1_S22_ﾜｰｸ受取位置移動指令
+AND M9104                ; RB13_位置決め起動指令
+INC D8000                ; HiST2-1自動運転ｽﾃｯﾌﾟ
+LD M9023                 ; U15-1_S23_到着確認
+ANB M9104                ; RB13_位置決め起動指令
+AND M9121                ; RB13_ﾜｰｸ受取り位置(ID確認位置)
+INC D8000                ; HiST2-1自動運転ｽﾃｯﾌﾟ
+LD M9024                 ; U15-1_S24
+AND M9479                ; U15_STEP動作
+INC D8000                ; HiST2-1自動運転ｽﾃｯﾌﾟ
+;<h1/>__S25_ﾜｰｸ除材要求
+LDB M7981                ; ﾊﾝﾄﾞ1_Hi検査未了品
+ANB M7987                ; ﾊﾝﾄﾞ1_Hi検査ST3再検品
+ANB M7991                ; ﾊﾝﾄﾞ2_Hi検査未了品
+ANB M7997                ; ﾊﾝﾄﾞ2_Hi検査ST3再検品
+ANB M8022                ; ﾊﾝﾄﾞ1HiST2除材中ﾌﾗｸﾞ
+ANB M8023                ; ﾊﾝﾄﾞ2HiST2除材中ﾌﾗｸﾞ
+ANB M8909                ; HiST1_無効予約(自動運転)
+ANB M9409                ; HiST2_無効予約(自動運転)
+ANB M9909                ; HiST3_無効予約(自動運転)
+ANB M10409               ; HiST4_無効予約(自動運転)
+ANB M10909               ; HiST5_無効予約(自動運転)
+INV
+OUT M9425                ; HiST2_ﾜｰｸ除去要求発行許可
+;M9　M1304を上流仮置きよりﾜｰｸ除材要求なしに入れ替え
+LD M9025                 ; U15-1_S25_ﾜｰｸ受取要求
+MPS
+AND M7911                ; 【搬送】HiST2除材開始
+INC D8000                ; HiST2-1自動運転ｽﾃｯﾌﾟ
+MPP
+LDB M6057                ; U10_S57_受渡可(→検査RB)
+OR M9425                 ; HiST2_ﾜｰｸ除去要求発行許可
+ANL
+OUT M9421                ; HiST2→搬送1除材要求
+LD M9026                 ; U15-1_S26
+LD M7916                 ; 【搬送】HiST2除材完了
+OR M9423                 ; HiST2→搬送除材完了受取
+ANL
+MPS
+LDB M7911                ; 【搬送】HiST2除材開始
+ANB M7916                ; 【搬送】HiST2除材完了
+ANL
+INC D8000                ; HiST2-1自動運転ｽﾃｯﾌﾟ
+MPP
+OUT M9423                ; HiST2→搬送除材完了受取
+LD M9027                 ; U15-1_S27
+AND M9479                ; U15_STEP動作
+AND= D8201 K0            ; HiST2 ﾜｰｸ有無記憶
+LD L1352                 ; Hi搬送高さ移動完了(HIGH)
+OR L1351                 ; Hi搬送高さ移動完了(MIDLE)
+OR L1350                 ; ﾜｰｸ入替高さ移動完了(HiW)
+ANL
+MPS
+ANB X1372                ; HiST2_部_ﾜｰｸ確認(ON=有)
+INC D8000                ; HiST2-1自動運転ｽﾃｯﾌﾟ
+MPP
+AND X1372                ; HiST2_部_ﾜｰｸ確認(ON=有)
+OUT M9430                ; HiST2_ﾜｰｸ受渡し異常
+LD M9028                 ; U15-1_S28
+AND M9479                ; U15_STEP動作
+INC D8000                ; HiST2-1自動運転ｽﾃｯﾌﾟ
+LD M9029                 ; U15-1_S29
+AND M9479                ; U15_STEP動作
+MOV K63 D8000            ; HiST2-1自動運転ｽﾃｯﾌﾟ
+;ｻｲｸﾙ終了
+LD M9062                 ; U15-1_S62
+OR CR2003                ; 常時OFF
+@MOV K63 D8000           ; HiST2-1自動運転ｽﾃｯﾌﾟ
+;<h1/>◇_電特検査SUB 状態・動作条件(補助)
+LD CR2002                ; 常時ON
+OUT M9230                ; U15-3原点
+LDB CR2003               ; 常時OFF
+INV
+OUT M9231                ; U15-3全異常
+LD M9230                 ; U15-3原点
+ANB M9234                ; U15-3(検査SUB)起動中
+AND M9479                ; U15_STEP動作
+LD M300                  ; PC通信正常
+OR M3                    ; OFFLINE_MODE
+ANL
+OUT M9232                ; U15-3起動条件
+LDB M50                  ; 運転準備
+OR M9486                 ; U15_CYCLE停止異常
+OR T15                   ; 強制停止
+OUT M9233                ; U15-3起動OFF
+LD M9016                 ; U15-1_S16_検査SUB開始ﾌﾗｸﾞ
+AND M9232                ; U15-3起動条件
+OR M9234                 ; U15-3(検査SUB)起動中
+ANB M9233                ; U15-3起動OFF
+ANB M9223                ; U15-3 StepEnd
+OUT M9234                ; U15-3(検査SUB)起動中
+;tp表示
+LD CR2002                ; 常時ON
+DW K0 D8400              ; Hi2検査_ｽﾃｰﾀｽ表示
+LD M9234                 ; U15-3(検査SUB)起動中
+DW K1 D8400              ; Hi2検査_ｽﾃｰﾀｽ表示
+LD= D8204 K1             ; HiST2 Hi検査結果(1=OK_2=NG)
+DW K2 D8400              ; Hi2検査_ｽﾃｰﾀｽ表示
+LD= D8204 K2             ; HiST2 Hi検査結果(1=OK_2=NG)
+DW K3 D8400              ; Hi2検査_ｽﾃｰﾀｽ表示
+LDB L1500                ; Hi検査ST2_有効状態
+DW K4 D8400              ; Hi2検査_ｽﾃｰﾀｽ表示
+;ﾕﾆｯﾄ1-3ｻｲｸﾙ停止異常
+LDB CR2003               ; 常時OFF
+INV
+OUT M9235                ; U15-3ｻｲｸﾙ停止異常
+;ﾕﾆｯﾄ1-3ｴﾗｰ発生まとめ
+LDB CR2003               ; 常時OFF
+INV
+OUT M9236                ; U15-3ｴﾗｰ発生
+;ﾕﾆｯﾄ1-3停止判定
+LD= D8002 D8007          ; HiST2-3自動運転ｽﾃｯﾌﾟ  HiST2-3動作中判定
+TMR K1512 K20
+LD CR2002                ; 常時ON
+MOV D8002 D8007          ; HiST2-3自動運転ｽﾃｯﾌﾟ  HiST2-3動作中判定
+LD T1512
+ORB M9234                ; U15-3(検査SUB)起動中
+OUT M9237                ; U15-3動作無し
+;□
+;□　ﾕﾆｯﾄ1-3自動運転ステップ開始
+;□
+LD CR2002                ; 常時ON
+FMOV K0 M9160 K4         ; U15-3_S0
+LDB M9234                ; U15-3(検査SUB)起動中
+MOV K0 D8002             ; HiST2-3自動運転ｽﾃｯﾌﾟ
+LD M9234                 ; U15-3(検査SUB)起動中
+MOV D8002 Z1             ; HiST2-3自動運転ｽﾃｯﾌﾟ
+SET M9160:Z1             ; U15-3_S0
+;<h1/>__S0_ﾜｰｸ有無判定
+LD M9160                 ; U15-3_S0
+MPS
+LD T1501                 ; HiST2扉閉
+AND M9479                ; U15_STEP動作
+ANB M35                  ; 空運転ﾓｰﾄﾞ
+ANB M3                   ; OFFLINE_MODE
+ANL
+INC D8002                ; HiST2-3自動運転ｽﾃｯﾌﾟ
+MPP
+LD M35                   ; 空運転ﾓｰﾄﾞ
+OR M3                    ; OFFLINE_MODE
+ANL
+MPS
+AND T1530                ; Hi検査時間(仮)
+INC D8002                ; HiST2-3自動運転ｽﾃｯﾌﾟ
+MPP
+TMR K1530 K880           ; Hi検査時間(仮)
+LD M9161                 ; U15-3_S1Hi検査ｽﾀｰﾄ要求
+AND W0105.7              ; 電気特性検査開始要求#2
+LD W05.7                 ; 電気特性検査ｽﾃｰｼﾞ状態#2
+ANB W05.12               ; 電気特性検査結果#2
+OR M3                    ; OFFLINE_MODE
+OR M35                   ; 空運転ﾓｰﾄﾞ
+ANL
+INC D8002                ; HiST2-3自動運転ｽﾃｯﾌﾟ
+LD M9162                 ; U15-3_S2
+LDB W05.7                ; 電気特性検査ｽﾃｰｼﾞ状態#2
+OR M3                    ; OFFLINE_MODE
+ANL
+INC D8002                ; HiST2-3自動運転ｽﾃｯﾌﾟ
+LD M9163                 ; U15-3_S3
+MPS
+AND<> D8204 K0           ; HiST2 Hi検査結果(1=OK_2=NG)
+INC D8002                ; HiST2-3自動運転ｽﾃｯﾌﾟ
+MRD
+LDB M35                  ; 空運転ﾓｰﾄﾞ
+ANB M3                   ; OFFLINE_MODE
+ANL
+MPS
+AND W05.12               ; 電気特性検査結果#2
+MOV K1 D8204             ; HiST2 Hi検査結果(1=OK_2=NG)
+MPP
+ANB W05.12               ; 電気特性検査結果#2
+MOV K2 D8204             ; HiST2 Hi検査結果(1=OK_2=NG)
+MPP
+LD M3                    ; OFFLINE_MODE
+OR M35                   ; 空運転ﾓｰﾄﾞ
+ANL
+MPS
+ANB B1038                ; OFF_LINE_検査結果(OFF=OK_ON=NG)
+MOV K1 D8204             ; HiST2 Hi検査結果(1=OK_2=NG)
+MPP
+AND B1038                ; OFF_LINE_検査結果(OFF=OK_ON=NG)
+MOV K2 D8204             ; HiST2 Hi検査結果(1=OK_2=NG)
+LD M9164                 ; U15-3_S4
+INC D8002                ; HiST2-3自動運転ｽﾃｯﾌﾟ
+LD M9165                 ; U15-3_S5
+INC D8002                ; HiST2-3自動運転ｽﾃｯﾌﾟ
+LD M9166                 ; U15-3_S6
+INC D8002                ; HiST2-3自動運転ｽﾃｯﾌﾟ
+LD M9167                 ; U15-3_S7
+INC D8002                ; HiST2-3自動運転ｽﾃｯﾌﾟ
+LD M9168                 ; U15-3_S8
+INC D8002                ; HiST2-3自動運転ｽﾃｯﾌﾟ
+LD M9169                 ; U15-3_S9
+AND T1501                ; HiST2扉閉
+AND M9479                ; U15_STEP動作
+MOV K63 D8002            ; HiST2-3自動運転ｽﾃｯﾌﾟ
+;<h1/>□_原点復帰回路
+LD CR2002                ; 常時ON
+FMOV K0 M9250 K3         ; OriStep0
+LDB M9484                ; U15_原点復帰中
+MOV K0 D8010             ; HiST2 原点復帰ｽﾃｯﾌﾟ
+LD M9484                 ; U15_原点復帰中
+MOV D8010 Z1             ; HiST2 原点復帰ｽﾃｯﾌﾟ
+SET M9250:Z1             ; OriStep0
+;原点復帰ｻｲｸﾙ監視
+LD M9484                 ; U15_原点復帰中
+TMR K1500 K200           ; U15原点復帰ﾀｲﾑｱｳﾄ
+;原点復帰ステップ開始
+LD M9250                 ; OriStep0
+AND T1501                ; HiST2扉閉
+AND M9479                ; U15_STEP動作
+AND L1352                ; Hi搬送高さ移動完了(HIGH)
+DW K0 D8020              ; HiST2投入回数
+CON
+INC D8010                ; HiST2 原点復帰ｽﾃｯﾌﾟ
+LD M9251                 ; OriStep1
+AND T1501                ; HiST2扉閉
+AND M9479                ; U15_STEP動作
+ANB W05.7                ; 電気特性検査ｽﾃｰｼﾞ状態#2
+INC D8010                ; HiST2 原点復帰ｽﾃｯﾌﾟ
+LD M9252                 ; OriStep2
+AND T1501                ; HiST2扉閉
+AND M9479                ; U15_STEP動作
+AND X382A                ; H2st(RB13)原点確定_HEND
+INC D8010                ; HiST2 原点復帰ｽﾃｯﾌﾟ
+LD M9253                 ; OriStep3
+AND T1501                ; HiST2扉閉
+AND M9479                ; U15_STEP動作
+AND M9102                ; RB13_位置決め条件
+MPS
+@MOV K1 D8040            ; RB13_指令Pos
+MPP
+AND= K1 D8040            ; RB13_指令Pos
+INC D8010                ; HiST2 原点復帰ｽﾃｯﾌﾟ
+LD M9254                 ; OriStep4_ｽﾃｰｼﾞ戻り指令
+AND M9104                ; RB13_位置決め起動指令
+INC D8010                ; HiST2 原点復帰ｽﾃｯﾌﾟ
+LD M9255                 ; OriStep5_
+ANB M9104                ; RB13_位置決め起動指令
+AND M9121                ; RB13_ﾜｰｸ受取り位置(ID確認位置)
+INC D8010                ; HiST2 原点復帰ｽﾃｯﾌﾟ
+LD M9256                 ; OriStep6_
+AND T1501                ; HiST2扉閉
+AND M9479                ; U15_STEP動作
+AND L1352                ; Hi搬送高さ移動完了(HIGH)
+INC D8010                ; HiST2 原点復帰ｽﾃｯﾌﾟ
+LD M9257                 ; OriStep7_ｸﾗﾝﾌﾟ上昇指令
+AND T1501                ; HiST2扉閉
+AND M9479                ; U15_STEP動作
+AND X1371                ; HiST2_部_ﾜｰｸ押_上昇端
+INC D8010                ; HiST2 原点復帰ｽﾃｯﾌﾟ
+;　　ﾜｰｸ有無ﾁｪｯｸ
+LD M9258                 ; OriStep8
+AND T1501                ; HiST2扉閉
+AND M9479                ; U15_STEP動作
+MPS
+ANB X1372                ; HiST2_部_ﾜｰｸ確認(ON=有)
+MOV K10 D8010            ; HiST2 原点復帰ｽﾃｯﾌﾟ
+MPP
+AND X1372                ; HiST2_部_ﾜｰｸ確認(ON=有)
+INC D8010                ; HiST2 原点復帰ｽﾃｯﾌﾟ
+;　　ﾜｰｸ除去要求
+LD M9259                 ; OriStep9_ORGﾜｰｸ除去要求
+AND T1501                ; HiST2扉閉
+AND M9479                ; U15_STEP動作
+AND B01FE                ; B1FE_511)HiST2ﾜｰｸ除去要求
+MOV K46 D8010            ; HiST2 原点復帰ｽﾃｯﾌﾟ
+;　　
+LD M9260                 ; OriStep10
+MPS
+AND M9480                ; U15_原点
+MOV K46 D8010            ; HiST2 原点復帰ｽﾃｯﾌﾟ
+MPP
+FMOV K0 D8200 K20        ; HiST2 INDEX NO.
+LD M9296                 ; OriStep46
+ANB M82                  ; 原点復帰開始
+MOV K47 D8010            ; HiST2 原点復帰ｽﾃｯﾌﾟ
+;<h1/>□_手動回路
+LD M31                   ; 手動ﾓｰﾄﾞ
+AND M32                  ; ﾒｲﾝ手動操作可能条件
+ANB M9485                ; U15_起動中
+ANB M9484                ; U15_原点復帰中
+LDB W05.7                ; 電気特性検査ｽﾃｰｼﾞ状態#2
+OR M3                    ; OFFLINE_MODE
+ANL
+MC
+LD M9102                 ; RB13_位置決め条件
+LD L1350                 ; ﾜｰｸ入替高さ移動完了(HiW)
+OR L1351                 ; Hi搬送高さ移動完了(MIDLE)
+OR L1352                 ; Hi搬送高さ移動完了(HIGH)
+ANL
+ANB M9330                ; RB13_ﾜｰｸ受取り位置移動指令
+ANB M9331                ; RB13_ｺﾈｸﾀ挿入開始位置移動指令
+ANB M9332                ; RB13_ｺﾈｸﾀ挿入押込完了位置移動指
+ANB M9333                ; RB13_ｺﾈｸﾀ抜き位置移動指令
+OUT M9320                ; RB13_ﾜｰｸ受取り位置移動OK
+OUT M9321                ; RB13_ｺﾈｸﾀ挿入開始位置移動OK
+OUT M9322                ; RB13_ｺﾈｸﾀ挿入押込完了位置移動OK
+OUT M9323                ; RB13_ｺﾈｸﾀ抜き位置移動OK
+LDP B1240                ; RB13_ﾜｰｸ受取り位置TP-PB
+AND M9320                ; RB13_ﾜｰｸ受取り位置移動OK
+OR M9330                 ; RB13_ﾜｰｸ受取り位置移動指令
+ANB M9107                ; RB13_位置決め完了
+OUT M9330                ; RB13_ﾜｰｸ受取り位置移動指令
+MOV K1 D8040             ; RB13_指令Pos
+LDP B1241                ; RB13_ｺﾈｸﾀ挿入開始位置TP-PB
+AND M9321                ; RB13_ｺﾈｸﾀ挿入開始位置移動OK
+OR M9331                 ; RB13_ｺﾈｸﾀ挿入開始位置移動指令
+ANB M9107                ; RB13_位置決め完了
+OUT M9331                ; RB13_ｺﾈｸﾀ挿入開始位置移動指令
+MOV D8050 D8040          ; ｺﾈｸﾀ挿入開始位置指令Pos  RB13_指令Pos
+LDP B1242                ; RB13_ｺﾈｸﾀ挿入押込み完了位置TP-PB
+AND M9322                ; RB13_ｺﾈｸﾀ挿入押込完了位置移動OK
+OR M9332                 ; RB13_ｺﾈｸﾀ挿入押込完了位置移動指
+ANB M9107                ; RB13_位置決め完了
+OUT M9332                ; RB13_ｺﾈｸﾀ挿入押込完了位置移動指
+MOV D8051 D8040          ; ｺﾈｸﾀ挿入押込み量※1指令Pos  RB13_指令Pos
+LDP B1243                ; RB13_ｺﾈｸﾀ抜き位置TP-PB
+AND M9323                ; RB13_ｺﾈｸﾀ抜き位置移動OK
+OR M9333                 ; RB13_ｺﾈｸﾀ抜き位置移動指令
+ANB M9107                ; RB13_位置決め完了
+OUT M9333                ; RB13_ｺﾈｸﾀ抜き位置移動指令
+MOV D8052 D8040          ; ｺﾈｸﾀ抜き位置Pos  RB13_指令Pos
+;　　ｸﾗﾝﾌﾟ上下
+LD CR2002                ; 常時ON
+AND M139                 ; 安全入力OK
+AND M7802                ; U13-3_RCX240起動条件
+AND M7811                ; RCX240動作完了
+LD L1352                 ; Hi搬送高さ移動完了(HIGH)
+OR L1315                 ; ﾊﾝﾄﾞ1st2部ﾜｰｸ受渡し動作完了
+OR L1317                 ; ﾊﾝﾄﾞ2st2部ﾜｰｸ受渡し動作完了
+ANL
+AND M9121                ; RB13_ﾜｰｸ受取り位置(ID確認位置)
+OUT M9304                ; HiST2ｸﾗﾝﾌﾟ開閉_閉_起動OK
+LDP B1244                ; HiST2ｸﾗﾝﾌﾟ閉_TP-PB
+AND M9304                ; HiST2ｸﾗﾝﾌﾟ開閉_閉_起動OK
+LD M9305                 ; HiST2ｸﾗﾝﾌﾟ開閉_閉_指令
+ANB M9307                ; HiST2ｸﾗﾝﾌﾟ開閉_開__指令
+ORL
+OUT M9305                ; HiST2ｸﾗﾝﾌﾟ開閉_閉_指令
+LD CR2002                ; 常時ON
+ANB W05.7                ; 電気特性検査ｽﾃｰｼﾞ状態#2
+AND M9121                ; RB13_ﾜｰｸ受取り位置(ID確認位置)
+OUT M9306                ; HiST2ｸﾗﾝﾌﾟ開閉_開_起動OK
+LDP B1245                ; HiST2ｸﾗﾝﾌﾟ開_TP-PB
+AND M9306                ; HiST2ｸﾗﾝﾌﾟ開閉_開_起動OK
+LD M9307                 ; HiST2ｸﾗﾝﾌﾟ開閉_開__指令
+ANB M9305                ; HiST2ｸﾗﾝﾌﾟ開閉_閉_指令
+ORL
+OUT M9307                ; HiST2ｸﾗﾝﾌﾟ開閉_開__指令
+MCR
+LDP B1246                ; SWBox_ﾊﾟﾚｯﾄ前後ﾓｰﾄﾞsw
+ANB M9312                ; HiST2SwBoxMode_ﾊﾟﾚｯﾄ前後Flag
+LDPB B1246               ; SWBox_ﾊﾟﾚｯﾄ前後ﾓｰﾄﾞsw
+AND M9312                ; HiST2SwBoxMode_ﾊﾟﾚｯﾄ前後Flag
+ANB M6312                ; Hi_RBﾁｬｯｸ開可
+ANB M9313                ; HiST2SwBoxMode_ｸﾗﾝﾌﾟ&ﾊﾟﾚｯﾄFlag
+ORL
+AND= D50 K201            ; TpM-K_表示中ページNo.
+AND M31                  ; 手動ﾓｰﾄﾞ
+ANB M81                  ; 原点復帰動作中
+AND M50                  ; 運転準備
+AND M29                  ; 未使用
+OUT M9312                ; HiST2SwBoxMode_ﾊﾟﾚｯﾄ前後Flag
+LDP B1247                ; SWBox_ｸﾗﾝﾌﾟ&ﾊﾟﾚｯﾄﾓｰﾄﾞsw
+ANB M9313                ; HiST2SwBoxMode_ｸﾗﾝﾌﾟ&ﾊﾟﾚｯﾄFlag
+LDPB B1247               ; SWBox_ｸﾗﾝﾌﾟ&ﾊﾟﾚｯﾄﾓｰﾄﾞsw
+AND M9313                ; HiST2SwBoxMode_ｸﾗﾝﾌﾟ&ﾊﾟﾚｯﾄFlag
+ANB M9312                ; HiST2SwBoxMode_ﾊﾟﾚｯﾄ前後Flag
+ANB M6312                ; Hi_RBﾁｬｯｸ開可
+ORL
+AND= D50 K201            ; TpM-K_表示中ページNo.
+AND M31                  ; 手動ﾓｰﾄﾞ
+ANB M81                  ; 原点復帰動作中
+AND M50                  ; 運転準備
+AND M29                  ; 未使用
+OUT M9313                ; HiST2SwBoxMode_ｸﾗﾝﾌﾟ&ﾊﾟﾚｯﾄFlag
+;<h1/>▽_検査ｽﾃｰｼﾞRB移動ｻﾌﾞﾙｰﾁﾝ
+;　　移動POS
+LD X382A                 ; H2st(RB13)原点確定_HEND
+AND X382B                ; H2st(RB13)位置決め完了_PEND
+MPS
+AND X3820                ; H2st(RB13)完了Pos_PM1
+OUT D8044.0
+MRD
+AND X3821                ; H2st(RB13)完了Pos_PM2
+OUT D8044.1
+MRD
+AND X3822                ; H2st(RB13)完了Pos_PM4
+OUT D8044.2
+MRD
+AND X3823                ; H2st(RB13)完了Pos_PM8
+OUT D8044.3
+MRD
+AND X3824                ; H2st(RB13)完了Pos_PM16
+OUT D8044.4
+MRD
+AND X3825                ; H2st(RB13)完了Pos_PM32
+OUT D8044.5
+MRD
+AND X3826                ; H2st(RB13)完了Pos_PM64
+OUT D8044.6
+MRD
+AND X3827                ; H2st(RB13)完了Pos_PM128
+OUT D8044.7
+MPP
+INV
+MOV K0 D8044             ; RB13_完了Pos
+;'RB13 POS MANUAL JIG SETTING
+;IF D250 < K1 THEN
+;   D250 = K1
+;END IF
+;D8050 = (D250 - K1)*3 + 51   'ｺﾈｸﾀ挿入開始
+;D8051 = (D250 - K1)*3 + 52   'ｺﾈｸﾀ挿入開始
+;D8052 = (D250 - K1)*3 + 53   'ｺﾈｸﾀ挿入開始
+LD M31                   ; 手動ﾓｰﾄﾞ
+NCJ K1000
+;'RB13 POS MANUAL JIG SETTING
+;
+;IF D250 < K1 THEN
+;
+LD< D250 K1              ; 手動_JIG_NO.指定
+NCJ K2000
+;   D250 = K1
+;
+LD CR2002                ; 常時ON
+MOV K1 D250              ; 手動_JIG_NO.指定
+;END IF
+;
+LABEL K2000
+;D8050 = (D250 - K1)*3 + 51   'ｺﾈｸﾀ挿入開始
+;
+LD CR2002                ; 常時ON
+LDA D250                 ; 手動_JIG_NO.指定
+CON
+EXT
+CON
+SUB.L +1
+CON
+MUL.L +3
+CON
+ADD.L +51
+CON
+STA D8050                ; ｺﾈｸﾀ挿入開始位置指令Pos
+;D8051 = (D250 - K1)*3 + 52   'ｺﾈｸﾀ挿入開始
+;
+LD CR2002                ; 常時ON
+LDA D250                 ; 手動_JIG_NO.指定
+CON
+EXT
+CON
+SUB.L +1
+CON
+MUL.L +3
+CON
+ADD.L +52
+CON
+STA D8051                ; ｺﾈｸﾀ挿入押込み量※1指令Pos
+;D8052 = (D250 - K1)*3 + 53   'ｺﾈｸﾀ挿入開始
+LD CR2002                ; 常時ON
+LDA D250                 ; 手動_JIG_NO.指定
+CON
+EXT
+CON
+SUB.L +1
+CON
+MUL.L +3
+CON
+ADD.L +53
+CON
+STA D8052                ; ｺﾈｸﾀ抜き位置Pos
+LABEL K1000
+;
+;'RB13 POS AUTO JIG SETTING
+;D8050 = (D8215 - K1)*3 + 51   'ｺﾈｸﾀ挿入開始
+;D8051 = (D8215 - K1)*3 + 52   'ｺﾈｸﾀ挿入開始
+;D8052 = (D8215 - K1)*3 + 53   'ｺﾈｸﾀ挿入開始
+LD M30                   ; 自動ﾓｰﾄﾞ
+NCJ K1001
+;'RB13 POS AUTO JIG SETTING
+;
+;D8050 = (D8215 - K1)*3 + 51   'ｺﾈｸﾀ挿入開始
+;
+LD CR2002                ; 常時ON
+LDA D8215                ; HiST2 高温検査ﾛﾎﾞｯﾄNo.
+CON
+EXT
+CON
+SUB.L +1
+CON
+MUL.L +3
+CON
+ADD.L +51
+CON
+STA D8050                ; ｺﾈｸﾀ挿入開始位置指令Pos
+;D8051 = (D8215 - K1)*3 + 52   'ｺﾈｸﾀ挿入開始
+;
+LD CR2002                ; 常時ON
+LDA D8215                ; HiST2 高温検査ﾛﾎﾞｯﾄNo.
+CON
+EXT
+CON
+SUB.L +1
+CON
+MUL.L +3
+CON
+ADD.L +52
+CON
+STA D8051                ; ｺﾈｸﾀ挿入押込み量※1指令Pos
+;D8052 = (D8215 - K1)*3 + 53   'ｺﾈｸﾀ挿入開始
+LD CR2002                ; 常時ON
+LDA D8215                ; HiST2 高温検査ﾛﾎﾞｯﾄNo.
+CON
+EXT
+CON
+SUB.L +1
+CON
+MUL.L +3
+CON
+ADD.L +53
+CON
+STA D8052                ; ｺﾈｸﾀ抜き位置Pos
+LABEL K1001
+;
+LD= D8044 K1             ; RB13_完了Pos
+AND<> D8044 K0           ; RB13_完了Pos
+OUT M9121                ; RB13_ﾜｰｸ受取り位置(ID確認位置)
+LD= D8044 D8050          ; RB13_完了Pos  ｺﾈｸﾀ挿入開始位置指令Pos
+AND<> D8044 K0           ; RB13_完了Pos
+OUT M9122                ; RB13_ｺﾈｸﾀ挿入開始位置
+LD= D8044 D8051          ; RB13_完了Pos  ｺﾈｸﾀ挿入押込み量※1指令Pos
+AND<> D8044 K0           ; RB13_完了Pos
+OUT M9123                ; RB13_ｺﾈｸﾀ挿入押込み完了位置
+LD= D8044 D8052          ; RB13_完了Pos  ｺﾈｸﾀ抜き位置Pos
+AND<> D8044 K0           ; RB13_完了Pos
+OUT M9124                ; RB13_ｺﾈｸﾀ抜き位置
+;	検査ｽﾗｲﾀﾞ位置決め処理
+LD X382C                 ; H2st(RB13)ｻｰﾎﾞ状態_SV
+ANB X3829                ; H2st(RB13)運転ﾓｰﾄﾞ_RMDS
+LD X382A                 ; H2st(RB13)原点確定_HEND
+OR CR2002                ; 常時ON
+ANL
+AND X382D                ; H2st(RB13)非常停止_*EMGS
+AND X382E                ; H2st(RB13)ｱﾗｰﾑ_*ALM
+OUT M9100                ; RB13_状態OK
+LD M50                   ; 運転準備
+ANB M51                  ; 即停止異常(緊急停止)
+AND M9100                ; RB13_状態OK
+ANB M9104                ; RB13_位置決め起動指令
+OUT M9102                ; RB13_位置決め条件
+LDB M9010                ; U15-1_S10_ﾌﾟﾛｰﾌﾞｱﾌﾟﾛｰﾁ移動指令
+ANB M9013                ; U15-1_S13_ｺﾈｸﾀ押込位置移動指指令
+ANB M9019                ; U15-1_S19_ｺﾈｸﾀ抜き位置移動指令
+ANB M9022                ; U15-1_S22_ﾜｰｸ受取位置移動指令
+ANB M9254                ; OriStep4_ｽﾃｰｼﾞ戻り指令
+INV
+LDB M9330                ; RB13_ﾜｰｸ受取り位置移動指令
+ANB M9331                ; RB13_ｺﾈｸﾀ挿入開始位置移動指令
+ANB M9332                ; RB13_ｺﾈｸﾀ挿入押込完了位置移動指
+ANB M9333                ; RB13_ｺﾈｸﾀ抜き位置移動指令
+INV
+ORL
+OUT M9103                ; RB13_位置決め起動指令(まとめ)
+LD M9103                 ; RB13_位置決め起動指令(まとめ)
+AND M9102                ; RB13_位置決め条件
+OR M9104                 ; RB13_位置決め起動指令
+AND M50                  ; 運転準備
+ANB M9108                ; RB13_位置決め動作完了
+AND X382D                ; H2st(RB13)非常停止_*EMGS
+AND X382E                ; H2st(RB13)ｱﾗｰﾑ_*ALM
+OUT M9104                ; RB13_位置決め起動指令
+LD M9104                 ; RB13_位置決め起動指令
+@MOV D8040 D8042         ; RB13_指令Pos  RB13_ｺﾝﾄﾛｰﾗｰ指令POS
+TMH K1550 K5             ; RB13ﾃﾞｰﾀ転送ﾃﾞｨﾚｲ
+LD T1550                 ; RB13ﾃﾞｰﾀ転送ﾃﾞｨﾚｲ
+OR M9105                 ; RB13_位置決めｽﾀｰﾄ指令
+AND M9104                ; RB13_位置決め起動指令
+ANB T1551                ; RB13位置決め再ｽﾀｰﾄ指令
+OUT M9105                ; RB13_位置決めｽﾀｰﾄ指令
+LD M9105                 ; RB13_位置決めｽﾀｰﾄ指令
+AND Y482D                ; H2st(RB13)ｽﾀｰﾄ_CSTR
+ANB X382B                ; H2st(RB13)位置決め完了_PEND
+OR M9106                 ; RB13_位置決め起動確認
+AND M9105                ; RB13_位置決めｽﾀｰﾄ指令
+OUT M9106                ; RB13_位置決め起動確認
+LD M9106                 ; RB13_位置決め起動確認
+ANB Y482D                ; H2st(RB13)ｽﾀｰﾄ_CSTR
+AND X382B                ; H2st(RB13)位置決め完了_PEND
+AND= D8042 D8044         ; RB13_ｺﾝﾄﾛｰﾗｰ指令POS  RB13_完了Pos
+OR M9107                 ; RB13_位置決め完了
+AND M9105                ; RB13_位置決めｽﾀｰﾄ指令
+OUT M9107                ; RB13_位置決め完了
+LD M9106                 ; RB13_位置決め起動確認
+ANB Y482D                ; H2st(RB13)ｽﾀｰﾄ_CSTR
+AND X382B                ; H2st(RB13)位置決め完了_PEND
+AND<> D8042 D8044        ; RB13_ｺﾝﾄﾛｰﾗｰ指令POS  RB13_完了Pos
+TMR K1551 K30            ; RB13位置決め再ｽﾀｰﾄ指令
+LD M9107                 ; RB13_位置決め完了
+ANPB M9107               ; RB13_位置決め完了
+OUT M9108                ; RB13_位置決め動作完了
+;<h1/>□_出力回路
+;ソレノイドバルブ出力
+;ｸﾗﾝﾌﾟ/ｱﾝｸﾗﾝﾌﾟ
+LD M9305                 ; HiST2ｸﾗﾝﾌﾟ開閉_閉_指令
+AND M9304                ; HiST2ｸﾗﾝﾌﾟ開閉_閉_起動OK
+OR M7955                 ; HiST2 ｸﾗﾝﾌﾟ指令(Hi給材)
+OR M9004                 ; U15-1_S04_ｸﾗﾝﾌﾟ指令
+LD Y2422                 ; HiST2ﾜｰｸ押さえ下降
+ANB Y2423                ; HiST2ﾜｰｸ押さえ上昇
+ORL
+AND M50                  ; 運転準備
+OUT Y2422                ; HiST2ﾜｰｸ押さえ下降
+LD M9307                 ; HiST2ｸﾗﾝﾌﾟ開閉_開__指令
+AND M9306                ; HiST2ｸﾗﾝﾌﾟ開閉_開_起動OK
+OR M7965                 ; HiST2_ｱﾝｸﾗﾝﾌﾟ指令(Hi除材)
+OR M9257                 ; OriStep7_ｸﾗﾝﾌﾟ上昇指令
+LD Y2423                 ; HiST2ﾜｰｸ押さえ上昇
+ANB Y2422                ; HiST2ﾜｰｸ押さえ下降
+ORL
+AND M50                  ; 運転準備
+OUT Y2423                ; HiST2ﾜｰｸ押さえ上昇
+;<h1/>____▼_検査ｽﾗｲﾀﾞ出力
+LD CR2002                ; 常時ON
+MPS
+AND D8042.0
+OUT Y4820                ; H2st(RB13)指令pos_PC1
+MRD
+AND D8042.1
+OUT Y4821                ; H2st(RB13)指令pos_PC2
+MRD
+AND D8042.2
+OUT Y4822                ; H2st(RB13)指令pos_PC4
+MRD
+AND D8042.3
+OUT Y4823                ; H2st(RB13)指令pos_PC8
+MRD
+AND D8042.4
+OUT Y4824                ; H2st(RB13)指令pos_PC16
+MRD
+AND D8042.5
+OUT Y4825                ; H2st(RB13)指令pos_PC32
+MRD
+AND D8042.6
+OUT Y4826                ; H2st(RB13)指令pos_PC64
+MPP
+AND D8042.7
+OUT Y4827                ; H2st(RB13)指令pos_PC128
+LD B124F                 ; ﾏﾆｭｱﾙﾓｰﾄﾞ切替SW(1：ﾏﾆｭｱﾙ)
+OUT Y482A                ; H2st(RB13)運転ﾓｰﾄﾞ_RMOD
+LD<> D50 K208            ; TpM-K_表示中ページNo.
+AND<> D70 K208           ; TpM-K_表示中ページNo.
+AND<> D90 K208           ; TpM-K_表示中ページNo.
+RES B124F                ; ﾏﾆｭｱﾙﾓｰﾄﾞ切替SW(1：ﾏﾆｭｱﾙ)
+LD M9252                 ; OriStep2
+ANB X382A                ; H2st(RB13)原点確定_HEND
+OUT Y482B                ; H2st(RB13)原点復帰_HOME
+LD M128                  ; 高温検査安全扉正常
+OR M37                   ; ｲﾝﾀｰﾛｯｸ解除ﾓｰﾄﾞ
+OUT Y482C                ; H2st(RB13)一時停止_*STP
+LD M9105                 ; RB13_位置決めｽﾀｰﾄ指令
+ANB M9106                ; RB13_位置決め起動確認
+OUT Y482D                ; H2st(RB13)ｽﾀｰﾄ_CSTR
+LD M16                   ; ﾘｾｯﾄPB
+ANB X382E                ; H2st(RB13)ｱﾗｰﾑ_*ALM
+OUT Y482E                ; H2st(RB13)ﾘｾｯﾄ_RES
+LD T10                   ; 運転準備ﾃﾞｨﾚｲ
+OR M9123                 ; RB13_ｺﾈｸﾀ挿入押込み完了位置
+LD W05.7                 ; 電気特性検査ｽﾃｰｼﾞ状態#2
+ANB M3                   ; OFFLINE_MODE
+ORL
+OUT Y482F                ; H2st(RB13)ｻｰﾎﾞON_SON
+;■その他制御出力
+LD M9161                 ; U15-3_S1Hi検査ｽﾀｰﾄ要求
+OUT W0105.7              ; 電気特性検査開始要求#2
+LD L1500                 ; Hi検査ST2_有効状態
+ANB M9409                ; HiST2_無効予約(自動運転)
+OUT W0105.12             ; 電気特性検査ｽﾃｰｼﾞ有効/無効#2
+LD M9404                 ; HiST2検査_有効確認要求
+OUT W0107.9              ; Hi_ST2ﾁｪｯｶ-確認要求
+LD L1500                 ; Hi検査ST2_有効状態
+ANB M9409                ; HiST2_無効予約(自動運転)
+LD M9409                 ; HiST2_無効予約(自動運転)
+AND CR2006               ; 1sｸﾛｯｸﾊﾟﾙｽ
+ORL
+OUT Y2411                ; HiST2__有効/無効表示
+OUT B174A                ; HiST2__有効/無効表示
+;□□　　パネル表示　　□□
+LD M9330                 ; RB13_ﾜｰｸ受取り位置移動指令
+AND CR2006               ; 1sｸﾛｯｸﾊﾟﾙｽ
+OR M9121                 ; RB13_ﾜｰｸ受取り位置(ID確認位置)
+OUT B1740                ; RB13_ﾜｰｸ受取り位置TP-PB
+LD M9331                 ; RB13_ｺﾈｸﾀ挿入開始位置移動指令
+AND CR2006               ; 1sｸﾛｯｸﾊﾟﾙｽ
+OR M9122                 ; RB13_ｺﾈｸﾀ挿入開始位置
+OUT B1741                ; RB13_ｺﾈｸﾀ挿入開始位置TP-PB
+LD M9332                 ; RB13_ｺﾈｸﾀ挿入押込完了位置移動指
+AND CR2006               ; 1sｸﾛｯｸﾊﾟﾙｽ
+OR M9123                 ; RB13_ｺﾈｸﾀ挿入押込み完了位置
+OUT B1742                ; RB13_ｺﾈｸﾀ挿入押込み完了位置TP-PB
+LD M9333                 ; RB13_ｺﾈｸﾀ抜き位置移動指令
+AND CR2006               ; 1sｸﾛｯｸﾊﾟﾙｽ
+OR M9124                 ; RB13_ｺﾈｸﾀ抜き位置
+OUT B1743                ; RB13_ｺﾈｸﾀ抜き位置TP-PB
+LD Y2422                 ; HiST2ﾜｰｸ押さえ下降
+AND CR2006               ; 1sｸﾛｯｸﾊﾟﾙｽ
+OR X1370                 ; HiST2_部_ﾜｰｸ押_下降端
+OUT B1744                ; HiST2ｸﾗﾝﾌﾟ閉_TP-PL
+LD Y2423                 ; HiST2ﾜｰｸ押さえ上昇
+AND CR2006               ; 1sｸﾛｯｸﾊﾟﾙｽ
+OR X1371                 ; HiST2_部_ﾜｰｸ押_上昇端
+OUT B1745                ; HiST2ｸﾗﾝﾌﾟ開_TP-PL
+LD M9312                 ; HiST2SwBoxMode_ﾊﾟﾚｯﾄ前後Flag
+OUT B1746                ; SWBox_ﾊﾟﾚｯﾄ前後ﾓｰﾄﾞsw
+LD M9313                 ; HiST2SwBoxMode_ｸﾗﾝﾌﾟ&ﾊﾟﾚｯﾄFlag
+OUT B1747                ; SWBox_ｸﾗﾝﾌﾟ&ﾊﾟﾚｯﾄﾓｰﾄﾞsw
+;<h1/>□_異常検出
+;[][]    Error Detect    [][]
+;B1E0--B1EF  B1F0--B1FF
+LDB X380E                ; H1st(RB12)ｱﾗｰﾑ_*ALM
+AND T12                  ; 運転準備ONﾃﾞｨﾚｲ(3S)
+LD CR2003                ; 常時OFF
+ANB B06E0                ; B1E0_481)Bz停止
+ORB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B01E0                ; B1E0_481)HiST2ｽﾃｰｼﾞ前後RB異常
+ORL
+OUT B01E0                ; B1E0_481)HiST2ｽﾃｰｼﾞ前後RB異常
+LDP B01E0                ; B1E0_481)HiST2ｽﾃｰｼﾞ前後RB異常
+AND< D900 K64            ; FIFO_DATA_VALUE
+MOV H01E1 D0             ; エラーコード
+FIFOW D0 D900            ; エラーコード  FIFO_DATA_VALUE
+LD M110                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B06E0                 ; B1E0_481)Bz停止
+AND B01E0                ; B1E0_481)HiST2ｽﾃｰｼﾞ前後RB異常
+OUT B06E0                ; B1E0_481)Bz停止
+;　　
+LD Y2422                 ; HiST2ﾜｰｸ押さえ下降
+ANB X1370                ; HiST2_部_ﾜｰｸ押_下降端
+LD Y2423                 ; HiST2ﾜｰｸ押さえ上昇
+ANB X1371                ; HiST2_部_ﾜｰｸ押_上昇端
+ORL
+LD X1370                 ; HiST2_部_ﾜｰｸ押_下降端
+AND X1371                ; HiST2_部_ﾜｰｸ押_上昇端
+ORL
+LD CR2003                ; 常時OFF
+ANB B06E1                ; B1E1_482)Bz停止
+ORB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B01E1                ; B1E1_482)HiST2ｸﾗﾝﾌﾟ開閉CLS異常
+ORL
+MPS
+AND T1591                ; CLSﾀｲﾑｱｳﾄ
+OUT B01E1                ; B1E1_482)HiST2ｸﾗﾝﾌﾟ開閉CLS異常
+MPP
+TMR K1591 K100           ; CLSﾀｲﾑｱｳﾄ
+LDP B01E1                ; B1E1_482)HiST2ｸﾗﾝﾌﾟ開閉CLS異常
+AND< D900 K64            ; FIFO_DATA_VALUE
+MOV H01E2 D0             ; エラーコード
+FIFOW D0 D900            ; エラーコード  FIFO_DATA_VALUE
+LD M110                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B06E1                 ; B1E1_482)Bz停止
+AND B01E1                ; B1E1_482)HiST2ｸﾗﾝﾌﾟ開閉CLS異常
+OUT B06E1                ; B1E1_482)Bz停止
+;
+LD T1506                 ; HiST2_ｺﾝﾀｸﾄﾍｯﾄﾞID_更新_DLY
+AND L1500                ; Hi検査ST2_有効状態
+AND<> D8100 D8106        ; HiST2_ｺﾝﾀｸﾄﾍｯﾄﾞID  HiST2_ｺﾝﾀｸﾄﾍｯﾄﾞID_Copy
+LD CR2003                ; 常時OFF
+ANB B06E2                ; B1E2_483)Bz停止
+ORB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B01E2                ; B1E2_483)HiST2_ﾃｽﾄﾍｯﾄﾞID_不一致
+ORL
+OUT B01E2                ; B1E2_483)HiST2_ﾃｽﾄﾍｯﾄﾞID_不一致
+LDP B01E2                ; B1E2_483)HiST2_ﾃｽﾄﾍｯﾄﾞID_不一致
+AND< D900 K64            ; FIFO_DATA_VALUE
+MOV H01E3 D0             ; エラーコード
+FIFOW D0 D900            ; エラーコード  FIFO_DATA_VALUE
+LD M110                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B06E2                 ; B1E2_483)Bz停止
+AND B01E2                ; B1E2_483)HiST2_ﾃｽﾄﾍｯﾄﾞID_不一致
+OUT B06E2                ; B1E2_483)Bz停止
+;
+LD T1507                 ; HiST2_ﾊﾟﾚｯﾄID_更新_DLY
+AND L1500                ; Hi検査ST2_有効状態
+AND<> D8101 D8107        ; HiST2_ﾊﾟﾚｯﾄID  HiST2_ﾊﾟﾚｯﾄID_ｾﾝｻ状態
+AND M9121                ; RB13_ﾜｰｸ受取り位置(ID確認位置)
+LD CR2003                ; 常時OFF
+ANB B06E3                ; B1E3_484)Bz停止
+ORB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B01E3                ; B1E3_484)HiST2_ﾊﾟﾚｯﾄID_不一致
+ORL
+OUT B01E3                ; B1E3_484)HiST2_ﾊﾟﾚｯﾄID_不一致
+LDP B01E3                ; B1E3_484)HiST2_ﾊﾟﾚｯﾄID_不一致
+AND< D900 K64            ; FIFO_DATA_VALUE
+MOV H01E4 D0             ; エラーコード
+FIFOW D0 D900            ; エラーコード  FIFO_DATA_VALUE
+LD M110                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B06E3                 ; B1E3_484)Bz停止
+AND B01E3                ; B1E3_484)HiST2_ﾊﾟﾚｯﾄID_不一致
+OUT B06E3                ; B1E3_484)Bz停止
+;
+LD M9060                 ; U15-1_S60 HiST1_ﾜｰｸ受取異常
+LD CR2003                ; 常時OFF
+ANB B06E4                ; B1E4_485)Bz停止
+ORB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B01E4                ; B1E4_485)HiST2_ﾜｰｸ受取異常
+ORL
+OUT B01E4                ; B1E4_485)HiST2_ﾜｰｸ受取異常
+LDP B01E4                ; B1E4_485)HiST2_ﾜｰｸ受取異常
+AND< D900 K64            ; FIFO_DATA_VALUE
+MOV H01E5 D0             ; エラーコード
+FIFOW D0 D900            ; エラーコード  FIFO_DATA_VALUE
+LD M110                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B06E4                 ; B1E4_485)Bz停止
+AND B01E4                ; B1E4_485)HiST2_ﾜｰｸ受取異常
+OUT B06E4                ; B1E4_485)Bz停止
+;
+LD M9430                 ; HiST2_ﾜｰｸ受渡し異常
+LD CR2003                ; 常時OFF
+ANB B06E5                ; B1E5_486)Bz停止
+ORB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B01E5                ; B1E5_486)HiST2_ﾜｰｸ受渡し異常
+ORL
+OUT B01E5                ; B1E5_486)HiST2_ﾜｰｸ受渡し異常
+LDP B01E5                ; B1E5_486)HiST2_ﾜｰｸ受渡し異常
+AND< D900 K64            ; FIFO_DATA_VALUE
+MOV H01E6 D0             ; エラーコード
+FIFOW D0 D900            ; エラーコード  FIFO_DATA_VALUE
+LD M110                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B06E5                 ; B1E5_486)Bz停止
+AND B01E5                ; B1E5_486)HiST2_ﾜｰｸ受渡し異常
+OUT B06E5                ; B1E5_486)Bz停止
+;
+LD D8201.0
+ANB X1372                ; HiST2_部_ﾜｰｸ確認(ON=有)
+LDB D8201.0
+AND X1372                ; HiST2_部_ﾜｰｸ確認(ON=有)
+ORL
+ANB M7901                ; 【搬送】搬送→Hi_ST2搬送開始
+ANB M7906                ; 【搬送】搬送→Hi_ST2搬送完了
+ANB M7911                ; 【搬送】HiST2除材開始
+ANB M7916                ; 【搬送】HiST2除材完了
+ANB M9053                ; U15-1_S53
+ANB M9054                ; U15-1_S54
+AND L1500                ; Hi検査ST2_有効状態
+AND M71                  ; 自動運転開始BZ
+LD CR2003                ; 常時OFF
+ANB B06E6                ; B1E6_487)Bz停止
+ORB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B01E6                ; B1E6_487)HiST2 ﾜｰｸ情報不一致
+ORL
+ANB M35                  ; 空運転ﾓｰﾄﾞ
+OUT B01E6                ; B1E6_487)HiST2 ﾜｰｸ情報不一致
+LDP B01E6                ; B1E6_487)HiST2 ﾜｰｸ情報不一致
+AND< D900 K64            ; FIFO_DATA_VALUE
+MOV H01E7 D0             ; エラーコード
+FIFOW D0 D900            ; エラーコード  FIFO_DATA_VALUE
+LD M110                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B06E6                 ; B1E6_487)Bz停止
+AND B01E6                ; B1E6_487)HiST2 ﾜｰｸ情報不一致
+OUT B06E6                ; B1E6_487)Bz停止
+;　　
+LD M9259                 ; OriStep9_ORGﾜｰｸ除去要求
+LD CR2003                ; 常時OFF
+ANB B06FE                ; B1FE_511)Bz停止
+ORB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B01FE                ; B1FE_511)HiST2ﾜｰｸ除去要求
+ORL
+OUT B01FE                ; B1FE_511)HiST2ﾜｰｸ除去要求
+LD M110                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B06FE                 ; B1FE_511)Bz停止
+AND B01FE                ; B1FE_511)HiST2ﾜｰｸ除去要求
+OUT B06FE                ; B1FE_511)Bz停止
+;電特検査中
+LD W05.7                 ; 電気特性検査ｽﾃｰｼﾞ状態#2
+AND M31                  ; 手動ﾓｰﾄﾞ
+AND M9251                ; OriStep1
+LD CR2003                ; 常時OFF
+ANB B06FF                ; B1FF_512)Bz停止
+ORB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B01FF                ; B1FF_512)HiST2ﾜｰｸ検査中
+ORL
+OUT B01FF                ; B1FF_512)HiST2ﾜｰｸ検査中
+LD M110                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B06FF                 ; B1FF_512)Bz停止
+AND B01FF                ; B1FF_512)HiST2ﾜｰｸ検査中
+OUT B06FF                ; B1FF_512)Bz停止
+;異常ﾌﾞｻﾞｰまとめ
+LDB B01E0                ; B1E0_481)HiST2ｽﾃｰｼﾞ前後RB異常
+OR B06E0                 ; B1E0_481)Bz停止
+LDB B01E1                ; B1E1_482)HiST2ｸﾗﾝﾌﾟ開閉CLS異常
+OR B06E1                 ; B1E1_482)Bz停止
+ANL
+LDB B01E2                ; B1E2_483)HiST2_ﾃｽﾄﾍｯﾄﾞID_不一致
+OR B06E2                 ; B1E2_483)Bz停止
+ANL
+LDB B01E3                ; B1E3_484)HiST2_ﾊﾟﾚｯﾄID_不一致
+OR B06E3                 ; B1E3_484)Bz停止
+ANL
+LDB B01E4                ; B1E4_485)HiST2_ﾜｰｸ受取異常
+OR B06E4                 ; B1E4_485)Bz停止
+ANL
+LDB B01E5                ; B1E5_486)HiST2_ﾜｰｸ受渡し異常
+OR B06E5                 ; B1E5_486)Bz停止
+ANL
+LDB B01E6                ; B1E6_487)HiST2 ﾜｰｸ情報不一致
+OR B06E6                 ; B1E6_487)Bz停止
+ANL
+LDB B01E7                ; B1E7_488)
+OR B06E7                 ; B1E7_488)Bz停止
+ANL
+LDB B01E8                ; B1E8_489)
+OR B06E8                 ; B1E8_489)Bz停止
+ANL
+LDB B01E9                ; B1E9_490)
+OR B06E9                 ; B1E9_490)Bz停止
+ANL
+LDB B01EA                ; B1EA_491)
+OR B06EA                 ; B1EA_491)Bz停止
+ANL
+LDB B01EB                ; B1EB_492)
+OR B06EB                 ; B1EB_492)Bz停止
+ANL
+LDB B01EC                ; B1EC_493)
+OR B06EC                 ; B1EC_493)Bz停止
+ANL
+LDB B01ED                ; B1ED_494)
+OR B06ED                 ; B1ED_494)Bz停止
+ANL
+LDB B01EE                ; B1EE_495)
+OR B06EE                 ; B1EE_495)Bz停止
+ANL
+LDB B01EF                ; B1EF_496)
+OR B06EF                 ; B1EF_496)Bz停止
+ANL
+LDB B01F0                ; B1F0_497)
+OR B06F0                 ; B1F0_497)Bz停止
+ANL
+LDB B01F1                ; B1F1_498)
+OR B06F1                 ; B1F1_498)Bz停止
+ANL
+LDB B01F2                ; B1F2_499)
+OR B06F2                 ; B1F2_499)Bz停止
+ANL
+LDB B01F3                ; B1F3_500)
+OR B06F3                 ; B1F3_500)Bz停止
+ANL
+LDB B01F4                ; B1F4_501)
+OR B06F4                 ; B1F4_501)Bz停止
+ANL
+LDB B01F5                ; B1F5_502)
+OR B06F5                 ; B1F5_502)Bz停止
+ANL
+LDB B01F6                ; B1F6_503)
+OR B06F6                 ; B1F6_503)Bz停止
+ANL
+LDB B01F7                ; B1F7_504)
+OR B06F7                 ; B1F7_504)Bz停止
+ANL
+LDB B01F8                ; B1F8_505)
+OR B06F8                 ; B1F8_505)Bz停止
+ANL
+LDB B01F9                ; B1F9_506)
+OR B06F9                 ; B1F9_506)Bz停止
+ANL
+LDB B01FA                ; B1FA_507)
+OR B06FA                 ; B1FA_507)Bz停止
+ANL
+LDB B01FB                ; B1FB_508)
+OR B06FB                 ; B1FB_508)Bz停止
+ANL
+LDB B01FC                ; B1FC_509)
+OR B06FC                 ; B1FC_509)Bz停止
+ANL
+LDB B01FD                ; B1FD_510)
+OR B06FD                 ; B1FD_510)Bz停止
+ANL
+LDB B01FE                ; B1FE_511)HiST2ﾜｰｸ除去要求
+OR B06FE                 ; B1FE_511)Bz停止
+ANL
+LDB B01FF                ; B1FF_512)HiST2ﾜｰｸ検査中
+OR B06FF                 ; B1FF_512)Bz停止
+ANL
+INV
+OUT M9489                ; U15_異常BZ補助
+END
+ENDH

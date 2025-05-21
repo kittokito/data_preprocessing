@@ -1,0 +1,4853 @@
+DEVICE:53
+;MODULE:ST1
+;MODULE_TYPE:0
+;SCRIPT_TYPE:
+;***************************************
+; 非常停止
+; Emergency Stop 
+;***************************************
+LD R50010                ; Emergency　Stop
+OR @MR000                ; Emergency STOP
+ZRES @MR100 @MR9915      ; 使用禁止  Err70 解除完了
+CON
+OUT @MR000               ; Emergency STOP
+TMR @39 #5               ; ｳｴｲﾄﾀｲﾏｰ39
+LD @T39                  ; ｳｴｲﾄﾀｲﾏｰ39
+MDSTOP ST1
+;ﾌｨﾙﾑﾌｨｰﾄﾞ_切出し台前進条件
+LD R7206                 ; ﾌｨﾙﾑ押さえ上下 下降
+AND R4206                ; ﾌｨﾙﾑ押さえ上下 下降限
+ANB R4207                ; ﾌｨﾙﾑ押さえ上下 上昇限
+LD R7207                 ; (ﾌｨﾙﾑ押さえ上下 上昇)
+AND R4207                ; ﾌｨﾙﾑ押さえ上下 上昇限
+ORL
+ANB R7403                ; ｶｯﾄ2ｹ前下吸着 吸着ON
+LD R4502                 ; ｶｯﾄ2ｹ前下吸着OUT1 (解放確認)
+ORB LR10000              ; 加筆中…
+ANL
+ANB R4503                ; ｶｯﾄ2ｹ前下吸着OUT2 (吸着確認)
+AND R7200                ; ﾌｨﾙﾑｸﾗﾝﾌﾟ 上下 上昇
+AND R4200                ; ﾌｨﾙﾑｸﾗﾝﾌﾟ 上下 上昇限
+ANB R4201                ; ﾌｨﾙﾑｸﾗﾝﾌﾟ 上下 下降限
+OUT @MR001               ; ﾌｨﾙﾑﾌｨｰﾄﾞ条件
+;ﾜｰｸ有無ﾌﾗｸﾞ
+;Work Existence Flag
+LD LR10000               ; 加筆中…
+OUT @MR010               ; ST1 ﾜｰｸ無し=ON
+;動作ﾊﾟﾗﾒｰﾀ
+;Operation Parameter
+LD LR41100               ; AUTO PARA01 flag
+OR LR41101               ; AUTO PARA02 flag
+OR LR41102               ; AUTO PARA03 flag
+OR LR41103               ; AUTO PARA04 flag
+OR LR41104               ; AUTO PARA05 flag
+OR LR41106               ; AUTO PARA07 flag
+OUT @MR013               ; ST1 AUTO Parameter OK
+;***************************************
+; ﾎﾟｰｽﾞ ･ ｴﾗｰ 監視
+; Pause ･ Error Check 
+;***************************************
+LDB R50300               ; Pause
+ANB R50111               ; Err ST1
+ANB R50110               ; Err INDEX
+OUT @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+;<h1/>■_原点復帰動作
+;HOME RETURN OPERATION 
+LD R50003                ; HOME
+ANB R50201               ; ST1 動作中
+SET R50201               ; ST1 動作中
+CON
+SET @MR1000              ; ST1 原点復帰開始
+LDB R50003               ; HOME
+ANB R50001               ; AUTO
+ANB R50002               ; STEP
+AND @MR1001              ; ST1 原点復帰終了
+RES R50201               ; ST1 動作中
+CON
+RES @MR1001              ; ST1 原点復帰終了
+STG @MR1000              ; ST1 原点復帰開始
+JMP @MR1003
+;<h1/>____▼_溶着部原点復帰
+STG @MR1003
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+RES MR2008               ; RB非常停止=OFF
+CON
+RES MR2009               ; RB1 電源ON
+CON
+RES DM2207.4             ; RB1_PCON ｻｰﾎﾞON指令
+CON
+AND T200                 ; PCON電源再投入ﾃﾞｨﾚｲ
+JMP @MR1004
+STG @MR1004
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+SET MR2008               ; RB非常停止=OFF
+CON
+SET MR2009               ; RB1 電源ON
+CON
+JMP @MR1005
+STG @MR1005
+JMP @MR1006
+STG @MR1006
+RES DM2207.4             ; RB1_PCON ｻｰﾎﾞON指令
+CON
+ANB DM2007.4             ; RB1_PCON 運転準備完了 ｻｰﾎﾞONでON
+AND DM2007.14            ; RB1_PCON PCON準備完了
+DW #0 DM10104            ; RB1 現在ﾎﾟｼﾞｼｮﾝ番号
+CON
+JMP @MR1007
+STG @MR1007
+SET DM2207.4             ; RB1_PCON ｻｰﾎﾞON指令
+CON
+MPS
+LDB DM2007.3             ; RB1_PCON ｱﾗｰﾑ ONで異常
+ANB DM2007.7             ; RB1_PCON 軽故障発生でON
+ANB DM2007.15            ; RB1_PCON 非常停止 ON=非常停止
+AND DM2007.4             ; RB1_PCON 運転準備完了 ｻｰﾎﾞONでON
+AND DM2007.14            ; RB1_PCON PCON準備完了
+ANL
+JMP @MR1008
+MPP
+TMR @0 #50               ; ｳｴｲﾄﾀｲﾏｰ00
+CON
+AND @T0                  ; ｳｴｲﾄﾀｲﾏｰ00
+SET DM2207.3             ; RB1_PCON ﾘｾｯﾄ=ON
+STG @MR1008
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+RES DM2207.3             ; RB1_PCON ﾘｾｯﾄ=ON
+CON
+MPS
+ANB DM2007.1             ; RB1_PCON 原点復帰完了
+JMP @MR1009
+MPP
+AND DM2007.1             ; RB1_PCON 原点復帰完了
+JMP @MR1011
+;RB HOME
+STG @MR1009
+SET @MR1900              ; RB Pack
+CON
+SET MR15508              ; RB1 HOME
+CON
+JMP @MR1010
+STG @MR1010
+AND MR15509              ; RB1 HOME comp
+RES MR15509              ; RB1 HOME comp
+CON
+RES @MR1900              ; RB Pack
+CON
+JMP @MR1011
+STG @MR1011
+SET @MR1900              ; RB Pack
+CON
+DW #1 DM10108            ; RB1 目標ﾎﾟｲﾝﾄ番号
+CON
+SET MR15500              ; RB1 MOVE
+CON
+JMP @MR1012
+STG @MR1012
+AND MR15501              ; RB1 MOVE comp
+RES MR15501              ; RB1 MOVE comp
+CON
+RES @MR1900              ; RB Pack
+CON
+JMP @MR1013
+STG @MR1013
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+RES MR7302               ; 溶着ﾍｯﾄﾞ 自重ｷｬﾝｾﾙON
+CON
+SET MR7301               ; (溶着ﾍｯﾄﾞｴｽｹｰﾌﾟ 上昇)
+CON
+RES MR7300               ; 溶着ﾍｯﾄﾞｴｽｹｰﾌﾟ 下降
+CON
+ANB MR4303               ; Cylinder Error 4303
+ANB MR4305               ; Cylinder Error 4305
+AND R4303                ; 溶着ﾍｯﾄﾞｴｽｹｰﾌﾟ1(手前側) 上昇限
+ANB R4302                ; 溶着ﾍｯﾄﾞｴｽｹｰﾌﾟ1(手前側) 下降限
+AND R4305                ; 溶着ﾍｯﾄﾞｴｽｹｰﾌﾟ2(奥側) 上昇限
+ANB R4304                ; 溶着ﾍｯﾄﾞｴｽｹｰﾌﾟ2(奥側) 下降限
+JMP @MR1014
+STG @MR1014
+JMP @MR1100              ; ﾌｨﾙﾑ搬送PP原点復帰
+;<h1/>____▼_ﾌｨﾙﾑ搬送PP原点復帰
+STG @MR1100              ; ﾌｨﾙﾑ搬送PP原点復帰
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+SET MR7213               ; (吸着ﾍｯﾄﾞ 上昇)
+CON
+RES MR7212               ; 吸着ﾍｯﾄﾞ 下降
+CON
+ANB MR4214               ; Cylinder Error 4214
+AND R4214                ; 吸着ﾍｯﾄﾞ 上昇限
+ANB R4212                ; 吸着ﾍｯﾄﾞ 下降限1(溶着側)
+ANB R4213                ; 吸着ﾍｯﾄﾞ 下降限2(切出し側)
+JMP @MR1101
+STG @MR1101
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+SET MR7214               ; 吸着ﾍｯﾄﾞ 旋回 (45°)
+CON
+RES MR7215               ; 吸着ﾍｯﾄﾞ 旋回戻し (0°)
+CON
+ANB MR4300               ; Cylinder Error 4300
+AND R4300                ; 吸着ﾍｯﾄﾞ 旋回限(45°)
+ANB R4301                ; 吸着ﾍｯﾄﾞ 旋回戻し限(0°)
+JMP @MR1102
+STG @MR1102
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+SET MR7211               ; 吸着ﾍｯﾄﾞ 左行 (ﾌｨﾙﾑ切出し側)
+CON
+RES MR7210               ; 吸着ﾍｯﾄﾞ 右行 (溶着側)
+CON
+ANB MR4211               ; Cylinder Error 4211
+AND R4211                ; 吸着ﾍｯﾄﾞ 左行限(切出し側)
+ANB R4210                ; 吸着ﾍｯﾄﾞ 右行限(溶着側)
+JMP @MR1103
+STG @MR1103
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+MPS
+ANB R4509                ; 吸着ﾍｯﾄﾞ(ﾒｶﾞﾈ)OUT2 (吸着)
+RES MR7409               ; 吸着ﾍｯﾄﾞ(ﾒｶﾞﾈ) 吸着ON
+CON
+RES MR7408               ; 吸着ﾍｯﾄﾞ(ﾒｶﾞﾈ) 破壊ON
+CON
+JMP @MR1107
+MPP
+AND R4509                ; 吸着ﾍｯﾄﾞ(ﾒｶﾞﾈ)OUT2 (吸着)
+JMP @MR1104
+STG @MR1104
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+SET @MR412               ; Err16　ﾌｨﾙﾑ搬送ﾌｨﾙﾑ徐材要求
+CON
+JMP @MR1105
+STG @MR1105
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+AND @MR415               ; Err16 解除完了
+RES @MR415               ; Err16 解除完了
+CON
+JMP @MR1103
+STG @MR1107
+JMP @MR1108              ; ﾌｨﾙﾑｶｯﾄ部原点復帰
+;<h1/>____▼_ﾌｨﾙﾑｶｯﾄ部原点復帰
+STG @MR1108              ; ﾌｨﾙﾑｶｯﾄ部原点復帰
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+RES MR7200               ; ﾌｨﾙﾑｸﾗﾝﾌﾟ 上下 上昇
+CON
+RES MR7201               ; (ﾌｨﾙﾑｸﾗﾝﾌﾟ 上下 下降)
+CON
+ANB MR4201               ; Cylinder Error 4201
+AND R4201                ; ﾌｨﾙﾑｸﾗﾝﾌﾟ 上下 下降限
+ANB R4200                ; ﾌｨﾙﾑｸﾗﾝﾌﾟ 上下 上昇限
+JMP @MR1109
+STG @MR1109
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+RES MR7400               ; ｶｯﾄ1ｹ前下吸着(切出台) 破壊ON
+CON
+RES MR7401               ; ｶｯﾄ1ｹ前下吸着(切出台) 吸着ON
+CON
+RES MR7402               ; ｶｯﾄ2ｹ前下吸着 破壊ON
+CON
+RES MR7403               ; ｶｯﾄ2ｹ前下吸着 吸着ON
+CON
+RES MR7404               ; ｶｯﾄ後下吸着(切出台) 破壊ON
+CON
+RES MR7405               ; ｶｯﾄ後下吸着(切出台) 吸着ON
+CON
+RES MR7406               ; 押え吸着 破壊ON
+CON
+RES MR7407               ; 押え吸着 吸着ON
+CON
+TMH @30 #100             ; ｳｴｲﾄﾀｲﾏｰ30
+CON
+AND @T30                 ; ｳｴｲﾄﾀｲﾏｰ30
+JMP @MR1110
+STG @MR1110
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+RES MR7206               ; ﾌｨﾙﾑ押さえ上下 下降
+CON
+SET MR7207               ; (ﾌｨﾙﾑ押さえ上下 上昇)
+CON
+ANB MR4207               ; Cylinder Error 4207
+AND R4207                ; ﾌｨﾙﾑ押さえ上下 上昇限
+ANB R4206                ; ﾌｨﾙﾑ押さえ上下 下降限
+JMP @MR1111
+STG @MR1111
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+RES MR7202               ; ﾌｨﾙﾑ押え 前進 (引出し側)
+CON
+SET MR7203               ; ﾌｨﾙﾑ押え 後退
+CON
+ANB MR4203               ; Cylinder Error 4203
+AND R4203                ; ﾌｨﾙﾑ押え 前後 後退限
+ANB R4202                ; ﾌｨﾙﾑ押え 前後 前進限(ﾌｨﾙﾑ引出)
+JMP @MR1112
+STG @MR1112
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+SET MR7208               ; ﾌｨﾙﾑ切り出し台 前進 (受渡側)
+CON
+RES MR7209               ; ﾌｨﾙﾑ切り出し台 後退 (引込側)
+CON
+ANB MR4209               ; Cylinder Error 4209
+ANB R4209                ; ﾌｨﾙﾑ切り出し台 前後 後退限(引込)
+AND R4208                ; ﾌｨﾙﾑ切り出し台  前進限(受渡)
+JMP @MR1113
+STG @MR1113
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+MPS
+AND R4204                ; ｶｯﾀｰ前後 前進限(装置内側)
+SET MR7204               ; ｶｯﾀｰ前後 前進 (装置内側)
+CON
+RES MR7205               ; ｶｯﾀｰ前後 後退 (外側)
+CON
+AND R4204                ; ｶｯﾀｰ前後 前進限(装置内側)
+ANB R4205                ; ｶｯﾀｰ前後 後退限(外側)
+JMP @MR1200
+MPP
+ANB R4204                ; ｶｯﾀｰ前後 前進限(装置内側)
+SET MR7205               ; ｶｯﾀｰ前後 後退 (外側)
+CON
+RES MR7204               ; ｶｯﾀｰ前後 前進 (装置内側)
+CON
+AND R4205                ; ｶｯﾀｰ前後 後退限(外側)
+ANB R4204                ; ｶｯﾀｰ前後 前進限(装置内側)
+JMP @MR1200
+;<h1/>____▼_ﾜｰｸ搬送部原点復帰
+STG @MR1200
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+SET MR7311               ; QRﾘｰﾀﾞ移動(親) 後退
+CON
+RES MR7310               ; QRﾘｰﾀﾞ移動(親) 前進
+CON
+SET MR7313               ; QRﾘｰﾀﾞ移動(子) 後退
+CON
+RES MR7312               ; QRﾘｰﾀﾞ移動(子) 前進
+CON
+ANB MR4409               ; Cylinder Error 4409
+AND R4409                ; QRﾘｰﾀﾞ移動(親) 後退限
+ANB R4408                ; QRﾘｰﾀﾞ移動(親) 前進限
+ANB MR4411               ; Cylinder Error 4411
+AND R4411                ; QRﾘｰﾀﾞ移動(子) 後退限
+ANB R4410                ; QRﾘｰﾀﾞ移動(子) 前進限
+JMP @MR1201
+STG @MR1201
+JMP @MR1202
+STG @MR1202
+JMP @MR1203              ; ﾜｰｸ搬送部原点復帰
+STG @MR1203              ; ﾜｰｸ搬送部原点復帰
+MPS
+LD @MR015                ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+AND MR3005               ; IL ﾜｰｸｾｯﾄ移動OK
+ANL
+SET MR7305               ; ﾜｰｸｾｯﾄ部　投入側移動
+CON
+RES MR7304               ; ﾜｰｸｾｯﾄ部　溶着側移動
+CON
+ANB MR4401               ; Cylinder Error 4401
+AND R4401                ; ﾜｰｸｾｯﾄ部 投入側限
+ANB R4400                ; ﾜｰｸｾｯﾄ部 溶着側限
+JMP @MR1205
+MPP
+ANB R1107                ; ﾗｲﾄｶｰﾃﾝ遮光無し=ON
+RES MR7304               ; ﾜｰｸｾｯﾄ部　溶着側移動
+CON
+RES MR7305               ; ﾜｰｸｾｯﾄ部　投入側移動
+CON
+SET @MR304               ; Err10　LC遮光
+CON
+JMP @MR1204
+STG @MR1204
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+AND @MR307               ; Err10 解除完了
+AND R1107                ; ﾗｲﾄｶｰﾃﾝ遮光無し=ON
+RES @MR307               ; Err10 解除完了
+CON
+JMP @MR1203              ; ﾜｰｸ搬送部原点復帰
+;ミューティングを入れるため
+STG @MR1205
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+JMP @MR1206
+STG @MR1206
+JMP @MR1207
+STG @MR1207
+MPS
+LD @MR015                ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+AND MR3005               ; IL ﾜｰｸｾｯﾄ移動OK
+ANL
+RES MR7305               ; ﾜｰｸｾｯﾄ部　投入側移動
+CON
+SET MR7304               ; ﾜｰｸｾｯﾄ部　溶着側移動
+CON
+ANB MR4400               ; Cylinder Error 4400
+AND R4400                ; ﾜｰｸｾｯﾄ部 溶着側限
+ANB R4401                ; ﾜｰｸｾｯﾄ部 投入側限
+JMP @MR1209
+MPP
+ANB R1107                ; ﾗｲﾄｶｰﾃﾝ遮光無し=ON
+RES MR7304               ; ﾜｰｸｾｯﾄ部　溶着側移動
+CON
+RES MR7305               ; ﾜｰｸｾｯﾄ部　投入側移動
+CON
+SET @MR304               ; Err10　LC遮光
+CON
+JMP @MR1208
+STG @MR1208
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+AND @MR307               ; Err10 解除完了
+AND R1107                ; ﾗｲﾄｶｰﾃﾝ遮光無し=ON
+RES @MR307               ; Err10 解除完了
+CON
+JMP @MR1207
+STG @MR1209
+MPS
+LD @MR015                ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+AND MR3005               ; IL ﾜｰｸｾｯﾄ移動OK
+ANL
+SET MR7305               ; ﾜｰｸｾｯﾄ部　投入側移動
+CON
+RES MR7304               ; ﾜｰｸｾｯﾄ部　溶着側移動
+CON
+ANB MR4401               ; Cylinder Error 4401
+AND R4401                ; ﾜｰｸｾｯﾄ部 投入側限
+ANB R4400                ; ﾜｰｸｾｯﾄ部 溶着側限
+JMP @MR1211
+MPP
+ANB R1107                ; ﾗｲﾄｶｰﾃﾝ遮光無し=ON
+RES MR7304               ; ﾜｰｸｾｯﾄ部　溶着側移動
+CON
+RES MR7305               ; ﾜｰｸｾｯﾄ部　投入側移動
+CON
+SET @MR304               ; Err10　LC遮光
+CON
+JMP @MR1210
+STG @MR1210
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+AND @MR307               ; Err10 解除完了
+AND R1107                ; ﾗｲﾄｶｰﾃﾝ遮光無し=ON
+RES @MR307               ; Err10 解除完了
+CON
+JMP @MR1209
+;ワーク位置決め解除
+STG @MR1211
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+SET @MR6100              ; ﾜｰｸ位置決め解除Sub実行指令
+CON
+JMP @MR1212
+STG @MR1212
+AND @MR6101              ; ﾜｰｸ位置決め解除Sub実行完了
+RES @MR6101              ; ﾜｰｸ位置決め解除Sub実行完了
+CON
+JMP @MR1213
+STG @MR1213
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+MPS
+ANB R4415                ; ﾜｰｸｾｯﾄ検出
+JMP @MR1302              ; 原点復帰完了
+MPP
+AND R4415                ; ﾜｰｸｾｯﾄ検出
+SET @MR104               ; Err2　原点復帰時ﾜｰｸ有
+CON
+JMP @MR1214
+STG @MR1214
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+AND @MR107               ; Err2 解除完了
+RES @MR107               ; Err2 解除完了
+CON
+JMP @MR1213
+;終了
+STG @MR1302              ; 原点復帰完了
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+AND MR600                ; ｻｲｸﾙ動作中
+SET R50411               ; ST1 1ｻｲｸﾙ終了
+CON
+SET @MR1001              ; ST1 原点復帰終了
+CON
+ENDS
+;<h1/>■_自動運転
+;AUTO OERATION
+LD R50001                ; AUTO
+ANB R50201               ; ST1 動作中
+ANB R50000               ; HOLD
+SET R50201               ; ST1 動作中
+CON
+SET @MR3000              ; ST1 AUTO開始
+LDB R50003               ; HOME
+AND R50001               ; AUTO
+ANB R50002               ; STEP
+AND @MR3001              ; ST1 AUTO終了
+ANB R50508               ; 作業完了ﾌﾞｻﾞｰ
+RES R50201               ; ST1 動作中
+CON
+RES @MR3001              ; ST1 AUTO終了
+STG @MR3000              ; ST1 AUTO開始
+MPS
+ANB R4415                ; ﾜｰｸｾｯﾄ検出
+RES LR100                ; 溶着異常ﾌﾗｸﾞ(ON=不良)
+CON
+JMP @MR3007
+MPP
+AND R4415                ; ﾜｰｸｾｯﾄ検出
+SET @MR108               ; Err3　運転開始時ﾜｰｸ有り
+CON
+JMP @MR3003
+;Err3 AUTO開始時ﾜｰｸ有り / Work Remain at AUTO START
+STG @MR3003
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+AND @MR111               ; Err3 解除完了
+JMP @MR3004
+STG @MR3004
+RES @MR111               ; Err3 解除完了
+CON
+JMP @MR3000              ; ST1 AUTO開始
+; 動作パラメーター確認
+; Operating Parameter Check
+STG @MR3007
+MPS
+AND R50209               ; 動作開始
+MPS
+AND @MR013               ; ST1 AUTO Parameter OK
+SET R50210               ; Model OK
+CON
+JMP @MR3010              ; ﾌｨﾙﾑ管理ﾙｰﾁﾝ起動
+MPP
+ANB @MR013               ; ST1 AUTO Parameter OK
+SET @MR308               ; Err11 動作ﾊﾟﾗﾒｰﾀｰ異常
+CON
+JMP @MR3008              ; 3008
+MPP
+LDB R50209               ; 動作開始
+AND R50000               ; HOLD
+ANL
+JMP @MR3900              ; AUTO終了処理
+; 動作パラメーター設定不良
+; Operating Parameter Setting Error
+STG @MR3008              ; 3008
+AND @MR311               ; Err11 解除完了
+JMP @MR3009              ; 3009
+STG @MR3009              ; 3009
+RES @MR311               ; Err11 解除完了
+CON
+SET R50009               ; HOLDRQ
+CON
+RES R50210               ; Model OK
+CON
+SET R50411               ; ST1 1ｻｲｸﾙ終了
+CON
+JMP @MR3902              ; 3902
+;AUTO動作開始
+;AUTO Operation Start
+;各ﾙｰﾁﾝ起動
+STG @MR3010              ; ﾌｨﾙﾑ管理ﾙｰﾁﾝ起動
+SET @MR5000              ; ﾌｨﾙﾑ管理ﾙｰﾁﾝ起動
+CON
+JMP @MR3011
+STG @MR3011
+AND @MR5002              ; ﾌｨﾙﾑ管理ﾙｰﾁﾝ起動中
+JMP @MR3012
+STG @MR3012
+JMP @MR3100              ; ﾜｰｸ搬送_AUTO LOOP先頭
+;<h1/>▽_[@M3100]ﾜｰｸ搬送ﾙｰﾁﾝ
+;
+STG @MR3100              ; ﾜｰｸ搬送_AUTO LOOP先頭
+MPS
+ANB R50000               ; HOLD
+MPS
+LD R1107                 ; ﾗｲﾄｶｰﾃﾝ遮光無し=ON
+AND R4415                ; ﾜｰｸｾｯﾄ検出
+ANL
+MPS
+AND R50105               ; ｽﾀｰﾄSW ON
+SET @MR8800              ; CT計測＿ﾜｰｸ搬送
+CON
+JMP @MR3101
+MPP
+ANB R50105               ; ｽﾀｰﾄSW ON
+OUT @MR901               ; ｽﾀｰﾄSW待ち
+MPP
+ANB R4415                ; ﾜｰｸｾｯﾄ検出
+OUT @MR900               ; ﾜｰｸｾｯﾄ待ち
+MPP
+AND R50000               ; HOLD
+JMP @MR3900              ; AUTO終了処理
+;ﾜｰｸ位置決め
+STG @MR3101
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+SET @MR6000              ; ﾜｰｸ位置決めSub実行指令
+CON
+JMP @MR3102
+STG @MR3102
+AND @MR6001              ; ﾜｰｸ位置決めSub実行完了
+RES @MR6001              ; ﾜｰｸ位置決めSub実行完了
+CON
+JMP @MR3103
+STG @MR3103
+SET @MR3014              ; 入力ｶｳﾝﾄ
+CON
+JMP @MR3104
+;<h1/>____▼_QR照合
+STG @MR3104
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+ZRES @MR1800 @MR1815     ; QRﾃﾞｰﾀ照合OK=ON  OK/NG Flag 15
+CON
+SET @MR8200              ; QR照合Sub
+CON
+JMP @MR3105
+STG @MR3105
+AND @MR8201              ; QR照合Sub完了
+RES @MR8201              ; QR照合Sub完了
+CON
+JMP @MR3106
+STG @MR3106
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+MPS
+LDB R42604               ; QR通信ｴﾗｰ
+ANB R42605               ; QR照合ｴﾗｰ
+ANB R42606               ; QRﾀｲﾑｱｳﾄｴﾗｰ
+ANL
+JMP @MR3200              ; ﾜｰｸ搬送
+MRD
+LD R42604                ; QR通信ｴﾗｰ
+OR R42606                ; QRﾀｲﾑｱｳﾄｴﾗｰ
+ANL
+SET @MR208               ; Err7　QR照合通信異常
+CON
+JMP @MR3107              ; QR関連の異常
+MPP
+AND R42605               ; QR照合ｴﾗｰ
+SET @MR212               ; Err8
+CON
+JMP @MR3107              ; QR関連の異常
+;Err7 QR照合異常 / QR Check NG
+STG @MR3107              ; QR関連の異常
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+LD @MR211                ; Err7 解除完了
+OR @MR215                ; Err8 解除完了
+ANL
+ZRES R42604 R42606       ; QR通信ｴﾗｰ  QRﾀｲﾑｱｳﾄｴﾗｰ
+CON
+JMP @MR3108
+STG @MR3108
+RES @MR211               ; Err7 解除完了
+CON
+RES @MR215               ; Err8 解除完了
+CON
+JMP @MR3109
+STG @MR3109
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+SET @MR6100              ; ﾜｰｸ位置決め解除Sub実行指令
+CON
+JMP @MR3110
+STG @MR3110
+AND @MR6101              ; ﾜｰｸ位置決め解除Sub実行完了
+RES @MR6101              ; ﾜｰｸ位置決め解除Sub実行完了
+CON
+JMP @MR3100              ; ﾜｰｸ搬送_AUTO LOOP先頭
+;<h1/>____▼_ﾜｰｸ搬送
+STG @MR3200              ; ﾜｰｸ搬送
+MPS
+LD @MR015                ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+AND MR3005               ; IL ﾜｰｸｾｯﾄ移動OK
+ANL
+SET MR7304               ; ﾜｰｸｾｯﾄ部　溶着側移動
+CON
+RES MR7305               ; ﾜｰｸｾｯﾄ部　投入側移動
+CON
+ANB MR4400               ; Cylinder Error 4400
+AND R4400                ; ﾜｰｸｾｯﾄ部 溶着側限
+ANB R4401                ; ﾜｰｸｾｯﾄ部 投入側限
+TMR @27 #5               ; ｳｴｲﾄﾀｲﾏｰ27
+CON
+AND @T27                 ; ｳｴｲﾄﾀｲﾏｰ27
+RES @MR8800              ; CT計測＿ﾜｰｸ搬送
+CON
+JMP @MR3204              ; ﾌｨﾙﾑ要求(ﾙｰﾁﾝ)
+MPP
+ANB R1107                ; ﾗｲﾄｶｰﾃﾝ遮光無し=ON
+RES MR7304               ; ﾜｰｸｾｯﾄ部　溶着側移動
+CON
+RES MR7305               ; ﾜｰｸｾｯﾄ部　投入側移動
+CON
+SET @MR304               ; Err10　LC遮光
+CON
+JMP @MR3201              ; ﾗｲﾄｶｰﾃﾝ遮光
+STG @MR3201              ; ﾗｲﾄｶｰﾃﾝ遮光
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+AND @MR307               ; Err10 解除完了
+AND R1107                ; ﾗｲﾄｶｰﾃﾝ遮光無し=ON
+JMP @MR3202
+STG @MR3202
+RES @MR307               ; Err10 解除完了
+CON
+JMP @MR3200              ; ﾜｰｸ搬送
+;<h1/>____▼_溶着動作
+;ﾌｨﾙﾑ要求
+STG @MR3204              ; ﾌｨﾙﾑ要求(ﾙｰﾁﾝ)
+MPS
+ANB @MR2901              ; ST1 STEP-02 ﾜｰｸｾｯﾄ/搬送中
+SET @MR8900              ; ﾌｨﾙﾑ供給要求→ﾌｨﾙﾑ搬送PP
+CON
+AND @MR8901              ; ﾌｨﾙﾑ供給完了→ﾜｰｸ搬送
+JMP @MR3205
+MPP
+AND @MR2901              ; ST1 STEP-02 ﾜｰｸｾｯﾄ/搬送中
+JMP @MR2008              ; Step終了
+STG @MR3205
+RES @MR8900              ; ﾌｨﾙﾑ供給要求→ﾌｨﾙﾑ搬送PP
+CON
+RES @MR8901              ; ﾌｨﾙﾑ供給完了→ﾜｰｸ搬送
+CON
+JMP @MR3206              ; NOP
+STG @MR3206              ; NOP
+JMP @MR3300              ; 溶着動作
+STG @MR3300              ; 溶着動作
+SET @MR7000              ; 溶着Sub開始指令
+CON
+JMP @MR3301
+STG @MR3301
+AND @MR7001              ; 溶着完了
+RES @MR7001              ; 溶着完了
+CON
+JMP @MR3302
+STG @MR3302
+SET @MR8902              ; 溶着完了→ﾌｨﾙﾑ搬送PP
+CON
+AND @MR8903              ; 溶着完了受取→ﾜｰｸ搬送PP
+JMP @MR3303
+STG @MR3303
+RES @MR8902              ; 溶着完了→ﾌｨﾙﾑ搬送PP
+CON
+RES @MR8903              ; 溶着完了受取→ﾜｰｸ搬送PP
+CON
+JMP @MR3304
+STG @MR3304
+MPS
+ANB @MR2903              ; ST1 STEP-04 ﾌｨﾙﾑ搬送&溶着中
+JMP @MR3305              ; ﾜｰｸ搬送(戻し)
+MPP
+AND @MR2903              ; ST1 STEP-04 ﾌｨﾙﾑ搬送&溶着中
+ENDS
+;<h1/>____▼_ﾜｰｸ搬送(排出)
+STG @MR3305              ; ﾜｰｸ搬送(戻し)
+MPS
+LD @MR015                ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+AND MR3005               ; IL ﾜｰｸｾｯﾄ移動OK
+ANL
+SET MR7305               ; ﾜｰｸｾｯﾄ部　投入側移動
+CON
+RES MR7304               ; ﾜｰｸｾｯﾄ部　溶着側移動
+CON
+ANB MR4401               ; Cylinder Error 4401
+AND R4401                ; ﾜｰｸｾｯﾄ部 投入側限
+ANB R4400                ; ﾜｰｸｾｯﾄ部 溶着側限
+TMR @28 #20              ; ｳｴｲﾄﾀｲﾏｰ28
+CON
+AND @T28                 ; ｳｴｲﾄﾀｲﾏｰ28
+JMP @MR3308              ; ﾜｰｸ取り出し要求
+MPP
+ANB R1107                ; ﾗｲﾄｶｰﾃﾝ遮光無し=ON
+RES MR7304               ; ﾜｰｸｾｯﾄ部　溶着側移動
+CON
+RES MR7305               ; ﾜｰｸｾｯﾄ部　投入側移動
+CON
+SET @MR304               ; Err10　LC遮光
+CON
+JMP @MR3306
+STG @MR3306
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+AND @MR307               ; Err10 解除完了
+AND R1107                ; ﾗｲﾄｶｰﾃﾝ遮光無し=ON
+JMP @MR3307
+STG @MR3307
+RES @MR307               ; Err10 解除完了
+CON
+JMP @MR3305              ; ﾜｰｸ搬送(戻し)
+STG @MR3308              ; ﾜｰｸ取り出し要求
+SET @MR3015              ; 出力ｶｳﾝﾄ
+CON
+MPS
+ANB LR100                ; 溶着異常ﾌﾗｸﾞ(ON=不良)
+JMP @MR3312
+MPP
+AND LR100                ; 溶着異常ﾌﾗｸﾞ(ON=不良)
+SET @MR9000              ; Err31 溶着NG
+CON
+JMP @MR3309              ; 溶着NG品
+STG @MR3309              ; 溶着NG品
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+AND @MR9003              ; Err31 解除完了
+RES @MR9003              ; Err31 解除完了
+CON
+JMP @MR3312
+STG @MR3312
+SET @MR6100              ; ﾜｰｸ位置決め解除Sub実行指令
+CON
+JMP @MR3313
+STG @MR3313
+AND @MR6101              ; ﾜｰｸ位置決め解除Sub実行完了
+RES @MR6101              ; ﾜｰｸ位置決め解除Sub実行完了
+CON
+JMP @MR3314
+STG @MR3314
+MPS
+AND R1107                ; ﾗｲﾄｶｰﾃﾝ遮光無し=ON
+MPS
+ANB R4415                ; ﾜｰｸｾｯﾄ検出
+MPS
+ANB @MR2901              ; ST1 STEP-02 ﾜｰｸｾｯﾄ/搬送中
+MPS
+ANB LR10002              ; ﾍｯﾄﾞ清掃要求記憶
+JMP @MR3100              ; ﾜｰｸ搬送_AUTO LOOP先頭
+MPP
+AND LR10002              ; ﾍｯﾄﾞ清掃要求記憶
+SET @MR9004              ; Err32 清掃要求
+CON
+JMP @MR3315
+MPP
+AND @MR2901              ; ST1 STEP-02 ﾜｰｸｾｯﾄ/搬送中
+JMP @MR2008              ; Step終了
+MPP
+AND LR100                ; 溶着異常ﾌﾗｸﾞ(ON=不良)
+RES LR100                ; 溶着異常ﾌﾗｸﾞ(ON=不良)
+MPP
+AND R4415                ; ﾜｰｸｾｯﾄ検出
+OUT @MR902               ; ﾜｰｸ取出後ｽﾀｰﾄSW待ち
+STG @MR3315
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+AND @MR9007              ; Err32 解除完了
+RES LR10002              ; ﾍｯﾄﾞ清掃要求記憶
+CON
+DW #0 @DM10              ; 溶着ﾍｯﾄﾞ清掃回数ｶｳﾝﾀ
+CON
+RES @MR9007              ; Err32 解除完了
+CON
+JMP @MR3100              ; ﾜｰｸ搬送_AUTO LOOP先頭
+;<h1/>▽_[@M5000]ﾌｨﾙﾑ切断
+;<h1/>____▼_初回ﾌｨﾙﾑ頭出し動作
+STG @MR5000              ; ﾌｨﾙﾑ管理ﾙｰﾁﾝ起動
+SET @MR5002              ; ﾌｨﾙﾑ管理ﾙｰﾁﾝ起動中
+CON
+JMP @MR5003
+STG @MR5003
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+SET MR7214               ; 吸着ﾍｯﾄﾞ 旋回 (45°)
+CON
+RES MR7215               ; 吸着ﾍｯﾄﾞ 旋回戻し (0°)
+CON
+ANB MR4300               ; Cylinder Error 4300
+AND R4300                ; 吸着ﾍｯﾄﾞ 旋回限(45°)
+ANB R4301                ; 吸着ﾍｯﾄﾞ 旋回戻し限(0°)
+JMP @MR5004
+;切り出し台ﾌｨﾙﾑ無確認
+STG @MR5004
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+RES MR7404               ; ｶｯﾄ後下吸着(切出台) 破壊ON
+CON
+SET MR7405               ; ｶｯﾄ後下吸着(切出台) 吸着ON
+CON
+TMH @9 #30               ; ｳｴｲﾄﾀｲﾏｰ09
+CON
+AND @T9                  ; ｳｴｲﾄﾀｲﾏｰ09
+MPS
+ANB R4505                ; ｶｯﾄ後下吸着(切出台)OUT2(吸着)
+JMP @MR5015
+MPP
+AND R4505                ; ｶｯﾄ後下吸着(切出台)OUT2(吸着)
+JMP @MR5005
+STG @MR5005
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+RES MR7206               ; ﾌｨﾙﾑ押さえ上下 下降
+CON
+SET MR7207               ; (ﾌｨﾙﾑ押さえ上下 上昇)
+CON
+ANB MR4207               ; Cylinder Error 4207
+AND R4207                ; ﾌｨﾙﾑ押さえ上下 上昇限
+ANB R4206                ; ﾌｨﾙﾑ押さえ上下 下降限
+SET MR7208               ; ﾌｨﾙﾑ切り出し台 前進 (受渡側)
+CON
+RES MR7209               ; ﾌｨﾙﾑ切り出し台 後退 (引込側)
+CON
+SET MR7202               ; ﾌｨﾙﾑ押え 前進 (引出し側)
+CON
+RES MR7203               ; ﾌｨﾙﾑ押え 後退
+CON
+AND R4202                ; ﾌｨﾙﾑ押え 前後 前進限(ﾌｨﾙﾑ引出)
+ANB R4203                ; ﾌｨﾙﾑ押え 前後 後退限
+AND R4208                ; ﾌｨﾙﾑ切り出し台  前進限(受渡)
+ANB R4209                ; ﾌｨﾙﾑ切り出し台 前後 後退限(引込)
+JMP @MR5006
+STG @MR5006
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+SET MR7206               ; ﾌｨﾙﾑ押さえ上下 下降
+CON
+RES MR7207               ; (ﾌｨﾙﾑ押さえ上下 上昇)
+CON
+ANB MR4206               ; Cylinder Error 4206
+AND R4206                ; ﾌｨﾙﾑ押さえ上下 下降限
+ANB R4207                ; ﾌｨﾙﾑ押さえ上下 上昇限
+MPS
+LD R4204                 ; ｶｯﾀｰ前後 前進限(装置内側)
+ANB R4205                ; ｶｯﾀｰ前後 後退限(外側)
+ANL
+RES MR7204               ; ｶｯﾀｰ前後 前進 (装置内側)
+CON
+SET MR7205               ; ｶｯﾀｰ前後 後退 (外側)
+CON
+JMP @MR5007
+MPP
+LDB R4204                ; ｶｯﾀｰ前後 前進限(装置内側)
+AND R4205                ; ｶｯﾀｰ前後 後退限(外側)
+ANL
+RES MR7205               ; ｶｯﾀｰ前後 後退 (外側)
+CON
+SET MR7204               ; ｶｯﾀｰ前後 前進 (装置内側)
+CON
+JMP @MR5007
+STG @MR5007
+LD R4204                 ; ｶｯﾀｰ前後 前進限(装置内側)
+ANB R4205                ; ｶｯﾀｰ前後 後退限(外側)
+AND MR7204               ; ｶｯﾀｰ前後 前進 (装置内側)
+LDB R4204                ; ｶｯﾀｰ前後 前進限(装置内側)
+AND R4205                ; ｶｯﾀｰ前後 後退限(外側)
+AND MR7205               ; ｶｯﾀｰ前後 後退 (外側)
+ORL
+ANL
+RES MR7206               ; ﾌｨﾙﾑ押さえ上下 下降
+CON
+SET MR7207               ; (ﾌｨﾙﾑ押さえ上下 上昇)
+CON
+ANB R4206                ; ﾌｨﾙﾑ押さえ上下 下降限
+AND R4207                ; ﾌｨﾙﾑ押さえ上下 上昇限
+JMP @MR5008
+STG @MR5008
+RES MR7202               ; ﾌｨﾙﾑ押え 前進 (引出し側)
+CON
+SET MR7203               ; ﾌｨﾙﾑ押え 後退
+CON
+AND R4203                ; ﾌｨﾙﾑ押え 前後 後退限
+ANB R4202                ; ﾌｨﾙﾑ押え 前後 前進限(ﾌｨﾙﾑ引出)
+JMP @MR5009
+;Err9 切出ﾌｨﾙﾑ除材要求 / Film remove demand 
+STG @MR5009
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+SET @MR300               ; Err9　切出ﾌｨﾙﾑ除材要求
+CON
+JMP @MR5010
+STG @MR5010
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+AND @MR303               ; Err9 解除完了
+MPS
+ANB R4505                ; ｶｯﾄ後下吸着(切出台)OUT2(吸着)
+RES @MR303               ; Err9 解除完了
+CON
+JMP @MR5015
+MPP
+AND R4505                ; ｶｯﾄ後下吸着(切出台)OUT2(吸着)
+RES @MR303               ; Err9 解除完了
+CON
+JMP @MR5009
+;
+STG @MR5015
+RES MR7404               ; ｶｯﾄ後下吸着(切出台) 破壊ON
+CON
+RES MR7405               ; ｶｯﾄ後下吸着(切出台) 吸着ON
+CON
+JMP @MR5100              ; 初回ﾌｨﾙﾑ切り出し動作
+;ｶｯﾄ後吸着ﾘｾｯﾄ
+;***** 初回F捨て出し / Film Feed & Cut at First *****
+STG @MR5100              ; 初回ﾌｨﾙﾑ切り出し動作
+DW #0 @DM1               ; ﾌｨﾙﾑﾌｨｰﾄﾞ回数
+MPS
+ANB LR10000              ; 加筆中…
+MOV #1 @DM0              ; ﾌｨﾙﾑﾌｨｰﾄﾞ回数設定
+MPP
+JMP @MR5101
+;ﾌｨﾙﾑﾌｨｰﾄﾞ&ｶｯﾄ
+STG @MR5101
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+SET @MR4000              ; ﾌｨﾙﾑﾌｨｰﾄﾞ& ｶｯﾄ 処理
+CON
+JMP @MR5102
+;ﾌｨﾙﾑﾌｨｰﾄﾞ&ｶｯﾄ結果確認
+;切り出し失敗→再切り出しへ
+;銀紙検出発生有り→ﾌｨﾙﾑ除材へ
+;正常終了→次の動作へ
+STG @MR5102
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+AND @MR4001              ; Fﾌｨｰﾄﾞ&ｶｯﾄ完了
+RES @MR4001              ; Fﾌｨｰﾄﾞ&ｶｯﾄ完了
+CON
+MPS
+ANB @MR907               ; ﾌｨﾙﾑ切り出し失敗
+MPS
+ANB @MR908               ; 銀紙検出有り
+SET @MR910               ; 2回目以降動作
+CON
+DW #0 @DM0               ; ﾌｨﾙﾑﾌｨｰﾄﾞ回数設定
+CON
+JMP @MR5105
+MPP
+AND @MR908               ; 銀紙検出有り
+DW #0 @DM0               ; ﾌｨﾙﾑﾌｨｰﾄﾞ回数設定
+CON
+JMP @MR5104              ; 銀紙検出
+MPP
+AND @MR907               ; ﾌｨﾙﾑ切り出し失敗
+JMP @MR5103
+STG @MR5103
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+RES @MR907               ; ﾌｨﾙﾑ切り出し失敗
+CON
+JMP @MR5100              ; 初回ﾌｨﾙﾑ切り出し動作
+STG @MR5104              ; 銀紙検出
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+JMP @MR5105
+;ﾌｨﾙﾑ搬送退避
+STG @MR5105
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+SET MR7214               ; 吸着ﾍｯﾄﾞ 旋回 (45°)
+CON
+RES MR7215               ; 吸着ﾍｯﾄﾞ 旋回戻し (0°)
+CON
+ANB MR4300               ; Cylinder Error 4300
+AND R4300                ; 吸着ﾍｯﾄﾞ 旋回限(45°)
+ANB R4301                ; 吸着ﾍｯﾄﾞ 旋回戻し限(0°)
+JMP @MR5106
+STG @MR5106
+JMP @MR5107
+;Err9 切出ﾌｨﾙﾑ除材要求 / Film remove demand 
+STG @MR5107
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+RES MR7404               ; ｶｯﾄ後下吸着(切出台) 破壊ON
+CON
+RES MR7405               ; ｶｯﾄ後下吸着(切出台) 吸着ON
+CON
+SET @MR300               ; Err9　切出ﾌｨﾙﾑ除材要求
+CON
+JMP @MR5108
+STG @MR5108
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+AND @MR303               ; Err9 解除完了
+RES @MR303               ; Err9 解除完了
+CON
+JMP @MR5109
+STG @MR5109
+RES MR7404               ; ｶｯﾄ後下吸着(切出台) 破壊ON
+CON
+SET MR7405               ; ｶｯﾄ後下吸着(切出台) 吸着ON
+CON
+TMH @7 #100              ; ｳｴｲﾄﾀｲﾏｰ07
+CON
+AND @T7                  ; ｳｴｲﾄﾀｲﾏｰ07
+MPS
+AND R4505                ; ｶｯﾄ後下吸着(切出台)OUT2(吸着)
+JMP @MR5107
+MPP
+ANB R4505                ; ｶｯﾄ後下吸着(切出台)OUT2(吸着)
+JMP @MR5110
+STG @MR5110
+RES MR7404               ; ｶｯﾄ後下吸着(切出台) 破壊ON
+CON
+RES MR7405               ; ｶｯﾄ後下吸着(切出台) 吸着ON
+CON
+MPS
+ANB @MR908               ; 銀紙検出有り
+JMP @MR5200              ; ﾌｨﾙﾑ切り出し
+MPP
+AND @MR908               ; 銀紙検出有り
+RES @MR908               ; 銀紙検出有り
+CON
+JMP @MR5100              ; 初回ﾌｨﾙﾑ切り出し動作
+;<h1/>____▼_正規長さﾌｨﾙﾑ供給
+STG @MR5200              ; ﾌｨﾙﾑ切り出し
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+MPS
+ANB @MR3002              ; ﾜｰｸ搬送ﾙｰﾁﾝHOLD
+SET @MR8804              ; CT計測＿ﾌｨﾙﾑｶｯﾄ
+CON
+SET @MR4000              ; ﾌｨﾙﾑﾌｨｰﾄﾞ& ｶｯﾄ 処理
+CON
+JMP @MR5201
+MPP
+AND @MR3002              ; ﾜｰｸ搬送ﾙｰﾁﾝHOLD
+JMP @MR5400              ; ﾌｨﾙﾑ切断＆搬送Hold処理
+STG @MR5201
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+AND @MR4001              ; Fﾌｨｰﾄﾞ&ｶｯﾄ完了
+RES @MR8804              ; CT計測＿ﾌｨﾙﾑｶｯﾄ
+CON
+RES @MR4001              ; Fﾌｨｰﾄﾞ&ｶｯﾄ完了
+CON
+JMP @MR5202
+STG @MR5202
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+MPS
+ANB @MR907               ; ﾌｨﾙﾑ切り出し失敗
+MPS
+ANB @MR908               ; 銀紙検出有り
+JMP @MR5300              ; 受け渡しﾌｨﾙﾑ有
+MPP
+AND @MR908               ; 銀紙検出有り
+JMP @MR5204
+MPP
+AND @MR907               ; ﾌｨﾙﾑ切り出し失敗
+JMP @MR5203
+STG @MR5203
+RES @MR907               ; ﾌｨﾙﾑ切り出し失敗
+CON
+JMP @MR5204
+;Err9 切出ﾌｨﾙﾑ除材要求 / Film remove demand 
+STG @MR5204
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+RES @MR908               ; 銀紙検出有り
+CON
+RES MR7404               ; ｶｯﾄ後下吸着(切出台) 破壊ON
+CON
+RES MR7405               ; ｶｯﾄ後下吸着(切出台) 吸着ON
+CON
+SET @MR300               ; Err9　切出ﾌｨﾙﾑ除材要求
+CON
+JMP @MR5205
+STG @MR5205
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+AND @MR303               ; Err9 解除完了
+RES @MR303               ; Err9 解除完了
+CON
+JMP @MR5206
+STG @MR5206
+SET MR7405               ; ｶｯﾄ後下吸着(切出台) 吸着ON
+CON
+TMH @8 #100              ; ｳｴｲﾄﾀｲﾏｰ08
+CON
+AND @T8                  ; ｳｴｲﾄﾀｲﾏｰ08
+MPS
+ANB R4505                ; ｶｯﾄ後下吸着(切出台)OUT2(吸着)
+JMP @MR5207
+MPP
+AND R4505                ; ｶｯﾄ後下吸着(切出台)OUT2(吸着)
+JMP @MR5204
+STG @MR5207
+RES MR7404               ; ｶｯﾄ後下吸着(切出台) 破壊ON
+CON
+RES MR7405               ; ｶｯﾄ後下吸着(切出台) 吸着ON
+CON
+JMP @MR5100              ; 初回ﾌｨﾙﾑ切り出し動作
+;<h1/>____▼_ﾌｨﾙﾑPP搬送動作
+STG @MR5300              ; 受け渡しﾌｨﾙﾑ有
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+MPS
+LDB @MR3002              ; ﾜｰｸ搬送ﾙｰﾁﾝHOLD
+AND @MR8900              ; ﾌｨﾙﾑ供給要求→ﾌｨﾙﾑ搬送PP
+ANL
+JMP @MR5301
+MPP
+AND @MR3002              ; ﾜｰｸ搬送ﾙｰﾁﾝHOLD
+JMP @MR5400              ; ﾌｨﾙﾑ切断＆搬送Hold処理
+;切り出し部ﾌｨﾙﾑ確認
+STG @MR5301
+MPS
+JMP @MR5302
+MPP
+LD LR10000               ; 加筆中…
+AND R4014                ; 側面 ｽﾀｰﾄSW
+ANL
+RES MR7404               ; ｶｯﾄ後下吸着(切出台) 破壊ON
+CON
+RES MR7405               ; ｶｯﾄ後下吸着(切出台) 吸着ON
+CON
+ANB R4505                ; ｶｯﾄ後下吸着(切出台)OUT2(吸着)
+JMP @MR5200              ; ﾌｨﾙﾑ切り出し
+;ﾌｨﾙﾑ搬送→溶着→戻るSub
+STG @MR5302
+SET @MR8803              ; CT計測＿ﾌｨﾙﾑ搬送
+CON
+SET @MR4500              ; ﾌｨﾙﾑPP取出し動作Sub実行指令
+CON
+JMP @MR5303
+STG @MR5303
+AND @MR4501              ; ﾌｨﾙﾑPP取出し動作Sub完了
+RES @MR4501              ; ﾌｨﾙﾑPP取出し動作Sub完了
+CON
+RES @MR8803              ; CT計測＿ﾌｨﾙﾑ搬送
+CON
+MPS
+ANB @MR911               ; ﾌｨﾙﾑ取出し失敗
+MPS
+ANB @MR2903              ; ST1 STEP-04 ﾌｨﾙﾑ搬送&溶着中
+JMP @MR5200              ; ﾌｨﾙﾑ切り出し
+MPP
+AND @MR2903              ; ST1 STEP-04 ﾌｨﾙﾑ搬送&溶着中
+JMP @MR2008              ; Step終了
+MPP
+AND @MR911               ; ﾌｨﾙﾑ取出し失敗
+RES @MR911               ; ﾌｨﾙﾑ取出し失敗
+CON
+MPS
+ANB @MR2903              ; ST1 STEP-04 ﾌｨﾙﾑ搬送&溶着中
+JMP @MR5200              ; ﾌｨﾙﾑ切り出し
+MPP
+AND @MR2903              ; ST1 STEP-04 ﾌｨﾙﾑ搬送&溶着中
+JMP @MR2008              ; Step終了
+;<h1/>____▼_ﾌｨﾙﾑ切断＆搬送Hold処理
+STG @MR5400              ; ﾌｨﾙﾑ切断＆搬送Hold処理
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+SET MR7213               ; (吸着ﾍｯﾄﾞ 上昇)
+CON
+RES MR7212               ; 吸着ﾍｯﾄﾞ 下降
+CON
+ANB MR4214               ; Cylinder Error 4214
+AND R4214                ; 吸着ﾍｯﾄﾞ 上昇限
+ANB R4212                ; 吸着ﾍｯﾄﾞ 下降限1(溶着側)
+ANB R4213                ; 吸着ﾍｯﾄﾞ 下降限2(切出し側)
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+JMP @MR5401
+STG @MR5401
+MPS
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+SET MR7211               ; 吸着ﾍｯﾄﾞ 左行 (ﾌｨﾙﾑ切出し側)
+CON
+RES MR7210               ; 吸着ﾍｯﾄﾞ 右行 (溶着側)
+CON
+ANB MR4211               ; Cylinder Error 4211
+AND R4211                ; 吸着ﾍｯﾄﾞ 左行限(切出し側)
+ANB R4210                ; 吸着ﾍｯﾄﾞ 右行限(溶着側)
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+JMP @MR5402
+MPP
+ANB R1111                ; ﾗｲﾄｶｰﾃﾝﾐｭｰﾃｨﾝｸﾞ中はON状態
+RES MR7210               ; 吸着ﾍｯﾄﾞ 右行 (溶着側)
+CON
+RES MR7211               ; 吸着ﾍｯﾄﾞ 左行 (ﾌｨﾙﾑ切出し側)
+STG @MR5402
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+MPS
+ANB R4509                ; 吸着ﾍｯﾄﾞ(ﾒｶﾞﾈ)OUT2 (吸着)
+JMP @MR5404
+MPP
+AND R4509                ; 吸着ﾍｯﾄﾞ(ﾒｶﾞﾈ)OUT2 (吸着)
+SET @MR412               ; Err16　ﾌｨﾙﾑ搬送ﾌｨﾙﾑ徐材要求
+CON
+JMP @MR5403
+STG @MR5403
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+AND @MR415               ; Err16 解除完了
+RES @MR415               ; Err16 解除完了
+CON
+JMP @MR5402
+STG @MR5404
+JMP @MR5405
+STG @MR5405
+JMP @MR5406
+STG @MR5406
+JMP @MR5407
+STG @MR5407
+JMP @MR5408
+STG @MR5408
+JMP @MR5409
+STG @MR5409
+JMP @MR5410
+STG @MR5410
+JMP @MR5411
+STG @MR5411
+AND @MR3002              ; ﾜｰｸ搬送ﾙｰﾁﾝHOLD
+SET @MR5001              ; ﾌｨﾙﾑ管理ﾙｰﾁﾝHOLD
+CON
+JMP @MR5412
+STG @MR5412
+ANB @MR5001              ; ﾌｨﾙﾑ管理ﾙｰﾁﾝHOLD
+RES @MR5002              ; ﾌｨﾙﾑ管理ﾙｰﾁﾝ起動中
+CON
+ENDS
+;<h1/>▽_AUTO 1ｻｲｸﾙ終了処理
+;AUTO 1Cycle end Operation
+STG @MR3900              ; AUTO終了処理
+MPS
+SET @MR3002              ; ﾜｰｸ搬送ﾙｰﾁﾝHOLD
+CON
+AND @MR5001              ; ﾌｨﾙﾑ管理ﾙｰﾁﾝHOLD
+AND R50001               ; AUTO
+AND MR600                ; ｻｲｸﾙ動作中
+RES @MR5001              ; ﾌｨﾙﾑ管理ﾙｰﾁﾝHOLD
+CON
+JMP @MR3901              ; 3901
+MPP
+AND R50002               ; STEP
+RES @MR3002              ; ﾜｰｸ搬送ﾙｰﾁﾝHOLD
+CON
+RES @MR5001              ; ﾌｨﾙﾑ管理ﾙｰﾁﾝHOLD
+CON
+JMP @MR2008              ; Step終了
+STG @MR3901              ; 3901
+AND MR600                ; ｻｲｸﾙ動作中
+SET R50411               ; ST1 1ｻｲｸﾙ終了
+CON
+JMP @MR3902              ; 3902
+STG @MR3902              ; 3902
+RES @MR2500              ; 入力ｶｳﾝﾄ記憶
+CON
+ANB R50209               ; 動作開始
+AND R50409               ; ｻｲｸﾙ完了
+AND R50000               ; HOLD
+JMP @MR3903              ; 3903
+;AUTO 終了処理
+;AUTO Finish Operation
+STG @MR3903              ; 3903
+RES @MR3002              ; ﾜｰｸ搬送ﾙｰﾁﾝHOLD
+CON
+ZRES @MR4000 @MR4915     ; ﾌｨﾙﾑﾌｨｰﾄﾞ& ｶｯﾄ 処理
+CON
+ZRES @MR6000 @MR8315     ; ﾜｰｸ位置決めSub実行指令
+CON
+JMP @MR3904
+STG @MR3904
+SET @MR3001              ; ST1 AUTO終了
+CON
+ENDS
+;
+LD @MR3014               ; 入力ｶｳﾝﾄ
+SET R81003               ; C/T1-1Trap
+CON
+SET R81000               ; InputTrap
+CON
+RES @MR3014              ; 入力ｶｳﾝﾄ
+CON
+AND R50001               ; AUTO
+SET R50309               ; 入力ｶｳﾝﾄ
+LD @MR3015               ; 出力ｶｳﾝﾄ
+RES @MR3015              ; 出力ｶｳﾝﾄ
+CON
+AND R50001               ; AUTO
+SET R50310               ; 出力ｶｳﾝﾄ
+LD R50508                ; 作業完了ﾌﾞｻﾞｰ
+TMR @5 #3                ; ｳｴｲﾄﾀｲﾏｰ05
+CON
+AND @T5                  ; ｳｴｲﾄﾀｲﾏｰ05
+RES R50508               ; 作業完了ﾌﾞｻﾞｰ
+;<h1/>■_ｽﾃｯﾌﾟ運転
+;STEP OERATION
+LDB R50003               ; HOME
+ANB R50001               ; AUTO
+AND R50002               ; STEP
+ANB R50201               ; ST1 動作中
+ANB R50000               ; HOLD
+SET @MR2000              ; ST1 STEP開始
+CON
+SET R50201               ; ST1 動作中
+LDB R50003               ; HOME
+ANB R50001               ; AUTO
+AND R50002               ; STEP
+AND @MR2001              ; ST1 STEP終了
+RES R50201               ; ST1 動作中
+CON
+RES @MR2001              ; ST1 STEP終了
+LD LR40200               ; ST1 STEP-01 通常動作
+AND R50212               ; ﾋｰﾀｰ適温
+LD LR40201               ; ST1 STEP-02 ﾜｰｸｾｯﾄ/搬送
+LD R4400                 ; ﾜｰｸｾｯﾄ部 溶着側限
+AND R4402                ; ﾜｰｸｸﾗﾝﾌﾟ 閉じ限
+AND R4404                ; 供給口位置決め1(左側) 前進限
+AND R4406                ; 供給口位置決め2(右側) 前進限
+LD R4401                 ; ﾜｰｸｾｯﾄ部 投入側限
+AND R4403                ; ﾜｰｸｸﾗﾝﾌﾟ 開き限
+AND R4405                ; 供給口位置決め1(左側) 後退限
+AND R4407                ; 供給口位置決め2(右側) 後退限
+ORL
+ANL
+AND MR3005               ; IL ﾜｰｸｾｯﾄ移動OK
+ORL
+LD LR40202               ; ST1 STEP-03 ﾌｨﾙﾑｶｯﾄ
+ANB R4505                ; ｶｯﾄ後下吸着(切出台)OUT2(吸着)
+ORL
+LD LR40203               ; ST1 STEP-04 ﾌｨﾙﾑ搬送&溶着
+AND R4505                ; ｶｯﾄ後下吸着(切出台)OUT2(吸着)
+AND R50212               ; ﾋｰﾀｰ適温
+AND R4400                ; ﾜｰｸｾｯﾄ部 溶着側限
+AND R4402                ; ﾜｰｸｸﾗﾝﾌﾟ 閉じ限
+AND R4404                ; 供給口位置決め1(左側) 前進限
+AND R4406                ; 供給口位置決め2(右側) 前進限
+ORL
+LD LR40204               ; ST1 STEP-05 QR読取り
+AND R4401                ; ﾜｰｸｾｯﾄ部 投入側限
+ORL
+OR LR40205               ; ST1 STEP-06 ﾄﾙｸ測定
+OUT @MR014               ; ST1 STEP Parameter OK
+STG @MR2000              ; ST1 STEP開始
+AND R50201               ; ST1 動作中
+MPS
+AND LR40200              ; ST1 STEP-01 通常動作
+SET @MR2900              ; ST1 STEP-01 通常動作中
+CON
+JMP @MR3000              ; ST1 AUTO開始
+MRD
+AND LR40201              ; ST1 STEP-02 ﾜｰｸｾｯﾄ/搬送
+MPS
+LD R4400                 ; ﾜｰｸｾｯﾄ部 溶着側限
+AND R4402                ; ﾜｰｸｸﾗﾝﾌﾟ 閉じ限
+AND R4404                ; 供給口位置決め1(左側) 前進限
+AND R4406                ; 供給口位置決め2(右側) 前進限
+ANL
+SET @MR2901              ; ST1 STEP-02 ﾜｰｸｾｯﾄ/搬送中
+CON
+JMP @MR3305              ; ﾜｰｸ搬送(戻し)
+MPP
+LD R4401                 ; ﾜｰｸｾｯﾄ部 投入側限
+AND R4403                ; ﾜｰｸｸﾗﾝﾌﾟ 開き限
+AND R4405                ; 供給口位置決め1(左側) 後退限
+AND R4407                ; 供給口位置決め2(右側) 後退限
+ANL
+SET @MR2901              ; ST1 STEP-02 ﾜｰｸｾｯﾄ/搬送中
+CON
+JMP @MR3100              ; ﾜｰｸ搬送_AUTO LOOP先頭
+MRD
+AND LR40202              ; ST1 STEP-03 ﾌｨﾙﾑｶｯﾄ
+SET @MR2902              ; ST1 STEP-03 ﾌｨﾙﾑｶｯﾄ中
+CON
+JMP @MR2102
+MRD
+AND LR40203              ; ST1 STEP-04 ﾌｨﾙﾑ搬送&溶着
+SET @MR2903              ; ST1 STEP-04 ﾌｨﾙﾑ搬送&溶着中
+CON
+SET @MR3204              ; ﾌｨﾙﾑ要求(ﾙｰﾁﾝ)
+CON
+JMP @MR5300              ; 受け渡しﾌｨﾙﾑ有
+MRD
+AND LR40204              ; ST1 STEP-05 QR読取り
+SET @MR2904              ; ST1 STEP-04 QR読取り
+CON
+JMP @MR2100              ; STEP-02 溶着のみ
+MRD
+AND LR40205              ; ST1 STEP-06 ﾄﾙｸ測定
+JMP @MR2104
+MPP
+ANB @MR014               ; ST1 STEP Parameter OK
+JMP @MR2008              ; Step終了
+;
+STG @MR2100              ; STEP-02 溶着のみ
+SET @MR8200              ; QR照合Sub
+CON
+JMP @MR2101
+STG @MR2101
+AND @MR8201              ; QR照合Sub完了
+RES @MR8201              ; QR照合Sub完了
+CON
+JMP @MR2008              ; Step終了
+;
+STG @MR2102
+SET @MR4000              ; ﾌｨﾙﾑﾌｨｰﾄﾞ& ｶｯﾄ 処理
+CON
+JMP @MR2103
+STG @MR2103
+AND @MR4001              ; Fﾌｨｰﾄﾞ&ｶｯﾄ完了
+RES @MR4001              ; Fﾌｨｰﾄﾞ&ｶｯﾄ完了
+CON
+JMP @MR2008              ; Step終了
+;
+STG @MR2104
+SET @MR7500              ; ﾄﾙｸ測定Sub実行指令
+CON
+JMP @MR2105
+STG @MR2105
+AND @MR7501              ; ﾄﾙｸ測定Sub実行完了
+RES @MR7501              ; ﾄﾙｸ測定Sub実行完了
+CON
+JMP @MR2008              ; Step終了
+;STEP終了処理
+STG @MR2008              ; Step終了
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+SET R50009               ; HOLDRQ
+CON
+JMP @MR2009              ; 2009
+STG @MR2009              ; 2009
+AND R50000               ; HOLD
+ZRES @MR4000 @MR4915     ; ﾌｨﾙﾑﾌｨｰﾄﾞ& ｶｯﾄ 処理
+CON
+ZRES @MR6000 @MR8315     ; ﾜｰｸ位置決めSub実行指令
+CON
+ZRES @MR2900 @MR2905     ; ST1 STEP-01 通常動作中
+CON
+ZRES @MR1800 @MR1815     ; QRﾃﾞｰﾀ照合OK=ON  OK/NG Flag 15
+CON
+RES @MR3015              ; 出力ｶｳﾝﾄ
+CON
+SET R50411               ; ST1 1ｻｲｸﾙ終了
+CON
+SET @MR2001              ; ST1 STEP終了
+CON
+ENDS
+;<h1/>■_ｻﾌﾞﾙｰﾁﾝ
+;<h1/>[@MR4000]Sub1_ﾌｨﾙﾑ搬送切断
+LDB R4312                ; 剥離ﾌｨﾙﾑ切れ 銀ﾃｰﾌﾟ検出ON=OK
+TMR @16 #10              ; ｳｴｲﾄﾀｲﾏｰ16
+CON
+AND @T16                 ; ｳｴｲﾄﾀｲﾏｰ16
+OUT MR22000              ; 剥離F銀紙検出(ON=異常)
+LD R4315                 ; ﾀﾞﾝｻｰﾛｰﾗ下限異常検出 L-ON
+TMH @17 #1               ; ｳｴｲﾄﾀｲﾏｰ17
+CON
+AND @T17                 ; ｳｴｲﾄﾀｲﾏｰ17
+OUT MR22001              ; ﾀﾞﾝｻｰﾛｰﾗ下限異常検出(ON=異常)
+;*****　ﾌｨﾙﾑﾌｨｰﾄﾞ& ｶｯﾄ 処理 / Film feed & cutting　@MR5000～@MR5015　*****
+STG @MR4000              ; ﾌｨﾙﾑﾌｨｰﾄﾞ& ｶｯﾄ 処理
+SET @MR4002              ; Fﾌｨｰﾄﾞ&ｶｯﾄ実行中
+CON
+JMP @MR4003
+;ﾌｨﾙﾑｴﾝﾄﾞ確認
+STG @MR4003
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+MPS
+ANB MR22000              ; 剥離F銀紙検出(ON=異常)
+JMP @MR4005
+MPP
+AND MR22000              ; 剥離F銀紙検出(ON=異常)
+SET @MR908               ; 銀紙検出有り
+CON
+RES MR7206               ; ﾌｨﾙﾑ押さえ上下 下降
+CON
+SET MR7207               ; (ﾌｨﾙﾑ押さえ上下 上昇)
+CON
+SET MR7200               ; ﾌｨﾙﾑｸﾗﾝﾌﾟ 上下 上昇
+CON
+RES MR7201               ; (ﾌｨﾙﾑｸﾗﾝﾌﾟ 上下 下降)
+CON
+SET @MR200               ; Err5
+CON
+JMP @MR4004
+;Err5 銀紙検出 / Film silver tape detection display
+STG @MR4004
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+AND @MR203               ; Err5 解除完了
+RES @MR203               ; Err5 解除完了
+CON
+MPS
+ANB MR22000              ; 剥離F銀紙検出(ON=異常)
+JMP @MR4005
+MPP
+AND MR22000              ; 剥離F銀紙検出(ON=異常)
+JMP @MR4003
+;ﾌｨﾙﾑ送り確認
+STG @MR4005
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+MPS
+ANB MR22001              ; ﾀﾞﾝｻｰﾛｰﾗ下限異常検出(ON=異常)
+JMP @MR4007
+MPP
+AND MR22001              ; ﾀﾞﾝｻｰﾛｰﾗ下限異常検出(ON=異常)
+SET @MR204               ; Err6_ﾀﾞﾝｻｰﾛｰﾗｰ下限検出
+CON
+JMP @MR4006
+STG @MR4006
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+AND @MR207               ; Err6 解除完了
+RES @MR207               ; Err6 解除完了
+CON
+JMP @MR4005
+;ﾀﾞﾝｻｰﾛｰﾗｰ上限確認
+STG @MR4007
+MPS
+AND R4313                ; ﾀﾞﾝｻｰﾛｰﾗ上限異常検出 L-ON
+JMP @MR4100              ; ﾌｨﾙﾑ送りへ
+MPP
+ANB R4313                ; ﾀﾞﾝｻｰﾛｰﾗ上限異常検出 L-ON
+JMP @MR4008
+STG @MR4008
+MPS
+LDB @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+ORB R1100                ; ﾌｨﾙﾑ送りﾓｰﾀｰｱﾗｰﾑON=OK
+ORB R1101                ; ﾌｨﾙﾑ送りﾓｰﾀｰｻｰﾓｽﾀｯﾄ
+ANL
+RES MR2100               ; ﾌｨﾙﾑ送りﾓｰﾀｰ正転
+CON
+RES MR2101               ; ﾌｨﾙﾑ送りﾓｰﾀｰ反転
+CON
+RES MR2102               ; ﾌｨﾙﾑ送りﾓｰﾀｰﾌﾞﾚｰｷﾘﾘｰｽ
+MRD
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+MPS
+LD R1100                 ; ﾌｨﾙﾑ送りﾓｰﾀｰｱﾗｰﾑON=OK
+AND R1101                ; ﾌｨﾙﾑ送りﾓｰﾀｰｻｰﾓｽﾀｯﾄ
+ANL
+SET MR2010               ; ﾌｨﾙﾑ送りﾓｰﾀｰ電源ON
+CON
+TMR @32 #5               ; ｳｴｲﾄﾀｲﾏｰ32
+CON
+AND @T32                 ; ｳｴｲﾄﾀｲﾏｰ32
+SET MR2100               ; ﾌｨﾙﾑ送りﾓｰﾀｰ正転
+CON
+RES MR2101               ; ﾌｨﾙﾑ送りﾓｰﾀｰ反転
+CON
+RES MR2102               ; ﾌｨﾙﾑ送りﾓｰﾀｰﾌﾞﾚｰｷﾘﾘｰｽ
+MRD
+TMR @19 #30              ; ｳｴｲﾄﾀｲﾏｰ19
+CON
+AND @T19                 ; ｳｴｲﾄﾀｲﾏｰ19
+RES MR2100               ; ﾌｨﾙﾑ送りﾓｰﾀｰ正転
+CON
+RES MR2101               ; ﾌｨﾙﾑ送りﾓｰﾀｰ反転
+CON
+RES MR2102               ; ﾌｨﾙﾑ送りﾓｰﾀｰﾌﾞﾚｰｷﾘﾘｰｽ
+CON
+SET @MR408               ; Err15 ﾌｨﾙﾑ送り出しﾀｲﾑｱｳﾄ
+CON
+JMP @MR4009
+MPP
+AND MR22001              ; ﾀﾞﾝｻｰﾛｰﾗ下限異常検出(ON=異常)
+RES MR2100               ; ﾌｨﾙﾑ送りﾓｰﾀｰ正転
+CON
+RES MR2101               ; ﾌｨﾙﾑ送りﾓｰﾀｰ反転
+CON
+RES MR2102               ; ﾌｨﾙﾑ送りﾓｰﾀｰﾌﾞﾚｰｷﾘﾘｰｽ
+CON
+SET @MR204               ; Err6_ﾀﾞﾝｻｰﾛｰﾗｰ下限検出
+CON
+JMP @MR4009
+MPP
+AND R4314                ; ﾀﾞﾝｻｰﾛｰﾗ巻出し検出 D-ON
+RES MR2100               ; ﾌｨﾙﾑ送りﾓｰﾀｰ正転
+CON
+RES MR2101               ; ﾌｨﾙﾑ送りﾓｰﾀｰ反転
+CON
+RES MR2102               ; ﾌｨﾙﾑ送りﾓｰﾀｰﾌﾞﾚｰｷﾘﾘｰｽ
+CON
+JMP @MR4007
+STG @MR4009
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+MPS
+AND @MR411               ; Err15 解除完了
+RES @MR411               ; Err15 解除完了
+CON
+JMP @MR4008
+MPP
+AND @MR207               ; Err6 解除完了
+RES @MR207               ; Err6 解除完了
+CON
+JMP @MR4008
+;<h1/>____Sub1_A PART(ｶｯﾄ1個前からﾌｨﾙﾑを持ち上げるまで)
+;++++　ｶｯﾄ1ヶ前 吸着ﾁｪｯｸ  / Before Cut1 absorption check  ++++
+STG @MR4100              ; ﾌｨﾙﾑ送りへ
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+RES MR7400               ; ｶｯﾄ1ｹ前下吸着(切出台) 破壊ON
+CON
+SET MR7401               ; ｶｯﾄ1ｹ前下吸着(切出台) 吸着ON
+CON
+MPS
+AND R4501                ; ｶｯﾄ1ｹ前下吸着(切出台)OUT2(吸着)
+JMP @MR4103
+MPP
+ANB R4501                ; ｶｯﾄ1ｹ前下吸着(切出台)OUT2(吸着)
+TMR @1 #50               ; ｳｴｲﾄﾀｲﾏｰ01
+CON
+AND @T1                  ; ｳｴｲﾄﾀｲﾏｰ01
+JMP @MR4101
+;ｶｯﾄ1ヶ前吸着NG_ﾌｨﾙﾑ押え下降
+STG @MR4101
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+RES MR7207               ; (ﾌｨﾙﾑ押さえ上下 上昇)
+CON
+SET MR7206               ; ﾌｨﾙﾑ押さえ上下 下降
+CON
+AND R4206                ; ﾌｨﾙﾑ押さえ上下 下降限
+ANB R4207                ; ﾌｨﾙﾑ押さえ上下 上昇限
+JMP @MR4102
+;ｶｯﾄ1ヶ前吸着NG_ﾌｨﾙﾑ押え上昇　吸着再確認
+STG @MR4102
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+RES MR7206               ; ﾌｨﾙﾑ押さえ上下 下降
+CON
+SET MR7207               ; (ﾌｨﾙﾑ押さえ上下 上昇)
+CON
+ANB R4206                ; ﾌｨﾙﾑ押さえ上下 下降限
+AND R4207                ; ﾌｨﾙﾑ押さえ上下 上昇限
+MPS
+LD R4501                 ; ｶｯﾄ1ｹ前下吸着(切出台)OUT2(吸着)
+ANB @T6                  ; ｳｴｲﾄﾀｲﾏｰ06
+ANL
+JMP @MR4103
+MPP
+ANB R4501                ; ｶｯﾄ1ｹ前下吸着(切出台)OUT2(吸着)
+TMR @6 #100              ; ｳｴｲﾄﾀｲﾏｰ06
+CON
+AND @T6                  ; ｳｴｲﾄﾀｲﾏｰ06
+JMP @MR4210              ; ﾌｨﾙﾑ押さえ 吸着異常(終了へ)
+;++++　ﾌｨﾙﾑ押さえ 真空 ON
+;++++　ﾌｨﾙﾑ押さえ 下降  / Film suppresion　down ++++
+STG @MR4103
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+RES MR7207               ; (ﾌｨﾙﾑ押さえ上下 上昇)
+CON
+SET MR7206               ; ﾌｨﾙﾑ押さえ上下 下降
+CON
+RES MR7406               ; 押え吸着 破壊ON
+CON
+SET MR7407               ; 押え吸着 吸着ON
+CON
+AND R4206                ; ﾌｨﾙﾑ押さえ上下 下降限
+ANB R4207                ; ﾌｨﾙﾑ押さえ上下 上昇限
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+JMP @MR4104
+;++++ 1ヶ前 破壊on / Film suppresion  vacuum on before cut1、after cut vacuum & rerease off ++++
+STG @MR4104
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+RES MR7401               ; ｶｯﾄ1ｹ前下吸着(切出台) 吸着ON
+CON
+SET MR7400               ; ｶｯﾄ1ｹ前下吸着(切出台) 破壊ON
+CON
+JMP @MR4105
+;++++　ﾌｨﾙﾑ押さえ 真空ﾁｪｯｸ / Film suppresion　vacuum check ++++
+STG @MR4105
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+MPS
+AND R4507                ; 押え吸着OUT2 (吸着確認)
+TMR @29 #5               ; ｳｴｲﾄﾀｲﾏｰ29
+CON
+AND @T29                 ; ｳｴｲﾄﾀｲﾏｰ29
+JMP @MR4201
+MPP
+ANB R4507                ; 押え吸着OUT2 (吸着確認)
+TMR @10 #100             ; ｳｴｲﾄﾀｲﾏｰ10
+CON
+AND @T10                 ; ｳｴｲﾄﾀｲﾏｰ10
+JMP @MR4106
+;***** 押さえ 吸着異常の時  / when film supression absorption NG  *****
+STG @MR4106
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+JMP @MR4107
+STG @MR4107
+RES MR7206               ; ﾌｨﾙﾑ押さえ上下 下降
+CON
+SET MR7207               ; (ﾌｨﾙﾑ押さえ上下 上昇)
+CON
+ANB R4206                ; ﾌｨﾙﾑ押さえ上下 下降限
+AND R4207                ; ﾌｨﾙﾑ押さえ上下 上昇限
+SET @MR400               ; Err13 押さえ吸着異常
+CON
+JMP @MR4108
+STG @MR4108
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+AND @MR403               ; Err13 解除完了
+RES @MR403               ; Err13 解除完了
+CON
+JMP @MR4109
+STG @MR4109
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+RES MR7207               ; (ﾌｨﾙﾑ押さえ上下 上昇)
+CON
+SET MR7206               ; ﾌｨﾙﾑ押さえ上下 下降
+CON
+AND R4206                ; ﾌｨﾙﾑ押さえ上下 下降限
+ANB R4207                ; ﾌｨﾙﾑ押さえ上下 上昇限
+SET @MR907               ; ﾌｨﾙﾑ切り出し失敗
+CON
+JMP @MR4408              ; ﾌｨﾙﾑｶｯﾄ終了処理へ
+;<h1/>____Sub1_B PART
+;++++　ﾌｨﾙﾑ押さえ 上昇  / Film suppresion　up & before cut1、after cut rerease on ++++
+STG @MR4201
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+RES MR7405               ; ｶｯﾄ後下吸着(切出台) 吸着ON
+CON
+SET MR7404               ; ｶｯﾄ後下吸着(切出台) 破壊ON
+CON
+LD R4504                 ; ｶｯﾄ後下吸着(切出台)OUT1(解放)
+LD CR2003                ; 常時OFF
+AND= @DM1 #0             ; ﾌｨﾙﾑﾌｨｰﾄﾞ回数
+ORL
+ANL
+RES MR7206               ; ﾌｨﾙﾑ押さえ上下 下降
+CON
+SET MR7207               ; (ﾌｨﾙﾑ押さえ上下 上昇)
+CON
+ANB R4206                ; ﾌｨﾙﾑ押さえ上下 下降限
+AND R4207                ; ﾌｨﾙﾑ押さえ上下 上昇限
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+JMP @MR4202
+;++++ｶｯﾄ1個前、ｶｯﾄ後破壊ﾘｾｯﾄ
+STG @MR4202
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+RES MR7401               ; ｶｯﾄ1ｹ前下吸着(切出台) 吸着ON
+CON
+RES MR7400               ; ｶｯﾄ1ｹ前下吸着(切出台) 破壊ON
+CON
+RES MR7404               ; ｶｯﾄ後下吸着(切出台) 破壊ON
+CON
+RES MR7405               ; ｶｯﾄ後下吸着(切出台) 吸着ON
+CON
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+JMP @MR4203
+;++++　ﾌｨﾙﾑ押さえ 後退
+STG @MR4203
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+AND MR3004               ; IL F押さえ後退OK
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+RES MR7202               ; ﾌｨﾙﾑ押え 前進 (引出し側)
+CON
+SET MR7203               ; ﾌｨﾙﾑ押え 後退
+CON
+JMP @MR4204
+;切り出し台 後退
+STG @MR4204
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+AND MR3003               ; IL F切り出し前進OK
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+RES MR7208               ; ﾌｨﾙﾑ切り出し台 前進 (受渡側)
+CON
+SET MR7209               ; ﾌｨﾙﾑ切り出し台 後退 (引込側)
+CON
+JMP @MR4205
+;位置確認
+STG @MR4205
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+ANB R4202                ; ﾌｨﾙﾑ押え 前後 前進限(ﾌｨﾙﾑ引出)
+AND R4203                ; ﾌｨﾙﾑ押え 前後 後退限
+ANB R4208                ; ﾌｨﾙﾑ切り出し台  前進限(受渡)
+AND R4209                ; ﾌｨﾙﾑ切り出し台 前後 後退限(引込)
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+JMP @MR4206
+;++++　 2ヶ前 破壊on  / before cut2 rerease  ++++
+STG @MR4206
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+SET MR7402               ; ｶｯﾄ2ｹ前下吸着 破壊ON
+CON
+RES MR7403               ; ｶｯﾄ2ｹ前下吸着 吸着ON
+CON
+AND R4502                ; ｶｯﾄ2ｹ前下吸着OUT1 (解放確認)
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+JMP @MR4207
+;ｶｯﾄ2個前破壊ﾘｾｯﾄ、1ヶ前吸着・ｶｯﾄ後吸着ON
+STG @MR4207
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+RES MR7400               ; ｶｯﾄ1ｹ前下吸着(切出台) 破壊ON
+CON
+SET MR7401               ; ｶｯﾄ1ｹ前下吸着(切出台) 吸着ON
+CON
+RES MR7402               ; ｶｯﾄ2ｹ前下吸着 破壊ON
+CON
+RES MR7403               ; ｶｯﾄ2ｹ前下吸着 吸着ON
+CON
+RES MR7404               ; ｶｯﾄ後下吸着(切出台) 破壊ON
+CON
+SET MR7405               ; ｶｯﾄ後下吸着(切出台) 吸着ON
+CON
+SET MR7206               ; ﾌｨﾙﾑ押さえ上下 下降
+CON
+RES MR7207               ; (ﾌｨﾙﾑ押さえ上下 上昇)
+CON
+ANB R4207                ; ﾌｨﾙﾑ押さえ上下 上昇限
+AND R4206                ; ﾌｨﾙﾑ押さえ上下 下降限
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+JMP @MR4208
+;ﾌｨﾙﾑ押さえ破壊ON
+STG @MR4208
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+RES MR7407               ; 押え吸着 吸着ON
+CON
+SET MR7406               ; 押え吸着 破壊ON
+CON
+MPS
+AND R4501                ; ｶｯﾄ1ｹ前下吸着(切出台)OUT2(吸着)
+JMP @MR4209
+MPP
+ANB R4501                ; ｶｯﾄ1ｹ前下吸着(切出台)OUT2(吸着)
+TMR @11 #100             ; ｳｴｲﾄﾀｲﾏｰ11
+CON
+AND @T11                 ; ｳｴｲﾄﾀｲﾏｰ11
+JMP @MR4210              ; ﾌｨﾙﾑ押さえ 吸着異常(終了へ)
+;++++　 1ヶ前 吸着ﾁｪｯｸ  /  before cut1 vacuum check  ++++
+STG @MR4209
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+RES MR7407               ; 押え吸着 吸着ON
+CON
+RES MR7406               ; 押え吸着 破壊ON
+CON
+MPS
+AND CR2003               ; 常時OFF
+RES MR7206               ; ﾌｨﾙﾑ押さえ上下 下降
+CON
+SET MR7207               ; (ﾌｨﾙﾑ押さえ上下 上昇)
+CON
+ANB R4206                ; ﾌｨﾙﾑ押さえ上下 下降限
+AND R4207                ; ﾌｨﾙﾑ押さえ上下 上昇限
+JMP @MR4300
+MPP
+ANB CR2003               ; 常時OFF
+JMP @MR4300
+;***** ｶｯﾄ1ヶ前 吸着異常の時  / when before cut absorption NG  *****
+STG @MR4210              ; ﾌｨﾙﾑ押さえ 吸着異常(終了へ)
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+JMP @MR4211
+STG @MR4211
+SET @MR312               ; Err12　ｶｯﾄ1つ前吸着異常
+CON
+JMP @MR4212
+STG @MR4212
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+AND @MR315               ; Err12 解除完了
+RES @MR315               ; Err12 解除完了
+CON
+SET @MR907               ; ﾌｨﾙﾑ切り出し失敗
+CON
+JMP @MR4408              ; ﾌｨﾙﾑｶｯﾄ終了処理へ
+;++++   ｶｯﾄ後 吸着ﾁｪｯｸ  /  after cut vacuum check  ++++  (ﾌｨﾙﾑはまだｶｯﾄしていない)
+STG @MR4300
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+MPS
+AND @MR910               ; 2回目以降動作
+MPS
+LD R4505                 ; ｶｯﾄ後下吸着(切出台)OUT2(吸着)
+ANB @T12                 ; ｳｴｲﾄﾀｲﾏｰ12
+ANL
+JMP @MR4301
+MPP
+ANB R4505                ; ｶｯﾄ後下吸着(切出台)OUT2(吸着)
+TMR @12 #100             ; ｳｴｲﾄﾀｲﾏｰ12
+CON
+AND @T12                 ; ｳｴｲﾄﾀｲﾏｰ12
+JMP @MR4302
+MPP
+ANB @MR910               ; 2回目以降動作
+JMP @MR4301
+STG @MR4301
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+JMP @MR4307
+;***** ｶｯﾄ後 吸着異常の時  / when after cut absorption NG  *****
+STG @MR4302
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+JMP @MR4303
+STG @MR4303
+SET @MR404               ; Err14　ｶｯﾄ後吸着異常
+CON
+JMP @MR4304
+STG @MR4304
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+AND @MR407               ; Err14 解除完了
+ZRES MR7400 MR7407       ; ｶｯﾄ1ｹ前下吸着(切出台) 破壊ON  押え吸着 吸着ON
+CON
+RES @MR407               ; Err14 解除完了
+CON
+SET @MR907               ; ﾌｨﾙﾑ切り出し失敗
+CON
+JMP @MR4408              ; ﾌｨﾙﾑｶｯﾄ終了処理へ
+;++++   吸着ﾍｯﾄﾞ位置確認  ++++
+STG @MR4307
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+SET MR7214               ; 吸着ﾍｯﾄﾞ 旋回 (45°)
+CON
+RES MR7215               ; 吸着ﾍｯﾄﾞ 旋回戻し (0°)
+CON
+ANB MR4300               ; Cylinder Error 4300
+AND R4300                ; 吸着ﾍｯﾄﾞ 旋回限(45°)
+ANB R4301                ; 吸着ﾍｯﾄﾞ 旋回戻し限(0°)
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+JMP @MR4308
+STG @MR4308
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+JMP @MR4309
+STG @MR4309
+JMP @MR4310
+;++++　ﾌｨﾙﾑｸﾗﾝﾌﾟ 上昇   / Film clamp up   ++++
+STG @MR4310
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+SET MR7200               ; ﾌｨﾙﾑｸﾗﾝﾌﾟ 上下 上昇
+CON
+RES MR7201               ; (ﾌｨﾙﾑｸﾗﾝﾌﾟ 上下 下降)
+CON
+ANB MR4200               ; Cylinder Error 4200
+AND R4200                ; ﾌｨﾙﾑｸﾗﾝﾌﾟ 上下 上昇限
+ANB R4201                ; ﾌｨﾙﾑｸﾗﾝﾌﾟ 上下 下降限
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+JMP @MR4311
+;++++　ﾌｨﾙﾑﾌｨｰﾄﾞ   / Film feed   ++++
+;切り出し台ｴｱｰOFF
+STG @MR4311
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+RES MR7208               ; ﾌｨﾙﾑ切り出し台 前進 (受渡側)
+CON
+RES MR7209               ; ﾌｨﾙﾑ切り出し台 後退 (引込側)
+CON
+JMP @MR4312
+STG @MR4312
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+AND @MR001               ; ﾌｨﾙﾑﾌｨｰﾄﾞ条件
+SET MR7202               ; ﾌｨﾙﾑ押え 前進 (引出し側)
+CON
+RES MR7203               ; ﾌｨﾙﾑ押え 後退
+CON
+AND R4202                ; ﾌｨﾙﾑ押え 前後 前進限(ﾌｨﾙﾑ引出)
+ANB R4203                ; ﾌｨﾙﾑ押え 前後 後退限
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+JMP @MR4313
+STG @MR4313
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+AND @MR001               ; ﾌｨﾙﾑﾌｨｰﾄﾞ条件
+SET MR7208               ; ﾌｨﾙﾑ切り出し台 前進 (受渡側)
+CON
+RES MR7209               ; ﾌｨﾙﾑ切り出し台 後退 (引込側)
+CON
+AND R4208                ; ﾌｨﾙﾑ切り出し台  前進限(受渡)
+ANB R4209                ; ﾌｨﾙﾑ切り出し台 前後 後退限(引込)
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+JMP @MR4314
+;++++　ﾌｨﾙﾑｸﾗﾝﾌﾟ 下降   / Film clamp down   ++++
+STG @MR4314
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+TMR @13 #5               ; ｳｴｲﾄﾀｲﾏｰ13
+CON
+AND @T13                 ; ｳｴｲﾄﾀｲﾏｰ13
+SET MR7201               ; (ﾌｨﾙﾑｸﾗﾝﾌﾟ 上下 下降)
+CON
+RES MR7200               ; ﾌｨﾙﾑｸﾗﾝﾌﾟ 上下 上昇
+CON
+ANB R4200                ; ﾌｨﾙﾑｸﾗﾝﾌﾟ 上下 上昇限
+AND R4201                ; ﾌｨﾙﾑｸﾗﾝﾌﾟ 上下 下降限
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+JMP @MR4400
+;++++　 2ヶ前 真空 on  / before cut2 vacuum on  ++++
+STG @MR4400
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+RES MR7402               ; ｶｯﾄ2ｹ前下吸着 破壊ON
+CON
+MPS
+AND @MR910               ; 2回目以降動作
+SET MR7403               ; ｶｯﾄ2ｹ前下吸着 吸着ON
+CON
+AND R4505                ; ｶｯﾄ後下吸着(切出台)OUT2(吸着)
+@INC @DM1                ; ﾌｨﾙﾑﾌｨｰﾄﾞ回数
+CON
+MPS
+AND<= @DM0 @DM1          ; ﾌｨﾙﾑﾌｨｰﾄﾞ回数設定  ﾌｨﾙﾑﾌｨｰﾄﾞ回数
+MPS
+AND R4204                ; ｶｯﾀｰ前後 前進限(装置内側)
+JMP @MR4401
+MPP
+AND R4205                ; ｶｯﾀｰ前後 後退限(外側)
+JMP @MR4402
+MPP
+AND> @DM0 @DM1           ; ﾌｨﾙﾑﾌｨｰﾄﾞ回数設定  ﾌｨﾙﾑﾌｨｰﾄﾞ回数
+JMP @MR4403
+MPP
+ANB @MR910               ; 2回目以降動作
+@INC @DM1                ; ﾌｨﾙﾑﾌｨｰﾄﾞ回数
+CON
+MPS
+AND<= @DM0 @DM1          ; ﾌｨﾙﾑﾌｨｰﾄﾞ回数設定  ﾌｨﾙﾑﾌｨｰﾄﾞ回数
+MPS
+AND R4204                ; ｶｯﾀｰ前後 前進限(装置内側)
+JMP @MR4401
+MPP
+AND R4205                ; ｶｯﾀｰ前後 後退限(外側)
+JMP @MR4402
+MPP
+AND> @DM0 @DM1           ; ﾌｨﾙﾑﾌｨｰﾄﾞ回数設定  ﾌｨﾙﾑﾌｨｰﾄﾞ回数
+JMP @MR4403
+;++++　ｶｯﾀｰ 後退 or 前進  / cutter back   ++++
+STG @MR4401
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+SET MR7205               ; ｶｯﾀｰ前後 後退 (外側)
+CON
+RES MR7204               ; ｶｯﾀｰ前後 前進 (装置内側)
+CON
+ANB R4204                ; ｶｯﾀｰ前後 前進限(装置内側)
+AND R4205                ; ｶｯﾀｰ前後 後退限(外側)
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+JMP @MR4403
+STG @MR4402
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+SET MR7204               ; ｶｯﾀｰ前後 前進 (装置内側)
+CON
+RES MR7205               ; ｶｯﾀｰ前後 後退 (外側)
+CON
+AND R4204                ; ｶｯﾀｰ前後 前進限(装置内側)
+ANB R4205                ; ｶｯﾀｰ前後 後退限(外側)
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+JMP @MR4403
+;++++　ﾌｨﾙﾑ押さえ 上昇   / Film suppresion uo   ++++
+STG @MR4403
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+SET MR7406               ; 押え吸着 破壊ON
+CON
+RES MR7407               ; 押え吸着 吸着ON
+CON
+AND R4506                ; 押え吸着OUT1 (解放確認)
+JMP @MR4404
+STG @MR4404
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+RES MR7406               ; 押え吸着 破壊ON
+CON
+RES MR7407               ; 押え吸着 吸着ON
+CON
+SET MR7207               ; (ﾌｨﾙﾑ押さえ上下 上昇)
+CON
+RES MR7206               ; ﾌｨﾙﾑ押さえ上下 下降
+CON
+ANB R4206                ; ﾌｨﾙﾑ押さえ上下 下降限
+AND R4207                ; ﾌｨﾙﾑ押さえ上下 上昇限
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+JMP @MR4405
+;++++　ﾌｨﾙﾑ押さえ 後退   / Film suppresion back   ++++
+STG @MR4405
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+AND MR3004               ; IL F押さえ後退OK
+SET MR7203               ; ﾌｨﾙﾑ押え 後退
+CON
+RES MR7202               ; ﾌｨﾙﾑ押え 前進 (引出し側)
+CON
+ANB R4202                ; ﾌｨﾙﾑ押え 前後 前進限(ﾌｨﾙﾑ引出)
+AND R4203                ; ﾌｨﾙﾑ押え 前後 後退限
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+JMP @MR4406
+STG @MR4406
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+SET MR7206               ; ﾌｨﾙﾑ押さえ上下 下降
+CON
+RES MR7207               ; (ﾌｨﾙﾑ押さえ上下 上昇)
+CON
+AND R4206                ; ﾌｨﾙﾑ押さえ上下 下降限
+ANB R4207                ; ﾌｨﾙﾑ押さえ上下 上昇限
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+JMP @MR4407
+STG @MR4407
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+MPS
+AND<= @DM0 @DM1          ; ﾌｨﾙﾑﾌｨｰﾄﾞ回数設定  ﾌｨﾙﾑﾌｨｰﾄﾞ回数
+JMP @MR4408              ; ﾌｨﾙﾑｶｯﾄ終了処理へ
+MPP
+AND> @DM0 @DM1           ; ﾌｨﾙﾑﾌｨｰﾄﾞ回数設定  ﾌｨﾙﾑﾌｨｰﾄﾞ回数
+MPS
+AND CR2003               ; 常時OFF
+JMP @MR4103
+MPP
+AND CR2002               ; 常時ON
+JMP @MR4408              ; ﾌｨﾙﾑｶｯﾄ終了処理へ
+;ﾌｨﾙﾑｶｯﾄ終了処理へ
+STG @MR4408              ; ﾌｨﾙﾑｶｯﾄ終了処理へ
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+SET @MR814               ; ｾﾞﾛﾃﾝｼｮﾝ中
+CON
+JMP @MR4409
+;++++　 ｾﾞﾛﾃﾝｼｮﾝ  / zero tension ++++
+STG @MR4409
+MPS
+LDB @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+ORB R1100                ; ﾌｨﾙﾑ送りﾓｰﾀｰｱﾗｰﾑON=OK
+ORB R1101                ; ﾌｨﾙﾑ送りﾓｰﾀｰｻｰﾓｽﾀｯﾄ
+ANL
+RES MR2100               ; ﾌｨﾙﾑ送りﾓｰﾀｰ正転
+CON
+RES MR2101               ; ﾌｨﾙﾑ送りﾓｰﾀｰ反転
+CON
+RES MR2102               ; ﾌｨﾙﾑ送りﾓｰﾀｰﾌﾞﾚｰｷﾘﾘｰｽ
+MRD
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+MPS
+LD R1100                 ; ﾌｨﾙﾑ送りﾓｰﾀｰｱﾗｰﾑON=OK
+AND R1101                ; ﾌｨﾙﾑ送りﾓｰﾀｰｻｰﾓｽﾀｯﾄ
+ANL
+SET MR2010               ; ﾌｨﾙﾑ送りﾓｰﾀｰ電源ON
+CON
+TMR @31 #5               ; ｳｴｲﾄﾀｲﾏｰ31
+CON
+AND @T31                 ; ｳｴｲﾄﾀｲﾏｰ31
+SET MR2100               ; ﾌｨﾙﾑ送りﾓｰﾀｰ正転
+CON
+RES MR2101               ; ﾌｨﾙﾑ送りﾓｰﾀｰ反転
+CON
+RES MR2102               ; ﾌｨﾙﾑ送りﾓｰﾀｰﾌﾞﾚｰｷﾘﾘｰｽ
+MRD
+AND MR2100               ; ﾌｨﾙﾑ送りﾓｰﾀｰ正転
+TMR @18 #50              ; ｳｴｲﾄﾀｲﾏｰ18
+CON
+AND @T18                 ; ｳｴｲﾄﾀｲﾏｰ18
+RES MR2100               ; ﾌｨﾙﾑ送りﾓｰﾀｰ正転
+CON
+RES MR2101               ; ﾌｨﾙﾑ送りﾓｰﾀｰ反転
+CON
+RES MR2102               ; ﾌｨﾙﾑ送りﾓｰﾀｰﾌﾞﾚｰｷﾘﾘｰｽ
+CON
+SET @MR408               ; Err15 ﾌｨﾙﾑ送り出しﾀｲﾑｱｳﾄ
+CON
+JMP @MR4411              ; ﾌｨﾙﾑ送り出し異常
+MPP
+AND MR22001              ; ﾀﾞﾝｻｰﾛｰﾗ下限異常検出(ON=異常)
+RES MR2100               ; ﾌｨﾙﾑ送りﾓｰﾀｰ正転
+CON
+RES MR2101               ; ﾌｨﾙﾑ送りﾓｰﾀｰ反転
+CON
+RES MR2102               ; ﾌｨﾙﾑ送りﾓｰﾀｰﾌﾞﾚｰｷﾘﾘｰｽ
+CON
+SET @MR204               ; Err6_ﾀﾞﾝｻｰﾛｰﾗｰ下限検出
+CON
+JMP @MR4411              ; ﾌｨﾙﾑ送り出し異常
+MPP
+AND R4314                ; ﾀﾞﾝｻｰﾛｰﾗ巻出し検出 D-ON
+RES MR2100               ; ﾌｨﾙﾑ送りﾓｰﾀｰ正転
+CON
+RES MR2101               ; ﾌｨﾙﾑ送りﾓｰﾀｰ反転
+CON
+RES MR2102               ; ﾌｨﾙﾑ送りﾓｰﾀｰﾌﾞﾚｰｷﾘﾘｰｽ
+CON
+JMP @MR4410
+STG @MR4411              ; ﾌｨﾙﾑ送り出し異常
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+MPS
+AND @MR411               ; Err15 解除完了
+RES @MR411               ; Err15 解除完了
+CON
+JMP @MR4409
+MPP
+AND @MR207               ; Err6 解除完了
+RES @MR207               ; Err6 解除完了
+CON
+JMP @MR4409
+;Fﾌｨｰﾄﾞ&ｶｯﾄ完了
+STG @MR4410
+MPS
+AND<= @DM0 @DM1          ; ﾌｨﾙﾑﾌｨｰﾄﾞ回数設定  ﾌｨﾙﾑﾌｨｰﾄﾞ回数
+RES @MR814               ; ｾﾞﾛﾃﾝｼｮﾝ中
+CON
+RES @MR4002              ; Fﾌｨｰﾄﾞ&ｶｯﾄ実行中
+CON
+SET @MR4001              ; Fﾌｨｰﾄﾞ&ｶｯﾄ完了
+CON
+ENDS
+MPP
+AND> @DM0 @DM1           ; ﾌｨﾙﾑﾌｨｰﾄﾞ回数設定  ﾌｨﾙﾑﾌｨｰﾄﾞ回数
+JMP @MR4103
+;<h1/>[@M4500]ﾌｨﾙﾑ搬送Sub
+STG @MR4500              ; ﾌｨﾙﾑPP取出し動作Sub実行指令
+RES @MR911               ; ﾌｨﾙﾑ取出し失敗
+CON
+SET @MR4502              ; ﾌｨﾙﾑPP取出し動作Sub実行中
+CON
+JMP @MR4503
+STG @MR4503
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+SET MR7215               ; 吸着ﾍｯﾄﾞ 旋回戻し (0°)
+CON
+RES MR7214               ; 吸着ﾍｯﾄﾞ 旋回 (45°)
+CON
+ANB MR4301               ; Cylinder Error 4301
+AND R4301                ; 吸着ﾍｯﾄﾞ 旋回戻し限(0°)
+ANB R4300                ; 吸着ﾍｯﾄﾞ 旋回限(45°)
+TMH @26 #50              ; ｳｴｲﾄﾀｲﾏｰ26
+CON
+AND @T26                 ; ｳｴｲﾄﾀｲﾏｰ26
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+JMP @MR4504
+;搬送PP吸着ON
+STG @MR4504
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+SET MR7212               ; 吸着ﾍｯﾄﾞ 下降
+CON
+RES MR7213               ; (吸着ﾍｯﾄﾞ 上昇)
+CON
+SET MR7409               ; 吸着ﾍｯﾄﾞ(ﾒｶﾞﾈ) 吸着ON
+CON
+RES MR7408               ; 吸着ﾍｯﾄﾞ(ﾒｶﾞﾈ) 破壊ON
+CON
+ANB MR4213               ; Cylinder Error 4213
+AND R4213                ; 吸着ﾍｯﾄﾞ 下降限2(切出し側)
+ANB R4214                ; 吸着ﾍｯﾄﾞ 上昇限
+JMP @MR4505
+STG @MR4505
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+SET MR7404               ; ｶｯﾄ後下吸着(切出台) 破壊ON
+CON
+RES MR7405               ; ｶｯﾄ後下吸着(切出台) 吸着ON
+CON
+MPS
+AND R4509                ; 吸着ﾍｯﾄﾞ(ﾒｶﾞﾈ)OUT2 (吸着)
+JMP @MR4513              ; 搬送PP上昇
+MPP
+ANB R4509                ; 吸着ﾍｯﾄﾞ(ﾒｶﾞﾈ)OUT2 (吸着)
+TMH @20 #500             ; ｳｴｲﾄﾀｲﾏｰ20
+CON
+AND @T20                 ; ｳｴｲﾄﾀｲﾏｰ20
+RES MR7405               ; ｶｯﾄ後下吸着(切出台) 吸着ON
+CON
+RES MR7406               ; 押え吸着 破壊ON
+CON
+JMP @MR4506
+;Err16 ﾌｨﾙﾑ搬送PP徐材要求 
+STG @MR4506
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+RES MR7212               ; 吸着ﾍｯﾄﾞ 下降
+CON
+SET MR7213               ; (吸着ﾍｯﾄﾞ 上昇)
+CON
+ANB MR4214               ; Cylinder Error 4214
+AND R4214                ; 吸着ﾍｯﾄﾞ 上昇限
+ANB R4213                ; 吸着ﾍｯﾄﾞ 下降限2(切出し側)
+JMP @MR4507
+STG @MR4507
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+SET @MR412               ; Err16　ﾌｨﾙﾑ搬送ﾌｨﾙﾑ徐材要求
+CON
+JMP @MR4508
+STG @MR4508
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+AND @MR415               ; Err16 解除完了
+RES @MR415               ; Err16 解除完了
+CON
+JMP @MR4509
+STG @MR4509
+SET MR7409               ; 吸着ﾍｯﾄﾞ(ﾒｶﾞﾈ) 吸着ON
+CON
+RES MR7408               ; 吸着ﾍｯﾄﾞ(ﾒｶﾞﾈ) 破壊ON
+CON
+TMH @21 #100             ; ｳｴｲﾄﾀｲﾏｰ21
+CON
+AND @T21                 ; ｳｴｲﾄﾀｲﾏｰ21
+MPS
+ANB R4509                ; 吸着ﾍｯﾄﾞ(ﾒｶﾞﾈ)OUT2 (吸着)
+RES MR7409               ; 吸着ﾍｯﾄﾞ(ﾒｶﾞﾈ) 吸着ON
+CON
+RES MR7408               ; 吸着ﾍｯﾄﾞ(ﾒｶﾞﾈ) 破壊ON
+CON
+JMP @MR4510
+MPP
+AND R4509                ; 吸着ﾍｯﾄﾞ(ﾒｶﾞﾈ)OUT2 (吸着)
+JMP @MR4506
+;Err9 切出ﾌｨﾙﾑ除材要求 / Film remove demand 
+STG @MR4510
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+RES MR7404               ; ｶｯﾄ後下吸着(切出台) 破壊ON
+CON
+RES MR7405               ; ｶｯﾄ後下吸着(切出台) 吸着ON
+CON
+SET @MR300               ; Err9　切出ﾌｨﾙﾑ除材要求
+CON
+JMP @MR4511
+STG @MR4511
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+AND @MR303               ; Err9 解除完了
+RES @MR303               ; Err9 解除完了
+CON
+JMP @MR4512
+STG @MR4512
+SET MR7404               ; ｶｯﾄ後下吸着(切出台) 破壊ON
+CON
+RES MR7405               ; ｶｯﾄ後下吸着(切出台) 吸着ON
+CON
+TMH @22 #10              ; ｳｴｲﾄﾀｲﾏｰ22
+CON
+AND @T22                 ; ｳｴｲﾄﾀｲﾏｰ22
+MPS
+ANB R4505                ; ｶｯﾄ後下吸着(切出台)OUT2(吸着)
+SET MR7404               ; ｶｯﾄ後下吸着(切出台) 破壊ON
+CON
+RES MR7405               ; ｶｯﾄ後下吸着(切出台) 吸着ON
+CON
+JMP @MR4600
+MPP
+AND R4505                ; ｶｯﾄ後下吸着(切出台)OUT2(吸着)
+JMP @MR4510
+;上昇後吸着確認
+STG @MR4513              ; 搬送PP上昇
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+RES MR7212               ; 吸着ﾍｯﾄﾞ 下降
+CON
+SET MR7213               ; (吸着ﾍｯﾄﾞ 上昇)
+CON
+ANB MR4214               ; Cylinder Error 4214
+AND R4214                ; 吸着ﾍｯﾄﾞ 上昇限
+ANB R4213                ; 吸着ﾍｯﾄﾞ 下降限2(切出し側)
+RES MR7404               ; ｶｯﾄ後下吸着(切出台) 破壊ON
+CON
+RES MR7405               ; ｶｯﾄ後下吸着(切出台) 吸着ON
+CON
+JMP @MR4514
+STG @MR4514
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+MPS
+AND R4509                ; 吸着ﾍｯﾄﾞ(ﾒｶﾞﾈ)OUT2 (吸着)
+JMP @MR4603              ; 搬送PP移動
+MPP
+ANB R4509                ; 吸着ﾍｯﾄﾞ(ﾒｶﾞﾈ)OUT2 (吸着)
+TMH @23 #500             ; ｳｴｲﾄﾀｲﾏｰ23
+CON
+AND @T23                 ; ｳｴｲﾄﾀｲﾏｰ23
+JMP @MR4515
+STG @MR4515
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+SET @MR412               ; Err16　ﾌｨﾙﾑ搬送ﾌｨﾙﾑ徐材要求
+CON
+JMP @MR4600
+STG @MR4600
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+AND @MR415               ; Err16 解除完了
+RES @MR415               ; Err16 解除完了
+CON
+JMP @MR4601
+STG @MR4601
+SET MR7409               ; 吸着ﾍｯﾄﾞ(ﾒｶﾞﾈ) 吸着ON
+CON
+RES MR7408               ; 吸着ﾍｯﾄﾞ(ﾒｶﾞﾈ) 破壊ON
+CON
+TMH @25 #100             ; ｳｴｲﾄﾀｲﾏｰ25
+CON
+AND @T25                 ; ｳｴｲﾄﾀｲﾏｰ25
+MPS
+ANB R4509                ; 吸着ﾍｯﾄﾞ(ﾒｶﾞﾈ)OUT2 (吸着)
+RES MR7409               ; 吸着ﾍｯﾄﾞ(ﾒｶﾞﾈ) 吸着ON
+CON
+RES MR7408               ; 吸着ﾍｯﾄﾞ(ﾒｶﾞﾈ) 破壊ON
+CON
+JMP @MR4602              ; ﾌｨﾙﾑ取出し異常終了
+MPP
+AND R4509                ; 吸着ﾍｯﾄﾞ(ﾒｶﾞﾈ)OUT2 (吸着)
+JMP @MR4515
+;ﾌｨﾙﾑ取出し異常終了
+STG @MR4602              ; ﾌｨﾙﾑ取出し異常終了
+SET @MR911               ; ﾌｨﾙﾑ取出し失敗
+CON
+JMP @MR4715              ; ﾌｨﾙﾑ搬送Sub終了
+;<h1/>____▼_溶着側へ移動
+STG @MR4603              ; 搬送PP移動
+MPS
+LD @MR015                ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+AND MR3000               ; IL 吸着ﾍｯﾄﾞ移動OK
+ANL
+SET MR7214               ; 吸着ﾍｯﾄﾞ 旋回 (45°)
+CON
+RES MR7215               ; 吸着ﾍｯﾄﾞ 旋回戻し (0°)
+CON
+SET MR7210               ; 吸着ﾍｯﾄﾞ 右行 (溶着側)
+CON
+RES MR7211               ; 吸着ﾍｯﾄﾞ 左行 (ﾌｨﾙﾑ切出し側)
+CON
+ANB MR4300               ; Cylinder Error 4300
+AND R4300                ; 吸着ﾍｯﾄﾞ 旋回限(45°)
+ANB R4301                ; 吸着ﾍｯﾄﾞ 旋回戻し限(0°)
+ANB MR4210               ; Cylinder Error 4210
+AND R4210                ; 吸着ﾍｯﾄﾞ 右行限(溶着側)
+ANB R4211                ; 吸着ﾍｯﾄﾞ 左行限(切出し側)
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+JMP @MR4604
+MPP
+ANB R1111                ; ﾗｲﾄｶｰﾃﾝﾐｭｰﾃｨﾝｸﾞ中はON状態
+RES MR7210               ; 吸着ﾍｯﾄﾞ 右行 (溶着側)
+CON
+RES MR7211               ; 吸着ﾍｯﾄﾞ 左行 (ﾌｨﾙﾑ切出し側)
+STG @MR4604
+JMP @MR4605              ; 供給要求待ち
+;ｽﾃｯﾌﾟの条件に下記をいれる
+STG @MR4605              ; 供給要求待ち
+AND @MR8900              ; ﾌｨﾙﾑ供給要求→ﾌｨﾙﾑ搬送PP
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+JMP @MR4606
+STG @MR4606
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+SET MR7212               ; 吸着ﾍｯﾄﾞ 下降
+CON
+RES MR7213               ; (吸着ﾍｯﾄﾞ 上昇)
+CON
+ANB MR4212               ; Cylinder Error 4212
+AND R4212                ; 吸着ﾍｯﾄﾞ 下降限1(溶着側)
+ANB R4214                ; 吸着ﾍｯﾄﾞ 上昇限
+JMP @MR4607
+STG @MR4607
+SET @MR8901              ; ﾌｨﾙﾑ供給完了→ﾜｰｸ搬送
+CON
+JMP @MR4608
+STG @MR4608
+ANB @MR8900              ; ﾌｨﾙﾑ供給要求→ﾌｨﾙﾑ搬送PP
+ANB @MR8901              ; ﾌｨﾙﾑ供給完了→ﾜｰｸ搬送
+JMP @MR4609              ; 溶着完了待ち
+STG @MR4609              ; 溶着完了待ち
+AND R4214                ; 吸着ﾍｯﾄﾞ 上昇限
+ANB R4509                ; 吸着ﾍｯﾄﾞ(ﾒｶﾞﾈ)OUT2 (吸着)
+AND @MR8902              ; 溶着完了→ﾌｨﾙﾑ搬送PP
+JMP @MR4610
+STG @MR4610
+SET @MR8903              ; 溶着完了受取→ﾜｰｸ搬送PP
+CON
+JMP @MR4611
+STG @MR4611
+ANB @MR8902              ; 溶着完了→ﾌｨﾙﾑ搬送PP
+ANB @MR8903              ; 溶着完了受取→ﾜｰｸ搬送PP
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+JMP @MR4612              ; 吸着ﾍｯﾄﾞ念の為上昇
+STG @MR4612              ; 吸着ﾍｯﾄﾞ念の為上昇
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+SET MR7213               ; (吸着ﾍｯﾄﾞ 上昇)
+CON
+RES MR7212               ; 吸着ﾍｯﾄﾞ 下降
+CON
+ANB MR4214               ; Cylinder Error 4214
+AND R4214                ; 吸着ﾍｯﾄﾞ 上昇限
+ANB R4212                ; 吸着ﾍｯﾄﾞ 下降限1(溶着側)
+ANB R4213                ; 吸着ﾍｯﾄﾞ 下降限2(切出し側)
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+JMP @MR4613
+STG @MR4613
+MPS
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+SET MR7211               ; 吸着ﾍｯﾄﾞ 左行 (ﾌｨﾙﾑ切出し側)
+CON
+RES MR7210               ; 吸着ﾍｯﾄﾞ 右行 (溶着側)
+CON
+ANB MR4211               ; Cylinder Error 4211
+AND R4211                ; 吸着ﾍｯﾄﾞ 左行限(切出し側)
+ANB R4210                ; 吸着ﾍｯﾄﾞ 右行限(溶着側)
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+JMP @MR4614
+MPP
+ANB R1111                ; ﾗｲﾄｶｰﾃﾝﾐｭｰﾃｨﾝｸﾞ中はON状態
+RES MR7210               ; 吸着ﾍｯﾄﾞ 右行 (溶着側)
+CON
+RES MR7211               ; 吸着ﾍｯﾄﾞ 左行 (ﾌｨﾙﾑ切出し側)
+STG @MR4614
+JMP @MR4715              ; ﾌｨﾙﾑ搬送Sub終了
+STG @MR4715              ; ﾌｨﾙﾑ搬送Sub終了
+RES @MR4502              ; ﾌｨﾙﾑPP取出し動作Sub実行中
+CON
+SET @MR4501              ; ﾌｨﾙﾑPP取出し動作Sub完了
+CON
+ENDS
+;<h1/>[@MR6000]ﾜｰｸ位置決めSub / Work Positioning Sub
+STG @MR6000              ; ﾜｰｸ位置決めSub実行指令
+ANB @MR6002              ; ﾜｰｸ位置決めSub実行中
+SET @MR6002              ; ﾜｰｸ位置決めSub実行中
+CON
+JMP @MR6003
+STG @MR6003
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+MPS
+AND R50105               ; ｽﾀｰﾄSW ON
+MPS
+ANB MR4402               ; Cylinder Error 4402
+SET MR7306               ; ﾜｰｸｸﾗﾝﾌﾟ 閉じ
+CON
+RES MR7307               ; ﾜｰｸｸﾗﾝﾌﾟ 開き
+CON
+AND R4402                ; ﾜｰｸｸﾗﾝﾌﾟ 閉じ限
+ANB R4403                ; ﾜｰｸｸﾗﾝﾌﾟ 開き限
+JMP @MR6004
+MPP
+AND MR4402               ; Cylinder Error 4402
+RES MR7306               ; ﾜｰｸｸﾗﾝﾌﾟ 閉じ
+CON
+SET MR7307               ; ﾜｰｸｸﾗﾝﾌﾟ 開き
+MPP
+ANB R50105               ; ｽﾀｰﾄSW ON
+OUT @MR901               ; ｽﾀｰﾄSW待ち
+STG @MR6004
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+MPS
+AND R50105               ; ｽﾀｰﾄSW ON
+MPS
+ANB MR4404               ; Cylinder Error 4404
+SET MR7308               ; 供給口位置決め 前進
+CON
+RES MR7309               ; 供給口位置決め 後退
+CON
+AND R4404                ; 供給口位置決め1(左側) 前進限
+ANB R4405                ; 供給口位置決め1(左側) 後退限
+ANB MR4406               ; Cylinder Error 4406
+AND R4406                ; 供給口位置決め2(右側) 前進限
+ANB R4407                ; 供給口位置決め2(右側) 後退限
+JMP @MR6005
+MPP
+AND MR4404               ; Cylinder Error 4404
+RES MR7308               ; 供給口位置決め 前進
+CON
+SET MR7309               ; 供給口位置決め 後退
+MPP
+ANB R50105               ; ｽﾀｰﾄSW ON
+OUT @MR901               ; ｽﾀｰﾄSW待ち
+STG @MR6005
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+AND R50105               ; ｽﾀｰﾄSW ON
+JMP @MR6006
+STG @MR6006
+JMP @MR6007
+STG @MR6007
+JMP @MR6015
+STG @MR6015
+RES @MR6002              ; ﾜｰｸ位置決めSub実行中
+CON
+SET @MR6001              ; ﾜｰｸ位置決めSub実行完了
+CON
+ENDS
+;<h1/>[@MR6100]ﾜｰｸ位置決め解除Sub / Work UNPositioning Sub
+STG @MR6100              ; ﾜｰｸ位置決め解除Sub実行指令
+ANB @MR6102              ; ﾜｰｸ位置決め解除Sub実行中
+SET @MR6102              ; ﾜｰｸ位置決め解除Sub実行中
+CON
+JMP @MR6103
+STG @MR6103
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+SET MR7309               ; 供給口位置決め 後退
+CON
+RES MR7308               ; 供給口位置決め 前進
+CON
+ANB MR4405               ; Cylinder Error 4405
+AND R4405                ; 供給口位置決め1(左側) 後退限
+ANB R4404                ; 供給口位置決め1(左側) 前進限
+ANB MR4407               ; Cylinder Error 4407
+AND R4407                ; 供給口位置決め2(右側) 後退限
+ANB R4406                ; 供給口位置決め2(右側) 前進限
+JMP @MR6104
+STG @MR6104
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+SET MR7307               ; ﾜｰｸｸﾗﾝﾌﾟ 開き
+CON
+RES MR7306               ; ﾜｰｸｸﾗﾝﾌﾟ 閉じ
+CON
+ANB MR4403               ; Cylinder Error 4403
+AND R4403                ; ﾜｰｸｸﾗﾝﾌﾟ 開き限
+ANB R4402                ; ﾜｰｸｸﾗﾝﾌﾟ 閉じ限
+JMP @MR6105
+STG @MR6105
+JMP @MR6106
+STG @MR6106
+JMP @MR6107
+STG @MR6107
+JMP @MR6115
+STG @MR6115
+RES @MR6102              ; ﾜｰｸ位置決め解除Sub実行中
+CON
+SET @MR6101              ; ﾜｰｸ位置決め解除Sub実行完了
+CON
+ENDS
+;<h1/>[@MR7000]Film溶着Sub / Film Weld Sub
+LDP R4001                ; 右ｽﾀｰﾄSW
+OR CR2002                ; 常時ON
+OUT LR10001              ; ﾃﾞﾊﾞｯｸﾞ
+STG @MR7000              ; 溶着Sub開始指令
+INC @DM10                ; 溶着ﾍｯﾄﾞ清掃回数ｶｳﾝﾀ
+CON
+SET @MR8801              ; CT計測＿溶着
+CON
+SET @MR7002              ; 溶着Sub開始中
+CON
+JMP @MR7003
+STG @MR7003
+MPS
+LD R50212                ; ﾋｰﾀｰ適温
+OR LR10001               ; ﾃﾞﾊﾞｯｸﾞ
+ANL
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+JMP @MR7004
+MPP
+ANB R50212               ; ﾋｰﾀｰ適温
+OUT @MR909               ; 適温待ち
+STG @MR7004
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+RES MR7302               ; 溶着ﾍｯﾄﾞ 自重ｷｬﾝｾﾙON
+CON
+AND R1112                ; 自重ｷｬﾝｾﾙ圧力検知OUT1
+SET MR7300               ; 溶着ﾍｯﾄﾞｴｽｹｰﾌﾟ 下降
+CON
+RES MR7301               ; (溶着ﾍｯﾄﾞｴｽｹｰﾌﾟ 上昇)
+CON
+ANB MR4302               ; Cylinder Error 4302
+ANB MR4304               ; Cylinder Error 4304
+AND R4302                ; 溶着ﾍｯﾄﾞｴｽｹｰﾌﾟ1(手前側) 下降限
+ANB R4303                ; 溶着ﾍｯﾄﾞｴｽｹｰﾌﾟ1(手前側) 上昇限
+AND R4304                ; 溶着ﾍｯﾄﾞｴｽｹｰﾌﾟ2(奥側) 下降限
+ANB R4305                ; 溶着ﾍｯﾄﾞｴｽｹｰﾌﾟ2(奥側) 上昇限
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+AND LR10001              ; ﾃﾞﾊﾞｯｸﾞ
+JMP @MR7005              ; アプローチ位置移動
+;アプローチ位置移動
+STG @MR7005              ; アプローチ位置移動
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+SET @MR1900              ; RB Pack
+CON
+DW #2 DM10108            ; RB1 目標ﾎﾟｲﾝﾄ番号
+CON
+SET MR15500              ; RB1 MOVE
+CON
+JMP @MR7006
+STG @MR7006
+MPS
+AND MR15501              ; RB1 MOVE comp
+RES MR15501              ; RB1 MOVE comp
+CON
+JMP @MR7007              ; 接触点検出
+MPP
+LD MR15504               ; RB1_ALM
+AND LR10001              ; ﾃﾞﾊﾞｯｸﾞ
+ANL
+JMP @MR7308              ; RB異常処理
+;接触点検出
+LDP @MR7007              ; 接触点検出
+MPS
+LDA DM500                ; RB1接触点検出電流値
+CON
+STA DM1200               ; RB1押付け電流値(0-100)
+MPP
+LDA DM501                ; RB1接触点検出押し幅
+CON
+EXT.S
+CON
+STA.L EM10020            ; RB1 Pos3 位置決め幅
+STG @MR7007              ; 接触点検出
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+DW #3 DM10108            ; RB1 目標ﾎﾟｲﾝﾄ番号
+CON
+SET MR15600              ; RB1 PUSH
+CON
+JMP @MR7008
+;RBアラーム発生後にワーク取出し異常にする
+STG @MR7008
+MPS
+AND MR15601              ; RB1 PUSH comp
+RES MR15601              ; RB1 PUSH comp
+CON
+JMP @MR7009
+MPP
+LD MR15603               ; RB1 PUSH ERROR
+OR MR15504               ; RB1_ALM
+ANL
+RES MR15504              ; RB1_ALM
+CON
+RES MR15603              ; RB1 PUSH ERROR
+CON
+RES MR15601              ; RB1 PUSH comp
+CON
+RES @MR1900              ; RB Pack
+CON
+JMP @MR7308              ; RB異常処理
+STG @MR7009
+MPS
+ANB MR002                ; ﾀｲﾏｰ溶着ﾓｰﾄﾞ=ON
+JMP @MR7010              ; 溶融点検出
+MPP
+AND MR002                ; ﾀｲﾏｰ溶着ﾓｰﾄﾞ=ON
+JMP @MR7200              ; ﾀｲﾏｰ接着ﾓｰﾄﾞ
+;<h1/>____▼_潰し量溶着
+;溶融点検出（接触点より高いトルク）
+LDP @MR7010              ; 溶融点検出
+MPS
+LDA DM502                ; RB1接触点検出電流値
+CON
+STA DM1200               ; RB1押付け電流値(0-100)
+MRD
+LDA DM503                ; RB1溶融点検出押し幅
+CON
+EXT.S
+CON
+STA.L EM10026            ; RB1 Pos4 位置決め幅
+MPP
+LDA.L DM2000             ; RB1_PCON 現在位置
+CON
+STA.L EM10024            ; RB1 Pos4 目標値
+STG @MR7010              ; 溶融点検出
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+AND LR10001              ; ﾃﾞﾊﾞｯｸﾞ
+DW #4 DM10108            ; RB1 目標ﾎﾟｲﾝﾄ番号
+CON
+SET MR15600              ; RB1 PUSH
+CON
+JMP @MR7011
+STG @MR7011
+MPS
+AND MR15601              ; RB1 PUSH comp
+RES MR15601              ; RB1 PUSH comp
+CON
+JMP @MR7012              ; Nop
+MPP
+LD MR15603               ; RB1 PUSH ERROR
+OR MR15504               ; RB1_ALM
+ANL
+RES MR15504              ; RB1_ALM
+CON
+RES MR15603              ; RB1 PUSH ERROR
+CON
+RES MR15601              ; RB1 PUSH comp
+CON
+RES @MR1900              ; RB Pack
+CON
+JMP @MR7308              ; RB異常処理
+;溶着潰し量
+STG @MR7012              ; Nop
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+JMP @MR7013              ; 溶着潰し量
+;'潰し量検出
+;EM10030.L = D2000.L + DM504.S
+LDP @MR7013              ; 溶着潰し量
+NCJ #1000
+;'潰し量検出
+;
+;EM10030.L = D2000.L + DM504.S
+LD CR2002                ; 常時ON
+LDA.S DM504              ; RB1 溶着潰し量
+CON
+EXT.S
+CON
+ADD.L DM2000             ; RB1_PCON 現在位置
+CON
+STA.L EM10030            ; RB1 Pos5 目標値
+LABEL #1000
+;
+STG @MR7013              ; 溶着潰し量
+AND LR10001              ; ﾃﾞﾊﾞｯｸﾞ
+SET @MR1900              ; RB Pack
+CON
+DW #5 DM10108            ; RB1 目標ﾎﾟｲﾝﾄ番号
+CON
+SET MR15500              ; RB1 MOVE
+CON
+JMP @MR7014
+STG @MR7014
+MPS
+AND MR15501              ; RB1 MOVE comp
+SET R50312               ; ﾋｰﾀｰ1溶着開始(PV取得)
+CON
+RES MR15501              ; RB1 MOVE comp
+CON
+JMP @MR7015
+MPP
+AND MR15504              ; RB1_ALM
+RES MR15504              ; RB1_ALM
+CON
+RES @MR1900              ; RB Pack
+CON
+JMP @MR7308              ; RB異常処理
+;' 溶着時間ﾀｲﾏｰ命令変更0.1→0.10s
+;D1212.L = FM1.S * K10
+LDP @MR7015
+NCJ #1002
+;' 溶着時間ﾀｲﾏｰ命令変更0.1→0.10s
+;
+;D1212.L = FM1.S * K10
+LD CR2002                ; 常時ON
+LDA.S FM1                ; ST1 Timer 01
+CON
+EXT.S
+CON
+MUL.L +10
+CON
+STA.L DM1212             ; 潰しﾓｰﾄﾞ時押あて時間
+LABEL #1002
+;
+STG @MR7015
+TMH @14 DM1212           ; ｳｴｲﾄﾀｲﾏｰ14  潰しﾓｰﾄﾞ時押あて時間
+CON
+AND @T14                 ; ｳｴｲﾄﾀｲﾏｰ14
+JMP @MR7100
+;RB待機位置まで上昇
+STG @MR7100
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+AND LR10001              ; ﾃﾞﾊﾞｯｸﾞ
+SET @MR1900              ; RB Pack
+CON
+DW #1 DM10108            ; RB1 目標ﾎﾟｲﾝﾄ番号
+CON
+SET MR15500              ; RB1 MOVE
+CON
+JMP @MR7101
+STG @MR7101
+MPS
+AND MR15501              ; RB1 MOVE comp
+RES MR15501              ; RB1 MOVE comp
+CON
+JMP @MR7300
+MPP
+AND MR15504              ; RB1_ALM
+JMP @MR7308              ; RB異常処理
+;<h1/>____▼_ﾀｲﾏｰ接着(CYL動作)
+LDP @MR7200              ; ﾀｲﾏｰ接着ﾓｰﾄﾞ
+MPS
+LDA DM506                ; RB1 CYL_MODE溶着ﾄﾙｸ(電流制限値)
+CON
+STA DM1200               ; RB1押付け電流値(0-100)
+MRD
+LDA #500
+CON
+EXT.S
+CON
+STA.L EM10038            ; RB1 Pos6 位置決め幅
+MPP
+LDA.L DM2000             ; RB1_PCON 現在位置
+CON
+STA.L EM10036            ; RB1 Pos6 目標値
+STG @MR7200              ; ﾀｲﾏｰ接着ﾓｰﾄﾞ
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+SET @MR1900              ; RB Pack
+CON
+DW #6 DM10108            ; RB1 目標ﾎﾟｲﾝﾄ番号
+CON
+SET MR15600              ; RB1 PUSH
+CON
+JMP @MR7201
+STG @MR7201
+MPS
+AND MR15601              ; RB1 PUSH comp
+SET R50312               ; ﾋｰﾀｰ1溶着開始(PV取得)
+CON
+RES MR15601              ; RB1 PUSH comp
+CON
+JMP @MR7202              ; 押し当て時間
+MPP
+AND MR15504              ; RB1_ALM
+RES MR15504              ; RB1_ALM
+CON
+RES MR15603              ; RB1 PUSH ERROR
+CON
+JMP @MR7308              ; RB異常処理
+;' 溶着時間ﾀｲﾏｰ命令変更0.1→0.10s
+;D1210.L = FM0.S * K10
+LD @MR7202               ; 押し当て時間
+NCJ #1001
+;' 溶着時間ﾀｲﾏｰ命令変更0.1→0.10s
+;
+;D1210.L = FM0.S * K10
+LD CR2002                ; 常時ON
+LDA.S FM0                ; ﾀｲﾏｰﾓｰﾄﾞ溶着時間
+CON
+EXT.S
+CON
+MUL.L +10
+CON
+STA.L DM1210             ; 溶着ﾀｲﾏｰﾓｰﾄﾞ時押あて時間
+LABEL #1001
+;
+STG @MR7202              ; 押し当て時間
+TMH @15 DM1210           ; ｳｴｲﾄﾀｲﾏｰ15  溶着ﾀｲﾏｰﾓｰﾄﾞ時押あて時間
+CON
+AND @T15                 ; ｳｴｲﾄﾀｲﾏｰ15
+JMP @MR7203
+;RB待機位置まで上昇
+STG @MR7203
+JMP @MR7204
+STG @MR7204
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+SET @MR1900              ; RB Pack
+CON
+DW #1 DM10108            ; RB1 目標ﾎﾟｲﾝﾄ番号
+CON
+SET MR15500              ; RB1 MOVE
+CON
+JMP @MR7205
+STG @MR7205
+MPS
+AND MR15501              ; RB1 MOVE comp
+RES MR15501              ; RB1 MOVE comp
+CON
+JMP @MR7206
+MPP
+AND MR15504              ; RB1_ALM
+JMP @MR7308              ; RB異常処理
+STG @MR7206
+JMP @MR7300
+;    潰し量ﾓｰﾄﾞとﾀｲﾏｰﾓｰﾄﾞの合流
+STG @MR7300
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+RES @MR1900              ; RB Pack
+CON
+JMP @MR7301
+STG @MR7301
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+SET MR7300               ; 溶着ﾍｯﾄﾞｴｽｹｰﾌﾟ 下降
+CON
+RES MR7301               ; (溶着ﾍｯﾄﾞｴｽｹｰﾌﾟ 上昇)
+CON
+ANB MR4302               ; Cylinder Error 4302
+ANB MR4304               ; Cylinder Error 4304
+AND R4302                ; 溶着ﾍｯﾄﾞｴｽｹｰﾌﾟ1(手前側) 下降限
+ANB R4303                ; 溶着ﾍｯﾄﾞｴｽｹｰﾌﾟ1(手前側) 上昇限
+AND R4304                ; 溶着ﾍｯﾄﾞｴｽｹｰﾌﾟ2(奥側) 下降限
+ANB R4305                ; 溶着ﾍｯﾄﾞｴｽｹｰﾌﾟ2(奥側) 上昇限
+JMP @MR7302
+STG @MR7302
+JMP @MR7315
+;RB異常処理
+STG @MR7308              ; RB異常処理
+RES @MR1900              ; RB Pack
+CON
+RES MR7300               ; 溶着ﾍｯﾄﾞｴｽｹｰﾌﾟ 下降
+CON
+RES MR7301               ; (溶着ﾍｯﾄﾞｴｽｹｰﾌﾟ 上昇)
+CON
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+ANB MR12001              ; RB1:動作中
+ANB MR15504              ; RB1_ALM
+SET LR100                ; 溶着異常ﾌﾗｸﾞ(ON=不良)
+CON
+@SET MR12003             ; RB1:ﾏｸﾛ強制終了
+CON
+AND= MR12000 #8          ; RB1:動作完了
+ZRES MR15500 MR15615     ; RB1 MOVE
+CON
+JMP @MR7309              ; RBｱﾗｰﾑﾘｾｯﾄ
+STG @MR7309              ; RBｱﾗｰﾑﾘｾｯﾄ
+MPS
+TMR #2000 #10
+MPP
+AND T2000
+@RES MR12003             ; RB1:ﾏｸﾛ強制終了
+CON
+MPS
+ANB DM2007.3             ; RB1_PCON ｱﾗｰﾑ ONで異常
+JMP @MR7311
+MPP
+AND DM2007.3             ; RB1_PCON ｱﾗｰﾑ ONで異常
+SET MR12009              ; RB1:ARMRST
+CON
+JMP @MR7310
+STG @MR7310
+AND MR12000              ; RB1:動作完了
+SET @MR009
+CON
+RES MR12000              ; RB1:動作完了
+CON
+JMP @MR7309              ; RBｱﾗｰﾑﾘｾｯﾄ
+STG @MR7311
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+SET @MR1900              ; RB Pack
+CON
+DW #1 DM10108            ; RB1 目標ﾎﾟｲﾝﾄ番号
+CON
+SET MR15500              ; RB1 MOVE
+CON
+JMP @MR7312
+STG @MR7312
+MPS
+AND MR15501              ; RB1 MOVE comp
+RES MR15501              ; RB1 MOVE comp
+CON
+RES @MR1900              ; RB Pack
+CON
+JMP @MR7313
+MPP
+AND MR15504              ; RB1_ALM
+JMP @MR7308              ; RB異常処理
+STG @MR7313
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+RES MR7300               ; 溶着ﾍｯﾄﾞｴｽｹｰﾌﾟ 下降
+CON
+RES MR7301               ; (溶着ﾍｯﾄﾞｴｽｹｰﾌﾟ 上昇)
+CON
+ANB MR4302               ; Cylinder Error 4302
+ANB MR4304               ; Cylinder Error 4304
+ANB R4302                ; 溶着ﾍｯﾄﾞｴｽｹｰﾌﾟ1(手前側) 下降限
+AND R4303                ; 溶着ﾍｯﾄﾞｴｽｹｰﾌﾟ1(手前側) 上昇限
+ANB R4304                ; 溶着ﾍｯﾄﾞｴｽｹｰﾌﾟ2(奥側) 下降限
+AND R4305                ; 溶着ﾍｯﾄﾞｴｽｹｰﾌﾟ2(奥側) 上昇限
+JMP @MR7314
+STG @MR7314
+JMP @MR7315
+STG @MR7315
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+SET MR7408               ; 吸着ﾍｯﾄﾞ(ﾒｶﾞﾈ) 破壊ON
+CON
+RES MR7409               ; 吸着ﾍｯﾄﾞ(ﾒｶﾞﾈ) 吸着ON
+CON
+MPS
+AND R4508                ; 吸着ﾍｯﾄﾞ(ﾒｶﾞﾈ)OUT1 (解放)
+JMP @MR7401
+MPP
+ANB R4508                ; 吸着ﾍｯﾄﾞ(ﾒｶﾞﾈ)OUT1 (解放)
+TMR @24 #10              ; ｳｴｲﾄﾀｲﾏｰ24
+CON
+AND @T24                 ; ｳｴｲﾄﾀｲﾏｰ24
+SET @MR500               ; Err17　搬送PP吸着破壊異常
+CON
+JMP @MR7400
+STG @MR7400
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+AND @MR503               ; Err17 解除完了
+RES @MR503               ; Err17 解除完了
+CON
+JMP @MR7315
+STG @MR7401
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+RES MR7408               ; 吸着ﾍｯﾄﾞ(ﾒｶﾞﾈ) 破壊ON
+CON
+RES MR7409               ; 吸着ﾍｯﾄﾞ(ﾒｶﾞﾈ) 吸着ON
+CON
+SET MR7213               ; (吸着ﾍｯﾄﾞ 上昇)
+CON
+RES MR7212               ; 吸着ﾍｯﾄﾞ 下降
+CON
+RES MR7300               ; 溶着ﾍｯﾄﾞｴｽｹｰﾌﾟ 下降
+CON
+SET MR7301               ; (溶着ﾍｯﾄﾞｴｽｹｰﾌﾟ 上昇)
+CON
+ANB MR4214               ; Cylinder Error 4214
+ANB MR4302               ; Cylinder Error 4302
+ANB MR4304               ; Cylinder Error 4304
+AND R4214                ; 吸着ﾍｯﾄﾞ 上昇限
+ANB R4213                ; 吸着ﾍｯﾄﾞ 下降限2(切出し側)
+ANB R4302                ; 溶着ﾍｯﾄﾞｴｽｹｰﾌﾟ1(手前側) 下降限
+AND R4303                ; 溶着ﾍｯﾄﾞｴｽｹｰﾌﾟ1(手前側) 上昇限
+ANB R4304                ; 溶着ﾍｯﾄﾞｴｽｹｰﾌﾟ2(奥側) 下降限
+AND R4305                ; 溶着ﾍｯﾄﾞｴｽｹｰﾌﾟ2(奥側) 上昇限
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+JMP @MR7402
+STG @MR7402
+MPS
+AND< @DM10 DM509         ; 溶着ﾍｯﾄﾞ清掃回数ｶｳﾝﾀ  RB1_溶着ﾍｯﾄﾞ清掃回数設定
+JMP @MR7415              ; 溶着Sub終了へ
+MPP
+AND>= @DM10 DM509        ; 溶着ﾍｯﾄﾞ清掃回数ｶｳﾝﾀ  RB1_溶着ﾍｯﾄﾞ清掃回数設定
+SET LR10002              ; ﾍｯﾄﾞ清掃要求記憶
+CON
+JMP @MR7415              ; 溶着Sub終了へ
+STG @MR7415              ; 溶着Sub終了へ
+RES @MR8801              ; CT計測＿溶着
+CON
+RES @MR7002              ; 溶着Sub開始中
+CON
+SET @MR7001              ; 溶着完了
+CON
+ENDS
+;<h1/>[@MR7500]ﾄﾙｸ測定Sub / ﾄﾙｸ Sub
+STG @MR7500              ; ﾄﾙｸ測定Sub実行指令
+SET @MR7502              ; ﾄﾙｸ測定Sub実行中
+CON
+JMP @MR7503
+STG @MR7503
+MPS
+LD @MR015                ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+AND MR3005               ; IL ﾜｰｸｾｯﾄ移動OK
+ANL
+SET MR7304               ; ﾜｰｸｾｯﾄ部　溶着側移動
+CON
+RES MR7305               ; ﾜｰｸｾｯﾄ部　投入側移動
+CON
+ANB MR4400               ; Cylinder Error 4400
+AND R4400                ; ﾜｰｸｾｯﾄ部 溶着側限
+ANB R4401                ; ﾜｰｸｾｯﾄ部 投入側限
+RES @MR8800              ; CT計測＿ﾜｰｸ搬送
+CON
+JMP @MR7505
+MPP
+ANB R1107                ; ﾗｲﾄｶｰﾃﾝ遮光無し=ON
+RES MR7304               ; ﾜｰｸｾｯﾄ部　溶着側移動
+CON
+RES MR7305               ; ﾜｰｸｾｯﾄ部　投入側移動
+CON
+SET @MR304               ; Err10　LC遮光
+CON
+JMP @MR7504
+STG @MR7504
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+AND @MR307               ; Err10 解除完了
+AND R1107                ; ﾗｲﾄｶｰﾃﾝ遮光無し=ON
+RES @MR307               ; Err10 解除完了
+CON
+JMP @MR7503
+STG @MR7505
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+RES MR7302               ; 溶着ﾍｯﾄﾞ 自重ｷｬﾝｾﾙON
+CON
+SET MR7300               ; 溶着ﾍｯﾄﾞｴｽｹｰﾌﾟ 下降
+CON
+RES MR7301               ; (溶着ﾍｯﾄﾞｴｽｹｰﾌﾟ 上昇)
+CON
+ANB MR4302               ; Cylinder Error 4302
+ANB MR4304               ; Cylinder Error 4304
+AND R4302                ; 溶着ﾍｯﾄﾞｴｽｹｰﾌﾟ1(手前側) 下降限
+ANB R4303                ; 溶着ﾍｯﾄﾞｴｽｹｰﾌﾟ1(手前側) 上昇限
+AND R4304                ; 溶着ﾍｯﾄﾞｴｽｹｰﾌﾟ2(奥側) 下降限
+ANB R4305                ; 溶着ﾍｯﾄﾞｴｽｹｰﾌﾟ2(奥側) 上昇限
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+AND LR10001              ; ﾃﾞﾊﾞｯｸﾞ
+JMP @MR7506
+STG @MR7506
+JMP @MR7507
+STG @MR7507
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+SET @MR1900              ; RB Pack
+CON
+DW #7 DM10108            ; RB1 目標ﾎﾟｲﾝﾄ番号
+CON
+SET MR15500              ; RB1 MOVE
+CON
+JMP @MR7508
+STG @MR7508
+MPS
+AND MR15501              ; RB1 MOVE comp
+RES MR15501              ; RB1 MOVE comp
+CON
+RES @MR1900              ; RB Pack
+CON
+JMP @MR7509
+MPP
+AND MR15504              ; RB1_ALM
+JMP @MR7515
+LDP @MR7509
+MPS
+LDA DM507                ; RB1測定ﾓｰﾄﾞ電流値
+CON
+STA DM1200               ; RB1押付け電流値(0-100)
+MPP
+LDA DM508                ; RB1測定ﾓｰﾄﾞ押し幅
+CON
+EXT.S
+CON
+STA.L EM10050            ; RB1 Pos8 位置決め幅
+STG @MR7509
+SET @MR1900              ; RB Pack
+CON
+DW #8 DM10108            ; RB1 目標ﾎﾟｲﾝﾄ番号
+CON
+SET MR15600              ; RB1 PUSH
+CON
+JMP @MR7510
+STG @MR7510
+MPS
+AND MR15601              ; RB1 PUSH comp
+SET R50312               ; ﾋｰﾀｰ1溶着開始(PV取得)
+CON
+RES MR15601              ; RB1 PUSH comp
+CON
+JMP @MR7511
+MPP
+AND MR15504              ; RB1_ALM
+JMP @MR7513
+STG @MR7511
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+SET @MR1900              ; RB Pack
+CON
+DW #1 DM10108            ; RB1 目標ﾎﾟｲﾝﾄ番号
+CON
+SET MR15500              ; RB1 MOVE
+CON
+JMP @MR7512
+STG @MR7512
+AND MR15501              ; RB1 MOVE comp
+RES MR15501              ; RB1 MOVE comp
+CON
+RES @MR1900              ; RB Pack
+CON
+JMP @MR7513
+STG @MR7513
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+RES MR7408               ; 吸着ﾍｯﾄﾞ(ﾒｶﾞﾈ) 破壊ON
+CON
+RES MR7409               ; 吸着ﾍｯﾄﾞ(ﾒｶﾞﾈ) 吸着ON
+CON
+SET MR7213               ; (吸着ﾍｯﾄﾞ 上昇)
+CON
+RES MR7212               ; 吸着ﾍｯﾄﾞ 下降
+CON
+RES MR7300               ; 溶着ﾍｯﾄﾞｴｽｹｰﾌﾟ 下降
+CON
+SET MR7301               ; (溶着ﾍｯﾄﾞｴｽｹｰﾌﾟ 上昇)
+CON
+ANB MR4214               ; Cylinder Error 4214
+ANB MR4302               ; Cylinder Error 4302
+ANB MR4304               ; Cylinder Error 4304
+AND R4214                ; 吸着ﾍｯﾄﾞ 上昇限
+ANB R4213                ; 吸着ﾍｯﾄﾞ 下降限2(切出し側)
+ANB R4302                ; 溶着ﾍｯﾄﾞｴｽｹｰﾌﾟ1(手前側) 下降限
+AND R4303                ; 溶着ﾍｯﾄﾞｴｽｹｰﾌﾟ1(手前側) 上昇限
+ANB R4304                ; 溶着ﾍｯﾄﾞｴｽｹｰﾌﾟ2(奥側) 下降限
+AND R4305                ; 溶着ﾍｯﾄﾞｴｽｹｰﾌﾟ2(奥側) 上昇限
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+JMP @MR7514
+STG @MR7514
+JMP @MR7515
+STG @MR7515
+SET @MR7501              ; ﾄﾙｸ測定Sub実行完了
+CON
+RES @MR7502              ; ﾄﾙｸ測定Sub実行中
+CON
+ENDS
+;<h1/>[@MR8200]QR照合Sub / QR Check Sub
+;前回のﾌﾗｸﾞが残っていたら一度ﾃﾞｰﾀを読み出す/ Read once data once it has been left the previous flag
+STG @MR8200              ; QR照合Sub
+SET @MR8202              ; QR照合Sub中
+CON
+JMP @MR8203
+STG @MR8203
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+SET MR7310               ; QRﾘｰﾀﾞ移動(親) 前進
+CON
+RES MR7311               ; QRﾘｰﾀﾞ移動(親) 後退
+CON
+SET MR7312               ; QRﾘｰﾀﾞ移動(子) 前進
+CON
+RES MR7313               ; QRﾘｰﾀﾞ移動(子) 後退
+CON
+ANB MR4408               ; Cylinder Error 4408
+AND R4408                ; QRﾘｰﾀﾞ移動(親) 前進限
+ANB R4409                ; QRﾘｰﾀﾞ移動(親) 後退限
+ANB MR4410               ; Cylinder Error 4410
+AND R4410                ; QRﾘｰﾀﾞ移動(子) 前進限
+ANB R4411                ; QRﾘｰﾀﾞ移動(子) 後退限
+JMP @MR8204
+STG @MR8204
+MPS
+ANB MR001                ; QR照合無し=ON
+MPS
+AND DM1001.0             ; N-L20[1]読取完
+SET DM1091.0             ; N-L20[1]読取完ｸﾘｱ
+CON
+JMP @MR8205
+MPP
+ANB DM1001.0             ; N-L20[1]読取完
+JMP @MR8206
+MPP
+AND MR001                ; QR照合無し=ON
+JMP @MR8306              ; 読取りCYL後退
+STG @MR8205
+ANB DM1001.0             ; N-L20[1]読取完
+RES DM1091.0             ; N-L20[1]読取完ｸﾘｱ
+CON
+JMP @MR8206
+STG @MR8206
+FMOV #0 DM40000 #200     ; QRﾃﾞｰﾀ00
+FMOV #0 DM1016 #128      ; N-L20[1]ﾃﾞｰﾀ(0000)
+JMP @MR8207
+STG @MR8207
+RES DM1091.0             ; N-L20[1]読取完ｸﾘｱ
+CON
+ANB DM1000.8             ; N-L20[1]BUSY
+JMP @MR8208
+STG @MR8208
+SET DM1090.8             ; N-L20[1]読取要求
+CON
+JMP @MR8209
+STG @MR8209
+MPS
+TMR @2 #20               ; ｳｴｲﾄﾀｲﾏｰ02
+CON
+AND @T2                  ; ｳｴｲﾄﾀｲﾏｰ02
+SET R42604               ; QR通信ｴﾗｰ
+CON
+JMP @MR8212
+MPP
+LDB DM1000.8             ; N-L20[1]BUSY
+AND DM1001.0             ; N-L20[1]読取完
+ANL
+JMP @MR8212
+STG @MR8212
+RES DM1090.8             ; N-L20[1]読取要求
+CON
+TMR @4 #2                ; ｳｴｲﾄﾀｲﾏｰ04
+CON
+AND @T4                  ; ｳｴｲﾄﾀｲﾏｰ04
+JMP @MR8213
+STG @MR8213
+SET DM1091.0             ; N-L20[1]読取完ｸﾘｱ
+CON
+ANB DM1001.0             ; N-L20[1]読取完
+JMP @MR8214
+STG @MR8214
+RES DM1091.0             ; N-L20[1]読取完ｸﾘｱ
+CON
+MPS
+ANB R42604               ; QR通信ｴﾗｰ
+JMP @MR8300
+MPP
+AND R42604               ; QR通信ｴﾗｰ
+JMP @MR8306              ; 読取りCYL後退
+;ｴﾗｰ処理はﾒｲﾝﾙｰﾁﾝへ戻って処理
+STG @MR8300
+MPS
+ANB DM1000.0             ; N-L20[1]ｴﾗｰ
+JMP @MR8301
+MPP
+AND DM1000.0             ; N-L20[1]ｴﾗｰ
+TMR @3 #100              ; ｳｴｲﾄﾀｲﾏｰ03
+CON
+AND @T3                  ; ｳｴｲﾄﾀｲﾏｰ03
+SET R42604               ; QR通信ｴﾗｰ
+CON
+JMP @MR8306              ; 読取りCYL後退
+STG @MR8301
+MPS
+BMOV DM1016 DM40000 #50  ; N-L20[1]ﾃﾞｰﾀ(0000)  QRﾃﾞｰﾀ00
+MPP
+AND @MR8308
+RES @MR8308
+CON
+JMP @MR8302
+;'文字分割
+;D40099.U = SPLIT( D40000.T , "," , D40050.T , D40100.T ) ' ,で分割
+;D40099.U = SPLIT( D40100.T , "%" , D40130.T , D40150.T , D40170.T _
+;				, D40190.T ) ' %で分割
+;
+;SET(@M8308) 
+LD @MR8301
+NCJ #1003
+;'文字分割
+;
+;D40099.U = SPLIT( D40000.T , "," , D40050.T , D40100.T ) ' ,で分割
+;
+LD CR2002                ; 常時ON
+ADRSET VM2 VM0
+MOV #0 VM2
+MOV.D VM0 @VM0
+SMOV "," *@VM0
+LD CR2002                ; 常時ON
+LEN DM40000 @VM2         ; QRﾃﾞｰﾀ00
+LEN *@VM0 @VM3
+DW #0 @VM4
+CON
+DW #0 @VM5
+CON
+DW #0 @VM6
+CON
+DW #0 @VM7
+LD CR2002                ; 常時ON
+DW #0 DM40050            ; QR_上ﾗﾍﾞﾙｺｰﾄﾞ
+CON
+DW #0 DM40100            ; QR_下ﾗﾍﾞﾙｺｰﾄﾞ
+FOR #2
+LD CR2002                ; 常時ON
+INC @VM7
+LD>= @VM4 @VM2
+BREAK
+LD>= @VM7 #2
+MOV #65535 @VM5
+CJ #2000
+LD CR2002                ; 常時ON
+LDA @VM4
+CON
+ADD @VM3
+CON
+CMP @VM2
+LD CR2011                ; 演算結果が正
+MOV #65535 @VM5
+LD CR2009                ; 演算結果が負
+OR CR2010                ; 演算結果がｾﾞﾛ
+SFIND DM40000 *@VM0 @VM5 @VM4;QRﾃﾞｰﾀ00
+LD CR2012                ; 演算実行ｴﾗｰ
+MOV #0 @VM7
+BREAK
+LABEL #2000
+LD= @VM5 #65535
+CAL- @VM2 @VM4 @VM6
+LD= @VM5 #0
+MOV #0 @VM6
+LD> @VM5 #0
+CAL- @VM5 @VM4 @VM6
+LD> @VM6 #0
+MPS
+AND= @VM7 #1
+MPS
+AND> @VM6 #1999
+MOV #1999 @VM6
+MPP
+SMID DM40000 DM40050 @VM4 @VM6;QRﾃﾞｰﾀ00  QR_上ﾗﾍﾞﾙｺｰﾄﾞ
+MPP
+AND= @VM7 #2
+MPS
+AND> @VM6 #1999
+MOV #1999 @VM6
+MPP
+SMID DM40000 DM40100 @VM4 @VM6;QRﾃﾞｰﾀ00  QR_下ﾗﾍﾞﾙｺｰﾄﾞ
+LD CR2012                ; 演算実行ｴﾗｰ
+MOV #0 @VM7
+BREAK
+LD= @VM5 #65535
+BREAK
+LD CR2002                ; 常時ON
+CAL+ @VM5 @VM3 @VM4
+NEXT
+LD CR2002                ; 常時ON
+MOV @VM7 DM40099
+;D40099.U = SPLIT( D40100.T , "%" , D40130.T , D40150.T , D40170.T _
+;
+;				, D40190.T ) ' %で分割
+;
+LD CR2002                ; 常時ON
+ADRSET VM2 VM0
+MOV #0 VM2
+MOV.D VM0 @VM8
+SMOV "%" *@VM8
+LD CR2002                ; 常時ON
+LEN DM40100 @VM10        ; QR_下ﾗﾍﾞﾙｺｰﾄﾞ
+LEN *@VM8 @VM11
+DW #0 @VM12
+CON
+DW #0 @VM13
+CON
+DW #0 @VM14
+CON
+DW #0 @VM15
+LD CR2002                ; 常時ON
+DW #0 DM40130            ; 下ﾗﾍﾞﾙ_ｺｰﾄﾞ分割1
+CON
+DW #0 DM40150            ; 下ﾗﾍﾞﾙ_ｺｰﾄﾞ_ｲﾝｸﾀｲﾌﾟ
+CON
+DW #0 DM40170            ; 下ﾗﾍﾞﾙ_ｺｰﾄﾞ分割3
+CON
+DW #0 DM40190
+FOR #4
+LD CR2002                ; 常時ON
+INC @VM15
+LD>= @VM12 @VM10
+BREAK
+LD>= @VM15 #4
+MOV #65535 @VM13
+CJ #2001
+LD CR2002                ; 常時ON
+LDA @VM12
+CON
+ADD @VM11
+CON
+CMP @VM10
+LD CR2011                ; 演算結果が正
+MOV #65535 @VM13
+LD CR2009                ; 演算結果が負
+OR CR2010                ; 演算結果がｾﾞﾛ
+SFIND DM40100 *@VM8 @VM13 @VM12;QR_下ﾗﾍﾞﾙｺｰﾄﾞ
+LD CR2012                ; 演算実行ｴﾗｰ
+MOV #0 @VM15
+BREAK
+LABEL #2001
+LD= @VM13 #65535
+CAL- @VM10 @VM12 @VM14
+LD= @VM13 #0
+MOV #0 @VM14
+LD> @VM13 #0
+CAL- @VM13 @VM12 @VM14
+LD> @VM14 #0
+MPS
+AND= @VM15 #1
+MPS
+AND> @VM14 #1999
+MOV #1999 @VM14
+MPP
+SMID DM40100 DM40130 @VM12 @VM14;QR_下ﾗﾍﾞﾙｺｰﾄﾞ  下ﾗﾍﾞﾙ_ｺｰﾄﾞ分割1
+MRD
+AND= @VM15 #2
+MPS
+AND> @VM14 #1999
+MOV #1999 @VM14
+MPP
+SMID DM40100 DM40150 @VM12 @VM14;QR_下ﾗﾍﾞﾙｺｰﾄﾞ  下ﾗﾍﾞﾙ_ｺｰﾄﾞ_ｲﾝｸﾀｲﾌﾟ
+MRD
+AND= @VM15 #3
+MPS
+AND> @VM14 #1999
+MOV #1999 @VM14
+MPP
+SMID DM40100 DM40170 @VM12 @VM14;QR_下ﾗﾍﾞﾙｺｰﾄﾞ  下ﾗﾍﾞﾙ_ｺｰﾄﾞ分割3
+MPP
+AND= @VM15 #4
+MPS
+AND> @VM14 #1999
+MOV #1999 @VM14
+MPP
+SMID DM40100 DM40190 @VM12 @VM14;QR_下ﾗﾍﾞﾙｺｰﾄﾞ
+LD CR2012                ; 演算実行ｴﾗｰ
+MOV #0 @VM15
+BREAK
+LD= @VM13 #65535
+BREAK
+LD CR2002                ; 常時ON
+CAL+ @VM13 @VM11 @VM12
+NEXT
+LD CR2002                ; 常時ON
+MOV @VM15 DM40099
+;SET(@M8308) 
+LD CR2002                ; 常時ON
+SET @MR8308
+LABEL #1003
+;
+STG @MR8302
+@FMOV #0 DM9050 #100     ; 選択中ｲﾝｸｺｰﾄﾞ(演算)
+MPS
+AND LR41600              ; 機種BK(ﾌﾞﾗｯｸ)
+BMOV DM9000 DM9050 #10   ; BKｲﾝｸｺｰﾄﾞ  選択中ｲﾝｸｺｰﾄﾞ(演算)
+MRD
+AND LR41601              ; 機種C(ｼｱﾝ)
+BMOV DM9010 DM9050 #10   ; Cｲﾝｸｺｰﾄﾞ  選択中ｲﾝｸｺｰﾄﾞ(演算)
+MRD
+AND LR41602              ; 機種M(ﾏｾﾞﾝﾀ)
+BMOV DM9020 DM9050 #10   ; Mｲﾝｸｺｰﾄﾞ  選択中ｲﾝｸｺｰﾄﾞ(演算)
+MRD
+AND LR41603              ; 機種Y(ｲｴﾛｰ)
+BMOV DM9030 DM9050 #10   ; Yｲﾝｸｺｰﾄﾞ  選択中ｲﾝｸｺｰﾄﾞ(演算)
+MRD
+STRIM DM9050 #2 DM9100   ; 選択中ｲﾝｸｺｰﾄﾞ(演算)  選択中ｲﾝｸｺｰﾄﾞ
+MRD
+LDB LR41600              ; 機種BK(ﾌﾞﾗｯｸ)
+ANB LR41601              ; 機種C(ｼｱﾝ)
+ANB LR41602              ; 機種M(ﾏｾﾞﾝﾀ)
+ANB LR41603              ; 機種Y(ｲｴﾛｰ)
+ANL
+FMOV #0 DM9050 #100      ; 選択中ｲﾝｸｺｰﾄﾞ(演算)
+MPP
+JMP @MR8303
+LDB LR41600              ; 機種BK(ﾌﾞﾗｯｸ)
+ANB LR41601              ; 機種C(ｼｱﾝ)
+ANB LR41602              ; 機種M(ﾏｾﾞﾝﾀ)
+ANB LR41603              ; 機種Y(ｲｴﾛｰ)
+INV
+AND=.D DM9100 DM40150    ; 選択中ｲﾝｸｺｰﾄﾞ  下ﾗﾍﾞﾙ_ｺｰﾄﾞ_ｲﾝｸﾀｲﾌﾟ
+AND=.D DM9102 DM40152    ; 選択中ｲﾝｸｺｰﾄﾞ  下ﾗﾍﾞﾙ_ｺｰﾄﾞ_ｲﾝｸﾀｲﾌﾟ
+AND=.D DM9104 DM40154    ; 選択中ｲﾝｸｺｰﾄﾞ  下ﾗﾍﾞﾙ_ｺｰﾄﾞ_ｲﾝｸﾀｲﾌﾟ
+AND=.D DM9106 DM40156    ; 選択中ｲﾝｸｺｰﾄﾞ  下ﾗﾍﾞﾙ_ｺｰﾄﾞ_ｲﾝｸﾀｲﾌﾟ
+AND=.D DM9108 DM40158    ; 選択中ｲﾝｸｺｰﾄﾞ  下ﾗﾍﾞﾙ_ｺｰﾄﾞ_ｲﾝｸﾀｲﾌﾟ
+OUT @MR1800              ; QRﾃﾞｰﾀ照合OK=ON
+STG @MR8303
+MPS
+ANB MR001                ; QR照合無し=ON
+MPS
+AND @MR1800              ; QRﾃﾞｰﾀ照合OK=ON
+JMP @MR8306              ; 読取りCYL後退
+MPP
+ANB @MR1800              ; QRﾃﾞｰﾀ照合OK=ON
+SET R42605               ; QR照合ｴﾗｰ
+CON
+JMP @MR8306              ; 読取りCYL後退
+MPP
+AND MR001                ; QR照合無し=ON
+JMP @MR8306              ; 読取りCYL後退
+STG @MR8306              ; 読取りCYL後退
+AND @MR015               ; ST1 ﾎﾟｰｽﾞ&ｴﾗｰ無
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+SET MR7311               ; QRﾘｰﾀﾞ移動(親) 後退
+CON
+RES MR7310               ; QRﾘｰﾀﾞ移動(親) 前進
+CON
+SET MR7313               ; QRﾘｰﾀﾞ移動(子) 後退
+CON
+RES MR7312               ; QRﾘｰﾀﾞ移動(子) 前進
+CON
+ANB MR4409               ; Cylinder Error 4409
+AND R4409                ; QRﾘｰﾀﾞ移動(親) 後退限
+ANB R4408                ; QRﾘｰﾀﾞ移動(親) 前進限
+ANB MR4411               ; Cylinder Error 4411
+AND R4411                ; QRﾘｰﾀﾞ移動(子) 後退限
+ANB R4410                ; QRﾘｰﾀﾞ移動(子) 前進限
+JMP @MR8307
+STG @MR8307
+SET @MR8201              ; QR照合Sub完了
+CON
+RES @MR8202              ; QR照合Sub中
+CON
+ENDS
+;<h1/>■_CT計測
+LD @MR8800               ; CT計測＿ﾜｰｸ搬送
+OUT R43200               ; ｻｲｸﾙﾀｲﾑ計測用1-1
+LD @MR8801               ; CT計測＿溶着
+MPS
+ANB MR002                ; ﾀｲﾏｰ溶着ﾓｰﾄﾞ=ON
+OUT R43201               ; ｻｲｸﾙﾀｲﾑ計測用1-2
+MPP
+AND MR002                ; ﾀｲﾏｰ溶着ﾓｰﾄﾞ=ON
+OUT R43202               ; ｻｲｸﾙﾀｲﾑ計測用1-3
+LD @MR8803               ; CT計測＿ﾌｨﾙﾑ搬送
+OUT R43203               ; ｻｲｸﾙﾀｲﾑ計測用1-4
+LD @MR8804               ; CT計測＿ﾌｨﾙﾑｶｯﾄ
+OUT R43204               ; ｻｲｸﾙﾀｲﾑ計測用1-5
+LD CR2003                ; 常時OFF
+OUT R43205               ; ｻｲｸﾙﾀｲﾑ計測用1-6
+;<h1/>■_Err処理
+;Err2原点復帰時ﾜｰｸ有り
+STG @MR104               ; Err2　原点復帰時ﾜｰｸ有
+ANB R50008               ; Error
+SET R50008               ; Error
+CON
+SET R50111               ; Err ST1
+CON
+MPS
+SET R42201               ; Err Sensor No.表示
+CON
+JMP @MR105
+MPP
+MOV #2 DM400             ; ﾒｯｾｰｼﾞNo.
+STG @MR105
+AND R50008               ; Error
+JMP @MR106
+STG @MR106
+ANB R50008               ; Error
+SET @MR107               ; Err2 解除完了
+CON
+ENDS
+;Err3運転開始時ﾜｰｸ有り
+STG @MR108               ; Err3　運転開始時ﾜｰｸ有り
+ANB R50008               ; Error
+SET R50008               ; Error
+CON
+SET R50111               ; Err ST1
+CON
+MPS
+DW #4415 DM416           ; Err Sensor No.A
+CON
+SET R42201               ; Err Sensor No.表示
+CON
+JMP @MR109
+MPP
+MOV #3 DM400             ; ﾒｯｾｰｼﾞNo.
+STG @MR109
+AND R50008               ; Error
+JMP @MR110
+STG @MR110
+ANB R50008               ; Error
+SET @MR111               ; Err3 解除完了
+CON
+ENDS
+;Err4完成品除材要求
+STG @MR112               ; Err4
+ANB R50008               ; Error
+SET R50008               ; Error
+CON
+SET R50111               ; Err ST1
+CON
+JMP @MR113
+MOV #4 DM400             ; ﾒｯｾｰｼﾞNo.
+STG @MR113
+AND R50008               ; Error
+JMP @MR114
+STG @MR114
+ANB R50008               ; Error
+SET @MR115               ; Err4 解除完了
+CON
+ENDS
+;Err5銀紙検出 / Film silver tape detection display
+STG @MR200               ; Err5
+ANB R50008               ; Error
+SET R50008               ; Error
+CON
+SET R50111               ; Err ST1
+CON
+JMP @MR201
+MOV #5 DM400             ; ﾒｯｾｰｼﾞNo.
+STG @MR201
+AND R50008               ; Error
+JMP @MR202
+STG @MR202
+ANB R50008               ; Error
+SET @MR203               ; Err5 解除完了
+CON
+ENDS
+;Err6
+STG @MR204               ; Err6_ﾀﾞﾝｻｰﾛｰﾗｰ下限検出
+ANB R50008               ; Error
+SET R50008               ; Error
+CON
+SET R50111               ; Err ST1
+CON
+SET MR2102               ; ﾌｨﾙﾑ送りﾓｰﾀｰﾌﾞﾚｰｷﾘﾘｰｽ
+CON
+MPS
+DW #4315 DM416           ; Err Sensor No.A
+CON
+SET R42201               ; Err Sensor No.表示
+CON
+JMP @MR205
+MPP
+MOV #6 DM400             ; ﾒｯｾｰｼﾞNo.
+STG @MR205
+AND R50008               ; Error
+JMP @MR206
+STG @MR206
+ANB R50008               ; Error
+RES MR2102               ; ﾌｨﾙﾑ送りﾓｰﾀｰﾌﾞﾚｰｷﾘﾘｰｽ
+CON
+SET @MR207               ; Err6 解除完了
+CON
+ENDS
+;Err7
+;QR照合通信異常
+STG @MR208               ; Err7　QR照合通信異常
+ANB R50008               ; Error
+SET R50008               ; Error
+CON
+SET R50111               ; Err ST1
+CON
+JMP @MR209
+MOV #7 DM400             ; ﾒｯｾｰｼﾞNo.
+STG @MR209
+AND R50008               ; Error
+JMP @MR210
+STG @MR210
+ANB R50008               ; Error
+SET @MR211               ; Err7 解除完了
+CON
+ENDS
+;Err8
+;QR照合異常
+STG @MR212               ; Err8
+ANB R50008               ; Error
+SET R50008               ; Error
+CON
+SET R50111               ; Err ST1
+CON
+SET LR49914              ; ｴﾗｰﾘｾｯﾄｷｰ要求
+CON
+JMP @MR213
+MOV #8 DM400             ; ﾒｯｾｰｼﾞNo.
+STG @MR213
+AND R50008               ; Error
+JMP @MR214
+STG @MR214
+ANB R50008               ; Error
+SET @MR215               ; Err8 解除完了
+CON
+ENDS
+;Err9
+STG @MR300               ; Err9　切出ﾌｨﾙﾑ除材要求
+ANB R50008               ; Error
+SET R50008               ; Error
+CON
+SET R50111               ; Err ST1
+CON
+JMP @MR301
+MOV #9 DM400             ; ﾒｯｾｰｼﾞNo.
+STG @MR301
+AND R50008               ; Error
+JMP @MR302
+STG @MR302
+ANB R50008               ; Error
+SET @MR303               ; Err9 解除完了
+CON
+ENDS
+;Err10
+STG @MR304               ; Err10　LC遮光
+ANB R50008               ; Error
+SET R50008               ; Error
+CON
+SET R50111               ; Err ST1
+CON
+JMP @MR305
+MOV #10 DM400            ; ﾒｯｾｰｼﾞNo.
+STG @MR305
+AND R50008               ; Error
+JMP @MR306
+STG @MR306
+ANB R50008               ; Error
+SET @MR307               ; Err10 解除完了
+CON
+ENDS
+;Err11
+STG @MR308               ; Err11 動作ﾊﾟﾗﾒｰﾀｰ異常
+ANB R50008               ; Error
+SET R50008               ; Error
+CON
+SET R50111               ; Err ST1
+CON
+JMP @MR309
+MOV #11 DM400            ; ﾒｯｾｰｼﾞNo.
+STG @MR309
+AND R50008               ; Error
+JMP @MR310
+STG @MR310
+ANB R50008               ; Error
+SET @MR311               ; Err11 解除完了
+CON
+ENDS
+;Err12
+STG @MR312               ; Err12　ｶｯﾄ1つ前吸着異常
+ANB R50008               ; Error
+SET R50008               ; Error
+CON
+SET R50111               ; Err ST1
+CON
+MPS
+DW #4501 DM416           ; Err Sensor No.A
+CON
+SET R42201               ; Err Sensor No.表示
+CON
+JMP @MR313
+MPP
+MOV #12 DM400            ; ﾒｯｾｰｼﾞNo.
+STG @MR313
+AND R50008               ; Error
+JMP @MR314
+STG @MR314
+ANB R50008               ; Error
+SET @MR315               ; Err12 解除完了
+CON
+ENDS
+;Err13
+STG @MR400               ; Err13 押さえ吸着異常
+ANB R50008               ; Error
+SET R50008               ; Error
+CON
+SET R50111               ; Err ST1
+CON
+MPS
+DW #4507 DM416           ; Err Sensor No.A
+CON
+SET R42201               ; Err Sensor No.表示
+CON
+JMP @MR401
+MPP
+MOV #13 DM400            ; ﾒｯｾｰｼﾞNo.
+STG @MR401
+AND R50008               ; Error
+JMP @MR402
+STG @MR402
+ANB R50008               ; Error
+SET @MR403               ; Err13 解除完了
+CON
+ENDS
+;Err14
+STG @MR404               ; Err14　ｶｯﾄ後吸着異常
+ANB R50008               ; Error
+SET R50008               ; Error
+CON
+SET R50111               ; Err ST1
+CON
+MPS
+DW #4505 DM416           ; Err Sensor No.A
+CON
+SET R42201               ; Err Sensor No.表示
+CON
+JMP @MR405
+MPP
+MOV #14 DM400            ; ﾒｯｾｰｼﾞNo.
+STG @MR405
+AND R50008               ; Error
+JMP @MR406
+STG @MR406
+ANB R50008               ; Error
+SET @MR407               ; Err14 解除完了
+CON
+ENDS
+;Err15
+STG @MR408               ; Err15 ﾌｨﾙﾑ送り出しﾀｲﾑｱｳﾄ
+ANB R50008               ; Error
+SET R50008               ; Error
+CON
+SET R50111               ; Err ST1
+CON
+MPS
+DW #4314 DM416           ; Err Sensor No.A
+CON
+SET R42201               ; Err Sensor No.表示
+CON
+JMP @MR409
+MPP
+MOV #15 DM400            ; ﾒｯｾｰｼﾞNo.
+STG @MR409
+AND R50008               ; Error
+JMP @MR410
+STG @MR410
+ANB R50008               ; Error
+SET @MR411               ; Err15 解除完了
+CON
+ENDS
+;Err16
+STG @MR412               ; Err16　ﾌｨﾙﾑ搬送ﾌｨﾙﾑ徐材要求
+ANB R50008               ; Error
+SET R50008               ; Error
+CON
+SET R50111               ; Err ST1
+CON
+MPS
+DW #4307 DM416           ; Err Sensor No.A
+CON
+DW #4309 DM417           ; Err Sensor No.B
+CON
+SET R42201               ; Err Sensor No.表示
+CON
+JMP @MR413
+MPP
+MOV #16 DM400            ; ﾒｯｾｰｼﾞNo.
+STG @MR413
+AND R50008               ; Error
+JMP @MR414
+STG @MR414
+ANB R50008               ; Error
+SET @MR415               ; Err16 解除完了
+CON
+ENDS
+;Err17
+STG @MR500               ; Err17　搬送PP吸着破壊異常
+ANB R50008               ; Error
+SET R50008               ; Error
+CON
+SET R50111               ; Err ST1
+CON
+MPS
+SET R42201               ; Err Sensor No.表示
+CON
+DW #4508 DM416           ; Err Sensor No.A
+CON
+JMP @MR501
+MPP
+MOV #17 DM400            ; ﾒｯｾｰｼﾞNo.
+STG @MR501
+AND R50008               ; Error
+JMP @MR502
+STG @MR502
+ANB R50008               ; Error
+SET @MR503               ; Err17 解除完了
+CON
+ENDS
+;Err18
+STG @MR504               ; Err18
+ANB R50008               ; Error
+SET R50008               ; Error
+CON
+SET R50111               ; Err ST1
+CON
+JMP @MR505
+MOV #18 DM400            ; ﾒｯｾｰｼﾞNo.
+STG @MR505
+AND R50008               ; Error
+JMP @MR506
+STG @MR506
+ANB R50008               ; Error
+SET @MR507               ; Err18 解除完了
+CON
+ENDS
+;Err19
+STG @MR508               ; Err19
+ANB R50008               ; Error
+SET R50008               ; Error
+CON
+SET R50111               ; Err ST1
+CON
+JMP @MR509
+MOV #19 DM400            ; ﾒｯｾｰｼﾞNo.
+STG @MR509
+AND R50008               ; Error
+JMP @MR510
+STG @MR510
+ANB R50008               ; Error
+SET @MR511               ; Err19 解除完了
+CON
+ENDS
+;Err20
+STG @MR512               ; Err20
+ANB R50008               ; Error
+SET R50008               ; Error
+CON
+SET R50111               ; Err ST1
+CON
+JMP @MR513
+MOV #20 DM400            ; ﾒｯｾｰｼﾞNo.
+STG @MR513
+AND R50008               ; Error
+JMP @MR514
+STG @MR514
+ANB R50008               ; Error
+SET @MR515               ; Err20 解除完了
+CON
+ENDS
+;<h1/>____▼_Err31-
+;Err31
+STG @MR9000              ; Err31 溶着NG
+ANB R50008               ; Error
+SET R50008               ; Error
+CON
+SET R50111               ; Err ST1
+CON
+SET LR49914              ; ｴﾗｰﾘｾｯﾄｷｰ要求
+CON
+JMP @MR9001
+MOV #31 DM400            ; ﾒｯｾｰｼﾞNo.
+STG @MR9001
+AND R50008               ; Error
+JMP @MR9002
+STG @MR9002
+ANB R50008               ; Error
+SET @MR9003              ; Err31 解除完了
+CON
+ENDS
+;Err32
+STG @MR9004              ; Err32 清掃要求
+ANB R50008               ; Error
+SET R50008               ; Error
+CON
+SET R50111               ; Err ST1
+CON
+SET LR49914              ; ｴﾗｰﾘｾｯﾄｷｰ要求
+CON
+JMP @MR9005
+MOV #32 DM400            ; ﾒｯｾｰｼﾞNo.
+STG @MR9005
+AND R50008               ; Error
+JMP @MR9006
+STG @MR9006
+ANB R50008               ; Error
+SET @MR9007              ; Err32 解除完了
+CON
+ENDS
+;Err33
+STG @MR9008              ; Err33
+ANB R50008               ; Error
+SET R50008               ; Error
+CON
+SET R50111               ; Err ST1
+CON
+JMP @MR9009
+MOV #33 DM400            ; ﾒｯｾｰｼﾞNo.
+STG @MR9009
+AND R50008               ; Error
+JMP @MR9010
+STG @MR9010
+ANB R50008               ; Error
+SET @MR9011              ; Err33 解除完了
+CON
+ENDS
+;Err34
+STG @MR9012              ; Err34
+ANB R50008               ; Error
+SET R50008               ; Error
+CON
+SET R50111               ; Err ST1
+CON
+JMP @MR9013
+MOV #34 DM400            ; ﾒｯｾｰｼﾞNo.
+STG @MR9013
+AND R50008               ; Error
+JMP @MR9014
+STG @MR9014
+ANB R50008               ; Error
+SET @MR9015              ; Err34 解除完了
+CON
+ENDS
+;Err35
+STG @MR9100              ; Err35
+ANB R50008               ; Error
+SET R50008               ; Error
+CON
+SET R50111               ; Err ST1
+CON
+JMP @MR9101
+MOV #35 DM400            ; ﾒｯｾｰｼﾞNo.
+STG @MR9101
+AND R50008               ; Error
+JMP @MR9102
+STG @MR9102
+ANB R50008               ; Error
+SET @MR9103              ; Err35 解除完了
+CON
+ENDS
+;Err36
+STG @MR9104              ; Err36
+ANB R50008               ; Error
+SET R50008               ; Error
+CON
+SET R50111               ; Err ST1
+CON
+JMP @MR9105
+MOV #36 DM400            ; ﾒｯｾｰｼﾞNo.
+STG @MR9105
+AND R50008               ; Error
+JMP @MR9106
+STG @MR9106
+ANB R50008               ; Error
+SET @MR9107              ; Err36 解除完了
+CON
+ENDS
+;Err37
+STG @MR9108              ; Err37
+ANB R50008               ; Error
+SET R50008               ; Error
+CON
+SET R50111               ; Err ST1
+CON
+JMP @MR9109
+MOV #37 DM400            ; ﾒｯｾｰｼﾞNo.
+STG @MR9109
+AND R50008               ; Error
+JMP @MR9110
+STG @MR9110
+ANB R50008               ; Error
+SET @MR9111              ; Err37 解除完了
+CON
+ENDS
+;Err38
+STG @MR9112              ; Err38
+ANB R50008               ; Error
+SET R50008               ; Error
+CON
+SET R50111               ; Err ST1
+CON
+JMP @MR9113
+MOV #38 DM400            ; ﾒｯｾｰｼﾞNo.
+STG @MR9113
+AND R50008               ; Error
+JMP @MR9114
+STG @MR9114
+ANB R50008               ; Error
+SET @MR9115              ; Err38 解除完了
+CON
+ENDS
+;Err39
+STG @MR9200              ; Err39
+ANB R50008               ; Error
+SET R50008               ; Error
+CON
+SET R50111               ; Err ST1
+CON
+JMP @MR9201
+MOV #39 DM400            ; ﾒｯｾｰｼﾞNo.
+STG @MR9201
+AND R50008               ; Error
+JMP @MR9202
+STG @MR9202
+ANB R50008               ; Error
+SET @MR9203              ; Err39 解除完了
+CON
+ENDS
+;Err40
+STG @MR9204              ; Err40
+ANB R50008               ; Error
+SET R50008               ; Error
+CON
+SET R50111               ; Err ST1
+CON
+JMP @MR9205
+MOV #40 DM400            ; ﾒｯｾｰｼﾞNo.
+STG @MR9205
+AND R50008               ; Error
+JMP @MR9206
+STG @MR9206
+ANB R50008               ; Error
+SET @MR9207              ; Err40 解除完了
+CON
+ENDS
+;Err41
+STG @MR9208              ; Err41
+ANB R50008               ; Error
+SET R50008               ; Error
+CON
+SET R50111               ; Err ST1
+CON
+JMP @MR9209
+MOV #41 DM400            ; ﾒｯｾｰｼﾞNo.
+STG @MR9209
+AND R50008               ; Error
+JMP @MR9210
+STG @MR9210
+ANB R50008               ; Error
+SET @MR9211              ; Err41 解除完了
+CON
+ENDS
+;Err42
+STG @MR9212              ; Err42
+ANB R50008               ; Error
+SET R50008               ; Error
+CON
+SET R50111               ; Err ST1
+CON
+JMP @MR9213
+MOV #42 DM400            ; ﾒｯｾｰｼﾞNo.
+STG @MR9213
+AND R50008               ; Error
+JMP @MR9214
+STG @MR9214
+ANB R50008               ; Error
+SET @MR9215              ; Err42 解除完了
+CON
+ENDS
+;Err43
+STG @MR9300              ; Err43
+ANB R50008               ; Error
+SET R50008               ; Error
+CON
+SET R50111               ; Err ST1
+CON
+JMP @MR9301
+MOV #43 DM400            ; ﾒｯｾｰｼﾞNo.
+STG @MR9301
+AND R50008               ; Error
+JMP @MR9302
+STG @MR9302
+ANB R50008               ; Error
+SET @MR9303              ; Err43 解除完了
+CON
+ENDS
+;Err44
+STG @MR9304              ; Err44
+ANB R50008               ; Error
+SET R50008               ; Error
+CON
+SET R50111               ; Err ST1
+CON
+JMP @MR9305
+MOV #44 DM400            ; ﾒｯｾｰｼﾞNo.
+STG @MR9305
+AND R50008               ; Error
+JMP @MR9306
+STG @MR9306
+ANB R50008               ; Error
+SET @MR9307              ; Err44 解除完了
+CON
+ENDS
+;Err45
+STG @MR9308              ; Err45
+ANB R50008               ; Error
+SET R50008               ; Error
+CON
+SET R50111               ; Err ST1
+CON
+JMP @MR9309
+MOV #45 DM400            ; ﾒｯｾｰｼﾞNo.
+STG @MR9309
+AND R50008               ; Error
+JMP @MR9310
+STG @MR9310
+ANB R50008               ; Error
+SET @MR9311              ; Err45 解除完了
+CON
+ENDS
+;Err46
+STG @MR9312              ; Err46
+ANB R50008               ; Error
+SET R50008               ; Error
+CON
+SET R50111               ; Err ST1
+CON
+JMP @MR9313
+MOV #46 DM400            ; ﾒｯｾｰｼﾞNo.
+STG @MR9313
+AND R50008               ; Error
+JMP @MR9314
+STG @MR9314
+ANB R50008               ; Error
+SET @MR9315              ; Err46 解除完了
+CON
+ENDS
+;Err47
+STG @MR9400              ; Err47
+ANB R50008               ; Error
+SET R50008               ; Error
+CON
+SET R50111               ; Err ST1
+CON
+JMP @MR9401
+MOV #47 DM400            ; ﾒｯｾｰｼﾞNo.
+STG @MR9401
+AND R50008               ; Error
+JMP @MR9402
+STG @MR9402
+ANB R50008               ; Error
+SET @MR9403              ; Err47 解除完了
+CON
+ENDS
+;Err48
+STG @MR9404              ; Err48
+ANB R50008               ; Error
+SET R50008               ; Error
+CON
+SET R50111               ; Err ST1
+CON
+JMP @MR9405
+MOV #48 DM400            ; ﾒｯｾｰｼﾞNo.
+STG @MR9405
+AND R50008               ; Error
+JMP @MR9406
+STG @MR9406
+ANB R50008               ; Error
+SET @MR9407              ; Err48 解除完了
+CON
+ENDS
+;Err49
+STG @MR9408              ; Err49
+ANB R50008               ; Error
+SET R50008               ; Error
+CON
+SET R50111               ; Err ST1
+CON
+JMP @MR9409
+MOV #49 DM400            ; ﾒｯｾｰｼﾞNo.
+STG @MR9409
+AND R50008               ; Error
+JMP @MR9410
+STG @MR9410
+ANB R50008               ; Error
+SET @MR9411              ; Err49 解除完了
+CON
+ENDS
+;Err50
+STG @MR9412              ; Err50
+ANB R50008               ; Error
+SET R50008               ; Error
+CON
+SET R50111               ; Err ST1
+CON
+JMP @MR9413
+MOV #50 DM400            ; ﾒｯｾｰｼﾞNo.
+STG @MR9413
+AND R50008               ; Error
+JMP @MR9414
+STG @MR9414
+ANB R50008               ; Error
+SET @MR9415              ; Err50 解除完了
+CON
+ENDS
+;<h1/>____▼_Err51-
+;Err51
+STG @MR9500              ; Err51
+ANB R50008               ; Error
+SET R50008               ; Error
+CON
+SET R50111               ; Err ST1
+CON
+SET LR49914              ; ｴﾗｰﾘｾｯﾄｷｰ要求
+CON
+JMP @MR9501
+MOV #51 DM400            ; ﾒｯｾｰｼﾞNo.
+STG @MR9501
+AND R50008               ; Error
+JMP @MR9502
+STG @MR9502
+ANB R50008               ; Error
+SET @MR9503              ; Err51 解除完了
+CON
+ENDS
+;Err52
+STG @MR9504              ; Err52
+ANB R50008               ; Error
+SET R50008               ; Error
+CON
+SET R50111               ; Err ST1
+CON
+JMP @MR9505
+MOV #52 DM400            ; ﾒｯｾｰｼﾞNo.
+STG @MR9505
+AND R50008               ; Error
+JMP @MR9506
+STG @MR9506
+ANB R50008               ; Error
+SET @MR9507              ; Err52 解除完了
+CON
+ENDS
+;Err53
+STG @MR9508              ; Err53
+ANB R50008               ; Error
+SET R50008               ; Error
+CON
+SET R50111               ; Err ST1
+CON
+JMP @MR9509
+MOV #53 DM400            ; ﾒｯｾｰｼﾞNo.
+STG @MR9509
+AND R50008               ; Error
+JMP @MR9510
+STG @MR9510
+ANB R50008               ; Error
+SET @MR9511              ; Err53 解除完了
+CON
+ENDS
+;Err54
+STG @MR9512              ; Err54
+ANB R50008               ; Error
+SET R50008               ; Error
+CON
+SET R50111               ; Err ST1
+CON
+JMP @MR9513
+MOV #54 DM400            ; ﾒｯｾｰｼﾞNo.
+STG @MR9513
+AND R50008               ; Error
+JMP @MR9514
+STG @MR9514
+ANB R50008               ; Error
+SET @MR9515              ; Err54 解除完了
+CON
+ENDS
+;Err55
+STG @MR9600              ; Err55
+ANB R50008               ; Error
+SET R50008               ; Error
+CON
+SET R50111               ; Err ST1
+CON
+JMP @MR9601
+MOV #55 DM400            ; ﾒｯｾｰｼﾞNo.
+STG @MR9601
+AND R50008               ; Error
+JMP @MR9602
+STG @MR9602
+ANB R50008               ; Error
+SET @MR9603              ; Err55 解除完了
+CON
+ENDS
+;Err56
+STG @MR9604              ; Err56
+ANB R50008               ; Error
+SET R50008               ; Error
+CON
+SET R50111               ; Err ST1
+CON
+JMP @MR9605
+MOV #56 DM400            ; ﾒｯｾｰｼﾞNo.
+STG @MR9605
+AND R50008               ; Error
+JMP @MR9606
+STG @MR9606
+ANB R50008               ; Error
+SET @MR9607              ; Err56 解除完了
+CON
+ENDS
+;Err57
+STG @MR9608              ; Err57
+ANB R50008               ; Error
+SET R50008               ; Error
+CON
+SET R50111               ; Err ST1
+CON
+JMP @MR9609
+MOV #57 DM400            ; ﾒｯｾｰｼﾞNo.
+STG @MR9609
+AND R50008               ; Error
+JMP @MR9610
+STG @MR9610
+ANB R50008               ; Error
+SET @MR9611              ; Err57 解除完了
+CON
+ENDS
+;Err58
+STG @MR9612              ; Err58
+ANB R50008               ; Error
+SET R50008               ; Error
+CON
+SET R50111               ; Err ST1
+CON
+JMP @MR9613
+MOV #58 DM400            ; ﾒｯｾｰｼﾞNo.
+STG @MR9613
+AND R50008               ; Error
+JMP @MR9614
+STG @MR9614
+ANB R50008               ; Error
+SET @MR9615              ; Err58 解除完了
+CON
+ENDS
+;Err59
+STG @MR9700              ; Err59
+ANB R50008               ; Error
+SET R50008               ; Error
+CON
+SET R50111               ; Err ST1
+CON
+JMP @MR9701
+MOV #59 DM400            ; ﾒｯｾｰｼﾞNo.
+STG @MR9701
+AND R50008               ; Error
+JMP @MR9702
+STG @MR9702
+ANB R50008               ; Error
+SET @MR9703              ; Err59 解除完了
+CON
+ENDS
+;Err60
+STG @MR9704              ; Err60
+ANB R50008               ; Error
+SET R50008               ; Error
+CON
+SET R50111               ; Err ST1
+CON
+JMP @MR9705
+MOV #60 DM400            ; ﾒｯｾｰｼﾞNo.
+STG @MR9705
+AND R50008               ; Error
+JMP @MR9706
+STG @MR9706
+ANB R50008               ; Error
+SET @MR9707              ; Err60 解除完了
+CON
+ENDS
+;Err61 ST3溶着時間ﾀｲﾑｵｰﾊﾞｰ
+STG @MR9708              ; Err61
+ANB R50008               ; Error
+SET R50008               ; Error
+CON
+SET R50111               ; Err ST1
+CON
+JMP @MR9709
+MOV #61 DM400            ; ﾒｯｾｰｼﾞNo.
+STG @MR9709
+AND R50008               ; Error
+JMP @MR9710
+STG @MR9710
+ANB R50008               ; Error
+SET @MR9711              ; Err61 解除完了
+CON
+ENDS
+;Err62 ST3 溶着時間早期終了異常
+STG @MR9712              ; Err62
+ANB R50008               ; Error
+SET R50008               ; Error
+CON
+SET R50111               ; Err ST1
+CON
+JMP @MR9713
+MOV #62 DM400            ; ﾒｯｾｰｼﾞNo.
+STG @MR9713
+AND R50008               ; Error
+JMP @MR9714
+STG @MR9714
+ANB R50008               ; Error
+SET @MR9715              ; Err62 解除完了
+CON
+ENDS
+;Err63  ST3ﾂｰﾙ下降時間ﾀｲﾑｵｰﾊﾞｰ
+STG @MR9800              ; Err63
+ANB R50008               ; Error
+SET R50008               ; Error
+CON
+SET R50111               ; Err ST1
+CON
+JMP @MR9801
+MOV #63 DM400            ; ﾒｯｾｰｼﾞNo.
+STG @MR9801
+AND R50008               ; Error
+JMP @MR9802
+STG @MR9802
+ANB R50008               ; Error
+SET @MR9803              ; Err63 解除完了
+CON
+ENDS
+;Er64  ST3 ﾂｰﾙ下降時間早期終了異
+STG @MR9804              ; Err64
+ANB R50008               ; Error
+SET R50008               ; Error
+CON
+SET R50111               ; Err ST1
+CON
+JMP @MR9805
+MOV #64 DM400            ; ﾒｯｾｰｼﾞNo.
+STG @MR9805
+AND R50008               ; Error
+JMP @MR9806
+STG @MR9806
+ANB R50008               ; Error
+SET @MR9807              ; Err64 解除完了
+CON
+ENDS
+;Err65 ST3 ﾂｰﾙ上昇時間ﾀｲﾑｵｰﾊﾞｰ
+STG @MR9808              ; Err65
+ANB R50008               ; Error
+SET R50008               ; Error
+CON
+SET R50111               ; Err ST1
+CON
+JMP @MR9809
+MOV #65 DM400            ; ﾒｯｾｰｼﾞNo.
+STG @MR9809
+AND R50008               ; Error
+JMP @MR9810
+STG @MR9810
+ANB R50008               ; Error
+SET @MR9811              ; Err65 解除完了
+CON
+ENDS
+;Err66 ST3 ﾂｰﾙ上昇時間早期終了異
+STG @MR9812              ; Err66
+ANB R50008               ; Error
+SET R50008               ; Error
+CON
+SET R50111               ; Err ST1
+CON
+JMP @MR9813
+MOV #66 DM400            ; ﾒｯｾｰｼﾞNo.
+STG @MR9813
+AND R50008               ; Error
+JMP @MR9814
+STG @MR9814
+ANB R50008               ; Error
+SET @MR9815              ; Err66 解除完了
+CON
+ENDS
+;Err67 ST3 接触点検知異常
+STG @MR9900              ; Err67
+ANB R50008               ; Error
+SET R50008               ; Error
+CON
+SET R50111               ; Err ST1
+CON
+JMP @MR9901
+MOV #67 DM400            ; ﾒｯｾｰｼﾞNo.
+STG @MR9901
+AND R50008               ; Error
+JMP @MR9902
+STG @MR9902
+ANB R50008               ; Error
+SET @MR9903              ; Err67 解除完了
+CON
+ENDS
+;Err68 ST3 変位計異常
+STG @MR9904              ; Err68
+ANB R50008               ; Error
+SET R50008               ; Error
+CON
+SET R50111               ; Err ST1
+CON
+JMP @MR9905
+MOV #68 DM400            ; ﾒｯｾｰｼﾞNo.
+STG @MR9905
+AND R50008               ; Error
+JMP @MR9906
+STG @MR9906
+ANB R50008               ; Error
+SET @MR9907              ; Err68 解除完了
+CON
+ENDS
+;Err69
+STG @MR9908              ; Err69
+ANB R50008               ; Error
+SET R50008               ; Error
+CON
+SET R50111               ; Err ST1
+CON
+JMP @MR9909
+MOV #69 DM400            ; ﾒｯｾｰｼﾞNo.
+STG @MR9909
+AND R50008               ; Error
+JMP @MR9910
+STG @MR9910
+ANB R50008               ; Error
+SET @MR9911              ; Err69 解除完了
+CON
+ENDS
+;Err70
+STG @MR9912              ; Err70
+ANB R50008               ; Error
+SET R50008               ; Error
+CON
+SET R50111               ; Err ST1
+CON
+JMP @MR9913
+MOV #70 DM400            ; ﾒｯｾｰｼﾞNo.
+STG @MR9913
+AND R50008               ; Error
+JMP @MR9914
+STG @MR9914
+ANB R50008               ; Error
+SET @MR9915              ; Err70 解除完了
+CON
+ENDS
+;<h1/>■_PACKｾｯﾄ
+;Pack Set
+LD @MR1908               ; 溶着Pack
+OR @MR1909               ; CY溶着Pack
+OR @MR1912               ; 溶着Pack
+OR @MR1913               ; CY溶着Pack
+OR @MR1900               ; RB Pack
+OR @MR1902               ; 袋開口中Pack
+OUT R50101               ; PACK ST1
+LD @MR5801
+LOGE #0
+LDB @MR5801
+LOGD #0
+LD @MR6801
+LOGE #1
+LDB @MR6801
+LOGD #1
+;
+LD @MR900                ; ﾜｰｸｾｯﾄ待ち
+OR @MR901                ; ｽﾀｰﾄSW待ち
+OUT R50406               ; ｽﾀｰﾄSWﾗﾝﾌﾟ点滅
+LD @MR900                ; ﾜｰｸｾｯﾄ待ち
+OUT MR15102              ; SubInfo 02
+CON
+DW #2 DM621              ; ﾒｲﾝ画面ｳｨﾝﾄﾞｳ表示内容
+CON
+DW #2 DM622
+LD @MR901                ; ｽﾀｰﾄSW待ち
+OUT MR15103              ; SubInfo 03
+CON
+DW #3 DM621              ; ﾒｲﾝ画面ｳｨﾝﾄﾞｳ表示内容
+CON
+DW #3 DM622
+LD @MR902                ; ﾜｰｸ取出後ｽﾀｰﾄSW待ち
+OUT MR15104              ; SubInfo 04
+CON
+DW #4 DM621              ; ﾒｲﾝ画面ｳｨﾝﾄﾞｳ表示内容
+CON
+DW #4 DM622
+END
+ENDH

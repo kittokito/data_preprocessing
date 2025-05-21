@@ -1,0 +1,91 @@
+DEVICE:53
+;MODULE:KE_CPU_JOG_Y
+;MODULE_TYPE:1
+;ﾓｰﾀｰ	ｺｶﾞﾈｲ	EWHRT**
+;ﾄﾞﾗｲﾊﾞ	ｺｶﾞﾈｲ	EWHCP-**
+;***CPUﾊﾟﾙｽ出力Y軸JOG動作****
+;
+;IN/OUTｱﾄﾞﾚｽ　先頭ﾋﾞｯﾄｱﾄﾞﾚｽから16bit占有
+;				IN　先頭ﾋﾞｯﾄｱﾄﾞﾚｽ+00　JOG起動+
+;					先頭ﾋﾞｯﾄｱﾄﾞﾚｽ+01　JOG起動-
+;					先頭ﾋﾞｯﾄｱﾄﾞﾚｽ+02　JOG動作Inter Lock
+;					先頭ﾋﾞｯﾄｱﾄﾞﾚｽ+03　JOG動作ﾘｾｯﾄSW
+;					先頭ﾋﾞｯﾄｱﾄﾞﾚｽ+04～7　予備
+;				OUT 先頭ﾋﾞｯﾄｱﾄﾞﾚｽ+08　JOG運転(+)動作中
+;					先頭ﾋﾞｯﾄｱﾄﾞﾚｽ+09　JOG運転(-)動作中
+;					先頭ﾋﾞｯﾄｱﾄﾞﾚｽ+10　異常
+;					先頭ﾋﾞｯﾄｱﾄﾞﾚｽ+11～15　予備
+;					
+;ERR_CODE	 先頭ﾜｰﾄﾞｱﾄﾞﾚｽから4Word占有
+;				先頭ﾜｰﾄﾞｱﾄﾞﾚｽ+00　異常Noを格納
+;				先頭ﾜｰﾄﾞｱﾄﾞﾚｽ+02　異常内容のｺｰﾄﾞNoを格納
+;入力
+LD P0:#0                 ; IN/OUTｱﾄﾞﾚｽ
+OUT @MR000               ; JOG起動＋
+LD P0:#1                 ; IN/OUTｱﾄﾞﾚｽ
+OUT @MR001               ; JOG起動－
+LD P0:#2                 ; IN/OUTｱﾄﾞﾚｽ
+OUT @MR002               ; JOG動作Inter Lock
+LD P0:#3                 ; IN/OUTｱﾄﾞﾚｽ
+OUT @MR003               ; JOG動作ﾘｾｯﾄSW
+;ﾌﾟﾛｸﾞﾗﾐﾝｸﾞｴﾘｱ
+LD @MR000                ; JOG起動＋
+AND @MR002               ; JOG動作Inter Lock
+ANB @MR011               ; 異常
+OUT @MR004               ; 出.JOG運転＋
+LD @MR001                ; JOG起動－
+AND @MR002               ; JOG動作Inter Lock
+ANB @MR011               ; 異常
+OUT @MR005               ; 出.JOG運転－
+LD @MR004                ; 出.JOG運転＋
+LDB CR3104               ; Y軸原点復帰動作中
+ANB CR3109               ; Y軸ﾊﾟﾙｽ出力中/緊急停止
+OR @MR006                ; 出.軸Y_JOG運転＋
+ANL
+OUT @MR006               ; 出.軸Y_JOG運転＋
+LD @MR005                ; 出.JOG運転－
+LDB CR3104               ; Y軸原点復帰動作中
+ANB CR3109               ; Y軸ﾊﾟﾙｽ出力中/緊急停止
+OR @MR007                ; 出.軸Y_JOG運転－
+ANL
+OUT @MR007               ; 出.軸Y_JOG運転－
+LD @MR006                ; 出.軸Y_JOG運転＋
+LD @MR007                ; 出.軸Y_JOG運転－
+LD @MR006                ; 出.軸Y_JOG運転＋
+OR @MR007                ; 出.軸Y_JOG運転－
+JOGY
+;ERR
+;位置決め異常
+LD CR3107                ; Y軸ｴﾗｰ/ｴﾗｰｸﾘｱ
+OR CR3108                ; Y軸ﾜｰﾆﾝｸﾞ/ﾜｰﾆﾝｸﾞｸﾘｱ
+OUT @MR012               ; Y軸位置決ﾕﾆｯﾄ異常
+BSET @DM0 #0             ; ERR_Code格納
+LD @MR012                ; Y軸位置決ﾕﾆｯﾄ異常
+MOV CM2054 @DM2          ; Y軸ｴﾗｰｺｰﾄﾞ  軸ERR_Code格納
+LDB @MR012               ; Y軸位置決ﾕﾆｯﾄ異常
+MOV #0 @DM2              ; 軸ERR_Code格納
+LD @MR003                ; JOG動作ﾘｾｯﾄSW
+MPS
+AND CR3107               ; Y軸ｴﾗｰ/ｴﾗｰｸﾘｱ
+RES CR3107               ; Y軸ｴﾗｰ/ｴﾗｰｸﾘｱ
+MPP
+AND CR3108               ; Y軸ﾜｰﾆﾝｸﾞ/ﾜｰﾆﾝｸﾞｸﾘｱ
+RES CR3108               ; Y軸ﾜｰﾆﾝｸﾞ/ﾜｰﾆﾝｸﾞｸﾘｱ
+;ERRまとめ
+LD @MR012                ; Y軸位置決ﾕﾆｯﾄ異常
+OUT @MR011               ; 異常
+;出力
+LD @MR006                ; 出.軸Y_JOG運転＋
+OUT P0:#8                ; IN/OUTｱﾄﾞﾚｽ
+LD @MR007                ; 出.軸Y_JOG運転－
+OUT P0:#9                ; IN/OUTｱﾄﾞﾚｽ
+LD @MR011                ; 異常
+OUT P0:#10               ; IN/OUTｱﾄﾞﾚｽ
+BMOV.D @DM0 P1:#0 #2     ; ERR_Code格納  ERR_CODE
+LDB @MR011               ; 異常
+FMOV.D #0 @DM0 #2        ; ERR_Code格納
+FMOV.D #0 P1:#0 #2       ; ERR_CODE
+LDB CR2002               ; 常時ON
+MEND
+END
+ENDH

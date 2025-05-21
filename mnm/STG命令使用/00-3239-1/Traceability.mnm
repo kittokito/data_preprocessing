@@ -1,0 +1,1164 @@
+DEVICE:53
+;MODULE:Traceability
+;MODULE_TYPE:0
+;SCRIPT_TYPE:
+;トレーサビリティデータ作成
+LD CR2008                ; 運転開始時1ｽｷｬﾝON
+DW #0 @DM50
+CON
+ZRES @R000 @R1915
+LD CR2003                ; 常時OFF
+ZRES @DM800 @DM899
+;<h1/>処理開始
+STG R42000               ; 共用SW0
+ANB R42002               ; 共用SW2
+ANB R42010               ; 共用SW10
+ANB R42102               ; ﾄﾚｻﾋﾞ3中
+SET R42002               ; 共用SW2
+CON
+JMP @R103
+STG R42008               ; 共用SW8
+ANB R42002               ; 共用SW2
+ANB R42010               ; 共用SW10
+ANB R42102               ; ﾄﾚｻﾋﾞ3中
+SET R42010               ; 共用SW10
+CON
+JMP @R103
+STG R42100               ; ﾄﾚｻﾋﾞ3開始
+ANB R42002               ; 共用SW2
+ANB R42010               ; 共用SW10
+ANB R42102               ; ﾄﾚｻﾋﾞ3中
+SET R42102               ; ﾄﾚｻﾋﾞ3中
+CON
+JMP @R103
+;空き容量チェック
+STG @R103
+SET @R102                ; Traceability　timer
+CON
+MPS
+MFREEK @DM112 @R104      ; 残り容量Kb  容量ﾁｪｯｸ完了
+MPP
+AND @R104                ; 容量ﾁｪｯｸ完了
+MPS
+ANB @R105                ; 容量ﾁｪｯｸNG
+JMP @R108
+MPP
+AND @R105                ; 容量ﾁｪｯｸNG
+SET @R700                ; ERR200
+CON
+JMP @R106
+STG @R106
+AND @R701                ; ERR201
+RES @R701                ; ERR201
+CON
+ZRES @R104 @R105         ; 容量ﾁｪｯｸ完了  容量ﾁｪｯｸNG
+CON
+JMP @R103
+;1MB以下はﾌｫﾙﾀﾞ削除
+STG @R108
+ZRES @R104 @R105         ; 容量ﾁｪｯｸ完了  容量ﾁｪｯｸNG
+CON
+MPS
+AND>=.D #1000 @DM112     ; 残り容量Kb
+JMP @R109                ; 容量不足
+MPP
+AND<.D #1000 @DM112      ; 残り容量Kb
+JMP @R200                ; 容量有
+;FTP送信
+STG @R109                ; 容量不足
+MPS
+AND= @DM110 #0           ; 書込み回数
+JMP @R200                ; 容量有
+MPP
+AND<> @DM110 #0          ; 書込み回数
+SET @R1000               ; FTP送信
+CON
+JMP @R110
+STG @R110
+AND @R1001               ; FTP送信完了
+RES @R1001               ; FTP送信完了
+CON
+JMP @R111
+;FOLDER 削除
+STG @R111
+MPS
+MRMDIR "Traceability" @R112;ﾌｫﾙﾀﾞ削除完了
+MPP
+AND @R112                ; ﾌｫﾙﾀﾞ削除完了
+MPS
+ANB @R113                ; ﾌｫﾙﾀﾞ削除NG
+JMP @R200                ; 容量有
+MPP
+AND @R113                ; ﾌｫﾙﾀﾞ削除NG
+SET @R700                ; ERR200
+CON
+JMP @R114
+STG @R114
+AND @R701                ; ERR201
+RES @R701                ; ERR201
+CON
+ZRES @R112 @R113         ; ﾌｫﾙﾀﾞ削除完了  ﾌｫﾙﾀﾞ削除NG
+CON
+JMP @R111
+;ﾌｫﾙﾀﾞ作成
+STG @R200                ; 容量有
+ZRES @R112 @R113         ; ﾌｫﾙﾀﾞ削除完了  ﾌｫﾙﾀﾞ削除NG
+CON
+MPS
+MMKDIR "Traceability" @R201;ﾌｫﾙﾀﾞ作成完了
+MPP
+AND @R201                ; ﾌｫﾙﾀﾞ作成完了
+MPS
+ANB @R202                ; ﾌｫﾙﾀﾞ作成NG
+JMP @R204
+MPP
+AND @R202                ; ﾌｫﾙﾀﾞ作成NG
+SET @R700                ; ERR200
+CON
+JMP @R203
+STG @R203
+AND @R701                ; ERR201
+RES @R701                ; ERR201
+CON
+ZRES @R201 @R202         ; ﾌｫﾙﾀﾞ作成完了  ﾌｫﾙﾀﾞ作成NG
+CON
+JMP @R200                ; 容量有
+;書込み回数確認
+STG @R204
+ZRES @R201 @R202         ; ﾌｫﾙﾀﾞ作成完了  ﾌｫﾙﾀﾞ作成NG
+CON
+MPS
+AND= @DM110 #0           ; 書込み回数
+ZRES @DM120 @DM149       ; FILE名
+CON
+JMP @R205
+MPP
+AND<> @DM110 #0          ; 書込み回数
+JMP @R207
+;FILE作成
+STG @R205
+AND @R206                ; FILE名作成完了
+RES @R206                ; FILE名作成完了
+CON
+JMP @R207
+;   TYPE @DM100-@DM108.U
+;BMOV(CM700,@DM100,6)		'日時読み込み
+;FOR @DM108 = 0 TO 5
+;	@DM800.U:@DM108 = ASC(TBCD(@DM100:@DM108))'File名ﾀｲﾑｽﾀﾝﾌﾟ部分
+;NEXT
+;
+;@DM120.T = "Traceability\C01_01_" + @DM800.T+CHR($00)'FILE名
+;
+;SET(@R206)
+LD @R205
+ANB @R206                ; FILE名作成完了
+NCJ #1002
+;   TYPE @DM100-@DM108.U
+;
+;BMOV(CM700,@DM100,6)		'日時読み込み
+;
+LD CR2002                ; 常時ON
+BMOV CM700 @DM100 #6     ; ｶﾚﾝﾀﾞﾀｲﾏ（年）  年
+;FOR @DM108 = 0 TO 5
+;
+LD CR2002                ; 常時ON
+MOV #0 @DM108            ; Loop
+LABEL #2000
+LD> @DM108 #5            ; Loop
+CJ #2001
+;	@DM800.U:@DM108 = ASC(TBCD(@DM100:@DM108))'File名ﾀｲﾑｽﾀﾝﾌﾟ部分
+;
+LD CR2002                ; 常時ON
+LDA @DM108               ; Loop
+CON
+EXT
+CON
+STA.L Z11
+CON
+LDA @DM108               ; Loop
+CON
+EXT
+CON
+STA.L Z12
+CON
+LDA @DM100:Z12           ; 年
+CON
+TBCD
+CON
+ASC
+CON
+STA @DM800:Z11
+;NEXT
+;
+LD CR2002                ; 常時ON
+INC @DM108               ; Loop
+LDB CR2009               ; 演算結果が負
+CJ #2000
+LABEL #2001
+;@DM120.T = "Traceability\C01_01_" + @DM800.T+CHR($00)'FILE名
+;
+LD CR2002                ; 常時ON
+ADRSET VM2 VM0
+MOV #0 VM2
+MOV.D VM0 @VM1
+LD CR2002                ; 常時ON
+LDA $0000
+CON
+SLA #8
+CON
+STA @VM0
+CON
+SMOV @VM0 *@VM1
+LD CR2002                ; 常時ON
+ADRADD.S +1 VM0
+LD CR2002                ; 常時ON
+MOV.D VM0 @VM3
+SMOV "Traceability\C01_01_" *@VM3
+LD CR2002                ; 常時ON
+SADD *@VM3 @DM800 *@VM3
+SADD *@VM3 *@VM1 *@VM3
+SMOV *@VM3 @DM120        ; FILE名
+;SET(@R206)
+LD CR2002                ; 常時ON
+SET @R206                ; FILE名作成完了
+LABEL #1002
+;
+;<h1/>DATA書込み開始
+STG @R207
+@INC @DM110              ; 書込み回数
+CON
+ANB @R302                ; ﾄﾚｻﾋﾞﾃﾞｰﾀ1書込み中
+ANB CR3214               ; ﾒﾓﾘｶｰﾄﾞ命令実行中
+MPS
+AND R42002               ; 共用SW2
+SET @R300                ; ﾄﾚｻﾋﾞﾃﾞｰﾀ1書込み開始
+CON
+JMP @R208
+MRD
+AND R42010               ; 共用SW10
+SET @R400                ; ﾄﾚｻﾋﾞﾃﾞｰﾀ2書込み開始
+CON
+JMP @R208
+MPP
+AND R42102               ; ﾄﾚｻﾋﾞ3中
+SET @R500                ; ﾄﾚｻﾋﾞﾃﾞｰﾀ3書込み開始
+CON
+JMP @R208
+STG @R208
+LD @R301                 ; ﾄﾚｻﾋﾞﾃﾞｰﾀ1書込み完了
+OR @R401                 ; ﾄﾚｻﾋﾞﾃﾞｰﾀ2書込み完了
+OR @R501                 ; ﾄﾚｻﾋﾞﾃﾞｰﾀ3書込み完了
+ANL
+RES @R301                ; ﾄﾚｻﾋﾞﾃﾞｰﾀ1書込み完了
+CON
+RES @R401                ; ﾄﾚｻﾋﾞﾃﾞｰﾀ2書込み完了
+CON
+RES @R501                ; ﾄﾚｻﾋﾞﾃﾞｰﾀ3書込み完了
+CON
+JMP @R209
+STG @R209
+MPS
+LDB @R303                ; ﾄﾚｻﾋﾞﾃﾞｰﾀ1書込NG
+ANB @R403                ; ﾄﾚｻﾋﾞﾃﾞｰﾀ2書込NG
+ANB @R503                ; ﾄﾚｻﾋﾞﾃﾞｰﾀ3書込NG
+ANL
+JMP @R211
+MPP
+LD @R303                 ; ﾄﾚｻﾋﾞﾃﾞｰﾀ1書込NG
+OR @R403                 ; ﾄﾚｻﾋﾞﾃﾞｰﾀ2書込NG
+OR @R503                 ; ﾄﾚｻﾋﾞﾃﾞｰﾀ3書込NG
+ANL
+SET @R800                ; Error201
+CON
+JMP @R210
+STG @R210
+RES @R303                ; ﾄﾚｻﾋﾞﾃﾞｰﾀ1書込NG
+CON
+RES @R403                ; ﾄﾚｻﾋﾞﾃﾞｰﾀ2書込NG
+CON
+RES @R503                ; ﾄﾚｻﾋﾞﾃﾞｰﾀ3書込NG
+CON
+AND @R801                ; Error201END
+RES @R801                ; Error201END
+CON
+@DEC @DM110              ; 書込み回数
+CON
+JMP @R207
+STG @R211
+MPS
+LDB @T0                  ; ﾄﾚｻﾋﾞ送信
+AND< @DM110 #120         ; 書込み回数
+ANL
+JMP @R214
+MPP
+LD @T0                   ; ﾄﾚｻﾋﾞ送信
+OR>= @DM110 #120         ; 書込み回数
+ANL
+JMP @R212                ; 10分経過
+;10分経過 or 40回書込み FTPアップロード
+STG @R212                ; 10分経過
+SET @R1000               ; FTP送信
+CON
+JMP @R213
+STG @R213
+AND @R1001               ; FTP送信完了
+RES @R1001               ; FTP送信完了
+CON
+JMP @R214
+STG @R214
+MPS
+AND R42002               ; 共用SW2
+RES R42002               ; 共用SW2
+CON
+SET R42001               ; 共用SW1
+CON
+ENDS
+MRD
+AND R42010               ; 共用SW10
+RES R42010               ; 共用SW10
+CON
+RES R42009               ; 共用SW9
+CON
+ENDS
+MPP
+AND R42102               ; ﾄﾚｻﾋﾞ3中
+RES R42102               ; ﾄﾚｻﾋﾞ3中
+CON
+RES R42101
+CON
+ENDS
+;<h1/>-----ﾄﾚｻﾋﾞﾃﾞｰﾀ書込み見本
+;工程1
+STG @R300                ; ﾄﾚｻﾋﾞﾃﾞｰﾀ1書込み開始
+DW #0 @DM50
+CON
+SET @R302                ; ﾄﾚｻﾋﾞﾃﾞｰﾀ1書込み中
+CON
+AND @R311
+RES @R311
+CON
+JMP @R304
+;   	W2000 = 1
+;	W2001.T = "CAVID1234567891"
+;	W2009 =  W2009+1'ﾜｰｸ番地
+;	W200A = #100 '100=良品
+;	 BMOV(CM700,W200B,6)'ﾀｲﾑｽﾀﾝﾌﾟ
+;	'W2011= 1'INDEX Pos
+;	
+;SET(@R311)
+;
+LD @R302                 ; ﾄﾚｻﾋﾞﾃﾞｰﾀ1書込み中
+ANB @R311
+NCJ #1000
+;   	W2000 = 1
+;
+LD CR2002                ; 常時ON
+MOV #1 W2000             ; 工程
+;	W2001.T = "CAVID1234567891"
+;
+LD CR2002                ; 常時ON
+SMOV "CAVID1234567891" W2001;WF ID
+;	W2009 =  W2009+1'ﾜｰｸ番地
+;
+LD CR2002                ; 常時ON
+LDA W2009                ; ﾜｰｸ番地
+CON
+EXT
+CON
+ADD.L +1
+CON
+STA W2009                ; ﾜｰｸ番地
+;	W200A = #100 '100=良品
+;
+LD CR2002                ; 常時ON
+MOV #100 W200A           ; 年
+;	 BMOV(CM700,W200B,6)'ﾀｲﾑｽﾀﾝﾌﾟ
+;
+LD CR2002                ; 常時ON
+BMOV CM700 W200B #6      ; ｶﾚﾝﾀﾞﾀｲﾏ（年）  月
+;	'W2011= 1'INDEX Pos
+;
+;SET(@R311)
+;
+LD CR2002                ; 常時ON
+SET @R311
+LABEL #1000
+;
+STG @R304
+MPS
+LDB R41900               ; ﾒﾓﾘｶｰﾄﾞ書込み完了
+ANB CR3214               ; ﾒﾓﾘｶｰﾄﾞ命令実行中
+ANL
+MPS
+AND= @DM50 #0
+DW #4 DM9400             ; To Memory Type
+CON
+DW #0 DM9401             ; To Memory MODE
+CON
+DW $0000 DM9402          ; To Memory option
+CON
+MWRIT @DM120 W2000 #1 DM9400 R41900;FILE名  工程  To Memory Type  ﾒﾓﾘｶｰﾄﾞ書込み完了
+MRD
+AND= @DM50 #1
+DW #8 DM9400             ; To Memory Type
+CON
+DW #0 DM9401             ; To Memory MODE
+CON
+DW.D #0 DM9402           ; To Memory option
+CON
+MWRIT @DM120 W2001 #16 DM9400 R41900;FILE名  WF ID  To Memory Type  ﾒﾓﾘｶｰﾄﾞ書込み完了
+MPP
+AND= @DM50 #2
+DW #4 DM9400             ; To Memory Type
+CON
+DW #0 DM9401             ; To Memory MODE
+CON
+DW #1 DM9402             ; To Memory option
+CON
+MWRIT @DM120 W2009 #8 DM9400 R41900;FILE名  ﾜｰｸ番地  To Memory Type  ﾒﾓﾘｶｰﾄﾞ書込み完了
+MPP
+ANP R41900               ; ﾒﾓﾘｶｰﾄﾞ書込み完了
+@INC @DM50
+CON
+MPS
+ANB R41901               ; MemoryCard 書込み失敗
+JMP @R305
+MPP
+AND R41901               ; MemoryCard 書込み失敗
+SET @R303                ; ﾄﾚｻﾋﾞﾃﾞｰﾀ1書込NG
+CON
+JMP @R306
+STG @R305
+ZRES R41900 R41901       ; ﾒﾓﾘｶｰﾄﾞ書込み完了  MemoryCard 書込み失敗
+CON
+MPS
+AND< @DM50 #3
+JMP @R304
+MPP
+AND= @DM50 #3
+JMP @R306
+STG @R306
+RES @R302                ; ﾄﾚｻﾋﾞﾃﾞｰﾀ1書込み中
+CON
+SET @R301                ; ﾄﾚｻﾋﾞﾃﾞｰﾀ1書込み完了
+CON
+ENDS
+;工程2
+STG @R400                ; ﾄﾚｻﾋﾞﾃﾞｰﾀ2書込み開始
+DW #0 @DM50
+CON
+SET @R402                ; ﾄﾚｻﾋﾞﾃﾞｰﾀ2書込み中
+CON
+AND @R411
+RES @R411
+CON
+JMP @R404
+;   	W2020 = 2
+;	W2021.T = "CAVID1234567891"
+;	W2029 =  W2009+1'ﾜｰｸ番地
+;	W202A = #100 '100=良品
+;	 BMOV(CM700,W202B,6)'ﾀｲﾑｽﾀﾝﾌﾟ
+;	W2031.T= "CR WF ID"
+;	W2039 = W2039+1'ﾜｰｸ番地
+;	
+;SET(@R411)
+;
+LD @R402                 ; ﾄﾚｻﾋﾞﾃﾞｰﾀ2書込み中
+ANB @R411
+NCJ #1005
+;   	W2020 = 2
+;
+LD CR2002                ; 常時ON
+MOV #2 W2020
+;	W2021.T = "CAVID1234567891"
+;
+LD CR2002                ; 常時ON
+SMOV "CAVID1234567891" W2021
+;	W2029 =  W2009+1'ﾜｰｸ番地
+;
+LD CR2002                ; 常時ON
+LDA W2009                ; ﾜｰｸ番地
+CON
+EXT
+CON
+ADD.L +1
+CON
+STA W2029
+;	W202A = #100 '100=良品
+;
+LD CR2002                ; 常時ON
+MOV #100 W202A
+;	 BMOV(CM700,W202B,6)'ﾀｲﾑｽﾀﾝﾌﾟ
+;
+LD CR2002                ; 常時ON
+BMOV CM700 W202B #6      ; ｶﾚﾝﾀﾞﾀｲﾏ（年）
+;	W2031.T= "CR WF ID"
+;
+LD CR2002                ; 常時ON
+SMOV "CR WF ID" W2031
+;	W2039 = W2039+1'ﾜｰｸ番地
+;
+LD CR2002                ; 常時ON
+LDA W2039
+CON
+EXT
+CON
+ADD.L +1
+CON
+STA W2039
+;SET(@R411)
+;
+LD CR2002                ; 常時ON
+SET @R411
+LABEL #1005
+;
+STG @R404
+MPS
+LDB R41900               ; ﾒﾓﾘｶｰﾄﾞ書込み完了
+ANB CR3214               ; ﾒﾓﾘｶｰﾄﾞ命令実行中
+ANL
+MPS
+AND= @DM50 #0
+DW #4 DM9400             ; To Memory Type
+CON
+DW #0 DM9401             ; To Memory MODE
+CON
+DW $0000 DM9402          ; To Memory option
+CON
+MWRIT @DM120 W2020 #1 DM9400 R41900;FILE名  To Memory Type  ﾒﾓﾘｶｰﾄﾞ書込み完了
+MRD
+AND= @DM50 #1
+DW #8 DM9400             ; To Memory Type
+CON
+DW #0 DM9401             ; To Memory MODE
+CON
+DW.D #0 DM9402           ; To Memory option
+CON
+MWRIT @DM120 W2021 #16 DM9400 R41900;FILE名  To Memory Type  ﾒﾓﾘｶｰﾄﾞ書込み完了
+MRD
+AND= @DM50 #2
+DW #4 DM9400             ; To Memory Type
+CON
+DW #0 DM9401             ; To Memory MODE
+CON
+DW #0 DM9402             ; To Memory option
+CON
+MWRIT @DM120 W2029 #8 DM9400 R41900;FILE名  To Memory Type  ﾒﾓﾘｶｰﾄﾞ書込み完了
+MRD
+AND= @DM50 #3
+DW #8 DM9400             ; To Memory Type
+CON
+DW #0 DM9401             ; To Memory MODE
+CON
+DW #0 DM9402             ; To Memory option
+CON
+MWRIT @DM120 W2031 #16 DM9400 R41900;FILE名  To Memory Type  ﾒﾓﾘｶｰﾄﾞ書込み完了
+MPP
+AND= @DM50 #4
+DW #4 DM9400             ; To Memory Type
+CON
+DW #0 DM9401             ; To Memory MODE
+CON
+DW #1 DM9402             ; To Memory option
+CON
+MWRIT @DM120 W2039 #1 DM9400 R41900;FILE名  To Memory Type  ﾒﾓﾘｶｰﾄﾞ書込み完了
+MPP
+ANP R41900               ; ﾒﾓﾘｶｰﾄﾞ書込み完了
+@INC @DM50
+CON
+MPS
+ANB R41901               ; MemoryCard 書込み失敗
+JMP @R405
+MPP
+AND R41901               ; MemoryCard 書込み失敗
+SET @R403                ; ﾄﾚｻﾋﾞﾃﾞｰﾀ2書込NG
+CON
+JMP @R406
+STG @R405
+ZRES R41900 R41901       ; ﾒﾓﾘｶｰﾄﾞ書込み完了  MemoryCard 書込み失敗
+CON
+MPS
+AND< @DM50 #5
+JMP @R404
+MPP
+AND= @DM50 #5
+JMP @R406
+STG @R406
+RES @R402                ; ﾄﾚｻﾋﾞﾃﾞｰﾀ2書込み中
+CON
+SET @R401                ; ﾄﾚｻﾋﾞﾃﾞｰﾀ2書込み完了
+CON
+ENDS
+;工程3
+STG @R500                ; ﾄﾚｻﾋﾞﾃﾞｰﾀ3書込み開始
+DW #0 @DM50
+CON
+SET @R502                ; ﾄﾚｻﾋﾞﾃﾞｰﾀ3書込み中
+CON
+AND @R511
+RES @R511
+CON
+JMP @R504
+;   	W2040 = 3
+;	W2041.T = "ID1234567891112"
+;	W2049.T = "C+R WF ID"
+;	W2051 = W2051+1'格納位置
+;	 BMOV(CM700,W2052,6)'ﾀｲﾑｽﾀﾝﾌﾟ
+;	
+;SET(@R511)
+;
+LD @R502                 ; ﾄﾚｻﾋﾞﾃﾞｰﾀ3書込み中
+ANB @R511
+NCJ #1006
+;   	W2040 = 3
+;
+LD CR2002                ; 常時ON
+MOV #3 W2040
+;	W2041.T = "ID1234567891112"
+;
+LD CR2002                ; 常時ON
+SMOV "ID1234567891112" W2041
+;	W2049.T = "C+R WF ID"
+;
+LD CR2002                ; 常時ON
+SMOV "C+R WF ID" W2049
+;	W2051 = W2051+1'格納位置
+;
+LD CR2002                ; 常時ON
+LDA W2051
+CON
+EXT
+CON
+ADD.L +1
+CON
+STA W2051
+;	 BMOV(CM700,W2052,6)'ﾀｲﾑｽﾀﾝﾌﾟ
+;
+LD CR2002                ; 常時ON
+BMOV CM700 W2052 #6      ; ｶﾚﾝﾀﾞﾀｲﾏ（年）
+;SET(@R511)
+;
+LD CR2002                ; 常時ON
+SET @R511
+LABEL #1006
+;
+STG @R504
+MPS
+LDB R41900               ; ﾒﾓﾘｶｰﾄﾞ書込み完了
+ANB CR3214               ; ﾒﾓﾘｶｰﾄﾞ命令実行中
+ANL
+MPS
+AND= @DM50 #0
+DW #4 DM9400             ; To Memory Type
+CON
+DW #0 DM9401             ; To Memory MODE
+CON
+DW $0000 DM9402          ; To Memory option
+CON
+MWRIT @DM120 W2040 #1 DM9400 R41900;FILE名  To Memory Type  ﾒﾓﾘｶｰﾄﾞ書込み完了
+MRD
+AND= @DM50 #1
+DW #8 DM9400             ; To Memory Type
+CON
+DW #0 DM9401             ; To Memory MODE
+CON
+DW.D #0 DM9402           ; To Memory option
+CON
+MWRIT @DM120 W2041 #16 DM9400 R41900;FILE名  To Memory Type  ﾒﾓﾘｶｰﾄﾞ書込み完了
+MRD
+AND= @DM50 #2
+DW #8 DM9400             ; To Memory Type
+CON
+DW #0 DM9401             ; To Memory MODE
+CON
+DW #0 DM9402             ; To Memory option
+CON
+MWRIT @DM120 W2049 #16 DM9400 R41900;FILE名  To Memory Type  ﾒﾓﾘｶｰﾄﾞ書込み完了
+MPP
+AND= @DM50 #3
+DW #4 DM9400             ; To Memory Type
+CON
+DW #0 DM9401             ; To Memory MODE
+CON
+DW #1 DM9402             ; To Memory option
+CON
+MWRIT @DM120 W2051 #7 DM9400 R41900;FILE名  To Memory Type  ﾒﾓﾘｶｰﾄﾞ書込み完了
+MPP
+ANP R41900               ; ﾒﾓﾘｶｰﾄﾞ書込み完了
+@INC @DM50
+CON
+MPS
+ANB R41901               ; MemoryCard 書込み失敗
+JMP @R505
+MPP
+AND R41901               ; MemoryCard 書込み失敗
+SET @R503                ; ﾄﾚｻﾋﾞﾃﾞｰﾀ3書込NG
+CON
+JMP @R506
+STG @R505
+ZRES R41900 R41901       ; ﾒﾓﾘｶｰﾄﾞ書込み完了  MemoryCard 書込み失敗
+CON
+MPS
+AND< @DM50 #4
+JMP @R504
+MPP
+AND= @DM50 #4
+JMP @R506
+STG @R506
+RES @R502                ; ﾄﾚｻﾋﾞﾃﾞｰﾀ3書込み中
+CON
+SET @R501                ; ﾄﾚｻﾋﾞﾃﾞｰﾀ3書込み完了
+CON
+ENDS
+;<h1/>FTP送信:ReName
+STG @R1000               ; FTP送信
+SET @R1002               ; FTP送信中
+CON
+JMP @R1003
+STG @R1003
+AND @R1004               ; Script完了
+JMP @R1005
+;@DM700.T = @DM120.T+".CSV"+ CHR($00)
+;SET(@R1004)
+LD @R1003
+ANB @R1004               ; Script完了
+NCJ #1003
+;@DM700.T = @DM120.T+".CSV"+ CHR($00)
+;
+LD CR2002                ; 常時ON
+ADRSET VM2 VM0
+MOV #0 VM2
+MOV.D VM0 @VM6
+LD CR2002                ; 常時ON
+LDA $0000
+CON
+SLA #8
+CON
+STA @VM5
+CON
+SMOV @VM5 *@VM6
+LD CR2002                ; 常時ON
+ADRADD.S +1 VM0
+LD CR2002                ; 常時ON
+MOV.D VM0 @VM8
+SMOV @DM120 *@VM8        ; FILE名
+LD CR2002                ; 常時ON
+SADD *@VM8 ".CSV" *@VM8
+SADD *@VM8 *@VM6 *@VM8
+SMOV *@VM8 @DM700        ; ReName元
+;SET(@R1004)
+LD CR2002                ; 常時ON
+SET @R1004               ; Script完了
+LABEL #1003
+;
+STG @R1005
+RES @R1004               ; Script完了
+CON
+JMP @R1006
+STG @R1006
+MPS
+MREN @DM700 "C01_01.csv" @R1007;ReName元  変更完了
+MPP
+AND @R1007               ; 変更完了
+MPS
+ANB @R1008               ; 変更NG
+JMP @R1200
+MPP
+AND @R1008               ; 変更NG
+SET @R700                ; ERR200
+CON
+JMP @R1009
+STG @R1009
+AND @R701                ; ERR201
+RES @R701                ; ERR201
+CON
+ZRES @R1007 @R1008       ; 変更完了  変更NG
+CON
+JMP @R1010
+STG @R1010
+MPS
+AND= CM2390 #4           ; ﾒﾓﾘｶｰﾄﾞ命令用ｴﾗｰｺｰﾄﾞ
+JMP @R1100
+MPP
+AND<> CM2390 #4          ; ﾒﾓﾘｶｰﾄﾞ命令用ｴﾗｰｺｰﾄﾞ
+JMP @R1003
+;既にフォルダー内に同じ送信FILE名称がある場合：送信→名称変更
+STG @R1100
+SET @R1300               ; FTP送信
+CON
+JMP @R1101
+STG @R1101
+AND @R1301               ; FTP送信完了
+RES @R1301               ; FTP送信完了
+CON
+JMP @R1102
+STG @R1102
+AND @R1103               ; Script完了
+JMP @R1104
+;BMOV(CM700,@DM100,6)		'日時読み込み
+;FOR @DM108 = 0 TO 5
+;	@DM850.U:@DM108 = ASC(TBCD(@DM100:@DM108))
+;NEXT
+;
+;@DM700.T="C01_01_"+@D850.T+CHR($00)
+;
+;SET(@R1103)
+;
+LD @R1102
+ANB @R1103               ; Script完了
+NCJ #1004
+;BMOV(CM700,@DM100,6)		'日時読み込み
+;
+LD CR2002                ; 常時ON
+BMOV CM700 @DM100 #6     ; ｶﾚﾝﾀﾞﾀｲﾏ（年）  年
+;FOR @DM108 = 0 TO 5
+;
+LD CR2002                ; 常時ON
+MOV #0 @DM108            ; Loop
+LABEL #2002
+LD> @DM108 #5            ; Loop
+CJ #2003
+;	@DM850.U:@DM108 = ASC(TBCD(@DM100:@DM108))
+;
+LD CR2002                ; 常時ON
+LDA @DM108               ; Loop
+CON
+EXT
+CON
+STA.L Z11
+CON
+LDA @DM108               ; Loop
+CON
+EXT
+CON
+STA.L Z12
+CON
+LDA @DM100:Z12           ; 年
+CON
+TBCD
+CON
+ASC
+CON
+STA @DM850:Z11
+;NEXT
+;
+LD CR2002                ; 常時ON
+INC @DM108               ; Loop
+LDB CR2009               ; 演算結果が負
+CJ #2002
+LABEL #2003
+;@DM700.T="C01_01_"+@D850.T+CHR($00)
+;
+LD CR2002                ; 常時ON
+ADRSET VM2 VM0
+MOV #0 VM2
+MOV.D VM0 @VM11
+LD CR2002                ; 常時ON
+LDA $0000
+CON
+SLA #8
+CON
+STA @VM10
+CON
+SMOV @VM10 *@VM11
+LD CR2002                ; 常時ON
+ADRADD.S +1 VM0
+LD CR2002                ; 常時ON
+MOV.D VM0 @VM13
+SMOV "C01_01_" *@VM13
+LD CR2002                ; 常時ON
+SADD *@VM13 @DM850 *@VM13
+SADD *@VM13 *@VM11 *@VM13
+SMOV *@VM13 @DM700       ; ReName元
+;SET(@R1103)
+;
+LD CR2002                ; 常時ON
+SET @R1103               ; Script完了
+LABEL #1004
+;
+STG @R1104
+RES @R1103               ; Script完了
+CON
+JMP @R1105
+STG @R1105
+MPS
+MREN @DM700 "C01_01.csv" @R1106;ReName元  Rename完了
+MPP
+AND @R1106               ; Rename完了
+MPS
+ANB @R1107               ; RenameERROR
+JMP @R1003
+MPP
+AND @R1107               ; RenameERROR
+SET @R700                ; ERR200
+CON
+JMP @R1108
+STG @R1108
+AND @R701                ; ERR201
+RES @R701                ; ERR201
+CON
+JMP @R1102
+;送信
+STG @R1200
+ZRES @R1007 @R1008       ; 変更完了  変更NG
+CON
+SET @R1300               ; FTP送信
+CON
+JMP @R1201
+STG @R1201
+AND @R1301               ; FTP送信完了
+RES @R1301               ; FTP送信完了
+CON
+JMP @R1205
+;送信後元のFile名に戻す
+STG @R1205
+AND @R1004               ; Script完了
+JMP @R1207
+;@DM700.T="C01_01_" + @D800.T +".CSV"+CHR($00)
+;SET(@R1004)
+LD @R1205
+ANB @R1004               ; Script完了
+NCJ #1001
+;@DM700.T="C01_01_" + @D800.T +".CSV"+CHR($00)
+;
+LD CR2002                ; 常時ON
+ADRSET VM2 VM0
+MOV #0 VM2
+MOV.D VM0 @VM16
+LD CR2002                ; 常時ON
+LDA $0000
+CON
+SLA #8
+CON
+STA @VM15
+CON
+SMOV @VM15 *@VM16
+LD CR2002                ; 常時ON
+ADRADD.S +1 VM0
+LD CR2002                ; 常時ON
+MOV.D VM0 @VM18
+SMOV "C01_01_" *@VM18
+LD CR2002                ; 常時ON
+SADD *@VM18 @DM800 *@VM18
+SADD *@VM18 ".CSV" *@VM18
+SADD *@VM18 *@VM16 *@VM18
+SMOV *@VM18 @DM700       ; ReName元
+;SET(@R1004)
+LD CR2002                ; 常時ON
+SET @R1004               ; Script完了
+LABEL #1001
+;
+STG @R1207
+MPS
+RES @R1004               ; Script完了
+CON
+MREN "Traceability\Cnn_0n.csv" @DM700 @R1208;ReName元  名称戻完了
+MPP
+AND @R1208               ; 名称戻完了
+MPS
+ANB @R1209               ; 名称戻NG
+JMP @R1211
+MPP
+AND @R1209               ; 名称戻NG
+SET @R700                ; ERR200
+CON
+JMP @R1210
+STG @R1210
+AND @R701                ; ERR201
+RES @R701                ; ERR201
+CON
+ZRES @R1208 @R1209       ; 名称戻完了  名称戻NG
+CON
+JMP @R1207
+STG @R1211
+ZRES @R1208 @R1209       ; 名称戻完了  名称戻NG
+CON
+RES @R102                ; Traceability　timer
+CON
+RES @R1002               ; FTP送信中
+CON
+SET @R1001               ; FTP送信完了
+CON
+ENDS
+;<h1/>FTP送信
+STG @R1300               ; FTP送信
+SET @R1302               ; FTP送信中
+CON
+JMP @R1303
+STG @R1303
+AND R33215               ; FTPｸﾗｲｱﾝﾄ動作可能
+ANB R33100               ; FTPﾌｧｲﾙ転送ｴﾗｰ ID0
+ANB R32100               ; FTPﾌｧｲﾙ転送中断 ID0
+@SET R32000              ; FTPﾌｧｲﾙ転送要求 ID0
+CON
+AND R33000               ; FTPﾌｧｲﾙ転送完了 ID0
+JMP @R1304
+STG @R1304
+RES R32000               ; FTPﾌｧｲﾙ転送要求 ID0
+CON
+MPS
+LDB R33100               ; FTPﾌｧｲﾙ転送ｴﾗｰ ID0
+ANB R33000               ; FTPﾌｧｲﾙ転送完了 ID0
+ANL
+DW #0 @DM110             ; 書込み回数
+CON
+JMP @R1308
+MPP
+AND R33100               ; FTPﾌｧｲﾙ転送ｴﾗｰ ID0
+SET R32100               ; FTPﾌｧｲﾙ転送中断 ID0
+CON
+JMP @R1305
+STG @R1305
+ANB R33000               ; FTPﾌｧｲﾙ転送完了 ID0
+RES R32100               ; FTPﾌｧｲﾙ転送中断 ID0
+CON
+JMP @R1306
+STG @R1306
+SET @R708                ; ERR201
+CON
+JMP @R1307
+STG @R1307
+AND @R709                ; ERR201
+RES @R709                ; ERR201
+CON
+JMP @R1300               ; FTP送信
+STG @R1308
+SET @R1301               ; FTP送信完了
+CON
+RES @R1302               ; FTP送信中
+CON
+ENDS
+;<h1/>MyTask Error Process Substance/エラー処理実体
+STG @R600                ; Task0 ERROR
+ANB R39002               ; ERROR_DISP Busy
+MPS
+ZRES @R605 @R608         ; SW1  SW4
+CON
+LDA @DM9                 ; ReturnSW /ERROR_DISP
+CON
+TBCD
+CON
+STA @DM10
+CON
+DISN @DM10 @DM3 #4
+MRD
+DW #0 @DM0               ; TaskNo /ERROR_DISP
+CON
+BMOV @DM0 DM60000 #7     ; TaskNo /ERROR_DISP  TaskNo /ERROR_DISP
+MPP
+SET R39000               ; ERROR_DISP Start
+CON
+SET @R602                ; Task0 ERROR Busy
+CON
+JMP @R603
+STG @R603
+AND R39002               ; ERROR_DISP Busy
+AND= DM60008 @DM1        ; ReturnNo /ERROR_DISP  ErrorNo /ERROR_DISP
+MPS
+AND= DM60007 @DM6        ; ReturnSW /ERROR_DISP
+SET @R605                ; SW1
+CON
+JMP @R604
+MRD
+AND= DM60007 @DM5        ; ReturnSW /ERROR_DISP
+SET @R606                ; SW2
+CON
+JMP @R604
+MRD
+AND= DM60007 @DM4        ; ReturnSW /ERROR_DISP
+SET @R607                ; SW3
+CON
+JMP @R604
+MPP
+AND= DM60007 @DM3        ; ReturnSW /ERROR_DISP
+SET @R608                ; SW4
+CON
+JMP @R604
+STG @R604
+ANB R39002               ; ERROR_DISP Busy
+RES @R602                ; Task0 ERROR Busy
+CON
+SET @R601                ; Task0 ｴﾗｰ完了
+CON
+ENDS
+;<h1/>ERROR
+;ERROR200:MemoryAccess
+STG @R700                ; ERR200
+ZRES @R104 @R105         ; 容量ﾁｪｯｸ完了  容量ﾁｪｯｸNG
+CON
+ANB R39004               ; ｴﾗｰ処理中
+SET R39004               ; ｴﾗｰ処理中
+CON
+DW #1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #200 @DM1             ; ErrorNo /ERROR_DISP
+CON
+DW #0 @DM2               ; SensorNo /ERROR_DISP
+CON
+SET @R600                ; Task0 ERROR
+CON
+JMP @R702
+STG @R702
+AND @R601                ; Task0 ｴﾗｰ完了
+RES @R601                ; Task0 ｴﾗｰ完了
+CON
+RES R39004               ; ｴﾗｰ処理中
+CON
+AND @R605                ; SW1
+SET @R701                ; ERR201
+CON
+ENDS
+;ERROR201:FTP送信ERROR
+STG @R708                ; ERR201
+ZRES @R104 @R105         ; 容量ﾁｪｯｸ完了  容量ﾁｪｯｸNG
+CON
+ANB R39004               ; ｴﾗｰ処理中
+SET R39004               ; ｴﾗｰ処理中
+CON
+DW #1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #201 @DM1             ; ErrorNo /ERROR_DISP
+CON
+DW #0 @DM2               ; SensorNo /ERROR_DISP
+CON
+SET @R600                ; Task0 ERROR
+CON
+JMP @R711
+STG @R711
+AND @R601                ; Task0 ｴﾗｰ完了
+RES @R601                ; Task0 ｴﾗｰ完了
+CON
+RES R39004               ; ｴﾗｰ処理中
+CON
+AND @R605                ; SW1
+SET @R709                ; ERR201
+CON
+ENDS
+;ERROR202:Memoryｶｰﾄﾞ書込みエラー
+STG @R800                ; Error201
+ZRES @R104 @R105         ; 容量ﾁｪｯｸ完了  容量ﾁｪｯｸNG
+CON
+ANB R39004               ; ｴﾗｰ処理中
+SET R39004               ; ｴﾗｰ処理中
+CON
+DW #1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #202 @DM1             ; ErrorNo /ERROR_DISP
+CON
+DW #0 @DM2               ; SensorNo /ERROR_DISP
+CON
+SET @R600                ; Task0 ERROR
+CON
+JMP @R803
+STG @R803
+AND @R601                ; Task0 ｴﾗｰ完了
+RES @R601                ; Task0 ｴﾗｰ完了
+CON
+RES R39004               ; ｴﾗｰ処理中
+CON
+AND @R605                ; SW1
+SET @R801                ; Error201END
+CON
+ENDS
+END
+ENDH

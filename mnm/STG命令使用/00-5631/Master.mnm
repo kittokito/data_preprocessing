@@ -1,0 +1,566 @@
+DEVICE:53
+;MODULE:Master
+;MODULE_TYPE:0
+LD R50010                ; Emergency　Stop
+ZRES @MR000 @MR915       ; AUTOMODE_PLS
+LD CR2002                ; 常時ON
+OUT R51000               ; ﾃﾞﾊﾞｯｸﾞ用常時ON
+;定周期ｶｳﾝﾀ(割り込み制御用)
+LD CR2008                ; 運転開始時1ｽｷｬﾝON
+EI
+CON
+SET CR2103               ; CTC0ON時CTH0自動ﾘｾｯﾄ
+CON
+SET CR2203               ; CTC2ON時CTH1自動ﾘｾｯﾄ
+CON
+RES CTH0
+CON
+RES CTH1
+LD CR2002                ; 常時ON
+CTH.D #0 CR2102          ; CTH0用100μs内部ｸﾛｯｸ
+CTC.D #0 #100
+CTC.D #1 #100
+LD CR2002                ; 常時ON
+CTH.D #1 CR2202          ; CTH1用100μs内部ｸﾛｯｸ
+CTC.D #2 #100
+CTC.D #3 #100
+;機種設定 / Model Setting
+LD LR41600
+OR LR41604
+OR LR41608
+OUT MR15006              ; 機種切替 Blk
+LD LR41601
+OR LR41603
+OR LR41602
+OR LR41605
+OR LR41607
+OR LR41606
+OR LR41609
+OR LR41611
+OR LR41610
+OUT MR15007              ; 機種切替 Blk以外
+;定周期ｶｳﾝﾀ(割り込み制御用)
+LD CR2008                ; 運転開始時1ｽｷｬﾝON
+EI
+LD CR2002                ; 常時ON
+TMS #210 #10             ; ｱﾅﾛｸﾞ取込用0.01sﾀｲﾏ
+LD T210                  ; ｱﾅﾛｸﾞ取込用0.01sﾀｲﾏ
+RES T210                 ; ｱﾅﾛｸﾞ取込用0.01sﾀｲﾏ
+;CPU RUN後ﾀｲﾏｰ
+LD CR2002                ; 常時ON
+TMR @5 #10               ; CPU RUN後1s
+;Action Parameter
+LD CR2002                ; 常時ON
+MPS
+AND LR41400              ; Action Parameter 00
+OUT MR000                ; 他装置通信無し=ON
+MRD
+AND LR41401              ; Action Parameter 01
+OUT MR001                ; 供給口挿入無し=ON
+MRD
+AND LR41402              ; Action Parameter 02
+OUT MR002                ; ﾋｰﾀｰ無効=ON
+MRD
+AND LR41403              ; Action Parameter 03
+OUT MR003                ; 溶着無効=ON
+MRD
+AND LR41404              ; Action Parameter 04
+OUT MR004                ; ﾘｰｸ検査無効=ON
+MRD
+AND LR41405              ; Action Parameter 05
+OUT MR005                ; 良品ﾏｰｷﾝｸﾞ無効=ON
+MRD
+AND LR41406              ; Action Parameter 06
+OUT MR006                ; Action Parameter 06
+MRD
+AND LR41407              ; Action Parameter 07
+OUT MR007                ; Action Parameter 07
+MRD
+AND LR41408              ; Action Parameter 08
+OUT MR008                ; Action Parameter 08
+MRD
+AND LR41409              ; Action Parameter 09
+OUT MR009                ; Action Parameter 09
+MRD
+AND LR41410              ; Action Parameter 10
+OUT MR010                ; Action Parameter 10
+MRD
+AND LR41411              ; Action Parameter 11
+OUT MR011                ; Action Parameter 11
+MRD
+AND LR41412              ; Action Parameter 12
+OUT MR012                ; Action Parameter 12
+MRD
+AND LR41413              ; Action Parameter 13
+OUT MR013                ; Action Parameter 13
+MRD
+AND LR41414              ; Action Parameter 14
+OUT MR014                ; Action Parameter 14
+MPP
+AND LR41415              ; Action Parameter 15
+OUT MR015                ; Action Parameter 15
+;START SW
+LD R4000                 ; 左ｽﾀｰﾄSW
+TMR @0 #3                ; Start SW(L)確認ﾀｲﾏｰ
+LD R4001                 ; 右ｽﾀｰﾄSW
+TMR @1 #3                ; Start SW(R)確認ﾀｲﾏｰ
+LD R4000                 ; 左ｽﾀｰﾄSW
+AND R4001                ; 右ｽﾀｰﾄSW
+ANB @T0                  ; Start SW(L)確認ﾀｲﾏｰ
+ANB @T1                  ; Start SW(R)確認ﾀｲﾏｰ
+OUT R50105               ; ｽﾀｰﾄSW ON
+;Task Control / タスク制御
+LD R50001                ; AUTO
+DIFU @MR000              ; AUTOMODE_PLS
+LD @MR000                ; AUTOMODE_PLS
+ORP @MR008               ; AUTOMODE選択PLS
+ORP R50003               ; HOME
+RES @MR008               ; AUTOMODE選択PLS
+CON
+SET R50209               ; 動作開始
+;Task Controll / タスク制御
+LDP R50209               ; 動作開始
+LD R50001                ; AUTO
+OR R50003                ; HOME
+ANL
+MDSTRT ST1
+SET @MR001               ; 各動作開始
+CON
+RES R50409               ; ｻｲｸﾙ完了
+STG @MR001               ; 各動作開始
+JMP @MR002               ; TASK終了確認
+STG @MR002               ; TASK終了確認
+SET MR600                ; ｻｲｸﾙ動作中
+CON
+AND R50411               ; ST1 1ｻｲｸﾙ終了
+JMP @MR003               ; 各ｻｲｸﾙ動作完了確認
+STG @MR003               ; 各ｻｲｸﾙ動作完了確認
+TMH @2 #1
+CON
+AND @T2
+RES R50209               ; 動作開始
+CON
+RES R50411               ; ST1 1ｻｲｸﾙ終了
+CON
+JMP @MR004               ; 装置1ｻｲｸﾙ完了
+STG @MR004               ; 装置1ｻｲｸﾙ完了
+TMH @6 #5
+CON
+AND @T6
+ANB R50411               ; ST1 1ｻｲｸﾙ終了
+RES MR600                ; ｻｲｸﾙ動作中
+CON
+SET R50409               ; ｻｲｸﾙ完了
+CON
+JMP @MR005
+STG @MR005
+JMP @MR006
+STG @MR006
+JMP @MR007
+STG @MR007
+MPS
+LD R50001                ; AUTO
+ANB R50000               ; HOLD
+ANL
+TMH @7 #5
+CON
+AND @T7
+SET @MR008               ; AUTOMODE選択PLS
+CON
+ENDS
+MPP
+ANB R50001               ; AUTO
+ENDS
+;STOP Manegment/停止処理
+LD R50001                ; AUTO
+LDF R4004                ; 操作ﾊﾟﾈﾙ AUTO選択
+ORP R50009               ; HOLDRQ
+ANL
+LD R50002                ; STEP
+LDF R50604               ; TP STEP選択
+ORP R50009               ; HOLDRQ
+ANL
+ORL
+ORP R50003               ; HOME
+SET R50000               ; HOLD
+CON
+RES R50009               ; HOLDRQ
+LDB R50004               ; TASKDO
+OR R50308                ; ﾀｽｸ停止待ち
+RES R50001               ; AUTO
+CON
+RES R50002               ; STEP
+LD R50003                ; HOME
+LDB R50004               ; TASKDO
+OR R50308                ; ﾀｽｸ停止待ち
+ANL
+RES R50003               ; HOME
+CON
+SET R50007               ; 原点復帰　完了
+;Each UT Task Stop / 各UTタスク停止
+LD R50001                ; AUTO
+AND R50409               ; ｻｲｸﾙ完了
+AND R50000               ; HOLD
+LD R50002                ; STEP
+OR R50003                ; HOME
+AND R50409               ; ｻｲｸﾙ完了
+ORL
+TMH @10 #1
+CON
+AND @T10
+RES R50409               ; ｻｲｸﾙ完了
+CON
+RES R50209               ; 動作開始
+CON
+SET R50308               ; ﾀｽｸ停止待ち
+LD R50308                ; ﾀｽｸ停止待ち
+ANB R50201               ; ST1 動作中
+RES R50308               ; ﾀｽｸ停止待ち
+CON
+RES R50004               ; TASKDO
+CON
+RES R50000               ; HOLD
+CON
+DIFU @MR103              ; TASK停止PLS
+STG @MR103               ; TASK停止PLS
+JMP @MR104               ; ﾓｼﾞｭｰﾙ停止指示
+MDSTOP ST1
+STG @MR104               ; ﾓｼﾞｭｰﾙ停止指示
+ANB _ST1
+RES R50115               ; INDEX Do   (STEP)
+CON
+ENDS
+;＠モード選択　/　Select Mode
+;ＨＯＭＥ
+LD R45000                ; 停止中
+LDB R50007               ; 原点復帰　完了
+AND R45004               ; HOME画面 表示中
+ORL
+AND R4005                ; 操作ﾊﾟﾈﾙ HOME選択
+ANP R4002                ; 操作ﾊﾟﾈﾙ ｽﾀｰﾄSW
+ANB LR49914              ; ｴﾗｰﾘｾｯﾄｷｰ要求
+DIFU @MR200
+LD @MR200
+RES R50007               ; 原点復帰　完了
+CON
+ANB R50004               ; TASKDO
+ANB R50008               ; Error
+ANB R50300               ; Pause
+ANB R50010               ; Emergency　Stop
+AND R1106                ; 正圧監視 ONで正常
+AND R1108                ; 装置ｶﾊﾞｰ 閉=ON
+SET R50003               ; HOME
+CON
+SET R50004               ; TASKDO
+;ＡＵＴＯ
+LD R4004                 ; 操作ﾊﾟﾈﾙ AUTO選択
+ANP R4002                ; 操作ﾊﾟﾈﾙ ｽﾀｰﾄSW
+AND R45100               ; STOP画面　表示中
+DIFU @MR300
+LD @MR300
+AND R50007               ; 原点復帰　完了
+ANB R50004               ; TASKDO
+ANB R50008               ; Error
+ANB R50300               ; Pause
+ANB R50010               ; Emergency　Stop
+AND R1106                ; 正圧監視 ONで正常
+AND R1107                ; ﾗｲﾄｶｰﾃﾝ遮光無し=ON
+AND R1108                ; 装置ｶﾊﾞｰ 閉=ON
+AND R42104               ; ﾋｰﾀｰ電源OK
+SET R50001               ; AUTO
+CON
+SET R50004               ; TASKDO
+;ＳＴＥＰ
+LD R4006                 ; 操作ﾊﾟﾈﾙ MANU選択
+ANP R4002                ; 操作ﾊﾟﾈﾙ ｽﾀｰﾄSW
+LD R45102                ; STEP画面　表示中
+OR R45006                ; STEP画面　表示中
+ANL
+DIFU @MR400
+LD @MR400
+AND R50007               ; 原点復帰　完了
+ANB R50004               ; TASKDO
+ANB R50008               ; Error
+ANB R50300               ; Pause
+ANB R50010               ; Emergency　Stop
+AND R1106                ; 正圧監視 ONで正常
+AND R1107                ; ﾗｲﾄｶｰﾃﾝ遮光無し=ON
+AND R1108                ; 装置ｶﾊﾞｰ 閉=ON
+ZRES DM610 DM613         ; ST1 Work Memory  ST4 Work Memory
+CON
+SET R50002               ; STEP
+CON
+SET R50004               ; TASKDO
+;STEP Operation / STEP動作
+LD R50002                ; STEP
+AND LR40100              ; STEP ST1 選択 flag
+MPS
+ANB _ST1
+MDSTRT ST1
+MPP
+AND R50411               ; ST1 1ｻｲｸﾙ終了
+SET R50409               ; ｻｲｸﾙ完了
+CON
+RES R50411               ; ST1 1ｻｲｸﾙ終了
+;Ｃａｌｌ　Ｐｏｓｔ
+LDB R50002               ; STEP
+ZRES R50403 R50405       ; CallPost中  CallPost START入力完了
+STG R50400               ; Call Post
+ANB R50403               ; CallPost中
+ANB R4002                ; 操作ﾊﾟﾈﾙ ｽﾀｰﾄSW
+AND R50002               ; STEP
+TMR @49 #5
+CON
+AND @T49
+SET R50403               ; CallPost中
+CON
+JMP R50404               ; CallPost START入力待ち
+STG R50404               ; CallPost START入力待ち
+ANP R4002                ; 操作ﾊﾟﾈﾙ ｽﾀｰﾄSW
+ANB R50008               ; Error
+ANB R50010               ; Emergency　Stop
+AND R1106                ; 正圧監視 ONで正常
+AND R1108                ; 装置ｶﾊﾞｰ 閉=ON
+JMP R50405               ; CallPost START入力完了
+STG R50405               ; CallPost START入力完了
+ANB R50400               ; Call Post
+RES R50403               ; CallPost中
+CON
+ENDS
+LD R50400                ; Call Post
+AND R50404               ; CallPost START入力待ち
+OUT R50401               ; Post Busy
+LD R50002                ; STEP
+AND R50405               ; CallPost START入力完了
+ORB R50002               ; STEP
+OR R50615                ; Call Postｷｬﾝｾﾙ
+OUT R50402               ; Post Ok
+LDF R50002               ; STEP
+RES R50615               ; Call Postｷｬﾝｾﾙ
+;Error Release Delay Management / エラー解除遅延処理
+LDP R50107               ; ｴﾗｰ中非常停止
+SET R50109               ; ｴﾗｰ解除
+LDB R50008               ; Error
+OR R50109                ; ｴﾗｰ解除
+TMR @3 #15
+LD @T3
+SET @MR500
+CON
+RES R50109               ; ｴﾗｰ解除
+CON
+RES R50107               ; ｴﾗｰ中非常停止
+STG @MR501
+AND @MR500
+RES @MR500
+CON
+SET R50108               ; ｴﾗｰ中
+CON
+ENDS
+LD R50008                ; Error
+AND R50108               ; ｴﾗｰ中
+TMR @4 #15
+;Error Release Manegment / エラー解除処理
+LD R50008                ; Error
+AND R50108               ; ｴﾗｰ中
+AND R50015               ; ｴﾗｰﾘｾｯﾄSW ON
+ANP R4002                ; 操作ﾊﾟﾈﾙ ｽﾀｰﾄSW
+AND @T4
+ANB R50300               ; Pause
+MPS
+SET R50109               ; ｴﾗｰ解除
+CON
+RES R50108               ; ｴﾗｰ中
+CON
+RES R50008               ; Error
+MPP
+ZRES R50110 R50114       ; Err INDEX  Err ST4
+CON
+ZRES MR4100 MR6915       ; Cylinder Error 4100
+LDP R50008               ; Error
+SET @MR501
+;Error Reset Key SW Operation Check / エラーリセットキーＳＷ動作確認
+LD CR2007                ; 運転開始時1ｽｷｬﾝOFF
+AND LR49914              ; ｴﾗｰﾘｾｯﾄｷｰ要求
+ANB R50010               ; Emergency　Stop
+@SET @MR502
+STG @MR502
+ANB R1109                ; ｴﾗｰﾘｾｯﾄｷｰ
+JMP @MR503
+STG @MR503
+AND R1109                ; ｴﾗｰﾘｾｯﾄｷｰ
+JMP @MR504
+STG @MR504
+ANB R1109                ; ｴﾗｰﾘｾｯﾄｷｰ
+MPS
+AND R50007               ; 原点復帰　完了
+SET LR49915              ; ｴﾗｰﾘｾｯﾄｷｰ動作OK
+CON
+ENDS
+MPP
+ANB R50007               ; 原点復帰　完了
+RES LR49914              ; ｴﾗｰﾘｾｯﾄｷｰ要求
+CON
+RES LR49915              ; ｴﾗｰﾘｾｯﾄｷｰ動作OK
+CON
+ENDS
+;サイクルタイム計測
+;Total  =  DM5010
+;UT1    =  DM5012
+;UT2    =  DM5014
+;UT3    =  DM5016
+;UT4    =  DM5018
+;Index  =  DM5020
+LD R50209                ; 動作開始
+AND R50001               ; AUTO
+AND CR2005               ; 100msｸﾛｯｸﾊﾟﾙｽ
+@INC DM5180              ; Total
+LDP R50411               ; ST1 1ｻｲｸﾙ終了
+AND R4004                ; 操作ﾊﾟﾈﾙ AUTO選択
+MOV DM5180 DM5183        ; Total  ST1 to panel
+DW #0 DM5180             ; Total
+LDP R50412               ; ST2 1ｻｲｸﾙ終了
+MOV DM5184 DM5185        ; ST2  ST2 to panel
+LDP R50413               ; ST3 1ｻｲｸﾙ終了
+MOV DM5186 DM5187        ; ST3  ST3 to panel
+LDP R50414               ; ST4 1ｻｲｸﾙ終了
+MOV DM5188 DM5189        ; ST4  ST4 to panel
+LDF R50200               ; INDEX Do
+WSR DM5190 #4 #1         ; Total CT履歴00
+MOV DM5180 DM5190        ; Total  Total CT履歴00
+LDF R50200               ; INDEX Do
+ORF R50408               ; ｻｲｸﾙ動作中
+MOV DM5198 DM5199        ; INDEX  INDEX to panel
+MOV DM5180 DM5181        ; Total  Total to panel
+MOV #0 DM5182            ; ST1
+MOV #0 DM5184            ; ST2
+MOV #0 DM5186            ; ST3
+MOV #0 DM5188            ; ST4
+LDF @MR007
+MOV #0 DM5198            ; INDEX
+MOV #0 DM5180            ; Total
+;ST1 CT1
+LD R43200                ; ｻｲｸﾙﾀｲﾑ計測用1-1
+AND CR2005               ; 100msｸﾛｯｸﾊﾟﾙｽ
+AND R50001               ; AUTO
+@INC DM5200              ; ST1-1 **** CT計測ｶｳﾝﾀ
+LDF R43200               ; ｻｲｸﾙﾀｲﾑ計測用1-1
+MOV DM5200 DM5201        ; ST1-1 **** CT計測ｶｳﾝﾀ  ST1-1 **** CT
+DW #0 DM5200             ; ST1-1 **** CT計測ｶｳﾝﾀ
+LD R43201                ; ｻｲｸﾙﾀｲﾑ計測用1-2
+AND CR2005               ; 100msｸﾛｯｸﾊﾟﾙｽ
+AND R50001               ; AUTO
+@INC DM5202              ; ST1-2 **** CT計測ｶｳﾝﾀ
+LDF R43201               ; ｻｲｸﾙﾀｲﾑ計測用1-2
+MOV DM5202 DM5203        ; ST1-2 **** CT計測ｶｳﾝﾀ  ST1-2 **** CT
+DW #0 DM5202             ; ST1-2 **** CT計測ｶｳﾝﾀ
+LD R43202                ; ｻｲｸﾙﾀｲﾑ計測用1-3
+AND CR2005               ; 100msｸﾛｯｸﾊﾟﾙｽ
+AND R50001               ; AUTO
+@INC DM5204              ; ST1-3 **** CT計測ｶｳﾝﾀ
+LDF R43202               ; ｻｲｸﾙﾀｲﾑ計測用1-3
+MOV DM5204 DM5205        ; ST1-3 **** CT計測ｶｳﾝﾀ  ST1-3 **** CT
+DW #0 DM5204             ; ST1-3 **** CT計測ｶｳﾝﾀ
+LD R43203                ; ｻｲｸﾙﾀｲﾑ計測用1-4
+AND CR2005               ; 100msｸﾛｯｸﾊﾟﾙｽ
+AND R50001               ; AUTO
+@INC DM5206              ; ST1-4 **** CT計測ｶｳﾝﾀ
+LDF R43203               ; ｻｲｸﾙﾀｲﾑ計測用1-4
+MOV DM5206 DM5207        ; ST1-4 **** CT計測ｶｳﾝﾀ  ST1-4 **** CT
+DW #0 DM5206             ; ST1-4 **** CT計測ｶｳﾝﾀ
+LD R43204                ; ｻｲｸﾙﾀｲﾑ計測用1-5
+AND CR2005               ; 100msｸﾛｯｸﾊﾟﾙｽ
+AND R50001               ; AUTO
+@INC DM5208
+LDF R43204               ; ｻｲｸﾙﾀｲﾑ計測用1-5
+MOV DM5208 DM5209
+DW #0 DM5208
+LD R43205                ; ｻｲｸﾙﾀｲﾑ計測用1-6
+AND CR2005               ; 100msｸﾛｯｸﾊﾟﾙｽ
+AND R50001               ; AUTO
+@INC DM5210
+LDF R43205               ; ｻｲｸﾙﾀｲﾑ計測用1-6
+MOV DM5210 DM5211
+DW #0 DM5210
+;ST2 CT2
+LD R43208                ; ｻｲｸﾙﾀｲﾑ計測用2-1
+AND CR2005               ; 100msｸﾛｯｸﾊﾟﾙｽ
+AND R50001               ; AUTO
+@INC DM5220              ; ST2-1 **** CT計測ｶｳﾝﾀ
+LDF R43208               ; ｻｲｸﾙﾀｲﾑ計測用2-1
+MOV DM5220 DM5221        ; ST2-1 **** CT計測ｶｳﾝﾀ  ST2-1 **** CT
+DW #0 DM5220             ; ST2-1 **** CT計測ｶｳﾝﾀ
+LD R43209                ; ｻｲｸﾙﾀｲﾑ計測用2-2
+AND CR2005               ; 100msｸﾛｯｸﾊﾟﾙｽ
+AND R50001               ; AUTO
+@INC DM5222              ; ST2-2 **** CT計測ｶｳﾝﾀ
+LDF R43209               ; ｻｲｸﾙﾀｲﾑ計測用2-2
+MOV DM5222 DM5223        ; ST2-2 **** CT計測ｶｳﾝﾀ  ST2-2 **** CT
+DW #0 DM5222             ; ST2-2 **** CT計測ｶｳﾝﾀ
+LD R43210                ; ｻｲｸﾙﾀｲﾑ計測用2-3
+AND CR2005               ; 100msｸﾛｯｸﾊﾟﾙｽ
+AND R50001               ; AUTO
+@INC DM5224              ; ST2-3 **** CT計測ｶｳﾝﾀ
+LDF R43210               ; ｻｲｸﾙﾀｲﾑ計測用2-3
+MOV DM5224 DM5225        ; ST2-3 **** CT計測ｶｳﾝﾀ  ST2-3 **** CT
+DW #0 DM5224             ; ST2-3 **** CT計測ｶｳﾝﾀ
+LD R43211                ; ｻｲｸﾙﾀｲﾑ計測用2-4
+AND CR2005               ; 100msｸﾛｯｸﾊﾟﾙｽ
+AND R50001               ; AUTO
+@INC DM5226              ; ST2-4 **** CT計測ｶｳﾝﾀ
+LDF R43211               ; ｻｲｸﾙﾀｲﾑ計測用2-4
+MOV DM5226 DM5227        ; ST2-4 **** CT計測ｶｳﾝﾀ  ST2-4 **** CT
+DW #0 DM5226             ; ST2-4 **** CT計測ｶｳﾝﾀ
+LD R43212                ; ｻｲｸﾙﾀｲﾑ計測用2-5
+AND CR2005               ; 100msｸﾛｯｸﾊﾟﾙｽ
+AND R50001               ; AUTO
+@INC DM5228              ; ST2-5 **** CT計測ｶｳﾝﾀ
+LDF R43212               ; ｻｲｸﾙﾀｲﾑ計測用2-5
+MOV DM5228 DM5229        ; ST2-5 **** CT計測ｶｳﾝﾀ  ST2-5 **** CT
+DW #0 DM5228             ; ST2-5 **** CT計測ｶｳﾝﾀ
+LD R43213                ; ｻｲｸﾙﾀｲﾑ計測用2-6
+AND CR2005               ; 100msｸﾛｯｸﾊﾟﾙｽ
+AND R50001               ; AUTO
+@INC DM5230              ; ST2-6 **** CT計測ｶｳﾝﾀ
+LDF R43213               ; ｻｲｸﾙﾀｲﾑ計測用2-6
+MOV DM5230 DM5231        ; ST2-6 **** CT計測ｶｳﾝﾀ  ST2-6 **** CT
+DW #0 DM5230             ; ST2-6 **** CT計測ｶｳﾝﾀ
+;ST3 CT1
+LD R43300                ; ｻｲｸﾙﾀｲﾑ計測用3-1
+AND CR2005               ; 100msｸﾛｯｸﾊﾟﾙｽ
+AND R50001               ; AUTO
+@INC DM5240              ; ST3-1 **** CT計測ｶｳﾝﾀ
+LDF R43300               ; ｻｲｸﾙﾀｲﾑ計測用3-1
+MOV DM5240 DM5241        ; ST3-1 **** CT計測ｶｳﾝﾀ  ST3-1 **** CT
+DW #0 DM5240             ; ST3-1 **** CT計測ｶｳﾝﾀ
+LD R43301                ; ｻｲｸﾙﾀｲﾑ計測用3-2
+AND CR2005               ; 100msｸﾛｯｸﾊﾟﾙｽ
+AND R50001               ; AUTO
+@INC DM5242              ; ST3-2 **** CT計測ｶｳﾝﾀ
+LDF R43301               ; ｻｲｸﾙﾀｲﾑ計測用3-2
+MOV DM5242 DM5243        ; ST3-2 **** CT計測ｶｳﾝﾀ  ST3-2 **** CT
+DW #0 DM5242             ; ST3-2 **** CT計測ｶｳﾝﾀ
+;ST4 CT1
+LD R43308                ; ｻｲｸﾙﾀｲﾑ計測用4-1
+AND CR2005               ; 100msｸﾛｯｸﾊﾟﾙｽ
+AND R50001               ; AUTO
+@INC DM5260              ; ST4-1 **** CT計測ｶｳﾝﾀ
+LDF R43308               ; ｻｲｸﾙﾀｲﾑ計測用4-1
+MOV DM5260 DM5261        ; ST4-1 **** CT計測ｶｳﾝﾀ  ST4-1 **** CT
+DW #0 DM5260             ; ST4-1 **** CT計測ｶｳﾝﾀ
+LD R43309                ; ｻｲｸﾙﾀｲﾑ計測用4-2
+AND CR2005               ; 100msｸﾛｯｸﾊﾟﾙｽ
+AND R50001               ; AUTO
+@INC DM5262              ; ST4-2 **** CT計測ｶｳﾝﾀ
+LDF R43309               ; ｻｲｸﾙﾀｲﾑ計測用4-2
+MOV DM5262 DM5263        ; ST4-2 **** CT計測ｶｳﾝﾀ  ST4-2 **** CT
+DW #0 DM5262             ; ST4-2 **** CT計測ｶｳﾝﾀ
+LD R43310                ; ｻｲｸﾙﾀｲﾑ計測用4-3
+AND CR2005               ; 100msｸﾛｯｸﾊﾟﾙｽ
+AND R50001               ; AUTO
+@INC DM5264              ; ST4-3 **** CT計測ｶｳﾝﾀ
+LDF R43310               ; ｻｲｸﾙﾀｲﾑ計測用4-3
+MOV DM5264 DM5265        ; ST4-3 **** CT計測ｶｳﾝﾀ  ST4-3 **** CT
+DW #0 DM5264             ; ST4-3 **** CT計測ｶｳﾝﾀ
+;
+END
+ENDH

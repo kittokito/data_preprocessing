@@ -1,0 +1,355 @@
+DEVICE:53
+;MODULE:自動_ﾜｰｸ押込
+;MODULE_TYPE:0
+LDB MR3200               ; 自動運転中
+DW #0 DM3410             ; ﾜｰｸ押込ﾘﾄﾗｲ回数
+CON
+DW #0 DM3411             ; ﾜｰｸ回収連続回数
+CON
+DW #0 MR34000            ; ﾜｰｸ押込動作 STEP00
+CON
+DW #0 MR34100            ; ﾜｰｸ回収動作 STEP00
+CON
+DW #0 MR34200            ; ﾜｰｸ回収動作 STEP16
+CON
+DW #0 MR34300            ; ﾜｰｸ押込 戻り動作 STEP00
+LD MR33500               ; ﾜｰｸ押込 動作要求
+ANB MR33203              ; 給材搬送 STEP35 ﾜｰｸ押込要求
+AND= MR34000 #0          ; ﾜｰｸ押込動作 STEP00
+AND= MR34100 #0          ; ﾜｰｸ回収動作 STEP00
+AND= MR34200 #0          ; ﾜｰｸ回収動作 STEP16
+AND= MR34300 #0          ; ﾜｰｸ押込 戻り動作 STEP00
+SET MR34000              ; ﾜｰｸ押込動作 STEP00
+LD MR35500               ; 検査完了 ﾜｰｸ押込み 戻り要求
+AND= MR34000 #0          ; ﾜｰｸ押込動作 STEP00
+AND= MR34100 #0          ; ﾜｰｸ回収動作 STEP00
+AND= MR34200 #0          ; ﾜｰｸ回収動作 STEP16
+AND= MR34300 #0          ; ﾜｰｸ押込 戻り動作 STEP00
+SET MR34300              ; ﾜｰｸ押込 戻り動作 STEP00
+;<h1/>STEP先頭
+STG MR34000              ; ﾜｰｸ押込動作 STEP00
+AND MR203                ; 自動歩進可
+ANB MR113                ; ｽﾃｯﾌﾟPLS
+ANB MR33500              ; ﾜｰｸ押込 動作要求
+AND R3009                ; 受取ﾗﾌｶﾞｲﾄﾞ下降端
+AND MR2607               ; 検査画像 Cmd_ready
+JMP MR34004              ; ﾜｰｸ押込動作 STEP04
+;投入ﾜｰｸ確認
+STG MR34004              ; ﾜｰｸ押込動作 STEP04
+AND MR203                ; 自動歩進可
+ANB MR113                ; ｽﾃｯﾌﾟPLS
+AND MR2806               ; 検査ｶﾒﾗ ﾜｰｸ有無 検出完了
+JMP MR34005              ; ﾜｰｸ押込動作 STEP05
+STG MR34005              ; ﾜｰｸ押込動作 STEP05
+AND MR203                ; 自動歩進可
+ANB MR113                ; ｽﾃｯﾌﾟPLS
+ANB MR2806               ; 検査ｶﾒﾗ ﾜｰｸ有無 検出完了
+JMP MR34006              ; ﾜｰｸ押込動作 STEP06
+STG MR34006              ; ﾜｰｸ押込動作 STEP06
+AND MR203                ; 自動歩進可
+ANB MR113                ; ｽﾃｯﾌﾟPLS
+MPS
+LD= W326C #1             ; ﾜｰｸ 0:有 1:NG 2:無 XG[22](0224)
+OR= W326C #2             ; ﾜｰｸ 0:有 1:NG 2:無 XG[22](0224)
+LD<=.D DM60290 FM1204    ; 軸1 現在座標  TP給材X軸 吸着確認 目標座標
+OR<=.D DM60290 FM1004    ; 軸1 現在座標  TP給材X軸 待機位置 目標座標
+ANL
+ANL
+DW #0 DM68               ; 検査部残確認有無｢0:有 1:無｣
+CON
+JMP MR34001              ; ﾜｰｸ押込動作 STEP01
+MPP
+AND= W326C #0            ; ﾜｰｸ 0:有 1:NG 2:無 XG[22](0224)
+JMP MR34013              ; ﾜｰｸ押込動作 STEP13
+;
+STG MR34001              ; ﾜｰｸ押込動作 STEP01
+AND MR203                ; 自動歩進可
+ANB MR113                ; ｽﾃｯﾌﾟPLS
+AND R3010                ; 落し込み 回収上昇端
+JMP MR34002              ; ﾜｰｸ押込動作 STEP02
+STG MR34002              ; ﾜｰｸ押込動作 STEP02
+AND MR203                ; 自動歩進可
+ANB MR113                ; ｽﾃｯﾌﾟPLS
+AND R3012                ; 落し込み 回収切替 押込側
+AND R3015                ; 落し込み 回収ｽﾗｲﾄﾞ 前進端
+JMP MR34003              ; ﾜｰｸ押込動作 STEP03
+STG MR34003              ; ﾜｰｸ押込動作 STEP03
+AND MR203                ; 自動歩進可
+ANB MR113                ; ｽﾃｯﾌﾟPLS
+AND R3011                ; 落し込み 回収下降端
+JMP MR34007              ; ﾜｰｸ押込動作 STEP07
+;投入ﾜｰｸ無し押込動作
+STG MR34007              ; ﾜｰｸ押込動作 STEP07
+TMH #41 DM78             ; 落し込み ﾜｰｸ押込 ON時間  押込ﾀｲﾏｰ時間設定
+CON
+AND T41                  ; 落し込み ﾜｰｸ押込 ON時間
+JMP MR34008              ; ﾜｰｸ押込動作 STEP08
+STG MR34008              ; ﾜｰｸ押込動作 STEP08
+AND MR203                ; 自動歩進可
+ANB MR113                ; ｽﾃｯﾌﾟPLS
+ANB R3904                ; 落し込み ﾜｰｸ押込
+TMH #42 #100             ; 検査ｶﾒﾗ ﾜｰｸ有無 検出ﾃﾞｨﾚｲ
+CON
+AND T42                  ; 検査ｶﾒﾗ ﾜｰｸ有無 検出ﾃﾞｨﾚｲ
+AND MR2607               ; 検査画像 Cmd_ready
+JMP MR34009              ; ﾜｰｸ押込動作 STEP09
+;押込後再確認
+STG MR34009              ; ﾜｰｸ押込動作 STEP09
+AND MR203                ; 自動歩進可
+ANB MR113                ; ｽﾃｯﾌﾟPLS
+AND MR2806               ; 検査ｶﾒﾗ ﾜｰｸ有無 検出完了
+JMP MR34010              ; ﾜｰｸ押込動作 STEP10
+STG MR34010              ; ﾜｰｸ押込動作 STEP10
+AND MR203                ; 自動歩進可
+ANB MR113                ; ｽﾃｯﾌﾟPLS
+ANB MR2806               ; 検査ｶﾒﾗ ﾜｰｸ有無 検出完了
+JMP MR34011              ; ﾜｰｸ押込動作 STEP11
+STG MR34011              ; ﾜｰｸ押込動作 STEP11
+AND MR203                ; 自動歩進可
+ANB MR113                ; ｽﾃｯﾌﾟPLS
+MPS
+LD= W326C #1             ; ﾜｰｸ 0:有 1:NG 2:無 XG[22](0224)
+OR= W326C #2             ; ﾜｰｸ 0:有 1:NG 2:無 XG[22](0224)
+ANL
+@INC DM3410              ; ﾜｰｸ押込ﾘﾄﾗｲ回数
+CON
+JMP MR34012              ; ﾜｰｸ押込動作 STEP12
+MPP
+AND= W326C #0            ; ﾜｰｸ 0:有 1:NG 2:無 XG[22](0224)
+JMP MR34013              ; ﾜｰｸ押込動作 STEP13
+;押込ﾘﾄﾗｲ or 回収判定
+STG MR34012              ; ﾜｰｸ押込動作 STEP12
+AND MR203                ; 自動歩進可
+ANB MR113                ; ｽﾃｯﾌﾟPLS
+MPS
+AND< DM3410 DM74         ; ﾜｰｸ押込ﾘﾄﾗｲ回数  検査押込ﾘﾄﾗｲ回数設定
+JMP MR34007              ; ﾜｰｸ押込動作 STEP07
+MPP
+AND>= DM3410 DM74        ; ﾜｰｸ押込ﾘﾄﾗｲ回数  検査押込ﾘﾄﾗｲ回数設定
+JMP MR34100              ; ﾜｰｸ回収動作 STEP00
+STG MR34013              ; ﾜｰｸ押込動作 STEP13
+AND MR203                ; 自動歩進可
+ANB MR113                ; ｽﾃｯﾌﾟPLS
+DW #0 DM3410             ; ﾜｰｸ押込ﾘﾄﾗｲ回数
+CON
+DW #0 DM3411             ; ﾜｰｸ回収連続回数
+CON
+AND MR34500              ; 検査開始要求
+JMP MR34014              ; ﾜｰｸ押込動作 STEP14
+STG MR34014              ; ﾜｰｸ押込動作 STEP14
+AND MR203                ; 自動歩進可
+ANB MR113                ; ｽﾃｯﾌﾟPLS
+AND R3010                ; 落し込み 回収上昇端
+JMP MR34015              ; ﾜｰｸ押込動作 STEP15
+STG MR34015              ; ﾜｰｸ押込動作 STEP15
+AND MR203                ; 自動歩進可
+ANB MR113                ; ｽﾃｯﾌﾟPLS
+AND R3012                ; 落し込み 回収切替 押込側
+AND R3014                ; 落し込み 回収ｽﾗｲﾄﾞ 後退端
+ENDS
+;<h1/>ﾜｰｸ回収動作
+STG MR34100              ; ﾜｰｸ回収動作 STEP00
+AND MR203                ; 自動歩進可
+ANB MR113                ; ｽﾃｯﾌﾟPLS
+DW #0 DM68               ; 検査部残確認有無｢0:有 1:無｣
+CON
+DW #0 DM3410             ; ﾜｰｸ押込ﾘﾄﾗｲ回数
+CON
+JMP MR34101              ; ﾜｰｸ回収動作 STEP01
+STG MR34101              ; ﾜｰｸ回収動作 STEP01
+AND MR203                ; 自動歩進可
+ANB MR113                ; ｽﾃｯﾌﾟPLS
+AND R3010                ; 落し込み 回収上昇端
+JMP MR34102              ; ﾜｰｸ回収動作 STEP02
+STG MR34102              ; ﾜｰｸ回収動作 STEP02
+AND MR203                ; 自動歩進可
+ANB MR113                ; ｽﾃｯﾌﾟPLS
+AND R3013                ; 落し込み 回収切替 回収側
+AND R3015                ; 落し込み 回収ｽﾗｲﾄﾞ 前進端
+JMP MR34103              ; ﾜｰｸ回収動作 STEP03
+STG MR34103              ; ﾜｰｸ回収動作 STEP03
+AND MR203                ; 自動歩進可
+ANB MR113                ; ｽﾃｯﾌﾟPLS
+AND R3011                ; 落し込み 回収下降端
+ANB R3907                ; 受渡ｴｼﾞｪｸﾀ
+JMP MR34104              ; ﾜｰｸ回収動作 STEP04
+STG MR34104              ; ﾜｰｸ回収動作 STEP04
+AND MR203                ; 自動歩進可
+ANB MR113                ; ｽﾃｯﾌﾟPLS
+AND R3905                ; 落し込み ﾜｰｸ回収
+MPS
+AND R3410                ; ﾜｰｸ回収確認ｾﾝｻ
+JMP MR34105              ; ﾜｰｸ回収動作 STEP05
+MPP
+TMH #40 #100             ; ﾜｰｸ回収時間
+CON
+AND T40                  ; ﾜｰｸ回収時間
+JMP MR34105              ; ﾜｰｸ回収動作 STEP05
+STG MR34105              ; ﾜｰｸ回収動作 STEP05
+AND MR203                ; 自動歩進可
+ANB MR113                ; ｽﾃｯﾌﾟPLS
+AND R3906                ; 落し込み 検査部押込み
+TMH #39 #50              ; 落し混み検査押込ﾀｲﾏ
+CON
+AND T39                  ; 落し混み検査押込ﾀｲﾏ
+JMP MR34109              ; ﾜｰｸ回収動作 STEP09
+;有無検査　使用しない
+STG MR34106              ; ﾜｰｸ回収動作 STEP06
+AND MR203                ; 自動歩進可
+ANB MR113                ; ｽﾃｯﾌﾟPLS
+AND MR2806               ; 検査ｶﾒﾗ ﾜｰｸ有無 検出完了
+JMP MR34107              ; ﾜｰｸ回収動作 STEP07
+STG MR34107              ; ﾜｰｸ回収動作 STEP07
+AND MR203                ; 自動歩進可
+ANB MR113                ; ｽﾃｯﾌﾟPLS
+ANB MR2806               ; 検査ｶﾒﾗ ﾜｰｸ有無 検出完了
+JMP MR34108              ; ﾜｰｸ回収動作 STEP08
+STG MR34108              ; ﾜｰｸ回収動作 STEP08
+AND MR203                ; 自動歩進可
+ANB MR113                ; ｽﾃｯﾌﾟPLS
+MPS
+LD= W326C #1             ; ﾜｰｸ 0:有 1:NG 2:無 XG[22](0224)
+OR= W326C #2             ; ﾜｰｸ 0:有 1:NG 2:無 XG[22](0224)
+ANL
+JMP MR34109              ; ﾜｰｸ回収動作 STEP09
+MPP
+AND= W326C #0            ; ﾜｰｸ 0:有 1:NG 2:無 XG[22](0224)
+JMP MR34109              ; ﾜｰｸ回収動作 STEP09
+;検査ﾜｰｸ回収､ｶｳﾝﾄ+1(D430)
+STG MR34109              ; ﾜｰｸ回収動作 STEP09
+AND MR203                ; 自動歩進可
+ANB MR113                ; ｽﾃｯﾌﾟPLS
+@INC DM3411              ; ﾜｰｸ回収連続回数
+CON
+@INC.D DM430             ; 検査回収数
+CON
+JMP MR34110              ; ﾜｰｸ回収動作 STEP10
+STG MR34110              ; ﾜｰｸ回収動作 STEP10
+AND MR203                ; 自動歩進可
+ANB MR113                ; ｽﾃｯﾌﾟPLS
+AND R3010                ; 落し込み 回収上昇端
+JMP MR34111              ; ﾜｰｸ回収動作 STEP11
+STG MR34111              ; ﾜｰｸ回収動作 STEP11
+AND MR203                ; 自動歩進可
+ANB MR113                ; ｽﾃｯﾌﾟPLS
+AND R3012                ; 落し込み 回収切替 押込側
+AND R3014                ; 落し込み 回収ｽﾗｲﾄﾞ 後退端
+MPS
+AND>= DM3411 DM75        ; ﾜｰｸ回収連続回数  連続回収設定
+JMP MR34112              ; ﾜｰｸ回収動作 STEP12
+MPP
+AND< DM3411 DM75         ; ﾜｰｸ回収連続回数  連続回収設定
+DW #0 DM3500             ; 検査ﾜｰｸ在荷
+CON
+JMP MR34201              ; ﾜｰｸ回収動作 STEP17
+STG MR34112              ; ﾜｰｸ回収動作 STEP12
+OUT MR34514              ; ｸﾞﾛｰﾊﾞﾙ ｳｨﾝﾄﾞｳ#22 表示
+CON
+AND MR400                ; 全ﾄﾞｱ閉確認
+MPS
+ANP B02F5                ; 確認SW
+DW #0 DM3411             ; ﾜｰｸ回収連続回数
+CON
+DW #0 DM3500             ; 検査ﾜｰｸ在荷
+CON
+JMP MR34115              ; ﾜｰｸ回収動作 STEP15
+MPP
+ANP B02F6                ; ﾘﾄﾗｲSW
+DW #0 DM3411             ; ﾜｰｸ回収連続回数
+CON
+JMP MR34113              ; ﾜｰｸ回収動作 STEP13
+;ｳｨﾝﾄﾞｳ選択､ﾎﾟｰｽﾞ解除待ち用(M34113)
+STG MR34113              ; ﾜｰｸ回収動作 STEP13
+AND MR203                ; 自動歩進可
+ANB MR113                ; ｽﾃｯﾌﾟPLS
+JMP MR34114              ; ﾜｰｸ回収動作 STEP14
+STG MR34114              ; ﾜｰｸ回収動作 STEP14
+AND MR203                ; 自動歩進可
+ANB MR113                ; ｽﾃｯﾌﾟPLS
+AND R3009                ; 受取ﾗﾌｶﾞｲﾄﾞ下降端
+LD<=.D DM60290 FM1204    ; 軸1 現在座標  TP給材X軸 吸着確認 目標座標
+OR<=.D DM60290 FM1004    ; 軸1 現在座標  TP給材X軸 待機位置 目標座標
+ANL
+AND MR2607               ; 検査画像 Cmd_ready
+MPS
+ANB MR31501              ; 準備時検査部ﾜｰｸ有､回収ﾌﾗｸﾞ
+JMP MR34004              ; ﾜｰｸ押込動作 STEP04
+MPP
+AND MR31501              ; 準備時検査部ﾜｰｸ有､回収ﾌﾗｸﾞ
+JMP MR34100              ; ﾜｰｸ回収動作 STEP00
+;ｳｨﾝﾄﾞｳ選択､ﾎﾟｰｽﾞ解除待ち用(M34115)
+STG MR34115              ; ﾜｰｸ回収動作 STEP15
+AND MR203                ; 自動歩進可
+ANB MR113                ; ｽﾃｯﾌﾟPLS
+JMP MR34200              ; ﾜｰｸ回収動作 STEP16
+STG MR34200              ; ﾜｰｸ回収動作 STEP16
+AND MR203                ; 自動歩進可
+ANB MR113                ; ｽﾃｯﾌﾟPLS
+AND R3009                ; 受取ﾗﾌｶﾞｲﾄﾞ下降端
+JMP MR34201              ; ﾜｰｸ回収動作 STEP17
+STG MR34201              ; ﾜｰｸ回収動作 STEP17
+AND MR203                ; 自動歩進可
+ANB MR113                ; ｽﾃｯﾌﾟPLS
+MPS
+LDB MR31501              ; 準備時検査部ﾜｰｸ有､回収ﾌﾗｸﾞ
+AND MR36502              ; 給材搬送 検査位置 ﾜｰｸ投入可
+ANL
+ENDS
+MPP
+AND MR31501              ; 準備時検査部ﾜｰｸ有､回収ﾌﾗｸﾞ
+JMP MR34202              ; ﾜｰｸ回収動作 STEP18
+STG MR34202              ; ﾜｰｸ回収動作 STEP18
+ANB MR31501              ; 準備時検査部ﾜｰｸ有､回収ﾌﾗｸﾞ
+ENDS
+;<h1/>押込み戻り
+STG MR34300              ; ﾜｰｸ押込 戻り動作 STEP00
+AND MR203                ; 自動歩進可
+ANB MR113                ; ｽﾃｯﾌﾟPLS
+ANB MR35500              ; 検査完了 ﾜｰｸ押込み 戻り要求
+JMP MR34301              ; ﾜｰｸ押込 戻り動作 STEP01
+STG MR34301              ; ﾜｰｸ押込 戻り動作 STEP01
+AND MR203                ; 自動歩進可
+ANB MR113                ; ｽﾃｯﾌﾟPLS
+AND R3010                ; 落し込み 回収上昇端
+JMP MR34302              ; ﾜｰｸ押込 戻り動作 STEP02
+STG MR34302              ; ﾜｰｸ押込 戻り動作 STEP02
+AND MR203                ; 自動歩進可
+ANB MR113                ; ｽﾃｯﾌﾟPLS
+AND R3012                ; 落し込み 回収切替 押込側
+AND R3014                ; 落し込み 回収ｽﾗｲﾄﾞ 後退端
+JMP MR34303              ; ﾜｰｸ押込 戻り動作 STEP03
+STG MR34303              ; ﾜｰｸ押込 戻り動作 STEP03
+AND MR203                ; 自動歩進可
+ANB MR113                ; ｽﾃｯﾌﾟPLS
+AND MR35504              ; PC結果判定完了
+JMP MR34304              ; ﾜｰｸ押込 戻り動作 STEP04
+STG MR34304              ; ﾜｰｸ押込 戻り動作 STEP04
+AND MR203                ; 自動歩進可
+ANB MR113                ; ｽﾃｯﾌﾟPLS
+ANB MR35504              ; PC結果判定完了
+JMP MR34305              ; ﾜｰｸ押込 戻り動作 STEP05
+STG MR34305              ; ﾜｰｸ押込 戻り動作 STEP05
+AND MR203                ; 自動歩進可
+ANB MR113                ; ｽﾃｯﾌﾟPLS
+AND MR34502              ; 除材反転 取出要求
+ENDS
+LD MR34013               ; ﾜｰｸ押込動作 STEP13
+OR MR34500               ; 検査開始要求
+AND MR3200               ; 自動運転中
+ANB MR35000              ; 検査STEP00
+OUT MR34500              ; 検査開始要求
+LD MR34305               ; ﾜｰｸ押込 戻り動作 STEP05
+OR MR34502               ; 除材反転 取出要求
+AND MR3200               ; 自動運転中
+ANB MR36000              ; 除材反転 STEP00 起動条件確認
+OUT MR34502              ; 除材反転 取出要求
+;<h1/>ｴﾗｰ出力
+;ERR72　ﾜｰｸ押込回収連続異常
+LD>= DM3411 #3           ; ﾜｰｸ回収連続回数
+LD MR7702                ; ERR72 連続回収異常
+ANB MR004                ; ﾘｾｯﾄSW
+ORL
+AND CR2003               ; 常時OFF
+OUT MR7702               ; ERR72 連続回収異常
+END
+ENDH

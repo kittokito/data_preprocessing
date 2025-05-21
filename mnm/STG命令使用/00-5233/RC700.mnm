@@ -1,0 +1,182 @@
+DEVICE:53
+;MODULE:RC700
+;MODULE_TYPE:0
+;<h1/>ﾌｨﾙﾀ搬送RB移動
+STG MR20900              ; RC7 移動
+SET MR20902              ; RC7 移動中
+CON
+JMP @MR005
+STG @MR005
+MPS
+SET DM11350.7            ; SCRBC1 Rest 
+CON
+ANB DM11150.3            ; SCRBC1 Error
+ANB DM11150.6            ; SCRBC1 SError
+RES DM11350.7            ; SCRBC1 Rest 
+CON
+JMP @MR006
+MPP
+TMR @10 #20
+CON
+AND @T10
+JMP @MR010               ; Err 143
+STG @MR006
+RES DM11350.9            ; SCRBC1 SetMotorsOff
+CON
+SET DM11350.8            ; SCRBC1 SetMotorsOn
+CON
+MPS
+AND DM11150.8            ; SCRBC1 MotorsOn
+RES DM11350.8            ; SCRBC1 SetMotorsOn
+CON
+JMP @MR007
+MPP
+ANB DM11150.8            ; SCRBC1 MotorsOn
+TMR @11 #20
+CON
+AND @T11
+JMP @MR010               ; Err 143
+STG @MR007
+SET DM11350.0            ; SCRBC1 Start
+CON
+MPS
+AND DM11150.1            ; SCRBC1 Running
+RES DM11350.0            ; SCRBC1 Start
+CON
+JMP @MR008
+MPP
+ANB DM11150.1            ; SCRBC1 Running
+TMR @12 #20
+CON
+AND @T12
+JMP @MR010               ; Err 143
+STG @MR008
+DW #0 @DM26              ; RC7 ｱﾗｰﾑｺｰﾄﾞ
+CON
+JMP @MR009
+LD @MR009
+MSTRT RC7_MOVE_1 DM12010 DM11150 DM11350 @DM26;SCARA目標ﾎﾟｼﾞｼｮﾝ  SCRBC1 I/F IN1  SCRBC1  I/F OUT1  RC7 ｱﾗｰﾑｺｰﾄﾞ
+STG @MR009
+MPS
+AND= @DM26 #20           ; RC7 ｱﾗｰﾑｺｰﾄﾞ
+JMP @MR015               ; 終了
+MPP
+LD<> @DM26 #20           ; RC7 ｱﾗｰﾑｺｰﾄﾞ
+AND<> @DM26 #0           ; RC7 ｱﾗｰﾑｺｰﾄﾞ
+ANL
+JMP @MR010               ; Err 143
+;*** Err 60 ﾌｨﾙﾀ搬送RBｺﾝﾄﾛｰﾗ異常
+STG @MR010               ; Err 143
+RES DM11350.7            ; SCRBC1 Rest 
+CON
+RES DM11350.8            ; SCRBC1 SetMotorsOn
+CON
+SET DM11350.9            ; SCRBC1 SetMotorsOff
+CON
+RES DM11350.0            ; SCRBC1 Start
+CON
+JMP @MR011
+STG @MR011
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+ANB R39004               ; ｴﾗｰ中
+ANL
+SET MR20904              ; RC7 異常中
+CON
+SET R39004               ; ｴﾗｰ中
+CON
+DW #60 @DM1              ; ErrorNo /ERROR_DISP
+CON
+DW #4004 @DM2            ; SensorNo /ERROR_DISP
+CON
+DW $1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+SET @MR100               ; Task0 ERROR
+CON
+JMP @MR012
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR200               ; Main1 HALT許可
+STG @MR012
+SET @MR200               ; Main1 HALT許可
+CON
+AND @MR101               ; Task0 ｴﾗｰ完了
+RES MR20904              ; RC7 異常中
+CON
+RES @MR101               ; Task0 ｴﾗｰ完了
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+JMP MR20900              ; RC7 移動
+;***
+;終了処理
+STG @MR015               ; 終了
+ANB _RC7_MOVE_1
+SET MR20901              ; RC7 移動完了
+CON
+RES MR20902              ; RC7 移動中
+CON
+ENDS
+;<h1/>*ERROR
+;MyTask Error Process Substance/エラー処理実体
+STG @MR100               ; Task0 ERROR
+ANB R39002               ; ERROR_DISP Busy
+MPS
+ZRES @MR105 @MR108       ; SW1  SW4
+CON
+DISN @DM9 @DM3 #4        ; ReturnSW /ERROR_DISP
+MRD
+DW MyTask @DM0           ; 自ﾀｽｸ番号  TaskNo /ERROR_DISP
+CON
+BMOV @DM0 DM60000 #7     ; TaskNo /ERROR_DISP  TaskNo /ERROR_DISP
+MPP
+SET R39000               ; ERROR_DISP Start
+CON
+SET @MR102               ; Task0 ERROR Busy
+CON
+JMP @MR103
+STG @MR103
+AND R39002               ; ERROR_DISP Busy
+AND= DM60008 @DM1        ; ReturnNo /ERROR_DISP  ErrorNo /ERROR_DISP
+MPS
+AND= DM60007 @DM6        ; ReturnSW /ERROR_DISP
+SET @MR105               ; SW1
+CON
+JMP @MR104
+MRD
+AND= DM60007 @DM5        ; ReturnSW /ERROR_DISP
+SET @MR106               ; SW2
+CON
+JMP @MR104
+MRD
+AND= DM60007 @DM4        ; ReturnSW /ERROR_DISP
+SET @MR107               ; SW3
+CON
+JMP @MR104
+MPP
+AND= DM60007 @DM3        ; ReturnSW /ERROR_DISP
+SET @MR108               ; SW4
+CON
+JMP @MR104
+STG @MR104
+ANB R39002               ; ERROR_DISP Busy
+RES @MR102               ; Task0 ERROR Busy
+CON
+SET @MR101               ; Task0 ｴﾗｰ完了
+CON
+ENDS
+;<h1/>HALT
+LD R41200                ; TASK0 PAUSE 要求
+AND @MR200               ; Main1 HALT許可
+TMR @2 #5                ; HALT許可 遅延
+CON
+AND @T2                  ; HALT許可 遅延
+SET MR20903              ; RC7 HALT許可
+LD MR20903               ; RC7 HALT許可
+ORB R41200               ; TASK0 PAUSE 要求
+ANB @MR001               ; TASK0 ERROR
+RES @MR200               ; Main1 HALT許可
+LDF R41200               ; TASK0 PAUSE 要求
+RES MR20903              ; RC7 HALT許可
+END
+ENDH

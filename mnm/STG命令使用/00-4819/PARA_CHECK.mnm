@@ -1,0 +1,95 @@
+DEVICE:53
+;MODULE:PARA_CHECK
+;MODULE_TYPE:1
+;OneSystem SupportMacro
+;広丘
+;-----------------------------------------
+;Macro Name 	: 	Para_Check
+;Macro Type	:	Self Holding
+;Function	:	ﾊﾟﾗﾒｰﾀ選択状態表示
+;-----------------------------------------
+;
+;Copylight(C) 2011 SEIKO EPSON Corp. All rights reserved.
+;引数：
+;	V0	=	表示ｸﾞﾙｰﾌﾟ番号			#1～8
+;	V1	=	ﾀｽｸ番号					#0～31	
+;	V2	=	画面番号				#0～31
+;	V3	=	ﾌﾞｻﾞｰ有無				#0=ﾌﾞｻﾞｰ無し、#1=ﾌﾞｻﾞｰ有り
+;	P9	=	OK/STOP選択肢			#1=OKが選択、#2=STOPが選択		(戻り値)
+;	
+;機能：
+;	指定TPに指定画面番号のYes/No選択画面を表示し、選択肢番号を戻り値として格納する
+LD R59915                ; _運転ﾓｰﾄﾞ指定
+MOV #0 P9                ; OK/STOP
+MEND
+LD R46104                ; _非常停止中　ﾓｰﾄﾞﾌﾗｸﾞ
+ZRES @R000 @R015
+CON
+MEND
+;<h1/>Argumant Range Check/引数範囲ﾁｪｯｸ
+LD< V0 #1                ; Group_No
+OR> V0 #8                ; Group_No
+SET R40008               ; _ｻﾎﾟｰﾄﾏｸﾛ引数異常発生
+CON
+SET @R015
+;<h1/>Init/初期化
+LD @CR2008
+ORB @R000
+ANB R59915               ; _運転ﾓｰﾄﾞ指定
+MOV #0 P9                ; OK/STOP
+MOV #0 @EM0
+;・優先ｴﾗｰ、通常ｴﾗｰ解除待ち
+;・Input系とSelect系は同一排他(画面表示領域が同じなので)解除待ち
+LDB R59915               ; _運転ﾓｰﾄﾞ指定
+ANB R46104               ; _非常停止中　ﾓｰﾄﾞﾌﾗｸﾞ
+ANB R46208               ; _Group1　ｴﾗｰ発生中
+ANB R48008               ; _Group1　画面処理排他
+SET R48008               ; _Group1　画面処理排他
+CON
+SET @R000
+CON
+SET @R001
+;<h1/>Select Yes No Display/YesNo選択画面表示
+STG @R001
+SET R48210               ; _Group1　ｼｽﾃﾑﾌﾞｻﾞｰ要求3
+TMH @0 #5
+CON
+AND @T0
+JMP @R002
+;<h1/>YesNo Choice Waiting/YesNo選択待ち
+LD @R002
+ANB R44200               ; Grp1 ﾎﾟｰｽﾞ要求
+AND<> DM8400 #0          ; Para_Check
+MOV DM8400 @EM0          ; Para_Check
+;Error発生中はｴﾗｰ画面表示優先でY/N画面は消去
+;Error解除待ち
+STG @R002
+MPS
+AND R46208               ; _Group1　ｴﾗｰ発生中
+RES R54400               ; Para_Check
+MRD
+ANB R46208               ; _Group1　ｴﾗｰ発生中
+SET R54400               ; Para_Check
+MPP
+AND<> @EM0 #0
+RES R54400               ; Para_Check
+CON
+JMP @R003
+;<h1/>End Process/終了処理
+STG @R003
+AND<> DM3000 #1112       ; _MainTP　表示中ﾍﾟｰｼﾞNo
+FMOV #0 DM8400 #2        ; Para_Check
+MPS
+RES R48008               ; _Group1　画面処理排他
+CON
+RES R48210               ; _Group1　ｼｽﾃﾑﾌﾞｻﾞｰ要求3
+MRD
+MOV @EM0 P9              ; OK/STOP
+MRD
+MEND
+MPP
+RES @R000
+CON
+ENDS
+END
+ENDH

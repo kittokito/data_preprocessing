@@ -1,0 +1,1761 @@
+DEVICE:53
+;MODULE:MC_Control
+;MODULE_TYPE:0
+;SCRIPT_TYPE:
+;ｻｰﾎﾞﾚﾃﾞｨﾁｪｯｸ/ﾊﾟﾈﾙ操作制限用
+LD CR2002                ; 常時ON
+TMR @12 #180             ; 起動時操作制限
+LD R24513                ; 軸1 ｻｰﾎﾞﾚﾃﾞｨ
+AND R25313               ; 軸2 ｻｰﾎﾞﾚﾃﾞｨ
+ANB @MR003               ; ﾁｪｯｸ済み(運転起動時)
+OR @T12                  ; 起動時操作制限
+OR @MR003                ; ﾁｪｯｸ済み(運転起動時)
+SET @MR003               ; ﾁｪｯｸ済み(運転起動時)
+CON
+OUT MR21800              ; 全軸ｻｰﾎﾞﾚﾃﾞｨOK
+;MC TP表示
+;軸1
+;TYPE D20001.U,D20003-D20004.L,@DM0.U,DM20020.U
+;
+;DM50318=DM20001-1+#10600 'Position Messag 表示
+;
+;'DATA表示
+;@DM0 = 10*(DM20001-1)
+;DM20003.L = EM3002.L:(@DM0) 'Position
+;DM20005.L = EM3000.L:(@DM0) 'SPEED
+;DM20020 = @DM0/2
+;
+;
+LD= DM3000 #2151         ; _MainTP　表示中ﾍﾟｰｼﾞNo
+OR= DM3000 #2205         ; _MainTP　表示中ﾍﾟｰｼﾞNo
+NCJ #1001
+;TYPE D20001.U,D20003-D20004.L,@DM0.U,DM20020.U
+;
+;DM50318=DM20001-1+#10600 'Position Messag 表示
+;
+LD CR2002                ; 常時ON
+LDA DM20001              ; ｸﾘｰﾆﾝｸﾞﾛｰﾗｰPOS番号
+CON
+EXT
+CON
+SUB.L +1
+CON
+ADD.L +10600
+CON
+STA DM50318
+;'DATA表示
+;
+;@DM0 = 10*(DM20001-1)
+;
+LD CR2002                ; 常時ON
+LDA DM20001              ; ｸﾘｰﾆﾝｸﾞﾛｰﾗｰPOS番号
+CON
+EXT
+CON
+SUB.L +1
+CON
+MUL.L +10
+CON
+STA @DM0
+;DM20003.L = EM3002.L:(@DM0) 'Position
+;
+LD CR2002                ; 常時ON
+LDA @DM0
+CON
+EXT
+CON
+STA.L Z12
+CON
+MOV.L EM3002:Z12 DM20003 ; MC 軸1 Point1 移動量  ｸﾘｰﾆﾝｸﾞﾛｰﾗ目標位置表示
+;DM20005.L = EM3000.L:(@DM0) 'SPEED
+;
+LD CR2002                ; 常時ON
+LDA @DM0
+CON
+EXT
+CON
+STA.L Z12
+CON
+MOV.L EM3000:Z12 DM20005 ; MC 軸1 Point1 速度  ｸﾘｰﾆﾝｸﾞﾛｰﾗ目標速度表示
+;DM20020 = @DM0/2
+;
+LD CR2002                ; 常時ON
+LDA @DM0
+CON
+EXT
+CON
+EXT.L
+CON
+DIV.L +2
+CON
+STA DM20020              ; MC1表示ｵﾌｾｯﾄ
+LABEL #1001
+;
+;
+;'DATA 格納
+;@DM2 = 10*(DM20001-1)
+; EM3002.L:(@DM2) = DM21290.L'現在値を格納
+; EM3000.L:(@DM2) = DM20026.L
+;RES (MR20010)
+LD= DM3000 #2151         ; _MainTP　表示中ﾍﾟｰｼﾞNo
+ANP MR20010              ; TPSW_MC1ﾎﾟｲﾝﾄｹﾞｯﾄ
+NCJ #1004
+;'DATA 格納
+;
+;@DM2 = 10*(DM20001-1)
+;
+LD CR2002                ; 常時ON
+LDA DM20001              ; ｸﾘｰﾆﾝｸﾞﾛｰﾗｰPOS番号
+CON
+EXT
+CON
+SUB.L +1
+CON
+MUL.L +10
+CON
+STA @DM2
+; EM3002.L:(@DM2) = DM21290.L'現在値を格納
+;
+LD CR2002                ; 常時ON
+LDA @DM2
+CON
+EXT
+CON
+STA.L Z11
+CON
+MOV.L DM21290 EM3002:Z11 ; 軸1 現在座標  MC 軸1 Point1 移動量
+; EM3000.L:(@DM2) = DM20026.L
+;
+LD CR2002                ; 常時ON
+LDA @DM2
+CON
+EXT
+CON
+STA.L Z11
+CON
+MOV.L DM20026 EM3000:Z11 ; MC1ﾎﾟｲﾝﾄｹﾞｯﾄ用速度  MC 軸1 Point1 速度
+;RES (MR20010)
+LD CR2002                ; 常時ON
+RES MR20010              ; TPSW_MC1ﾎﾟｲﾝﾄｹﾞｯﾄ
+LABEL #1004
+;
+;軸2
+;TYPE D20001.U,D20003-D20004.L,@DM1.U
+;
+;DM50318=DM20002-1+#10700 'Position Messag 表示
+;
+;'DATA表示
+;@DM1 = 10*(DM20002-1)
+;DM20007.L = EM3202.L:(@DM1) 'Position
+;DM20009.L = EM3200.L:(@DM1) 'SPEED
+;DM20021 = @DM1/2
+;
+;
+;
+LD= DM3000 #2152         ; _MainTP　表示中ﾍﾟｰｼﾞNo
+OR= DM3000 #2206         ; _MainTP　表示中ﾍﾟｰｼﾞNo
+NCJ #1003
+;TYPE D20001.U,D20003-D20004.L,@DM1.U
+;
+;DM50318=DM20002-1+#10700 'Position Messag 表示
+;
+LD CR2002                ; 常時ON
+LDA DM20002              ; 裏面取出POS番号
+CON
+EXT
+CON
+SUB.L +1
+CON
+ADD.L +10700
+CON
+STA DM50318
+;'DATA表示
+;
+;@DM1 = 10*(DM20002-1)
+;
+LD CR2002                ; 常時ON
+LDA DM20002              ; 裏面取出POS番号
+CON
+EXT
+CON
+SUB.L +1
+CON
+MUL.L +10
+CON
+STA @DM1                 ; ErrorNo /ERROR_DISP
+;DM20007.L = EM3202.L:(@DM1) 'Position
+;
+LD CR2002                ; 常時ON
+LDA @DM1                 ; ErrorNo /ERROR_DISP
+CON
+EXT
+CON
+STA.L Z12
+CON
+MOV.L EM3202:Z12 DM20007 ; MC 軸2 Point1 移動量  裏面取出目標位置表示
+;DM20009.L = EM3200.L:(@DM1) 'SPEED
+;
+LD CR2002                ; 常時ON
+LDA @DM1                 ; ErrorNo /ERROR_DISP
+CON
+EXT
+CON
+STA.L Z12
+CON
+MOV.L EM3200:Z12 DM20009 ; MC 軸2 Point1 速度  裏面取出目標速度表示
+;DM20021 = @DM1/2
+;
+LD CR2002                ; 常時ON
+LDA @DM1                 ; ErrorNo /ERROR_DISP
+CON
+EXT
+CON
+EXT.L
+CON
+DIV.L +2
+CON
+STA DM20021              ; MC2表示ｵﾌｾｯﾄ
+LABEL #1003
+;
+;
+;'DATA 格納
+;@DM3 = 10*(DM20002-1)
+; EM3202.L:(@DM3) = DM21350.L'現在値を格納
+; EM3200.L:(@DM2) = DM20028.L
+;RES (MR20011)
+LD= DM3000 #2152         ; _MainTP　表示中ﾍﾟｰｼﾞNo
+ANP MR20011              ; TPSW_MC2ﾎﾟｲﾝﾄｹﾞｯﾄ
+NCJ #1005
+;'DATA 格納
+;
+;@DM3 = 10*(DM20002-1)
+;
+LD CR2002                ; 常時ON
+LDA DM20002              ; 裏面取出POS番号
+CON
+EXT
+CON
+SUB.L +1
+CON
+MUL.L +10
+CON
+STA @DM3
+; EM3202.L:(@DM3) = DM21350.L'現在値を格納
+;
+LD CR2002                ; 常時ON
+LDA @DM3
+CON
+EXT
+CON
+STA.L Z11
+CON
+MOV.L DM21350 EM3202:Z11 ; 軸2 現在座標  MC 軸2 Point1 移動量
+; EM3200.L:(@DM2) = DM20028.L
+;
+LD CR2002                ; 常時ON
+LDA @DM2
+CON
+EXT
+CON
+STA.L Z11
+CON
+MOV.L DM20028 EM3200:Z11 ; MC2ﾎﾟｲﾝﾄｹﾞｯﾄ用速度  MC 軸2 Point1 速度
+;RES (MR20011)
+LD CR2002                ; 常時ON
+RES MR20011              ; TPSW_MC2ﾎﾟｲﾝﾄｹﾞｯﾄ
+LABEL #1005
+;
+;<h1/>MC20 動作許可
+;[内容]
+;・非常停止、優先ｴﾗｰ発生時に初期化したいﾃﾞﾊﾞｲｽを指定して下さい
+;※本Taskで使用するﾛｰｶﾙﾃﾞﾊﾞｲｽなど
+;※STG～JMPにて使用しているﾃﾞﾊﾞｲｽは必須
+LD CR2002                ; 常時ON
+FLIK #30 #30 @MR000      ; ﾌﾘｯｶ
+LD R46104                ; _非常停止中　ﾓｰﾄﾞﾌﾗｸﾞ
+ZRES @MR100 @MR115
+LD CR2002                ; 常時ON
+TMR @0 #50
+CON
+AND @T0
+OUT @MR514               ; MC立上りｳｪｲﾄﾀｲﾏ
+;MC 立上げ時ﾁｪｯｸ
+LDB R46104               ; _非常停止中　ﾓｰﾄﾞﾌﾗｸﾞ
+OUT R21600               ; 動作許可
+LD R22800                ; 動作可能
+OUT MR24800              ; MC20 動作可能
+LD R22801                ; 動作許可ｴﾗｰ
+OUT MR24801              ; MC20 動作不可_ｴﾗｰ発生
+LD R20802                ; 軸1 位置決め完了
+OUT MR21111              ; MC 軸1位置決め完了
+LD R24705                ; 軸1 ﾄﾞﾗｲﾊﾞｱﾗｰﾑ
+ANB @MR008               ; MCｱﾗｰﾑ発生
+ANB R39004               ; ｴﾗｰ処理中
+ANB MR10006              ; 確認画面表示ｴﾗｰ
+OUT MR21115              ; MC 軸1ｴﾗｰ検出
+LD R20810                ; 軸2 位置決め完了
+OUT MR21311              ; MC 軸2位置決め完了
+LD R25505                ; 軸2 ﾄﾞﾗｲﾊﾞｱﾗｰﾑ
+ANB @MR008               ; MCｱﾗｰﾑ発生
+ANB R39004               ; ｴﾗｰ処理中
+ANB MR10006              ; 確認画面表示ｴﾗｰ
+OUT MR21315              ; MC 軸2ｴﾗｰ検出
+LD @MR514                ; MC立上りｳｪｲﾄﾀｲﾏ
+ANB @MR008               ; MCｱﾗｰﾑ発生
+AND MR24801              ; MC20 動作不可_ｴﾗｰ発生
+ANB R39004               ; ｴﾗｰ処理中
+SET @MR008               ; MCｱﾗｰﾑ発生
+CON
+SET R39004               ; ｴﾗｰ処理中
+CON
+DW #3 @DM1               ; ErrorNo /ERROR_DISP
+CON
+DW #1000 @DM9
+CON
+LDA DM60009              ; Sensor ERROR No.
+CON
+STA @DM2
+CON
+SET @R100                ; MC ｱﾗｰﾑ発生
+CON
+LDA DM21000              ; ﾕﾆｯﾄｴﾗｰｺｰﾄﾞ
+CON
+STA DM20030              ; Error画面RBｱﾗｰﾑｺｰﾄﾞ表示
+CON
+SET MR10002              ; ｱﾗｰﾑｺｰﾄﾞ表示
+CON
+SET @R000
+STG @R000
+AND @R101
+RES @R101
+CON
+DW #0 DM60009            ; Sensor ERROR No.
+CON
+AND @R105                ; SW1
+DW #0 DM20030            ; Error画面RBｱﾗｰﾑｺｰﾄﾞ表示
+CON
+RES MR10002              ; ｱﾗｰﾑｺｰﾄﾞ表示
+CON
+JMP @R001
+LD @R001
+OUT R24000               ; 軸1 軸ｴﾗｰｸﾘｱ
+STG @R001
+TMR @1 #5
+CON
+AND @T1
+RES @R100                ; MC ｱﾗｰﾑ発生
+CON
+RES MR10002              ; ｱﾗｰﾑｺｰﾄﾞ表示
+CON
+RES R39004               ; ｴﾗｰ処理中
+CON
+ENDS
+;<h1/>軸1ｴﾗｰ(ｸﾘｰﾆﾝｸﾞﾛｰﾗｰ)
+LD @MR514                ; MC立上りｳｪｲﾄﾀｲﾏ
+AND MR21115              ; MC 軸1ｴﾗｰ検出
+ANB R39004               ; ｴﾗｰ処理中
+ANB MR10006              ; 確認画面表示ｴﾗｰ
+SET @MR008               ; MCｱﾗｰﾑ発生
+CON
+SET R39004               ; ｴﾗｰ処理中
+CON
+DW #6 @DM1               ; ErrorNo /ERROR_DISP
+CON
+DW #1000 @DM9
+CON
+LDA DM60009              ; Sensor ERROR No.
+CON
+STA @DM2
+CON
+SET @R100                ; MC ｱﾗｰﾑ発生
+CON
+LDA DM21000              ; ﾕﾆｯﾄｴﾗｰｺｰﾄﾞ
+CON
+STA DM20030              ; Error画面RBｱﾗｰﾑｺｰﾄﾞ表示
+CON
+SET MR10002              ; ｱﾗｰﾑｺｰﾄﾞ表示
+CON
+SET @R003
+STG @R003
+AND @R101
+RES @R101
+CON
+DW #0 DM60009            ; Sensor ERROR No.
+CON
+AND @R105                ; SW1
+DW #0 DM20030            ; Error画面RBｱﾗｰﾑｺｰﾄﾞ表示
+CON
+RES MR10002              ; ｱﾗｰﾑｺｰﾄﾞ表示
+CON
+JMP @R004
+STG @R004
+TMR @2 #5
+CON
+AND @T2
+RES @R100                ; MC ｱﾗｰﾑ発生
+CON
+RES R39004               ; ｴﾗｰ処理中
+CON
+SET @MR500               ; 軸1ｱﾗｰﾑﾘｾｯﾄ
+CON
+JMP @R005
+STG @R005
+MPS
+AND R24513               ; 軸1 ｻｰﾎﾞﾚﾃﾞｨ
+ENDS
+MPP
+ANB R24513               ; 軸1 ｻｰﾎﾞﾚﾃﾞｨ
+TMR @3 #5
+CON
+AND @T3
+JMP @R006
+STG @R006
+ANB R39004               ; ｴﾗｰ処理中
+ANB MR10006              ; 確認画面表示ｴﾗｰ
+SET @MR008               ; MCｱﾗｰﾑ発生
+CON
+SET R39004               ; ｴﾗｰ処理中
+CON
+DW #6 @DM1               ; ErrorNo /ERROR_DISP
+CON
+DW #1000 @DM9
+CON
+LDA DM60009              ; Sensor ERROR No.
+CON
+STA @DM2
+CON
+SET @R100                ; MC ｱﾗｰﾑ発生
+CON
+LDA DM21000              ; ﾕﾆｯﾄｴﾗｰｺｰﾄﾞ
+CON
+STA DM20030              ; Error画面RBｱﾗｰﾑｺｰﾄﾞ表示
+CON
+SET MR10002              ; ｱﾗｰﾑｺｰﾄﾞ表示
+CON
+JMP @R003
+;<h1/>軸2ｴﾗｰ(裏面取出)
+LD @MR514                ; MC立上りｳｪｲﾄﾀｲﾏ
+AND MR21315              ; MC 軸2ｴﾗｰ検出
+ANB MR10006              ; 確認画面表示ｴﾗｰ
+ANB R39004               ; ｴﾗｰ処理中
+SET @MR008               ; MCｱﾗｰﾑ発生
+CON
+SET R39004               ; ｴﾗｰ処理中
+CON
+DW #7 @DM1               ; ErrorNo /ERROR_DISP
+CON
+DW #1000 @DM9
+CON
+LDA DM60009              ; Sensor ERROR No.
+CON
+STA @DM2
+CON
+SET @R100                ; MC ｱﾗｰﾑ発生
+CON
+LDA DM21000              ; ﾕﾆｯﾄｴﾗｰｺｰﾄﾞ
+CON
+STA DM20030              ; Error画面RBｱﾗｰﾑｺｰﾄﾞ表示
+CON
+SET MR10002              ; ｱﾗｰﾑｺｰﾄﾞ表示
+CON
+SET @R007
+STG @R007
+AND @R101
+RES @R101
+CON
+DW #0 DM60009            ; Sensor ERROR No.
+CON
+AND @R105                ; SW1
+DW #0 DM20030            ; Error画面RBｱﾗｰﾑｺｰﾄﾞ表示
+CON
+RES MR10002              ; ｱﾗｰﾑｺｰﾄﾞ表示
+CON
+JMP @R008
+STG @R008
+TMR @4 #5
+CON
+AND @T4
+RES @R100                ; MC ｱﾗｰﾑ発生
+CON
+RES R39004               ; ｴﾗｰ処理中
+CON
+SET @MR600               ; 軸2ｱﾗｰﾑﾘｾｯﾄ
+CON
+JMP @R009
+STG @R009
+MPS
+AND R25313               ; 軸2 ｻｰﾎﾞﾚﾃﾞｨ
+ENDS
+MPP
+ANB R25313               ; 軸2 ｻｰﾎﾞﾚﾃﾞｨ
+TMR @5 #5
+CON
+AND @T5
+JMP @R010
+STG @R010
+ANB MR10006              ; 確認画面表示ｴﾗｰ
+ANB R39004               ; ｴﾗｰ処理中
+SET @MR008               ; MCｱﾗｰﾑ発生
+CON
+SET R39004               ; ｴﾗｰ処理中
+CON
+DW #9 @DM1               ; ErrorNo /ERROR_DISP
+CON
+DW #1000 @DM9
+CON
+LDA DM60009              ; Sensor ERROR No.
+CON
+STA @DM2
+CON
+SET @R100                ; MC ｱﾗｰﾑ発生
+CON
+LDA DM21000              ; ﾕﾆｯﾄｴﾗｰｺｰﾄﾞ
+CON
+STA DM20030              ; Error画面RBｱﾗｰﾑｺｰﾄﾞ表示
+CON
+SET MR10002              ; ｱﾗｰﾑｺｰﾄﾞ表示
+CON
+JMP @R007
+;<h1/>ﾕﾆｯﾄｴﾗｰ(MC)
+LD @MR514                ; MC立上りｳｪｲﾄﾀｲﾏ
+AND R22802               ; ｴﾗｰ中
+ANB MR10006              ; 確認画面表示ｴﾗｰ
+ANB R39004               ; ｴﾗｰ処理中
+SET @MR008               ; MCｱﾗｰﾑ発生
+CON
+SET R39004               ; ｴﾗｰ処理中
+CON
+DW #10 @DM1              ; ErrorNo /ERROR_DISP
+CON
+DW #1000 @DM9
+CON
+LDA DM60009              ; Sensor ERROR No.
+CON
+STA @DM2
+CON
+SET @R100                ; MC ｱﾗｰﾑ発生
+CON
+LDA DM21000              ; ﾕﾆｯﾄｴﾗｰｺｰﾄﾞ
+CON
+STA DM20030              ; Error画面RBｱﾗｰﾑｺｰﾄﾞ表示
+CON
+SET MR10002              ; ｱﾗｰﾑｺｰﾄﾞ表示
+CON
+SET @R011
+STG @R011
+AND @R101
+RES @R101
+CON
+DW #0 DM60009            ; Sensor ERROR No.
+CON
+AND @R105                ; SW1
+DW #0 DM20030            ; Error画面RBｱﾗｰﾑｺｰﾄﾞ表示
+CON
+RES MR10002              ; ｱﾗｰﾑｺｰﾄﾞ表示
+CON
+JMP @R012
+STG @R012
+TMR @14 #5
+CON
+AND @T14
+RES @R100                ; MC ｱﾗｰﾑ発生
+CON
+RES R39004               ; ｴﾗｰ処理中
+CON
+SET R24000               ; 軸1 軸ｴﾗｰｸﾘｱ
+CON
+SET R24800               ; 軸2 軸ｴﾗｰｸﾘｱ
+CON
+JMP @R013
+STG @R013
+MPS
+ANB R22802               ; ｴﾗｰ中
+RES R24000               ; 軸1 軸ｴﾗｰｸﾘｱ
+CON
+RES R24800               ; 軸2 軸ｴﾗｰｸﾘｱ
+CON
+ENDS
+MPP
+AND R22802               ; ｴﾗｰ中
+TMR @15 #5
+CON
+AND @T15
+JMP @R014
+STG @R014
+ANB MR10006              ; 確認画面表示ｴﾗｰ
+ANB R39004               ; ｴﾗｰ処理中
+SET @MR008               ; MCｱﾗｰﾑ発生
+CON
+SET R39004               ; ｴﾗｰ処理中
+CON
+DW #10 @DM1              ; ErrorNo /ERROR_DISP
+CON
+DW #1000 @DM9
+CON
+LDA DM60009              ; Sensor ERROR No.
+CON
+STA @DM2
+CON
+SET @R100                ; MC ｱﾗｰﾑ発生
+CON
+LDA DM21000              ; ﾕﾆｯﾄｴﾗｰｺｰﾄﾞ
+CON
+STA DM20030              ; Error画面RBｱﾗｰﾑｺｰﾄﾞ表示
+CON
+SET MR10002              ; ｱﾗｰﾑｺｰﾄﾞ表示
+CON
+JMP @R011
+;<h1/>MC20 1軸目 ｸﾘｰﾆﾝｸﾞﾛｰﾗ 設定
+LD CR2008                ; 運転開始時1ｽｷｬﾝON
+ORP MR20306              ; TPSW_ｸﾘｰﾆﾝｸﾞﾛｰﾗALMﾘｾｯﾄ
+SET @MR500               ; 軸1ｱﾗｰﾑﾘｾｯﾄ
+;ｱﾗｰﾑﾘｾｯﾄ
+LD @MR500                ; 軸1ｱﾗｰﾑﾘｾｯﾄ
+ANB R46104               ; _非常停止中　ﾓｰﾄﾞﾌﾗｸﾞ
+AND @MR514               ; MC立上りｳｪｲﾄﾀｲﾏ
+AND MR24800              ; MC20 動作可能
+ANB @MR515               ; 軸1 ｻｰﾎﾞﾚﾃﾞｨON中
+RES @MR500               ; 軸1ｱﾗｰﾑﾘｾｯﾄ
+CON
+SET @MR501
+STG @MR501
+TMR @6 #50
+CON
+AND @T6
+SET R24305               ; 軸1 ﾄﾞﾗｲﾊﾞｱﾗｰﾑﾘｾｯﾄ
+CON
+JMP @MR502
+STG @MR502
+ANB R24705               ; 軸1 ﾄﾞﾗｲﾊﾞｱﾗｰﾑ
+RES R24305               ; 軸1 ﾄﾞﾗｲﾊﾞｱﾗｰﾑﾘｾｯﾄ
+CON
+SET R24000               ; 軸1 軸ｴﾗｰｸﾘｱ
+CON
+JMP @MR503
+STG @MR503
+ANB R24400               ; 軸1 軸ｴﾗｰ中
+RES R24000               ; 軸1 軸ｴﾗｰｸﾘｱ
+CON
+JMP @MR504
+STG @MR504
+TMR @7 #55
+CON
+AND @T7
+SET R24113               ; 軸1 ｻｰﾎﾞON
+CON
+JMP @MR505
+STG @MR505
+AND R24513               ; 軸1 ｻｰﾎﾞﾚﾃﾞｨ
+SET @MR515               ; 軸1 ｻｰﾎﾞﾚﾃﾞｨON中
+CON
+ENDS
+LDF R24513               ; 軸1 ｻｰﾎﾞﾚﾃﾞｨ
+RES @MR515               ; 軸1 ｻｰﾎﾞﾚﾃﾞｨON中
+LDP MR20307              ; TPSW_ｸﾘｰﾆﾝｸﾞﾛｰﾗｻｰﾎﾞSW
+OR CR2008                ; 運転開始時1ｽｷｬﾝON
+ANB MR21110              ; MC 軸1BUSY
+MPS
+AND R24113               ; 軸1 ｻｰﾎﾞON
+OUT @MR900
+CON
+RES R24113               ; 軸1 ｻｰﾎﾞON
+MPP
+LDB R24113               ; 軸1 ｻｰﾎﾞON
+ANB @MR900
+ANL
+SET R24113               ; 軸1 ｻｰﾎﾞON
+;ﾌﾞﾚｰｷ開放
+LDP MR20313              ; TPSW_ｸﾘｰﾆﾝｸﾞﾛｰﾗﾌﾞﾚｰｷSW
+ANB MR21110              ; MC 軸1BUSY
+LDP R46101               ; _原点復帰中　ﾓｰﾄﾞﾌﾗｸﾞ
+AND MR2003               ; DRV-1(M1)FREE (励磁OFFﾌﾞﾚｰｷ開放)
+ORL
+RES MR21109              ; MC 軸1原点復帰完了記憶
+CON
+MPS
+AND MR2003               ; DRV-1(M1)FREE (励磁OFFﾌﾞﾚｰｷ開放)
+OUT @MR903
+CON
+RES MR2003               ; DRV-1(M1)FREE (励磁OFFﾌﾞﾚｰｷ開放)
+MPP
+LDB MR2003               ; DRV-1(M1)FREE (励磁OFFﾌﾞﾚｰｷ開放)
+ANB @MR903
+ANL
+SET MR2003               ; DRV-1(M1)FREE (励磁OFFﾌﾞﾚｰｷ開放)
+;<h1/>MC20 1軸目 Busy
+LDB MR21111              ; MC 軸1位置決め完了
+AND CR2003               ; 常時OFF
+OUT MR21110              ; MC 軸1BUSY
+;<h1/>MC20 1軸目 現在値読み出し
+LD CR2002                ; 常時ON
+U_RDFPOS.L #2 #1 EM2600  ; MC 軸1 現在位置
+;<h1/>MC20 2軸目 裏面取出し 設定
+LD CR2008                ; 運転開始時1ｽｷｬﾝON
+ORP MR20402              ; TPSW_裏面取出ALMﾘｾｯﾄ
+SET @MR600               ; 軸2ｱﾗｰﾑﾘｾｯﾄ
+;ｱﾗｰﾑﾘｾｯﾄ
+LD @MR600                ; 軸2ｱﾗｰﾑﾘｾｯﾄ
+ANB R46104               ; _非常停止中　ﾓｰﾄﾞﾌﾗｸﾞ
+AND @MR514               ; MC立上りｳｪｲﾄﾀｲﾏ
+AND MR24800              ; MC20 動作可能
+ANB @MR615               ; 軸2 ｻｰﾎﾞﾚﾃﾞｨON中
+RES @MR600               ; 軸2ｱﾗｰﾑﾘｾｯﾄ
+CON
+SET @MR601
+STG @MR601
+TMR @8 #50
+CON
+AND @T8
+SET R25105               ; 軸2 ﾄﾞﾗｲﾊﾞｱﾗｰﾑﾘｾｯﾄ
+CON
+JMP @MR602
+STG @MR602
+ANB R25505               ; 軸2 ﾄﾞﾗｲﾊﾞｱﾗｰﾑ
+RES R25105               ; 軸2 ﾄﾞﾗｲﾊﾞｱﾗｰﾑﾘｾｯﾄ
+CON
+SET R24800               ; 軸2 軸ｴﾗｰｸﾘｱ
+CON
+JMP @MR603
+STG @MR603
+ANB R25200               ; 軸2 軸ｴﾗｰ中
+RES R24800               ; 軸2 軸ｴﾗｰｸﾘｱ
+CON
+JMP @MR604
+STG @MR604
+TMR @9 #55
+CON
+AND @T9
+SET R24913               ; 軸2 ｻｰﾎﾞON
+CON
+JMP @MR605
+STG @MR605
+AND R25313               ; 軸2 ｻｰﾎﾞﾚﾃﾞｨ
+SET @MR615               ; 軸2 ｻｰﾎﾞﾚﾃﾞｨON中
+CON
+ENDS
+LDF R25313               ; 軸2 ｻｰﾎﾞﾚﾃﾞｨ
+RES @MR615               ; 軸2 ｻｰﾎﾞﾚﾃﾞｨON中
+LDP MR20403              ; TPSW_裏面取出ｻｰﾎﾞSW
+OR CR2008                ; 運転開始時1ｽｷｬﾝON
+ANB MR21310              ; MC 軸2BUSY
+MPS
+AND R24913               ; 軸2 ｻｰﾎﾞON
+OUT @MR901
+CON
+RES R24913               ; 軸2 ｻｰﾎﾞON
+MPP
+LDB R24913               ; 軸2 ｻｰﾎﾞON
+ANB @MR901
+ANL
+SET R24913               ; 軸2 ｻｰﾎﾞON
+;ﾌﾞﾚｰｷ開放
+LDP MR20409              ; TPSW_裏面取出ﾌﾞﾚｰｷSW
+ANB MR21310              ; MC 軸2BUSY
+LDP R46101               ; _原点復帰中　ﾓｰﾄﾞﾌﾗｸﾞ
+AND MR2007               ; DRV-2(M2)FREE (励磁OFFﾌﾞﾚｰｷ開放)
+ORL
+RES MR20802              ; MC 軸2原点復帰完了記憶
+CON
+MPS
+AND MR2007               ; DRV-2(M2)FREE (励磁OFFﾌﾞﾚｰｷ開放)
+OUT @MR904
+CON
+RES MR2007               ; DRV-2(M2)FREE (励磁OFFﾌﾞﾚｰｷ開放)
+MPP
+LDB MR2007               ; DRV-2(M2)FREE (励磁OFFﾌﾞﾚｰｷ開放)
+ANB @MR904
+ANL
+SET MR2007               ; DRV-2(M2)FREE (励磁OFFﾌﾞﾚｰｷ開放)
+;<h1/>MC20 2軸目 裏面取出 動作 Busy
+LDB MR21311              ; MC 軸2位置決め完了
+AND CR2003               ; 常時OFF
+OUT MR21310              ; MC 軸2BUSY
+;<h1/>MC20 2軸目 裏面取出 現在値読み出し
+LD CR2002                ; 常時ON
+U_RDFPOS.L #2 #2 EM2610  ; MC 軸2 現在位置
+;<h1/>MC20 1軸目 ｸﾘｰﾆﾝｸﾞﾛｰﾗ 原点復帰
+LDB R4614                ; ｸﾘｰﾆﾝｸﾞﾛｰﾗ前後 前進限
+AND R4615                ; ｸﾘｰﾆﾝｸﾞﾛｰﾗ前後 後退限
+ANB DM10531.2            ; RB4移動中
+AND>=.L +7000 DM10524    ; RB4 現在位置(下位)
+OUT @MR715               ; 軸1原点復帰条件OK
+LDP MR20308              ; TPSW_ｸﾘｰﾆﾝｸﾞﾛｰﾗ原点復帰SW
+ANB @MR701               ; 軸1原点復帰中
+AND @MR715               ; 軸1原点復帰条件OK
+ANB MR21610              ; MC 軸1動作中
+SET MR21610              ; MC 軸1動作中
+CON
+SET @MR701               ; 軸1原点復帰中
+CON
+SET @MR700
+LDP MR10300              ; MC 軸1 原点復帰要求
+ANB @MR701               ; 軸1原点復帰中
+AND @MR715               ; 軸1原点復帰条件OK
+SET MR21610              ; MC 軸1動作中
+CON
+SET @MR701               ; 軸1原点復帰中
+CON
+SET @MR700
+STG @MR700
+RES MR21109              ; MC 軸1原点復帰完了記憶
+CON
+TMR @10 #5
+CON
+AND @T10
+JMP @MR703
+STG @MR703
+MPS
+SET MR20109              ; MC 軸1原点復帰動作中
+CON
+MCALL MC_ORIGIN_OP #2 #1 R24012 R24412 @MR001;軸1 原点復帰要求  軸1 原点復帰完了  軸1原点復帰完了
+MPP
+AND @MR001               ; 軸1原点復帰完了
+JMP @MR704
+STG @MR704
+RES R24012               ; 軸1 原点復帰要求
+CON
+JMP @MR705
+STG @MR705
+RES @MR001               ; 軸1原点復帰完了
+CON
+ANB @MR001               ; 軸1原点復帰完了
+RES MR20109              ; MC 軸1原点復帰動作中
+CON
+TMR @11 #5
+CON
+AND @T11
+JMP @MR706
+STG @MR706
+JMP @MR707
+STG @MR707
+RES MR21610              ; MC 軸1動作中
+CON
+SET MR21109              ; MC 軸1原点復帰完了記憶
+CON
+RES @MR701               ; 軸1原点復帰中
+CON
+ENDS
+;<h1/>MC20 軸1 ｸﾘｰﾆﾝｸﾞﾛｰﾗ 動作
+LD MR3005                ; DRV1 起動IL ON=起動可能
+OR MR10003               ; ｸﾘｰﾆﾝｸﾞﾛｰﾗｰSW表示
+AND R22800               ; 動作可能
+AND R24513               ; 軸1 ｻｰﾎﾞﾚﾃﾞｨ
+OUT @MR1000              ; 軸1JOGOK
+LDB R24100               ; 軸1 JOG正方向
+ANB R24101               ; 軸1 JOG負方向
+ANB R24012               ; 軸1 原点復帰要求
+ANB MR21610              ; MC 軸1動作中
+INV
+OUT MR20110              ; MC1 BUSY
+LD @MR1000               ; 軸1JOGOK
+MPS
+LD= DM3000 #2005         ; _MainTP　表示中ﾍﾟｰｼﾞNo
+OR= DM3000 #2151         ; _MainTP　表示中ﾍﾟｰｼﾞNo
+OR MR10003               ; ｸﾘｰﾆﾝｸﾞﾛｰﾗｰSW表示
+ANL
+MPS
+LD MR20309               ; TPSW_ｸﾘｰﾆﾝｸﾞﾛｰﾗJOG+
+ANB MR20310              ; TPSW_ｸﾘｰﾆﾝｸﾞﾛｰﾗJOG-
+ANL
+OUT R24100               ; 軸1 JOG正方向
+MPP
+LD MR20310               ; TPSW_ｸﾘｰﾆﾝｸﾞﾛｰﾗJOG-
+ANB MR20309              ; TPSW_ｸﾘｰﾆﾝｸﾞﾛｰﾗJOG+
+ANL
+OUT R24101               ; 軸1 JOG負方向
+MPP
+AND MR20311              ; TPSW_ｸﾘｰﾆﾝｸﾞﾛｰﾗJOG速度切替
+OUT R24102               ; 軸1 高速JOG
+;<h1/>MC20 1軸目 ｸﾘｰﾆﾝｸﾞﾛｰﾗ ﾃﾞｰﾀｾｯﾄ
+LD CR2002                ; 常時ON
+MPS
+ANP MR21500              ; TPSW_軸1POS1
+DW #1 DM20001            ; ｸﾘｰﾆﾝｸﾞﾛｰﾗｰPOS番号
+CON
+ZRES MR10700 MR10706     ; ｸﾘｰﾆﾝｸﾞﾛｰﾗPOS1  ｸﾘｰﾆﾝｸﾞﾛｰﾗPOS7
+CON
+SET MR10700              ; ｸﾘｰﾆﾝｸﾞﾛｰﾗPOS1
+MRD
+ANP MR21501              ; TPSW_軸1POS2
+DW #2 DM20001            ; ｸﾘｰﾆﾝｸﾞﾛｰﾗｰPOS番号
+CON
+ZRES MR10700 MR10706     ; ｸﾘｰﾆﾝｸﾞﾛｰﾗPOS1  ｸﾘｰﾆﾝｸﾞﾛｰﾗPOS7
+CON
+SET MR10701              ; ｸﾘｰﾆﾝｸﾞﾛｰﾗPOS2
+MRD
+ANP MR21502              ; TPSW_軸1POS3
+DW #3 DM20001            ; ｸﾘｰﾆﾝｸﾞﾛｰﾗｰPOS番号
+CON
+ZRES MR10700 MR10706     ; ｸﾘｰﾆﾝｸﾞﾛｰﾗPOS1  ｸﾘｰﾆﾝｸﾞﾛｰﾗPOS7
+CON
+SET MR10702              ; ｸﾘｰﾆﾝｸﾞﾛｰﾗPOS3
+MRD
+ANP MR21503              ; TPSW_軸1POS4
+DW #4 DM20001            ; ｸﾘｰﾆﾝｸﾞﾛｰﾗｰPOS番号
+CON
+ZRES MR10700 MR10706     ; ｸﾘｰﾆﾝｸﾞﾛｰﾗPOS1  ｸﾘｰﾆﾝｸﾞﾛｰﾗPOS7
+CON
+SET MR10703              ; ｸﾘｰﾆﾝｸﾞﾛｰﾗPOS4
+MRD
+ANP MR21504              ; TPSW_軸1POS5
+DW #5 DM20001            ; ｸﾘｰﾆﾝｸﾞﾛｰﾗｰPOS番号
+CON
+ZRES MR10700 MR10706     ; ｸﾘｰﾆﾝｸﾞﾛｰﾗPOS1  ｸﾘｰﾆﾝｸﾞﾛｰﾗPOS7
+CON
+SET MR10704              ; ｸﾘｰﾆﾝｸﾞﾛｰﾗPOS5
+MRD
+ANP MR21505              ; TPSW_軸1POS6
+DW #6 DM20001            ; ｸﾘｰﾆﾝｸﾞﾛｰﾗｰPOS番号
+CON
+ZRES MR10700 MR10706     ; ｸﾘｰﾆﾝｸﾞﾛｰﾗPOS1  ｸﾘｰﾆﾝｸﾞﾛｰﾗPOS7
+CON
+SET MR10705              ; ｸﾘｰﾆﾝｸﾞﾛｰﾗPOS6
+MPP
+ANP MR21506              ; TPSW_軸1POS7
+DW #7 DM20001            ; ｸﾘｰﾆﾝｸﾞﾛｰﾗｰPOS番号
+CON
+ZRES MR10700 MR10706     ; ｸﾘｰﾆﾝｸﾞﾛｰﾗPOS1  ｸﾘｰﾆﾝｸﾞﾛｰﾗPOS7
+CON
+SET MR10706              ; ｸﾘｰﾆﾝｸﾞﾛｰﾗPOS7
+LD= DM3000 #2005         ; _MainTP　表示中ﾍﾟｰｼﾞNo
+OR= DM3000 #2151         ; _MainTP　表示中ﾍﾟｰｼﾞNo
+LD MR21109               ; MC 軸1原点復帰完了記憶
+OR CR2002                ; 常時ON
+ANL
+MPS
+ANP MR21500              ; TPSW_軸1POS1
+MOV.L EM3002 EM1940      ; MC 軸1 Point1 移動量  MC軸1 目標位置（下位bit）表示用
+MOV.L EM3000 EM1944      ; MC 軸1 Point1 速度  MC軸1 指令速度表示用
+MRD
+ANP MR21501              ; TPSW_軸1POS2
+MOV.L EM3012 EM1940      ; MC 軸1 Point2 移動量  MC軸1 目標位置（下位bit）表示用
+MOV.L EM3010 EM1944      ; MC 軸1 Point2 速度  MC軸1 指令速度表示用
+MRD
+ANP MR21502              ; TPSW_軸1POS3
+MOV.L EM3022 EM1940      ; MC 軸1 Point3 移動量  MC軸1 目標位置（下位bit）表示用
+MOV.L EM3020 EM1944      ; MC 軸1 Point3 速度  MC軸1 指令速度表示用
+MRD
+ANP MR21503              ; TPSW_軸1POS4
+MOV.L EM3032 EM1940      ; MC 軸1 Point4 移動量  MC軸1 目標位置（下位bit）表示用
+MOV.L EM3030 EM1944      ; MC 軸1 Point4 速度  MC軸1 指令速度表示用
+MRD
+ANP MR21504              ; TPSW_軸1POS5
+MOV.L EM3042 EM1940      ; MC 軸1 Point5 移動量  MC軸1 目標位置（下位bit）表示用
+MOV.L EM3040 EM1944      ; MC 軸1 Point5 速度  MC軸1 指令速度表示用
+MRD
+ANP MR21505              ; TPSW_軸1POS6
+MOV.L EM3052 EM1940      ; MC 軸1 Point6 移動量  MC軸1 目標位置（下位bit）表示用
+MOV.L EM3050 EM1944      ; MC 軸1 Point6 速度  MC軸1 指令速度表示用
+MPP
+ANP MR21506              ; TPSW_軸1POS7
+MOV.L EM3062 EM1940      ; MC 軸1 Point7 移動量  MC軸1 目標位置（下位bit）表示用
+MOV.L EM3060 EM1944      ; MC 軸1 Point7 速度  MC軸1 指令速度表示用
+LD CR2002                ; 常時ON
+UWRIT.L #2 #18016 EM3002 #1;MC 軸1 Point1 移動量
+UWRIT.L #2 #18528 EM3012 #1;MC 軸1 Point2 移動量
+UWRIT.L #2 #19040 EM3022 #1;MC 軸1 Point3 移動量
+UWRIT.L #2 #19552 EM3032 #1;MC 軸1 Point4 移動量
+UWRIT.L #2 #20064 EM3042 #1;MC 軸1 Point5 移動量
+UWRIT.L #2 #20576 EM3052 #1;MC 軸1 Point6 移動量
+UWRIT.L #2 #21088 EM3062 #1;MC 軸1 Point7 移動量
+UWRIT.L #2 #18028 EM3000 #1;MC 軸1 Point1 速度
+UWRIT.L #2 #18540 EM3010 #1;MC 軸1 Point2 速度
+UWRIT.L #2 #19052 EM3020 #1;MC 軸1 Point3 速度
+UWRIT.L #2 #19564 EM3030 #1;MC 軸1 Point4 速度
+UWRIT.L #2 #20076 EM3040 #1;MC 軸1 Point5 速度
+UWRIT.L #2 #20588 EM3050 #1;MC 軸1 Point6 速度
+UWRIT.L #2 #21100 EM3060 #1;MC 軸1 Point7 速度
+;EM43000.l = #0 - 2
+;EM44000.l = #0 + 2
+;EM43002.l = em3002.l - 2
+;EM44002.l = em3002.l + 2
+;EM43012.l = em3012.l - 2
+;EM44012.l = em3012.l + 2
+;EM43022.l = em3022.l - 2
+;EM44022.l = em3022.l + 2
+;EM43032.l = em3032.l - 2
+;EM44032.l = em3032.l + 2
+;EM43042.l = em3042.l - 2
+;EM44042.l = em3042.l + 2
+;EM43052.l = em3052.l - 2
+;EM44052.l = em3052.l + 2
+;EM43062.l = em3062.l - 2
+;EM44062.l = em3062.l + 2
+;EM43072.l = em3072.l - 2
+;EM44072.l = em3072.l + 2
+LD CR2002                ; 常時ON
+NCJ #1000
+;EM43000.l = #0 - 2
+;
+LD CR2002                ; 常時ON
+MOV.L -2 EM43000         ; MC 軸1 原点位置-2
+;EM44000.l = #0 + 2
+;
+LD CR2002                ; 常時ON
+MOV.L +2 EM44000         ; MC 軸1 原点位置+2
+;EM43002.l = em3002.l - 2
+;
+LD CR2002                ; 常時ON
+LDA.L EM3002             ; MC 軸1 Point1 移動量
+CON
+SUB.L +2
+CON
+STA.L EM43002            ; MC 軸1 Point1 移動量-2
+;EM44002.l = em3002.l + 2
+;
+LD CR2002                ; 常時ON
+LDA.L EM3002             ; MC 軸1 Point1 移動量
+CON
+ADD.L +2
+CON
+STA.L EM44002            ; MC 軸1 Point1 移動量+2
+;EM43012.l = em3012.l - 2
+;
+LD CR2002                ; 常時ON
+LDA.L EM3012             ; MC 軸1 Point2 移動量
+CON
+SUB.L +2
+CON
+STA.L EM43012            ; MC 軸1 Point2 移動量-2
+;EM44012.l = em3012.l + 2
+;
+LD CR2002                ; 常時ON
+LDA.L EM3012             ; MC 軸1 Point2 移動量
+CON
+ADD.L +2
+CON
+STA.L EM44012            ; MC 軸1 Point2 移動量+2
+;EM43022.l = em3022.l - 2
+;
+LD CR2002                ; 常時ON
+LDA.L EM3022             ; MC 軸1 Point3 移動量
+CON
+SUB.L +2
+CON
+STA.L EM43022            ; MC 軸1 Point3 移動量-2
+;EM44022.l = em3022.l + 2
+;
+LD CR2002                ; 常時ON
+LDA.L EM3022             ; MC 軸1 Point3 移動量
+CON
+ADD.L +2
+CON
+STA.L EM44022            ; MC 軸1 Point3 移動量+2
+;EM43032.l = em3032.l - 2
+;
+LD CR2002                ; 常時ON
+LDA.L EM3032             ; MC 軸1 Point4 移動量
+CON
+SUB.L +2
+CON
+STA.L EM43032            ; MC 軸1 Point4 移動量-2
+;EM44032.l = em3032.l + 2
+;
+LD CR2002                ; 常時ON
+LDA.L EM3032             ; MC 軸1 Point4 移動量
+CON
+ADD.L +2
+CON
+STA.L EM44032            ; MC 軸1 Point4 移動量+2
+;EM43042.l = em3042.l - 2
+;
+LD CR2002                ; 常時ON
+LDA.L EM3042             ; MC 軸1 Point5 移動量
+CON
+SUB.L +2
+CON
+STA.L EM43042            ; MC 軸1 Point5 移動量-2
+;EM44042.l = em3042.l + 2
+;
+LD CR2002                ; 常時ON
+LDA.L EM3042             ; MC 軸1 Point5 移動量
+CON
+ADD.L +2
+CON
+STA.L EM44042            ; MC 軸1 Point5 移動量+2
+;EM43052.l = em3052.l - 2
+;
+LD CR2002                ; 常時ON
+LDA.L EM3052             ; MC 軸1 Point6 移動量
+CON
+SUB.L +2
+CON
+STA.L EM43052            ; MC 軸1 Point6 移動量-2
+;EM44052.l = em3052.l + 2
+;
+LD CR2002                ; 常時ON
+LDA.L EM3052             ; MC 軸1 Point6 移動量
+CON
+ADD.L +2
+CON
+STA.L EM44052            ; MC 軸1 Point6 移動量+2
+;EM43062.l = em3062.l - 2
+;
+LD CR2002                ; 常時ON
+LDA.L EM3062             ; MC 軸1 Point7 移動量
+CON
+SUB.L +2
+CON
+STA.L EM43062            ; MC 軸1 Point7 移動量-2
+;EM44062.l = em3062.l + 2
+;
+LD CR2002                ; 常時ON
+LDA.L EM3062             ; MC 軸1 Point7 移動量
+CON
+ADD.L +2
+CON
+STA.L EM44062            ; MC 軸1 Point7 移動量+2
+;EM43072.l = em3072.l - 2
+;
+LD CR2002                ; 常時ON
+LDA.L EM3072
+CON
+SUB.L +2
+CON
+STA.L EM43072
+;EM44072.l = em3072.l + 2
+LD CR2002                ; 常時ON
+LDA.L EM3072
+CON
+ADD.L +2
+CON
+STA.L EM44072
+LABEL #1000
+;
+LD MR10700               ; ｸﾘｰﾆﾝｸﾞﾛｰﾗPOS1
+LD= DM20001 #1           ; ｸﾘｰﾆﾝｸﾞﾛｰﾗｰPOS番号
+AND= DM3000 #2151        ; _MainTP　表示中ﾍﾟｰｼﾞNo
+ORL
+AND= EM3002 DM21290      ; MC 軸1 Point1 移動量  軸1 現在座標
+RES MR10301              ; MC 軸1 ﾎﾟｲﾝﾄ-1移動要求
+LD MR21109               ; MC 軸1原点復帰完了記憶
+LD= EM3002 DM21290       ; MC 軸1 Point1 移動量  軸1 現在座標
+LD>.L EM43002 DM21290    ; MC 軸1 Point1 移動量-2  軸1 現在座標
+OR>.L DM21290 EM44002    ; 軸1 現在座標  MC 軸1 Point1 移動量+2
+AND @MR000               ; ﾌﾘｯｶ
+AND MR10700              ; ｸﾘｰﾆﾝｸﾞﾛｰﾗPOS1
+ORL
+ANL
+OUT MR23800              ; ｸﾘｰﾆﾝｸﾞﾛｰﾗ_P1ﾗﾝﾌﾟ
+LD MR10701               ; ｸﾘｰﾆﾝｸﾞﾛｰﾗPOS2
+LD= DM20001 #2           ; ｸﾘｰﾆﾝｸﾞﾛｰﾗｰPOS番号
+AND= DM3000 #2151        ; _MainTP　表示中ﾍﾟｰｼﾞNo
+ORL
+AND= EM3012 DM21290      ; MC 軸1 Point2 移動量  軸1 現在座標
+RES MR10302              ; MC 軸1 ﾎﾟｲﾝﾄ-2移動要求
+LD MR21109               ; MC 軸1原点復帰完了記憶
+LD= EM3012 DM21290       ; MC 軸1 Point2 移動量  軸1 現在座標
+LD>.L EM43012 DM21290    ; MC 軸1 Point2 移動量-2  軸1 現在座標
+OR>.L DM21290 EM1402     ; 軸1 現在座標
+AND @MR000               ; ﾌﾘｯｶ
+AND MR10701              ; ｸﾘｰﾆﾝｸﾞﾛｰﾗPOS2
+ORL
+ANL
+OUT MR23801              ; ｸﾘｰﾆﾝｸﾞﾛｰﾗ_P2ﾗﾝﾌﾟ
+LD MR10702               ; ｸﾘｰﾆﾝｸﾞﾛｰﾗPOS3
+LD= DM20001 #3           ; ｸﾘｰﾆﾝｸﾞﾛｰﾗｰPOS番号
+AND= DM3000 #2151        ; _MainTP　表示中ﾍﾟｰｼﾞNo
+ORL
+AND= EM3022 DM21290      ; MC 軸1 Point3 移動量  軸1 現在座標
+RES MR10303              ; MC 軸1 ﾎﾟｲﾝﾄ-3移動要求
+LD MR21109               ; MC 軸1原点復帰完了記憶
+LD= EM3022 DM21290       ; MC 軸1 Point3 移動量  軸1 現在座標
+LD>.L EM43022 DM21290    ; MC 軸1 Point3 移動量-2  軸1 現在座標
+OR>.L DM21290 EM44022    ; 軸1 現在座標  MC 軸1 Point3 移動量+2
+AND @MR000               ; ﾌﾘｯｶ
+AND MR10702              ; ｸﾘｰﾆﾝｸﾞﾛｰﾗPOS3
+ORL
+ANL
+OUT MR23802              ; ｸﾘｰﾆﾝｸﾞﾛｰﾗ_P3(右清掃進入)
+LD MR10703               ; ｸﾘｰﾆﾝｸﾞﾛｰﾗPOS4
+LD= DM20001 #4           ; ｸﾘｰﾆﾝｸﾞﾛｰﾗｰPOS番号
+AND= DM3000 #2151        ; _MainTP　表示中ﾍﾟｰｼﾞNo
+ORL
+AND= EM3032 DM21290      ; MC 軸1 Point4 移動量  軸1 現在座標
+RES MR10304              ; MC 軸1 ﾎﾟｲﾝﾄ-4移動要求
+LD MR21109               ; MC 軸1原点復帰完了記憶
+LD<=.L EM43032 DM21290   ; MC 軸1 Point4 移動量-2  軸1 現在座標
+AND<=.L DM21290 EM44032  ; 軸1 現在座標  MC 軸1 Point4 移動量+2
+LD>.L EM43032 DM21290    ; MC 軸1 Point4 移動量-2  軸1 現在座標
+OR>.L DM21290 EM44032    ; 軸1 現在座標  MC 軸1 Point4 移動量+2
+AND @MR000               ; ﾌﾘｯｶ
+AND MR10703              ; ｸﾘｰﾆﾝｸﾞﾛｰﾗPOS4
+ORL
+ANL
+OUT MR23803              ; ｸﾘｰﾆﾝｸﾞﾛｰﾗ_P4ﾗﾝﾌﾟ
+LD MR10704               ; ｸﾘｰﾆﾝｸﾞﾛｰﾗPOS5
+LD= DM20001 #5           ; ｸﾘｰﾆﾝｸﾞﾛｰﾗｰPOS番号
+AND= DM3000 #2151        ; _MainTP　表示中ﾍﾟｰｼﾞNo
+ORL
+AND= EM3042 DM21290      ; MC 軸1 Point5 移動量  軸1 現在座標
+RES MR10305              ; MC 軸1 ﾎﾟｲﾝﾄ-5移動要求
+LD MR21109               ; MC 軸1原点復帰完了記憶
+LD<=.L EM43042 DM21290   ; MC 軸1 Point5 移動量-2  軸1 現在座標
+AND<=.L DM21290 EM44042  ; 軸1 現在座標  MC 軸1 Point5 移動量+2
+LD>.L EM43042 DM21290    ; MC 軸1 Point5 移動量-2  軸1 現在座標
+OR>.L DM21290 EM44042    ; 軸1 現在座標  MC 軸1 Point5 移動量+2
+AND @MR000               ; ﾌﾘｯｶ
+AND MR10704              ; ｸﾘｰﾆﾝｸﾞﾛｰﾗPOS5
+ORL
+ANL
+OUT MR23804              ; ｸﾘｰﾆﾝｸﾞﾛｰﾗ_P5ﾗﾝﾌﾟ
+LD MR10705               ; ｸﾘｰﾆﾝｸﾞﾛｰﾗPOS6
+LD= DM20001 #6           ; ｸﾘｰﾆﾝｸﾞﾛｰﾗｰPOS番号
+AND= DM3000 #2151        ; _MainTP　表示中ﾍﾟｰｼﾞNo
+ORL
+AND= EM3052 DM21290      ; MC 軸1 Point6 移動量  軸1 現在座標
+RES MR10306              ; MC 軸1 ﾎﾟｲﾝﾄ-6移動要求
+LD MR21109               ; MC 軸1原点復帰完了記憶
+LD= EM3052 DM21290       ; MC 軸1 Point6 移動量  軸1 現在座標
+LD>.L EM43052 DM21290    ; MC 軸1 Point6 移動量-2  軸1 現在座標
+OR>.L DM21290 EM44052    ; 軸1 現在座標  MC 軸1 Point6 移動量+2
+AND @MR000               ; ﾌﾘｯｶ
+AND MR10705              ; ｸﾘｰﾆﾝｸﾞﾛｰﾗPOS6
+ORL
+ANL
+OUT MR23805              ; ｸﾘｰﾆﾝｸﾞﾛｰﾗ_P6ﾗﾝﾌﾟ(左清掃進入)
+LD MR10706               ; ｸﾘｰﾆﾝｸﾞﾛｰﾗPOS7
+LD= DM20001 #7           ; ｸﾘｰﾆﾝｸﾞﾛｰﾗｰPOS番号
+AND= DM3000 #2151        ; _MainTP　表示中ﾍﾟｰｼﾞNo
+ORL
+AND= EM3062 DM21290      ; MC 軸1 Point7 移動量  軸1 現在座標
+RES MR10307              ; MC 軸1 ﾎﾟｲﾝﾄ-7移動要求
+LD MR21109               ; MC 軸1原点復帰完了記憶
+LD= EM3062 DM21290       ; MC 軸1 Point7 移動量  軸1 現在座標
+LD>.L EM43062 DM21290    ; MC 軸1 Point7 移動量-2  軸1 現在座標
+OR>.L DM21290 EM44062    ; 軸1 現在座標  MC 軸1 Point7 移動量+2
+AND @MR000               ; ﾌﾘｯｶ
+AND MR10706              ; ｸﾘｰﾆﾝｸﾞﾛｰﾗPOS7
+ORL
+ANL
+OUT MR23806              ; ｸﾘｰﾆﾝｸﾞﾛｰﾗ_P7ﾗﾝﾌﾟ
+LD MR3005                ; DRV1 起動IL ON=起動可能
+ANB MR21610              ; MC 軸1動作中
+AND MR21109              ; MC 軸1原点復帰完了記憶
+MPS
+LD MR10700               ; ｸﾘｰﾆﾝｸﾞﾛｰﾗPOS1
+LD= DM20001 #1           ; ｸﾘｰﾆﾝｸﾞﾛｰﾗｰPOS番号
+AND= DM3000 #2151        ; _MainTP　表示中ﾍﾟｰｼﾞNo
+ORL
+ANB MR10301              ; MC 軸1 ﾎﾟｲﾝﾄ-1移動要求
+ANP MR20312              ; TPSW_ｸﾘｰﾆﾝｸﾞﾛｰﾗMOVE
+ANL
+SET MR10301              ; MC 軸1 ﾎﾟｲﾝﾄ-1移動要求
+MRD
+LD MR10701               ; ｸﾘｰﾆﾝｸﾞﾛｰﾗPOS2
+LD= DM20001 #2           ; ｸﾘｰﾆﾝｸﾞﾛｰﾗｰPOS番号
+AND= DM3000 #2151        ; _MainTP　表示中ﾍﾟｰｼﾞNo
+ORL
+ANB MR10302              ; MC 軸1 ﾎﾟｲﾝﾄ-2移動要求
+ANP MR20312              ; TPSW_ｸﾘｰﾆﾝｸﾞﾛｰﾗMOVE
+ANL
+SET MR10302              ; MC 軸1 ﾎﾟｲﾝﾄ-2移動要求
+MRD
+LD MR10702               ; ｸﾘｰﾆﾝｸﾞﾛｰﾗPOS3
+LD= DM20001 #3           ; ｸﾘｰﾆﾝｸﾞﾛｰﾗｰPOS番号
+AND= DM3000 #2151        ; _MainTP　表示中ﾍﾟｰｼﾞNo
+ORL
+ANB MR10303              ; MC 軸1 ﾎﾟｲﾝﾄ-3移動要求
+ANP MR20312              ; TPSW_ｸﾘｰﾆﾝｸﾞﾛｰﾗMOVE
+ANL
+SET MR10303              ; MC 軸1 ﾎﾟｲﾝﾄ-3移動要求
+MRD
+LD MR10703               ; ｸﾘｰﾆﾝｸﾞﾛｰﾗPOS4
+LD= DM20001 #4           ; ｸﾘｰﾆﾝｸﾞﾛｰﾗｰPOS番号
+AND= DM3000 #2151        ; _MainTP　表示中ﾍﾟｰｼﾞNo
+ORL
+ANB MR10304              ; MC 軸1 ﾎﾟｲﾝﾄ-4移動要求
+ANP MR20312              ; TPSW_ｸﾘｰﾆﾝｸﾞﾛｰﾗMOVE
+ANL
+SET MR10304              ; MC 軸1 ﾎﾟｲﾝﾄ-4移動要求
+MRD
+LD MR10704               ; ｸﾘｰﾆﾝｸﾞﾛｰﾗPOS5
+LD= DM20001 #5           ; ｸﾘｰﾆﾝｸﾞﾛｰﾗｰPOS番号
+AND= DM3000 #2151        ; _MainTP　表示中ﾍﾟｰｼﾞNo
+ORL
+ANB MR10305              ; MC 軸1 ﾎﾟｲﾝﾄ-5移動要求
+ANP MR20312              ; TPSW_ｸﾘｰﾆﾝｸﾞﾛｰﾗMOVE
+ANL
+SET MR10305              ; MC 軸1 ﾎﾟｲﾝﾄ-5移動要求
+MRD
+LD MR10705               ; ｸﾘｰﾆﾝｸﾞﾛｰﾗPOS6
+LD= DM20001 #6           ; ｸﾘｰﾆﾝｸﾞﾛｰﾗｰPOS番号
+AND= DM3000 #2151        ; _MainTP　表示中ﾍﾟｰｼﾞNo
+ORL
+ANB MR10306              ; MC 軸1 ﾎﾟｲﾝﾄ-6移動要求
+ANP MR20312              ; TPSW_ｸﾘｰﾆﾝｸﾞﾛｰﾗMOVE
+ANL
+SET MR10306              ; MC 軸1 ﾎﾟｲﾝﾄ-6移動要求
+MPP
+LD MR10706               ; ｸﾘｰﾆﾝｸﾞﾛｰﾗPOS7
+LD= DM20001 #7           ; ｸﾘｰﾆﾝｸﾞﾛｰﾗｰPOS番号
+AND= DM3000 #2151        ; _MainTP　表示中ﾍﾟｰｼﾞNo
+ORL
+ANB MR10307              ; MC 軸1 ﾎﾟｲﾝﾄ-7移動要求
+ANP MR20312              ; TPSW_ｸﾘｰﾆﾝｸﾞﾛｰﾗMOVE
+ANL
+SET MR10307              ; MC 軸1 ﾎﾟｲﾝﾄ-7移動要求
+;<h1/>MC20 2軸目 裏面取出 原点復帰(ｾﾞﾛ書き込み）
+LD MR3006                ; DRV2 起動IL ON=起動可能
+ANB MR21910              ; MC 軸2動作中
+OUT @MR815               ; 軸2原点復帰OK
+LDP MR20404              ; TPSW_裏面取出原点復帰SW
+ANB @MR801               ; 軸2原点復帰中
+AND @MR815               ; 軸2原点復帰OK
+ANB MR21910              ; MC 軸2動作中
+SET MR21910              ; MC 軸2動作中
+CON
+SET @MR801               ; 軸2原点復帰中
+CON
+SET @MR800
+LDP MR10500              ; MC 軸2 原点復帰要求
+ANB @MR801               ; 軸2原点復帰中
+AND @MR815               ; 軸2原点復帰OK
+SET MR21910              ; MC 軸2動作中
+CON
+SET @MR801               ; 軸2原点復帰中
+CON
+SET @MR800
+STG @MR800
+RES MR20802              ; MC 軸2原点復帰完了記憶
+CON
+TMR @24 #5
+CON
+AND @T24
+JMP @MR802
+STG @MR802
+MPS
+SET MR20111              ; MC 軸2原点復帰動作中
+CON
+MCALL MC_ORIGIN_OP #2 #2 R24812 R25212 @MR002;軸2 原点復帰要求  軸2 原点復帰完了  軸2原点復帰完了
+MPP
+AND @MR002               ; 軸2原点復帰完了
+JMP @MR803
+STG @MR803
+RES R24812               ; 軸2 原点復帰要求
+CON
+RES @MR002               ; 軸2原点復帰完了
+CON
+ANB @MR002               ; 軸2原点復帰完了
+RES MR20111              ; MC 軸2原点復帰動作中
+CON
+TMR @13 #5
+CON
+AND @T13
+JMP @MR804
+STG @MR804
+RES MR21910              ; MC 軸2動作中
+CON
+SET MR20802              ; MC 軸2原点復帰完了記憶
+CON
+RES @MR801               ; 軸2原点復帰中
+CON
+ENDS
+;<h1/>MC20 2軸目 裏面取出 動作
+LD MR3006                ; DRV2 起動IL ON=起動可能
+AND R22800               ; 動作可能
+AND R24913               ; 軸2 ｻｰﾎﾞON
+AND MR20802              ; MC 軸2原点復帰完了記憶
+OUT @MR1010              ; 軸2JOGOK
+LD @MR1010               ; 軸2JOGOK
+AND= DM3000 #2152        ; _MainTP　表示中ﾍﾟｰｼﾞNo
+ANB MR20406              ; TPSW_裏面取出JOG-
+AND MR20405              ; TPSW_裏面取出JOG+
+OUT R24900               ; 軸2 JOG正方向
+LD @MR1010               ; 軸2JOGOK
+AND= DM3000 #2152        ; _MainTP　表示中ﾍﾟｰｼﾞNo
+ANB MR20405              ; TPSW_裏面取出JOG+
+AND MR20406              ; TPSW_裏面取出JOG-
+OUT R24901               ; 軸2 JOG負方向
+LD @MR1010               ; 軸2JOGOK
+AND MR20407              ; TPSW_裏面取出JOG速度切替
+OUT R24902               ; 軸2 高速JOG
+;<h1/>MC20 2軸目 裏面取出 ﾃﾞｰﾀｾｯﾄ
+LD CR2002                ; 常時ON
+MPS
+ANP MR21700              ; TPSW_軸2POS1
+DW #1 DM20002            ; 裏面取出POS番号
+CON
+ZRES MR10800 MR10806     ; 裏面取出POS1  裏面取出POS7
+CON
+SET MR10800              ; 裏面取出POS1
+MRD
+ANP MR21701              ; TPSW_軸2POS2
+DW #2 DM20002            ; 裏面取出POS番号
+CON
+ZRES MR10800 MR10806     ; 裏面取出POS1  裏面取出POS7
+CON
+SET MR10801              ; 裏面取出POS2
+MRD
+ANP MR21702              ; TPSW_軸2POS3
+DW #3 DM20002            ; 裏面取出POS番号
+CON
+ZRES MR10800 MR10806     ; 裏面取出POS1  裏面取出POS7
+CON
+SET MR10802              ; 裏面取出POS3
+MRD
+ANP MR21703              ; TPSW_軸2POS4
+DW #4 DM20002            ; 裏面取出POS番号
+CON
+ZRES MR10800 MR10806     ; 裏面取出POS1  裏面取出POS7
+CON
+SET MR10803              ; 裏面取出POS4
+MRD
+ANP MR21704              ; TPSW_軸2POS5
+DW #5 DM20002            ; 裏面取出POS番号
+CON
+ZRES MR10800 MR10806     ; 裏面取出POS1  裏面取出POS7
+CON
+SET MR10804              ; 裏面取出POS5
+MRD
+ANP MR21705              ; TPSW_軸2POS6
+DW #5 DM20002            ; 裏面取出POS番号
+CON
+ZRES MR10800 MR10806     ; 裏面取出POS1  裏面取出POS7
+CON
+SET MR10805              ; 裏面取出POS6
+MPP
+ANP MR21706              ; TPSW_軸2POS7
+DW #5 DM20002            ; 裏面取出POS番号
+CON
+ZRES MR10800 MR10806     ; 裏面取出POS1  裏面取出POS7
+CON
+SET MR10806              ; 裏面取出POS7
+LD CR2002                ; 常時ON
+UWRIT.L #2 #18048 EM3202 #1;MC 軸2 Point1 移動量
+UWRIT.L #2 #18560 EM3212 #1;MC 軸2 Point2 移動量
+UWRIT.L #2 #19072 EM3222 #1;MC 軸2 Point3 移動量
+UWRIT.L #2 #19584 EM3232 #1;MC 軸2 Point4 移動量
+UWRIT.L #2 #20096 EM3242 #1;MC 軸2 Point5 移動量
+UWRIT.L #2 #20608 EM3252 #1;MC 軸2 Point6 移動量
+UWRIT.L #2 #21120 EM3262 #1;MC 軸2 Point7 移動量
+UWRIT.L #2 #22656 EM5000 #1
+UWRIT.L #2 #23680 EM5002 #1
+UWRIT.L #2 #18060 EM3200 #1;MC 軸2 Point1 速度
+UWRIT.L #2 #18572 EM3210 #1;MC 軸2 Point2 速度
+UWRIT.L #2 #19084 EM3220 #1;MC 軸2 Point3 速度
+UWRIT.L #2 #19596 EM3230 #1;MC 軸2 Point4 速度
+UWRIT.L #2 #20108 EM3240 #1;MC 軸2 Point5 速度
+UWRIT.L #2 #20620 EM3250 #1;MC 軸2 Point6 速度
+UWRIT.L #2 #21132 EM3260 #1;MC 軸2 Point7 速度
+LD MR10800               ; 裏面取出POS1
+AND MR4915               ; 現在地書込SW
+MOV.L DM21350 EM3202     ; 軸2 現在座標  MC 軸2 Point1 移動量
+MOV.L EM1954 EM3200      ; MC軸2 指令速度表示用  MC 軸2 Point1 速度
+LD MR10801               ; 裏面取出POS2
+AND MR4915               ; 現在地書込SW
+MOV.L DM21350 EM3212     ; 軸2 現在座標  MC 軸2 Point2 移動量
+MOV.L EM1954 EM3210      ; MC軸2 指令速度表示用  MC 軸2 Point2 速度
+LD MR10802               ; 裏面取出POS3
+AND MR4915               ; 現在地書込SW
+MOV.L DM21350 EM3222     ; 軸2 現在座標  MC 軸2 Point3 移動量
+MOV.L EM1954 EM3220      ; MC軸2 指令速度表示用  MC 軸2 Point3 速度
+LD MR10803               ; 裏面取出POS4
+AND MR4915               ; 現在地書込SW
+MOV.L DM21350 EM3232     ; 軸2 現在座標  MC 軸2 Point4 移動量
+MOV.L EM1954 EM3230      ; MC軸2 指令速度表示用  MC 軸2 Point4 速度
+LD MR10804               ; 裏面取出POS5
+AND MR4915               ; 現在地書込SW
+MOV.L DM21350 EM3242     ; 軸2 現在座標  MC 軸2 Point5 移動量
+MOV.L EM1954 EM3240      ; MC軸2 指令速度表示用  MC 軸2 Point5 速度
+LD MR10805               ; 裏面取出POS6
+AND MR4915               ; 現在地書込SW
+MOV.L DM21350 EM3252     ; 軸2 現在座標  MC 軸2 Point6 移動量
+MOV.L EM1954 EM3250      ; MC軸2 指令速度表示用  MC 軸2 Point6 速度
+LD MR10806               ; 裏面取出POS7
+AND MR4915               ; 現在地書込SW
+MOV.L DM21350 EM3262     ; 軸2 現在座標  MC 軸2 Point7 移動量
+MOV.L EM1954 EM3260      ; MC軸2 指令速度表示用  MC 軸2 Point7 速度
+;EM43200.l = #0- 2
+;EM44200.l = #0 + 2
+;EM43202.l = em3202.l - 2
+;EM44202.l = em3202.l + 2
+;EM43212.l = em3212.l - 2
+;EM44212.l = em3212.l + 2
+;EM43222.l = em3222.l - 2
+;EM44222.l = em3222.l + 2
+;EM43232.l = em3232.l - 2
+;EM44232.l = em3232.l + 2
+;EM43242.l = em3242.l - 2
+;EM44242.l = em3242.l + 2
+;EM43252.l = em3252.l - 2
+;EM44252.l = em3252.l + 2
+;EM43262.l = em3262.l - 2
+;EM44262.l = em3262.l + 2
+;EM43272.l = em3272.l - 2
+;EM44272.l = em3272.l + 2
+LD CR2002                ; 常時ON
+NCJ #1002
+;EM43200.l = #0- 2
+;
+LD CR2002                ; 常時ON
+MOV.L -2 EM43200         ; MC 軸2 原点位置-2
+;EM44200.l = #0 + 2
+;
+LD CR2002                ; 常時ON
+MOV.L +2 EM44200         ; MC 軸2 原点位置+2
+;EM43202.l = em3202.l - 2
+;
+LD CR2002                ; 常時ON
+LDA.L EM3202             ; MC 軸2 Point1 移動量
+CON
+SUB.L +2
+CON
+STA.L EM43202            ; MC 軸2 Point1 移動量-2
+;EM44202.l = em3202.l + 2
+;
+LD CR2002                ; 常時ON
+LDA.L EM3202             ; MC 軸2 Point1 移動量
+CON
+ADD.L +2
+CON
+STA.L EM44202            ; MC 軸2 Point1 移動量+2
+;EM43212.l = em3212.l - 2
+;
+LD CR2002                ; 常時ON
+LDA.L EM3212             ; MC 軸2 Point2 移動量
+CON
+SUB.L +2
+CON
+STA.L EM43212            ; MC 軸2 Point2 移動量-2
+;EM44212.l = em3212.l + 2
+;
+LD CR2002                ; 常時ON
+LDA.L EM3212             ; MC 軸2 Point2 移動量
+CON
+ADD.L +2
+CON
+STA.L EM44212            ; MC 軸2 Point2 移動量+2
+;EM43222.l = em3222.l - 2
+;
+LD CR2002                ; 常時ON
+LDA.L EM3222             ; MC 軸2 Point3 移動量
+CON
+SUB.L +2
+CON
+STA.L EM43222            ; MC 軸2 Point3 移動量-2
+;EM44222.l = em3222.l + 2
+;
+LD CR2002                ; 常時ON
+LDA.L EM3222             ; MC 軸2 Point3 移動量
+CON
+ADD.L +2
+CON
+STA.L EM44222            ; MC 軸2 Point3 移動量+2
+;EM43232.l = em3232.l - 2
+;
+LD CR2002                ; 常時ON
+LDA.L EM3232             ; MC 軸2 Point4 移動量
+CON
+SUB.L +2
+CON
+STA.L EM43232            ; MC 軸2 Point4 移動量-2
+;EM44232.l = em3232.l + 2
+;
+LD CR2002                ; 常時ON
+LDA.L EM3232             ; MC 軸2 Point4 移動量
+CON
+ADD.L +2
+CON
+STA.L EM44232            ; MC 軸2 Point4 移動+2
+;EM43242.l = em3242.l - 2
+;
+LD CR2002                ; 常時ON
+LDA.L EM3242             ; MC 軸2 Point5 移動量
+CON
+SUB.L +2
+CON
+STA.L EM43242            ; MC 軸2 Point5 移動量-2
+;EM44242.l = em3242.l + 2
+;
+LD CR2002                ; 常時ON
+LDA.L EM3242             ; MC 軸2 Point5 移動量
+CON
+ADD.L +2
+CON
+STA.L EM44242            ; MC 軸2 Point5 移動量+2
+;EM43252.l = em3252.l - 2
+;
+LD CR2002                ; 常時ON
+LDA.L EM3252             ; MC 軸2 Point6 移動量
+CON
+SUB.L +2
+CON
+STA.L EM43252            ; MC 軸2 Point6 移動量-2
+;EM44252.l = em3252.l + 2
+;
+LD CR2002                ; 常時ON
+LDA.L EM3252             ; MC 軸2 Point6 移動量
+CON
+ADD.L +2
+CON
+STA.L EM44252            ; MC 軸2 Point6 移動量+2
+;EM43262.l = em3262.l - 2
+;
+LD CR2002                ; 常時ON
+LDA.L EM3262             ; MC 軸2 Point7 移動量
+CON
+SUB.L +2
+CON
+STA.L EM43262            ; MC 軸2 Point7 移動量-2
+;EM44262.l = em3262.l + 2
+;
+LD CR2002                ; 常時ON
+LDA.L EM3262             ; MC 軸2 Point7 移動量
+CON
+ADD.L +2
+CON
+STA.L EM44262            ; MC 軸2 Point7 移動量+2
+;EM43272.l = em3272.l - 2
+;
+LD CR2002                ; 常時ON
+LDA.L EM3272             ; MC 軸2 Point8 移動量
+CON
+SUB.L +2
+CON
+STA.L EM43272            ; MC 軸2 Point8 移動量-2
+;EM44272.l = em3272.l + 2
+LD CR2002                ; 常時ON
+LDA.L EM3272             ; MC 軸2 Point8 移動量
+CON
+ADD.L +2
+CON
+STA.L EM44272            ; MC 軸2 Point8 移動量+2
+LABEL #1002
+;
+LD MR20802               ; MC 軸2原点復帰完了記憶
+LD MR10800               ; 裏面取出POS1
+LD= DM20002 #1           ; 裏面取出POS番号
+LD= DM3000 #2152         ; _MainTP　表示中ﾍﾟｰｼﾞNo
+OR= DM3000 #2006         ; _MainTP　表示中ﾍﾟｰｼﾞNo
+ANL
+ORL
+ANL
+AND= EM3202 DM21350      ; MC 軸2 Point1 移動量  軸2 現在座標
+RES MR10501              ; MC 軸2 ﾎﾟｲﾝﾄ-1移動要求
+LD MR20802               ; MC 軸2原点復帰完了記憶
+AND MR10800              ; 裏面取出POS1
+LD= EM3202 DM21350       ; MC 軸2 Point1 移動量  軸2 現在座標
+LD>.L EM43202 DM21350    ; MC 軸2 Point1 移動量-2  軸2 現在座標
+OR>.L DM21350 EM44202    ; 軸2 現在座標  MC 軸2 Point1 移動量+2
+AND @MR000               ; ﾌﾘｯｶ
+ORL
+ANL
+OUT MR23900              ; 裏面取出_P1ﾗﾝﾌﾟ
+LD MR20802               ; MC 軸2原点復帰完了記憶
+LD MR10800               ; 裏面取出POS1
+LD= DM20002 #1           ; 裏面取出POS番号
+LD= DM3000 #2152         ; _MainTP　表示中ﾍﾟｰｼﾞNo
+OR= DM3000 #2006         ; _MainTP　表示中ﾍﾟｰｼﾞNo
+ANL
+ORL
+ANL
+ANP MR20408              ; TPSW_裏面取出MOVE
+AND MR3006               ; DRV2 起動IL ON=起動可能
+ANB MR10501              ; MC 軸2 ﾎﾟｲﾝﾄ-1移動要求
+ANB MR21910              ; MC 軸2動作中
+SET MR10501              ; MC 軸2 ﾎﾟｲﾝﾄ-1移動要求
+LD MR20802               ; MC 軸2原点復帰完了記憶
+LD MR10801               ; 裏面取出POS2
+LD= DM20002 #2           ; 裏面取出POS番号
+LD= DM3000 #2152         ; _MainTP　表示中ﾍﾟｰｼﾞNo
+OR= DM3000 #2006         ; _MainTP　表示中ﾍﾟｰｼﾞNo
+ANL
+ORL
+ANL
+AND= EM3212 DM21350      ; MC 軸2 Point2 移動量  軸2 現在座標
+RES MR10502              ; MC 軸2 ﾎﾟｲﾝﾄ-2移動要求
+LD MR20802               ; MC 軸2原点復帰完了記憶
+AND MR10801              ; 裏面取出POS2
+LD= EM3212 DM21350       ; MC 軸2 Point2 移動量  軸2 現在座標
+LD>.L EM43212 DM21350    ; MC 軸2 Point2 移動量-2  軸2 現在座標
+OR>.L DM21350 EM44212    ; 軸2 現在座標  MC 軸2 Point2 移動量+2
+AND @MR000               ; ﾌﾘｯｶ
+ORL
+ANL
+OUT MR23901              ; 裏面取出_P2ｽﾍﾟｰｻ受け取り
+LD MR20802               ; MC 軸2原点復帰完了記憶
+LD MR10801               ; 裏面取出POS2
+LD= DM20002 #2           ; 裏面取出POS番号
+LD= DM3000 #2152         ; _MainTP　表示中ﾍﾟｰｼﾞNo
+OR= DM3000 #2006         ; _MainTP　表示中ﾍﾟｰｼﾞNo
+ANL
+ORL
+ANL
+ANP MR20408              ; TPSW_裏面取出MOVE
+AND MR3006               ; DRV2 起動IL ON=起動可能
+ANB MR10502              ; MC 軸2 ﾎﾟｲﾝﾄ-2移動要求
+ANB MR21910              ; MC 軸2動作中
+SET MR10502              ; MC 軸2 ﾎﾟｲﾝﾄ-2移動要求
+LD MR20802               ; MC 軸2原点復帰完了記憶
+LD MR10802               ; 裏面取出POS3
+LD= DM20002 #3           ; 裏面取出POS番号
+LD= DM3000 #2152         ; _MainTP　表示中ﾍﾟｰｼﾞNo
+OR= DM3000 #2006         ; _MainTP　表示中ﾍﾟｰｼﾞNo
+ANL
+ORL
+ANL
+AND= EM3222 DM21350      ; MC 軸2 Point3 移動量  軸2 現在座標
+RES MR10503              ; MC 軸2 ﾎﾟｲﾝﾄ-3移動要求
+LD MR20802               ; MC 軸2原点復帰完了記憶
+AND MR10802              ; 裏面取出POS3
+LD= EM3222 DM21350       ; MC 軸2 Point3 移動量  軸2 現在座標
+LD>.L EM43222 DM21350    ; MC 軸2 Point3 移動量-2  軸2 現在座標
+OR>.L DM21350 EM44222    ; 軸2 現在座標  MC 軸2 Point3 移動量+2
+AND @MR000               ; ﾌﾘｯｶ
+ORL
+ANL
+OUT MR23902              ; 裏面取出_P3ｽﾍﾟｰｻ受渡し
+LD MR20802               ; MC 軸2原点復帰完了記憶
+LD MR10802               ; 裏面取出POS3
+LD= DM20002 #3           ; 裏面取出POS番号
+LD= DM3000 #2152         ; _MainTP　表示中ﾍﾟｰｼﾞNo
+OR= DM3000 #2006         ; _MainTP　表示中ﾍﾟｰｼﾞNo
+ANL
+ORL
+ANL
+ANP MR20408              ; TPSW_裏面取出MOVE
+AND MR3006               ; DRV2 起動IL ON=起動可能
+ANB MR10503              ; MC 軸2 ﾎﾟｲﾝﾄ-3移動要求
+ANB MR21910              ; MC 軸2動作中
+SET MR10503              ; MC 軸2 ﾎﾟｲﾝﾄ-3移動要求
+;MyTask Error Process Substance/ｴﾗｰ処理実体
+STG @R100                ; MC ｱﾗｰﾑ発生
+ANB R39002               ; ERROR_DISP Busy
+MPS
+ZRES @R105 @R108         ; SW1
+CON
+LDA @DM9
+CON
+TBCD
+CON
+STA @DM10
+CON
+DISN @DM10 @DM3 #4
+MRD
+DW #5 @DM0
+CON
+BMOV @DM0 DM60000 #7     ; TaskNo /ERROR_DISP
+MPP
+SET R39000               ; ERROR_DISP Start
+CON
+SET @R102
+CON
+JMP @R103
+STG @R103
+AND R39002               ; ERROR_DISP Busy
+AND= DM60008 @DM1        ; ReturnNo /ERROR_DISP  ErrorNo /ERROR_DISP
+AND= DM60007 @DM6        ; ReturnSW /ERROR_DISP
+SET @R105                ; SW1
+CON
+JMP @R104
+STG @R104
+ANB R39002               ; ERROR_DISP Busy
+RES @R102
+CON
+SET @R101
+CON
+ENDS
+;
+END
+ENDH

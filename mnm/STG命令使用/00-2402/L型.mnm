@@ -1,0 +1,362 @@
+DEVICE:53
+;MODULE:L型
+;MODULE_TYPE:0
+;非常停止
+;Emergency Stop
+LD R50000                ; 即停止
+OR R50900                ; TRAP
+OR R50010                ; 非常停止
+ZRES @MR002 @MR1915
+;ｾﾝｻ
+LDB R4406                ; L_ﾜｰｸｾｯﾄ 上昇端
+AND R4407                ; L_ﾜｰｸｾｯﾄ 下降端
+ANB R4408                ; L_位置決めﾁｬｯｸX 閉端
+AND R4409                ; L_位置決めﾁｬｯｸX 開端
+ANB R4410                ; L_位置決めﾁｬｯｸY 閉端
+AND R4411                ; L_位置決めﾁｬｯｸY 開端
+ANB R4412                ; L_吸着ﾜｰｸ圧力ｾﾝｻ OUT1
+LD R4413                 ; L_破戒ﾜｰｸ圧力ｾﾝｻ OUT2
+OR CR2002                ; 常時ON
+ANL
+OUT @MR115               ; 搬送原点
+LDB R50300               ; PAUSE中
+ANB R50113               ; L側COF接合部ｴﾗｰ中
+ANB R50108               ; ｴﾗｰ発生中
+OUT @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+LD R53104                ; Line-A（左） 型動作要求
+ANB R53200               ; L側型ｻｲｸﾙ動作中
+MPS
+AND LR000                ; 吸着OFFで位置決めﾊﾞｰｼﾞｮﾝ
+SET @MR100               ; 型動作開始
+MPP
+ANB LR000                ; 吸着OFFで位置決めﾊﾞｰｼﾞｮﾝ
+SET @MR300               ; 型動作開始　吸着OFFにてXY位置決
+;型動作　吸着ONでX,Y軸位置決め
+STG @MR100               ; 型動作開始
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+SET R53200               ; L側型ｻｲｸﾙ動作中
+CON
+JMP @MR101
+STG @MR101
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+MPS
+LD= DM504 #1             ; RB2目標値
+AND R4409                ; L_位置決めﾁｬｯｸX 開端
+AND R4411                ; L_位置決めﾁｬｯｸY 開端
+ANL
+SET MR6306               ; L_ﾜｰｸｾｯﾄ上下 上昇端
+CON
+RES MR6307               ; L_ﾜｰｸｾｯﾄ上下 下降端
+CON
+AND R4406                ; L_ﾜｰｸｾｯﾄ 上昇端
+ANB R4407                ; L_ﾜｰｸｾｯﾄ 下降端
+JMP @MR102
+MPP
+AND<> DM504 #1           ; RB2目標値
+JMP @MR202
+STG @MR102
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+SET MR6302               ; L_位置決めﾁｬｯｸY 閉
+CON
+ANB R4411                ; L_位置決めﾁｬｯｸY 開端
+JMP @MR103
+STG @MR103
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+SET MR6304               ; L_位置決めﾁｬｯｸX 閉
+CON
+ANB R4409                ; L_位置決めﾁｬｯｸX 開端
+TMR #360 #2
+CON
+AND T360
+JMP @MR104
+STG @MR104
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+RES MR6700               ; L_ﾜｰｸ確認 破壊
+CON
+SET MR6701               ; L_ﾜｰｸ確認 吸着
+CON
+TMR @5 #3
+CON
+AND @T5
+JMP @MR105
+STG @MR105
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+RES MR6302               ; L_位置決めﾁｬｯｸY 閉
+CON
+RES MR6304               ; L_位置決めﾁｬｯｸX 閉
+CON
+TMR @4 #3
+CON
+AND @T4
+JMP @MR106
+STG @MR106
+SET MR6302               ; L_位置決めﾁｬｯｸY 閉
+CON
+SET MR6304               ; L_位置決めﾁｬｯｸX 閉
+CON
+TMR @0 #3
+CON
+AND @T0
+JMP @MR107
+STG @MR107
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+MPS
+AND R4412                ; L_吸着ﾜｰｸ圧力ｾﾝｻ OUT1
+JMP @MR110
+MPP
+ANB R4412                ; L_吸着ﾜｰｸ圧力ｾﾝｻ OUT1
+TMR #361 #50
+CON
+AND T361
+SET @MR1500              ; 吸着ｴﾗｰ
+CON
+ENDS
+STG @MR110
+SET R53108               ; Line-A（左） 溶着動作要求
+CON
+JMP @MR111
+STG @MR111
+ANB R53108               ; Line-A（左） 溶着動作要求
+AND R53110               ; Line-A（左） 溶着動作完了
+RES R53110               ; Line-A（左） 溶着動作完了
+CON
+JMP @MR200
+STG @MR200
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+RES MR6302               ; L_位置決めﾁｬｯｸY 閉
+CON
+RES MR6304               ; L_位置決めﾁｬｯｸX 閉
+CON
+AND R4409                ; L_位置決めﾁｬｯｸX 開端
+AND R4411                ; L_位置決めﾁｬｯｸY 開端
+JMP @MR201
+STG @MR201
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+RES MR6701               ; L_ﾜｰｸ確認 吸着
+CON
+RES MR6700               ; L_ﾜｰｸ確認 破壊
+CON
+JMP @MR202
+STG @MR202
+RES MR6701               ; L_ﾜｰｸ確認 吸着
+CON
+RES MR6700               ; L_ﾜｰｸ確認 破壊
+CON
+SET MR6307               ; L_ﾜｰｸｾｯﾄ上下 下降端
+CON
+RES MR6306               ; L_ﾜｰｸｾｯﾄ上下 上昇端
+CON
+AND R4407                ; L_ﾜｰｸｾｯﾄ 下降端
+ANB R4406                ; L_ﾜｰｸｾｯﾄ 上昇端
+JMP @MR203
+STG @MR203
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+RES R53200               ; L側型ｻｲｸﾙ動作中
+CON
+SET R53106               ; Line-A（左） 型動作完了
+CON
+ENDS
+;型動作　吸着OFFでX,Y軸位置決め
+STG @MR300               ; 型動作開始　吸着OFFにてXY位置決
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+SET R53200               ; L側型ｻｲｸﾙ動作中
+CON
+JMP @MR301
+STG @MR301
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+MPS
+LD= DM504 #1             ; RB2目標値
+AND R4409                ; L_位置決めﾁｬｯｸX 開端
+AND R4411                ; L_位置決めﾁｬｯｸY 開端
+ANL
+SET MR6306               ; L_ﾜｰｸｾｯﾄ上下 上昇端
+CON
+RES MR6307               ; L_ﾜｰｸｾｯﾄ上下 下降端
+CON
+AND R4406                ; L_ﾜｰｸｾｯﾄ 上昇端
+ANB R4407                ; L_ﾜｰｸｾｯﾄ 下降端
+RES R53202               ; L側吸着確認 位置決め後
+CON
+JMP @MR302
+MPP
+AND<> DM504 #1           ; RB2目標値
+JMP @MR402
+STG @MR302
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+RES MR6700               ; L_ﾜｰｸ確認 破壊
+CON
+SET MR6701               ; L_ﾜｰｸ確認 吸着
+CON
+MPS
+AND R4412                ; L_吸着ﾜｰｸ圧力ｾﾝｻ OUT1
+SET R53202               ; L側吸着確認 位置決め後
+CON
+JMP @MR303
+MPP
+ANB R4412                ; L_吸着ﾜｰｸ圧力ｾﾝｻ OUT1
+TMR @1 #50
+CON
+AND @T1
+SET @MR1500              ; 吸着ｴﾗｰ
+CON
+ENDS
+STG @MR303
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+SET MR6302               ; L_位置決めﾁｬｯｸY 閉
+CON
+ANB R4411                ; L_位置決めﾁｬｯｸY 開端
+JMP @MR304
+STG @MR304
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+SET MR6304               ; L_位置決めﾁｬｯｸX 閉
+CON
+ANB R4409                ; L_位置決めﾁｬｯｸX 開端
+TMR @6 #2
+CON
+AND @T6
+JMP @MR305
+STG @MR305
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+MPS
+AND R4412                ; L_吸着ﾜｰｸ圧力ｾﾝｻ OUT1
+RES R53202               ; L側吸着確認 位置決め後
+CON
+JMP @MR310
+MPP
+ANB R4412                ; L_吸着ﾜｰｸ圧力ｾﾝｻ OUT1
+TMR @3 #50
+CON
+AND @T3
+SET @MR1500              ; 吸着ｴﾗｰ
+CON
+ENDS
+STG @MR310
+SET R53108               ; Line-A（左） 溶着動作要求
+CON
+JMP @MR311
+STG @MR311
+ANB R53108               ; Line-A（左） 溶着動作要求
+AND R53110               ; Line-A（左） 溶着動作完了
+RES R53110               ; Line-A（左） 溶着動作完了
+CON
+JMP @MR400
+STG @MR400
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+RES MR6302               ; L_位置決めﾁｬｯｸY 閉
+CON
+RES MR6304               ; L_位置決めﾁｬｯｸX 閉
+CON
+AND R4409                ; L_位置決めﾁｬｯｸX 開端
+AND R4411                ; L_位置決めﾁｬｯｸY 開端
+JMP @MR401
+STG @MR401
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+RES MR6701               ; L_ﾜｰｸ確認 吸着
+CON
+RES MR6700               ; L_ﾜｰｸ確認 破壊
+CON
+JMP @MR402
+STG @MR402
+RES MR6701               ; L_ﾜｰｸ確認 吸着
+CON
+RES MR6700               ; L_ﾜｰｸ確認 破壊
+CON
+SET MR6307               ; L_ﾜｰｸｾｯﾄ上下 下降端
+CON
+RES MR6306               ; L_ﾜｰｸｾｯﾄ上下 上昇端
+CON
+AND R4407                ; L_ﾜｰｸｾｯﾄ 下降端
+ANB R4406                ; L_ﾜｰｸｾｯﾄ 上昇端
+JMP @MR403
+STG @MR403
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+RES R53200               ; L側型ｻｲｸﾙ動作中
+CON
+SET R53106               ; Line-A（左） 型動作完了
+CON
+ENDS
+;ｱﾗｰﾑ処理
+STG @MR1500              ; 吸着ｴﾗｰ
+SET R50008               ; 全体ｴﾗｰ発生
+CON
+SET R50113               ; L側COF接合部ｴﾗｰ中
+CON
+SET R51003               ; L側COF接合部表示
+CON
+SET R210                 ; RETRY SW　目隠し解除
+CON
+SET R50607               ; ERR23
+CON
+RES MR6701               ; L_ﾜｰｸ確認 吸着
+CON
+SET MR6700               ; L_ﾜｰｸ確認 破壊
+CON
+JMP @MR1501
+MOV #23 DM400            ; 表示画面No.
+STG @MR1501
+TMR @2 #3
+CON
+AND @T2
+RES MR6701               ; L_ﾜｰｸ確認 吸着
+CON
+RES MR6700               ; L_ﾜｰｸ確認 破壊
+CON
+RES MR6302               ; L_位置決めﾁｬｯｸY 閉
+CON
+RES MR6304               ; L_位置決めﾁｬｯｸX 閉
+CON
+AND R4409                ; L_位置決めﾁｬｯｸX 開端
+AND R4411                ; L_位置決めﾁｬｯｸY 開端
+JMP @MR1502
+STG @MR1502
+AND R50008               ; 全体ｴﾗｰ発生
+JMP @MR1503
+STG @MR1503
+ANB R50008               ; 全体ｴﾗｰ発生
+MPS
+ANB R310                 ; ﾊﾟｽｽｲｯﾁON
+JMP @MR1505
+MPP
+AND R310                 ; ﾊﾟｽｽｲｯﾁON
+JMP @MR1504
+STG @MR1504
+ANB R50008               ; 全体ｴﾗｰ発生
+LDA #8
+CON
+STA DM504                ; RB2目標値
+CON
+RES R310                 ; ﾊﾟｽｽｲｯﾁON
+CON
+RES R210                 ; RETRY SW　目隠し解除
+CON
+MPS
+AND LR000                ; 吸着OFFで位置決めﾊﾞｰｼﾞｮﾝ
+SET @MR200
+CON
+ENDS
+MPP
+ANB LR000                ; 吸着OFFで位置決めﾊﾞｰｼﾞｮﾝ
+SET @MR400
+CON
+ENDS
+STG @MR1505
+ANB R50008               ; 全体ｴﾗｰ発生
+JMP @MR1506
+STG @MR1506
+ANB R50008               ; 全体ｴﾗｰ発生
+RES R210                 ; RETRY SW　目隠し解除
+CON
+RES R310                 ; ﾊﾟｽｽｲｯﾁON
+CON
+MPS
+AND LR000                ; 吸着OFFで位置決めﾊﾞｰｼﾞｮﾝ
+SET @MR102
+CON
+ENDS
+MPP
+ANB LR000                ; 吸着OFFで位置決めﾊﾞｰｼﾞｮﾝ
+SET @MR302
+CON
+ENDS
+END
+ENDH

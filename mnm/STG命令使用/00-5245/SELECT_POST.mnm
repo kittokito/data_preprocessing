@@ -1,0 +1,121 @@
+DEVICE:53
+;MODULE:SELECT_POST
+;MODULE_TYPE:1
+;OneSystem SupportMacro
+;広丘
+;-----------------------------------------
+;Macro Name 	: 	SELECT_POST
+;Macro Type	:	Self Holding
+;Function	:	Post有効／無効選択表示
+;-----------------------------------------
+;
+;Copylight(C) 2011 SEIKO EPSON Corp. All rights reserved.
+;引数：
+;	V0	=	表示ｸﾞﾙｰﾌﾟ番号			#1～8
+;	V1	=	ﾀｽｸ番号					#0～#31
+;	V2	=	ﾌﾞｻﾞｰ有無				#1=ﾌﾞｻﾞｰON、#0:ﾌﾞｻﾞｰOFF
+;	P9	=	完了ﾘﾚｰ					ﾏｸﾛ完了時ON
+;	
+;機能：
+;	指定TPに選択画面を表示して、選択肢によりPost有効／無効を設定する(MAINTEﾓｰﾄﾞ限定)
+LD R59915                ; _運転ﾓｰﾄﾞ指定
+SET P9                   ; Fin_Relay
+CON
+MEND
+LD R46104                ; _非常停止中　ﾓｰﾄﾞﾌﾗｸﾞ
+ZRES @R000 @R015         ; ﾏｸﾛ実行中  ﾏｸﾛ異常発生
+CON
+MEND
+;<h1/>Argumant Range Check/引数範囲ﾁｪｯｸ
+LD< V0 #1                ; Group_No
+OR> V0 #8                ; Group_No
+OR< V1 #0                ; Task_No
+OR> V1 #100              ; Task_No
+LD> V1 #31               ; Task_No
+AND< V1 #100             ; Task_No
+ORL
+SET R40008               ; _ｻﾎﾟｰﾄﾏｸﾛ引数異常発生
+CON
+SET @R015                ; ﾏｸﾛ異常発生
+;<h1/>Init/初期化
+LD @CR2008
+ORB @R000                ; ﾏｸﾛ実行中
+ANB R59915               ; _運転ﾓｰﾄﾞ指定
+MPS
+ANB R46102               ; _ﾒﾝﾃﾅﾝｽ運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+SET P9                   ; Fin_Relay
+CON
+MEND
+MPP
+AND R46102               ; _ﾒﾝﾃﾅﾝｽ運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+RES P9                   ; Fin_Relay
+;<h1/>Exclusive/排他占有
+;・優先ｴﾗｰ、通常ｴﾗｰ解除待ち
+;・Input系とSelect系は同一排他(画面表示領域が同じなので)解除待ち
+;・排他解除待ち中にPAUSE要求にてHALT実施
+LDB R59915               ; _運転ﾓｰﾄﾞ指定
+ANB R46104               ; _非常停止中　ﾓｰﾄﾞﾌﾗｸﾞ
+ANB R46208               ; _Group1　ｴﾗｰ発生中
+ANB R48008               ; _Group1　画面処理排他
+SET R48008               ; _Group1　画面処理排他
+SET @R000                ; ﾏｸﾛ実行中
+CON
+SET @R001                ; ACT画面表示
+;<h1/>Select Action Display/選択画面表示
+STG @R001                ; ACT画面表示
+MOV #99 DM8172           ; _ACTﾒｯｾｰｼﾞ番号
+SET R55008               ; _ACT選択ﾎﾞﾀﾝ表示／非表示
+MOV #99 DM8173           ; _ACT選択肢1名称番号
+RES R55009               ; _ACT選択ﾎﾞﾀﾝ表示／非表示
+MOV #0 DM8174            ; _ACT選択肢2名称番号
+RES R55010               ; _ACT選択ﾎﾞﾀﾝ表示／非表示
+MOV #0 DM8175            ; _ACT選択肢3名称番号
+SET R55011               ; _ACT選択ﾎﾞﾀﾝ表示／非表示
+MOV #100 DM8176          ; _ACT選択肢4名称番号
+MPS
+AND= V2 #1               ; Bz_Use
+SET R48210               ; _Group1　ｼｽﾃﾑﾌﾞｻﾞｰ要求3
+MPP
+TMH @0 #5                ; 表示ﾃﾞｨﾚｲ
+CON
+AND @T0                  ; 表示ﾃﾞｨﾚｲ
+AND= DM3000 #10          ; _MainTP　表示中ﾍﾟｰｼﾞNo
+SET R53800               ; _ACT画面表示
+CON
+JMP @R002                ; ACT選択肢待ち
+;<h1/>Action Choise Waiting/選択待ち
+STG @R002                ; ACT選択肢待ち
+ANB R44200               ; Grp1 ﾎﾟｰｽﾞ要求
+MPS
+AND= DM8177 #0           ; _ACT復帰選択肢
+MPS
+AND R46208               ; _Group1　ｴﾗｰ発生中
+RES R53800               ; _ACT画面表示
+MPP
+ANB R46208               ; _Group1　ｴﾗｰ発生中
+SET R53800               ; _ACT画面表示
+MPP
+AND<> DM8177 #0          ; _ACT復帰選択肢
+MPS
+AND= DM8177 #1           ; _ACT復帰選択肢
+RES R50800               ; _Group1 Post無効宣言
+MRD
+AND= DM8177 #4           ; _ACT復帰選択肢
+SET R50800               ; _Group1 Post無効宣言
+MPP
+RES R53800               ; _ACT画面表示
+CON
+JMP @R003                ; ACT排他開放
+;<h1/>End Process/終了処理
+STG @R003                ; ACT排他開放
+AND<> DM3000 #1111       ; _MainTP　表示中ﾍﾟｰｼﾞNo
+FMOV #0 DM8172 #6        ; _ACTﾒｯｾｰｼﾞ番号
+RES R48210               ; _Group1　ｼｽﾃﾑﾌﾞｻﾞｰ要求3
+RES R48008               ; _Group1　画面処理排他
+SET P9                   ; Fin_Relay
+MEND
+RES @R000                ; ﾏｸﾛ実行中
+CON
+ENDS
+END
+ENDH

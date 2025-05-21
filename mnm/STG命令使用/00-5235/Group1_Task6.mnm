@@ -1,0 +1,2731 @@
+DEVICE:53
+;MODULE:Group1_Task6
+;MODULE_TYPE:0
+;SCRIPT_TYPE:
+;OneSystem Main-Module
+;
+;-----------------------------------------
+;ModuleName	:	Group1_Task6
+;ModuleType	:	Main Module
+;Line		:	
+;Cell		:	
+;Function	:	フィルム剥ぎ取り
+;-----------------------------------------
+;<<Task LocalDevice>>
+;/*項目			/*割付ｴﾘｱ				/*備考
+;---------------------------------------------------------------------			
+;Emergency		@MR000～@MR015			Emergency処理時RESET禁止ｴﾘｱ
+;Free			@MR100～@MR915			ﾕｰｻﾞｰﾌﾘｰｴﾘｱ
+;HOME			@MR1000～@MR1515		HOME動作時使用ｴﾘｱ
+;MAINTENANCE		@MR2000～@MR2915		MAINTE動作時使用ｴﾘｱ
+;AUTO(Main1)		@MR3000～@MR3915		AUTO(Main1)動作時使用ｴﾘｱ
+;	(Main2)		@MR4000～@MR4415		AUTO(Main2)動作時使用ｴﾘｱ
+;SubRoutine		@MR4500～@MR6415		ｻﾌﾞﾙｰﾁﾝ共通動作使用ｴﾘｱ　※状況により増設してください。
+;----------------------------------------------------------------------
+;<h1/>Device_Init/ﾃﾞﾊﾞｲｽ初期化
+;[内容]
+;・非常停止、優先ｴﾗｰ発生時に初期化したいﾃﾞﾊﾞｲｽを指定して下さい
+;※本Taskで使用するﾛｰｶﾙﾃﾞﾊﾞｲｽなど
+;※STG～JMPにて使用しているﾃﾞﾊﾞｲｽは必須
+LDP R46104               ; _非常停止中　ﾓｰﾄﾞﾌﾗｸﾞ
+ZRES @MR100 @MR6415      ; Task6 ERROR
+LD= DM60000 MyTask       ; TaskNo /ERROR_DISP  自ﾀｽｸ番号
+AND R46208               ; _Group1　ｴﾗｰ発生中
+OUT @MR001               ; TASK6　ERROR
+;<h1/>Task_Monitor/ﾀｽｸﾓﾆﾀｰ
+LD CR2002                ; 常時ON
+FLIK #50 #50 @MR000
+;ON STG Main1
+;TYPE EM648.U,EM649.U,@MR000.U,@MR3000.U
+;
+;FOR EM648 = EM648 TO 160 STEP 16
+;	IF @MR3000:EM648 <> 0 THEN
+;		BREAK
+;	END IF	
+;NEXT
+;	
+;IF EM648 < 160 THEN
+;	EM649 = (EM648 / 16) * 100 + DMX(@MR3000:EM648) + #3000
+;END IF		
+;		
+;EM648 = EM648 + 16		
+;IF EM648 > 160 THEN		
+;	EM648 = 0		
+;END IF
+LDP @MR000
+NCJ #1000
+;TYPE EM648.U,EM649.U,@MR000.U,@MR3000.U
+;
+;FOR EM648 = EM648 TO 160 STEP 16
+;
+LD CR2002                ; 常時ON
+MOV EM648 EM648          ; Task6 Main1@MR  Task6 Main1@MR
+LABEL #2000
+LD> EM648 #160           ; Task6 Main1@MR
+CJ #2001
+;	IF @MR3000:EM648 <> 0 THEN
+;
+LD CR2002                ; 常時ON
+LDA EM648                ; Task6 Main1@MR
+CON
+EXT
+CON
+STA.L Z12
+LD<> @MR3000:Z12 #0      ; AUTO Main1
+NCJ #2002
+;		BREAK
+;
+LD CR2002                ; 常時ON
+CJ #2003
+;	END IF	
+;
+LABEL #2002
+;NEXT
+;
+LD CR2002                ; 常時ON
+LDA EM648                ; Task6 Main1@MR
+CON
+ADD #16
+CON
+STA EM648                ; Task6 Main1@MR
+LDB CR2009               ; 演算結果が負
+CJ #2000
+LABEL #2003
+LABEL #2001
+;IF EM648 < 160 THEN
+;
+LD< EM648 #160           ; Task6 Main1@MR
+NCJ #2004
+;	EM649 = (EM648 / 16) * 100 + DMX(@MR3000:EM648) + #3000
+;
+;;Warning[1103]: "=": (符号付き32ビット整数型->符号無し16ビット整数型) 代入によりデータが欠落する可能性があります。
+LD CR2002                ; 常時ON
+LDA EM648                ; Task6 Main1@MR
+CON
+EXT
+CON
+STA.L Z12
+CON
+LDA @MR3000:Z12          ; AUTO Main1
+CON
+DMX
+CON
+STA @VM0
+CON
+LDA EM648                ; Task6 Main1@MR
+CON
+EXT
+CON
+EXT.L
+CON
+DIV.L +16
+CON
+MUL.L +100
+CON
+STA.L @VM1
+CON
+LDA @VM0
+CON
+EXT
+CON
+ADD.L @VM1
+CON
+ADD.L +3000
+CON
+STA EM649                ; Task6 Main1@MR
+;END IF		
+;
+LABEL #2004
+;EM648 = EM648 + 16		
+;
+;;Warning[1103]: "=": (符号付き32ビット整数型->符号無し16ビット整数型) 代入によりデータが欠落する可能性があります。
+LD CR2002                ; 常時ON
+LDA EM648                ; Task6 Main1@MR
+CON
+EXT
+CON
+ADD.L +16
+CON
+STA EM648                ; Task6 Main1@MR
+;IF EM648 > 160 THEN		
+;
+LD> EM648 #160           ; Task6 Main1@MR
+NCJ #2005
+;	EM648 = 0		
+;
+LD CR2002                ; 常時ON
+MOV #0 EM648             ; Task6 Main1@MR
+;END IF
+LABEL #2005
+LABEL #1000
+;
+;ON STG Main2
+;TYPE EM650.U,EM651.U,@MR4000.U
+;
+;FOR EM650 = EM650 TO 80 STEP 16
+;	IF @MR4000:EM650 <> 0 THEN
+;		BREAK
+;	END IF	
+;NEXT	
+;
+;IF EM650 < 80 THEN
+;	EM651 = (EM650 / 16) * 100 + DMX(@MR4000:EM650) + #4000
+;END IF
+;
+;EM650 = EM650 + 16		
+;
+;IF EM650 > 80 THEN
+;	EM650 = 0	
+;END IF
+LDP @MR000
+NCJ #1001
+;TYPE EM650.U,EM651.U,@MR4000.U
+;
+;FOR EM650 = EM650 TO 80 STEP 16
+;
+LD CR2002                ; 常時ON
+MOV EM650 EM650          ; Task6 Main2@MR  Task6 Main2@MR
+LABEL #2006
+LD> EM650 #80            ; Task6 Main2@MR
+CJ #2007
+;	IF @MR4000:EM650 <> 0 THEN
+;
+LD CR2002                ; 常時ON
+LDA EM650                ; Task6 Main2@MR
+CON
+EXT
+CON
+STA.L Z12
+LD<> @MR4000:Z12 #0      ; AUTO Main2
+NCJ #2008
+;		BREAK
+;
+LD CR2002                ; 常時ON
+CJ #2009
+;	END IF	
+;
+LABEL #2008
+;NEXT	
+;
+LD CR2002                ; 常時ON
+LDA EM650                ; Task6 Main2@MR
+CON
+ADD #16
+CON
+STA EM650                ; Task6 Main2@MR
+LDB CR2009               ; 演算結果が負
+CJ #2006
+LABEL #2009
+LABEL #2007
+;IF EM650 < 80 THEN
+;
+LD< EM650 #80            ; Task6 Main2@MR
+NCJ #2010
+;	EM651 = (EM650 / 16) * 100 + DMX(@MR4000:EM650) + #4000
+;
+;;Warning[1103]: "=": (符号付き32ビット整数型->符号無し16ビット整数型) 代入によりデータが欠落する可能性があります。
+LD CR2002                ; 常時ON
+LDA EM650                ; Task6 Main2@MR
+CON
+EXT
+CON
+STA.L Z12
+CON
+LDA @MR4000:Z12          ; AUTO Main2
+CON
+DMX
+CON
+STA @VM3
+CON
+LDA EM650                ; Task6 Main2@MR
+CON
+EXT
+CON
+EXT.L
+CON
+DIV.L +16
+CON
+MUL.L +100
+CON
+STA.L @VM4
+CON
+LDA @VM3
+CON
+EXT
+CON
+ADD.L @VM4
+CON
+ADD.L +4000
+CON
+STA EM651                ; Task6 Main2@MR
+;END IF
+;
+LABEL #2010
+;EM650 = EM650 + 16		
+;
+;;Warning[1103]: "=": (符号付き32ビット整数型->符号無し16ビット整数型) 代入によりデータが欠落する可能性があります。
+LD CR2002                ; 常時ON
+LDA EM650                ; Task6 Main2@MR
+CON
+EXT
+CON
+ADD.L +16
+CON
+STA EM650                ; Task6 Main2@MR
+;IF EM650 > 80 THEN
+;
+LD> EM650 #80            ; Task6 Main2@MR
+NCJ #2011
+;	EM650 = 0	
+;
+LD CR2002                ; 常時ON
+MOV #0 EM650             ; Task6 Main2@MR
+;END IF
+LABEL #2011
+LABEL #1001
+;
+;ON STG SubRoutine
+;TYPE EM652.U,EM653.U,@MR4500.U
+;	
+;FOR EM652 = EM652 TO 320 STEP 16
+;	IF @MR4500:EM652 <> 0 THEN
+;		BREAK
+;	END IF	
+;NEXT
+;		
+;IF EM652 < 320 THEN
+;	EM653 = (EM652 / 16) * 100 + DMX(@MR4500:EM652) + #4500
+;END IF
+;		
+;EM652 = EM652 + 16	
+;
+;IF EM652 > 320 THEN
+;   EM652 = 0	
+;END IF
+LDP @MR000
+NCJ #1002
+;TYPE EM652.U,EM653.U,@MR4500.U
+;
+;FOR EM652 = EM652 TO 320 STEP 16
+;
+LD CR2002                ; 常時ON
+MOV EM652 EM652          ; Task6 Sub@MR  Task6 Sub@MR
+LABEL #2012
+LD> EM652 #320           ; Task6 Sub@MR
+CJ #2013
+;	IF @MR4500:EM652 <> 0 THEN
+;
+LD CR2002                ; 常時ON
+LDA EM652                ; Task6 Sub@MR
+CON
+EXT
+CON
+STA.L Z12
+LD<> @MR4500:Z12 #0      ; ①SUB_RB9/Move
+NCJ #2014
+;		BREAK
+;
+LD CR2002                ; 常時ON
+CJ #2015
+;	END IF	
+;
+LABEL #2014
+;NEXT
+;
+LD CR2002                ; 常時ON
+LDA EM652                ; Task6 Sub@MR
+CON
+ADD #16
+CON
+STA EM652                ; Task6 Sub@MR
+LDB CR2009               ; 演算結果が負
+CJ #2012
+LABEL #2015
+LABEL #2013
+;IF EM652 < 320 THEN
+;
+LD< EM652 #320           ; Task6 Sub@MR
+NCJ #2016
+;	EM653 = (EM652 / 16) * 100 + DMX(@MR4500:EM652) + #4500
+;
+;;Warning[1103]: "=": (符号付き32ビット整数型->符号無し16ビット整数型) 代入によりデータが欠落する可能性があります。
+LD CR2002                ; 常時ON
+LDA EM652                ; Task6 Sub@MR
+CON
+EXT
+CON
+STA.L Z12
+CON
+LDA @MR4500:Z12          ; ①SUB_RB9/Move
+CON
+DMX
+CON
+STA @VM6
+CON
+LDA EM652                ; Task6 Sub@MR
+CON
+EXT
+CON
+EXT.L
+CON
+DIV.L +16
+CON
+MUL.L +100
+CON
+STA.L @VM7
+CON
+LDA @VM6
+CON
+EXT
+CON
+ADD.L @VM7
+CON
+ADD.L +4500
+CON
+STA EM653                ; Task6 Sub@MR
+;END IF
+;
+LABEL #2016
+;EM652 = EM652 + 16	
+;
+;;Warning[1103]: "=": (符号付き32ビット整数型->符号無し16ビット整数型) 代入によりデータが欠落する可能性があります。
+LD CR2002                ; 常時ON
+LDA EM652                ; Task6 Sub@MR
+CON
+EXT
+CON
+ADD.L +16
+CON
+STA EM652                ; Task6 Sub@MR
+;IF EM652 > 320 THEN
+;
+LD> EM652 #320           ; Task6 Sub@MR
+NCJ #2017
+;   EM652 = 0	
+;
+LD CR2002                ; 常時ON
+MOV #0 EM652             ; Task6 Sub@MR
+;END IF
+LABEL #2017
+LABEL #1002
+;
+;<h1/>Task_Init/ﾀｽｸ初期化
+;[本STG内容]
+;・本Task起動時に必要な初期化処理を記述して下さい
+;・起動Taskの全Init処理終了後、Task_StartのSTGが起動します
+STG LR806                ; _Grp1_Task6_Init.STG
+ENDS
+;<h1/>Task_Start/ﾀｽｸ開始
+;[本STG内容]
+;・Task起動後、以下運転ﾓｰﾄﾞに従い、各STGにJMPします
+;【HOME】	→	LR5200
+;【AUTO】	→	LR5400
+;【MAINTE】	→	LR5600
+;・本STGは追記、修正不要です
+STG LR406                ; _Grp1_Task6_Start.STG
+MPS
+AND R46101               ; _原点復帰中　ﾓｰﾄﾞﾌﾗｸﾞ
+JMP LR5206               ; _Grp1_Task6_HOME.STG
+MRD
+AND R46100               ; _自動運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+JMP LR5406               ; _Grp1_Task6_AUTO.STG
+MPP
+AND R46102               ; _ﾒﾝﾃﾅﾝｽ運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+JMP LR5606               ; _Grp1_Task6_MAINTE.STG
+;<h1/>Task_Finish/ﾀｽｸ終了
+;[本STG内容]
+;・各Taskの終了STGになります
+;・運転ﾓｰﾄﾞに係わらず終了時は本STGを経由して終了して下さい
+;・本STGは追記、修正不要です
+STG LR606                ; _Grp1_Task6_Fin.STG
+MPS
+LDB R41206               ; TASK6 PAUSE 要求
+ANB @MR001               ; TASK6　ERROR
+ANL
+RES R42606               ; Grp1_Task6_ﾎﾟｰｽﾞ許可
+CON
+RES R41006               ; _Grp1_Task6_起動中ﾌﾗｸﾞ
+CON
+ENDS
+MPP
+AND R41206               ; TASK6 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+;<h1/>HOME/原点復帰
+;[本STG内容]
+;・STG @MR1000の続きから各Taskの原点復帰動作を記述する
+;・動作終了時は@MR1515にJMPする事
+STG LR5206               ; _Grp1_Task6_HOME.STG
+JMP @MR1000              ; HOME
+STG @MR1000              ; HOME
+RES MR20006              ; TASK6復帰完了
+CON
+SET @MR1002              ; HOME中
+CON
+JMP @MR1003
+;ﾌｨﾙﾑﾁｬｯｸ位置確認
+STG @MR1003
+MPS
+LD R4308                 ; ﾌｨﾙﾑﾁｬｯｸ下降側
+ANB R4309                ; ﾌｨﾙﾑﾁｬｯｸ上昇側
+ANL
+JMP @MR1007
+MRD
+LDB R4308                ; ﾌｨﾙﾑﾁｬｯｸ下降側
+AND R4309                ; ﾌｨﾙﾑﾁｬｯｸ上昇側
+ANL
+JMP @MR1100
+MPP
+LDB R4308                ; ﾌｨﾙﾑﾁｬｯｸ下降側
+ANB R4309                ; ﾌｨﾙﾑﾁｬｯｸ上昇側
+LD R4308                 ; ﾌｨﾙﾑﾁｬｯｸ下降側
+AND R4309                ; ﾌｨﾙﾑﾁｬｯｸ上昇側
+ORL
+ANL
+JMP @MR1004
+;Error 165 ﾌｨﾙﾑﾁｬｯｸ上下位置異常(RB9)
+STG @MR1004
+ANB R39900               ; RB動作中
+MPS
+LDB R41206               ; TASK6 PAUSE 要求
+ANB R39004               ; ｴﾗｰ中
+ANL
+SET R39004               ; ｴﾗｰ中
+CON
+DW $7000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #165 @DM1             ; ErrorNo /ERROR_DISP
+CON
+DW #4308 @DM2            ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task6 ERROR
+CON
+JMP @MR1005
+MPP
+AND R41206               ; TASK6 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR1006
+SET @MR1900              ; Main1 HALT許可
+CON
+AND @MR101               ; Task6 ERROR_End
+RES @MR101               ; Task6 ERROR_End
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+AND @MR105               ; SW1
+JMP @MR1003
+;ﾌｨﾙﾑ有無確認
+STG @MR1007
+MPS
+LDB R41206               ; TASK6 PAUSE 要求
+ANB MR20109              ; 吸着確認中
+ANL
+SET MR20109              ; 吸着確認中
+CON
+SET @MR5200              ; ⑥SUB_ﾌｨﾙﾑ無確認
+CON
+JMP @MR1008
+MPP
+AND R41206               ; TASK6 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR1008
+AND @MR5201              ; ⑥SUB_ﾌｨﾙﾑ無確認完了
+RES MR20109              ; 吸着確認中
+CON
+RES @MR5201              ; ⑥SUB_ﾌｨﾙﾑ無確認完了
+CON
+JMP @MR1009
+STG @MR1009
+MPS
+AND DM2000.3             ; ﾄﾞﾗｲ運転有効/無効(ON有効)
+MPS
+AND R4611                ; ﾌｨﾙﾑ有無OUT2
+RES MR20109              ; 吸着確認中
+CON
+JMP @MR1100
+MPP
+ANB R4611                ; ﾌｨﾙﾑ有無OUT2
+JMP @MR1010
+MPP
+ANB DM2000.3             ; ﾄﾞﾗｲ運転有効/無効(ON有効)
+MPS
+AND= DM20036 #1          ; RB9フィルム剥がし有無記憶(1=有り
+RES MR7410               ; ﾌｨﾙﾑﾁｬｯｸ下降
+CON
+SET MR7411               ; ﾌｨﾙﾑﾁｬｯｸ上昇
+CON
+JMP @MR1010
+MPP
+AND= DM20036 #0          ; RB9フィルム剥がし有無記憶(1=有り
+RES MR20109              ; 吸着確認中
+CON
+JMP @MR1100
+;Error 166 フィルム除材要求(フィルム剥ぎ取り)
+STG @MR1010
+ANB R39900               ; RB動作中
+MPS
+LDB R41206               ; TASK6 PAUSE 要求
+ANB R39004               ; ｴﾗｰ中
+ANL
+SET R39004               ; ｴﾗｰ中
+CON
+DW $4000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #166 @DM1             ; ErrorNo /ERROR_DISP
+CON
+DW #4610 @DM2            ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task6 ERROR
+CON
+JMP @MR1011
+MPP
+AND R41206               ; TASK6 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR1011
+SET @MR1900              ; Main1 HALT許可
+CON
+AND @MR101               ; Task6 ERROR_End
+RES @MR101               ; Task6 ERROR_End
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+AND @MR105               ; SW1
+DW #0 DM20036            ; RB9フィルム剥がし有無記憶(1=有り
+CON
+JMP @MR1100
+;吸着OFF
+STG @MR1100
+SET MR7610               ; 剥離ﾌｨﾙﾑ有無吸着OFF
+CON
+RES MR7609               ; 剥離ﾌｨﾙﾑ有無吸着ON
+CON
+RES MR7611               ; 剥離ﾌｨﾙﾑ有無真空破壊ON
+CON
+JMP @MR1101
+;ﾌｨﾙﾑﾁｬｯｸ上昇
+STG @MR1101
+SET MR7411               ; ﾌｨﾙﾑﾁｬｯｸ上昇
+CON
+RES MR7410               ; ﾌｨﾙﾑﾁｬｯｸ下降
+CON
+MPS
+LDB MR4309               ; ﾌｨﾙﾑﾁｬｯｸ上昇側ERR
+ANB R4308                ; ﾌｨﾙﾑﾁｬｯｸ下降側
+AND R4309                ; ﾌｨﾙﾑﾁｬｯｸ上昇側
+ANL
+JMP @MR1102
+MPP
+LD MR4309                ; ﾌｨﾙﾑﾁｬｯｸ上昇側ERR
+AND R41206               ; TASK6 PAUSE 要求
+ANL
+SET @MR1900              ; Main1 HALT許可
+;ﾌｨﾙﾑﾁｬｯｸ後退
+STG @MR1102
+SET MR7409               ; ﾌｨﾙﾑﾁｬｯｸ後退
+CON
+RES MR7408               ; ﾌｨﾙﾑﾁｬｯｸ前進
+CON
+MPS
+LDB MR4307               ; ﾌｨﾙﾑﾁｬｯｸ後退側ERR
+ANB R4306                ; ﾌｨﾙﾑﾁｬｯｸ前進側
+AND R4307                ; ﾌｨﾙﾑﾁｬｯｸ後退側
+ANL
+JMP @MR1103
+MPP
+LD MR4307                ; ﾌｨﾙﾑﾁｬｯｸ後退側ERR
+AND R41206               ; TASK6 PAUSE 要求
+ANL
+SET @MR1900              ; Main1 HALT許可
+;RB10位置確認
+STG @MR1103
+MPS
+AND>=.L DM11072 +8000    ; RB10 現在位置
+JMP @MR1200
+MPP
+AND<.L DM11072 +8000     ; RB10 現在位置
+MPS
+LD>=.L DM11000 +24000    ; RB1 現在位置下位
+AND<=.L DM11000 +29000   ; RB1 現在位置下位
+ANL
+MPS
+AND>=.L DM11000 +24000   ; RB1 現在位置下位
+SET MR20205              ; TASK6→2負方向退避要求
+CON
+JMP @MR1104
+MPP
+AND<=.L DM11000 +29000   ; RB1 現在位置下位
+SET MR20204              ; TASK6→2正方向退避要求
+CON
+JMP @MR1104
+MPP
+LD<.L DM11000 +24000     ; RB1 現在位置下位
+OR>.L DM11000 +29000     ; RB1 現在位置下位
+ANL
+JMP @MR1200
+;RB1退避待ち
+STG @MR1104
+MPS
+LDB R41206               ; TASK6 PAUSE 要求
+AND MR20206              ; TASK2→6退避完了
+ANL
+SET MR20204              ; TASK6→2正方向退避要求
+CON
+RES MR20205              ; TASK6→2負方向退避要求
+CON
+JMP @MR1105
+MPP
+AND R41206               ; TASK6 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR1105
+MPS
+LDB R41206               ; TASK6 PAUSE 要求
+ANB MR20206              ; TASK2→6退避完了
+ANL
+JMP @MR1103
+MPP
+AND R41206               ; TASK6 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+;RB10 ﾌｨﾙﾑ回収 移動 待機位置
+STG @MR1200
+DW #1 EM1318             ; RB10Target Pos
+CON
+SET @MR4700              ; ③SUB_RB10/Move
+CON
+JMP @MR1201
+STG @MR1201
+AND @MR4701              ; ③SUB_RB10/Move完了
+RES @MR4701              ; ③SUB_RB10/Move完了
+CON
+JMP @MR1203
+;TASK6→2復帰許可
+STG @MR1203
+SET MR20203              ; TASK6→2復帰許可
+CON
+JMP @MR1204
+STG @MR1204
+MPS
+LDB R41206               ; TASK6 PAUSE 要求
+AND MR20002              ; TASK2復帰完了
+ANL
+RES MR20203              ; TASK6→2復帰許可
+CON
+JMP @MR1205
+MPP
+AND R41206               ; TASK6 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+;RB9 ﾌｨﾙﾑ剥がし 原点復帰
+STG @MR1205
+SET @MR4600              ; ②SUB_RB9/Home
+CON
+JMP @MR1206
+STG @MR1206
+AND @MR4601              ; ②SUB_RB9/Home完了
+RES @MR4601              ; ②SUB_RB9/Home完了
+CON
+JMP @MR1207
+;RB9 ﾌｨﾙﾑ剥がし 移動 待機位置
+STG @MR1207
+DW #1 EM1316             ; RB9Target Pos
+CON
+SET @MR4500              ; ①SUB_RB9/Move
+CON
+JMP @MR1208
+STG @MR1208
+AND @MR4501              ; ①SUB_RB9/Move完了
+RES @MR4501              ; ①SUB_RB9/Move完了
+CON
+JMP @MR1209
+;ｲｵﾅｲｻﾞOFF
+STG @MR1209
+SET MR7413               ; (ｲｵﾅｲｻﾞOFF)
+CON
+RES MR7412               ; ｲｵﾅｲｻﾞON
+CON
+JMP @MR1210
+;RB10 ﾌｨﾙﾑ回収原点復帰
+STG @MR1210
+SET @MR4800              ; ④SUB_RB10/Home
+CON
+JMP @MR1211
+STG @MR1211
+AND @MR4801              ; ④SUB_RB10/Home完了
+RES @MR4801              ; ④SUB_RB10/Home完了
+CON
+JMP @MR1212
+;RB10 ﾌｨﾙﾑ回収 移動 待機位置
+STG @MR1212
+DW #1 EM1318             ; RB10Target Pos
+CON
+SET @MR4700              ; ③SUB_RB10/Move
+CON
+JMP @MR1213
+STG @MR1213
+AND @MR4701              ; ③SUB_RB10/Move完了
+RES @MR4701              ; ③SUB_RB10/Move完了
+CON
+JMP @MR1515              ; HOME END
+;終了
+STG @MR1515              ; HOME END
+MPS
+LDB R41206               ; TASK6 PAUSE 要求
+ANB @MR001               ; TASK6　ERROR
+ANL
+SET MR20006              ; TASK6復帰完了
+CON
+RES @MR1002              ; HOME中
+CON
+JMP LR606                ; _Grp1_Task6_Fin.STG
+MPP
+AND R41206               ; TASK6 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+;<h1/>AUTO/自動動作
+STG LR5406               ; _Grp1_Task6_AUTO.STG
+RES MR20606              ; Task6 ｽﾀｰﾄﾌﾗｸﾞ
+CON
+JMP @MR3000              ; AUTO Main1
+;<h1/>Auto-Main1/Autoﾒｲﾝﾙｰﾁﾝ1
+;[本STG内容]
+;・各TaskのAUTO動作を記述して下さい
+;・動作ﾓｰﾄﾞは「AUTOAC」に格納されています(1～32)
+;・@MR3000:AUTO_Main1開始、@MR3001:AUTO_Main1完了、@MR3002:AUTO_Main1動作中
+STG @MR3000              ; AUTO Main1
+MPS
+ANB R47800               ; _Group1　ﾒﾝﾃ動作定停止移行中
+MPS
+ANB R57306               ; Task6 停止要求
+SET @MR3002              ; AUTO Main1 Busy
+CON
+JMP @MR3003
+MPP
+AND R57306               ; Task6 停止要求
+JMP @MR3915              ; AUTO END
+MPP
+AND R47800               ; _Group1　ﾒﾝﾃ動作定停止移行中
+JMP @MR3915              ; AUTO END
+;Task6 ｽﾀｰﾄﾌﾗｸﾞ待ち
+STG @MR3003
+MPS
+ANB R41206               ; TASK6 PAUSE 要求
+MPS
+LD R57306                ; Task6 停止要求
+ORB R57306               ; Task6 停止要求
+ANB R41003               ; _Grp1_Task3_起動中ﾌﾗｸﾞ
+ANL
+JMP @MR3915              ; AUTO END
+MPP
+LD R41003                ; _Grp1_Task3_起動中ﾌﾗｸﾞ
+AND MR20606              ; Task6 ｽﾀｰﾄﾌﾗｸﾞ
+ANL
+JMP @MR3005
+MPP
+AND R41206               ; TASK6 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+;TASK3→6 フィルム剥ぎ取り要求待ち
+STG @MR3005
+MPS
+ANB R41206               ; TASK6 PAUSE 要求
+MPS
+AND MR20314              ; TASK3→6 フィルム剥ぎ取り要求
+SET MR20315              ; TASK6→3 フィルム剥ぎ取り中
+CON
+JMP @MR3006
+MPP
+LDB MR20314              ; TASK3→6 フィルム剥ぎ取り要求
+AND MR20212              ; TASK2→6 不良フィルム廃棄要求
+ANL
+JMP @MR3200
+MPP
+AND R41206               ; TASK6 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR3006
+MPS
+LDB R41206               ; TASK6 PAUSE 要求
+ANB MR20314              ; TASK3→6 フィルム剥ぎ取り要求
+ANL
+JMP @MR3300
+MPP
+AND R41206               ; TASK6 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+;<h1/> 不良ﾌｨﾙﾑ廃棄
+;ﾌｨﾙﾑ廃棄棒有無確認
+STG @MR3200
+SET @MR5500              ; ⑨SUB_ﾌｨﾙﾑ廃棄棒有無確認
+CON
+JMP @MR3201
+STG @MR3201
+AND @MR5501              ; ⑨SUB_ﾌｨﾙﾑ廃棄棒有無確認完了
+RES @MR5501              ; ⑨SUB_ﾌｨﾙﾑ廃棄棒有無確認完了
+CON
+JMP @MR3202
+;ﾌｨﾙﾑ回収満杯確認
+STG @MR3202
+SET @MR5400              ; ⑧SUB_RB10ﾌｨﾙﾑ回収満杯確認
+CON
+JMP @MR3203
+STG @MR3203
+AND @MR5401              ; ⑧SUB_RB10ﾌｨﾙﾑ回収満杯確認完了
+RES @MR5401              ; ⑧SUB_RB10ﾌｨﾙﾑ回収満杯確認完了
+CON
+JMP @MR3204
+;TASK6→2 不良ﾌｨﾙﾑ廃棄中ON
+STG @MR3204
+SET MR20213              ; TASK6→2 不良フィルム廃棄中
+CON
+JMP @MR3205
+STG @MR3205
+MPS
+LDB R41206               ; TASK6 PAUSE 要求
+ANB MR20212              ; TASK2→6 不良フィルム廃棄要求
+ANL
+RES MR20213              ; TASK6→2 不良フィルム廃棄中
+CON
+JMP @MR3206
+MPP
+AND R41206               ; TASK6 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+;不良ﾌｨﾙﾑ回収動作
+STG @MR3206
+SET @MR5600              ; ⑩SUB_不良ﾌｨﾙﾑ回収動作
+CON
+JMP @MR3207
+STG @MR3207
+AND @MR5601              ; ⑩SUB_不良ﾌｨﾙﾑ回収動作完了
+RES @MR5601              ; ⑩SUB_不良ﾌｨﾙﾑ回収動作完了
+CON
+JMP @MR3208
+;TASK6→2 不良フィルム廃棄中ON
+STG @MR3208
+SET MR20214              ; TASK6→2 不良フィルム廃棄完了
+CON
+JMP @MR3209
+STG @MR3209
+MPS
+LDB R41206               ; TASK6 PAUSE 要求
+AND MR20215              ; TASK2→6 不良フィルム廃棄後退避
+ANL
+RES MR20214              ; TASK6→2 不良フィルム廃棄完了
+CON
+JMP @MR3210
+MPP
+AND R41206               ; TASK6 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR3210
+MPS
+LDB R41206               ; TASK6 PAUSE 要求
+ANB MR20215              ; TASK2→6 不良フィルム廃棄後退避
+ANL
+JMP @MR3211
+MPP
+AND R41206               ; TASK6 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+; 先頭へ
+STG @MR3211
+JMP @MR3005
+;<h1/> ﾌｨﾙﾑ剥ぎ取り
+STG @MR3300
+SET @MR4900              ; ⑤SUB_ﾌｨﾙﾑ剥ぎ取り
+CON
+JMP @MR3301
+STG @MR3301
+AND @MR4901              ; ⑤SUB_ﾌｨﾙﾑ剥ぎ取り完了
+RES @MR4901              ; ⑤SUB_ﾌｨﾙﾑ剥ぎ取り完了
+CON
+JMP @MR3302
+;TASK6→3 フィルム剥ぎ取り中OFF
+STG @MR3302
+JMP @MR3303
+STG @MR3303
+MPS
+AND= DM20036 #1          ; RB9フィルム剥がし有無記憶(1=有り
+JMP @MR3304
+MPP
+AND= DM20036 #0          ; RB9フィルム剥がし有無記憶(1=有り
+MPS
+AND R46100               ; _自動運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+SET MR20812              ; フィルム剥ぎ取り不良(溶着不良)
+CON
+RES MR20315              ; TASK6→3 フィルム剥ぎ取り中
+CON
+JMP @MR3005
+MPP
+AND R46102               ; _ﾒﾝﾃﾅﾝｽ運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+JMP @MR2301
+;剥ぎ取り後ﾌｨﾙﾑ確認
+STG @MR3304
+MPS
+LDB R41206               ; TASK6 PAUSE 要求
+ANB MR20109              ; 吸着確認中
+ANL
+SET MR20109              ; 吸着確認中
+CON
+SET @MR5100              ; ⑥SUB_ﾌｨﾙﾑ有確認
+CON
+JMP @MR3305
+MPP
+AND R41206               ; TASK6 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR3305
+AND @MR5101              ; ⑥SUB_ﾌｨﾙﾑ有確認完了
+RES MR20109              ; 吸着確認中
+CON
+RES @MR5101              ; ⑥SUB_ﾌｨﾙﾑ有確認完了
+CON
+JMP @MR3306
+STG @MR3306
+MPS
+AND= DM20036 #1          ; RB9フィルム剥がし有無記憶(1=有り
+RES MR20315              ; TASK6→3 フィルム剥ぎ取り中
+CON
+MPS
+AND R46100               ; _自動運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+JMP @MR3401
+MPP
+AND R46102               ; _ﾒﾝﾃﾅﾝｽ運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+JMP @MR2301
+MPP
+AND= DM20036 #0          ; RB9フィルム剥がし有無記憶(1=有り
+JMP @MR3307
+;Error 161 ﾌｨﾙﾑ未検出(RB9ﾌｨﾙﾑ剥がし)
+STG @MR3307
+ANB R39900               ; RB動作中
+MPS
+LDB R41206               ; TASK6 PAUSE 要求
+ANB R39004               ; ｴﾗｰ中
+ANL
+SET R39004               ; ｴﾗｰ中
+CON
+DW $7400 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #161 @DM1             ; ErrorNo /ERROR_DISP
+CON
+DW #4611 @DM2            ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task6 ERROR
+CON
+JMP @MR3308
+MPP
+AND R41206               ; TASK6 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR3308
+SET @MR1900              ; Main1 HALT許可
+CON
+AND @MR101               ; Task6 ERROR_End
+RES @MR101               ; Task6 ERROR_End
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+MPS
+AND @MR105               ; SW1
+JMP @MR3304
+MPP
+AND @MR106               ; SW2
+RES MR20315              ; TASK6→3 フィルム剥ぎ取り中
+CON
+JMP @MR3401
+;<h1/>  ※除材選択
+;ﾌｨﾙﾑﾁｬｯｸ上昇(開)
+;ﾌｨﾙﾑ吸着OFF
+;ﾌｨﾙﾑﾁｬｯｸ後退
+;ﾌｨﾙﾑ廃棄棒有無確認
+STG @MR3401
+SET @MR5500              ; ⑨SUB_ﾌｨﾙﾑ廃棄棒有無確認
+CON
+JMP @MR3402
+STG @MR3402
+AND @MR5501              ; ⑨SUB_ﾌｨﾙﾑ廃棄棒有無確認完了
+RES @MR5501              ; ⑨SUB_ﾌｨﾙﾑ廃棄棒有無確認完了
+CON
+JMP @MR3403
+;ﾌｨﾙﾑ回収満杯確認
+STG @MR3403
+SET @MR5400              ; ⑧SUB_RB10ﾌｨﾙﾑ回収満杯確認
+CON
+JMP @MR3404
+STG @MR3404
+AND @MR5401              ; ⑧SUB_RB10ﾌｨﾙﾑ回収満杯確認完了
+RES @MR5401              ; ⑧SUB_RB10ﾌｨﾙﾑ回収満杯確認完了
+CON
+JMP @MR3500
+;<h1/> 剥ぎ取り後ﾌｨﾙﾑ廃棄
+STG @MR3500
+SET @MR5300              ; ⑦SUB_ﾌｨﾙﾑ廃棄動作
+CON
+JMP @MR3501
+STG @MR3501
+AND @MR5301              ; ⑦SUB_ﾌｨﾙﾑ廃棄動作完了
+RES @MR5301              ; ⑦SUB_ﾌｨﾙﾑ廃棄動作完了
+CON
+JMP @MR3502
+;廃棄後ﾌｨﾙﾑ確認
+STG @MR3502
+MPS
+LDB R41206               ; TASK6 PAUSE 要求
+ANB MR20109              ; 吸着確認中
+ANL
+SET MR20109              ; 吸着確認中
+CON
+SET @MR5100              ; ⑥SUB_ﾌｨﾙﾑ有確認
+CON
+JMP @MR3503
+MPP
+AND R41206               ; TASK6 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR3503
+AND @MR5101              ; ⑥SUB_ﾌｨﾙﾑ有確認完了
+RES MR20109              ; 吸着確認中
+CON
+RES @MR5101              ; ⑥SUB_ﾌｨﾙﾑ有確認完了
+CON
+JMP @MR3504
+STG @MR3504
+MPS
+AND DM2000.3             ; ﾄﾞﾗｲ運転有効/無効(ON有効)
+JMP @MR3507
+MPP
+ANB DM2000.3             ; ﾄﾞﾗｲ運転有効/無効(ON有効)
+MPS
+AND= DM20036 #1          ; RB9フィルム剥がし有無記憶(1=有り
+JMP @MR3505
+MPP
+AND= DM20036 #0          ; RB9フィルム剥がし有無記憶(1=有り
+JMP @MR3507
+;Error 164 ﾌｨﾙﾑ廃棄失敗(RB10ﾌｨﾙﾑ回収)
+STG @MR3505
+ANB R39900               ; RB動作中
+MPS
+LDB R41206               ; TASK6 PAUSE 要求
+ANB R39004               ; ｴﾗｰ中
+ANL
+SET R39004               ; ｴﾗｰ中
+CON
+DW $7000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #164 @DM1             ; ErrorNo /ERROR_DISP
+CON
+DW #4610 @DM2            ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task6 ERROR
+CON
+JMP @MR3506
+MPP
+AND R41206               ; TASK6 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR3506
+SET @MR1900              ; Main1 HALT許可
+CON
+AND @MR101               ; Task6 ERROR_End
+RES @MR101               ; Task6 ERROR_End
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+AND @MR105               ; SW1
+JMP @MR3502
+;ﾌｨﾙﾑ吸着OFF＆ﾌｨﾙﾑ回収枚数INC
+STG @MR3507
+MPS
+ANB DM2000.3             ; ﾄﾞﾗｲ運転有効/無効(ON有効)
+INC.L DM20037            ; RB10フィルム回収枚数
+MPP
+SET MR7610               ; 剥離ﾌｨﾙﾑ有無吸着OFF
+CON
+RES MR7609               ; 剥離ﾌｨﾙﾑ有無吸着ON
+CON
+RES MR7611               ; 剥離ﾌｨﾙﾑ有無真空破壊ON
+CON
+JMP @MR3508
+;RB10 ﾌｨﾙﾑ回収 移動 待機位置
+STG @MR3508
+DW #1 EM1318             ; RB10Target Pos
+CON
+SET @MR4700              ; ③SUB_RB10/Move
+CON
+JMP @MR3509
+STG @MR3509
+AND @MR4701              ; ③SUB_RB10/Move完了
+RES @MR4701              ; ③SUB_RB10/Move完了
+CON
+JMP @MR3510
+;RB9 ﾌｨﾙﾑ剥がし 移動 待機位置
+STG @MR3510
+DW #1 EM1316             ; RB9Target Pos
+CON
+SET @MR4500              ; ①SUB_RB9/Move
+CON
+JMP @MR3511
+STG @MR3511
+AND @MR4501              ; ①SUB_RB9/Move完了
+RES @MR4501              ; ①SUB_RB9/Move完了
+CON
+JMP @MR3512
+;<h1/> 先頭へ
+STG @MR3512
+MPS
+AND R46100               ; _自動運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+JMP @MR3003
+MPP
+AND R46102               ; _ﾒﾝﾃﾅﾝｽ運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+JMP @MR2301
+;<h1/>Auto終了処理
+STG @MR3915              ; AUTO END
+RES @MR3002              ; AUTO Main1 Busy
+CON
+MPS
+LDB R41206               ; TASK6 PAUSE 要求
+ANB @MR001               ; TASK6　ERROR
+ANB @MR4002              ; Main2 Busy
+ANL
+ZRES @MR900 @MR915
+CON
+JMP LR606                ; _Grp1_Task6_Fin.STG
+MPP
+AND R41206               ; TASK6 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+;<h1/>Auto-Main2/Autoﾒｲﾝﾙｰﾁﾝ2
+;[本STG内容]
+;・@MR4000の起動はMain1にて行う事
+;・@MR4000:AUTO_Main2開始、@MR4001:AUTO_Main2完了、@MR4002:AUTO_Main2動作中
+STG @MR4000              ; AUTO Main2
+SET @MR4002              ; Main2 Busy
+CON
+JMP @MR4003
+STG @MR4003
+JMP @MR4415              ; Main2 END
+STG @MR4415              ; Main2 END
+SET @MR4001              ; Main2 END
+CON
+RES @MR4002              ; Main2 Busy
+CON
+ENDS
+;<h1/>MAINTE/ﾒﾝﾃﾅﾝｽ動作
+;[本STG内容]
+;・各TaskのMAINTE動作を記述して下さい
+;・動作ﾓｰﾄﾞは「MAINTEAC*」に格納されています(1～32)
+;・動作終了時は@MR2915にJMPして下さい
+STG LR5606               ; _Grp1_Task6_MAINTE.STG
+JMP @MR2000              ; Mainte
+STG @MR2000              ; Mainte
+SET @MR2002              ; ﾒﾝﾃ中
+CON
+JMP @MR2003
+STG @MR2003
+MPS
+AND= DM4110 #8           ; _Group1　ﾒﾝﾃ動作番号
+JMP @MR2100
+MRD
+AND= DM4110 #11          ; _Group1　ﾒﾝﾃ動作番号
+JMP @MR2004
+MPP
+LD<> DM4110 #8           ; _Group1　ﾒﾝﾃ動作番号
+AND<> DM4110 #11         ; _Group1　ﾒﾝﾃ動作番号
+ANL
+JMP @MR2915              ; Mainte END
+;<h1/> TASK2からﾌｨﾙﾑ回収動作要求待ち
+STG @MR2004
+MPS
+ANB R41206               ; TASK6 PAUSE 要求
+MPS
+AND MR20500              ; TASK2→6 ﾒﾝﾃ_ﾌｨﾙﾑ回収要求
+JMP @MR2005
+MPP
+LDB MR20500              ; TASK2→6 ﾒﾝﾃ_ﾌｨﾙﾑ回収要求
+ANB R41002               ; Grp1_Task2_起動中ﾌﾗｸﾞ
+ANL
+JMP @MR2915              ; Mainte END
+MPP
+AND R41206               ; TASK6 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR2005
+SET MR20501              ; TASK6→2 ﾒﾝﾃ_ﾌｨﾙﾑ回収中
+CON
+JMP @MR2700
+;ﾒﾝﾃ#1_動作
+STG @MR2100
+JMP @MR2101
+;フィルム剥がし動作
+;[[剥離]]フィルムを剥離します。
+;[[廃棄]]剥離したフィルムを回収します。
+;[[定停止]]動作を終了します。
+STG @MR2101
+ANB R39204               ; SELECT_ACT Interlock
+SET R39204               ; SELECT_ACT Interlock
+CON
+MPS
+SET @MR1900              ; Main1 HALT許可
+CON
+DW #10 @DM31             ; ScreenNo /SELECT_ACT
+CON
+DW #17 @DM32             ; Bz_Use /SELECT_ACT
+CON
+DW #18 @DM33             ; SW1_No /SELECT_ACT
+CON
+DW #0 @DM34              ; SW2_No /SELECT_ACT
+CON
+DW #3 @DM35              ; SW3_No /SELECT_ACT
+CON
+DW #0 @DM36              ; SW4_No /SELECT_ACT
+MPP
+SET @MR200               ; Task6 SELECT_ACT
+CON
+JMP @MR2102
+STG @MR2102
+SET @MR1900              ; Main1 HALT許可
+CON
+AND @MR201               ; Task6 SEL_ACT END
+RES @MR201               ; Task6 SEL_ACT END
+CON
+RES R39204               ; SELECT_ACT Interlock
+CON
+MPS
+AND @MR205               ; SW1
+DW #1 @DM10              ; ﾒﾝﾃ動作ｺｰﾄﾞ
+CON
+JMP @MR2200
+MRD
+AND @MR206               ; SW2
+DW #2 @DM10              ; ﾒﾝﾃ動作ｺｰﾄﾞ
+CON
+JMP @MR2200
+MPP
+AND @MR208               ; SW4
+DW #0 @DM10              ; ﾒﾝﾃ動作ｺｰﾄﾞ
+CON
+JMP @MR2914
+;ｽﾃｯﾌﾟor通常　か選択
+STG @MR2200
+MPS
+MSTRT SELECT_POST #1 MyTask #0 @MR2005;自ﾀｽｸ番号
+MPP
+AND @MR2005
+RES @MR2005
+CON
+JMP @MR2202
+LD= @DM10 #1             ; ﾒﾝﾃ動作ｺｰﾄﾞ
+AND DM11007.1
+LD>=.L DM11000 +0        ; RB1 現在位置下位
+OR<=.L DM11000 +28000    ; RB1 現在位置下位
+ANL
+AND DM11087.1
+AND>=.L DM11080 +22950   ; RB11 現在位置下位
+AND<=.L DM11080 +23050   ; RB11 現在位置下位
+ANB R4308                ; ﾌｨﾙﾑﾁｬｯｸ下降側
+AND R4309                ; ﾌｨﾙﾑﾁｬｯｸ上昇側
+AND R4108                ; ﾌﾚｰﾑ押さえ左 下降端
+ANB R4109                ; ﾌﾚｰﾑ押さえ左 上昇端
+AND R4110                ; ﾌﾚｰﾑ押さえ右 下降端
+ANB R4111                ; ﾌﾚｰﾑ押さえ右 上昇端
+AND R4112                ; ﾌﾚｰﾑ押さえ左 前進端
+ANB R4113                ; ﾌﾚｰﾑ押さえ左 後退端
+AND R4114                ; ﾌﾚｰﾑ押さえ右 前進端
+ANB R4115                ; ﾌﾚｰﾑ押さえ右 後退端
+AND DM11071.1
+AND<=.L DM11064 +29700   ; RB9 現在位置
+AND DM11079.1
+AND>=.L DM11072 +18000   ; RB10 現在位置
+OUT @MR500               ; ﾒﾝﾃｺｰﾄﾞ1条件OK
+LD= @DM10 #2             ; ﾒﾝﾃ動作ｺｰﾄﾞ
+AND DM11071.1
+AND<=.L DM11064 +29700   ; RB9 現在位置
+AND DM11007.1
+AND>=.L DM11000 +0       ; RB1 現在位置下位
+AND<=.L DM11000 +20000   ; RB1 現在位置下位
+OUT @MR501               ; ﾒﾝﾃｺｰﾄﾞ2条件OK
+STG @MR2202
+MPS
+TMR @39 #10              ; ﾒﾝﾃ条件NG
+CON
+AND @T39                 ; ﾒﾝﾃ条件NG
+JMP @MR2810
+MPP
+ANB @T39                 ; ﾒﾝﾃ条件NG
+MPS
+LD= @DM10 #1             ; ﾒﾝﾃ動作ｺｰﾄﾞ
+AND @MR500               ; ﾒﾝﾃｺｰﾄﾞ1条件OK
+ANL
+JMP @MR2300
+MPP
+LD= @DM10 #2             ; ﾒﾝﾃ動作ｺｰﾄﾞ
+AND @MR501               ; ﾒﾝﾃｺｰﾄﾞ2条件OK
+ANL
+JMP @MR2400
+;<h1/> ﾒﾝﾃｺｰﾄﾞ1動作/Maintenance code 1 Operation
+STG @MR2300
+JMP @MR3300
+;終了
+STG @MR2301
+JMP @MR2100
+;<h1/> ﾒﾝﾃｺｰﾄﾞ2動作/Maintenance code 2 Operation
+;RB10 ﾌｨﾙﾑ回収 移動 待機位置
+STG @MR2400
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+DW #1 EM1318             ; RB10Target Pos
+CON
+SET @MR4700              ; ③SUB_RB10/Move
+CON
+JMP @MR2401
+STG @MR2401
+AND @MR4701              ; ③SUB_RB10/Move完了
+RES @MR4701              ; ③SUB_RB10/Move完了
+CON
+JMP @MR2402
+STG @MR2402
+JMP @MR3401
+;終了
+STG @MR2403
+JMP @MR2100
+;<h1/> ﾒﾝﾃ_ﾌｨﾙﾑ回収動作
+;ﾌｨﾙﾑ廃棄棒有無確認
+STG @MR2700
+SET @MR5500              ; ⑨SUB_ﾌｨﾙﾑ廃棄棒有無確認
+CON
+JMP @MR2701
+STG @MR2701
+AND @MR5501              ; ⑨SUB_ﾌｨﾙﾑ廃棄棒有無確認完了
+RES @MR5501              ; ⑨SUB_ﾌｨﾙﾑ廃棄棒有無確認完了
+CON
+JMP @MR2702
+;ﾌｨﾙﾑ回収満杯確認
+STG @MR2702
+SET @MR5400              ; ⑧SUB_RB10ﾌｨﾙﾑ回収満杯確認
+CON
+JMP @MR2703
+STG @MR2703
+AND @MR5401              ; ⑧SUB_RB10ﾌｨﾙﾑ回収満杯確認完了
+RES @MR5401              ; ⑧SUB_RB10ﾌｨﾙﾑ回収満杯確認完了
+CON
+JMP @MR2704
+;ﾌｨﾙﾑ廃棄動作
+STG @MR2704
+SET @MR5600              ; ⑩SUB_不良ﾌｨﾙﾑ回収動作
+CON
+JMP @MR2705
+STG @MR2705
+AND @MR5601              ; ⑩SUB_不良ﾌｨﾙﾑ回収動作完了
+RES @MR5601              ; ⑩SUB_不良ﾌｨﾙﾑ回収動作完了
+CON
+JMP @MR2706
+;TASK6→2 ﾒﾝﾃ_ﾌｨﾙﾑ回収中 ﾘｾｯﾄ(完了)
+STG @MR2706
+RES MR20501              ; TASK6→2 ﾒﾝﾃ_ﾌｨﾙﾑ回収中
+CON
+JMP @MR2707
+STG @MR2707
+MPS
+LDB R41206               ; TASK6 PAUSE 要求
+ANB MR20500              ; TASK2→6 ﾒﾝﾃ_ﾌｨﾙﾑ回収要求
+ANL
+JMP @MR2004
+MPP
+AND R41206               ; TASK6 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+;<h1/> ﾒﾝﾃﾅﾝｽｲﾝﾀｰﾛｯｸ
+STG @MR2810
+ANB R39900               ; RB動作中
+MPS
+LDB R41206               ; TASK6 PAUSE 要求
+ANB R39004               ; ｴﾗｰ中
+ANL
+SET R39004               ; ｴﾗｰ中
+CON
+DW $3000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #52 @DM1              ; ErrorNo /ERROR_DISP
+CON
+DW #0 @DM2               ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task6 ERROR
+CON
+JMP @MR2811
+MPP
+AND R41206               ; TASK6 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR2811
+SET @MR1900              ; Main1 HALT許可
+CON
+AND @MR101               ; Task6 ERROR_End
+RES @MR101               ; Task6 ERROR_End
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+AND @MR105               ; SW1
+JMP @MR2003
+;Maintenance 終了
+STG @MR2914
+MCALL MODE_INDI #2
+MCALL HOLD_REQUEST MyGroup;自ｸﾞﾙｰﾌﾟ番号
+DW #211 DM3008           ; _MainTP　切替ﾍﾟｰｼﾞNo
+CON
+JMP @MR2915              ; Mainte END
+STG @MR2915              ; Mainte END
+MPS
+LD R41206                ; TASK6 PAUSE 要求
+ANB @MR001               ; TASK6　ERROR
+ANL
+SET @MR1900              ; Main1 HALT許可
+MPP
+ANB R41206               ; TASK6 PAUSE 要求
+RES @MR2002              ; ﾒﾝﾃ中
+CON
+JMP LR606                ; _Grp1_Task6_Fin.STG
+;<h1/>SubRoutines/ｻﾌﾞﾙｰﾁﾝ
+;[記述方法]
+;・ｻﾌﾞﾙｰﾁﾝは本ﾌﾞｯｸﾏｰｸから下に記述していって下さい
+;・ｻﾌﾞﾙｰﾁﾝは必ずﾌﾞｯｸﾏｰｸを挿入して処理内容を明確にする事
+;<h1/> ①SUB_RB9/Move
+STG @MR4500              ; ①SUB_RB9/Move
+SET @MR4502              ; ①SUB_RB9/Move中
+CON
+JMP @MR4503
+;ｱﾗｰﾑﾘｾｯﾄ &ｻｰﾎﾞON　ｱﾗｰﾑﾘｾｯﾄできない場合は、ｻｰﾎﾞOFFしError発生
+STG @MR4503
+MPS
+BSET DM11271 #3          ; RB9 制御信号
+CON
+BANB DM11071 #3          ; RB9 状態信号
+BSET DM11271 #4          ; RB9 制御信号
+CON
+BAND DM11071 #4          ; RB9 状態信号
+BRES DM11271 #3          ; RB9 制御信号
+CON
+JMP @MR4504
+MPP
+TMR @0 #20               ; RB9Moveｴﾗｰ
+CON
+AND @T0                  ; RB9Moveｴﾗｰ
+BRES DM11271 #3          ; RB9 制御信号
+CON
+BRES DM11271 #4          ; RB9 制御信号
+CON
+JMP @MR4614
+STG @MR4504
+SET R35800               ; RB9 MOVE
+CON
+JMP @MR4505
+STG @MR4505
+AND R35801               ; RB9 MOVE END
+RES R35801               ; RB9 MOVE END
+CON
+JMP @MR4506
+STG @MR4506
+MPS
+ANB R35803               ; RB9 Alarm
+JMP @MR4507
+MPP
+AND R35803               ; RB9 Alarm
+RES R35803               ; RB9 Alarm
+CON
+JMP @MR4614
+;END
+STG @MR4507
+SET @MR4501              ; ①SUB_RB9/Move完了
+CON
+RES @MR4502              ; ①SUB_RB9/Move中
+CON
+ENDS
+;<h1/> ②SUB_RB9/Home
+STG @MR4600              ; ②SUB_RB9/Home
+DW #0 EM1317             ; RB9Now Pos
+CON
+SET @MR4602              ; ②SUB_RB9/Home中
+CON
+JMP @MR4603
+;ｱﾗｰﾑﾘｾｯﾄ &ｻｰﾎﾞON　ｱﾗｰﾑﾘｾｯﾄできない場合は、ｻｰﾎﾞOFFしError発生
+STG @MR4603
+MPS
+BSET DM11271 #3          ; RB9 制御信号
+CON
+BANB DM11071 #3          ; RB9 状態信号
+BSET DM11271 #4          ; RB9 制御信号
+CON
+BAND DM11071 #4          ; RB9 状態信号
+BRES DM11271 #3          ; RB9 制御信号
+CON
+JMP @MR4604
+MPP
+TMR @1 #20               ; RB9Homeｴﾗｰ
+CON
+AND @T1                  ; RB9Homeｴﾗｰ
+BRES DM11271 #3          ; RB9 制御信号
+CON
+BRES DM11271 #4          ; RB9 制御信号
+CON
+JMP @MR4614
+STG @MR4604
+MPS
+BAND DM11071 #1          ; RB9 状態信号
+JMP @MR4607
+MPP
+BANB DM11071 #1          ; RB9 状態信号
+SET R35808               ; RB9 HOME
+CON
+JMP @MR4605
+STG @MR4605
+AND R35809               ; RB9 HOME END
+RES R35809               ; RB9 HOME END
+CON
+JMP @MR4606
+STG @MR4606
+MPS
+ANB R35803               ; RB9 Alarm
+JMP @MR4607
+MPP
+AND R35803               ; RB9 Alarm
+RES R35803               ; RB9 Alarm
+CON
+JMP @MR4614
+;END
+STG @MR4607
+SET @MR4601              ; ②SUB_RB9/Home完了
+CON
+RES @MR4602              ; ②SUB_RB9/Home中
+CON
+ENDS
+;Error 9 RB9動作異常
+STG @MR4614
+ANB R39900               ; RB動作中
+MPS
+LDB R41206               ; TASK6 PAUSE 要求
+ANB R39004               ; ｴﾗｰ中
+ANL
+SET R39004               ; ｴﾗｰ中
+CON
+MPS
+DW $1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #9 @DM1               ; ErrorNo /ERROR_DISP
+CON
+DW #0 @DM2               ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task6 ERROR
+CON
+JMP @MR4615
+MPP
+SET B3990                ; ｱﾗｰﾑ詳細表示
+CON
+LDA DM11070              ; RB9 ｱﾗｰﾑｺｰﾄﾞ
+CON
+STA DM50310              ; RB ｱﾗｰﾑ表示
+MPP
+AND R41206               ; TASK6 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR4615
+SET @MR1900              ; Main1 HALT許可
+CON
+AND @MR101               ; Task6 ERROR_End
+RES @MR101               ; Task6 ERROR_End
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+AND @MR105               ; SW1
+RES B3990                ; ｱﾗｰﾑ詳細表示
+CON
+DW #0 DM50310            ; RB ｱﾗｰﾑ表示
+CON
+MPS
+AND @MR4602              ; ②SUB_RB9/Home中
+JMP @MR4603
+MPP
+AND @MR4502              ; ①SUB_RB9/Move中
+JMP @MR4503
+;<h1/> ③SUB_RB10/Move
+STG @MR4700              ; ③SUB_RB10/Move
+SET @MR4702              ; ③SUB_RB10/Move中
+CON
+JMP @MR4703
+;ｱﾗｰﾑﾘｾｯﾄ &ｻｰﾎﾞON　ｱﾗｰﾑﾘｾｯﾄできない場合は、ｻｰﾎﾞOFFしError発生
+STG @MR4703
+MPS
+BSET DM11279 #3          ; RB10 制御信号
+CON
+BANB DM11079 #3          ; RB10 状態信号
+BSET DM11279 #4          ; RB10 制御信号
+CON
+BAND DM11079 #4          ; RB10 状態信号
+BRES DM11279 #3          ; RB10 制御信号
+CON
+JMP @MR4704
+MPP
+TMR @2 #20               ; RB10Moveｴﾗｰ
+CON
+AND @T2                  ; RB10Moveｴﾗｰ
+BRES DM11279 #3          ; RB10 制御信号
+CON
+BRES DM11279 #4          ; RB10 制御信号
+CON
+JMP @MR4814
+STG @MR4704
+SET R35900               ; RB10 MOVE
+CON
+JMP @MR4705
+STG @MR4705
+AND R35901               ; RB10 MOVE END
+RES R35901               ; RB10 MOVE END
+CON
+JMP @MR4706
+STG @MR4706
+MPS
+ANB R35903               ; RB10 Alarm
+JMP @MR4707
+MPP
+AND R35903               ; RB10 Alarm
+RES R35903               ; RB10 Alarm
+CON
+JMP @MR4814
+;END
+STG @MR4707
+SET @MR4701              ; ③SUB_RB10/Move完了
+CON
+RES @MR4702              ; ③SUB_RB10/Move中
+CON
+ENDS
+;<h1/> ④SUB_RB10/Home
+STG @MR4800              ; ④SUB_RB10/Home
+DW #0 EM1319             ; RB10Now Pos
+CON
+SET @MR4802              ; ④SUB_RB10/Home中
+CON
+JMP @MR4803
+;ｱﾗｰﾑﾘｾｯﾄ &ｻｰﾎﾞON　ｱﾗｰﾑﾘｾｯﾄできない場合は、ｻｰﾎﾞOFFしError発生
+STG @MR4803
+MPS
+BSET DM11279 #3          ; RB10 制御信号
+CON
+BANB DM11079 #3          ; RB10 状態信号
+BSET DM11279 #4          ; RB10 制御信号
+CON
+BAND DM11079 #4          ; RB10 状態信号
+BRES DM11279 #3          ; RB10 制御信号
+CON
+JMP @MR4804
+MPP
+TMR @3 #20               ; RB10Homeｴﾗｰ
+CON
+AND @T3                  ; RB10Homeｴﾗｰ
+BRES DM11279 #3          ; RB10 制御信号
+CON
+BRES DM11279 #4          ; RB10 制御信号
+CON
+JMP @MR4814
+STG @MR4804
+MPS
+BAND DM11079 #1          ; RB10 状態信号
+JMP @MR4807
+MPP
+BANB DM11079 #1          ; RB10 状態信号
+SET R35908               ; RB10 HOME
+CON
+JMP @MR4805
+STG @MR4805
+AND R35909               ; RB10 HOME END
+RES R35909               ; RB10 HOME END
+CON
+JMP @MR4806
+STG @MR4806
+MPS
+ANB R35903               ; RB10 Alarm
+JMP @MR4807
+MPP
+AND R35903               ; RB10 Alarm
+RES R35903               ; RB10 Alarm
+CON
+JMP @MR4814
+;END
+STG @MR4807
+SET @MR4801              ; ④SUB_RB10/Home完了
+CON
+RES @MR4802              ; ④SUB_RB10/Home中
+CON
+ENDS
+;Error 10 RB10動作異常
+STG @MR4814
+ANB R39900               ; RB動作中
+MPS
+LDB R41206               ; TASK6 PAUSE 要求
+ANB R39004               ; ｴﾗｰ中
+ANL
+SET R39004               ; ｴﾗｰ中
+CON
+MPS
+DW $1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #10 @DM1              ; ErrorNo /ERROR_DISP
+CON
+DW #0 @DM2               ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task6 ERROR
+CON
+JMP @MR4815
+MPP
+SET B3990                ; ｱﾗｰﾑ詳細表示
+CON
+LDA DM11078              ; RB10 ｱﾗｰﾑｺｰﾄﾞ
+CON
+STA DM50310              ; RB ｱﾗｰﾑ表示
+MPP
+AND R41206               ; TASK6 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR4815
+SET @MR1900              ; Main1 HALT許可
+CON
+AND @MR101               ; Task6 ERROR_End
+RES @MR101               ; Task6 ERROR_End
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+AND @MR105               ; SW1
+RES B3990                ; ｱﾗｰﾑ詳細表示
+CON
+DW #0 DM50310            ; RB ｱﾗｰﾑ表示
+CON
+MPS
+AND @MR4802              ; ④SUB_RB10/Home中
+JMP @MR4803
+MPP
+AND @MR4702              ; ③SUB_RB10/Move中
+JMP @MR4703
+;<h1/> ⑤SUB_ﾌｨﾙﾑ剥ぎ取り
+STG @MR4900              ; ⑤SUB_ﾌｨﾙﾑ剥ぎ取り
+SET @MR4902              ; ⑤SUB_ﾌｨﾙﾑ剥ぎ取り中
+CON
+JMP @MR4903
+;ﾌｨﾙﾑﾁｬｯｸ後退
+STG @MR4903
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+SET MR7409               ; ﾌｨﾙﾑﾁｬｯｸ後退
+CON
+RES MR7408               ; ﾌｨﾙﾑﾁｬｯｸ前進
+CON
+MPS
+LDB MR4307               ; ﾌｨﾙﾑﾁｬｯｸ後退側ERR
+ANB R4306                ; ﾌｨﾙﾑﾁｬｯｸ前進側
+AND R4307                ; ﾌｨﾙﾑﾁｬｯｸ後退側
+ANL
+JMP @MR4904
+MPP
+LD MR4307                ; ﾌｨﾙﾑﾁｬｯｸ後退側ERR
+AND R41206               ; TASK6 PAUSE 要求
+ANL
+SET @MR1900              ; Main1 HALT許可
+;RB9 ﾌｨﾙﾑ剥がし 移動 剥ぎ取り前位置
+STG @MR4904
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+DW #2 EM1316             ; RB9Target Pos
+CON
+SET @MR4500              ; ①SUB_RB9/Move
+CON
+JMP @MR4905
+STG @MR4905
+AND @MR4501              ; ①SUB_RB9/Move完了
+RES @MR4501              ; ①SUB_RB9/Move完了
+CON
+JMP @MR4906
+;ﾌｨﾙﾑﾁｬｯｸ前進
+STG @MR4906
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+SET MR7408               ; ﾌｨﾙﾑﾁｬｯｸ前進
+CON
+RES MR7409               ; ﾌｨﾙﾑﾁｬｯｸ後退
+CON
+MPS
+LDB MR4306               ; ﾌｨﾙﾑﾁｬｯｸ前進側ERR
+AND R4306                ; ﾌｨﾙﾑﾁｬｯｸ前進側
+ANB R4307                ; ﾌｨﾙﾑﾁｬｯｸ後退側
+ANL
+JMP @MR4907
+MPP
+LD MR4306                ; ﾌｨﾙﾑﾁｬｯｸ前進側ERR
+AND R41206               ; TASK6 PAUSE 要求
+ANL
+SET @MR1900              ; Main1 HALT許可
+;RB9 ﾌｨﾙﾑ剥がし 移動 ﾁｬｯｸ位置
+STG @MR4907
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+DW #3 EM1316             ; RB9Target Pos
+CON
+SET @MR4500              ; ①SUB_RB9/Move
+CON
+JMP @MR4908
+STG @MR4908
+AND @MR4501              ; ①SUB_RB9/Move完了
+RES @MR4501              ; ①SUB_RB9/Move完了
+CON
+JMP @MR4909
+;ﾌｨﾙﾑﾁｬｯｸ下降(閉)
+STG @MR4909
+SET MR7410               ; ﾌｨﾙﾑﾁｬｯｸ下降
+CON
+RES MR7411               ; ﾌｨﾙﾑﾁｬｯｸ上昇
+CON
+MPS
+LDB MR4308               ; ﾌｨﾙﾑﾁｬｯｸ下降側ERR
+AND R4308                ; ﾌｨﾙﾑﾁｬｯｸ下降側
+ANB R4309                ; ﾌｨﾙﾑﾁｬｯｸ上昇側
+ANL
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR4910
+MPP
+LD MR4308                ; ﾌｨﾙﾑﾁｬｯｸ下降側ERR
+AND R41206               ; TASK6 PAUSE 要求
+ANL
+SET @MR1900              ; Main1 HALT許可
+;ﾌｨﾙﾑ吸着ON
+STG @MR4910
+SET MR7609               ; 剥離ﾌｨﾙﾑ有無吸着ON
+CON
+RES MR7610               ; 剥離ﾌｨﾙﾑ有無吸着OFF
+CON
+RES MR7611               ; 剥離ﾌｨﾙﾑ有無真空破壊ON
+CON
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR4911
+;吸着圧力確認
+LD @MR4911
+LD R4610                 ; ﾌｨﾙﾑ有無OUT1
+AND R4611                ; ﾌｨﾙﾑ有無OUT2
+LDB R4610                ; ﾌｨﾙﾑ有無OUT1
+LD R4611                 ; ﾌｨﾙﾑ有無OUT2
+ORB R4611                ; ﾌｨﾙﾑ有無OUT2
+ANL
+ORL
+ANL
+TMR @4 #20               ; wait
+STG @MR4911
+MPS
+AND DM2000.3             ; ﾄﾞﾗｲ運転有効/無効(ON有効)
+JMP @MR4912
+MPP
+ANB DM2000.3             ; ﾄﾞﾗｲ運転有効/無効(ON有効)
+MPS
+AND R4610                ; ﾌｨﾙﾑ有無OUT1
+MPS
+ANB R4611                ; ﾌｨﾙﾑ有無OUT2
+JMP @MR4912
+MPP
+LD R4611                 ; ﾌｨﾙﾑ有無OUT2
+AND @T4                  ; wait
+ANL
+JMP @MR5002
+MPP
+ANB R4610                ; ﾌｨﾙﾑ有無OUT1
+MPS
+LD R4611                 ; ﾌｨﾙﾑ有無OUT2
+AND @T4                  ; wait
+ANL
+JMP @MR5004
+MPP
+LDB R4611                ; ﾌｨﾙﾑ有無OUT2
+AND @T4                  ; wait
+ANL
+JMP @MR5002
+;RB9 ﾌｨﾙﾑ剥がし 移動 剥ぎ取り後位置
+STG @MR4912
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+DW #4 EM1316             ; RB9Target Pos
+CON
+SET @MR4500              ; ①SUB_RB9/Move
+CON
+JMP @MR4913
+STG @MR4913
+AND @MR4501              ; ①SUB_RB9/Move完了
+RES @MR4501              ; ①SUB_RB9/Move完了
+CON
+JMP @MR4914
+;ﾌｨﾙﾑ記憶ｾｯﾄ
+STG @MR4914
+DW #1 DM20036            ; RB9フィルム剥がし有無記憶(1=有り
+CON
+JMP @MR5015
+;Error 160 吸着圧力異常(RB9ﾌｨﾙﾑ剥がし)
+STG @MR5002
+ANB R39900               ; RB動作中
+MPS
+LDB R41206               ; TASK6 PAUSE 要求
+ANB R39004               ; ｴﾗｰ中
+ANL
+SET R39004               ; ｴﾗｰ中
+CON
+DW $7000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #160 @DM1             ; ErrorNo /ERROR_DISP
+CON
+DW #4610 @DM2            ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task6 ERROR
+CON
+JMP @MR5003
+MPP
+AND R41206               ; TASK6 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR5003
+SET @MR1900              ; Main1 HALT許可
+CON
+AND @MR101               ; Task6 ERROR_End
+RES @MR101               ; Task6 ERROR_End
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+AND @MR105               ; SW1
+JMP @MR4911
+;ﾌｨﾙﾑﾁｬｯｸ上昇(開)
+STG @MR5004
+SET MR7411               ; ﾌｨﾙﾑﾁｬｯｸ上昇
+CON
+RES MR7410               ; ﾌｨﾙﾑﾁｬｯｸ下降
+CON
+MPS
+LDB MR4309               ; ﾌｨﾙﾑﾁｬｯｸ上昇側ERR
+ANB R4308                ; ﾌｨﾙﾑﾁｬｯｸ下降側
+AND R4309                ; ﾌｨﾙﾑﾁｬｯｸ上昇側
+ANL
+JMP @MR5005
+MPP
+LD MR4309                ; ﾌｨﾙﾑﾁｬｯｸ上昇側ERR
+AND R41206               ; TASK6 PAUSE 要求
+ANL
+SET @MR1900              ; Main1 HALT許可
+;ﾌｨﾙﾑ吸着OFF
+STG @MR5005
+SET MR7610               ; 剥離ﾌｨﾙﾑ有無吸着OFF
+CON
+RES MR7609               ; 剥離ﾌｨﾙﾑ有無吸着ON
+CON
+RES MR7611               ; 剥離ﾌｨﾙﾑ有無真空破壊ON
+CON
+JMP @MR5006
+;Error 161 ﾌｨﾙﾑ未検出(RB9ﾌｨﾙﾑ剥がし)
+STG @MR5006
+ANB R39900               ; RB動作中
+MPS
+LDB R41206               ; TASK6 PAUSE 要求
+ANB R39004               ; ｴﾗｰ中
+ANL
+SET R39004               ; ｴﾗｰ中
+CON
+DW $7400 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #161 @DM1             ; ErrorNo /ERROR_DISP
+CON
+DW #4611 @DM2            ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task6 ERROR
+CON
+JMP @MR5007
+MPP
+AND R41206               ; TASK6 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR5007
+SET @MR1900              ; Main1 HALT許可
+CON
+AND @MR101               ; Task6 ERROR_End
+RES @MR101               ; Task6 ERROR_End
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+MPS
+AND @MR105               ; SW1
+JMP @MR4909
+MPP
+AND @MR106               ; SW2
+JMP @MR5008
+;<h1/>  ※除材選択
+;ﾌｨﾙﾑﾁｬｯｸ後退
+STG @MR5008
+SET MR7409               ; ﾌｨﾙﾑﾁｬｯｸ後退
+CON
+RES MR7408               ; ﾌｨﾙﾑﾁｬｯｸ前進
+CON
+MPS
+LDB MR4307               ; ﾌｨﾙﾑﾁｬｯｸ後退側ERR
+ANB R4306                ; ﾌｨﾙﾑﾁｬｯｸ前進側
+AND R4307                ; ﾌｨﾙﾑﾁｬｯｸ後退側
+ANL
+JMP @MR5009
+MPP
+LD MR4307                ; ﾌｨﾙﾑﾁｬｯｸ後退側ERR
+AND R41206               ; TASK6 PAUSE 要求
+ANL
+SET @MR1900              ; Main1 HALT許可
+;RB9 ﾌｨﾙﾑ剥がし 移動 待機位置
+STG @MR5009
+DW #1 EM1316             ; RB9Target Pos
+CON
+SET @MR4500              ; ①SUB_RB9/Move
+CON
+JMP @MR5010
+STG @MR5010
+AND @MR4501              ; ①SUB_RB9/Move完了
+RES @MR4501              ; ①SUB_RB9/Move完了
+CON
+JMP @MR5011
+;ﾌｨﾙﾑ記憶ｸﾘｱ
+STG @MR5011
+DW #0 DM20036            ; RB9フィルム剥がし有無記憶(1=有り
+CON
+JMP @MR5015
+;END
+STG @MR5015
+SET @MR4901              ; ⑤SUB_ﾌｨﾙﾑ剥ぎ取り完了
+CON
+RES @MR4902              ; ⑤SUB_ﾌｨﾙﾑ剥ぎ取り中
+CON
+ENDS
+;<h1/> ⑥SUB_ﾌｨﾙﾑ有無確認
+STG @MR5100              ; ⑥SUB_ﾌｨﾙﾑ有確認
+SET @MR5102              ; ⑥SUB_ﾌｨﾙﾑ有確認中
+CON
+JMP @MR5103
+;ﾌｨﾙﾑ吸着ON
+STG @MR5103
+SET MR7609               ; 剥離ﾌｨﾙﾑ有無吸着ON
+CON
+RES MR7610               ; 剥離ﾌｨﾙﾑ有無吸着OFF
+CON
+RES MR7611               ; 剥離ﾌｨﾙﾑ有無真空破壊ON
+CON
+JMP @MR5104
+;吸着圧力確認
+LD @MR5104
+TMR @5 #5                ; wait
+STG @MR5104
+MPS
+AND DM2000.3             ; ﾄﾞﾗｲ運転有効/無効(ON有効)
+JMP @MR5105
+MPP
+ANB DM2000.3             ; ﾄﾞﾗｲ運転有効/無効(ON有効)
+MPS
+AND R4610                ; ﾌｨﾙﾑ有無OUT1
+JMP @MR5105
+MPP
+LDB R4610                ; ﾌｨﾙﾑ有無OUT1
+AND @T5                  ; wait
+ANL
+JMP @MR5106
+;ﾌｨﾙﾑ記憶ｾｯﾄ
+STG @MR5105
+DW #1 DM20036            ; RB9フィルム剥がし有無記憶(1=有り
+CON
+JMP @MR5115
+STG @MR5106
+DW #0 DM20036            ; RB9フィルム剥がし有無記憶(1=有り
+CON
+JMP @MR5115
+;Error 160 吸着圧力異常(RB9ﾌｨﾙﾑ剥がし)
+STG @MR5107
+ANB R39900               ; RB動作中
+MPS
+LDB R41206               ; TASK6 PAUSE 要求
+ANB R39004               ; ｴﾗｰ中
+ANL
+SET R39004               ; ｴﾗｰ中
+CON
+DW $7000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #160 @DM1             ; ErrorNo /ERROR_DISP
+CON
+DW #4610 @DM2            ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task6 ERROR
+CON
+JMP @MR5108
+MPP
+AND R41206               ; TASK6 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR5108
+SET @MR1900              ; Main1 HALT許可
+CON
+AND @MR101               ; Task6 ERROR_End
+RES @MR101               ; Task6 ERROR_End
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+AND @MR105               ; SW1
+JMP @MR5104
+;END
+STG @MR5115
+SET @MR5101              ; ⑥SUB_ﾌｨﾙﾑ有確認完了
+CON
+RES @MR5102              ; ⑥SUB_ﾌｨﾙﾑ有確認中
+CON
+ENDS
+;<h1/> ⑥SUB_ﾌｨﾙﾑ有無確認
+STG @MR5200              ; ⑥SUB_ﾌｨﾙﾑ無確認
+SET @MR5202              ; ⑥SUB_ﾌｨﾙﾑ無確認中
+CON
+JMP @MR5203
+;ﾌｨﾙﾑ吸着ON
+STG @MR5203
+SET MR7609               ; 剥離ﾌｨﾙﾑ有無吸着ON
+CON
+RES MR7610               ; 剥離ﾌｨﾙﾑ有無吸着OFF
+CON
+RES MR7611               ; 剥離ﾌｨﾙﾑ有無真空破壊ON
+CON
+JMP @MR5204
+;吸着圧力確認
+LD @MR5204
+TMR @9 #5                ; wait
+STG @MR5204
+MPS
+AND DM2000.3             ; ﾄﾞﾗｲ運転有効/無効(ON有効)
+JMP @MR5205
+MPP
+ANB DM2000.3             ; ﾄﾞﾗｲ運転有効/無効(ON有効)
+MPS
+LDB R4611                ; ﾌｨﾙﾑ有無OUT2
+AND @T9                  ; wait
+ANL
+JMP @MR5205
+MPP
+AND R4611                ; ﾌｨﾙﾑ有無OUT2
+JMP @MR5206
+;ﾌｨﾙﾑ記憶ｾｯﾄ
+STG @MR5205
+DW #1 DM20036            ; RB9フィルム剥がし有無記憶(1=有り
+CON
+JMP @MR5215
+STG @MR5206
+DW #0 DM20036            ; RB9フィルム剥がし有無記憶(1=有り
+CON
+JMP @MR5215
+;Error 160 吸着圧力異常(RB9ﾌｨﾙﾑ剥がし)
+STG @MR5207
+ANB R39900               ; RB動作中
+MPS
+LDB R41206               ; TASK6 PAUSE 要求
+ANB R39004               ; ｴﾗｰ中
+ANL
+SET R39004               ; ｴﾗｰ中
+CON
+DW $7000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #160 @DM1             ; ErrorNo /ERROR_DISP
+CON
+DW #4610 @DM2            ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task6 ERROR
+CON
+JMP @MR5208
+MPP
+AND R41206               ; TASK6 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR5208
+SET @MR1900              ; Main1 HALT許可
+CON
+AND @MR101               ; Task6 ERROR_End
+RES @MR101               ; Task6 ERROR_End
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+AND @MR105               ; SW1
+JMP @MR5204
+;END
+STG @MR5215
+SET @MR5201              ; ⑥SUB_ﾌｨﾙﾑ無確認完了
+CON
+RES @MR5202              ; ⑥SUB_ﾌｨﾙﾑ無確認中
+CON
+ENDS
+;<h1/> ⑦SUB_ﾌｨﾙﾑ廃棄動作
+STG @MR5300              ; ⑦SUB_ﾌｨﾙﾑ廃棄動作
+SET @MR5302              ; ⑦SUB_ﾌｨﾙﾑ廃棄動作中
+CON
+JMP @MR5303
+;RB9 ﾌｨﾙﾑ剥がし 移動 廃棄前位置
+STG @MR5303
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+DW #5 EM1316             ; RB9Target Pos
+CON
+SET @MR4500              ; ①SUB_RB9/Move
+CON
+JMP @MR5304
+STG @MR5304
+AND @MR4501              ; ①SUB_RB9/Move完了
+RES @MR4501              ; ①SUB_RB9/Move完了
+CON
+JMP @MR5305
+;RB10 ﾌｨﾙﾑ回収 移動 剥ぎ取りﾌｨﾙﾑ受取位置
+STG @MR5305
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+DW #3 EM1318             ; RB10Target Pos
+CON
+SET @MR4700              ; ③SUB_RB10/Move
+CON
+JMP @MR5306
+STG @MR5306
+AND @MR4701              ; ③SUB_RB10/Move完了
+RES @MR4701              ; ③SUB_RB10/Move完了
+CON
+JMP @MR5307
+;RB9 ﾌｨﾙﾑ剥がし 移動 廃棄位置
+STG @MR5307
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+DW #6 EM1316             ; RB9Target Pos
+CON
+SET @MR4500              ; ①SUB_RB9/Move
+CON
+JMP @MR5308
+STG @MR5308
+AND @MR4501              ; ①SUB_RB9/Move完了
+RES @MR4501              ; ①SUB_RB9/Move完了
+CON
+JMP @MR5309
+;ｲｵﾅｲｻﾞON
+STG @MR5309
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+SET MR7412               ; ｲｵﾅｲｻﾞON
+CON
+RES MR7413               ; (ｲｵﾅｲｻﾞOFF)
+CON
+JMP @MR5310
+;ﾌｨﾙﾑ吸着破壊ON
+STG @MR5310
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+SET MR7611               ; 剥離ﾌｨﾙﾑ有無真空破壊ON
+CON
+RES MR7609               ; 剥離ﾌｨﾙﾑ有無吸着ON
+CON
+SET MR7610               ; 剥離ﾌｨﾙﾑ有無吸着OFF
+CON
+JMP @MR5311
+;ﾌｨﾙﾑﾁｬｯｸ上昇(開)
+STG @MR5311
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+SET MR7411               ; ﾌｨﾙﾑﾁｬｯｸ上昇
+CON
+RES MR7410               ; ﾌｨﾙﾑﾁｬｯｸ下降
+CON
+MPS
+LDB MR4309               ; ﾌｨﾙﾑﾁｬｯｸ上昇側ERR
+ANB R4308                ; ﾌｨﾙﾑﾁｬｯｸ下降側
+AND R4309                ; ﾌｨﾙﾑﾁｬｯｸ上昇側
+ANL
+JMP @MR5312
+MPP
+LD MR4309                ; ﾌｨﾙﾑﾁｬｯｸ上昇側ERR
+AND R41206               ; TASK6 PAUSE 要求
+ANL
+SET @MR1900              ; Main1 HALT許可
+;ﾌｨﾙﾑﾁｬｯｸ後退
+STG @MR5312
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+SET MR7409               ; ﾌｨﾙﾑﾁｬｯｸ後退
+CON
+RES MR7408               ; ﾌｨﾙﾑﾁｬｯｸ前進
+CON
+MPS
+LDB MR4307               ; ﾌｨﾙﾑﾁｬｯｸ後退側ERR
+ANB R4306                ; ﾌｨﾙﾑﾁｬｯｸ前進側
+AND R4307                ; ﾌｨﾙﾑﾁｬｯｸ後退側
+ANL
+JMP @MR5313
+MPP
+LD MR4307                ; ﾌｨﾙﾑﾁｬｯｸ後退側ERR
+AND R41206               ; TASK6 PAUSE 要求
+ANL
+SET @MR1900              ; Main1 HALT許可
+;RB9 ﾌｨﾙﾑ剥がし 移動 剥ぎ取り後位置
+STG @MR5313
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+DW #4 EM1316             ; RB9Target Pos
+CON
+SET @MR4500              ; ①SUB_RB9/Move
+CON
+JMP @MR5314
+STG @MR5314
+AND @MR4501              ; ①SUB_RB9/Move完了
+RES @MR4501              ; ①SUB_RB9/Move完了
+CON
+JMP @MR5315
+;ｲｵﾅｲｻﾞOFF
+;END
+STG @MR5315
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+SET MR7413               ; (ｲｵﾅｲｻﾞOFF)
+CON
+RES MR7412               ; ｲｵﾅｲｻﾞON
+CON
+SET @MR5301              ; ⑦SUB_ﾌｨﾙﾑ廃棄動作完了
+CON
+RES @MR5302              ; ⑦SUB_ﾌｨﾙﾑ廃棄動作中
+CON
+ENDS
+;<h1/> ⑧SUB_RB10ﾌｨﾙﾑ回収満杯確認
+STG @MR5400              ; ⑧SUB_RB10ﾌｨﾙﾑ回収満杯確認
+SET @MR5402              ; ⑧SUB_RB10ﾌｨﾙﾑ回収満杯確認中
+CON
+JMP @MR5403
+;RB10フィルム回収枚数確認
+STG @MR5403
+MPS
+AND<.L DM20037 DM7008    ; RB10フィルム回収枚数  装置基礎ﾃﾞｰﾀ5
+JMP @MR5415
+MPP
+AND>=.L DM20037 DM7008   ; RB10フィルム回収枚数  装置基礎ﾃﾞｰﾀ5
+JMP @MR5404
+;Error 162 ﾌｨﾙﾑ回収満杯(RB10ﾌｨﾙﾑ回収)
+STG @MR5404
+ANB R39900               ; RB動作中
+MPS
+LDB R41206               ; TASK6 PAUSE 要求
+ANB R39004               ; ｴﾗｰ中
+ANL
+SET R39004               ; ｴﾗｰ中
+CON
+DW $4000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #162 @DM1             ; ErrorNo /ERROR_DISP
+CON
+DW #0 @DM2               ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task6 ERROR
+CON
+JMP @MR5405
+MPP
+AND R41206               ; TASK6 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR5405
+SET @MR1900              ; Main1 HALT許可
+CON
+AND @MR101               ; Task6 ERROR_End
+RES @MR101               ; Task6 ERROR_End
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+AND @MR105               ; SW1
+JMP @MR5406
+;RB10フィルム回収枚数ｸﾘｱ
+STG @MR5406
+DW.L +0 DM20037          ; RB10フィルム回収枚数
+CON
+JMP @MR5415
+;END
+STG @MR5415
+SET @MR5401              ; ⑧SUB_RB10ﾌｨﾙﾑ回収満杯確認完了
+CON
+RES @MR5402              ; ⑧SUB_RB10ﾌｨﾙﾑ回収満杯確認中
+CON
+ENDS
+;<h1/> ⑨SUB_ﾌｨﾙﾑ廃棄棒有無確認
+STG @MR5500              ; ⑨SUB_ﾌｨﾙﾑ廃棄棒有無確認
+SET @MR5502              ; ⑨SUB_ﾌｨﾙﾑ廃棄棒有無確認中
+CON
+JMP @MR5503
+;RB10フィルム回収枚数確認
+STG @MR5503
+MPS
+AND R4415                ; ﾌｨﾙﾑ廃棄棒検出
+JMP @MR5515
+MPP
+ANB R4415                ; ﾌｨﾙﾑ廃棄棒検出
+TMR @6 #5                ; wait
+CON
+AND @T6                  ; wait
+JMP @MR5504
+;Error 163 ﾌｨﾙﾑ廃棄棒未検出(RB10ﾌｨﾙﾑ回収)
+STG @MR5504
+ANB R39900               ; RB動作中
+MPS
+LDB R41206               ; TASK6 PAUSE 要求
+ANB R39004               ; ｴﾗｰ中
+ANL
+SET R39004               ; ｴﾗｰ中
+CON
+DW $7000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #163 @DM1             ; ErrorNo /ERROR_DISP
+CON
+DW #4415 @DM2            ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task6 ERROR
+CON
+JMP @MR5505
+MPP
+AND R41206               ; TASK6 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR5505
+SET @MR1900              ; Main1 HALT許可
+CON
+AND @MR101               ; Task6 ERROR_End
+RES @MR101               ; Task6 ERROR_End
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+AND @MR105               ; SW1
+JMP @MR5503
+;END
+STG @MR5515
+SET @MR5501              ; ⑨SUB_ﾌｨﾙﾑ廃棄棒有無確認完了
+CON
+RES @MR5502              ; ⑨SUB_ﾌｨﾙﾑ廃棄棒有無確認中
+CON
+ENDS
+;<h1/> ⑩SUB_不良ﾌｨﾙﾑ回収動作
+STG @MR5600              ; ⑩SUB_不良ﾌｨﾙﾑ回収動作
+SET @MR5602              ; ⑩SUB_不良ﾌｨﾙﾑ回収動作中
+CON
+JMP @MR5603
+;RB10 ﾌｨﾙﾑ回収 移動 不良ﾌｨﾙﾑ受取位置
+STG @MR5603
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+DW #4 EM1318             ; RB10Target Pos
+CON
+SET @MR4700              ; ③SUB_RB10/Move
+CON
+JMP @MR5604
+STG @MR5604
+AND @MR4701              ; ③SUB_RB10/Move完了
+RES @MR4701              ; ③SUB_RB10/Move完了
+CON
+JMP @MR5605
+;吸着治具真空破壊ON
+STG @MR5605
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+SET MR7602               ; 吸着治具真空破壊ON
+CON
+RES MR7600               ; 吸着治具吸着ON
+CON
+SET MR7601               ; 吸着治具吸着OFF
+CON
+JMP @MR5606
+STG @MR5606
+TMR @7 #5                ; wait
+CON
+AND @T7                  ; wait
+JMP @MR5607
+;RB10 ﾌｨﾙﾑ回収 移動 待機位置
+STG @MR5607
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+DW #1 EM1318             ; RB10Target Pos
+CON
+SET @MR4700              ; ③SUB_RB10/Move
+CON
+JMP @MR5608
+STG @MR5608
+AND @MR4701              ; ③SUB_RB10/Move完了
+RES @MR4701              ; ③SUB_RB10/Move完了
+CON
+JMP @MR5615
+;END
+STG @MR5615
+SET @MR5601              ; ⑩SUB_不良ﾌｨﾙﾑ回収動作完了
+CON
+RES @MR5602              ; ⑩SUB_不良ﾌｨﾙﾑ回収動作中
+CON
+ENDS
+;<h1/>-----------------------------------------------------------
+;<h1/>*ERROR
+;MyTask Error Process Substance/エラー処理実体
+STG @MR100               ; Task6 ERROR
+ANB R39002               ; ERROR_DISP Busy
+MPS
+ZRES @MR105 @MR108       ; SW1  SW4
+CON
+DISN @DM9 @DM3 #4        ; ReturnSW /ERROR_DISP
+MRD
+DW MyTask @DM0           ; 自ﾀｽｸ番号  TaskNo /ERROR_DISP
+CON
+BMOV @DM0 DM60000 #7     ; TaskNo /ERROR_DISP  TaskNo /ERROR_DISP
+MPP
+SET R39000               ; ERROR_DISP Start
+CON
+SET @MR102               ; Task6 ERROR Busy
+CON
+JMP @MR103
+STG @MR103
+AND R39002               ; ERROR_DISP Busy
+AND= DM60008 @DM1        ; ReturnNo /ERROR_DISP  ErrorNo /ERROR_DISP
+MPS
+AND= DM60007 @DM6        ; ReturnSW /ERROR_DISP
+SET @MR105               ; SW1
+CON
+JMP @MR104
+MRD
+AND= DM60007 @DM5        ; ReturnSW /ERROR_DISP
+SET @MR106               ; SW2
+CON
+JMP @MR104
+MRD
+AND= DM60007 @DM4        ; ReturnSW /ERROR_DISP
+SET @MR107               ; SW3
+CON
+JMP @MR104
+MPP
+AND= DM60007 @DM3        ; ReturnSW /ERROR_DISP
+SET @MR108               ; SW4
+CON
+JMP @MR104
+STG @MR104
+ANB R39002               ; ERROR_DISP Busy
+RES @MR102               ; Task6 ERROR Busy
+CON
+SET @MR101               ; Task6 ERROR_End
+CON
+ENDS
+;<h1/>*Select_Y_N 
+;MyTask Select_Y_N Process Substance/SELECT_Y_N処理実体
+STG @MR300               ; Task6 SELECT_Y_N
+ANB R39102               ; SELECT_Y_N Busy
+MPS
+ZRES @MR306 @MR307       ; Task6 Y/N
+CON
+DW #0 @DM20              ; TaskNo /SELECT_Y_N
+CON
+BMOV @DM20 DM60020 #3    ; TaskNo /SELECT_Y_N  TaskNo /SELECT_Y_N
+MPP
+SET R39100               ; SELECT_Y_N Start
+CON
+SET @MR302               ; Task6 Y_N Busy
+CON
+JMP @MR303
+STG @MR303
+AND R39102               ; SELECT_Y_N Busy
+MPS
+AND= DM60023 #1          ; Y_N /SELECT_Y_N
+SET @MR306               ; Task6 Y/N
+CON
+JMP @MR304
+MPP
+AND= DM60023 #2          ; Y_N /SELECT_Y_N
+RES @MR306               ; Task6 Y/N
+CON
+JMP @MR304
+STG @MR304
+ANB R39102               ; SELECT_Y_N Busy
+RES @MR302               ; Task6 Y_N Busy
+CON
+SET @MR301               ; Task6 Y/N END
+CON
+ENDS
+;<h1/>*TIMEUP ERROR
+;MyTask TIMEUP_ERROR Process Substance/TIMEUP_ERROR処理実体
+STG @MR400               ; Task6 TIMEUP_ERR
+ANB R39302               ; TIMEUP_ERR Busy
+MPS
+DW #0 @DM40              ; TaskNo /TIMEUP_ERR
+CON
+BMOV @DM40 DM60040 #2    ; TaskNo /TIMEUP_ERR  TaskNo /TIMEUP_ERR
+MPP
+SET R39300               ; TIMEUP_ERR Start
+CON
+SET @MR402               ; Task6 TIMEUP Busy
+CON
+JMP @MR403
+STG @MR403
+AND R39302               ; TIMEUP_ERR Busy
+JMP @MR404
+STG @MR404
+ANB R39302               ; TIMEUP_ERR Busy
+RES @MR402               ; Task6 TIMEUP Busy
+CON
+SET @MR401               ; Task6 TIMEUP_END
+CON
+ENDS
+;<h1/>*Select_ACT 
+;MyTask Select_ACT Process Substance/SELECT_ACT処理実体
+STG @MR200               ; Task6 SELECT_ACT
+ANB R39202               ; SELECT_ACT Busy
+MPS
+ZRES @MR205 @MR208       ; SW1  SW4
+CON
+DW #0 @DM30              ; TaskNo /SELECT_ACT
+CON
+BMOV @DM30 DM60030 #7    ; TaskNo /SELECT_ACT  TaskNo /SELECT_ACT
+MPP
+SET R39200               ; SELECT_ACT Start
+CON
+SET @MR202               ; Task6 SEL_ACT Busy
+CON
+JMP @MR203
+STG @MR203
+AND R39202               ; SELECT_ACT Busy
+AND<> DM60037 #0         ; SelectSW /SELECT_ACT
+MPS
+AND= DM60037 #1          ; SelectSW /SELECT_ACT
+SET @MR205               ; SW1
+CON
+JMP @MR204
+MRD
+AND= DM60037 #2          ; SelectSW /SELECT_ACT
+SET @MR206               ; SW2
+CON
+JMP @MR204
+MRD
+AND= DM60037 #3          ; SelectSW /SELECT_ACT
+SET @MR207               ; SW3
+CON
+JMP @MR204
+MPP
+AND= DM60037 #4          ; SelectSW /SELECT_ACT
+SET @MR208               ; SW4
+CON
+JMP @MR204
+STG @MR204
+ANB R39202               ; SELECT_ACT Busy
+RES @MR202               ; Task6 SEL_ACT Busy
+CON
+SET @MR201               ; Task6 SEL_ACT END
+CON
+ENDS
+;<h1/>※機能Macro呼出し見本- 削除して下さい。-------------------------------------
+;<h1/>※Error:記述見本
+;ERR163 "****Error"
+;<h1/>※SELECT_ACT　:記述見本
+;画面番号33をブザー有りで選択SW番号を左から#5,#10,#0(無し),#34の並びで表示する
+;<h1/>※ SELECT_Y_N　記述見本
+;//*Select_Y_N
+;<h1/>HALT
+LD R41206                ; TASK6 PAUSE 要求
+AND @MR1900              ; Main1 HALT許可
+LD @MR1901               ; Main2 HALT許可
+ORB @MR4002              ; Main2 Busy
+ANL
+TMR @40 #5               ; HALT許可 遅延
+CON
+AND @T40                 ; HALT許可 遅延
+SET R42606               ; Grp1_Task6_ﾎﾟｰｽﾞ許可
+LD R42606                ; Grp1_Task6_ﾎﾟｰｽﾞ許可
+ORB R41206               ; TASK6 PAUSE 要求
+ANB @MR001               ; TASK6　ERROR
+RES @MR1900              ; Main1 HALT許可
+CON
+RES @MR1901              ; Main2 HALT許可
+END
+ENDH

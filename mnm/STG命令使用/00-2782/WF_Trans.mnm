@@ -1,0 +1,1381 @@
+DEVICE:52
+;MODULE:WF_Trans
+;MODULE_TYPE:0
+;***** ｷｬﾘｱ　ﾏｯﾋﾟﾝｸﾞ未了時ｽﾀｰﾄ *****
+LDP T600                 ; 自動運転開始ﾃﾞｨﾚｰﾀｲﾏ
+ANB MR900                ; ﾏｯﾋﾟﾝｸﾞ済FLG
+SET MR10000
+STG MR10000
+SET MR910                ; 自動起動中
+CON
+AND MR910                ; 自動起動中
+RES MR3700               ; WF9時の位置
+CON
+RES MR3702               ; WF12時の位置
+CON
+RES MR3704               ; WF6時の位置
+CON
+ANB MR3700               ; WF9時の位置
+ANB MR3702               ; WF12時の位置
+ANB MR3704               ; WF6時の位置
+JMP MR10001
+STG MR10001
+@FMOV #0 DM10107 #25
+@FMOV #0 DM2000 #25
+@MOV #0 DM2030           ; ｷｬﾘｱ内WF枚数
+RES MR909                ; 次WF投入禁止
+CON
+ANB MR909                ; 次WF投入禁止
+ANB MR32000              ; 塗布ﾕﾆｯﾄﾎﾟｰｽﾞ/異常
+JMP MR10002              ; 自動RBﾏｯﾋﾟﾝｸﾞ動作
+STG MR10002              ; 自動RBﾏｯﾋﾟﾝｸﾞ動作
+AND MR1104               ; RBﾏｯﾋﾟﾝｸﾞ動作中
+JMP MR10003
+STG MR10003
+ANB MR1104               ; RBﾏｯﾋﾟﾝｸﾞ動作中
+JMP MR10004
+STG MR10004
+JMP MR10005              ; 自動ﾏｯﾋﾟﾝｸﾞ内容読出し
+STG MR10005              ; 自動ﾏｯﾋﾟﾝｸﾞ内容読出し
+AND MR1108               ; ﾏｯﾋﾟﾝｸﾞ内容読出し
+JMP MR10006
+STG MR10006
+ANB MR1108               ; ﾏｯﾋﾟﾝｸﾞ内容読出し
+TMR #602 #3
+CON
+AND T602
+JMP MR10007
+STG MR10007
+@BMOV DM10107 DM2000 #25
+JMP MR10008
+STG MR10008
+MPS
+WSUM DM2000 #25
+CON
+STA DM2030               ; ｷｬﾘｱ内WF枚数
+MPP
+JMP MR10009              ; ｷｬﾘｱWF枚数判断
+STG MR10009              ; ｷｬﾘｱWF枚数判断
+MPS
+LD> DM2030 #0            ; ｷｬﾘｱ内WF枚数
+AND<= DM2030 #24         ; ｷｬﾘｱ内WF枚数
+ANL
+JMP MR10010              ; 転写装置自動j起動確認
+MPP
+LD= DM2030 #0            ; ｷｬﾘｱ内WF枚数
+OR> DM2030 #24           ; ｷｬﾘｱ内WF枚数
+ANL
+SET MR406                ; ｷｬﾘｱWF枚数異常
+CON
+AND MR406                ; ｷｬﾘｱWF枚数異常
+JMP MR10014              ; 接着剤不足時自動OFF
+STG MR10010              ; 転写装置自動j起動確認
+SET MR900                ; ﾏｯﾋﾟﾝｸﾞ済FLG
+CON
+AND MR900                ; ﾏｯﾋﾟﾝｸﾞ済FLG
+MPS
+LD MR5700                ; 転写装置電源ON
+AND MR5701               ; 転写装置起動中
+ANB LR501                ; 搬送ﾓｰﾄﾞ
+ANL
+JMP MR10011              ; 接着剤比較
+MPP
+AND LR501                ; 搬送ﾓｰﾄﾞ
+JMP MR10013              ; 次WF投入要求信号待ち
+STG MR10011              ; 接着剤比較
+MPS
+LD>= DM5700 DM2030       ; 接着剤本数×2  ｷｬﾘｱ内WF枚数
+AND MR5708               ; 接着剤在籍確認完了
+ANL
+TMR #621 #2
+CON
+AND T621
+JMP MR10012              ; WF取出し要求確認
+MPP
+LD< DM5700 DM2030        ; 接着剤本数×2  ｷｬﾘｱ内WF枚数
+AND MR5708               ; 接着剤在籍確認完了
+AND CR2003               ; 常時OFF
+ANL
+SET MR407                ; 接着剤不足異常
+CON
+AND MR407                ; 接着剤不足異常
+ANB MR5701               ; 転写装置起動中
+RES MR900                ; ﾏｯﾋﾟﾝｸﾞ済FLG
+CON
+ANB MR900                ; ﾏｯﾋﾟﾝｸﾞ済FLG
+JMP MR10014              ; 接着剤不足時自動OFF
+STG MR10012              ; WF取出し要求確認
+MPS
+ANB MR5703               ; WF取出し要求
+JMP MR10013              ; 次WF投入要求信号待ち
+MRD
+LD MR5703                ; WF取出し要求
+AND CR2003               ; 常時OFF
+ANL
+JMP MR10509              ; WF取出し待機中
+MPP
+AND MR30010              ; ｻｲｸﾙ停止受付
+TMR #632 #10
+CON
+AND T632
+JMP MR11800
+STG MR10013              ; 次WF投入要求信号待ち
+ANB MR32000              ; 塗布ﾕﾆｯﾄﾎﾟｰｽﾞ/異常
+MPS
+LDB LR501                ; 搬送ﾓｰﾄﾞ
+LD R4000                 ; 接合装置電源投入
+OR CR2003                ; 常時OFF
+ANL
+AND R4005                ; 次WF投入要求信号
+AND MR5712               ; 転写より接着剤塗布開始
+ANB MR5706               ; 接着剤残量無し
+ANB MR5707               ; 接着剤ﾎﾟｯﾄﾗｲﾌｵｰﾊﾞｰ
+ANL
+JMP MR10015
+MRD
+LD LR501                 ; 搬送ﾓｰﾄﾞ
+AND R4000                ; 接合装置電源投入
+AND R4005                ; 次WF投入要求信号
+ANL
+JMP MR10015
+MPP
+AND MR30010              ; ｻｲｸﾙ停止受付
+TMR #630 #10
+CON
+AND T630
+JMP MR11800
+STG MR10014              ; 接着剤不足時自動OFF
+RES MR900                ; ﾏｯﾋﾟﾝｸﾞ済FLG
+CON
+ANB MR900                ; ﾏｯﾋﾟﾝｸﾞ済FLG
+ANB MR40005              ; 全起動中
+JMP MR10015
+STG MR10015
+AND MR40005              ; 全起動中
+SET MR909                ; 次WF投入禁止
+CON
+AND MR909                ; 次WF投入禁止
+ANB MR5512               ; 接着剤塗布開始
+TMR #71 DM20             ; WF引出し待ち時間  WF引出し待ち時間設定値
+CON
+AND T71                  ; WF引出し待ち時間
+JMP MR10200              ; WF取出し開始
+;***** WF　ﾏｯﾋﾟﾝｸﾞ完了済みｽﾀｰﾄ *****
+LDP T600                 ; 自動運転開始ﾃﾞｨﾚｰﾀｲﾏ
+AND MR900                ; ﾏｯﾋﾟﾝｸﾞ済FLG
+SET MR10100              ; ﾏｯﾋﾟﾝｸﾞ完了時ｽﾀｰﾄ
+STG MR10100              ; ﾏｯﾋﾟﾝｸﾞ完了時ｽﾀｰﾄ
+RES MR909                ; 次WF投入禁止
+CON
+ANB MR909                ; 次WF投入禁止
+RES MR3700               ; WF9時の位置
+CON
+RES MR3702               ; WF12時の位置
+CON
+RES MR3704               ; WF6時の位置
+CON
+ANB MR3700               ; WF9時の位置
+ANB MR3702               ; WF12時の位置
+ANB MR3704               ; WF6時の位置
+JMP MR10101              ; 転写装置自動j起動確認
+STG MR10101              ; 転写装置自動j起動確認
+MPS
+LDB LR501                ; 搬送ﾓｰﾄﾞ
+AND MR5700               ; 転写装置電源ON
+AND MR5701               ; 転写装置起動中
+ANL
+JMP MR10102              ; 次WF投入要求信号待ち
+MPP
+AND LR501                ; 搬送ﾓｰﾄﾞ
+JMP MR10103
+STG MR10102              ; 次WF投入要求信号待ち
+MPS
+ANB MR5703               ; WF取出し要求
+JMP MR10103
+MRD
+LD MR5703                ; WF取出し要求
+AND CR2003               ; 常時OFF
+ANL
+JMP MR10509              ; WF取出し待機中
+MPP
+AND MR30010              ; ｻｲｸﾙ停止受付
+TMR #633 #10
+CON
+AND T633
+JMP MR11800
+STG MR10103
+ANB MR32000              ; 塗布ﾕﾆｯﾄﾎﾟｰｽﾞ/異常
+MPS
+LDB LR501                ; 搬送ﾓｰﾄﾞ
+LD R4000                 ; 接合装置電源投入
+OR CR2003                ; 常時OFF
+ANL
+AND R4005                ; 次WF投入要求信号
+AND MR5712               ; 転写より接着剤塗布開始
+ANB MR5706               ; 接着剤残量無し
+ANL
+JMP MR10105
+MRD
+LD LR501                 ; 搬送ﾓｰﾄﾞ
+AND R4000                ; 接合装置電源投入
+AND R4005                ; 次WF投入要求信号
+ANL
+JMP MR10105
+MPP
+AND MR30010              ; ｻｲｸﾙ停止受付
+TMR #631 #10
+CON
+AND T631
+JMP MR11800
+STG MR10104
+JMP MR10105
+STG MR10105
+SET MR909                ; 次WF投入禁止
+CON
+AND MR909                ; 次WF投入禁止
+ANB MR5512               ; 接着剤塗布開始
+TMR #70 DM20             ; WF引出し待ち時間  WF引出し待ち時間設定値
+CON
+AND T70                  ; WF引出し待ち時間
+JMP MR10200              ; WF取出し開始
+;***** WF　取出し *****
+STG MR10200              ; WF取出し開始
+AND MR40005              ; 全起動中
+ZRES MR10000 MR10015
+CON
+ZRES MR10100 MR10015     ; ﾏｯﾋﾟﾝｸﾞ完了時ｽﾀｰﾄ
+CON
+JMP MR10201
+STG MR10201
+MOV #0 Z1
+MOV #0 DM2040            ; ｷｬﾘｱWF取出しｽﾛｯﾄNo.
+JMP MR10202
+STG MR10202
+MPS
+AND= DM2000:Z1 #1
+MPS
+LDA Z1
+CON
+ADD #1
+CON
+STA DM2040               ; ｷｬﾘｱWF取出しｽﾛｯﾄNo.
+MPP
+JMP MR10204              ; ｷｬﾘｱWF取出しｽﾛｯﾄNo.
+MPP
+AND<> DM2000:Z1 #1
+TMH #603 #4
+CON
+AND T603
+JMP MR10203
+STG MR10203
+@INC Z1
+TMH #604 #4
+CON
+AND T604
+MPS
+AND< Z1 #25
+JMP MR10202
+MPP
+AND>= Z1 #25
+JMP MR10213              ; ｷｬﾘｱWF0 or 25枚自動OFF
+STG MR10204              ; ｷｬﾘｱWF取出しｽﾛｯﾄNo.
+MPS
+@MOV DM2040 DM2050       ; ｷｬﾘｱWF取出しｽﾛｯﾄNo.  ｷｬﾘｱWF取出しｽﾛｯﾄNo.記憶
+MPP
+LDB MR1701               ; WF取出し中
+ANB MR32000              ; 塗布ﾕﾆｯﾄﾎﾟｰｽﾞ/異常
+ANL
+JMP MR10205              ; ｷｬﾘｱWF取出し
+STG MR10205              ; ｷｬﾘｱWF取出し
+AND MR1701               ; WF取出し中
+JMP MR10206
+STG MR10206
+ANB MR1701               ; WF取出し中
+MPS
+ANB R4108                ; 搬送ﾛﾎﾞｯﾄｱﾗｰﾑ
+JMP MR10208              ; ｷｬﾘｱよりWF取出し完了
+MPP
+AND MR4105               ; WF搬送ﾛﾎﾞｯﾄ吸着異常
+SET MR6500               ; WF搬送ﾛﾎﾞｯﾄ異常
+CON
+AND MR6500               ; WF搬送ﾛﾎﾞｯﾄ異常
+JMP MR10207
+STG MR10207
+ANB MR32000              ; 塗布ﾕﾆｯﾄﾎﾟｰｽﾞ/異常
+MPS
+AND MR010                ; ﾒｲﾝ画面
+OUT MR4802               ; 搬送ﾛﾎﾞｯﾄWF吸着異常表示
+MPP
+AND MR6500               ; WF搬送ﾛﾎﾞｯﾄ異常
+MPS
+AND MR803                ; ﾘﾄﾗｲSW
+RES MR6500               ; WF搬送ﾛﾎﾞｯﾄ異常
+CON
+JMP MR10204              ; ｷｬﾘｱWF取出しｽﾛｯﾄNo.
+MRD
+AND MR806                ; 次WF取出し
+@MOV #0 DM2000:Z1
+RES MR6500               ; WF搬送ﾛﾎﾞｯﾄ異常
+CON
+JMP MR10201
+MPP
+AND MR801                ; 中断SW
+RES MR6500               ; WF搬送ﾛﾎﾞｯﾄ異常
+CON
+ANB MR40005              ; 全起動中
+ENDS
+STG MR10208              ; ｷｬﾘｱよりWF取出し完了
+MPS
+LDB LR501                ; 搬送ﾓｰﾄﾞ
+ANB LR100                ; ﾊﾞｰｺｰﾄﾞ読込み済みFLG
+ANL
+JMP MR10209              ; PCへLot読込み要求
+MPP
+LD LR501                 ; 搬送ﾓｰﾄﾞ
+OR LR100                 ; ﾊﾞｰｺｰﾄﾞ読込み済みFLG
+ANL
+JMP MR10210              ; WF取出し段ｸﾘｱ
+STG MR10209              ; PCへLot読込み要求
+AND= DM100 #1            ; PCへLot読込み要求
+SET LR100                ; ﾊﾞｰｺｰﾄﾞ読込み済みFLG
+CON
+AND LR100                ; ﾊﾞｰｺｰﾄﾞ読込み済みFLG
+JMP MR10210              ; WF取出し段ｸﾘｱ
+STG MR10210              ; WF取出し段ｸﾘｱ
+AND= DM100 #0            ; PCへLot読込み要求
+@MOV #0 DM2000:Z1
+JMP MR10214
+STG MR10213              ; ｷｬﾘｱWF0 or 25枚自動OFF
+ANB MR40005              ; 全起動中
+JMP MR10215
+STG MR10214
+MPS
+WSUM DM2000 #25
+CON
+STA DM2032               ; ｷｬﾘｱ内WF残数
+MPP
+JMP MR10215
+STG MR10215
+MPS
+AND MR40005              ; 全起動中
+JMP MR10300
+MPP
+ANB MR40005              ; 全起動中
+ENDS
+;***** WF　ｱﾗｲﾅ収納 *****
+STG MR10300
+ANB MR32000              ; 塗布ﾕﾆｯﾄﾎﾟｰｽﾞ/異常
+MPS
+ANB LR501                ; 搬送ﾓｰﾄﾞ
+JMP MR10301              ; ｱﾗｲﾅ収納待機位置移動
+MPP
+AND LR501                ; 搬送ﾓｰﾄﾞ
+SET MR914                ; 次WF転写開始信号
+CON
+AND MR914                ; 次WF転写開始信号
+SET MR3704               ; WF6時の位置
+CON
+AND MR3704               ; WF6時の位置
+JMP MR11200
+STG MR10301              ; ｱﾗｲﾅ収納待機位置移動
+AND MR1800               ; ｱﾗｲﾅ収納待機位置移動
+JMP MR10302
+STG MR10302
+ANB MR1800               ; ｱﾗｲﾅ収納待機位置移動
+JMP MR10303
+STG MR10303
+ANB MR32000              ; 塗布ﾕﾆｯﾄﾎﾟｰｽﾞ/異常
+JMP MR10304              ; ｱﾗｲﾅ収納位置移動
+STG MR10304              ; ｱﾗｲﾅ収納位置移動
+AND MR1810               ; ｱﾗｲﾅ収納位置移動
+JMP MR10305
+STG MR10305
+ANB MR1810               ; ｱﾗｲﾅ収納位置移動
+JMP MR10306
+STG MR10306
+ANB MR32000              ; 塗布ﾕﾆｯﾄﾎﾟｰｽﾞ/異常
+JMP MR10307              ; ｱﾗｲﾒﾝﾄ実行転写向き
+STG MR10307              ; ｱﾗｲﾒﾝﾄ実行転写向き
+AND MR2800               ; ｱﾗｲﾒﾝﾄ転写向き実行
+JMP MR10308              ; ｱﾗｲﾒﾝﾄ実行転写向き待ち
+STG MR10308              ; ｱﾗｲﾒﾝﾄ実行転写向き待ち
+ANB MR2800               ; ｱﾗｲﾒﾝﾄ転写向き実行
+JMP MR10309              ; ｱﾗｲﾒﾝﾄ実行転写向き完了
+STG MR10309              ; ｱﾗｲﾒﾝﾄ実行転写向き完了
+ANB MR32000              ; 塗布ﾕﾆｯﾄﾎﾟｰｽﾞ/異常
+JMP MR10310              ; 搬送RBｱﾗｲﾅ取出し待機位置移動
+;***** WF　ｱﾗｲﾅ取出し *****
+STG MR10310              ; 搬送RBｱﾗｲﾅ取出し待機位置移動
+AND MR1900               ; 搬送RBｱﾗｲﾅ取出し待機位置移動
+JMP MR10311
+STG MR10311
+ANB MR1900               ; 搬送RBｱﾗｲﾅ取出し待機位置移動
+JMP MR10312
+STG MR10312
+ANB MR32000              ; 塗布ﾕﾆｯﾄﾎﾟｰｽﾞ/異常
+JMP MR10313              ; ｱﾗｲﾅ取出
+STG MR10313              ; ｱﾗｲﾅ取出
+AND MR1907               ; ｱﾗｲﾅ取出し位置移動
+JMP MR10314
+STG MR10314
+ANB MR1907               ; ｱﾗｲﾅ取出し位置移動
+MPS
+ANB R4108                ; 搬送ﾛﾎﾞｯﾄｱﾗｰﾑ
+SET MR10500
+CON
+ENDS
+MPP
+AND MR4105               ; WF搬送ﾛﾎﾞｯﾄ吸着異常
+SET MR6500               ; WF搬送ﾛﾎﾞｯﾄ異常
+CON
+AND MR6500               ; WF搬送ﾛﾎﾞｯﾄ異常
+JMP MR10315
+STG MR10315
+ANB MR32000              ; 塗布ﾕﾆｯﾄﾎﾟｰｽﾞ/異常
+MPS
+AND MR010                ; ﾒｲﾝ画面
+OUT MR2010               ; 搬送ﾛﾎﾞｯﾄWF吸着異常表示1
+MPP
+AND MR6500               ; WF搬送ﾛﾎﾞｯﾄ異常
+MPS
+AND MR803                ; ﾘﾄﾗｲSW
+RES MR6500               ; WF搬送ﾛﾎﾞｯﾄ異常
+CON
+JMP MR10310              ; 搬送RBｱﾗｲﾅ取出し待機位置移動
+MPP
+AND MR810                ; WF吸着異常中断SW
+RES MR6500               ; WF搬送ﾛﾎﾞｯﾄ異常
+CON
+ANB MR40005              ; 全起動中
+ENDS
+;***** WF　転写中間位置収納 *****
+STG MR10500
+ANB MR32000              ; 塗布ﾕﾆｯﾄﾎﾟｰｽﾞ/異常
+AND MR5701               ; 転写装置起動中
+AND MR5702               ; WF供給要求
+ANB MR5710               ; 転写装置異常発生
+SET MR911                ; 転写装置へﾊﾝﾄﾞ進入中
+CON
+AND MR911                ; 転写装置へﾊﾝﾄﾞ進入中
+JMP MR10501
+STG MR10501
+AND MR7200               ; 転写収納中間位置移動
+JMP MR10502
+STG MR10502
+ANB MR7200               ; 転写収納中間位置移動
+JMP MR10503
+STG MR10503
+ANB MR32000              ; 塗布ﾕﾆｯﾄﾎﾟｰｽﾞ/異常
+JMP MR10504              ; 転写装置へ吸着ON要求
+STG MR10504              ; 転写装置へ吸着ON要求
+AND MR5701               ; 転写装置起動中
+AND MR5704               ; WF吸着ON
+ANB MR5710               ; 転写装置異常発生
+JMP MR10505
+;***** WF　転写位置収納 *****
+STG MR10505
+AND MR7210               ; 転写収納下降位置移動
+JMP MR10506
+STG MR10506
+ANB MR7210               ; 転写収納下降位置移動
+JMP MR10507              ; 転写装置WF供給完了
+STG MR10507              ; 転写装置WF供給完了
+RES MR911                ; 転写装置へﾊﾝﾄﾞ進入中
+CON
+ANB MR911                ; 転写装置へﾊﾝﾄﾞ進入中
+AND MR5700               ; 転写装置電源ON
+AND MR5701               ; 転写装置起動中
+ANB MR5702               ; WF供給要求
+JMP MR10508
+STG MR10508
+JMP MR10509              ; WF取出し待機中
+;***** WF　転写中間位置取出し *****
+STG MR10509              ; WF取出し待機中
+ANB MR32000              ; 塗布ﾕﾆｯﾄﾎﾟｰｽﾞ/異常
+AND MR5701               ; 転写装置起動中
+AND MR5703               ; WF取出し要求
+SET MR911                ; 転写装置へﾊﾝﾄﾞ進入中
+CON
+AND MR911                ; 転写装置へﾊﾝﾄﾞ進入中
+JMP MR10510              ; 転写取出し中間位置移動
+STG MR10510              ; 転写取出し中間位置移動
+AND MR7400               ; 転写取出し中間位置移動
+JMP MR10511
+STG MR10511
+ANB MR7400               ; 転写取出し中間位置移動
+JMP MR10512              ; WF吸着OFF要求
+STG MR10512              ; WF吸着OFF要求
+ANB MR32000              ; 塗布ﾕﾆｯﾄﾎﾟｰｽﾞ/異常
+JMP MR10513              ; 転写装置WF吸着OFF要求
+STG MR10513              ; 転写装置WF吸着OFF要求
+AND MR5701               ; 転写装置起動中
+AND MR5705               ; WF吸着OFF
+JMP MR10514              ; 転写取出し上昇位置移動
+;***** WF　転写取出し *****
+STG MR10514              ; 転写取出し上昇位置移動
+AND MR7410               ; 転写取出し上昇位置移動
+JMP MR10515
+STG MR10515
+ANB MR7410               ; 転写取出し上昇位置移動
+JMP MR10600
+STG MR10600
+MPS
+ANB R4108                ; 搬送ﾛﾎﾞｯﾄｱﾗｰﾑ
+JMP MR10602              ; 転写後経過時間ｶｳﾝﾄ開始
+MPP
+AND MR4105               ; WF搬送ﾛﾎﾞｯﾄ吸着異常
+SET MR6500               ; WF搬送ﾛﾎﾞｯﾄ異常
+CON
+AND MR6500               ; WF搬送ﾛﾎﾞｯﾄ異常
+JMP MR10601              ; WF取出し完了
+STG MR10601              ; WF取出し完了
+ANB MR32000              ; 塗布ﾕﾆｯﾄﾎﾟｰｽﾞ/異常
+MPS
+AND MR010                ; ﾒｲﾝ画面
+OUT MR2013               ; 搬送ﾛﾎﾞｯﾄWF吸着異常表示3
+MPP
+AND MR6500               ; WF搬送ﾛﾎﾞｯﾄ異常
+MPS
+AND MR803                ; ﾘﾄﾗｲSW
+RES MR6500               ; WF搬送ﾛﾎﾞｯﾄ異常
+CON
+JMP MR10514              ; 転写取出し上昇位置移動
+MPP
+AND MR810                ; WF吸着異常中断SW
+RES MR6500               ; WF搬送ﾛﾎﾞｯﾄ異常
+CON
+ANB MR40005              ; 全起動中
+ENDS
+STG MR10602              ; 転写後経過時間ｶｳﾝﾄ開始
+AND MR610                ; 転写後経過時間ｶｳﾝﾄ開始
+JMP MR10603              ; WF取出し完了
+LD MR10602               ; 転写後経過時間ｶｳﾝﾄ開始
+OR MR610                 ; 転写後経過時間ｶｳﾝﾄ開始
+ANB MR3910               ; 次WF投入要求信号ﾊﾟﾙｽ
+OUT MR610                ; 転写後経過時間ｶｳﾝﾄ開始
+STG MR10603              ; WF取出し完了
+RES MR911                ; 転写装置へﾊﾝﾄﾞ進入中
+CON
+ANB MR911                ; 転写装置へﾊﾝﾄﾞ進入中
+AND MR5701               ; 転写装置起動中
+ANB MR5703               ; WF取出し要求
+JMP MR10604
+STG MR10604
+MPS
+ANB MR5707               ; 接着剤ﾎﾟｯﾄﾗｲﾌｵｰﾊﾞｰ
+SET MR914                ; 次WF転写開始信号
+CON
+AND MR914                ; 次WF転写開始信号
+SET MR10700
+CON
+ENDS
+MPP
+AND MR5707               ; 接着剤ﾎﾟｯﾄﾗｲﾌｵｰﾊﾞｰ
+SET MR914                ; 次WF転写開始信号
+CON
+SET MR907                ; ﾎﾟｯﾄﾗｲﾌ時間ｵｰﾊﾞｰFLG
+CON
+AND MR914                ; 次WF転写開始信号
+AND MR907                ; ﾎﾟｯﾄﾗｲﾌ時間ｵｰﾊﾞｰFLG
+SET MR10700
+CON
+ENDS
+;***** WF　画像検査　P1 *****
+STG MR10700
+ANB MR32000              ; 塗布ﾕﾆｯﾄﾎﾟｰｽﾞ/異常
+JMP MR10701
+STG MR10701
+@MOV #1 DM1020           ; 外観検査ﾛﾎﾞｯﾄﾎﾟｲﾝﾄNo.
+@MOV #1 DM1022           ; 外観画像検査ﾎﾟｲﾝﾄNo.
+TMH #613 #3
+CON
+AND T613
+JMP MR10702              ; 画像検査位置移動P1
+STG MR10702              ; 画像検査位置移動P1
+AND MR7800               ; 画像検査位置移動PM
+JMP MR10703
+STG MR10703
+ANB MR7800               ; 画像検査位置移動PM
+ANB MR8600               ; 外観画像検査動作中
+JMP MR10704              ; 外観画像検査動作実行
+STG MR10704              ; 外観画像検査動作実行
+AND MR8600               ; 外観画像検査動作中
+JMP MR10705
+STG MR10705
+ANB MR8600               ; 外観画像検査動作中
+JMP MR10706
+STG MR10706
+@INC DM1020              ; 外観検査ﾛﾎﾞｯﾄﾎﾟｲﾝﾄNo.
+TMH #605 #5
+CON
+AND T605
+ANB MR32000              ; 塗布ﾕﾆｯﾄﾎﾟｰｽﾞ/異常
+SET MR10707              ; 画像検査位置移動P2-P4
+CON
+ENDS
+;***** WF　画像検査　P2-4 *****
+STG MR10707              ; 画像検査位置移動P2-P4
+AND MR8400               ; 画像検査位置移動PMA
+JMP MR10708
+STG MR10708
+ANB MR8400               ; 画像検査位置移動PMA
+ANB MR8600               ; 外観画像検査動作中
+JMP MR10709              ; 外観画像検査実行
+STG MR10709              ; 外観画像検査実行
+AND MR8600               ; 外観画像検査動作中
+JMP MR10710
+STG MR10710
+ANB MR8600               ; 外観画像検査動作中
+JMP MR10711
+STG MR10711
+@INC DM1020              ; 外観検査ﾛﾎﾞｯﾄﾎﾟｲﾝﾄNo.
+TMH #606 #5
+CON
+AND T606
+JMP MR10712
+STG MR10712
+ANB MR32000              ; 塗布ﾕﾆｯﾄﾎﾟｰｽﾞ/異常
+MPS
+AND< DM1020 #5           ; 外観検査ﾛﾎﾞｯﾄﾎﾟｲﾝﾄNo.
+JMP MR10707              ; 画像検査位置移動P2-P4
+MPP
+AND>= DM1020 #5          ; 外観検査ﾛﾎﾞｯﾄﾎﾟｲﾝﾄNo.
+JMP MR10713              ; 画像検査位置移動P5
+;***** WF　画像検査　P5 *****
+STG MR10713              ; 画像検査位置移動P5
+AND MR7800               ; 画像検査位置移動PM
+JMP MR10714
+STG MR10714
+ANB MR7800               ; 画像検査位置移動PM
+ANB MR8600               ; 外観画像検査動作中
+JMP MR10715              ; 外観画像検査実行
+STG MR10715              ; 外観画像検査実行
+AND MR8600               ; 外観画像検査動作中
+JMP MR10800
+STG MR10800
+ANB MR8600               ; 外観画像検査動作中
+JMP MR10801
+STG MR10801
+@INC DM1020              ; 外観検査ﾛﾎﾞｯﾄﾎﾟｲﾝﾄNo.
+TMH #607 #5
+CON
+AND T607
+ANB MR32000              ; 塗布ﾕﾆｯﾄﾎﾟｰｽﾞ/異常
+JMP MR10802              ; 画像検査位置移動P6-P8
+;***** WF　画像検査　P6-8 *****
+STG MR10802              ; 画像検査位置移動P6-P8
+AND MR8400               ; 画像検査位置移動PMA
+JMP MR10803
+STG MR10803
+ANB MR8400               ; 画像検査位置移動PMA
+ANB MR8600               ; 外観画像検査動作中
+JMP MR10804              ; 外観画像検査実行
+STG MR10804              ; 外観画像検査実行
+AND MR8600               ; 外観画像検査動作中
+JMP MR10805
+STG MR10805
+ANB MR8600               ; 外観画像検査動作中
+JMP MR10806
+STG MR10806
+@INC DM1020              ; 外観検査ﾛﾎﾞｯﾄﾎﾟｲﾝﾄNo.
+TMH #608 #5
+CON
+AND T608
+JMP MR10807
+STG MR10807
+ANB MR32000              ; 塗布ﾕﾆｯﾄﾎﾟｰｽﾞ/異常
+MPS
+AND< DM1020 #9           ; 外観検査ﾛﾎﾞｯﾄﾎﾟｲﾝﾄNo.
+JMP MR10802              ; 画像検査位置移動P6-P8
+MPP
+AND>= DM1020 #9          ; 外観検査ﾛﾎﾞｯﾄﾎﾟｲﾝﾄNo.
+JMP MR10808              ; 画像検査位置移動P9
+;***** WF　画像検査　P9 *****
+STG MR10808              ; 画像検査位置移動P9
+AND MR7800               ; 画像検査位置移動PM
+JMP MR10809
+STG MR10809
+ANB MR7800               ; 画像検査位置移動PM
+ANB MR8600               ; 外観画像検査動作中
+JMP MR10810              ; 外観画像検査実行
+STG MR10810              ; 外観画像検査実行
+AND MR8600               ; 外観画像検査動作中
+JMP MR10811
+STG MR10811
+ANB MR8600               ; 外観画像検査動作中
+JMP MR10812
+STG MR10812
+@INC DM1020              ; 外観検査ﾛﾎﾞｯﾄﾎﾟｲﾝﾄNo.
+TMH #609 #5
+CON
+AND T609
+ANB MR32000              ; 塗布ﾕﾆｯﾄﾎﾟｰｽﾞ/異常
+JMP MR10813              ; 画像検査位置移動P10-P12
+;***** WF　画像検査　P10-12 *****
+STG MR10813              ; 画像検査位置移動P10-P12
+AND MR8400               ; 画像検査位置移動PMA
+JMP MR10814
+STG MR10814
+ANB MR8400               ; 画像検査位置移動PMA
+ANB MR8600               ; 外観画像検査動作中
+JMP MR10815              ; 外観画像検査実行
+STG MR10815              ; 外観画像検査実行
+AND MR8600               ; 外観画像検査動作中
+JMP MR10900
+STG MR10900
+ANB MR8600               ; 外観画像検査動作中
+JMP MR10901
+STG MR10901
+@INC DM1020              ; 外観検査ﾛﾎﾞｯﾄﾎﾟｲﾝﾄNo.
+TMH #610 #5
+CON
+AND T610
+JMP MR10902
+STG MR10902
+ANB MR32000              ; 塗布ﾕﾆｯﾄﾎﾟｰｽﾞ/異常
+MPS
+AND< DM1020 #13          ; 外観検査ﾛﾎﾞｯﾄﾎﾟｲﾝﾄNo.
+JMP MR10813              ; 画像検査位置移動P10-P12
+MPP
+AND>= DM1020 #13         ; 外観検査ﾛﾎﾞｯﾄﾎﾟｲﾝﾄNo.
+JMP MR10903              ; 画像検査位置移動P13
+;***** WF　画像検査　P13 *****
+STG MR10903              ; 画像検査位置移動P13
+AND MR7800               ; 画像検査位置移動PM
+JMP MR10904
+STG MR10904
+ANB MR7800               ; 画像検査位置移動PM
+ANB MR8600               ; 外観画像検査動作中
+JMP MR10905              ; 外観画像検査実行
+STG MR10905              ; 外観画像検査実行
+AND MR8600               ; 外観画像検査動作中
+JMP MR10906
+STG MR10906
+ANB MR8600               ; 外観画像検査動作中
+JMP MR10907
+STG MR10907
+@INC DM1020              ; 外観検査ﾛﾎﾞｯﾄﾎﾟｲﾝﾄNo.
+TMH #611 #5
+CON
+AND T611
+ANB MR32000              ; 塗布ﾕﾆｯﾄﾎﾟｰｽﾞ/異常
+JMP MR10908              ; 画像検査位置移動P14-P16
+;***** WF　画像検査　P14-16 *****
+STG MR10908              ; 画像検査位置移動P14-P16
+AND MR8400               ; 画像検査位置移動PMA
+JMP MR10909
+STG MR10909
+ANB MR8400               ; 画像検査位置移動PMA
+ANB MR8600               ; 外観画像検査動作中
+JMP MR10910              ; 外観画像検査実行
+STG MR10910              ; 外観画像検査実行
+AND MR8600               ; 外観画像検査動作中
+JMP MR10911
+STG MR10911
+ANB MR8600               ; 外観画像検査動作中
+JMP MR10912
+STG MR10912
+@INC DM1020              ; 外観検査ﾛﾎﾞｯﾄﾎﾟｲﾝﾄNo.
+TMH #612 #5
+CON
+AND T612
+JMP MR10913
+STG MR10913
+ANB MR32000              ; 塗布ﾕﾆｯﾄﾎﾟｰｽﾞ/異常
+MPS
+AND< DM1020 #17          ; 外観検査ﾛﾎﾞｯﾄﾎﾟｲﾝﾄNo.
+JMP MR10908              ; 画像検査位置移動P14-P16
+MPP
+AND>= DM1020 #17         ; 外観検査ﾛﾎﾞｯﾄﾎﾟｲﾝﾄNo.
+JMP MR10914
+STG MR10914
+JMP MR10915
+STG MR10915
+SET MR11000
+CON
+ENDS
+;***** WF　画像検査　結果判断 *****
+STG MR11000
+JMP MR11001
+STG MR11001
+JMP MR11002              ; WF検査結果受信起動
+STG MR11002              ; WF検査結果受信起動
+AND MR9000               ; 外観画像検査結果受信起動
+JMP MR11004
+STG MR11003
+ANB MR9000               ; 外観画像検査結果受信起動
+JMP MR11004
+STG MR11004
+JMP MR11005
+STG MR11005
+MPS
+LD MR314                 ; 外観検査結果OK
+ANB MR313                ; 外観検査結果送受異常
+ANB MR315                ; 外観検査結果NG
+OR LR502                 ; 外観検査有効/無効(ON=無効)
+ANL
+JMP MR11010
+MPP
+LD MR315                 ; 外観検査結果NG
+OR MR313                 ; 外観検査結果送受異常
+ANB LR502                ; 外観検査有効/無効(ON=無効)
+ANL
+JMP MR11006
+STG MR11006
+ANB MR32000              ; 塗布ﾕﾆｯﾄﾎﾟｰｽﾞ/異常
+MPS
+AND MR010                ; ﾒｲﾝ画面
+OUT MR4800               ; 外観検査NGﾒｯｾｰｼﾞ
+MRD
+AND MR800                ; 続行SW
+JMP MR11010
+MRD
+AND MR802                ; 収納SW
+@MOV #1 DM158            ; 外観検査良否結果
+SET MR3700               ; WF9時の位置
+CON
+AND MR3700               ; WF9時の位置
+JMP MR12200              ; WF　ｷｬﾘｱ収納処理開始
+MPP
+AND MR810                ; WF吸着異常中断SW
+@MOV #1 DM158            ; 外観検査良否結果
+JMP MR11007              ; 中断処理
+STG MR11007              ; 中断処理
+RES MR910                ; 自動起動中
+CON
+ANB MR910                ; 自動起動中
+ANB MR40005              ; 全起動中
+ENDS
+STG MR11010
+ANB MR32000              ; 塗布ﾕﾆｯﾄﾎﾟｰｽﾞ/異常
+MPS
+AND CR2002               ; 常時ON
+SET MR11200
+CON
+ENDS
+MPP
+AND CR2003               ; 常時OFF
+SET MR3700               ; WF9時の位置
+CON
+AND MR3700               ; WF9時の位置
+JMP MR12200              ; WF　ｷｬﾘｱ収納処理開始
+;***** WF　ｱﾗｲﾅ収納待機位置移動 *****
+STG MR11200
+ZRES MR10700 MR11015
+CON
+JMP MR11201              ; ｱﾗｲﾅ収納待機位置移動
+STG MR11201              ; ｱﾗｲﾅ収納待機位置移動
+AND MR1800               ; ｱﾗｲﾅ収納待機位置移動
+JMP MR11202
+STG MR11202
+ANB MR1800               ; ｱﾗｲﾅ収納待機位置移動
+JMP MR11203
+STG MR11203
+ANB MR32000              ; 塗布ﾕﾆｯﾄﾎﾟｰｽﾞ/異常
+JMP MR11204              ; ｱﾗｲﾅ収納位置移動
+;***** WF　ｱﾗｲﾅ収納 *****
+STG MR11204              ; ｱﾗｲﾅ収納位置移動
+AND MR1810               ; ｱﾗｲﾅ収納位置移動
+JMP MR11205
+STG MR11205
+ANB MR1810               ; ｱﾗｲﾅ収納位置移動
+JMP MR11206
+STG MR11206
+ANB MR32000              ; 塗布ﾕﾆｯﾄﾎﾟｰｽﾞ/異常
+JMP MR11207              ; ｱﾗｲﾒﾝﾄ接合向き実行
+;***** WF　ｱﾗｲﾅ接合向けｱﾗｲﾒﾝﾄ実行 *****
+STG MR11207              ; ｱﾗｲﾒﾝﾄ接合向き実行
+AND MR2900               ; ｱﾗｲﾒﾝﾄ接合向き実行
+JMP MR11208
+STG MR11208
+ANB MR2900               ; ｱﾗｲﾒﾝﾄ接合向き実行
+JMP MR11209
+STG MR11209
+ANB MR32000              ; 塗布ﾕﾆｯﾄﾎﾟｰｽﾞ/異常
+JMP MR11210              ; 搬送RBｱﾗｲﾅ取出し待機位置移動
+;***** WF　ｱﾗｲﾅ取出し待機位置移動 *****
+STG MR11210              ; 搬送RBｱﾗｲﾅ取出し待機位置移動
+AND MR1900               ; 搬送RBｱﾗｲﾅ取出し待機位置移動
+JMP MR11211
+STG MR11211
+ANB MR1900               ; 搬送RBｱﾗｲﾅ取出し待機位置移動
+JMP MR11212
+STG MR11212
+ANB MR32000              ; 塗布ﾕﾆｯﾄﾎﾟｰｽﾞ/異常
+JMP MR11213              ; ｱﾗｲﾅ取出し
+;***** WF　ｱﾗｲﾅ取出し *****
+STG MR11213              ; ｱﾗｲﾅ取出し
+AND MR1907               ; ｱﾗｲﾅ取出し位置移動
+JMP MR11214
+STG MR11214
+ANB MR1907               ; ｱﾗｲﾅ取出し位置移動
+MPS
+ANB R4108                ; 搬送ﾛﾎﾞｯﾄｱﾗｰﾑ
+SET MR11300
+CON
+ENDS
+MPP
+AND MR4105               ; WF搬送ﾛﾎﾞｯﾄ吸着異常
+SET MR6500               ; WF搬送ﾛﾎﾞｯﾄ異常
+CON
+AND MR6500               ; WF搬送ﾛﾎﾞｯﾄ異常
+JMP MR11215
+STG MR11215
+ANB MR32000              ; 塗布ﾕﾆｯﾄﾎﾟｰｽﾞ/異常
+MPS
+AND MR010                ; ﾒｲﾝ画面
+OUT MR2011               ; 搬送ﾛﾎﾞｯﾄWF吸着異常表示2
+MPP
+AND MR6500               ; WF搬送ﾛﾎﾞｯﾄ異常
+MPS
+AND MR803                ; ﾘﾄﾗｲSW
+RES MR6500               ; WF搬送ﾛﾎﾞｯﾄ異常
+CON
+JMP MR11210              ; 搬送RBｱﾗｲﾅ取出し待機位置移動
+MPP
+AND MR810                ; WF吸着異常中断SW
+RES MR6500               ; WF搬送ﾛﾎﾞｯﾄ異常
+CON
+ANB MR40005              ; 全起動中
+ENDS
+;***** WF　接合収納待機位置移動 *****
+STG MR11300
+ZRES MR11200 MR11215
+CON
+JMP MR11301
+STG MR11301
+JMP MR11302
+STG MR11302
+AND MR7900               ; 接合収納待機位置移動
+JMP MR11303
+STG MR11303
+ANB MR7900               ; 接合収納待機位置移動
+JMP MR11304
+STG MR11304
+ANB MR32000              ; 塗布ﾕﾆｯﾄﾎﾟｰｽﾞ/異常
+JMP MR11305
+STG MR11305
+AND MR8500               ; ｷｬﾘｱ WF確認
+JMP MR11306
+STG MR11306
+ANB MR8500               ; ｷｬﾘｱ WF確認
+JMP MR11307
+STG MR11307
+JMP MR11308              ; 接合装置受取り可能待ち
+STG MR11308              ; 接合装置受取り可能待ち
+ANB MR32000              ; 塗布ﾕﾆｯﾄﾎﾟｰｽﾞ/異常
+MPS
+LDB R4000                ; 接合装置電源投入
+OR R4003                 ; 接合装置ｴﾗｰ
+ANL
+MPS
+LDB MR413                ; 続行SW　ON記憶
+AND MR010                ; ﾒｲﾝ画面
+ANL
+OUT MR4801               ; 接合装置停止表示
+MPP
+AND MR802                ; 収納SW
+SET MR3702               ; WF12時の位置
+CON
+AND MR3702               ; WF12時の位置
+JMP MR12200              ; WF　ｷｬﾘｱ収納処理開始
+MRD
+LD R4009                 ; 接合装置ﾌﾙｵｰﾄ
+ANB LR501                ; 搬送ﾓｰﾄﾞ
+AND R4000                ; 接合装置電源投入
+AND R4001                ; 接合装置受取り可能
+ANB R4003                ; 接合装置ｴﾗｰ
+ANL
+JMP MR11309
+MPP
+LDB R4009                ; 接合装置ﾌﾙｵｰﾄ
+AND LR501                ; 搬送ﾓｰﾄﾞ
+AND R4000                ; 接合装置電源投入
+AND R4001                ; 接合装置受取り可能
+ANB R4003                ; 接合装置ｴﾗｰ
+ANL
+JMP MR11309
+LD MR800                 ; 続行SW
+OR MR413                 ; 続行SW　ON記憶
+AND MR11308              ; 接合装置受取り可能待ち
+OUT MR413                ; 続行SW　ON記憶
+STG MR11309
+MPS
+AND R4006                ; 接合機最終ACT信号
+JMP MR11310
+MPP
+ANB R4006                ; 接合機最終ACT信号
+JMP MR11311
+STG MR11310
+SET MR904                ; 接合機最終ACTF LG
+CON
+JMP MR11311
+STG MR11311
+JMP MR11312
+STG MR11312
+JMP MR11400
+;***** WF　接合収納中間位置移動 *****
+STG MR11400
+SET MR915                ; 接合装置へﾊﾝﾄﾞ進入中
+CON
+AND MR915                ; 接合装置へﾊﾝﾄﾞ進入中
+JMP MR11401
+STG MR11401
+JMP MR11402
+STG MR11402
+AND MR7600               ; 接合収納中間位置移動
+JMP MR11403
+STG MR11403
+ANB MR7600               ; 接合収納中間位置移動
+JMP MR11404
+STG MR11404
+AND R4000                ; 接合装置電源投入
+ANB R4003                ; 接合装置ｴﾗｰ
+JMP MR11405              ; 接合装置PAｽﾃｰｼﾞ吸着ON要求
+;***** WF　接合収納位置移動 *****
+STG MR11405              ; 接合装置PAｽﾃｰｼﾞ吸着ON要求
+AND R4002                ; 接合装置PAｽﾃｰｼﾞ吸着ON
+TMR #615 #2              ; 接合装置PAｽﾃｰｼﾞ吸着ON確認
+CON
+AND T615                 ; 接合装置PAｽﾃｰｼﾞ吸着ON確認
+JMP MR11406
+STG MR11406
+JMP MR11407
+STG MR11407
+AND MR7610               ; 接合収納下降位置移動
+JMP MR11408
+STG MR11408
+ANB MR7610               ; 接合収納下降位置移動
+JMP MR11409
+STG MR11409
+RES MR914                ; 次WF転写開始信号
+CON
+RES MR915                ; 接合装置へﾊﾝﾄﾞ進入中
+CON
+ANB MR914                ; 次WF転写開始信号
+ANB MR915                ; 接合装置へﾊﾝﾄﾞ進入中
+ANB R4001                ; 接合装置受取り可能
+ANB R4005                ; 次WF投入要求信号
+JMP MR11410              ; 接合装置WF収納完了
+STG MR11410              ; 接合装置WF収納完了
+MPS
+LDB LR501                ; 搬送ﾓｰﾄﾞ
+AND= DM102 #1            ; PCへWF情報読出し要求
+ANL
+JMP MR11411
+MPP
+AND LR501                ; 搬送ﾓｰﾄﾞ
+JMP MR11412
+STG MR11411
+AND= DM102 #0            ; PCへWF情報読出し要求
+JMP MR11412
+STG MR11412
+MPS
+AND MR905                ; ｷｬﾘｱWF無しFLG
+JMP MR11415
+MPP
+ANB MR905                ; ｷｬﾘｱWF無しFLG
+JMP MR11415
+STG MR11415
+JMP MR11800
+;***** WF　1枚WF終了時処理 *****
+STG MR11800
+ZRES MR10000 MR11415
+CON
+ZRES MR12200 MR12415     ; WF　ｷｬﾘｱ収納処理開始
+CON
+JMP MR11801
+STG MR11801
+MPS
+ANB MR904                ; 接合機最終ACTF LG
+JMP MR11802
+MPP
+AND MR904                ; 接合機最終ACTF LG
+JMP MR11810              ; 最終終了処理開始
+STG MR11802
+MPS
+ANB MR905                ; ｷｬﾘｱWF無しFLG
+JMP MR11803
+MPP
+AND MR905                ; ｷｬﾘｱWF無しFLG
+JMP MR11810              ; 最終終了処理開始
+STG MR11803
+MPS
+ANB MR907                ; ﾎﾟｯﾄﾗｲﾌ時間ｵｰﾊﾞｰFLG
+JMP MR11804              ; ｻｲｸﾙ停止ONか
+MPP
+AND MR907                ; ﾎﾟｯﾄﾗｲﾌ時間ｵｰﾊﾞｰFLG
+JMP MR11810              ; 最終終了処理開始
+STG MR11804              ; ｻｲｸﾙ停止ONか
+MPS
+ANB MR30010              ; ｻｲｸﾙ停止受付
+JMP MR11805
+MPP
+AND MR30010              ; ｻｲｸﾙ停止受付
+JMP MR11812              ; 全起動OFF
+STG MR11805
+MPS
+LDB MR30010              ; ｻｲｸﾙ停止受付
+AND MR40005              ; 全起動中
+ANB MR907                ; ﾎﾟｯﾄﾗｲﾌ時間ｵｰﾊﾞｰFLG
+ANL
+JMP MR11813
+MPP
+LD MR30010               ; ｻｲｸﾙ停止受付
+ORB MR40005              ; 全起動中
+OR MR907                 ; ﾎﾟｯﾄﾗｲﾌ時間ｵｰﾊﾞｰFLG
+ANL
+JMP MR11812              ; 全起動OFF
+STG MR11810              ; 最終終了処理開始
+LD MR612                 ; 接着剤解凍開始中ｸﾘｱ
+ORB MR5801               ; 接着剤解凍開始中
+ANL
+JMP MR11811              ; 最終処理
+LD MR11810               ; 最終終了処理開始
+OR MR612                 ; 接着剤解凍開始中ｸﾘｱ
+AND MR5801               ; 接着剤解凍開始中
+ANB MR40006              ; 自動運転開始ﾊﾟﾙｽ
+OUT MR612                ; 接着剤解凍開始中ｸﾘｱ
+STG MR11811              ; 最終処理
+@FMOV #0 DM120 #20
+RES MR900                ; ﾏｯﾋﾟﾝｸﾞ済FLG
+CON
+ANB MR900                ; ﾏｯﾋﾟﾝｸﾞ済FLG
+JMP MR11812              ; 全起動OFF
+STG MR11812              ; 全起動OFF
+ANB MR910                ; 自動起動中
+ANB MR904                ; 接合機最終ACTF LG
+ANB MR905                ; ｷｬﾘｱWF無しFLG
+ANB MR906                ; 最終封止板FLG
+ANB MR907                ; ﾎﾟｯﾄﾗｲﾌ時間ｵｰﾊﾞｰFLG
+ANB MR914                ; 次WF転写開始信号
+ANB MR40005              ; 全起動中
+ZRES MR10000 MR11815
+CON
+ENDS
+LD MR11812               ; 全起動OFF
+RES MR910                ; 自動起動中
+CON
+RES MR904                ; 接合機最終ACTF LG
+CON
+RES MR905                ; ｷｬﾘｱWF無しFLG
+CON
+RES MR906                ; 最終封止板FLG
+CON
+RES MR907                ; ﾎﾟｯﾄﾗｲﾌ時間ｵｰﾊﾞｰFLG
+CON
+RES MR914                ; 次WF転写開始信号
+STG MR11813
+SET MR10100              ; ﾏｯﾋﾟﾝｸﾞ完了時ｽﾀｰﾄ
+CON
+ENDS
+LDF MR40005              ; 全起動中
+ZRES MR10000 MR12415
+LDB MR40005              ; 全起動中
+RES MR910                ; 自動起動中
+;***** WF　ｷｬﾘｱ収納処理 *****
+;***** WF　ｱﾗｲﾅ取出し *****
+STG MR12200              ; WF　ｷｬﾘｱ収納処理開始
+JMP MR12201              ; ｱﾗｲﾅ収納待機位置移動
+STG MR12201              ; ｱﾗｲﾅ収納待機位置移動
+AND MR1800               ; ｱﾗｲﾅ収納待機位置移動
+JMP MR12202
+STG MR12202
+ANB MR1800               ; ｱﾗｲﾅ収納待機位置移動
+JMP MR12203
+STG MR12203
+ANB MR32000              ; 塗布ﾕﾆｯﾄﾎﾟｰｽﾞ/異常
+JMP MR12204              ; ｱﾗｲﾅ収納位置移動
+STG MR12204              ; ｱﾗｲﾅ収納位置移動
+AND MR1810               ; ｱﾗｲﾅ収納位置移動
+JMP MR12205
+STG MR12205
+ANB MR1810               ; ｱﾗｲﾅ収納位置移動
+JMP MR12206
+STG MR12206
+ANB MR32000              ; 塗布ﾕﾆｯﾄﾎﾟｰｽﾞ/異常
+JMP MR12207              ; ｱﾗｲﾒﾝﾄｷｬﾘｱ向き実行
+STG MR12207              ; ｱﾗｲﾒﾝﾄｷｬﾘｱ向き実行
+AND MR2500               ; ｱﾗｲﾒﾝﾄｷｬﾘｱ向き実行
+JMP MR12208
+STG MR12208
+ANB MR2500               ; ｱﾗｲﾒﾝﾄｷｬﾘｱ向き実行
+JMP MR12209
+STG MR12209
+ANB MR32000              ; 塗布ﾕﾆｯﾄﾎﾟｰｽﾞ/異常
+JMP MR12210              ; 搬送RBｱﾗｲﾅ取出し待機位置移動
+;***** WF　ｱﾗｲﾅ取出し *****
+STG MR12210              ; 搬送RBｱﾗｲﾅ取出し待機位置移動
+AND MR1900               ; 搬送RBｱﾗｲﾅ取出し待機位置移動
+JMP MR12211
+STG MR12211
+ANB MR1900               ; 搬送RBｱﾗｲﾅ取出し待機位置移動
+JMP MR12212
+STG MR12212
+ANB MR32000              ; 塗布ﾕﾆｯﾄﾎﾟｰｽﾞ/異常
+JMP MR12213              ; ｱﾗｲﾅ取出し
+STG MR12213              ; ｱﾗｲﾅ取出し
+AND MR1907               ; ｱﾗｲﾅ取出し位置移動
+JMP MR12214
+STG MR12214
+ANB MR1907               ; ｱﾗｲﾅ取出し位置移動
+MPS
+ANB R4108                ; 搬送ﾛﾎﾞｯﾄｱﾗｰﾑ
+SET MR12300
+CON
+ENDS
+MPP
+AND MR4105               ; WF搬送ﾛﾎﾞｯﾄ吸着異常
+SET MR6500               ; WF搬送ﾛﾎﾞｯﾄ異常
+CON
+AND MR6500               ; WF搬送ﾛﾎﾞｯﾄ異常
+JMP MR12215
+STG MR12215
+ANB MR32000              ; 塗布ﾕﾆｯﾄﾎﾟｰｽﾞ/異常
+MPS
+AND MR010                ; ﾒｲﾝ画面
+OUT MR2012               ; 搬送ﾛﾎﾞｯﾄWF吸着異常表示3
+MPP
+AND MR6500               ; WF搬送ﾛﾎﾞｯﾄ異常
+MPS
+AND MR803                ; ﾘﾄﾗｲSW
+RES MR6500               ; WF搬送ﾛﾎﾞｯﾄ異常
+CON
+JMP MR12210              ; 搬送RBｱﾗｲﾅ取出し待機位置移動
+MPP
+AND MR810                ; WF吸着異常中断SW
+RES MR6500               ; WF搬送ﾛﾎﾞｯﾄ異常
+CON
+ANB MR40005              ; 全起動中
+ENDS
+LDB MR2010               ; 搬送ﾛﾎﾞｯﾄWF吸着異常表示1
+ANB MR2011               ; 搬送ﾛﾎﾞｯﾄWF吸着異常表示2
+ANB MR2012               ; 搬送ﾛﾎﾞｯﾄWF吸着異常表示3
+ANB MR2013               ; 搬送ﾛﾎﾞｯﾄWF吸着異常表示3
+INV
+OUT MR4807               ; 搬送ﾛﾎﾞｯﾄWF吸着異常表示
+;***** WF　ｷｬﾘｱ収納 *****
+STG MR12300
+JMP MR12301              ; WF収納
+STG MR12301              ; WF収納
+AND MR1707               ; WF収納中
+JMP MR12302
+STG MR12302
+ANB MR1707               ; WF収納中
+JMP MR12303
+STG MR12303
+ANB MR32000              ; 塗布ﾕﾆｯﾄﾎﾟｰｽﾞ/異常
+JMP MR12304              ; ｷｬﾘｱ WF確認
+STG MR12304              ; ｷｬﾘｱ WF確認
+AND MR8500               ; ｷｬﾘｱ WF確認
+JMP MR12305
+STG MR12305
+ANB MR8500               ; ｷｬﾘｱ WF確認
+JMP MR12306
+STG MR12306
+JMP MR12307              ; PCへWF情報読出し要求
+STG MR12307              ; PCへWF情報読出し要求
+AND= DM102 #1            ; PCへWF情報読出し要求
+JMP MR12308
+STG MR12308
+AND= DM102 #0            ; PCへWF情報読出し要求
+RES MR914                ; 次WF転写開始信号
+CON
+ANB MR914                ; 次WF転写開始信号
+JMP MR12309
+STG MR12309
+JMP MR12400
+STG MR12400
+JMP MR12401              ; 搬送ﾛﾎﾞｯﾄﾊﾝﾄﾞ吸着ON
+STG MR12401              ; 搬送ﾛﾎﾞｯﾄﾊﾝﾄﾞ吸着ON
+AND MR1308               ; 真空吸着ON
+JMP MR12402
+STG MR12402
+ANB MR1308               ; 真空吸着ON
+TMR #614 #5
+CON
+AND T614
+JMP MR12403              ; ﾊﾝﾄﾞ吸着状態確認
+STG MR12403              ; ﾊﾝﾄﾞ吸着状態確認
+MPS
+ANB R4106                ; ﾛﾎﾞｯﾄﾊﾝﾄﾞ圧力ｾﾝｻｰ信号
+JMP MR12410              ; 搬送ﾛﾎﾞｯﾄﾊﾝﾄﾞ吸着OFF
+MPP
+AND R4106                ; ﾛﾎﾞｯﾄﾊﾝﾄﾞ圧力ｾﾝｻｰ信号
+JMP MR12404
+STG MR12404
+JMP MR12415
+STG MR12405              ; 搬送ﾛﾎﾞｯﾄﾊﾝﾄﾞ吸着OFF
+AND MR1311               ; 真空吸着OFF
+JMP MR12406
+STG MR12406
+ANB MR1311               ; 真空吸着OFF
+ANB R4106                ; ﾛﾎﾞｯﾄﾊﾝﾄﾞ圧力ｾﾝｻｰ信号
+JMP MR12407              ; ﾊﾝﾄﾞＷＦ有り異常ON
+STG MR12407              ; ﾊﾝﾄﾞＷＦ有り異常ON
+ANB MR40005              ; 全起動中
+JMP MR12415
+STG MR12410              ; 搬送ﾛﾎﾞｯﾄﾊﾝﾄﾞ吸着OFF
+AND MR1311               ; 真空吸着OFF
+JMP MR12411
+STG MR12411
+ANB MR1311               ; 真空吸着OFF
+ANB R4106                ; ﾛﾎﾞｯﾄﾊﾝﾄﾞ圧力ｾﾝｻｰ信号
+JMP MR12412
+STG MR12412
+SET MR11800
+CON
+ENDS
+STG MR12415
+ENDS
+;***** 中断処理 *****
+LDB MR40010              ; 強制停止
+ANB MR810                ; WF吸着異常中断SW
+ANB MR4107               ; 搬送ﾛﾎﾞｯﾄ通信異常
+ANB MR4109               ; 搬送ﾛﾎﾞｯﾄ異常
+ANB MR4115               ; ｱﾗｲﾅ吸着異常
+ANB MR4200               ; ｱﾗｲﾅθ軸ｱﾗｲﾒﾝﾄ異常
+ANB MR4201               ; ｱﾗｲﾅ偏芯異常
+ANB MR4203               ; ｱﾗｲﾅ通信異常
+ANB MR4204               ; ｱﾗｲﾅ異常
+ANB MR4205               ; ｱﾗｲﾅ通信ﾀｲﾑｱｳﾄ異常
+INV
+OUT MR710                ; 中断処理受付
+LDP MR710                ; 中断処理受付
+OR MR700                 ; 中断処理
+AND MR40005              ; 全起動中
+OUT MR700                ; 中断処理
+TMH #171 #5              ; 中断処理開始
+LDP T171                 ; 中断処理開始
+SET MR701                ; 中断PCへWF情報読出し要求
+STG MR701                ; 中断PCへWF情報読出し要求
+AND= DM102 #1            ; PCへWF情報読出し要求
+JMP MR702
+STG MR702
+AND= DM102 #0            ; PCへWF情報読出し要求
+JMP MR703                ; 全起動OFF
+STG MR703                ; 全起動OFF
+RES MR910                ; 自動起動中
+CON
+RES MR904                ; 接合機最終ACTF LG
+CON
+RES MR905                ; ｷｬﾘｱWF無しFLG
+CON
+RES MR906                ; 最終封止板FLG
+CON
+RES MR907                ; ﾎﾟｯﾄﾗｲﾌ時間ｵｰﾊﾞｰFLG
+CON
+RES MR914                ; 次WF転写開始信号
+CON
+ANB MR910                ; 自動起動中
+ANB MR904                ; 接合機最終ACTF LG
+ANB MR905                ; ｷｬﾘｱWF無しFLG
+ANB MR906                ; 最終封止板FLG
+ANB MR907                ; ﾎﾟｯﾄﾗｲﾌ時間ｵｰﾊﾞｰFLG
+ANB MR914                ; 次WF転写開始信号
+ANB MR40005              ; 全起動中
+ENDS
+LDB MR40005              ; 全起動中
+ZRES MR701 MR709         ; 中断PCへWF情報読出し要求
+END
+ENDH

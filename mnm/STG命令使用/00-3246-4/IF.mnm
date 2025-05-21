@@ -1,0 +1,936 @@
+DEVICE:53
+;MODULE:IF
+;MODULE_TYPE:0
+;MainPLC → 洗浄機
+;MainPLC → Cleaning Unit
+;B2040　 → B2000
+;W020    → W010
+LDP CR2002               ; 常時ON
+LDB MR915                ; ﾛｰｶﾙｸﾘｱ
+ANB R50000               ; 非常停止停止(復帰不可ｴﾗｰ)
+ANB R55003               ; 即停止ｴﾗｰ(復帰不可)
+INV
+ORL
+ZRES @MR000 @MR4915      ; Unit1給材I/F開始
+;<h1/>ﾗｲﾝ1給材I/F
+LDP MR3108               ; Unit1_供給IF開始
+SET @MR000               ; Unit1給材I/F開始
+STG @MR000               ; Unit1給材I/F開始
+SET MR2501               ; ﾒｲﾝへ給材1ﾗｲﾝ動作開始許可
+CON
+RES MR3108               ; Unit1_供給IF開始
+CON
+AND MR2501               ; ﾒｲﾝへ給材1ﾗｲﾝ動作開始許可
+ANB MR3108               ; Unit1_供給IF開始
+JMP @MR001               ; ﾒｲﾝへ動作開始許可
+STG @MR001               ; ﾒｲﾝへ動作開始許可
+MPS
+LDB MR3002               ; 停止要求ON
+LD B2010                 ; ﾒｲﾝより給材1ﾗｲﾝ側動作開始通知
+OR LR000                 ; Offline
+ANL
+ANL
+MPS
+ANB B2017                ; ﾒｲﾝより給材1ﾗｲﾝ側2回目動作通知
+RES MR2501               ; ﾒｲﾝへ給材1ﾗｲﾝ動作開始許可
+CON
+ANB MR2501               ; ﾒｲﾝへ給材1ﾗｲﾝ動作開始許可
+JMP @MR002               ; ﾒｲﾝより動作開始
+MPP
+AND B2017                ; ﾒｲﾝより給材1ﾗｲﾝ側2回目動作通知
+RES MR2501               ; ﾒｲﾝへ給材1ﾗｲﾝ動作開始許可
+CON
+ANB MR2501               ; ﾒｲﾝへ給材1ﾗｲﾝ動作開始許可
+JMP @MR010               ; 2回目動作確認
+MPP
+AND MR3002               ; 停止要求ON
+RES MR2501               ; ﾒｲﾝへ給材1ﾗｲﾝ動作開始許可
+CON
+ANB MR2501               ; ﾒｲﾝへ給材1ﾗｲﾝ動作開始許可
+JMP @MR015               ; END
+STG @MR010               ; 2回目動作確認
+ANB B2010                ; ﾒｲﾝより給材1ﾗｲﾝ側動作開始通知
+ANB B2017                ; ﾒｲﾝより給材1ﾗｲﾝ側2回目動作通知
+JMP @MR000               ; Unit1給材I/F開始
+;MainPLC ﾜｰｸ置動作開始確認
+;MainPLC Operation start confirmation put the work
+STG @MR002               ; ﾒｲﾝより動作開始
+ANB B2010                ; ﾒｲﾝより給材1ﾗｲﾝ側動作開始通知
+JMP @MR003               ; 【動作中】
+;MainPLC ﾜｰｸ置動作完了
+;MainPLC Operation is completed to put the work
+STG @MR003               ; 【動作中】
+MPS
+ANB MR3002               ; 停止要求ON
+MPS
+AND B2012                ; ﾒｲﾝより給材1ﾗｲﾝ側動作失敗
+JMP @MR000               ; Unit1給材I/F開始
+MPP
+LDB B2012                ; ﾒｲﾝより給材1ﾗｲﾝ側動作失敗
+LD B2016                 ; ﾒｲﾝより給材1ﾗｲﾝ側動作完了通知
+OR LR000                 ; Offline
+ANL
+ANL
+SET MR2506               ; ﾒｲﾝへ給材1ﾗｲﾝ側動作完了確認通知
+CON
+AND MR2506               ; ﾒｲﾝへ給材1ﾗｲﾝ側動作完了確認通知
+JMP @MR004               ; ﾒｲﾝより動作完了
+MPP
+AND MR3002               ; 停止要求ON
+JMP @MR015               ; END
+;MainPLC ﾜｰｸ置動作完了確認
+;MainPLC Completion confirmation put the work
+STG @MR004               ; ﾒｲﾝより動作完了
+ANB B2016                ; ﾒｲﾝより給材1ﾗｲﾝ側動作完了通知
+SET MR3109               ; Unit1_供給IF完了
+CON
+RES MR2506               ; ﾒｲﾝへ給材1ﾗｲﾝ側動作完了確認通知
+CON
+JMP @MR005
+STG @MR005
+ANB B2056                ; ﾒｲﾝへ給材1ﾗｲﾝ側動作完了確認通知
+JMP @MR015               ; END
+STG @MR015               ; END
+ANB MR3109               ; Unit1_供給IF完了
+ZRES @MR000 @MR015       ; Unit1給材I/F開始  END
+CON
+ENDS
+;<h1/>ﾗｲﾝ1除材I/F
+LDP MR3110               ; Unit1_除材IF開始
+SET @MR100               ; Unit1除材I/F開始
+STG @MR100               ; Unit1除材I/F開始
+RES MR3110               ; Unit1_除材IF開始
+CON
+ANB MR3110               ; Unit1_除材IF開始
+MPS
+ANB LR100                ; OFF:成型部品ON:ﾌﾞｯｼｭｼｰﾙ
+SET MR2601               ; ﾒｲﾝへ除材1ﾗｲﾝ動作開始許可
+CON
+AND MR2601               ; ﾒｲﾝへ除材1ﾗｲﾝ動作開始許可
+JMP @MR101               ; ﾒｲﾝへ動作開始許可
+MPP
+AND LR100                ; OFF:成型部品ON:ﾌﾞｯｼｭｼｰﾙ
+JMP @MR401               ; ﾌﾞｯｼｭｼｰﾙ除材I/F1
+STG @MR101               ; ﾒｲﾝへ動作開始許可
+MPS
+LDB MR3002               ; 停止要求ON
+LD B2020                 ; ﾒｲﾝより除材1ﾗｲﾝ側動作開始通知
+OR LR000                 ; Offline
+ANL
+ANL
+MPS
+ANB B2027                ; ﾒｲﾝより除材1ﾗｲﾝ側2回目動作通知
+RES MR2601               ; ﾒｲﾝへ除材1ﾗｲﾝ動作開始許可
+CON
+ANB MR2601               ; ﾒｲﾝへ除材1ﾗｲﾝ動作開始許可
+JMP @MR102               ; ﾒｲﾝより動作開始
+MPP
+AND B2027                ; ﾒｲﾝより除材1ﾗｲﾝ側2回目動作通知
+RES MR2601               ; ﾒｲﾝへ除材1ﾗｲﾝ動作開始許可
+CON
+ANB MR2601               ; ﾒｲﾝへ除材1ﾗｲﾝ動作開始許可
+JMP @MR110               ; 2回目動作確認
+MPP
+AND MR3002               ; 停止要求ON
+RES MR2601               ; ﾒｲﾝへ除材1ﾗｲﾝ動作開始許可
+CON
+ANB MR2601               ; ﾒｲﾝへ除材1ﾗｲﾝ動作開始許可
+JMP @MR115               ; END
+STG @MR110               ; 2回目動作確認
+ANB B2020                ; ﾒｲﾝより除材1ﾗｲﾝ側動作開始通知
+ANB B2027                ; ﾒｲﾝより除材1ﾗｲﾝ側2回目動作通知
+JMP @MR100               ; Unit1除材I/F開始
+;MainPLC ﾜｰｸ取動作開始確認
+;MainPLC Operation start confirmation take the work
+STG @MR102               ; ﾒｲﾝより動作開始
+ANB B2020                ; ﾒｲﾝより除材1ﾗｲﾝ側動作開始通知
+JMP @MR103               ; 【動作中】
+;MainPLC ﾜｰｸ取動作完了
+;MainPLC Operation is completed to take the work
+STG @MR103               ; 【動作中】
+MPS
+ANB MR3002               ; 停止要求ON
+MPS
+AND B2022                ; ﾒｲﾝより除材1ﾗｲﾝ側動作失敗
+JMP @MR100               ; Unit1除材I/F開始
+MPP
+LDB B2022                ; ﾒｲﾝより除材1ﾗｲﾝ側動作失敗
+LD B2026                 ; ﾒｲﾝより除材1ﾗｲﾝ側動作完了通知
+OR LR000                 ; Offline
+OR MR010                 ; 強制除材信号1
+ANL
+ANL
+SET MR2606               ; ﾒｲﾝへ除材1ﾗｲﾝ側動作完了確認通知
+CON
+AND MR2606               ; ﾒｲﾝへ除材1ﾗｲﾝ側動作完了確認通知
+JMP @MR104               ; ﾒｲﾝより動作完了
+MPP
+AND MR3002               ; 停止要求ON
+JMP @MR115               ; END
+;MainPLC ﾜｰｸ取動作完了確認
+;MainPLC Completion confirmation take the work
+STG @MR104               ; ﾒｲﾝより動作完了
+ANB B2026                ; ﾒｲﾝより除材1ﾗｲﾝ側動作完了通知
+RES MR010                ; 強制除材信号1
+CON
+RES MR2606               ; ﾒｲﾝへ除材1ﾗｲﾝ側動作完了確認通知
+CON
+SET MR3111               ; Unit1_除材IF完了
+CON
+JMP @MR105
+STG @MR105
+ANB B2066                ; ﾒｲﾝへ除材1ﾗｲﾝ側動作完了確認通知
+JMP @MR115               ; END
+STG @MR115               ; END
+ANB MR3111               ; Unit1_除材IF完了
+ZRES @MR100 @MR115       ; Unit1除材I/F開始  END
+CON
+ZRES @MR400 @MR415
+CON
+ENDS
+;ﾌﾞｯｼｭｼｰﾙ2cellとのI/F
+;
+STG @MR401               ; ﾌﾞｯｼｭｼｰﾙ除材I/F1
+SET MR2601               ; ﾒｲﾝへ除材1ﾗｲﾝ動作開始許可
+CON
+AND MR2601               ; ﾒｲﾝへ除材1ﾗｲﾝ動作開始許可
+JMP @MR402               ; ﾒｲﾝへ動作開始許可
+STG @MR402               ; ﾒｲﾝへ動作開始許可
+LD B2020                 ; ﾒｲﾝより除材1ﾗｲﾝ側動作開始通知
+OR LR000                 ; Offline
+OR MR010                 ; 強制除材信号1
+ANL
+JMP @MR403               ; 【動作中】
+STG @MR403               ; 【動作中】
+ANB B2020                ; ﾒｲﾝより除材1ﾗｲﾝ側動作開始通知
+RES MR2601               ; ﾒｲﾝへ除材1ﾗｲﾝ動作開始許可
+CON
+ANB MR2601               ; ﾒｲﾝへ除材1ﾗｲﾝ動作開始許可
+JMP @MR404               ; 動作完了
+STG @MR404               ; 動作完了
+MPS
+LD B202F                 ; ﾒｲﾝより除材2ﾗｲﾝ側2回目動作通知
+OR LR000                 ; Offline
+OR MR010                 ; 強制除材信号1
+ANB R7000                ; 洗浄ｼｬﾄﾙ1ﾊﾟﾚｯﾄ吸着
+ANL
+RES MR010                ; 強制除材信号1
+CON
+SET MR3111               ; Unit1_除材IF完了
+CON
+ANB MR010                ; 強制除材信号1
+AND MR3111               ; Unit1_除材IF完了
+JMP @MR115               ; END
+MPP
+LDB B202F                ; ﾒｲﾝより除材2ﾗｲﾝ側2回目動作通知
+ANB LR000                ; Offline
+ANB MR010                ; 強制除材信号1
+ANL
+JMP @MR401               ; ﾌﾞｯｼｭｼｰﾙ除材I/F1
+;<h1/>ﾗｲﾝ2給材I/F
+LDP MR3208               ; Unit2_供給IF開始
+SET @MR200               ; Unit2給材I/F開始
+STG @MR200               ; Unit2給材I/F開始
+SET MR2509               ; ﾒｲﾝへ給材2ﾗｲﾝ動作開始許可
+CON
+RES MR3208               ; Unit2_供給IF開始
+CON
+AND MR2509               ; ﾒｲﾝへ給材2ﾗｲﾝ動作開始許可
+ANB MR3208               ; Unit2_供給IF開始
+JMP @MR201               ; ﾒｲﾝへ動作開始許可
+STG @MR201               ; ﾒｲﾝへ動作開始許可
+MPS
+LDB MR3002               ; 停止要求ON
+LD B2018                 ; ﾒｲﾝより給材2ﾗｲﾝ側動作開始通知
+OR LR000                 ; Offline
+ANL
+ANL
+MPS
+ANB B201F                ; ﾒｲﾝより給材1ﾗｲﾝ側2回目動作通知
+RES MR2509               ; ﾒｲﾝへ給材2ﾗｲﾝ動作開始許可
+CON
+ANB MR2509               ; ﾒｲﾝへ給材2ﾗｲﾝ動作開始許可
+JMP @MR202               ; ﾒｲﾝより動作開始
+MPP
+AND B201F                ; ﾒｲﾝより給材1ﾗｲﾝ側2回目動作通知
+RES MR2509               ; ﾒｲﾝへ給材2ﾗｲﾝ動作開始許可
+CON
+ANB MR2509               ; ﾒｲﾝへ給材2ﾗｲﾝ動作開始許可
+JMP @MR210               ; 2回目動作確認
+MPP
+AND MR3002               ; 停止要求ON
+RES MR2509               ; ﾒｲﾝへ給材2ﾗｲﾝ動作開始許可
+CON
+ANB MR2509               ; ﾒｲﾝへ給材2ﾗｲﾝ動作開始許可
+JMP @MR215               ; END
+STG @MR210               ; 2回目動作確認
+ANB B2018                ; ﾒｲﾝより給材2ﾗｲﾝ側動作開始通知
+ANB B201F                ; ﾒｲﾝより給材1ﾗｲﾝ側2回目動作通知
+JMP @MR200               ; Unit2給材I/F開始
+;MainPLC ﾜｰｸ置動作開始確認
+;MainPLC Operation start confirmation put the work
+STG @MR202               ; ﾒｲﾝより動作開始
+ANB B2018                ; ﾒｲﾝより給材2ﾗｲﾝ側動作開始通知
+JMP @MR203               ; 【動作中】
+;MainPLC ﾜｰｸ置動作完了
+;MainPLC Operation is completed to put the work
+STG @MR203               ; 【動作中】
+MPS
+ANB MR3002               ; 停止要求ON
+MPS
+AND B201A                ; ﾒｲﾝより給材2ﾗｲﾝ側動作失敗
+JMP @MR200               ; Unit2給材I/F開始
+MPP
+LDB B201A                ; ﾒｲﾝより給材2ﾗｲﾝ側動作失敗
+LD B201E                 ; ﾒｲﾝより給材2ﾗｲﾝ側動作完了通知
+OR LR000                 ; Offline
+ANL
+ANL
+SET MR2514               ; ﾒｲﾝへ給材2ﾗｲﾝ側動作完了確認通知
+CON
+AND MR2514               ; ﾒｲﾝへ給材2ﾗｲﾝ側動作完了確認通知
+JMP @MR204               ; ﾒｲﾝより動作完了
+MPP
+AND MR3002               ; 停止要求ON
+JMP @MR215               ; END
+;MainPLC ﾜｰｸ置動作完了確認
+;MainPLC Completion confirmation put the work
+STG @MR204               ; ﾒｲﾝより動作完了
+ANB B201E                ; ﾒｲﾝより給材2ﾗｲﾝ側動作完了通知
+SET MR3209               ; Unit2_供給IF完了
+CON
+RES MR2514               ; ﾒｲﾝへ給材2ﾗｲﾝ側動作完了確認通知
+CON
+JMP @MR205
+STG @MR205
+ANB B205E                ; ﾒｲﾝへ給材2ﾗｲﾝ側動作完了確認通知
+JMP @MR215               ; END
+STG @MR215               ; END
+ANB MR3209               ; Unit2_供給IF完了
+ZRES @MR200 @MR215       ; Unit2給材I/F開始  END
+CON
+ENDS
+;<h1/>ﾗｲﾝ2除材I/F
+LDP MR3210               ; Unit2_除材IF開始
+SET @MR300               ; Unit2除材I/F開始
+STG @MR300               ; Unit2除材I/F開始
+RES MR3210               ; Unit2_除材IF開始
+CON
+ANB MR3210               ; Unit2_除材IF開始
+MPS
+ANB LR100                ; OFF:成型部品ON:ﾌﾞｯｼｭｼｰﾙ
+SET MR2609               ; ﾒｲﾝへ除材2ﾗｲﾝ動作開始許可
+CON
+AND MR2609               ; ﾒｲﾝへ除材2ﾗｲﾝ動作開始許可
+JMP @MR301               ; ﾒｲﾝへ動作開始許可
+MPP
+AND LR100                ; OFF:成型部品ON:ﾌﾞｯｼｭｼｰﾙ
+JMP @MR501               ; ﾒｲﾝへ動作開始許可
+STG @MR301               ; ﾒｲﾝへ動作開始許可
+MPS
+LDB MR3002               ; 停止要求ON
+LD B2028                 ; ﾒｲﾝより除材2ﾗｲﾝ側動作開始通知
+OR LR000                 ; Offline
+ANL
+ANL
+MPS
+ANB B202F                ; ﾒｲﾝより除材2ﾗｲﾝ側2回目動作通知
+RES MR2609               ; ﾒｲﾝへ除材2ﾗｲﾝ動作開始許可
+CON
+ANB MR2609               ; ﾒｲﾝへ除材2ﾗｲﾝ動作開始許可
+JMP @MR302               ; ﾒｲﾝより動作開始
+MPP
+AND B202F                ; ﾒｲﾝより除材2ﾗｲﾝ側2回目動作通知
+RES MR2609               ; ﾒｲﾝへ除材2ﾗｲﾝ動作開始許可
+CON
+ANB MR2609               ; ﾒｲﾝへ除材2ﾗｲﾝ動作開始許可
+JMP @MR310               ; 2回目動作確認
+MPP
+AND MR3002               ; 停止要求ON
+RES MR2609               ; ﾒｲﾝへ除材2ﾗｲﾝ動作開始許可
+CON
+ANB MR2609               ; ﾒｲﾝへ除材2ﾗｲﾝ動作開始許可
+JMP @MR315               ; END
+STG @MR310               ; 2回目動作確認
+ANB B2028                ; ﾒｲﾝより除材2ﾗｲﾝ側動作開始通知
+ANB B202F                ; ﾒｲﾝより除材2ﾗｲﾝ側2回目動作通知
+JMP @MR300               ; Unit2除材I/F開始
+;MainPLC ﾜｰｸ取動作開始確認
+;MainPLC Operation start confirmation take the work
+STG @MR302               ; ﾒｲﾝより動作開始
+ANB B2028                ; ﾒｲﾝより除材2ﾗｲﾝ側動作開始通知
+JMP @MR303               ; 【動作中】
+;MainPLC ﾜｰｸ取動作完了
+;MainPLC Operation is completed to take the work
+STG @MR303               ; 【動作中】
+MPS
+ANB MR3002               ; 停止要求ON
+MPS
+AND B202A                ; ﾒｲﾝより機種切替要求
+JMP @MR300               ; Unit2除材I/F開始
+MPP
+LDB B202A                ; ﾒｲﾝより機種切替要求
+LD B202E                 ; ﾒｲﾝより除材2ﾗｲﾝ側動作完了通知
+OR LR000                 ; Offline
+OR MR011                 ; 強制除材信号2
+ANL
+ANL
+SET MR2614               ; ﾒｲﾝへ除材2ﾗｲﾝ側動作完了確認通知
+CON
+AND MR2614               ; ﾒｲﾝへ除材2ﾗｲﾝ側動作完了確認通知
+JMP @MR304               ; ﾒｲﾝより動作完了
+MPP
+AND MR3002               ; 停止要求ON
+JMP @MR315               ; END
+;MainPLC ﾜｰｸ取動作完了確認
+;MainPLC Completion confirmation take the work
+STG @MR304               ; ﾒｲﾝより動作完了
+ANB B202E                ; ﾒｲﾝより除材2ﾗｲﾝ側動作完了通知
+RES MR011                ; 強制除材信号2
+CON
+SET MR3211               ; Unit2_除材IF完了
+CON
+RES MR2614               ; ﾒｲﾝへ除材2ﾗｲﾝ側動作完了確認通知
+CON
+JMP @MR305
+STG @MR305
+ANB B206E                ; ﾒｲﾝへ除材2ﾗｲﾝ側動作完了確認通知
+JMP @MR315               ; END
+STG @MR315               ; END
+ANB MR3211               ; Unit2_除材IF完了
+ZRES @MR300 @MR315       ; Unit2除材I/F開始  END
+CON
+ZRES @MR500 @MR515       ; ﾌﾞｯｼｭｼｰﾙ除材I/F2
+CON
+ENDS
+;ﾌﾞｯｼｭｼｰﾙ2cellとのI/F
+;
+STG @MR501               ; ﾒｲﾝへ動作開始許可
+SET MR2609               ; ﾒｲﾝへ除材2ﾗｲﾝ動作開始許可
+CON
+AND MR2609               ; ﾒｲﾝへ除材2ﾗｲﾝ動作開始許可
+JMP @MR502               ; 【動作中】
+STG @MR502               ; 【動作中】
+LD B2028                 ; ﾒｲﾝより除材2ﾗｲﾝ側動作開始通知
+OR LR000                 ; Offline
+OR MR011                 ; 強制除材信号2
+ANL
+JMP @MR503               ; 動作完了
+STG @MR503               ; 動作完了
+ANB B2028                ; ﾒｲﾝより除材2ﾗｲﾝ側動作開始通知
+RES MR2609               ; ﾒｲﾝへ除材2ﾗｲﾝ動作開始許可
+CON
+ANB MR2609               ; ﾒｲﾝへ除材2ﾗｲﾝ動作開始許可
+JMP @MR504
+STG @MR504
+MPS
+LD B202F                 ; ﾒｲﾝより除材2ﾗｲﾝ側2回目動作通知
+OR LR000                 ; Offline
+OR MR011                 ; 強制除材信号2
+ANB R7002                ; 洗浄ｼｬﾄﾙ2ﾊﾟﾚｯﾄ吸着
+ANL
+SET MR3211               ; Unit2_除材IF完了
+CON
+RES MR011                ; 強制除材信号2
+CON
+AND MR3211               ; Unit2_除材IF完了
+ANB MR011                ; 強制除材信号2
+JMP @MR315               ; END
+MPP
+LDB B202F                ; ﾒｲﾝより除材2ﾗｲﾝ側2回目動作通知
+ANB LR000                ; Offline
+ANB MR011                ; 強制除材信号2
+ANL
+JMP @MR501               ; ﾒｲﾝへ動作開始許可
+;<h1/>【B】
+;ﾌﾞｯｼｭｼｰﾙ ｱﾗｲﾒﾝﾄ動作
+;<h1/>ﾗｲﾝ1ｱﾗｲﾒﾝﾄ開き
+LDP B2030                ; ﾒｲﾝよりLD反転仮置台昇降ｼﾘﾝﾀﾞ上昇
+ANB LR000                ; Offline
+ORP R36000               ; 【B】ｱﾗｲﾒﾝﾄ1開開始
+AND LR100                ; OFF:成型部品ON:ﾌﾞｯｼｭｼｰﾙ
+SET @MR1000              ; Unit1ｱﾗｲﾒﾝﾄ開き動作開始
+STG @MR1000              ; Unit1ｱﾗｲﾒﾝﾄ開き動作開始
+RES MR7308               ; 【B】ｱﾗｲﾒﾝﾄ1前進(閉)
+CON
+SET MR7309               ; 【B】ｱﾗｲﾒﾝﾄ1後退(開)
+CON
+RES MR7310               ; 【B】ｱﾗｲﾒﾝﾄ1左右(閉)
+CON
+SET MR7311               ; 【B】ｱﾗｲﾒﾝﾄ1左右(開)
+CON
+JMP @MR1015              ; ｱﾗｲﾒﾝﾄ開
+STG @MR1015              ; ｱﾗｲﾒﾝﾄ開
+AND R4112                ; 【B】洗浄1ｱﾗｲﾒﾝﾄX開端
+AND R4114                ; 【B】洗浄1ｱﾗｲﾒﾝﾄY開端
+MPS
+AND B2030                ; ﾒｲﾝよりLD反転仮置台昇降ｼﾘﾝﾀﾞ上昇
+ZRES @MR1000 @MR1015     ; Unit1ｱﾗｲﾒﾝﾄ開き動作開始  ｱﾗｲﾒﾝﾄ開
+CON
+ENDS
+MPP
+AND R36000               ; 【B】ｱﾗｲﾒﾝﾄ1開開始
+RES R36000               ; 【B】ｱﾗｲﾒﾝﾄ1開開始
+CON
+SET R36001               ; 【B】ｱﾗｲﾒﾝﾄ1開完了
+CON
+ZRES @MR1000 @MR1015     ; Unit1ｱﾗｲﾒﾝﾄ開き動作開始  ｱﾗｲﾒﾝﾄ開
+CON
+ENDS
+;<h1/>ﾗｲﾝ1ｱﾗｲﾒﾝﾄ閉じ
+LDP B2031                ; ﾒｲﾝよりLD反転仮置台昇降ｼﾘﾝﾀﾞ下降
+ANB LR000                ; Offline
+ORP R36008               ; 【B】ｱﾗｲﾒﾝﾄ1閉開始
+AND LR100                ; OFF:成型部品ON:ﾌﾞｯｼｭｼｰﾙ
+SET @MR1100              ; Unit1ｱﾗｲﾒﾝﾄ閉じ動作開始
+STG @MR1100              ; Unit1ｱﾗｲﾒﾝﾄ閉じ動作開始
+SET MR7308               ; 【B】ｱﾗｲﾒﾝﾄ1前進(閉)
+CON
+RES MR7309               ; 【B】ｱﾗｲﾒﾝﾄ1後退(開)
+CON
+JMP @MR1101              ; Unit1ｱﾗｲﾒﾝﾄX閉じ
+STG @MR1101              ; Unit1ｱﾗｲﾒﾝﾄX閉じ
+AND R4113                ; 【B】洗浄1ｱﾗｲﾒﾝﾄX閉端
+SET MR7310               ; 【B】ｱﾗｲﾒﾝﾄ1左右(閉)
+CON
+RES MR7311               ; 【B】ｱﾗｲﾒﾝﾄ1左右(開)
+CON
+JMP @MR1102              ; Unit1ｱﾗｲﾒﾝﾄY閉じ
+STG @MR1102              ; Unit1ｱﾗｲﾒﾝﾄY閉じ
+AND R4115                ; 【B】洗浄1ｱﾗｲﾒﾝﾄY閉端
+MPS
+AND B2031                ; ﾒｲﾝよりLD反転仮置台昇降ｼﾘﾝﾀﾞ下降
+JMP @MR1103              ; Unit1ｱﾗｲﾒﾝﾄ閉じ完了
+MPP
+AND R36008               ; 【B】ｱﾗｲﾒﾝﾄ1閉開始
+RES R36008               ; 【B】ｱﾗｲﾒﾝﾄ1閉開始
+CON
+SET R36009               ; 【B】ｱﾗｲﾒﾝﾄ1閉完了
+CON
+JMP @MR1115              ; Unit1ｱﾗｲﾒﾝﾄ閉じ完了
+STG @MR1103              ; Unit1ｱﾗｲﾒﾝﾄ閉じ完了
+TMR @0 #2
+CON
+AND @T0
+SET MR3112               ; Unit1_真空ON_SUB開始
+CON
+JMP @MR1104              ; Unit1ｱﾗｲﾒﾝﾄ真空ON
+STG @MR1104              ; Unit1ｱﾗｲﾒﾝﾄ真空ON
+AND MR3113               ; Unit1_真空ON_SUB完了
+JMP @MR1115              ; Unit1ｱﾗｲﾒﾝﾄ閉じ完了
+STG @MR1115              ; Unit1ｱﾗｲﾒﾝﾄ閉じ完了
+RES MR3113               ; Unit1_真空ON_SUB完了
+CON
+ZRES @MR1100 @MR1115     ; Unit1ｱﾗｲﾒﾝﾄ閉じ動作開始  Unit1ｱﾗｲﾒﾝﾄ閉じ完了
+CON
+ENDS
+;<h1/>ﾗｲﾝ2ｱﾗｲﾒﾝﾄ開き
+LDP B2032                ; ﾒｲﾝより装置背面STARTﾗﾝﾌﾟ
+ANB LR000                ; Offline
+ORP R36100               ; 【B】ｱﾗｲﾒﾝﾄ2開開始
+AND LR100                ; OFF:成型部品ON:ﾌﾞｯｼｭｼｰﾙ
+SET @MR1200              ; Unit2ｱﾗｲﾒﾝﾄ開き動作開始
+STG @MR1200              ; Unit2ｱﾗｲﾒﾝﾄ開き動作開始
+RES MR7312               ; 【S】洗浄ｼｬﾄﾙ2ﾜｰｸ押えﾁｬｯｸ
+CON
+SET MR7313               ; 【S】洗浄ｼｬﾄﾙ2ﾜｰｸ押えｱﾝﾁｬｯｸ
+CON
+RES MR7314               ; 【S】洗浄ｼｬﾄﾙ1ﾜｰｸ押えﾁｬｯｸ
+CON
+SET MR7315               ; 【S】洗浄ｼｬﾄﾙ1ﾜｰｸ押えｱﾝﾁｬｯｸ
+CON
+JMP @MR1201              ; Unit2ｱﾗｲﾒﾝﾄ開
+STG @MR1201              ; Unit2ｱﾗｲﾒﾝﾄ開
+AND R4312                ; 【B】洗浄2ｱﾗｲﾒﾝﾄX開端
+AND R4314                ; 【B】洗浄2ｱﾗｲﾒﾝﾄY開端
+MPS
+AND B2032                ; ﾒｲﾝより装置背面STARTﾗﾝﾌﾟ
+ZRES @MR1200 @MR1215     ; Unit2ｱﾗｲﾒﾝﾄ開き動作開始  ｱﾗｲﾒﾝﾄ開
+CON
+ENDS
+MPP
+AND R36100               ; 【B】ｱﾗｲﾒﾝﾄ2開開始
+RES R36100               ; 【B】ｱﾗｲﾒﾝﾄ2開開始
+CON
+SET R36101               ; 【B】ｱﾗｲﾒﾝﾄ2開完了
+CON
+ZRES @MR1200 @MR1215     ; Unit2ｱﾗｲﾒﾝﾄ開き動作開始  ｱﾗｲﾒﾝﾄ開
+CON
+ENDS
+;<h1/>ﾗｲﾝ2ｱﾗｲﾒﾝﾄ閉じ
+LDP B2033                ; ﾒｲﾝより装置背面PAUSEﾗﾝﾌﾟ
+ANB LR000                ; Offline
+ORP R36108               ; 【B】ｱﾗｲﾒﾝﾄ2閉開始
+AND LR100                ; OFF:成型部品ON:ﾌﾞｯｼｭｼｰﾙ
+SET @MR1300              ; Unit2ｱﾗｲﾒﾝﾄ閉じ動作開始
+STG @MR1300              ; Unit2ｱﾗｲﾒﾝﾄ閉じ動作開始
+SET MR7312               ; 【S】洗浄ｼｬﾄﾙ2ﾜｰｸ押えﾁｬｯｸ
+CON
+RES MR7313               ; 【S】洗浄ｼｬﾄﾙ2ﾜｰｸ押えｱﾝﾁｬｯｸ
+CON
+JMP @MR1301              ; Unit2ｱﾗｲﾒﾝﾄX閉じ
+STG @MR1301              ; Unit2ｱﾗｲﾒﾝﾄX閉じ
+AND R4313                ; 【B】洗浄2ｱﾗｲﾒﾝﾄX閉端
+SET MR7314               ; 【S】洗浄ｼｬﾄﾙ1ﾜｰｸ押えﾁｬｯｸ
+CON
+RES MR7315               ; 【S】洗浄ｼｬﾄﾙ1ﾜｰｸ押えｱﾝﾁｬｯｸ
+CON
+JMP @MR1302              ; Unit2ｱﾗｲﾒﾝﾄY閉じ
+STG @MR1302              ; Unit2ｱﾗｲﾒﾝﾄY閉じ
+AND R4315                ; 【B】洗浄2ｱﾗｲﾒﾝﾄY閉端
+MPS
+AND B2033                ; ﾒｲﾝより装置背面PAUSEﾗﾝﾌﾟ
+JMP @MR1303              ; Unit2ｱﾗｲﾒﾝﾄ閉じ完了
+MPP
+AND R36108               ; 【B】ｱﾗｲﾒﾝﾄ2閉開始
+RES R36108               ; 【B】ｱﾗｲﾒﾝﾄ2閉開始
+CON
+SET R36109               ; 【B】ｱﾗｲﾒﾝﾄ2閉完了
+CON
+JMP @MR1315              ; Unit2ｱﾗｲﾒﾝﾄ閉じ完了
+STG @MR1303              ; Unit2ｱﾗｲﾒﾝﾄ閉じ完了
+TMR @2 #2
+CON
+AND @T2
+SET MR3212               ; Unit2_真空ON_SUB開始
+CON
+JMP @MR1304              ; Unit2ｱﾗｲﾒﾝﾄ真空ON
+STG @MR1304              ; Unit2ｱﾗｲﾒﾝﾄ真空ON
+AND MR3213               ; Unit2_真空ON_SUB完了
+JMP @MR1315              ; Unit2ｱﾗｲﾒﾝﾄ閉じ完了
+STG @MR1315              ; Unit2ｱﾗｲﾒﾝﾄ閉じ完了
+RES MR3213               ; Unit2_真空ON_SUB完了
+CON
+ZRES @MR1300 @MR1315     ; Unit2ｱﾗｲﾒﾝﾄ閉じ動作開始  Unit2ｱﾗｲﾒﾝﾄ閉じ完了
+CON
+ENDS
+;<h1/>ﾗｲﾝ1真空OFF要求
+LDP B2021                ; ﾒｲﾝより除材1ﾗｲﾝ側動作開始許可
+SET @MR1400              ; Unit1真空OFF
+STG @MR1400              ; Unit1真空OFF
+SET MR3114               ; Unit1_真空OFF_SUB開始
+CON
+AND MR3114               ; Unit1_真空OFF_SUB開始
+JMP @MR1401              ; Unit1真空OFF完了
+STG @MR1401              ; Unit1真空OFF完了
+AND MR3115               ; Unit1_真空OFF_SUB完了
+SET MR2606               ; ﾒｲﾝへ除材1ﾗｲﾝ側動作完了確認通知
+CON
+RES MR3115               ; Unit1_真空OFF_SUB完了
+CON
+AND MR2606               ; ﾒｲﾝへ除材1ﾗｲﾝ側動作完了確認通知
+ANB MR3115               ; Unit1_真空OFF_SUB完了
+JMP @MR1402              ; ﾒｲﾝへ真空OFF完了
+STG @MR1402              ; ﾒｲﾝへ真空OFF完了
+ANB B2021                ; ﾒｲﾝより除材1ﾗｲﾝ側動作開始許可
+RES MR2606               ; ﾒｲﾝへ除材1ﾗｲﾝ側動作完了確認通知
+CON
+ANB MR2606               ; ﾒｲﾝへ除材1ﾗｲﾝ側動作完了確認通知
+ZRES @MR1400 @MR1415     ; Unit1真空OFF
+CON
+ENDS
+;<h1/>ﾗｲﾝ2真空OFF要求
+LDP B2029                ; ﾒｲﾝより除材2ﾗｲﾝ側動作開始許可
+SET @MR1500              ; Unit2真空OFF
+STG @MR1500              ; Unit2真空OFF
+SET MR3214               ; Unit2_真空OFF_SUB開始
+CON
+AND MR3214               ; Unit2_真空OFF_SUB開始
+JMP @MR1501              ; Unit2真空OFF完了
+STG @MR1501              ; Unit2真空OFF完了
+AND MR3215               ; Unit2_真空OFF_SUB完了
+SET MR2614               ; ﾒｲﾝへ除材2ﾗｲﾝ側動作完了確認通知
+CON
+RES MR3215               ; Unit2_真空OFF_SUB完了
+CON
+AND MR2614               ; ﾒｲﾝへ除材2ﾗｲﾝ側動作完了確認通知
+ANB MR3215               ; Unit2_真空OFF_SUB完了
+JMP @MR1502              ; ﾒｲﾝへ真空OFF完了
+STG @MR1502              ; ﾒｲﾝへ真空OFF完了
+ANB B2029                ; ﾒｲﾝより除材2ﾗｲﾝ側動作開始許可
+RES MR2614               ; ﾒｲﾝへ除材2ﾗｲﾝ側動作完了確認通知
+CON
+ANB MR2614               ; ﾒｲﾝへ除材2ﾗｲﾝ側動作完了確認通知
+ZRES @MR1500 @MR1515     ; Unit2真空OFF
+CON
+ENDS
+;真空ON/OFF_SUB
+;
+LDP MR3112               ; Unit1_真空ON_SUB開始
+LDP B2034                ; ﾒｲﾝよりﾗｲﾝ1ﾜｰｸ1・3有
+AND LR100                ; OFF:成型部品ON:ﾌﾞｯｼｭｼｰﾙ
+ORL
+SET @MR4700              ; Unit1真空ON
+STG @MR4700              ; Unit1真空ON
+SET MR7000               ; 洗浄ｼｬﾄﾙ1ﾊﾟﾚｯﾄ吸着
+CON
+RES MR3112               ; Unit1_真空ON_SUB開始
+CON
+JMP @MR4701              ; 真空ON完了
+STG @MR4701              ; 真空ON完了
+AND R7000                ; 洗浄ｼｬﾄﾙ1ﾊﾟﾚｯﾄ吸着
+TMR @110 #1
+CON
+AND @T110
+SET MR3113               ; Unit1_真空ON_SUB完了
+CON
+AND MR3113               ; Unit1_真空ON_SUB完了
+ZRES @MR4700 @MR4707     ; Unit1真空ON
+CON
+ENDS
+LDP MR3114               ; Unit1_真空OFF_SUB開始
+LDP B2035                ; ﾒｲﾝよりﾗｲﾝ1ﾜｰｸ2・4有
+AND LR100                ; OFF:成型部品ON:ﾌﾞｯｼｭｼｰﾙ
+ORL
+SET @MR4708              ; Unit1真空OFF
+STG @MR4708              ; Unit1真空OFF
+RES MR7000               ; 洗浄ｼｬﾄﾙ1ﾊﾟﾚｯﾄ吸着
+CON
+SET MR7001               ; 洗浄ｼｬﾄﾙ1ﾊﾟﾚｯﾄ真空破壊
+CON
+RES MR3114               ; Unit1_真空OFF_SUB開始
+CON
+ANB MR3114               ; Unit1_真空OFF_SUB開始
+JMP @MR4709              ; 真空破壊
+STG @MR4709              ; 真空破壊
+ANB R7000                ; 洗浄ｼｬﾄﾙ1ﾊﾟﾚｯﾄ吸着
+AND R7001                ; 洗浄ｼｬﾄﾙ1ﾊﾟﾚｯﾄ真空破壊
+TMR @111 #3
+CON
+AND @T111
+RES MR7001               ; 洗浄ｼｬﾄﾙ1ﾊﾟﾚｯﾄ真空破壊
+CON
+SET MR3115               ; Unit1_真空OFF_SUB完了
+CON
+JMP @MR4710              ; 真空OFF完了
+STG @MR4710              ; 真空OFF完了
+ANB R7001                ; 洗浄ｼｬﾄﾙ1ﾊﾟﾚｯﾄ真空破壊
+AND MR3115               ; Unit1_真空OFF_SUB完了
+ZRES @MR4708 @MR4715     ; Unit1真空OFF
+CON
+ENDS
+LDP MR3212               ; Unit2_真空ON_SUB開始
+LDP B2036                ; ﾒｲﾝよりﾗｲﾝ2ﾜｰｸ1・3有
+AND LR100                ; OFF:成型部品ON:ﾌﾞｯｼｭｼｰﾙ
+ORL
+SET @MR4800              ; Unit2真空ON
+STG @MR4800              ; Unit2真空ON
+SET MR7002               ; 洗浄ｼｬﾄﾙ2ﾊﾟﾚｯﾄ吸着
+CON
+RES MR3212               ; Unit2_真空ON_SUB開始
+CON
+JMP @MR4801              ; 真空ON完了
+STG @MR4801              ; 真空ON完了
+AND R7002                ; 洗浄ｼｬﾄﾙ2ﾊﾟﾚｯﾄ吸着
+TMR @112 #1
+CON
+AND @T112
+SET MR3213               ; Unit2_真空ON_SUB完了
+CON
+AND MR3213               ; Unit2_真空ON_SUB完了
+ZRES @MR4800 @MR4807     ; Unit2真空ON
+CON
+ENDS
+LDP MR3214               ; Unit2_真空OFF_SUB開始
+LDP B2037                ; ﾒｲﾝよりﾗｲﾝ2ﾜｰｸ2・4有
+AND LR100                ; OFF:成型部品ON:ﾌﾞｯｼｭｼｰﾙ
+ORL
+SET @MR4808              ; Unit2真空OFF
+STG @MR4808              ; Unit2真空OFF
+RES MR7002               ; 洗浄ｼｬﾄﾙ2ﾊﾟﾚｯﾄ吸着
+CON
+SET MR7003               ; 洗浄ｼｬﾄﾙ2ﾊﾟﾚｯﾄ真空破壊
+CON
+RES MR3214               ; Unit2_真空OFF_SUB開始
+CON
+ANB MR3214               ; Unit2_真空OFF_SUB開始
+JMP @MR4809              ; 真空破壊
+STG @MR4809              ; 真空破壊
+ANB R7002                ; 洗浄ｼｬﾄﾙ2ﾊﾟﾚｯﾄ吸着
+AND R7003                ; 洗浄ｼｬﾄﾙ2ﾊﾟﾚｯﾄ真空破壊
+TMR @113 #3
+CON
+AND @T113
+RES MR7003               ; 洗浄ｼｬﾄﾙ2ﾊﾟﾚｯﾄ真空破壊
+CON
+SET MR3215               ; Unit2_真空OFF_SUB完了
+CON
+JMP @MR4810              ; 真空OFF完了
+STG @MR4810              ; 真空OFF完了
+ANB R7003                ; 洗浄ｼｬﾄﾙ2ﾊﾟﾚｯﾄ真空破壊
+AND MR3215               ; Unit2_真空OFF_SUB完了
+ZRES @MR4808 @MR4815     ; Unit2真空OFF
+CON
+ENDS
+;MainPLC ← 洗浄機
+;MainPLC ← Cleaning Unit
+;B2080   ← B2040
+;W030    ← W000
+;※ｵﾌﾗｲﾝ時は出力しない
+;※ Not output when offline
+LDB LR000                ; Offline
+MC
+LD MR2501                ; ﾒｲﾝへ給材1ﾗｲﾝ動作開始許可
+OUT B2051                ; ﾒｲﾝへ給材1ﾗｲﾝ動作開始許可
+LD B2012                 ; ﾒｲﾝより給材1ﾗｲﾝ側動作失敗
+RES LR300                ; 洗浄ﾕﾆｯﾄ1ﾜｰｸ有
+CON
+ANB LR300                ; 洗浄ﾕﾆｯﾄ1ﾜｰｸ有
+OUT B2052                ; ﾒｲﾝへ給材1ﾗｲﾝ動作失敗
+LD MR2506                ; ﾒｲﾝへ給材1ﾗｲﾝ側動作完了確認通知
+OUT B2056                ; ﾒｲﾝへ給材1ﾗｲﾝ側動作完了確認通知
+LD MR2509                ; ﾒｲﾝへ給材2ﾗｲﾝ動作開始許可
+OUT B2059                ; ﾒｲﾝへ給材2ﾗｲﾝ動作開始許可
+LD B201A                 ; ﾒｲﾝより給材2ﾗｲﾝ側動作失敗
+RES LR301                ; 洗浄ﾕﾆｯﾄ2ﾜｰｸ有
+CON
+ANB LR301                ; 洗浄ﾕﾆｯﾄ2ﾜｰｸ有
+OUT B205A                ; ﾒｲﾝへ給材2ﾗｲﾝ動作失敗
+LD MR2514                ; ﾒｲﾝへ給材2ﾗｲﾝ側動作完了確認通知
+OUT B205E                ; ﾒｲﾝへ給材2ﾗｲﾝ側動作完了確認通知
+LD MR2601                ; ﾒｲﾝへ除材1ﾗｲﾝ動作開始許可
+OUT B2061                ; ﾒｲﾝへ除材1ﾗｲﾝ動作開始許可
+LD MR2602                ; ﾒｲﾝへ除材1ﾗｲﾝ動作失敗
+OUT B2062                ; ﾒｲﾝへ除材1ﾗｲﾝ動作失敗
+LD MR2606                ; ﾒｲﾝへ除材1ﾗｲﾝ側動作完了確認通知
+OUT B2066                ; ﾒｲﾝへ除材1ﾗｲﾝ側動作完了確認通知
+LD MR2609                ; ﾒｲﾝへ除材2ﾗｲﾝ動作開始許可
+OUT B2069                ; ﾒｲﾝへ除材2ﾗｲﾝ動作開始許可
+LD MR2610                ; ﾒｲﾝへ除材2ﾗｲﾝ動作失敗
+OUT B206A                ; ﾒｲﾝへ除材2ﾗｲﾝ動作失敗
+LD MR2614                ; ﾒｲﾝへ除材2ﾗｲﾝ側動作完了確認通知
+OUT B206E                ; ﾒｲﾝへ除材2ﾗｲﾝ側動作完了確認通知
+MCR
+LD CR2002                ; 常時ON
+OUT B2040                ; ﾒｲﾝへ自PLC電源状態
+LDB R50000               ; 非常停止停止(復帰不可ｴﾗｰ)
+ANB R55003               ; 即停止ｴﾗｰ(復帰不可)
+OUT B2041                ; ﾒｲﾝへ非常停止
+LD R4001                 ; 【S】洗浄ｼｬﾄﾙ1 ﾜｰｸ押え ｱﾝﾁｬｯｸ
+ANB LR100                ; OFF:成型部品ON:ﾌﾞｯｼｭｼｰﾙ
+LD B2070                 ; ﾒｲﾝへLD反転仮置き台在荷1
+AND LR100                ; OFF:成型部品ON:ﾌﾞｯｼｭｼｰﾙ
+ORL
+ANB R50000               ; 非常停止停止(復帰不可ｴﾗｰ)
+LDB R50013               ; ｴﾗｰ発生
+OR CR2002                ; 常時ON
+ANL
+ANB DM10807.2            ; MOVE
+AND= EM1300 #1           ; RB1現在POS
+OUT B2042                ; ﾒｲﾝへ給材1ﾗｲﾝ側ｲﾝﾀｰﾛｯｸ信号
+LD R4201                 ; 【S】洗浄ｼｬﾄﾙ2 ﾜｰｸ押え ｱﾝﾁｬｯｸ
+ANB LR100                ; OFF:成型部品ON:ﾌﾞｯｼｭｼｰﾙ
+LD B2072                 ; ﾒｲﾝへLD反転仮置き台 上昇限
+AND LR100                ; OFF:成型部品ON:ﾌﾞｯｼｭｼｰﾙ
+ORL
+ANB R50000               ; 非常停止停止(復帰不可ｴﾗｰ)
+LDB R50013               ; ｴﾗｰ発生
+OR CR2002                ; 常時ON
+ANL
+ANB DM10815.2            ; MOVE
+AND= EM1302 #1           ; RB2現在POS
+OUT B2043                ; ﾒｲﾝへ給材2ﾗｲﾝ側ｲﾝﾀｰﾛｯｸ信号
+LD R4001                 ; 【S】洗浄ｼｬﾄﾙ1 ﾜｰｸ押え ｱﾝﾁｬｯｸ
+ANB LR100                ; OFF:成型部品ON:ﾌﾞｯｼｭｼｰﾙ
+LD B2070                 ; ﾒｲﾝへLD反転仮置き台在荷1
+AND LR100                ; OFF:成型部品ON:ﾌﾞｯｼｭｼｰﾙ
+ORL
+ANB R50000               ; 非常停止停止(復帰不可ｴﾗｰ)
+LDB R50013               ; ｴﾗｰ発生
+OR CR2002                ; 常時ON
+ANL
+ANB DM10807.2            ; MOVE
+AND= EM1300 #5           ; RB1現在POS
+OUT B2044                ; ﾒｲﾝへ除材1ﾗｲﾝ側ｲﾝﾀｰﾛｯｸ信号
+LD R4201                 ; 【S】洗浄ｼｬﾄﾙ2 ﾜｰｸ押え ｱﾝﾁｬｯｸ
+ANB LR100                ; OFF:成型部品ON:ﾌﾞｯｼｭｼｰﾙ
+LD B2072                 ; ﾒｲﾝへLD反転仮置き台 上昇限
+AND LR100                ; OFF:成型部品ON:ﾌﾞｯｼｭｼｰﾙ
+ORL
+ANB R50000               ; 非常停止停止(復帰不可ｴﾗｰ)
+LDB R50013               ; ｴﾗｰ発生
+OR CR2002                ; 常時ON
+ANL
+ANB DM10815.2            ; MOVE
+AND= EM1302 #5           ; RB2現在POS
+OUT B2045                ; ﾒｲﾝへ除材2ﾗｲﾝ側ｲﾝﾀｰﾛｯｸ信号
+LD MR3004                ; 洗浄機ﾎﾟｰｽﾞON
+ANB B2009                ; ﾒｲﾝよりPAUSE要求
+ANB CR2002               ; 常時ON
+OUT B2049                ; ﾒｲﾝへPAUSE要求
+LD R50009                ; 一時停止中
+LDB MR3004               ; 洗浄機ﾎﾟｰｽﾞON
+OR CR2002                ; 常時ON
+ANL
+OUT B204A                ; ﾒｲﾝへPAUSE許可
+LD R50001                ; 自動中
+OUT B204B                ; ﾒｲﾝへｽﾃｰﾀｽ(AUTO)
+LD R50003                ; 原点復帰中
+OUT B204C                ; ﾒｲﾝへｽﾃｰﾀｽ(HOME)
+LD R50002                ; 手動中
+OUT B204D                ; ﾒｲﾝへｽﾃｰﾀｽ(MAINTE)
+LD R50009                ; 一時停止中
+OUT B204E                ; ﾒｲﾝへｽﾃｰﾀｽ(PAUSE)
+LD R4014                 ; 【S】LD反転仮置台在荷確認ｾﾝｻ1
+ANB LR100                ; OFF:成型部品ON:ﾌﾞｯｼｭｼｰﾙ
+LD R4112                 ; 【B】洗浄1ｱﾗｲﾒﾝﾄX開端
+AND R4114                ; 【B】洗浄1ｱﾗｲﾒﾝﾄY開端
+AND LR100                ; OFF:成型部品ON:ﾌﾞｯｼｭｼｰﾙ
+ORL
+OUT B2070                ; ﾒｲﾝへLD反転仮置き台在荷1
+LD R4015                 ; 【S】LD反転仮置台在荷確認ｾﾝｻ2
+ANB LR100                ; OFF:成型部品ON:ﾌﾞｯｼｭｼｰﾙ
+LD R4113                 ; 【B】洗浄1ｱﾗｲﾒﾝﾄX閉端
+AND R4115                ; 【B】洗浄1ｱﾗｲﾒﾝﾄY閉端
+AND R7000                ; 洗浄ｼｬﾄﾙ1ﾊﾟﾚｯﾄ吸着
+AND LR100                ; OFF:成型部品ON:ﾌﾞｯｼｭｼｰﾙ
+ORL
+OUT B2071                ; ﾒｲﾝへLD反転仮置き台在荷2
+LD R4100                 ; 【S】LD反転仮置台昇降ｼﾘﾝﾀﾞ上限
+ANB LR100                ; OFF:成型部品ON:ﾌﾞｯｼｭｼｰﾙ
+LD R4312                 ; 【B】洗浄2ｱﾗｲﾒﾝﾄX開端
+AND R4314                ; 【B】洗浄2ｱﾗｲﾒﾝﾄY開端
+AND LR100                ; OFF:成型部品ON:ﾌﾞｯｼｭｼｰﾙ
+ORL
+OUT B2072                ; ﾒｲﾝへLD反転仮置き台 上昇限
+LD R4101                 ; 【S】LD反転仮置台昇降ｼﾘﾝﾀﾞ下限
+ANB LR100                ; OFF:成型部品ON:ﾌﾞｯｼｭｼｰﾙ
+LD R4313                 ; 【B】洗浄2ｱﾗｲﾒﾝﾄX閉端
+AND R4315                ; 【B】洗浄2ｱﾗｲﾒﾝﾄY閉端
+AND R7002                ; 洗浄ｼｬﾄﾙ2ﾊﾟﾚｯﾄ吸着
+AND LR100                ; OFF:成型部品ON:ﾌﾞｯｼｭｼｰﾙ
+ORL
+OUT B2073                ; ﾒｲﾝへLD反転仮置き台 下降限
+LD R4206                 ; 背面START_SW
+ANB LR100                ; OFF:成型部品ON:ﾌﾞｯｼｭｼｰﾙ
+OUT B2074                ; ﾒｲﾝへ装置背面START
+LD R4207                 ; 背面PAUSE_SW
+ANB LR100                ; OFF:成型部品ON:ﾌﾞｯｼｭｼｰﾙ
+OUT B2075                ; ﾒｲﾝへ装置背面PAUSE
+LD R4214                 ; 【S】ULD反転仮置台在荷確認ｾﾝｻ1
+ANB LR100                ; OFF:成型部品ON:ﾌﾞｯｼｭｼｰﾙ
+LD R50007                ; 原点復帰　完了
+AND LR100                ; OFF:成型部品ON:ﾌﾞｯｼｭｼｰﾙ
+ORL
+OUT B2078                ; ﾒｲﾝへULD反転仮置き台在荷1
+LD R4215                 ; 【S】ULD反転仮置台在荷確認ｾﾝｻ2
+ANB LR100                ; OFF:成型部品ON:ﾌﾞｯｼｭｼｰﾙ
+LD R4004                 ; ﾉｽﾞﾙﾕﾆｯﾄ1 真空吸着ﾊﾞﾙﾌﾞ 吸着
+AND LR100                ; OFF:成型部品ON:ﾌﾞｯｼｭｼｰﾙ
+ORL
+OUT B2079                ; ﾒｲﾝへULD反転仮置き台在荷2
+LD R4300                 ; 【S】ULD反転仮置台昇降ｼﾘﾝﾀﾞ上限
+ANB LR100                ; OFF:成型部品ON:ﾌﾞｯｼｭｼｰﾙ
+LD R4204                 ; ﾉｽﾞﾙﾕﾆｯﾄ2 真空吸着ﾊﾞﾙﾌﾞ 吸着
+AND LR100                ; OFF:成型部品ON:ﾌﾞｯｼｭｼｰﾙ
+ORL
+OUT B207A                ; ﾒｲﾝへULD反転仮置き台 上昇限
+LD R4301                 ; 【S】ULD反転仮置台昇降ｼﾘﾝﾀﾞ下限
+ANB LR100                ; OFF:成型部品ON:ﾌﾞｯｼｭｼｰﾙ
+OUT B207B                ; ﾒｲﾝへULD反転仮置き台 下降限
+LD= DM3000 #2            ; _MainTP　表示中ﾍﾟｰｼﾞNo
+OUT B2047                ; ﾒｲﾝへﾀｯﾁﾊﾟﾈﾙ　ﾒｲﾝ画面
+LD R50007                ; 原点復帰　完了
+OUT B2048                ; ﾒｲﾝへ洗浄機原点復帰完了
+END
+ENDH

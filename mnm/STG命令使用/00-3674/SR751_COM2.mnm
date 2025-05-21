@@ -1,0 +1,643 @@
+DEVICE:53
+;MODULE:SR751_COM2
+;MODULE_TYPE:0
+;PCとの通信
+LDP R46104               ; _ESTOP_MODE
+ZRES @R100 @R115
+;<h1/>Communication MAIN
+LD CR2003                ; 常時OFF
+ANB R37110               ; SR751-2通信中
+@SET R37108              ; SR751-2通信開始
+STG R37108               ; SR751-2通信開始
+ZRES DM40518 DM40527     ; SR-750 Series[2]ﾃﾞｰﾀ(0000)  SR-750 Series[2]ﾃﾞｰﾀ(0018)
+CON
+ZRES EM30600 EM30799
+CON
+RES R37109               ; SR751-2通信正常完了
+CON
+RES R37115               ; SR751-2通信異常完了
+CON
+SET R37110               ; SR751-2通信中
+CON
+JMP @R100
+STG @R100
+SET R39600               ; SR-750 Series[2]読取完ｸﾘｱ
+CON
+SET R39507               ; SR-750 Series[2]ｴﾗｰｸﾘｱ
+CON
+ANB R39000               ; SR-750 Series[2]ｴﾗｰ
+ANB R39100               ; SR-750 Series[2]読取完
+JMP @R101
+STG @R101
+RES R39600               ; SR-750 Series[2]読取完ｸﾘｱ
+CON
+RES R39507               ; SR-750 Series[2]ｴﾗｰｸﾘｱ
+CON
+JMP @R102
+STG @R102
+SET R39508               ; SR-750 Series[2]読取要求
+CON
+JMP @R103
+STG @R103
+AND R39100               ; SR-750 Series[2]読取完
+@BMOV DM40518 EM30600 #10; SR-750 Series[2]ﾃﾞｰﾀ(0000)
+@DISS EM30600 EM30620
+RES R39508               ; SR-750 Series[2]読取要求
+CON
+JMP @R104
+LD @R103
+ANB R39100               ; SR-750 Series[2]読取完
+TMR @0 #50
+CON
+AND @T0
+@RES R39508              ; SR-750 Series[2]読取要求
+STG @R104
+MPS
+AND= EM30624 $003A
+@BMOV EM30620 EM30640 #4 ; ② T-code ASC Byte
+@BMOV EM30625 EM30650 #3 ; ② X座標 ASC Byte
+@BMOV EM30629 EM30660 #3 ; ② Y座標 ASC Byte
+@UNIS EM30640 EM30670 #4 ; ② T-code ASC Byte  ② T-code ASC Word
+@UNIS EM30650 EM30680 #3 ; ② X座標 ASC Byte  ② X座標 ASC Word
+@UNIS EM30660 EM30690 #3 ; ② Y座標 ASC Byte  ② Y座標 ASC Word
+MRD
+AND= EM30625 $003A
+@BMOV EM30620 EM30640 #5 ; ② T-code ASC Byte
+@BMOV EM30626 EM30650 #3 ; ② X座標 ASC Byte
+@BMOV EM30630 EM30660 #3 ; ② Y座標 ASC Byte
+@UNIS EM30640 EM30670 #5 ; ② T-code ASC Byte  ② T-code ASC Word
+@UNIS EM30650 EM30680 #3 ; ② X座標 ASC Byte  ② X座標 ASC Word
+@UNIS EM30660 EM30690 #3 ; ② Y座標 ASC Byte  ② Y座標 ASC Word
+MRD
+LD= EM30624 $003A
+OR= EM30625 $003A
+ANL
+@RDASC EM30680 EM30700   ; ② X座標 ASC Word  ② X座標 BIN
+@RDASC EM30690 EM30710   ; ② Y座標 ASC Word  ② Y座標 BIN
+MPS
+@LDA.L EM30700           ; ② X座標 BIN
+CON
+@SUB.L +376
+CON
+@STA.L EM30720           ; ② X座標 中心距離
+MRD
+@LDA.L EM30720           ; ② X座標 中心距離
+CON
+@FLOAT.L
+CON
+@STA.F EM30722           ; ② X座標  中心距離FLOT化
+MRD
+AND>=.L EM30720 +0       ; ② X座標 中心距離
+@LDA.F EM30722           ; ② X座標  中心距離FLOT化
+CON
+@MUL.F +0.093883
+CON
+@STA.F EM30724           ; ② X座標 中心距離mm化
+MRD
+AND<.L EM30720 +0        ; ② X座標 中心距離
+@LDA.F EM30722           ; ② X座標  中心距離FLOT化
+CON
+@MUL.F -0.093883
+CON
+@STA.F EM30724           ; ② X座標 中心距離mm化
+MRD
+@LDA.F EM30724           ; ② X座標 中心距離mm化
+CON
+@DIV.F +20
+CON
+@STA.F EM30726           ; ② X座標 中心距離mm化/ﾎﾞﾄﾙ半径
+MRD
+@LDA.F EM30726           ; ② X座標 中心距離mm化/ﾎﾞﾄﾙ半径
+CON
+@ACOS
+CON
+@STA.F EM30728           ; ② X座標 余弦角度化(ﾗｼﾞｱﾝ)
+MRD
+@LDA.F EM30728           ; ② X座標 余弦角度化(ﾗｼﾞｱﾝ)
+CON
+@MUL.F +57.29579
+CON
+@STA.F EM30740           ; ② X座標 余弦角度化(°)
+MRD
+@LDA.F +90
+CON
+@SUB.F EM30740           ; ② X座標 余弦角度化(°)
+CON
+@STA.F EM30742           ; ② X座標 角度換算値(°)
+MRD
+AND>=.L EM30720 +0       ; ② X座標 中心距離
+@LDA.F EM30742           ; ② X座標 角度換算値(°)
+CON
+@MUL.F +100
+CON
+@STA.F EM30744           ; ② X座標 角度換算値 4桁化
+MRD
+AND<.L EM30720 +0        ; ② X座標 中心距離
+@LDA.F EM30742           ; ② X座標 角度換算値(°)
+CON
+@MUL.F -100
+CON
+@STA.F EM30744           ; ② X座標 角度換算値 4桁化
+MRD
+@LDA.L EM30744           ; ② X座標 角度換算値 4桁化
+CON
+@INTG.L
+CON
+@STA.L EM30746           ; ② X座標 角度換算値 4桁整数化
+MRD
+AND<= EM30710 DM15200    ; ② Y座標 BIN  ② Y方向4桁 窪み画素閾値
+MPS
+AND= EM30670 $3636       ; ② T-code ASC Word
+@LDA.L EM30746           ; ② X座標 角度換算値 4桁整数化
+CON
+@ADD.L DM15210           ; ②X方向 4桁(66**)角度補正1
+CON
+@STA.L EM30748           ; ② X座標 角度補正換算値 4桁
+MPP
+AND= EM30670 $3637       ; ② T-code ASC Word
+@LDA.L EM30746           ; ② X座標 角度換算値 4桁整数化
+CON
+@ADD.L DM15214           ; ②X方向 4桁(67**)角度補正1
+CON
+@STA.L EM30748           ; ② X座標 角度補正換算値 4桁
+MRD
+AND> EM30710 DM15200     ; ② Y座標 BIN  ② Y方向4桁 窪み画素閾値
+MPS
+AND= EM30670 $3636       ; ② T-code ASC Word
+@LDA.L EM30746           ; ② X座標 角度換算値 4桁整数化
+CON
+@ADD.L DM15212           ; ②X方向 4桁(66**)角度補正２
+CON
+@STA.L EM30748           ; ② X座標 角度補正換算値 4桁
+MPP
+AND= EM30670 $3637       ; ② T-code ASC Word
+@LDA.L EM30746           ; ② X座標 角度換算値 4桁整数化
+CON
+@ADD.L DM15216           ; ②X方向 4桁(67**)角度補正２
+CON
+@STA.L EM30748           ; ② X座標 角度補正換算値 4桁
+MRD
+ANB MR215                ; 4st Y軸 2次関数 FLG
+MPS
+@LDA.L EM30710           ; ② Y座標 BIN
+CON
+@SUB.L +280
+CON
+@STA.L EM30730           ; ② Y座標 中心距離
+MRD
+@LDA.L EM30730           ; ② Y座標 中心距離
+CON
+@FLOAT.L
+CON
+@STA.F EM30732           ; ② X座標  中心距離FLOT化
+MRD
+AND>=.L EM30730 +0       ; ② Y座標 中心距離
+@LDA.F EM30732           ; ② X座標  中心距離FLOT化
+CON
+@MUL.F +0.09375
+CON
+@STA.F EM30734           ; ② Y座標  中心距離mm化
+MRD
+AND<.L EM30730 +0        ; ② Y座標 中心距離
+@LDA.F EM30732           ; ② X座標  中心距離FLOT化
+CON
+@MUL.F -0.09375
+CON
+@STA.F EM30734           ; ② Y座標  中心距離mm化
+MRD
+AND>=.L EM30730 +0       ; ② Y座標 中心距離
+@LDA.F EM30734           ; ② Y座標  中心距離mm化
+CON
+@MUL.F -100
+CON
+@STA.F EM30736           ; ② Y座標  中心距離 ４桁化
+MRD
+AND<.L EM30730 +0        ; ② Y座標 中心距離
+@LDA.F EM30734           ; ② Y座標  中心距離mm化
+CON
+@MUL.F +100
+CON
+@STA.F EM30736           ; ② Y座標  中心距離 ４桁化
+MPP
+@LDA.L EM30736           ; ② Y座標  中心距離 ４桁化
+CON
+@INTG.L
+CON
+@STA.L EM30750           ; ② Y座標 ﾐﾘ換算値
+MRD
+AND MR215                ; 4st Y軸 2次関数 FLG
+MPS
+@LDA.L EM30700           ; ② X座標 BIN
+CON
+@FLOAT.L
+CON
+@STA.F EM30702           ; ② X座標 FLOT化
+MRD
+@LDA.F EM30702           ; ② X座標 FLOT化
+CON
+@MUL.F +0.093883
+CON
+@STA.F EM30704           ; ② X座標 mm化
+MRD
+@LDA.F EM30704           ; ② X座標 mm化
+CON
+@MUL.F EM30704           ; ② X座標 mm化
+CON
+@STA.F EM30706           ; ②(X座標mm)2乗
+MRD
+AND CR2003               ; 常時OFF
+@LDA.F EM30706           ; ②(X座標mm)2乗
+CON
+@MUL.F +0.0071
+CON
+@STA.F EM30708           ; ②(X座標mm２乗)×係数
+MRD
+@LDA.F EM30706           ; ②(X座標mm)2乗
+CON
+@MUL.F DM15260           ; ②2乗定数
+CON
+@STA.F EM30708           ; ②(X座標mm２乗)×係数
+MRD
+AND CR2003               ; 常時OFF
+@LDA.F EM30704           ; ② X座標 mm化
+CON
+@MUL.F +0.5602
+CON
+@STA.F EM30712           ; ②(X座標mm)×係数
+MRD
+@LDA.F EM30704           ; ② X座標 mm化
+CON
+@MUL.F DM15262           ; ②1乗定数
+CON
+@STA.F EM30712           ; ②(X座標mm)×係数
+MRD
+@LDA.F EM30708           ; ②(X座標mm２乗)×係数
+CON
+@SUB.F EM30712           ; ②(X座標mm)×係数
+CON
+@STA.F EM30714           ; ②(X座標mm２乗)×係数-(X座標mm)
+MRD
+AND CR2003               ; 常時OFF
+@LDA.F EM30714           ; ②(X座標mm２乗)×係数-(X座標mm)
+CON
+@ADD.F +11.04925
+CON
+@STA.F EM30716           ; ②(Y 2次関数mm化)
+MRD
+@LDA.F EM30714           ; ②(X座標mm２乗)×係数-(X座標mm)
+CON
+@ADD.F DM15264           ; ②定数
+CON
+@STA.F EM30716           ; ②(Y 2次関数mm化)
+MRD
+@LDA.F EM30716           ; ②(Y 2次関数mm化)
+CON
+@MUL.F -100
+CON
+@STA.F EM30718           ; ②(Y 2次関数 4桁mm化)
+MPP
+@LDA.F EM30718           ; ②(Y 2次関数 4桁mm化)
+CON
+@INTG.L
+CON
+@STA.L EM30750           ; ② Y座標 ﾐﾘ換算値
+MPP
+@LDA.L EM30746           ; ② X座標 角度換算値 4桁整数化
+CON
+@ADD.L +6600
+CON
+@STA.L EM30760           ; ② X座標 補正前角度移動量
+MRD
+AND= EM30624 $003A
+MPS
+AND<= EM30710 DM15200    ; ② Y座標 BIN  ② Y方向4桁 窪み画素閾値
+MPS
+AND= EM30670 $3636       ; ② T-code ASC Word
+MPS
+LD>.L EM30748 -3500      ; ② X座標 角度補正換算値 4桁
+AND<.L EM30748 +3500     ; ② X座標 角度補正換算値 4桁
+ANL
+@LDA.L EM30760           ; ② X座標 補正前角度移動量
+CON
+@ADD.L DM15210           ; ②X方向 4桁(66**)角度補正1
+CON
+@STA.L EM30780           ; ② X座標 補正後角度移動量
+MRD
+AND<=.L EM30748 -3500    ; ② X座標 角度補正換算値 4桁
+@LDA.L EM30760           ; ② X座標 補正前角度移動量
+CON
+@ADD.L DM15230           ; ②X方向 角度4桁(Θ<40)
+CON
+@STA.L EM30780           ; ② X座標 補正後角度移動量
+MPP
+AND>=.L EM30748 +3500    ; ② X座標 角度補正換算値 4桁
+@LDA.L EM30760           ; ② X座標 補正前角度移動量
+CON
+@ADD.L DM15232           ; ②X方向 角度4桁(Θ>40)
+CON
+@STA.L EM30780           ; ② X座標 補正後角度移動量
+MPP
+AND= EM30670 $3637       ; ② T-code ASC Word
+MPS
+LD>.L EM30748 -3500      ; ② X座標 角度補正換算値 4桁
+AND<.L EM30748 +3500     ; ② X座標 角度補正換算値 4桁
+ANL
+@LDA.L EM30760           ; ② X座標 補正前角度移動量
+CON
+@ADD.L DM15214           ; ②X方向 4桁(67**)角度補正1
+CON
+@STA.L EM30780           ; ② X座標 補正後角度移動量
+MRD
+AND<=.L EM30748 -3500    ; ② X座標 角度補正換算値 4桁
+@LDA.L EM30760           ; ② X座標 補正前角度移動量
+CON
+@ADD.L DM15230           ; ②X方向 角度4桁(Θ<40)
+CON
+@STA.L EM30780           ; ② X座標 補正後角度移動量
+MPP
+AND>=.L EM30748 +3500    ; ② X座標 角度補正換算値 4桁
+@LDA.L EM30760           ; ② X座標 補正前角度移動量
+CON
+@ADD.L DM15232           ; ②X方向 角度4桁(Θ>40)
+CON
+@STA.L EM30780           ; ② X座標 補正後角度移動量
+MRD
+AND> EM30710 DM15200     ; ② Y座標 BIN  ② Y方向4桁 窪み画素閾値
+MPS
+AND= EM30670 $3636       ; ② T-code ASC Word
+MPS
+LD>.L EM30748 -3500      ; ② X座標 角度補正換算値 4桁
+AND<.L EM30748 +3500     ; ② X座標 角度補正換算値 4桁
+ANL
+@LDA.L EM30760           ; ② X座標 補正前角度移動量
+CON
+@ADD.L DM15212           ; ②X方向 4桁(66**)角度補正２
+CON
+@STA.L EM30780           ; ② X座標 補正後角度移動量
+MRD
+AND<=.L EM30748 -3500    ; ② X座標 角度補正換算値 4桁
+@LDA.L EM30760           ; ② X座標 補正前角度移動量
+CON
+@ADD.L DM15230           ; ②X方向 角度4桁(Θ<40)
+CON
+@STA.L EM30780           ; ② X座標 補正後角度移動量
+MPP
+AND>=.L EM30748 +3500    ; ② X座標 角度補正換算値 4桁
+@LDA.L EM30760           ; ② X座標 補正前角度移動量
+CON
+@ADD.L DM15232           ; ②X方向 角度4桁(Θ>40)
+CON
+@STA.L EM30780           ; ② X座標 補正後角度移動量
+MPP
+AND= EM30670 $3637       ; ② T-code ASC Word
+MPS
+LD>.L EM30748 -4000      ; ② X座標 角度補正換算値 4桁
+AND<.L EM30748 +4000     ; ② X座標 角度補正換算値 4桁
+ANL
+@LDA.L EM30760           ; ② X座標 補正前角度移動量
+CON
+@ADD.L DM15216           ; ②X方向 4桁(67**)角度補正２
+CON
+@STA.L EM30780           ; ② X座標 補正後角度移動量
+MRD
+AND<=.L EM30748 -4000    ; ② X座標 角度補正換算値 4桁
+@LDA.L EM30760           ; ② X座標 補正前角度移動量
+CON
+@ADD.L DM15230           ; ②X方向 角度4桁(Θ<40)
+CON
+@STA.L EM30780           ; ② X座標 補正後角度移動量
+MPP
+AND>=.L EM30748 +4000    ; ② X座標 角度補正換算値 4桁
+@LDA.L EM30760           ; ② X座標 補正前角度移動量
+CON
+@ADD.L DM15232           ; ②X方向 角度4桁(Θ>40)
+CON
+@STA.L EM30780           ; ② X座標 補正後角度移動量
+MRD
+AND<= EM30710 DM15200    ; ② Y座標 BIN  ② Y方向4桁 窪み画素閾値
+MPS
+ANB MR215                ; 4st Y軸 2次関数 FLG
+MPS
+LD>.L EM30748 -3500      ; ② X座標 角度補正換算値 4桁
+AND<.L EM30748 +3500     ; ② X座標 角度補正換算値 4桁
+ANL
+@LDA.L EM30750           ; ② Y座標 ﾐﾘ換算値
+CON
+@ADD.L DM15220           ; ②Y方向 ４桁高さ補正1
+CON
+@STA.L EM30790           ; ② Y座標 補正後移動量
+MRD
+AND<=.L EM30748 -3500    ; ② X座標 角度補正換算値 4桁
+@LDA.L EM30750           ; ② Y座標 ﾐﾘ換算値
+CON
+@ADD.L DM15250           ; ②Y方向 角度4桁(Θ<40)
+CON
+@STA.L EM30790           ; ② Y座標 補正後移動量
+MPP
+AND>=.L EM30748 +3500    ; ② X座標 角度補正換算値 4桁
+@LDA.L EM30750           ; ② Y座標 ﾐﾘ換算値
+CON
+@ADD.L DM15252           ; ②Y方向 角度4桁(Θ>40)
+CON
+@STA.L EM30790           ; ② Y座標 補正後移動量
+MPP
+AND MR215                ; 4st Y軸 2次関数 FLG
+@LDA.L EM30750           ; ② Y座標 ﾐﾘ換算値
+CON
+@ADD.L DM15220           ; ②Y方向 ４桁高さ補正1
+CON
+@STA.L EM30790           ; ② Y座標 補正後移動量
+MPP
+AND> EM30710 DM15200     ; ② Y座標 BIN  ② Y方向4桁 窪み画素閾値
+MPS
+ANB MR215                ; 4st Y軸 2次関数 FLG
+MPS
+LD>.L EM30748 -3500      ; ② X座標 角度補正換算値 4桁
+AND<.L EM30748 +3500     ; ② X座標 角度補正換算値 4桁
+ANL
+@LDA.L EM30750           ; ② Y座標 ﾐﾘ換算値
+CON
+@ADD.L DM15222           ; ①Y方向 ４桁高さ補正２
+CON
+@STA.L EM30790           ; ② Y座標 補正後移動量
+MRD
+AND<=.L EM30748 -3500    ; ② X座標 角度補正換算値 4桁
+@LDA.L EM30750           ; ② Y座標 ﾐﾘ換算値
+CON
+@ADD.L DM15250           ; ②Y方向 角度4桁(Θ<40)
+CON
+@STA.L EM30790           ; ② Y座標 補正後移動量
+MPP
+AND>=.L EM30748 +3500    ; ② X座標 角度補正換算値 4桁
+@LDA.L EM30750           ; ② Y座標 ﾐﾘ換算値
+CON
+@ADD.L DM15252           ; ②Y方向 角度4桁(Θ>40)
+CON
+@STA.L EM30790           ; ② Y座標 補正後移動量
+MPP
+AND MR215                ; 4st Y軸 2次関数 FLG
+@LDA.L EM30750           ; ② Y座標 ﾐﾘ換算値
+CON
+@ADD.L DM15222           ; ①Y方向 ４桁高さ補正２
+CON
+@STA.L EM30790           ; ② Y座標 補正後移動量
+MRD
+AND= EM30625 $003A
+MPS
+AND<= EM30710 DM15300    ; ② Y座標 BIN  ② Y方向4桁窪み画素閾値
+MPS
+LD>.L EM30748 -3500      ; ② X座標 角度補正換算値 4桁
+AND<.L EM30748 +3500     ; ② X座標 角度補正換算値 4桁
+ANL
+@LDA.L EM30760           ; ② X座標 補正前角度移動量
+CON
+@ADD.L DM15310           ; ②X方向 ５桁角度補正1
+CON
+@STA.L EM30780           ; ② X座標 補正後角度移動量
+MRD
+AND<=.L EM30748 -3500    ; ② X座標 角度補正換算値 4桁
+@LDA.L EM30760           ; ② X座標 補正前角度移動量
+CON
+@ADD.L DM15330           ; ②X方向 角度5桁(Θ<40)
+CON
+@STA.L EM30780           ; ② X座標 補正後角度移動量
+MPP
+AND>=.L EM30748 +3500    ; ② X座標 角度補正換算値 4桁
+@LDA.L EM30760           ; ② X座標 補正前角度移動量
+CON
+@ADD.L DM15332           ; ②X方向 角度5桁(Θ>40)
+CON
+@STA.L EM30780           ; ② X座標 補正後角度移動量
+MRD
+AND> EM30710 DM15300     ; ② Y座標 BIN  ② Y方向4桁窪み画素閾値
+MPS
+LD>.L EM30748 -3500      ; ② X座標 角度補正換算値 4桁
+AND<.L EM30748 +3500     ; ② X座標 角度補正換算値 4桁
+ANL
+@LDA.L EM30760           ; ② X座標 補正前角度移動量
+CON
+@ADD.L DM15312           ; ②X方向 ５桁角度補正２
+CON
+@STA.L EM30780           ; ② X座標 補正後角度移動量
+MRD
+AND<=.L EM30748 -3500    ; ② X座標 角度補正換算値 4桁
+@LDA.L EM30760           ; ② X座標 補正前角度移動量
+CON
+@ADD.L DM15330           ; ②X方向 角度5桁(Θ<40)
+CON
+@STA.L EM30780           ; ② X座標 補正後角度移動量
+MPP
+AND>=.L EM30748 +3500    ; ② X座標 角度補正換算値 4桁
+@LDA.L EM30760           ; ② X座標 補正前角度移動量
+CON
+@ADD.L DM15332           ; ②X方向 角度5桁(Θ>40)
+CON
+@STA.L EM30780           ; ② X座標 補正後角度移動量
+MRD
+AND<= EM30710 DM15300    ; ② Y座標 BIN  ② Y方向4桁窪み画素閾値
+MPS
+ANB MR215                ; 4st Y軸 2次関数 FLG
+MPS
+LD>.L EM30748 -3500      ; ② X座標 角度補正換算値 4桁
+AND<.L EM30748 +3500     ; ② X座標 角度補正換算値 4桁
+ANL
+@LDA.L EM30750           ; ② Y座標 ﾐﾘ換算値
+CON
+@ADD.L DM15320           ; ②Y方向 ５桁高さ補正1
+CON
+@STA.L EM30790           ; ② Y座標 補正後移動量
+MRD
+AND<=.L EM30748 -3500    ; ② X座標 角度補正換算値 4桁
+@LDA.L EM30750           ; ② Y座標 ﾐﾘ換算値
+CON
+@ADD.L DM15350           ; ②Y方向 角度5桁(Θ<40)
+CON
+@STA.L EM30790           ; ② Y座標 補正後移動量
+MPP
+AND>=.L EM30748 +3500    ; ② X座標 角度補正換算値 4桁
+@LDA.L EM30750           ; ② Y座標 ﾐﾘ換算値
+CON
+@ADD.L DM15352           ; ②Y方向 角度5桁(Θ>40)
+CON
+@STA.L EM30790           ; ② Y座標 補正後移動量
+MPP
+AND MR215                ; 4st Y軸 2次関数 FLG
+@LDA.L EM30750           ; ② Y座標 ﾐﾘ換算値
+CON
+@ADD.L DM15320           ; ②Y方向 ５桁高さ補正1
+CON
+@STA.L EM30790           ; ② Y座標 補正後移動量
+MPP
+AND> EM30710 DM15300     ; ② Y座標 BIN  ② Y方向4桁窪み画素閾値
+MPS
+ANB MR215                ; 4st Y軸 2次関数 FLG
+MPS
+LD>.L EM30748 -3500      ; ② X座標 角度補正換算値 4桁
+AND<.L EM30748 +3500     ; ② X座標 角度補正換算値 4桁
+ANL
+@LDA.L EM30750           ; ② Y座標 ﾐﾘ換算値
+CON
+@ADD.L DM15322           ; ②Y方向 ５桁高さ補正２
+CON
+@STA.L EM30790           ; ② Y座標 補正後移動量
+MRD
+AND<=.L EM30748 -3500    ; ② X座標 角度補正換算値 4桁
+@LDA.L EM30750           ; ② Y座標 ﾐﾘ換算値
+CON
+@ADD.L DM15350           ; ②Y方向 角度5桁(Θ<40)
+CON
+@STA.L EM30790           ; ② Y座標 補正後移動量
+MPP
+AND>=.L EM30748 +3500    ; ② X座標 角度補正換算値 4桁
+@LDA.L EM30750           ; ② Y座標 ﾐﾘ換算値
+CON
+@ADD.L DM15352           ; ②Y方向 角度5桁(Θ>40)
+CON
+@STA.L EM30790           ; ② Y座標 補正後移動量
+MPP
+AND MR215                ; 4st Y軸 2次関数 FLG
+@LDA.L EM30750           ; ② Y座標 ﾐﾘ換算値
+CON
+@ADD.L DM15322           ; ②Y方向 ５桁高さ補正２
+CON
+@STA.L EM30790           ; ② Y座標 補正後移動量
+MRD
+LD= EM30624 $003A
+OR= EM30625 $003A
+ANL
+JMP @R105
+MPP
+LD= EM30600 $4552
+AND= EM30601 $524F
+AND= EM30602 $520D
+ANL
+JMP @R114
+STG @R105
+SET R39600               ; SR-750 Series[2]読取完ｸﾘｱ
+CON
+ANB R39100               ; SR-750 Series[2]読取完
+JMP @R106
+STG @R106
+RES R39600               ; SR-750 Series[2]読取完ｸﾘｱ
+CON
+JMP @R115
+STG @R114
+TMS @4 #1
+CON
+AND @T4
+RES R37110               ; SR751-2通信中
+CON
+SET R37115               ; SR751-2通信異常完了
+CON
+ENDS
+STG @R115
+TMS @5 #1
+CON
+AND @T5
+RES R37110               ; SR751-2通信中
+CON
+SET R37109               ; SR751-2通信正常完了
+CON
+ENDS
+END
+ENDH

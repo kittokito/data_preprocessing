@@ -1,0 +1,193 @@
+DEVICE:53
+;MODULE:DA_conversion2
+;MODULE_TYPE:0
+LD CR2008                ; 1 scan on at start
+FMOV #0 @DM0 #3
+;低圧回路用
+;電空ﾚｷﾞｭﾚｰﾀｰ(Fukuda)
+;For low voltage circuits
+;Electro-pneumatic regulator (Fukuda)
+LD= EM30000 #801         ; (TP)crnt during display scrn No.
+LDA DM7                  ; Manual pressure(Fukuda)
+CON
+STA @DM0
+LD MR101                 ; Spring Inspection
+LDA DM650                ; Spring chk pressure
+CON
+ADD DM665                ; Spring chk pressure correction
+CON
+STA @DM0
+LD MR102                 ; Check valve checking in progress
+LDA DM670                ; Valve chk pressure
+CON
+ADD DM671                ; Valve chk pressure correction
+CON
+STA @DM0
+;↓_2019/9/30追加 ﾁｮｰｸ解除変更
+LD MR105                 ; Chalk open test in progress
+MPS
+AND MR9915               ; Old choke release selection
+LDA DM787                ; Choke chk release pressure
+CON
+ADD DM798                ; Choke releasing pressure correct
+CON
+STA @DM0
+MPP
+ANB MR9915               ; Old choke release selection
+MPS
+AND= DM104 #0            ; Chalk opening fluctuation value
+LDA DM104                ; Chalk opening fluctuation value
+CON
+STA @DM0
+CON
+STA DM10802              ; E regulator(Fukuda) setting valu
+MPP
+AND<> DM104 #0           ; Chalk opening fluctuation value
+LDA DM104                ; Chalk opening fluctuation value
+CON
+STA @DM0
+;↑_2019/9/30追加 ﾁｮｰｸ解除変更
+LD MR113                 ; dur electro-pneumatic regulator 
+ANB MR400                ; Atmospheric release circuit init
+MPS
+AND= DM21 #3             ; Electrode correction circuit No.
+MPS
+LDA DM650                ; Spring chk pressure
+CON
+ADD DM22                 ; TP Electrode correction val
+CON
+STA @DM0
+MPP
+LDA DM650                ; Spring chk pressure
+CON
+STA.S DM24               ; Ev(Fukuda) value (at correction 
+MRD
+AND= DM21 #4             ; Electrode correction circuit No.
+MPS
+LDA DM670                ; Valve chk pressure
+CON
+ADD DM22                 ; TP Electrode correction val
+CON
+STA @DM0
+MPP
+LDA DM670                ; Valve chk pressure
+CON
+STA.S DM24               ; Ev(Fukuda) value (at correction 
+MPP
+AND= DM21 #5             ; Electrode correction circuit No.
+MPS
+LDA DM787                ; Choke chk release pressure
+CON
+ADD DM22                 ; TP Electrode correction val
+CON
+STA @DM0
+MPP
+LDA DM787                ; Choke chk release pressure
+CON
+STA.S DM24               ; Ev(Fukuda) value (at correction 
+LDB MR103                ; Ink flow path leakage inspection
+ANB MR104                ; Pneumatic leak check
+INV
+AND<> EM30000 #801       ; (TP)crnt during display scrn No.
+LDB MR106                ; mainte_equip. leak chk during
+ANB MR113                ; dur electro-pneumatic regulator 
+LD MR106                 ; mainte_equip. leak chk during
+AND<= EM509 #5           ; MC leak No(1-5)
+ORL
+LD MR113                 ; dur electro-pneumatic regulator 
+AND<= DM21 #2            ; Electrode correction circuit No.
+ORL
+ANL
+DW #0 @DM0
+CON
+DW #0 DM10802            ; E regulator(Fukuda) setting valu
+;変動圧力検査時の近似式
+;※2019/10/25 ﾁｮｰｸ解除は変動圧力なのでこの近似式を使用するよう変更
+;範囲1～8.5kPa
+;近似  y=27.59X ＋ 75.472
+;※変動加圧した場合のﾘｱﾙﾀｲﾑﾁｬｰﾄﾓﾆﾀより指示圧変更から1秒後の圧力計値を使用して算出
+LD MR105                 ; Chalk open test in progress
+ANB MR9915               ; Old choke release selection
+OUT @MR000               ; Use fluctuating pressure approxi
+LD MR305                 ; origin return complete
+ANB MR900                ; severe err：pwr rstr necessary
+ANB MR402                ; Open to the atmosphere
+AND @MR000               ; Use fluctuating pressure approxi
+LDA @DM0
+CON
+MPS
+EXT
+CON
+MUL.D #2759
+CON
+ADD.D #7547
+CON
+DIV.D #100
+CON
+STA.D @DM1
+MRD
+LDA @DM1
+CON
+STA DM10802              ; E regulator(Fukuda) setting valu
+MPP
+AND= @DM0 #0
+LDA #0
+CON
+STA @DM0
+CON
+STA DM10802              ; E regulator(Fukuda) setting valu
+;固定圧力検査時の近似式
+;※2019/10/25 ﾁｮｰｸ解除は変動圧力なのでこの近似式使用しないよう変更
+;範囲5～20kPa
+;近似  y=31.689X - 211.23
+;格納値が6以下の場合は近似式が使用できないので値0とする※最小は0.7kPa  切片ﾏｲﾅｽのため
+LD MR305                 ; origin return complete
+ANB MR900                ; severe err：pwr rstr necessary
+ANB MR402                ; Open to the atmosphere
+ANB @MR000               ; Use fluctuating pressure approxi
+LDA @DM0
+CON
+MPS
+EXT
+CON
+MUL.D #3169
+CON
+SUB.D #21123
+CON
+DIV.D #100
+CON
+STA.D @DM1
+MRD
+LDA @DM1
+CON
+STA DM10802              ; E regulator(Fukuda) setting valu
+MPP
+AND<= @DM0 #6
+LDA #0
+CON
+STA @DM0
+CON
+STA DM10802              ; E regulator(Fukuda) setting valu
+;式算出用
+LD CR2003                ; always off
+ANP R2000                ; start SW
+LDA DM10802              ; E regulator(Fukuda) setting valu
+CON
+ADD #300
+CON
+STA DM10802              ; E regulator(Fukuda) setting valu
+;設定値ｸﾘｱ/Clear set value
+LD CR2002                ; always on
+LDB MR8000               ;  flow valve 1(ON=open)
+ORB MR305                ; origin return complete
+ANL
+DW #0 @DM0
+CON
+DW #0 DM10802            ; E regulator(Fukuda) setting valu
+;電空ﾚｷﾞｭﾚｰﾀｰ現在値表示/Display of electropneumatic regulator current value
+LD CR2002                ; always on
+LDA @DM0
+CON
+STA DM47                 ; Shink? ponpu genzaine
+END
+ENDH

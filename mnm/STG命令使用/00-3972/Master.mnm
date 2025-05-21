@@ -1,0 +1,288 @@
+DEVICE:53
+;MODULE:Master
+;MODULE_TYPE:0
+;初期化
+;Initial
+LD R50010                ; Emargency Stop
+ZRES @MR000 @MR415
+;電源投入
+;Power ON
+LD CR2002                ; 常時ON
+MPS
+TMS #2000 #3000          ; 起動遅延
+MPP
+LDB R50011               ; TRAP
+AND T2000                ; 起動遅延
+ANL
+TMR #2020 #10            ; 動作中遅延
+;ｾﾝｻ入力
+LD CR2002                ; 常時ON
+MPS
+AND R001                 ; 内蓋閉め確認
+OUT R50101               ; 内蓋閉め確認
+MRD
+AND R002                 ; ｴﾘｱｾﾝｻ
+OUT R50102               ; ｴﾘｱｾﾝｻ
+MPP
+AND R1000                ; HEPA_ALM1    
+OUT R50100               ; HEPA_ALM1
+;ｽﾀｰﾄSW
+;Start SW
+LD R000                  ; START SW
+TMR @0 #1                ; ｽﾀｰﾄSW_DLY
+CON
+AND @T0                  ; ｽﾀｰﾄSW_DLY
+OUT R50105               ; ｽﾀｰﾄSW ON
+LD T2020                 ; 動作中遅延
+AND R50101               ; 内蓋閉め確認
+AND R50102               ; ｴﾘｱｾﾝｻ
+AND MR10009              ; 軸1&2動作可
+OUT R50106               ; 装置動作可
+;ﾀｽｸ制御
+;Task Control
+LD R50003                ; HOME
+OR R50001                ; AUTO
+OR R50002                ; STEP
+MPS
+TMR @5 #5                ; 動作開始DLY
+MPP
+ANP @T5                  ; 動作開始DLY
+SET R50209               ; 動作開始
+LDP R50209               ; 動作開始
+LD R50003                ; HOME
+OR R50001                ; AUTO
+OR R50002                ; STEP
+ANL
+RES R50409               ; ｻｲｸﾙ完了
+CON
+SET @MR001               ; @STG1-1
+CON
+MDSTRT ST1_測定部
+STG @MR001               ; @STG1-1
+AND R50901               ; ST1ｻｲｸﾙ完了
+RES R50901               ; ST1ｻｲｸﾙ完了
+CON
+RES R50209               ; 動作開始
+CON
+SET R50409               ; ｻｲｸﾙ完了
+CON
+ENDS
+;停止処理
+;STOP Manegment
+LD R50001                ; AUTO
+OR R50002                ; STEP
+ANP R50009               ; HOLD RQ
+ORP R50003               ; HOME
+SET R50000               ; 即停止 HOLD
+CON
+RES R50009               ; HOLD RQ
+LDB R50004               ; TASKDO
+OR R50308                ; ﾀｽｸ停止待ち
+RES R50001               ; AUTO
+CON
+RES R50002               ; STEP
+LD R50003                ; HOME
+LDB R50004               ; TASKDO
+OR R50308                ; ﾀｽｸ停止待ち
+ANL
+RES R50003               ; HOME
+CON
+SET R50007               ; 原点復帰完了
+;各UTタスク停止
+;Each UT Task Stop
+LD R50003                ; HOME
+AND R50409               ; ｻｲｸﾙ完了
+LD R50001                ; AUTO
+OR R50002                ; STEP
+AND R50409               ; ｻｲｸﾙ完了
+AND R50000               ; 即停止 HOLD
+ORL
+RES R50409               ; ｻｲｸﾙ完了
+CON
+RES R50209               ; 動作開始
+CON
+SET R50308               ; ﾀｽｸ停止待ち
+LD R50308                ; ﾀｽｸ停止待ち
+ANB R50801               ; ST1ｻｲｸﾙ動作中
+RES R50308               ; ﾀｽｸ停止待ち
+CON
+RES R50004               ; TASKDO
+CON
+RES R50000               ; 即停止 HOLD
+LD R50002                ; STEP
+AND R50900               ; STEPｻｲｸﾙ完了
+SET R50312               ; ﾀｽｸ停止待ち(STEP)
+LD R50312                ; ﾀｽｸ停止待ち(STEP)
+AND R50101               ; 内蓋閉め確認
+AND R50102               ; ｴﾘｱｾﾝｻ
+ANP R50105               ; ｽﾀｰﾄSW ON
+RES R50900               ; STEPｻｲｸﾙ完了
+CON
+DIFU R50313              ; STEP再起動PLS
+;＠ﾓｰﾄﾞ選択
+;  Select Mode
+;HOME補助
+LDB R73700               ; TP ｽﾀｰﾄ可能表示
+ORB R50007               ; 原点復帰完了
+AND R50101               ; 内蓋閉め確認
+AND R50102               ; ｴﾘｱｾﾝｻ
+AND MR000                ; TP[0000]:初期画面
+ANP R50105               ; ｽﾀｰﾄSW ON
+DIFU @MR006              ; 原点復帰開始ﾊﾟﾙｽ
+LD @MR006                ; 原点復帰開始ﾊﾟﾙｽ
+ANB R50004               ; TASKDO
+ANB R50008               ; Error
+ANB R50300               ; Pause
+ANB R50010               ; Emargency Stop
+SET R50003               ; HOME
+CON
+SET R50004               ; TASKDO
+;AUTO補助
+LD MR002                 ; TP[0000]: ﾒｲﾝ画面
+MPS
+LD R80003                ; 自動ﾓｰﾄﾞSW(ﾊﾟﾈﾙ)
+AND MR105                ; ﾓｰﾄﾞ選択有
+AND MR31001              ; 画像処理 正常
+ANL
+SET MR46003              ; 自動ﾓｰﾄﾞLP(ﾊﾟﾈﾙ)
+MPP
+LD R80006                ; 停止SW(ﾊﾟﾈﾙ)
+ANB R50001               ; AUTO
+ANL
+RES MR46003              ; 自動ﾓｰﾄﾞLP(ﾊﾟﾈﾙ)
+LDB R50004               ; TASKDO
+ANB MR46003              ; 自動ﾓｰﾄﾞLP(ﾊﾟﾈﾙ)
+OUT R80007               ; 停止LP(ﾊﾟﾈﾙ)
+LD MR002                 ; TP[0000]: ﾒｲﾝ画面
+AND MR46003              ; 自動ﾓｰﾄﾞLP(ﾊﾟﾈﾙ)
+AND MR31000              ; 変位ｾﾝｻ 正常
+ANP R50105               ; ｽﾀｰﾄSW ON
+MPS
+LD MR31001               ; 画像処理 正常
+AND MR105                ; ﾓｰﾄﾞ選択有
+ANL
+DIFU @MR008              ; AUTO開始ﾊﾟﾙｽ
+MPP
+LDB B02                  ; XG-8000/7000[1]Cmd ready
+ANB R50001               ; AUTO
+ANB MR400                ; 画像処理 無ﾃｽﾄ
+ANL
+DIFU MR46010             ; AUTO開始_Cmd_Ready_OFF
+LD @MR008                ; AUTO開始ﾊﾟﾙｽ
+AND R50007               ; 原点復帰完了
+ANB R50004               ; TASKDO
+ANB R50008               ; Error
+ANB R50300               ; Pause
+ANB R50010               ; Emargency Stop
+SET @MR200               ; AUTO開始状態確認
+STG @MR200               ; AUTO開始状態確認
+SET R50001               ; AUTO
+CON
+SET R50004               ; TASKDO
+CON
+ENDS
+;STEP補助
+LDB R50002               ; STEP
+TMR #2010 #10            ; STEP停止DLY
+LD MR005                 ; TP[0015]: STEP画面
+AND<> DM19969 #0         ; STEP動作No
+AND T2010                ; STEP停止DLY
+AND MR31000              ; 変位ｾﾝｻ 正常
+MPS
+LD MR31001               ; 画像処理 正常
+AND MR105                ; ﾓｰﾄﾞ選択有
+ANL
+OUT MR7002               ; STEP開始時ｽﾀｰﾄ要求
+CON
+ANP R50105               ; ｽﾀｰﾄSW ON
+DIFU @MR010              ; STEP開始ﾊﾟﾙｽ
+MPP
+LDB B02                  ; XG-8000/7000[1]Cmd ready
+ANP R50105               ; ｽﾀｰﾄSW ON
+ANB MR400                ; 画像処理 無ﾃｽﾄ
+ANL
+DIFU MR46011             ; STEP開始_Cmd_Ready_OFF
+LD @MR010                ; STEP開始ﾊﾟﾙｽ
+AND R50007               ; 原点復帰完了
+ANB R50004               ; TASKDO
+ANB R50008               ; Error
+ANB R50300               ; Pause
+ANB R50010               ; Emargency Stop
+SET @MR210               ; STEP開始状態確認
+STG @MR210               ; STEP開始状態確認
+SET R50002               ; STEP
+CON
+SET R50004               ; TASKDO
+CON
+ENDS
+;MANUAL補助
+LD MR100                 ; TP[0015]: MANUAL画面
+OR MR101                 ; TP[0015]: TEACH画面
+AND R50007               ; 原点復帰完了
+ANB R50004               ; TASKDO
+ANB R50008               ; Error
+ANB R50300               ; Pause
+ANB R50010               ; Emargency Stop
+SET R50006               ; MANUAL
+LD<= DM3000 #2           ; 表示中画面No.
+OR R50004                ; TASKDO
+OR R50010                ; Emargency Stop
+RES R50006               ; MANUAL
+LDP R70602               ; TP "戻る"SW(手動を抜ける)
+SET R50011               ; TRAP
+;ｴﾗｰ解除遅延処理
+;Error Release Delay Management
+LDP R50107               ; ｴﾗｰ中非常停止
+SET R50109               ; ｴﾗｰ解除
+LDB R50008               ; Error
+OR R50109                ; ｴﾗｰ解除
+RES R50109               ; ｴﾗｰ解除
+CON
+RES R50107               ; ｴﾗｰ中非常停止
+STG @MR301               ; STG1-Error発生
+SET R50108               ; ｴﾗｰ中
+CON
+ENDS
+;ｴﾗｰ解除処理
+;Error Release Manegment
+LD R50008                ; Error
+AND R50108               ; ｴﾗｰ中
+MPS
+TMR @4 #15               ; ｴﾗｰ発生DLY
+MPP
+LDP R50015               ; ｴﾗｰﾘｾｯﾄSW ON
+AND @T4                  ; ｴﾗｰ発生DLY
+ANB R50300               ; Pause
+AND MR010                ; TP[0030]: ERROR画面
+ANL
+MPS
+SET R50109               ; ｴﾗｰ解除
+CON
+RES R50108               ; ｴﾗｰ中
+CON
+RES R50008               ; Error
+MPP
+ZRES R50700 R50715       ; Err All  Err ST10
+LDP R50008               ; Error
+SET @MR301               ; STG1-Error発生
+;Main_Errorによる各STの停止制御
+LD R49900                ; Main_Error
+SET R50701               ; Err ST1
+CON
+SET R50008               ; Error
+CON
+AND R50008               ; Error
+SET @MR400               ; STG_Error停止
+STG @MR400               ; STG_Error停止
+ANB R50008               ; Error
+RES R50701               ; Err ST1
+CON
+ENDS
+LDB R50003               ; HOME
+ANB R50001               ; AUTO
+TMR #2001 #10            ; 装置停止中DLY
+;画像処理 無しﾌﾗｸﾞ
+LD CR2003                ; 常時OFF
+OUT MR400                ; 画像処理 無ﾃｽﾄ
+END
+ENDH

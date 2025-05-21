@@ -1,0 +1,764 @@
+DEVICE:128
+;MODULE:U01
+;MODULE_TYPE:0
+;  ▽_入力受け
+LD Y59                   ; ｺﾝﾍﾞﾔ Power ON
+AND Y5A                  ; 投入ｺﾝﾍﾞﾔ 回転
+TMR K105 K50             ; 投入ｺﾝﾍﾞﾔ上ｹｰｽ無し
+LD X109                  ; 投入CV 投入部ﾜｰｸ検出
+TMR K109 K10             ; 投入CV 投入部ﾜｰｸ検出
+LD X10A                  ; 投入CV 移載位置ﾜｰｸ到達確認
+TMH K114 K10             ; 投入ｹｰｽ取出し位置到達
+;
+LD M1023                 ; U1C1_S023
+OR M1580                 ; 搬送異常記憶
+AND M74                  ; 自動運転中
+ANB M1199                ; U1C1_S199__動作終了
+ANB M1001                ; U1C1_S001
+ANB M1030                ; U1C1_S030
+OUT M1580                ; 搬送異常記憶
+LD M1032                 ; U1C1_S032
+OR M1581                 ; 搬送残り有
+AND M74                  ; 自動運転中
+ANB M1031                ; U1C1_S031
+ANB T105                 ; 投入ｺﾝﾍﾞﾔ上ｹｰｽ無し
+OUT M1581                ; 搬送残り有
+LD M1583                 ; 搬送中ﾜｰｸ給材監視中
+AND X109                 ; 投入CV 投入部ﾜｰｸ検出
+OR M1582                 ; 搬送中給材ﾜｰｸ有り
+AND M74                  ; 自動運転中
+ANB M1199                ; U1C1_S199__動作終了
+ANB T105                 ; 投入ｺﾝﾍﾞﾔ上ｹｰｽ無し
+ANPB Y5A                 ; 投入ｺﾝﾍﾞﾔ 回転
+OUT M1582                ; 搬送中給材ﾜｰｸ有り
+;
+LD M1021                 ; U1C1_S021
+MPS
+MEP
+DW K0 D1040              ; 投入CV移動時間ｶｳﾝﾄ
+MPP
+ANP CR2004               ; 10msｸﾛｯｸﾊﾟﾙｽ
+INC D1040                ; 投入CV移動時間ｶｳﾝﾄ
+LD CR2008                ; 運転開始時1ｽｷｬﾝON
+ORP M74                  ; 自動運転中
+DW K270 D1045            ; 投入CV最小移動時間
+;<h1/>□_装置状態・動作条件
+;  ▽_原点
+LD M1800                 ; Cycle1原点
+LD M1820                 ; Cycle2原点
+OR CR2002                ; 常時ON
+ANL
+OUT M1980                ; ﾕﾆｯﾄ1原点
+;  ▽_即停止異常
+LDB M1801                ; Cycle1即停止異常
+ANB M1821                ; Cycle2即停止異常
+INV
+OUT M1981                ; ﾕﾆｯﾄ1即停止異常
+;  ▽_原点復帰OFF
+LDB M50                  ; 運転準備
+LDB M51                  ; 即停止異常(緊急停止)
+ANB M52                  ; ｻｲｸﾙ停止異常(ｻｲｸﾙ停止)
+ANB M60                  ; ｴﾗｰ発生
+INV
+ORL
+OR T15                   ; 強制停止ONﾀｲﾏ
+OUT M1983                ; ﾕﾆｯﾄ1_原点復帰起動OFF
+;  ▽_原点復帰中
+LD M82                   ; 原点復帰開始
+ANB M1984                ; ﾕﾆｯﾄ1原点復帰中
+OR M1984                 ; ﾕﾆｯﾄ1原点復帰中
+ANB M1983                ; ﾕﾆｯﾄ1_原点復帰起動OFF
+ANB M1969                ; U1org_StepEnd
+OUT M1984                ; ﾕﾆｯﾄ1原点復帰中
+;  ▽_サイクル起動中
+LDB M1804                ; Cycle1起動中
+ANB M1824                ; Cycle2起動中
+OUB M1985                ; ﾕﾆｯﾄ1起動中
+;  ▽_サイクル停止異常
+LDB M1805                ; Cycle1ｻｲｸﾙ停止異常
+ANB M1825                ; Cycle2ｻｲｸﾙ停止異常
+OUB M1986                ; ﾕﾆｯﾄ1ｻｲｸﾙ停止異常
+;  ▽_払い出し後に停止する異常
+LDB CR2003               ; 常時OFF
+OUB M1987                ; ﾕﾆｯﾄ1払出後停止異常
+;  ▽_警報ﾌﾞｻﾞｰ
+LDB CR2003               ; 常時OFF
+OUB M1988                ; ﾕﾆｯﾄ1警報補助
+;  ▽_機器準備完了
+LD CR2002                ; 常時ON
+OUT M1990                ; ﾕﾆｯﾄ1機器準備完了
+;  ▽_一時停止異常
+LDB M1806                ; Cycle1ｴﾗｰ発生(一時停止処理)
+ANB M1826                ; Cycle2ｴﾗｰ発生(一時停止処理)
+OUB M1991                ; ﾕﾆｯﾄ1ｴﾗｰ発生
+;  ▽_ﾕﾆｯﾄ停止中ﾌﾗｸﾞ
+LD M1809                 ; Cycle1動作無し完了
+LD M1827                 ; Cycle2動作無し
+OR CR2002                ; 常時ON
+ANL
+OUT M1992                ; ﾕﾆｯﾄ1動作無し確認
+;  ▽_ﾕﾆｯﾄ1ﾜｰｸ無確認
+LDB X109                 ; 投入CV 投入部ﾜｰｸ検出
+ANB X10A                 ; 投入CV 移載位置ﾜｰｸ到達確認
+ANB M1581                ; 搬送残り有
+OUT M1993                ; ﾕﾆｯﾄ1ﾜｰｸ無し
+;<h1/>□_自動回路
+;<h1/>▽_Cycle1
+LDB Y5A                  ; 投入ｺﾝﾍﾞﾔ 回転
+OUT M1800                ; Cycle1原点
+LDB CR2003               ; 常時OFF
+INV
+OUT M1801                ; Cycle1即停止異常
+LD M50                   ; 運転準備
+ANB M1803                ; Cycle1起動OFF
+ANB M1804                ; Cycle1起動中
+ANB M130                 ; 一時停止
+ANB M56                  ; 自動起動停止指令(ｻｲｸﾙ停止)
+ANB M1808                ; U1_Cycle1払出完了
+OUT M1802                ; Cycle1起動条件
+LDB M50                  ; 運転準備
+OR M1986                 ; ﾕﾆｯﾄ1ｻｲｸﾙ停止異常
+OR M51                   ; 即停止異常(緊急停止)
+OR T15                   ; 強制停止ONﾀｲﾏ
+OUT M1803                ; Cycle1起動OFF
+LD M73                   ; 各工程起動指令
+AND M1802                ; Cycle1起動条件
+OR M1804                 ; Cycle1起動中
+AND M50                  ; 運転準備
+ANB M1803                ; Cycle1起動OFF
+ANB M1199                ; U1C1_S199__動作終了
+OUT M1804                ; Cycle1起動中
+LDB CR2003               ; 常時OFF
+INV
+OUT M1805                ; Cycle1ｻｲｸﾙ停止異常
+LDB B020                 ; 032)投入CVｹｰｽ搬送異常
+ANB B021                 ; 033)投入CV取出し位置ｹｰｽ残
+ANB B022                 ; 034)投入CV ｹｰｽ残
+INV
+OUT M1806                ; Cycle1ｴﾗｰ発生(一時停止処理)
+LD CR2002                ; 常時ON
+OUT M1895                ; UT1 ｼﾘﾝﾀﾞ動作中無し
+LDB M1000                ; U1C1_S000
+ANB M1001                ; U1C1_S001
+ANB M1023                ; U1C1_S023
+ANB M1042                ; U1C1_S042
+ANB M1050                ; U1C1_S050
+ANB M1054                ; U1C1_S054
+ANB M1183                ; U1C1_S183
+ANB M1190                ; U1C1_S190
+INV
+AND M130                 ; 一時停止
+OUT M1807                ; Cycle1動作無し
+LD M1807                 ; Cycle1動作無し
+AND M1895                ; UT1 ｼﾘﾝﾀﾞ動作中無し
+ANB CR2003               ; 常時OFF
+OR M1808                 ; U1_Cycle1払出完了
+ORB M1804                ; Cycle1起動中
+OR M1809                 ; Cycle1動作無し完了
+AND M130                 ; 一時停止
+OUT M1809                ; Cycle1動作無し完了
+;ｻｲｸﾙﾀｲﾑ計測
+LD M1804                 ; Cycle1起動中
+AND>= D1000 K10          ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+AND CR2005               ; 100msｸﾛｯｸﾊﾟﾙｽ
+@INC D1899               ; ｻｲｸﾙﾀｲﾑ計測
+LDF M1804                ; Cycle1起動中
+BMOV D1899 D1900 K10     ; ｻｲｸﾙﾀｲﾑ計測  ｻｲｸﾙﾀｲﾑ
+DW K0 D1899              ; ｻｲｸﾙﾀｲﾑ計測
+;  ▽_Cycle1ｽﾃｯﾌﾟ回路
+LD CR2002                ; 常時ON
+ZRES M1000 M1199         ; U1C1_S000  U1C1_S199__動作終了
+LDB M1804                ; Cycle1起動中
+MOV K0 D1000             ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+LD M1804                 ; Cycle1起動中
+MOV D1000 Z1             ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+SET M1000:Z1             ; U1C1_S000
+;<h1/>▽_Cycle1動作回路
+LD M1000                 ; U1C1_S000
+ANB M130                 ; 一時停止
+MPS
+ANB M52                  ; ｻｲｸﾙ停止異常(ｻｲｸﾙ停止)
+MPS
+ANB M1598                ; 初回ﾜｰｸ確認済
+MOV K180 D1000           ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+MPP
+AND M1598                ; 初回ﾜｰｸ確認済
+MPS
+ANB X10A                 ; 投入CV 移載位置ﾜｰｸ到達確認
+MPS
+LDB X109                 ; 投入CV 投入部ﾜｰｸ検出
+ANB M1581                ; 搬送残り有
+ANL
+INC D1000                ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+MPP
+LD X109                  ; 投入CV 投入部ﾜｰｸ検出
+OR M1581                 ; 搬送残り有
+ANL
+MOV K20 D1000            ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+MPP
+AND X10A                 ; 投入CV 移載位置ﾜｰｸ到達確認
+MOV K50 D1000            ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+MPP
+AND M52                  ; ｻｲｸﾙ停止異常(ｻｲｸﾙ停止)
+MOV K190 D1000           ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+;<h1/>  ▽_S001 ｹｰｽ給材待ち / Waiting for Case supply
+LD M1001                 ; U1C1_S001
+ANB M130                 ; 一時停止
+MPS
+LDB M52                  ; ｻｲｸﾙ停止異常(ｻｲｸﾙ停止)
+ANB M36                  ; 払出ﾓｰﾄﾞ
+ANL
+MPS
+AND T109                 ; 投入CV 投入部ﾜｰｸ検出
+MOV K20 D1000            ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+MPP
+LDB T109                 ; 投入CV 投入部ﾜｰｸ検出
+AND X10A                 ; 投入CV 移載位置ﾜｰｸ到達確認
+ANL
+TMR K117 K50             ; Delay
+CON
+AND T117                 ; Delay
+MOV K20 D1000            ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+MRD
+LD M52                   ; ｻｲｸﾙ停止異常(ｻｲｸﾙ停止)
+OR M36                   ; 払出ﾓｰﾄﾞ
+ANL
+MOV K190 D1000           ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+MPP
+ANB X109                 ; 投入CV 投入部ﾜｰｸ検出
+OUT M1891                ; 供給CV 給材待ち
+;<h1/>  ▽_S020 給材ｺﾝﾍﾞﾔ回転 / Supply Conveyor RUN
+;搬送P&P 干渉外位置確認 / Transfer Interference check
+LD M1020                 ; U1C1_S020
+LD W1007.12              ; RBC1 ZONE1  供給CV干渉外
+LD W100F.12              ; RBC2 ZONE1  CV干渉外
+ANB X100                 ; 搬送ﾁｬｯｸ閉じ端（ﾜｰｸ有）
+ORL
+ANL
+INC D1000                ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+;供給CV回転/ Supply CV Run
+LD M1021                 ; U1C1_S021
+OUT M1602                ; 投入CV 回転
+MPS
+LDB X109                 ; 投入CV 投入部ﾜｰｸ検出
+OR M1583                 ; 搬送中ﾜｰｸ給材監視中
+ANL
+OUT M1583                ; 搬送中ﾜｰｸ給材監視中
+MRD
+AND T114                 ; 投入ｹｰｽ取出し位置到達
+MOV K30 D1000            ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+MPP
+LDB X10A                 ; 投入CV 移載位置ﾜｰｸ到達確認
+AND T105                 ; 投入ｺﾝﾍﾞﾔ上ｹｰｽ無し
+ANL
+MPS
+LD M1580                 ; 搬送異常記憶
+OR M1584                 ; 前回短移動時間
+ANL
+TMR K106 K20             ; ﾘﾋﾟｰﾄﾃﾞｨﾚｲ
+CON
+AND T106                 ; ﾘﾋﾟｰﾄﾃﾞｨﾚｲ
+MOV K1 D1000             ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+MPP
+LDB M1580                ; 搬送異常記憶
+ANB M1584                ; 前回短移動時間
+ANL
+INC D1000                ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+;◇投入ｺﾝﾍﾞﾔｹｰｽ搬送異常 / Supply CV Case transport error
+LD M1022                 ; U1C1_S022
+AND B020                 ; 032)投入CVｹｰｽ搬送異常
+INC D1000                ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+LD M1023                 ; U1C1_S023
+ANB M130                 ; 一時停止
+ANB B020                 ; 032)投入CVｹｰｽ搬送異常
+AND M1580                ; 搬送異常記憶
+MOV K20 D1000            ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+;搬送時間ﾁｪｯｸ / Transport time check
+LD M1030                 ; U1C1_S030
+OR M1584                 ; 前回短移動時間
+LD< D1040 D1045          ; 投入CV移動時間ｶｳﾝﾄ  投入CV最小移動時間
+ORB M1030                ; U1C1_S030
+ANL
+AND M74                  ; 自動運転中
+OUT M1584                ; 前回短移動時間
+LD M1030                 ; U1C1_S030
+MPS
+LD>= D1040 D1045         ; 投入CV移動時間ｶｳﾝﾄ  投入CV最小移動時間
+ANB M1582                ; 搬送中給材ﾜｰｸ有り
+ANL
+INC D1000                ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+MPP
+LD< D1040 D1045          ; 投入CV移動時間ｶｳﾝﾄ  投入CV最小移動時間
+OR M1582                 ; 搬送中給材ﾜｰｸ有り
+ANL
+MOV K32 D1000            ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+;搬送正常 / Transport OK
+LD M1031                 ; U1C1_S031
+ANB M1581                ; 搬送残り有
+MOV K40 D1000            ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+;搬送時間 少 搬送残り有 / Case transport remaining
+LD M1032                 ; U1C1_S032
+AND M1581                ; 搬送残り有
+MOV K40 D1000            ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+;ｺﾝﾍﾞﾔ逆戻り動作対策
+LD M1040                 ; U1C1_S040
+TMH K115 K100            ; 受渡ﾃﾞｨﾚｲ
+CON
+AND T115                 ; 受渡ﾃﾞｨﾚｲ
+MPS
+AND X10A                 ; 投入CV 移載位置ﾜｰｸ到達確認
+MOV K50 D1000            ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+MPP
+ANB X10A                 ; 投入CV 移載位置ﾜｰｸ到達確認
+INC D1000                ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+;供給CVちょっと回転 / Supply CV Run (few)
+LD M1041                 ; U1C1_S041
+OUT M1603                ; 投入CV 回転
+MPS
+TMH K116 K10             ; 微量搬送時間
+MPP
+AND T116                 ; 微量搬送時間
+INC D1000                ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+LD M1042                 ; U1C1_S042
+ANB M130                 ; 一時停止
+MOV K40 D1000            ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+;<h1/>  ▽_S050 ｹｰｽ受渡 / Case Pick up request for P&P
+LD M1050                 ; U1C1_S050
+MPS
+ANB M130                 ; 一時停止
+MPS
+AND M2500                ; U2→U1 取出し完了
+INC D1000                ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+MPP
+LDB X10A                 ; 投入CV 移載位置ﾜｰｸ到達確認
+AND>= D2000 K50          ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+ANL
+MOV K41 D1000            ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+MPP
+OUT M1500                ; U1→U2 取出し要求
+LD M1051                 ; U1C1_S051
+ANB M2500                ; U2→U1 取出し完了
+INC D1000                ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+;ｹｰｽ残ﾁｪｯｸ / Case remain check
+LD M1052                 ; U1C1_S052
+MPS
+ANB X10A                 ; 投入CV 移載位置ﾜｰｸ到達確認
+MOV K190 D1000           ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+MPP
+AND X10A                 ; 投入CV 移載位置ﾜｰｸ到達確認
+INC D1000                ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+;◇投入ｺﾝﾍﾞﾔ取出しｹｰｽ残 / Supply Case remain
+LD M1053                 ; U1C1_S053
+AND B021                 ; 033)投入CV取出し位置ｹｰｽ残
+INC D1000                ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+LD M1054                 ; U1C1_S054
+ANB M130                 ; 一時停止
+ANB B021                 ; 033)投入CV取出し位置ｹｰｽ残
+MOV K52 D1000            ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+;<h1/>  ▽_S180 初期ﾜｰｸ除材
+LD M1180                 ; U1C1_S180
+OR M1598                 ; 初回ﾜｰｸ確認済
+AND M74                  ; 自動運転中
+OUT M1598                ; 初回ﾜｰｸ確認済
+LD M1180                 ; U1C1_S180
+AND M1598                ; 初回ﾜｰｸ確認済
+INC D1000                ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+LD M1181                 ; U1C1_S181
+MPS
+LDB X109                 ; 投入CV 投入部ﾜｰｸ検出
+ANB X10A                 ; 投入CV 移載位置ﾜｰｸ到達確認
+ANL
+MOV K190 D1000           ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+MPP
+LD X109                  ; 投入CV 投入部ﾜｰｸ検出
+OR X10A                  ; 投入CV 移載位置ﾜｰｸ到達確認
+ANL
+INC D1000                ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+;◇投入ｺﾝﾍﾞﾔしｹｰｽ残 / Supply-CV Case remain
+LD M1182                 ; U1C1_S182
+AND B022                 ; 034)投入CV ｹｰｽ残
+INC D1000                ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+LD M1183                 ; U1C1_S183
+ANB M130                 ; 一時停止
+ANB B022                 ; 034)投入CV ｹｰｽ残
+MOV K181 D1000           ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+;<h1/>  ▽_ｻｲｸﾙ停止
+LD M1190                 ; U1C1_S190
+AND M1993                ; ﾕﾆｯﾄ1ﾜｰｸ無し
+OR M1808                 ; U1_Cycle1払出完了
+AND M36                  ; 払出ﾓｰﾄﾞ
+OUT M1808                ; U1_Cycle1払出完了
+LD M1190                 ; U1C1_S190
+ANB M130                 ; 一時停止
+MOV K199 D1000           ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+;<h1/>□_原点復帰回路
+LD CR2002                ; 常時ON
+ZRES M1900 M1969         ; U1org_S000  U1org_StepEnd
+LDB M1984                ; ﾕﾆｯﾄ1原点復帰中
+MOV K0 D1010             ; 原点復帰ｽﾃｯﾌﾟ
+LD M1984                 ; ﾕﾆｯﾄ1原点復帰中
+MOV D1010 Z1             ; 原点復帰ｽﾃｯﾌﾟ
+SET M1900:Z1             ; U1org_S000
+;搬送RB 原点復帰完了待ち
+LD M1900                 ; U1org_S000
+AND M2520                ; U2→U1-4 Origin動作許可
+INC D1010                ; 原点復帰ｽﾃｯﾌﾟ
+LD M1901                 ; U1org_S001
+MPS
+ANB M2520                ; U2→U1-4 Origin動作許可
+INC D1010                ; 原点復帰ｽﾃｯﾌﾟ
+MPP
+OUT M1520                ; U1→U2 Origin許可受領
+;ﾜｰｸ残確認 / Case remain check
+LD M1902                 ; U1org_S002
+MPS
+LDB X109                 ; 投入CV 投入部ﾜｰｸ検出
+ANB X10A                 ; 投入CV 移載位置ﾜｰｸ到達確認
+ANL
+MOV K4 D1010             ; 原点復帰ｽﾃｯﾌﾟ
+MPP
+LD X109                  ; 投入CV 投入部ﾜｰｸ検出
+OR X10A                  ; 投入CV 移載位置ﾜｰｸ到達確認
+ANL
+INC D1010                ; 原点復帰ｽﾃｯﾌﾟ
+;◇投入ｺﾝﾍﾞﾔﾜｰｸ残 / Supply conveyor Case remain
+LD M1903                 ; U1org_S003
+MOV K5 D1010             ; 原点復帰ｽﾃｯﾌﾟ
+;ｺﾝﾍﾞﾔ回転 / Conveyor Run
+LD M1904                 ; U1org_S004
+OUT M1601                ; 投入CV 回転
+MPS
+LDB X109                 ; 投入CV 投入部ﾜｰｸ検出
+ANB X10A                 ; 投入CV 移載位置ﾜｰｸ到達確認
+AND T105                 ; 投入ｺﾝﾍﾞﾔ上ｹｰｽ無し
+ANL
+MOV K65 D1010            ; 原点復帰ｽﾃｯﾌﾟ
+MPP
+LD X109                  ; 投入CV 投入部ﾜｰｸ検出
+OR X10A                  ; 投入CV 移載位置ﾜｰｸ到達確認
+ANL
+INC D1010                ; 原点復帰ｽﾃｯﾌﾟ
+;◇投入ｺﾝﾍﾞﾔﾜｰｸ残 / Supply conveyor Case remain
+LD M1905                 ; U1org_S005
+OR M1585                 ; 供給CVｹｰｽ残
+AND M81                  ; 原点復帰動作中
+OUT M1585                ; 供給CVｹｰｽ残
+LD M1905                 ; U1org_S005
+AND M1585                ; 供給CVｹｰｽ残
+MOV K60 D1010            ; 原点復帰ｽﾃｯﾌﾟ
+LD M1960                 ; U1org_S060
+LDB M2984                ; ﾕﾆｯﾄ2原点復帰中
+OR M2960                 ; Org_S60
+ANL
+LDB M3984                ; ﾕﾆｯﾄ3原点復帰中
+OR M3960                 ; U3org_S060
+ANL
+LDB M4984                ; ﾕﾆｯﾄ4原点復帰中
+OR M4960                 ; U4org_S060
+ANL
+INC D1010                ; 原点復帰ｽﾃｯﾌﾟ
+;Origin end
+LD M1965                 ; U1org_S065
+MPS
+LDB M2984                ; ﾕﾆｯﾄ2原点復帰中
+ANB M3984                ; ﾕﾆｯﾄ3原点復帰中
+ANB M4984                ; ﾕﾆｯﾄ4原点復帰中
+AND M1980                ; ﾕﾆｯﾄ1原点
+ANB M82                  ; 原点復帰開始
+ANL
+MOV K69 D1010            ; 原点復帰ｽﾃｯﾌﾟ
+MPP
+LD M2960                 ; Org_S60
+OR M3960                 ; U3org_S060
+OR M4960                 ; U4org_S060
+ANL
+MOV K60 D1010            ; 原点復帰ｽﾃｯﾌﾟ
+;<h1/>□_手動回路
+LD M31                   ; 手動ﾓｰﾄﾞ
+AND Y51                  ; 安全ﾄﾞｱﾛｯｸ
+AND M123                 ; 安全扉正常
+AND M32                  ; ﾒｲﾝ手動操作可能条件
+ANB M1984                ; ﾕﾆｯﾄ1原点復帰中
+ANB M1985                ; ﾕﾆｯﾄ1起動中
+MC
+;<h1/>    投入ｺﾝﾍﾞﾔ / Supply conveyor
+LD B1080                 ; UNIT1-1-1 TP-PB
+OUT M1600                ; 投入CV 回転
+MCR
+;<h1/>○  Subﾙｰﾁﾝ  ○
+;<h1/>  ｽﾗｲﾀﾞ上ﾜｰｸ残確認 / Work remain check
+LD CR2002                ; 常時ON
+ZRES M1300 M1319         ; U1Sb1_S00  U1Sb1_S19 完了
+LDB M1402                ; ﾜｰｸ残ﾁｪｯｸ動作
+ANB M1403                ; ﾜｰｸ残ﾁｪｯｸ動作
+INV
+OUT M1400                ; ﾜｰｸ残ﾁｪｯｸ中
+LDB M1400                ; ﾜｰｸ残ﾁｪｯｸ中
+MOV K0 D1005             ; sub1ｽﾃｯﾌﾟｶｳﾝﾀ
+LD M1400                 ; ﾜｰｸ残ﾁｪｯｸ中
+MOV D1005 Z3             ; sub1ｽﾃｯﾌﾟｶｳﾝﾀ
+MPS
+SET M1300:Z3             ; U1Sb1_S00
+MPP
+AND M1319                ; U1Sb1_S19 完了
+OUT M1401                ; ﾜｰｸ残ﾁｪｯｸ完了
+;
+LD M1300                 ; U1Sb1_S00
+INC D1005                ; sub1ｽﾃｯﾌﾟｶｳﾝﾀ
+;End
+LD M1310                 ; U1Sb1_S10
+MOV K19 D1005            ; sub1ｽﾃｯﾌﾟｶｳﾝﾀ
+;<h1/>□_出力回路
+;
+LD M50                   ; 運転準備
+AND M123                 ; 安全扉正常
+ANB M51                  ; 即停止異常(緊急停止)
+MC
+;
+;<h1/>____▼_投入CV / Supply conveyor
+LDB M74                  ; 自動運転中
+ANB M81                  ; 原点復帰動作中
+ANB Y5A                  ; 投入ｺﾝﾍﾞﾔ 回転
+ANB Y5B                  ; 排出ｺﾝﾍﾞﾔ 回転
+INV
+OUT Y59                  ; ｺﾝﾍﾞﾔ Power ON
+;
+LDB M1600                ; 投入CV 回転
+ANB M1601                ; 投入CV 回転
+ANB M1602                ; 投入CV 回転
+ANB M1603                ; 投入CV 回転
+ANB M1604                ; 投入CV 回転
+ANB M1605                ; 投入CV 回転
+ANB M1606                ; 投入CV 回転
+ANB M1607                ; 投入CV 回転
+INV
+LD Y5A                   ; 投入ｺﾝﾍﾞﾔ 回転
+ANB M1610                ; 投入CV 停止補助
+AND CR2003               ; 常時OFF
+ORL
+OUT Y5A                  ; 投入ｺﾝﾍﾞﾔ 回転
+LDB M1611                ; 投入CV 停止
+ANB M1612                ; 投入CV 停止
+ANB M1613                ; 投入CV 停止
+ANB M1614                ; 投入CV 停止
+ANB M1615                ; 投入CV 停止
+ANB M1616                ; 投入CV 停止
+ANB M1617                ; 投入CV 停止
+ANB M1618                ; 投入CV 停止
+INV
+OUT M1610                ; 投入CV 停止補助
+MCR
+;<h1/>____▼_Tp出力
+LD Y59                   ; ｺﾝﾍﾞﾔ Power ON
+AND Y5A                  ; 投入ｺﾝﾍﾞﾔ 回転
+OUT B1580                ; UNIT1-1-1 TP-PL
+;<h1/>□_異常回路
+;
+LD M1022                 ; U1C1_S022
+LD B020                  ; 032)投入CVｹｰｽ搬送異常
+ANB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+ORL
+OUT B020                 ; 032)投入CVｹｰｽ搬送異常
+LDP B020                 ; 032)投入CVｹｰｽ搬送異常
+AND< D13510 K64          ; 発生ｴﾗｰｺｰﾄﾞ格納先
+MOV H0020 D13500         ; ｴﾗｰｺｰﾄﾞ
+FIFOW D13500 D13510      ; ｴﾗｰｺｰﾄﾞ  発生ｴﾗｰｺｰﾄﾞ格納先
+;
+LD M1961                 ; U1org_S061
+AND M1585                ; 供給CVｹｰｽ残
+OR M1053                 ; U1C1_S053
+LD B021                  ; 033)投入CV取出し位置ｹｰｽ残
+ANB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+ORL
+OUT B021                 ; 033)投入CV取出し位置ｹｰｽ残
+LDP B021                 ; 033)投入CV取出し位置ｹｰｽ残
+AND< D13510 K64          ; 発生ｴﾗｰｺｰﾄﾞ格納先
+MOV H0021 D13500         ; ｴﾗｰｺｰﾄﾞ
+FIFOW D13500 D13510      ; ｴﾗｰｺｰﾄﾞ  発生ｴﾗｰｺｰﾄﾞ格納先
+;
+LD M1182                 ; U1C1_S182
+LD B022                  ; 034)投入CV ｹｰｽ残
+ANB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+ORL
+OUT B022                 ; 034)投入CV ｹｰｽ残
+LDP B022                 ; 034)投入CV ｹｰｽ残
+AND< D13510 K64          ; 発生ｴﾗｰｺｰﾄﾞ格納先
+MOV H0022 D13500         ; ｴﾗｰｺｰﾄﾞ
+FIFOW D13500 D13510      ; ｴﾗｰｺｰﾄﾞ  発生ｴﾗｰｺｰﾄﾞ格納先
+;
+LD CR2003                ; 常時OFF
+LD B023                  ; 035)
+ANB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+ORL
+MPS
+TMR K193 K100            ; CLS監視ﾀｲﾏ
+MPP
+LD T193                  ; CLS監視ﾀｲﾏ
+AND CR2003               ; 常時OFF
+ANL
+OUT B023                 ; 035)
+LDP B023                 ; 035)
+AND< D13510 K64          ; 発生ｴﾗｰｺｰﾄﾞ格納先
+MOV H0023 D13500         ; ｴﾗｰｺｰﾄﾞ
+FIFOW D13500 D13510      ; ｴﾗｰｺｰﾄﾞ  発生ｴﾗｰｺｰﾄﾞ格納先
+;
+LD CR2003                ; 常時OFF
+LD B024                  ; 036)
+ANB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+ORL
+OUT B024                 ; 036)
+LDP B024                 ; 036)
+AND< D13510 K64          ; 発生ｴﾗｰｺｰﾄﾞ格納先
+MOV H0024 D13500         ; ｴﾗｰｺｰﾄﾞ
+FIFOW D13500 D13510      ; ｴﾗｰｺｰﾄﾞ  発生ｴﾗｰｺｰﾄﾞ格納先
+;
+LD CR2003                ; 常時OFF
+LD B025                  ; 037)
+ANB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+ORL
+OUT B025                 ; 037)
+LDP B025                 ; 037)
+AND< D13510 K64          ; 発生ｴﾗｰｺｰﾄﾞ格納先
+MOV H0025 D13500         ; ｴﾗｰｺｰﾄﾞ
+FIFOW D13500 D13510      ; ｴﾗｰｺｰﾄﾞ  発生ｴﾗｰｺｰﾄﾞ格納先
+;
+LD CR2003                ; 常時OFF
+LD B026                  ; 038)
+ANB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+ORL
+OUT B026                 ; 038)
+LDP B026                 ; 038)
+AND< D13510 K64          ; 発生ｴﾗｰｺｰﾄﾞ格納先
+MOV H0026 D13500         ; ｴﾗｰｺｰﾄﾞ
+FIFOW D13500 D13510      ; ｴﾗｰｺｰﾄﾞ  発生ｴﾗｰｺｰﾄﾞ格納先
+;
+LD CR2003                ; 常時OFF
+LD B027                  ; 039)
+ANB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+ORL
+OUT B027                 ; 039)
+LDP B027                 ; 039)
+AND< D13510 K64          ; 発生ｴﾗｰｺｰﾄﾞ格納先
+MOV H0027 D13500         ; ｴﾗｰｺｰﾄﾞ
+FIFOW D13500 D13510      ; ｴﾗｰｺｰﾄﾞ  発生ｴﾗｰｺｰﾄﾞ格納先
+;
+LD CR2003                ; 常時OFF
+LD B028                  ; 040)
+ANB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+ORL
+OUT B028                 ; 040)
+LDP B028                 ; 040)
+AND< D13510 K64          ; 発生ｴﾗｰｺｰﾄﾞ格納先
+MOV H0028 D13500         ; ｴﾗｰｺｰﾄﾞ
+FIFOW D13500 D13510      ; ｴﾗｰｺｰﾄﾞ  発生ｴﾗｰｺｰﾄﾞ格納先
+;
+LD CR2003                ; 常時OFF
+LD B029                  ; 041)
+ANB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+ORL
+OUT B029                 ; 041)
+LDP B029                 ; 041)
+AND< D13510 K64          ; 発生ｴﾗｰｺｰﾄﾞ格納先
+MOV H0029 D13500         ; ｴﾗｰｺｰﾄﾞ
+FIFOW D13500 D13510      ; ｴﾗｰｺｰﾄﾞ  発生ｴﾗｰｺｰﾄﾞ格納先
+;
+LD CR2003                ; 常時OFF
+LD B02A                  ; 042)
+ANB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+ORL
+OUT B02A                 ; 042)
+LDP B02A                 ; 042)
+AND< D13510 K64          ; 発生ｴﾗｰｺｰﾄﾞ格納先
+MOV H002A D13500         ; ｴﾗｰｺｰﾄﾞ
+FIFOW D13500 D13510      ; ｴﾗｰｺｰﾄﾞ  発生ｴﾗｰｺｰﾄﾞ格納先
+;
+LD CR2003                ; 常時OFF
+LD B030                  ; 048)
+ANB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+ORL
+OUT B030                 ; 048)
+LDP B030                 ; 048)
+AND< D13510 K64          ; 発生ｴﾗｰｺｰﾄﾞ格納先
+MOV H0030 D13500         ; ｴﾗｰｺｰﾄﾞ
+FIFOW D13500 D13510      ; ｴﾗｰｺｰﾄﾞ  発生ｴﾗｰｺｰﾄﾞ格納先
+;
+LD CR2003                ; 常時OFF
+LD B031                  ; 049)
+ANB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+ORL
+OUT B031                 ; 049)
+LDP B031                 ; 049)
+AND< D13510 K64          ; 発生ｴﾗｰｺｰﾄﾞ格納先
+MOV H0031 D13500         ; ｴﾗｰｺｰﾄﾞ
+FIFOW D13500 D13510      ; ｴﾗｰｺｰﾄﾞ  発生ｴﾗｰｺｰﾄﾞ格納先
+;
+LD CR2003                ; 常時OFF
+LD B032                  ; 050)
+ANB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+ORL
+OUT B032                 ; 050)
+LDP B032                 ; 050)
+AND< D13510 K64          ; 発生ｴﾗｰｺｰﾄﾞ格納先
+MOV H0032 D13500         ; ｴﾗｰｺｰﾄﾞ
+FIFOW D13500 D13510      ; ｴﾗｰｺｰﾄﾞ  発生ｴﾗｰｺｰﾄﾞ格納先
+;
+LD CR2003                ; 常時OFF
+LD B033                  ; 051)
+ANB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+ORL
+OUT B033                 ; 051)
+LDP B033                 ; 051)
+AND< D13510 K64          ; 発生ｴﾗｰｺｰﾄﾞ格納先
+MOV H0033 D13500         ; ｴﾗｰｺｰﾄﾞ
+FIFOW D13500 D13510      ; ｴﾗｰｺｰﾄﾞ  発生ｴﾗｰｺｰﾄﾞ格納先
+;
+LD CR2003                ; 常時OFF
+LD B034                  ; 052)
+ANB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+ORL
+OUT B034                 ; 052)
+LDP B034                 ; 052)
+AND< D13510 K64          ; 発生ｴﾗｰｺｰﾄﾞ格納先
+MOV H0034 D13500         ; ｴﾗｰｺｰﾄﾞ
+FIFOW D13500 D13510      ; ｴﾗｰｺｰﾄﾞ  発生ｴﾗｰｺｰﾄﾞ格納先
+;
+LD CR2003                ; 常時OFF
+LD B035                  ; 053)
+ANB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+ORL
+OUT B035                 ; 053)
+LDP B035                 ; 053)
+AND< D13510 K64          ; 発生ｴﾗｰｺｰﾄﾞ格納先
+MOV H0035 D13500         ; ｴﾗｰｺｰﾄﾞ
+FIFOW D13500 D13510      ; ｴﾗｰｺｰﾄﾞ  発生ｴﾗｰｺｰﾄﾞ格納先
+;
+LD CR2003                ; 常時OFF
+LD B036                  ; 054)
+ANB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+ORL
+OUT B036                 ; 054)
+LDP B036                 ; 054)
+AND< D13510 K64          ; 発生ｴﾗｰｺｰﾄﾞ格納先
+MOV H0036 D13500         ; ｴﾗｰｺｰﾄﾞ
+FIFOW D13500 D13510      ; ｴﾗｰｺｰﾄﾞ  発生ｴﾗｰｺｰﾄﾞ格納先
+;■■■  
+LD CR2003                ; 常時OFF
+LD B03A                  ; 058)
+ANB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+ORL
+OUT B03A                 ; 058)
+LDP B03A                 ; 058)
+AND< D13510 K64          ; 発生ｴﾗｰｺｰﾄﾞ格納先
+MOV H003A D13500         ; ｴﾗｰｺｰﾄﾞ
+FIFOW D13500 D13510      ; ｴﾗｰｺｰﾄﾞ  発生ｴﾗｰｺｰﾄﾞ格納先
+;ﾌﾞｻﾞｰ発生回路
+LD<>.D B020 D1012        ; 032)投入CVｹｰｽ搬送異常  ﾌﾞｻﾞｰSTOP監視ｴﾘｱ
+AND<>.D B020 K0          ; 032)投入CVｹｰｽ搬送異常
+OUT M1989                ; ﾕﾆｯﾄ1異常BZ補助
+LD M110                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR M111                  ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+MOV.D B020 D1012         ; 032)投入CVｹｰｽ搬送異常  ﾌﾞｻﾞｰSTOP監視ｴﾘｱ
+LD=.D B020 K0            ; 032)投入CVｹｰｽ搬送異常
+@MOV.D K0 D1012          ; ﾌﾞｻﾞｰSTOP監視ｴﾘｱ
+END
+ENDH

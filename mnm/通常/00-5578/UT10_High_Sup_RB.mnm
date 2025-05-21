@@ -1,0 +1,3281 @@
+DEVICE:53
+;MODULE:UT10_High_Sup_RB
+;MODULE_TYPE:0
+;ｶｳﾝﾀ初期化
+LD= D5550 K0             ; Hi#1_徐材ｶｳﾝﾀ
+MOV K1 D5550             ; Hi#1_徐材ｶｳﾝﾀ
+LD= D5551 K0             ; Hi#1_給材ｶｳﾝﾀ
+MOV K1 D5551             ; Hi#1_給材ｶｳﾝﾀ
+LD= D5552 K0             ; Hi#2_徐材ｶｳﾝﾀ
+MOV K1 D5552             ; Hi#2_徐材ｶｳﾝﾀ
+LD= D5553 K0             ; Hi#2_給材ｶｳﾝﾀ
+MOV K1 D5553             ; Hi#2_給材ｶｳﾝﾀ
+LD= D5556 K0             ; Hi_RB給徐材選択ﾌﾗｸﾞ
+MOV K1 D5556             ; Hi_RB給徐材選択ﾌﾗｸﾞ
+;□□　　入力受け　　□□
+LD X131D                 ; 高温給徐材RBﾁｬｯｸ閉端
+TMH K1010 K5             ; 高温給徐材RBﾁｬｯｸ閉端
+LD X131C                 ; 高温給徐材RBﾁｬｯｸ開端
+TMH K1011 K5             ; 高温給徐材RBﾁｬｯｸ開端
+LD X131E                 ; 高温給徐材RBﾜｰｸ確認
+TMH K1012 K2             ; 高温給徐材RBﾜｰｸ確認
+;ｼﾌﾄﾛﾎﾞｯﾄ現在値
+LD X130D                 ; High_Shift_RB準備完了
+AND X370B                ; Hi_Shift_RB_ORG-S
+ANB X370C                ; Hi_Shift_RB_Busy
+AND X370D                ; Hi_Shift_RB_END
+MPS
+AND X3700                ; Hi_Shift_RB_Pout1
+OUT D5548.0              ; Hi_sift_RB_完了POS1
+MRD
+AND X3701                ; Hi_Shift_RB_Pout2
+OUT D5548.1              ; Hi_sift_RB_完了POS2
+MRD
+AND X3702                ; Hi_Shift_RB_Pout4
+OUT D5548.2              ; Hi_sift_RB_完了POS4
+MRD
+AND X3703                ; Hi_Shift_RB_Pout8
+OUT D5548.3              ; Hi_sift_RB_完了POS8
+MRD
+AND X3704                ; Hi_Shift_RB_Pout16
+OUT D5548.4              ; Hi_sift_RB_完了POS16
+MRD
+AND X3705                ; Hi_Shift_RB_Pout32
+OUT D5548.5              ; Hi_sift_RB_完了POS32
+MRD
+AND X3706                ; Hi_Shift_RB_Pout64
+OUT D5548.6              ; Hi_sift_RB_完了POS64
+MRD
+AND X3707                ; Hi_Shift_RB_Pout128
+OUT D5548.7              ; Hi_sift_RB_完了POS128
+MPP
+INV
+MOV K0 D5548             ; Hi_Sift_RB_完了POS
+;□
+;□□ 装置状態・動作条件 □□
+;□
+;□ ﾕﾆｯﾄ原点
+LD T1011                 ; 高温給徐材RBﾁｬｯｸ開端
+AND X3645                ; Hi_Sup_RB_ORG(805)
+ANB X3662                ; Hi_RB_Sift_取出移動(834)
+ANB X3663                ; Hi_RB_Sift_Hi#1位置移動(835)
+ANB X3664                ; Hi_RB_Sift_Hi#2位置移動(836)
+ANB X3665                ; Hi_RB_Sift_検査仮置移動(837)
+ANB X3666                ; Hi_RB_Sift原点移動(838)
+OUT M6480                ; U10_原点
+;□ 非常停止
+LDB B0141                ; Hi_Sup_RB異常
+ANB B0144                ; Hi_Sup_RB搬送中ﾜｰｸ無異常
+ANB B0145                ; RB受信品種ﾃﾞｰﾀ異常
+ANB B0146                ; Hi_Sup_RB徐材時槽内ﾜｰｸ有異常
+ANB B0147                ; Hi_Sup_RB徐材時槽内ﾜｰｸ無異常
+ANB B0148                ; Hi_Sup_RB_初期起動時ﾜｰｸ有異常
+ANB B014C                ; Hi_Sup_RB給材時槽内ﾜｰｸ有異常
+ANB B014D                ; Hi_Sup_ｽﾗｲﾄﾞﾛﾎﾞｯﾄ異常
+ANB B015C                ; High_Sup_RB_PC照合異常(Hi#1)
+ANB B015D                ; High_Sup_RB_PC照合異常(Hi#2)
+ANB B015E                ; High_Sup_RB_ﾜｰｸ照合異常(Hi#1)
+ANB B015F                ; High_Sup_RB_ﾜｰｸ照合異常(Hi#2)
+INV
+OUT M6481                ; U10_即停止異常
+;□ 起動条件
+LD M6480                 ; U10_原点
+AND M6490                ; U10_機器準備完了
+OUT M6482                ; U10_起動条件
+;□ 起動OFF
+LDB M50                  ; 運転準備
+LD M60                   ; ｴﾗｰ発生
+OR M56                   ; 自動起動停止指令(ｻｲｸﾙ停止)
+AND M6484                ; U10_原点復帰中
+ORL
+OR M6486                 ; U10_CYCLE停止異常
+OR T15                   ; 強制停止
+OUT M6483                ; U10_起動OFF
+;□ 原点復帰
+LD M82                   ; 原点復帰開始
+LDP B11B0                ; UNIT10-2-1 TP-PB
+AND M31                  ; 手動ﾓｰﾄﾞ
+ANB M82                  ; 原点復帰開始
+ANB M6321                ; Hi_取出1ｻｲｸﾙ(手動)
+ANB M6341                ; Hi_供給1ｻｲｸﾙ(手動)
+AND CR2003               ; 常時OFF
+ORL
+ANB M6484                ; U10_原点復帰中
+OR M6484                 ; U10_原点復帰中
+ANB M6483                ; U10_起動OFF
+ANB M6491                ; U10_ERR発生
+ANB M6299                ; ﾕﾆｯﾄ10原点終了
+MPS
+OUT M6484                ; U10_原点復帰中
+MPP
+AND CR2006               ; 1sｸﾛｯｸﾊﾟﾙｽ
+OUT B16B0                ; UNIT10-2-1 TP-PL
+;□ 高温検査受渡可ﾌﾗｸﾞ
+LD= D7201 K0             ; ﾊﾝﾄﾞ1 ﾜｰｸ有無記憶
+AND= D7301 K0            ; ﾊﾝﾄﾞ2 ﾜｰｸ有無記憶
+OR M6171                 ; 冷却ｼｬﾄﾙﾜｰｸ無し
+LD= D7701 K1             ; HiST1 ﾜｰｸ有無記憶
+AND= D8201 K1            ; HiST2 ﾜｰｸ有無記憶
+AND= D8701 K1            ; HiST3 ﾜｰｸ有無記憶
+AND= D9201 K1            ; HiST4 ﾜｰｸ有無記憶
+AND= D9701 K1            ; HiST5 ﾜｰｸ有無記憶
+INV
+LD= D7201 K1             ; ﾊﾝﾄﾞ1 ﾜｰｸ有無記憶
+AND= D7301 K0            ; ﾊﾝﾄﾞ2 ﾜｰｸ有無記憶
+LD= D7201 K0             ; ﾊﾝﾄﾞ1 ﾜｰｸ有無記憶
+AND= D7301 K1            ; ﾊﾝﾄﾞ2 ﾜｰｸ有無記憶
+ORL
+ANL
+AND M6171                ; 冷却ｼｬﾄﾙﾜｰｸ無し
+ORL
+AND M73                  ; 各工程起動指令
+AND M8485                ; U13_起動中
+ANB M170                 ; 高温検査ﾒﾝﾃ停止開始
+ANB M8075                ; Hi_ST1-5 無効予約ｽﾃｰｼﾞ有ﾌﾗｸﾞ
+AND M8076                ; Hi_ST1-5 有効ｽﾃｰｼﾞ有ﾌﾗｸﾞ
+OUT M6170                ; 高温検査ﾜｰｸ受渡可
+LD= D10100 K0            ; 冷却ｼｬﾄﾙ 高温検査ﾊﾟﾚｯﾄID
+AND= D10101 K0           ; 冷却ｼｬﾄﾙ 高温検査ﾃｽﾄﾍｯﾄﾞID
+AND= D10102 K0           ; 冷却ｼｬﾄﾙ 高温検査部排出ﾊﾟﾚｯﾄID
+AND= D10103 K0           ; 冷却ｼｬﾄﾙ 高温検査搬送ﾛﾎﾞｯﾄNo.
+AND= D10104 K0           ; 冷却ｼｬﾄﾙ 高温検査Skip(0:ｼﾅ/1:ｽﾙ)
+AND= D10105 K0           ; 冷却ｼｬﾄﾙ 高温検査ﾛﾎﾞｯﾄNo.
+AND= D10106 K0           ; 冷却ｼｬﾄﾙ_冷却槽投入ﾛﾎﾞｯﾄNo.
+OUT M6171                ; 冷却ｼｬﾄﾙﾜｰｸ無し
+;□ 起動中
+LD M73                   ; 各工程起動指令
+AND M6479                ; U10_STEP動作
+AND M6482                ; U10_起動条件
+ANB B101D                ; 途中投入選択TP(1:単独_0:連動)
+LD M6245                 ; Hi_Sup_RB_初期起動完了ﾌﾗｸﾞ
+LD M5520                 ; U9-S20_ﾜｰｸ取出可(→High_Sup_RB)
+ANB M170                 ; 高温検査ﾒﾝﾃ停止開始
+LDB M36                  ; 払出処理
+AND M6170                ; 高温検査ﾜｰｸ受渡可
+LD M6501                 ; Hi#1_給徐材要求ON
+OR M7001                 ; Hi#2_給徐材要求ON
+ANL
+ORL
+ANL
+ORB M6245                ; Hi_Sup_RB_初期起動完了ﾌﾗｸﾞ
+ANL
+OR M6485                 ; U10_起動中
+ANB M6483                ; U10_起動OFF
+ANB M6149                ; ﾕﾆｯﾄ10ｻｲｸﾙ終了
+OUT M6485                ; U10_起動中
+;□ ｻｲｸﾙ停止異常
+LDB CR2003               ; 常時OFF
+INV
+OUT M6486                ; U10_CYCLE停止異常
+;□ 払出停止異常
+LDB CR2003               ; 常時OFF
+INV
+OUT M6487                ; U10_払出停止異常
+;□ 警報補助
+LDB B0142                ; Hi_Sup_RB原点復帰ﾜｰｸ有取出要求
+OR B0642                 ; B142_323)Bz停止
+LDB B0143                ; Hi_Sup_RBﾊﾞｯﾃﾘｰ低下
+OR B0643                 ; B143_324)Bz停止
+ANL
+LDB B014B                ; 高温槽全停止中
+OR B064B                 ; B14B_332)Bz停止
+ANL
+ANB M6022                ; U10_S22_ﾜｰｸ無NG(選択ﾀﾞｲｱﾛｸﾞ)
+ANB M6027                ; U10_S27_ﾜｰｸ有NG(選択ﾀﾞｲｱﾛｸﾞ)
+ANB M6077                ; Hi_槽内ﾜｰｸ有NG(選択ﾀﾞｲｱﾛｸﾞ)
+ANB M6142                ; 一時停止確認(ﾀﾞｲｱﾛｸﾞ)
+INV
+OUT M6488                ; U10_警報補助
+;□ 機器準備確認
+LDB X3621                ; Hi_Sup_RB_RUN
+AND X3623                ; Hi_Sup_RB_SV_ON
+AND X3624                ; Hi_Sup_RB_Ready
+AND X3625                ; Hi_Sup_RB_Auto
+AND X3626                ; Hi_Sup_RB_EXT
+ANB X3628                ; Hi_Sup_RB_Worning
+AND X370F                ; Hi_Shift_RB_SV_ON
+OUT M6490                ; U10_機器準備完了
+;□ ｴﾗｰ発生　一時停止
+LDB B0140                ; Hi_Sup_RBﾁｬｯｸ開閉異常
+ANB B0142                ; Hi_Sup_RB原点復帰ﾜｰｸ有取出要求
+INV
+OUT M6491                ; U10_ERR発生
+;□ 動作中ﾕﾆｯﾄ無し
+LDB M6485                ; U10_起動中
+OR M140                  ; 全一時停止
+OR M6141                 ; 高温検査段取一時停止処理
+OR M6142                 ; 一時停止確認(ﾀﾞｲｱﾛｸﾞ)
+ANB M6484                ; U10_原点復帰中
+LDB M6022                ; U10_S22_ﾜｰｸ無NG(選択ﾀﾞｲｱﾛｸﾞ)
+ANB M6027                ; U10_S27_ﾜｰｸ有NG(選択ﾀﾞｲｱﾛｸﾞ)
+ANB M6176                ; 高温読取異常一時停止処理中
+ANB M6077                ; Hi_槽内ﾜｰｸ有NG(選択ﾀﾞｲｱﾛｸﾞ)
+INV
+AND M6485                ; U10_起動中
+ANB M6479                ; U10_STEP動作
+ORL
+LDB M6010                ; U10_S10_給徐材先判定
+ANB M6011                ; U10_S11_給徐材開始
+INV
+ANB M6479                ; U10_STEP動作
+ORL
+ANB X3621                ; Hi_Sup_RB_RUN
+TMR K1001 K20            ; ﾕﾆｯﾄ10動作無し判定ﾀｲﾏ
+LD CR2002                ; 常時ON
+MOV D5500 D5505          ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ  ﾕﾆｯﾄ10動作中判定
+LD T1001                 ; ﾕﾆｯﾄ10動作無し判定ﾀｲﾏ
+OUT M6492                ; U10_動作無し確認
+;□ 払出しﾜｰｸ無し
+LD T1011                 ; 高温給徐材RBﾁｬｯｸ開端
+TMR K1005 K10            ; UNIT10払出処理ﾜｰｸ無し
+LD T1005                 ; UNIT10払出処理ﾜｰｸ無し
+OUT M6493                ; U10_WORK無し
+;□ 手動動作中無し
+LDB X3621                ; Hi_Sup_RB_RUN
+ANB M6321                ; Hi_取出1ｻｲｸﾙ(手動)
+ANB M6341                ; Hi_供給1ｻｲｸﾙ(手動)
+AND X3645                ; Hi_Sup_RB_ORG(805)
+OUT M6494                ; U10_手動動作無・干渉無
+;□ ｽﾃｯﾌﾟ起動
+LD M30                   ; 自動ﾓｰﾄﾞ
+OR M31                   ; 手動ﾓｰﾄﾞ
+AND M128                 ; 高温検査安全扉正常
+ANB M6491                ; U10_ERR発生
+ANB M140                 ; 全一時停止
+ANB M180                 ; 高温検査一時停止
+OUT M6479                ; U10_STEP動作
+;□□□□□□□□□□□□□□□
+;□　　 　UNIT10自動回路 　　□
+;□□□□□□□□□□□□□□□
+;<h1/>■自動回路 
+;運転開始・ステッパ初期化・補助接点へ展開
+LD CR2002                ; 常時ON
+ZRES M6000 M6149         ; Hi槽内ﾜｰｸ情報照合開始  ﾕﾆｯﾄ10ｻｲｸﾙ終了
+LDB M6485                ; U10_起動中
+MOV K0 D5500             ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+LD M6485                 ; U10_起動中
+MOV D5500 Z1             ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+OUT M6000:Z1             ; Hi槽内ﾜｰｸ情報照合開始
+;自動運転ステップ開始
+;給徐材要求判定
+;槽内ﾜｰｸ情報照合ﾌﾟﾛｸﾞﾗﾑ追加
+LD M6000                 ; Hi槽内ﾜｰｸ情報照合開始
+MPS
+ANB M6245                ; Hi_Sup_RB_初期起動完了ﾌﾗｸﾞ
+@MOV K110 D5500          ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+MPP
+AND M6245                ; Hi_Sup_RB_初期起動完了ﾌﾗｸﾞ
+MOV K10 D5500            ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+;<h1/>/ﾃﾞｰﾀ照合
+;槽内､PCﾜｰｸ情報照合
+LDB M3                   ; OFFLINE_MODE
+LD>= D5550 K2            ; Hi#1_徐材ｶｳﾝﾀ
+AND< D5551 K2            ; Hi#1_給材ｶｳﾝﾀ
+AND W058.0               ; Hi#1-1ﾜｰｸ(ON:有 OFF:無)
+LD>= D5550 K3            ; Hi#1_徐材ｶｳﾝﾀ
+AND< D5551 K3            ; Hi#1_給材ｶｳﾝﾀ
+AND W058.1               ; Hi#1-2ﾜｰｸ(ON:有 OFF:無)
+ORL
+LD>= D5550 K4            ; Hi#1_徐材ｶｳﾝﾀ
+AND< D5551 K4            ; Hi#1_給材ｶｳﾝﾀ
+AND W058.2               ; Hi#1-3ﾜｰｸ(ON:有 OFF:無)
+ORL
+ANL
+OUT M6230                ; Hi#1_ﾜｰｸ情報異常
+LDB M3                   ; OFFLINE_MODE
+LD>= D5552 K2            ; Hi#2_徐材ｶｳﾝﾀ
+AND< D5553 K2            ; Hi#2_給材ｶｳﾝﾀ
+AND W059.0               ; Hi#2-1ﾜｰｸ(ON:有 OFF:無)
+LD>= D5552 K3            ; Hi#2_徐材ｶｳﾝﾀ
+AND< D5553 K3            ; Hi#2_給材ｶｳﾝﾀ
+AND W059.1               ; Hi#2-2ﾜｰｸ(ON:有 OFF:無)
+ORL
+LD>= D5552 K4            ; Hi#2_徐材ｶｳﾝﾀ
+AND< D5553 K4            ; Hi#2_給材ｶｳﾝﾀ
+AND W059.2               ; Hi#2-3ﾜｰｸ(ON:有 OFF:無)
+ORL
+ANL
+OUT M6231                ; Hi#2_ﾜｰｸ情報異常
+;有効槽ﾜｰｸ情報(PC－PLC)判定
+LD M6110                 ; Hi_#1情報確認
+LD X1850                 ; Hi#1_ﾏｽﾀ槽運転有効確認
+ANB M6230                ; Hi#1_ﾜｰｸ情報異常
+ORB X1850                ; Hi#1_ﾏｽﾀ槽運転有効確認
+ANL
+@INC D5500               ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+LD M6111                 ; Hi_#2情報確認
+LD X1870                 ; Hi#2_ﾏｽﾀ槽運転有効確認
+ANB M6231                ; Hi#2_ﾜｰｸ情報異常
+ORB X1870                ; Hi#2_ﾏｽﾀ槽運転有効確認
+ANL
+@MOV K120 D5500          ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+;<h1/>/槽1ﾜｰｸ確認
+;槽1ﾜｰｸ情報確認済判定
+LD M6120                 ; Hi_#1ﾜｰｸ状態確認
+MPS
+AND X1850                ; Hi#1_ﾏｽﾀ槽運転有効確認
+MPS
+ANB M6240                ; Hi#1_初期起動ﾜｰｸ確認済ﾌﾗｸﾞ
+@INC D5500               ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+MPP
+AND M6240                ; Hi#1_初期起動ﾜｰｸ確認済ﾌﾗｸﾞ
+@MOV K130 D5500          ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+MPP
+LDB X1850                ; Hi#1_ﾏｽﾀ槽運転有効確認
+AND X1870                ; Hi#2_ﾏｽﾀ槽運転有効確認
+ANL
+@MOV K130 D5500          ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+;設定初期化
+;Setting initialization
+LD M6121                 ; Hi_RB_設定初期化
+@FMOV K0 D5520 K3        ; Hi_搬送RB Type No.
+MPS
+@FMOV K0 D5530 K3        ; Hi_RB_ﾛﾎﾞｯﾄ制御ﾃﾞｰﾀ1
+MPP
+LD= D5520 K0             ; Hi_搬送RB Type No.
+AND= D5521 K0            ; Hi_搬送RB給徐材槽 No.
+AND= D5522 K0            ; Hi_搬送RB給徐材段 No.
+AND= D5530 K0            ; Hi_RB_ﾛﾎﾞｯﾄ制御ﾃﾞｰﾀ1
+AND= D5531 K0            ; Hi_RB_ﾛﾎﾞｯﾄｺﾏﾝﾄﾞﾃﾞｰﾀ
+AND= D5532 K0            ; Hi_RB_ﾛﾎﾞｯﾄﾌﾟﾛｸﾞﾗﾑ番号
+ANL
+@INC D5500               ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+;確認動作PRGｾｯﾄ
+LD M6122                 ; Hi_RB_設定ｾｯﾄ
+@MOV D5560 D5520         ; 高温槽搬送_ﾛﾎﾞｯﾄNo.  Hi_搬送RB Type No.
+@MOV K1 D5521            ; Hi_搬送RB給徐材槽 No.
+@MOV K2 D5530            ; Hi_RB_ﾛﾎﾞｯﾄ制御ﾃﾞｰﾀ1
+@MOV K1 D5531            ; Hi_RB_ﾛﾎﾞｯﾄｺﾏﾝﾄﾞﾃﾞｰﾀ
+MPS
+@MOV K10 D5532           ; Hi_RB_ﾛﾎﾞｯﾄﾌﾟﾛｸﾞﾗﾑ番号
+MPP
+LD= D5521 K1             ; Hi_搬送RB給徐材槽 No.
+AND= D5530 K2            ; Hi_RB_ﾛﾎﾞｯﾄ制御ﾃﾞｰﾀ1
+AND= D5531 K1            ; Hi_RB_ﾛﾎﾞｯﾄｺﾏﾝﾄﾞﾃﾞｰﾀ
+AND= D5532 K10           ; Hi_RB_ﾛﾎﾞｯﾄﾌﾟﾛｸﾞﾗﾑ番号
+ANL
+@INC D5500               ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+;ﾛﾎﾞｯﾄ起動､起動確認
+LD M6123                 ; Hi_RB_確認PRG.ｽﾀｰﾄ
+AND X3621                ; Hi_Sup_RB_RUN
+AND X3625                ; Hi_Sup_RB_Auto
+@INC D5500               ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+LD M6124                 ; Hi_RB_起動確認
+AND X365F                ; Hi_RB_確認動作完了(831)
+AND M6240                ; Hi#1_初期起動ﾜｰｸ確認済ﾌﾗｸﾞ
+@INC D5500               ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+LD M6125                 ; Hi_RB_確認完了(Lo_#1)
+ANB X3621                ; Hi_Sup_RB_RUN
+ANB X365F                ; Hi_RB_確認動作完了(831)
+@MOV K130 D5500          ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+;<h1/>/槽2ﾜｰｸ確認
+;槽2ﾜｰｸ情報確認済判定
+LD M6130                 ; Hi_#2ﾜｰｸ状態確認
+MPS
+AND X1870                ; Hi#2_ﾏｽﾀ槽運転有効確認
+MPS
+ANB M6241                ; Hi#2_初期起動ﾜｰｸ確認済ﾌﾗｸﾞ
+@INC D5500               ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+MPP
+AND M6241                ; Hi#2_初期起動ﾜｰｸ確認済ﾌﾗｸﾞ
+@MOV K139 D5500          ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+MPP
+LDB X1870                ; Hi#2_ﾏｽﾀ槽運転有効確認
+AND X1850                ; Hi#1_ﾏｽﾀ槽運転有効確認
+ANL
+@MOV K139 D5500          ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+;設定初期化
+;Setting initialization
+LD M6131                 ; Hi_RB_設定初期化
+@FMOV K0 D5520 K3        ; Hi_搬送RB Type No.
+MPS
+@FMOV K0 D5530 K3        ; Hi_RB_ﾛﾎﾞｯﾄ制御ﾃﾞｰﾀ1
+MPP
+LD= D5520 K0             ; Hi_搬送RB Type No.
+AND= D5521 K0            ; Hi_搬送RB給徐材槽 No.
+AND= D5522 K0            ; Hi_搬送RB給徐材段 No.
+AND= D5530 K0            ; Hi_RB_ﾛﾎﾞｯﾄ制御ﾃﾞｰﾀ1
+AND= D5531 K0            ; Hi_RB_ﾛﾎﾞｯﾄｺﾏﾝﾄﾞﾃﾞｰﾀ
+AND= D5532 K0            ; Hi_RB_ﾛﾎﾞｯﾄﾌﾟﾛｸﾞﾗﾑ番号
+ANL
+@INC D5500               ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+;確認動作PRGｾｯﾄ
+LD M6132                 ; Hi_RB_設定ｾｯﾄ
+ANB M6491                ; U10_ERR発生
+@MOV D5560 D5520         ; 高温槽搬送_ﾛﾎﾞｯﾄNo.  Hi_搬送RB Type No.
+@MOV K2 D5521            ; Hi_搬送RB給徐材槽 No.
+@MOV K2 D5530            ; Hi_RB_ﾛﾎﾞｯﾄ制御ﾃﾞｰﾀ1
+@MOV K1 D5531            ; Hi_RB_ﾛﾎﾞｯﾄｺﾏﾝﾄﾞﾃﾞｰﾀ
+MPS
+@MOV K10 D5532           ; Hi_RB_ﾛﾎﾞｯﾄﾌﾟﾛｸﾞﾗﾑ番号
+MPP
+LD= D5521 K2             ; Hi_搬送RB給徐材槽 No.
+AND= D5530 K2            ; Hi_RB_ﾛﾎﾞｯﾄ制御ﾃﾞｰﾀ1
+AND= D5531 K1            ; Hi_RB_ﾛﾎﾞｯﾄｺﾏﾝﾄﾞﾃﾞｰﾀ
+AND= D5532 K10           ; Hi_RB_ﾛﾎﾞｯﾄﾌﾟﾛｸﾞﾗﾑ番号
+ANL
+@INC D5500               ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+;ﾛﾎﾞｯﾄ起動､起動確認
+LD M6133                 ; Hi_RB_確認PRG.ｽﾀｰﾄ
+AND X3621                ; Hi_Sup_RB_RUN
+AND X3625                ; Hi_Sup_RB_Auto
+@INC D5500               ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+LD M6134                 ; Hi_RB_起動確認
+AND X365F                ; Hi_RB_確認動作完了(831)
+AND M6241                ; Hi#2_初期起動ﾜｰｸ確認済ﾌﾗｸﾞ
+@INC D5500               ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+LD M6135                 ; Hi_RB_確認完了(Lo_#1)
+ANB X3621                ; Hi_Sup_RB_RUN
+ANB X365F                ; Hi_RB_確認動作完了(831)
+@MOV K139 D5500          ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+;初期確認完了
+LD M6139                 ; Hi_初期起動完了
+AND M6245                ; Hi_Sup_RB_初期起動完了ﾌﾗｸﾞ
+@MOV K149 D5500          ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+;<h1/>/給徐材判定
+;自動運転ステップ開始
+;給徐材要求判定
+LD M6010                 ; U10_S10_給徐材先判定
+AND M6479                ; U10_STEP動作
+MPS
+LDB M56                  ; 自動起動停止指令(ｻｲｸﾙ停止)
+AND M6170                ; 高温検査ﾜｰｸ受渡可
+ANL
+MPS
+LD M6900                 ; Hi#1_READY_ON
+ANB M7400                ; Hi#2_READY_ON
+ANL
+@MOV K1 D5555            ; Hi_RB給徐材優先ﾌﾗｸﾞ
+MRD
+LDB M6900                ; Hi#1_READY_ON
+AND M7400                ; Hi#2_READY_ON
+ANL
+@MOV K2 D5555            ; Hi_RB給徐材優先ﾌﾗｸﾞ
+MRD
+LD= D5555 K1             ; Hi_RB給徐材優先ﾌﾗｸﾞ
+AND M6501                ; Hi#1_給徐材要求ON
+AND M6900                ; Hi#1_READY_ON
+ANL
+@INC D5500               ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+@MOV D5555 D5556         ; Hi_RB給徐材優先ﾌﾗｸﾞ  Hi_RB給徐材選択ﾌﾗｸﾞ
+MPP
+LD= D5555 K2             ; Hi_RB給徐材優先ﾌﾗｸﾞ
+AND M7001                ; Hi#2_給徐材要求ON
+AND M7400                ; Hi#2_READY_ON
+ANL
+@INC D5500               ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+@MOV D5555 D5556         ; Hi_RB給徐材優先ﾌﾗｸﾞ  Hi_RB給徐材選択ﾌﾗｸﾞ
+MPP
+LD M56                   ; 自動起動停止指令(ｻｲｸﾙ停止)
+OR M170                  ; 高温検査ﾒﾝﾃ停止開始
+ANL
+MOV K149 D5500           ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+;徐材処理判定
+LDP CR2005               ; 100msｸﾛｯｸﾊﾟﾙｽ
+MOV K0 D5621             ; 有効ST数
+MPS
+LD L1400                 ; HiST1_有効状態
+ANB M8909                ; HiST1_無効予約(自動運転)
+ANL
+@INC D5621               ; 有効ST数
+MRD
+LD L1500                 ; Hi検査ST2_有効状態
+ANB M9409                ; HiST2_無効予約(自動運転)
+ANL
+@INC D5621               ; 有効ST数
+MRD
+LD L1600                 ; Hi検査ST3_有効状態
+ANB M9909                ; HiST3_無効予約(自動運転)
+ANL
+@INC D5621               ; 有効ST数
+MRD
+LD L1700                 ; HiST4_有効状態
+ANB M10409               ; HiST4_無効予約(自動運転)
+ANL
+@INC D5621               ; 有効ST数
+MRD
+LD L1800                 ; HiST5_有効状態
+ANB M10909               ; HiST5_無効予約(自動運転)
+ANL
+@INC D5621               ; 有効ST数
+MPP
+AND<> K0 D5621           ; 有効ST数
+CAL* D5620 K5 D5622      ; 高温槽取出ﾀｲﾑ設定  高温槽取出基準時間
+CAL/ D5622 D5621 D5624   ; 高温槽取出基準時間  有効ST数  高温槽取出時間
+LD CR2002                ; 常時ON
+AND CR2005               ; 100msｸﾛｯｸﾊﾟﾙｽ
+AND> D5624 D5590         ; 高温槽取出時間  高温槽取出可ﾀｲﾏｶｳﾝﾀ
+@INC D5590               ; 高温槽取出可ﾀｲﾏｶｳﾝﾀ
+LD M6011                 ; U10_S11_給徐材開始
+AND M6479                ; U10_STEP動作
+MPS
+LD M6170                 ; 高温検査ﾜｰｸ受渡可
+AND>= D5590 D5624        ; 高温槽取出可ﾀｲﾏｶｳﾝﾀ  高温槽取出時間
+ANL
+MPS
+LD= D5556 K1             ; Hi_RB給徐材選択ﾌﾗｸﾞ
+AND<= D5550 K3           ; Hi#1_徐材ｶｳﾝﾀ
+LD= D5556 K2             ; Hi_RB給徐材選択ﾌﾗｸﾞ
+AND<= D5552 K3           ; Hi#2_徐材ｶｳﾝﾀ
+ORL
+ANL
+@INC D5500               ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+MOV K0 D5590             ; 高温槽取出可ﾀｲﾏｶｳﾝﾀ
+MPP
+LD= D5556 K1             ; Hi_RB給徐材選択ﾌﾗｸﾞ
+AND> D5550 K3            ; Hi#1_徐材ｶｳﾝﾀ
+LD= D5556 K2             ; Hi_RB給徐材選択ﾌﾗｸﾞ
+AND> D5552 K3            ; Hi#2_徐材ｶｳﾝﾀ
+ORL
+ANL
+MPS
+MOV K85 D5500            ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+MPP
+AND CR2003               ; 常時OFF
+MOV K0 D5590             ; 高温槽取出可ﾀｲﾏｶｳﾝﾀ
+MRD
+LD M5520                 ; U9-S20_ﾜｰｸ取出可(→High_Sup_RB)
+LD= D5556 K1             ; Hi_RB給徐材選択ﾌﾗｸﾞ
+AND> D5550 D5551         ; Hi#1_徐材ｶｳﾝﾀ  Hi#1_給材ｶｳﾝﾀ
+LD= D5556 K2             ; Hi_RB給徐材選択ﾌﾗｸﾞ
+AND> D5552 D5553         ; Hi#2_徐材ｶｳﾝﾀ  Hi#2_給材ｶｳﾝﾀ
+ORL
+ANL
+ANL
+MOV K85 D5500            ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+MPP
+LD M56                   ; 自動起動停止指令(ｻｲｸﾙ停止)
+OR M170                  ; 高温検査ﾒﾝﾃ停止開始
+ANL
+MOV K149 D5500           ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+LD M6084                 ; 要求OFF確認
+ANB X3621                ; Hi_Sup_RB_RUN
+ANB X3653                ; Hi_RB_ﾜｰｸ無NG完了(819)
+ANB X3654                ; Hi_RB_ﾜｰｸ有NG完了(820)
+ANB X3655                ; Hi_RB_高温槽取出完了(821)
+@INC D5500               ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+;全て徐材か判定1
+LD M6085                 ; 徐材数判定2
+MPS
+LD= D5556 K1             ; Hi_RB給徐材選択ﾌﾗｸﾞ
+AND<= D5550 K3           ; Hi#1_徐材ｶｳﾝﾀ
+LD= D5556 K2             ; Hi_RB給徐材選択ﾌﾗｸﾞ
+AND<= D5552 K3           ; Hi#2_徐材ｶｳﾝﾀ
+ORL
+ANL
+MOV K65 D5500            ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+MPP
+LD= D5556 K1             ; Hi_RB給徐材選択ﾌﾗｸﾞ
+AND> D5550 K3            ; Hi#1_徐材ｶｳﾝﾀ
+LD= D5556 K2             ; Hi_RB給徐材選択ﾌﾗｸﾞ
+AND> D5552 K3            ; Hi#2_徐材ｶｳﾝﾀ
+ORL
+ANL
+@INC D5500               ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+;徐材完了
+LD M6086                 ; 全徐材確認2､徐材完了ﾌﾗｸﾞｾｯﾄ
+LD= D5556 K1             ; Hi_RB給徐材選択ﾌﾗｸﾞ
+AND M6201                ; Hi#1_徐材完了ﾌﾗｸﾞ
+LD= D5556 K2             ; Hi_RB給徐材選択ﾌﾗｸﾞ
+AND M6211                ; Hi#2_徐材完了ﾌﾗｸﾞ
+ORL
+ANL
+MOV K65 D5500            ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+;槽内ﾜｰｸ情報要求
+LD M6012                 ; U10_S12_取出ﾃﾞｰﾀｾｯﾄ
+ANB M140                 ; 全一時停止
+MPS
+AND= D5556 K1            ; Hi_RB給徐材選択ﾌﾗｸﾞ
+MOV K1 W0148             ; 高温槽No.
+MOV D5550 W0149          ; Hi#1_徐材ｶｳﾝﾀ  高温槽段数
+MRD
+AND= D5556 K2            ; Hi_RB給徐材選択ﾌﾗｸﾞ
+MOV K2 W0148             ; 高温槽No.
+MOV D5552 W0149          ; Hi#2_徐材ｶｳﾝﾀ  高温槽段数
+MPP
+ANB W04.4                ; 高温槽無取出製品情報ｾｯﾄ完了
+FMOV K0 D5560 K4         ; 高温槽搬送_ﾛﾎﾞｯﾄNo.
+@INC D5500               ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+;<h1/>/槽内ﾜｰｸ情報取得
+;槽内ﾜｰｸ情報･検査ST_治具ID取得
+LD M6013                 ; U10_S13_槽内ﾜｰｸ情報要求
+AND W0104.4              ; 高温槽内取出製品情報要求
+MPS
+LD W04.4                 ; 高温槽無取出製品情報ｾｯﾄ完了
+OR M3                    ; OFFLINE_MODE
+ANB W04.5                ; 高温槽内製品治具IDｴﾗｰ
+ANL
+@MOV W050 D5560          ; 高温槽取出ﾛﾎﾞｯﾄNo.  高温槽搬送_ﾛﾎﾞｯﾄNo.
+@BMOV W052 D5562 K2      ; 高温検査ﾊﾟﾚｯﾄID  低温槽搬送_検査ﾊﾟﾚｯﾄID
+MPS
+AND M3                   ; OFFLINE_MODE
+DW K7 D5560              ; 高温槽搬送_ﾛﾎﾞｯﾄNo.
+CON
+DW K7 D5562              ; 低温槽搬送_検査ﾊﾟﾚｯﾄID
+CON
+DW K7 D5563              ; 低温槽搬送_検査ﾃｽﾄﾍｯﾄﾞID
+MRD
+AND<> W050 K0            ; 高温槽取出ﾛﾎﾞｯﾄNo.
+MOV K1 D5600             ; ﾜｰｸ有取出中(検査搬送抑制ﾌﾗｸﾞ)
+MPP
+MOV K15 D5500            ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+MPP
+AND W04.5                ; 高温槽内製品治具IDｴﾗｰ
+MOV K140 D5500           ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+;<h1/>/治具IDｴﾗｰ･段取
+;一時停止処理中ﾌﾗｸﾞ
+LD M6140                 ; 高温検査段取開始
+OR M6175                 ; 高温検査一時停止処理中
+ANB M6144                ; 段取終了一時停止解除
+OUT M6175                ; 高温検査一時停止処理中
+;治具IDｴﾗｰ･治具交換
+LD M6140                 ; 高温検査段取開始
+ANB M7981                ; ﾊﾝﾄﾞ1_Hi検査未了品
+ANB M7985                ; ﾊﾝﾄﾞ1_Hi検査ST1再検品
+ANB M7986                ; ﾊﾝﾄﾞ1_Hi検査ST2再検品
+ANB M7987                ; ﾊﾝﾄﾞ1_Hi検査ST3再検品
+ANB M7988                ; ﾊﾝﾄﾞ1_Hi検査ST4再検品
+ANB M7989                ; ﾊﾝﾄﾞ1_Hi検査ST5再検品
+ANB M7991                ; ﾊﾝﾄﾞ2_Hi検査未了品
+ANB M7995                ; ﾊﾝﾄﾞ2_Hi検査ST1再検品
+ANB M7996                ; ﾊﾝﾄﾞ2_Hi検査ST2再検品
+ANB M7997                ; ﾊﾝﾄﾞ2_Hi検査ST3再検品
+ANB M7998                ; ﾊﾝﾄﾞ2_Hi検査ST4再検品
+ANB M7999                ; ﾊﾝﾄﾞ2_Hi検査ST5再検品
+AND M8993                ; U14_WORK無し
+AND M9493                ; U15_WORK無し
+AND M9993                ; U16_WORK無し
+AND M10493               ; U17_WORK無し
+AND M10993               ; U18_WORK無し
+@INC D5500               ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+LD M6141                 ; 高温検査段取一時停止処理
+AND M180                 ; 高温検査一時停止
+AND M182                 ; 高温検査一時停止OK
+AND= D200 K0             ; ｴﾗｰｺｰﾄﾞNo.
+DW K1004 D200            ; ｴﾗｰｺｰﾄﾞNo.
+CON
+@INC D5500               ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+LD M6142                 ; 一時停止確認(ﾀﾞｲｱﾛｸﾞ)
+LD B1025                 ; 確認TP_PB
+OR B1002                 ; ｽﾀｰﾄPB
+ANL
+AND M180                 ; 高温検査一時停止
+AND M128                 ; 高温検査安全扉正常
+DW K0 D200               ; ｴﾗｰｺｰﾄﾞNo.
+CON
+@INC D5500               ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+LD M6143                 ; 段取完了確認
+MPS
+OUT W0104.5              ; 高温槽治具ﾀﾞｲｱﾛｸﾞ完了
+MPP
+ANB W04.5                ; 高温槽内製品治具IDｴﾗｰ
+@INC D5500               ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+LD M6144                 ; 段取終了一時停止解除
+ANB M6175                ; 高温検査一時停止処理中
+ANB M180                 ; 高温検査一時停止
+MOV K12 D5500            ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+;<h1/>/槽取出開始条件
+;有効STの治具IDが一致している場合はﾀｲﾏ条件無視
+LD= D7606 D5563          ; HiST1_ｺﾝﾀｸﾄﾍｯﾄﾞID_Copy  低温槽搬送_検査ﾃｽﾄﾍｯﾄﾞID
+AND= D7601 D5562         ; HiST1_ﾊﾟﾚｯﾄID  低温槽搬送_検査ﾊﾟﾚｯﾄID
+ORB L1400                ; HiST1_有効状態
+LD= D8106 D5563          ; HiST2_ｺﾝﾀｸﾄﾍｯﾄﾞID_Copy  低温槽搬送_検査ﾃｽﾄﾍｯﾄﾞID
+AND= D8101 D5562         ; HiST2_ﾊﾟﾚｯﾄID  低温槽搬送_検査ﾊﾟﾚｯﾄID
+ORB L1500                ; Hi検査ST2_有効状態
+ANL
+LD= D8606 D5563          ; HiST3_ｺﾝﾀｸﾄﾍｯﾄﾞID_Copy  低温槽搬送_検査ﾃｽﾄﾍｯﾄﾞID
+AND= D8601 D5562         ; HiST3_ﾊﾟﾚｯﾄID  低温槽搬送_検査ﾊﾟﾚｯﾄID
+ORB L1600                ; Hi検査ST3_有効状態
+ANL
+LD= D9106 D5563          ; HiST4_ｺﾝﾀｸﾄﾍｯﾄﾞID_Copy  低温槽搬送_検査ﾃｽﾄﾍｯﾄﾞID
+AND= D9101 D5562         ; HiST4_ﾊﾟﾚｯﾄID  低温槽搬送_検査ﾊﾟﾚｯﾄID
+ORB L1700                ; HiST4_有効状態
+ANL
+LD= D9606 D5563          ; HiST5_ｺﾝﾀｸﾄﾍｯﾄﾞID_Copy  低温槽搬送_検査ﾃｽﾄﾍｯﾄﾞID
+AND= D9601 D5562         ; HiST5_ﾊﾟﾚｯﾄID  低温槽搬送_検査ﾊﾟﾚｯﾄID
+ORB L1800                ; HiST5_有効状態
+ANL
+LD L1400                 ; HiST1_有効状態
+OR L1500                 ; Hi検査ST2_有効状態
+OR L1600                 ; Hi検査ST3_有効状態
+OR L1700                 ; HiST4_有効状態
+OR L1800                 ; HiST5_有効状態
+ANL
+OUT M6160                ; Hi有効ST全治具ID一致
+;取出開始条件
+;HI_ST1
+LD= D7606 D7211          ; HiST1_ｺﾝﾀｸﾄﾍｯﾄﾞID_Copy  ﾊﾝﾄﾞ1 高温検査ﾃｽﾄﾍｯﾄﾞID
+AND= D7601 D7210         ; HiST1_ﾊﾟﾚｯﾄID  ﾊﾝﾄﾞ1 高温検査ﾊﾟﾚｯﾄID
+LD M7981                 ; ﾊﾝﾄﾞ1_Hi検査未了品
+OR M7985                 ; ﾊﾝﾄﾞ1_Hi検査ST1再検品
+ANL
+LD= D7606 D7311          ; HiST1_ｺﾝﾀｸﾄﾍｯﾄﾞID_Copy  ﾊﾝﾄﾞ2 高温検査ﾃｽﾄﾍｯﾄﾞID
+AND= D7601 D7310         ; HiST1_ﾊﾟﾚｯﾄID  ﾊﾝﾄﾞ2 高温検査ﾊﾟﾚｯﾄID
+LD M7991                 ; ﾊﾝﾄﾞ2_Hi検査未了品
+OR M7995                 ; ﾊﾝﾄﾞ2_Hi検査ST1再検品
+ANL
+ORL
+ANB T1041                ; HiST1検査完了近傍
+OUT M6151                ; HI_ST1給材有効ﾜｰｸ有
+LD L1400                 ; HiST1_有効状態
+ANB M8909                ; HiST1_無効予約(自動運転)
+MPS
+AND M8734                ; U14-3(検査SUB)起動中
+TMR K1041 D5626          ; HiST1検査完了近傍  高温検査先行ﾀｲﾑ設定
+MPP
+LD= D7606 D5563          ; HiST1_ｺﾝﾀｸﾄﾍｯﾄﾞID_Copy  低温槽搬送_検査ﾃｽﾄﾍｯﾄﾞID
+AND= D7601 D5562         ; HiST1_ﾊﾟﾚｯﾄID  低温槽搬送_検査ﾊﾟﾚｯﾄID
+LD T1041                 ; HiST1検査完了近傍
+LD M8930                 ; HiST1_ﾜｰｸ受渡し異常
+AND CR2003               ; 常時OFF
+ORL
+LDB X1362                ; HiST1_部_ﾜｰｸ確認(ON=有)
+ANB M8920                ; HiST1→搬送ﾜｰｸ供給要求
+ANB M8921                ; HiST1→搬送1除材要求
+ORL
+OR M8921                 ; HiST1→搬送1除材要求
+ANL
+ANB M6151                ; HI_ST1給材有効ﾜｰｸ有
+ANB M7900                ; 【搬送】搬送→Hi_ST1搬送開始
+ANL
+OUT M6161                ; HI_ST1供給可
+;HI_ST2
+LD= D8106 D7211          ; HiST2_ｺﾝﾀｸﾄﾍｯﾄﾞID_Copy  ﾊﾝﾄﾞ1 高温検査ﾃｽﾄﾍｯﾄﾞID
+AND= D8101 D7210         ; HiST2_ﾊﾟﾚｯﾄID  ﾊﾝﾄﾞ1 高温検査ﾊﾟﾚｯﾄID
+LD M7981                 ; ﾊﾝﾄﾞ1_Hi検査未了品
+OR M7986                 ; ﾊﾝﾄﾞ1_Hi検査ST2再検品
+ANL
+LD= D8106 D7311          ; HiST2_ｺﾝﾀｸﾄﾍｯﾄﾞID_Copy  ﾊﾝﾄﾞ2 高温検査ﾃｽﾄﾍｯﾄﾞID
+AND= D8101 D7310         ; HiST2_ﾊﾟﾚｯﾄID  ﾊﾝﾄﾞ2 高温検査ﾊﾟﾚｯﾄID
+LD M7991                 ; ﾊﾝﾄﾞ2_Hi検査未了品
+OR M7996                 ; ﾊﾝﾄﾞ2_Hi検査ST2再検品
+ANL
+ORL
+ANB T1042                ; HiST2検査完了近傍
+OUT M6152                ; HI_ST2給材有効ﾜｰｸ有
+LD L1500                 ; Hi検査ST2_有効状態
+ANB M9409                ; HiST2_無効予約(自動運転)
+MPS
+AND M9234                ; U15-3(検査SUB)起動中
+TMR K1042 D5626          ; HiST2検査完了近傍  高温検査先行ﾀｲﾑ設定
+MPP
+LD= D8106 D5563          ; HiST2_ｺﾝﾀｸﾄﾍｯﾄﾞID_Copy  低温槽搬送_検査ﾃｽﾄﾍｯﾄﾞID
+AND= D8101 D5562         ; HiST2_ﾊﾟﾚｯﾄID  低温槽搬送_検査ﾊﾟﾚｯﾄID
+LD T1042                 ; HiST2検査完了近傍
+LD M9420                 ; HiST2→搬送ﾜｰｸ供給要求
+AND CR2003               ; 常時OFF
+ORL
+LDB X1372                ; HiST2_部_ﾜｰｸ確認(ON=有)
+ANB M9420                ; HiST2→搬送ﾜｰｸ供給要求
+ANB M9421                ; HiST2→搬送1除材要求
+ORL
+OR M9421                 ; HiST2→搬送1除材要求
+ANL
+ANB M6152                ; HI_ST2給材有効ﾜｰｸ有
+ANB M7901                ; 【搬送】搬送→Hi_ST2搬送開始
+ANL
+OUT M6162                ; HI_ST2供給可
+;HI_ST3
+LD= D8606 D7211          ; HiST3_ｺﾝﾀｸﾄﾍｯﾄﾞID_Copy  ﾊﾝﾄﾞ1 高温検査ﾃｽﾄﾍｯﾄﾞID
+AND= D8601 D7210         ; HiST3_ﾊﾟﾚｯﾄID  ﾊﾝﾄﾞ1 高温検査ﾊﾟﾚｯﾄID
+LD M7981                 ; ﾊﾝﾄﾞ1_Hi検査未了品
+OR M7987                 ; ﾊﾝﾄﾞ1_Hi検査ST3再検品
+ANL
+LD= D8606 D7311          ; HiST3_ｺﾝﾀｸﾄﾍｯﾄﾞID_Copy  ﾊﾝﾄﾞ2 高温検査ﾃｽﾄﾍｯﾄﾞID
+AND= D8601 D7310         ; HiST3_ﾊﾟﾚｯﾄID  ﾊﾝﾄﾞ2 高温検査ﾊﾟﾚｯﾄID
+LD M7991                 ; ﾊﾝﾄﾞ2_Hi検査未了品
+OR M7997                 ; ﾊﾝﾄﾞ2_Hi検査ST3再検品
+ANL
+ORL
+ANB T1043                ; HiST3検査完了近傍
+OUT M6153                ; HI_ST3給材有効ﾜｰｸ有
+LD L1600                 ; Hi検査ST3_有効状態
+ANB M9909                ; HiST3_無効予約(自動運転)
+MPS
+AND M9734                ; U16-3(検査SUB)起動中
+TMR K1043 D5626          ; HiST3検査完了近傍  高温検査先行ﾀｲﾑ設定
+MPP
+LD= D8606 D5563          ; HiST3_ｺﾝﾀｸﾄﾍｯﾄﾞID_Copy  低温槽搬送_検査ﾃｽﾄﾍｯﾄﾞID
+AND= D8601 D5562         ; HiST3_ﾊﾟﾚｯﾄID  低温槽搬送_検査ﾊﾟﾚｯﾄID
+LD T1043                 ; HiST3検査完了近傍
+LD M9920                 ; HiST3→搬送ﾜｰｸ供給要求
+AND CR2003               ; 常時OFF
+ORL
+LDB X1382                ; HiST3_部_ﾜｰｸ確認(ON=有)
+ANB M9920                ; HiST3→搬送ﾜｰｸ供給要求
+ANB M9921                ; HiST3→搬送1除材要求
+ORL
+OR M9921                 ; HiST3→搬送1除材要求
+ANL
+ANB M6153                ; HI_ST3給材有効ﾜｰｸ有
+ANB M7902                ; 【搬送】搬送→Hi_ST3搬送開始
+ANL
+OUT M6163                ; HI_ST3供給可
+;HI_ST4
+LD= D9106 D7211          ; HiST4_ｺﾝﾀｸﾄﾍｯﾄﾞID_Copy  ﾊﾝﾄﾞ1 高温検査ﾃｽﾄﾍｯﾄﾞID
+AND= D9101 D7210         ; HiST4_ﾊﾟﾚｯﾄID  ﾊﾝﾄﾞ1 高温検査ﾊﾟﾚｯﾄID
+LD M7981                 ; ﾊﾝﾄﾞ1_Hi検査未了品
+OR M7988                 ; ﾊﾝﾄﾞ1_Hi検査ST4再検品
+ANL
+LD= D9106 D7311          ; HiST4_ｺﾝﾀｸﾄﾍｯﾄﾞID_Copy  ﾊﾝﾄﾞ2 高温検査ﾃｽﾄﾍｯﾄﾞID
+AND= D9101 D7310         ; HiST4_ﾊﾟﾚｯﾄID  ﾊﾝﾄﾞ2 高温検査ﾊﾟﾚｯﾄID
+LD M7991                 ; ﾊﾝﾄﾞ2_Hi検査未了品
+OR M7998                 ; ﾊﾝﾄﾞ2_Hi検査ST4再検品
+ANL
+ORL
+ANB T1044                ; HiST4検査完了近傍
+OUT M6154                ; HI_ST4給材有効ﾜｰｸ有
+LD L1700                 ; HiST4_有効状態
+ANB M10409               ; HiST4_無効予約(自動運転)
+MPS
+AND M10234               ; U17-3(検査SUB)起動中
+TMR K1044 D5626          ; HiST4検査完了近傍  高温検査先行ﾀｲﾑ設定
+MPP
+LD= D9106 D5563          ; HiST4_ｺﾝﾀｸﾄﾍｯﾄﾞID_Copy  低温槽搬送_検査ﾃｽﾄﾍｯﾄﾞID
+AND= D9101 D5562         ; HiST4_ﾊﾟﾚｯﾄID  低温槽搬送_検査ﾊﾟﾚｯﾄID
+LD T1044                 ; HiST4検査完了近傍
+LD M10420                ; HiST4→搬送ﾜｰｸ供給要求
+AND CR2003               ; 常時OFF
+ORL
+LDB X1392                ; HiST4_部_ﾜｰｸ確認(ON=有)
+ANB M10420               ; HiST4→搬送ﾜｰｸ供給要求
+ANB M10421               ; HiST4→搬送1除材要求
+ORL
+OR M10421                ; HiST4→搬送1除材要求
+ANL
+ANB M6154                ; HI_ST4給材有効ﾜｰｸ有
+ANB M7903                ; 【搬送】搬送→Hi_ST4搬送開始
+ANL
+OUT M6164                ; HI_ST4供給可
+;HI_ST5
+LD= D9606 D7211          ; HiST5_ｺﾝﾀｸﾄﾍｯﾄﾞID_Copy  ﾊﾝﾄﾞ1 高温検査ﾃｽﾄﾍｯﾄﾞID
+AND= D9601 D7210         ; HiST5_ﾊﾟﾚｯﾄID  ﾊﾝﾄﾞ1 高温検査ﾊﾟﾚｯﾄID
+LD M7981                 ; ﾊﾝﾄﾞ1_Hi検査未了品
+OR M7989                 ; ﾊﾝﾄﾞ1_Hi検査ST5再検品
+ANL
+LD= D9606 D7311          ; HiST5_ｺﾝﾀｸﾄﾍｯﾄﾞID_Copy  ﾊﾝﾄﾞ2 高温検査ﾃｽﾄﾍｯﾄﾞID
+AND= D9601 D7310         ; HiST5_ﾊﾟﾚｯﾄID  ﾊﾝﾄﾞ2 高温検査ﾊﾟﾚｯﾄID
+LD M7991                 ; ﾊﾝﾄﾞ2_Hi検査未了品
+OR M7999                 ; ﾊﾝﾄﾞ2_Hi検査ST5再検品
+ANL
+ORL
+ANB T1045                ; HiST5検査完了近傍
+OUT M6155                ; HI_ST5給材有効ﾜｰｸ有
+LD L1800                 ; HiST5_有効状態
+ANB M10909               ; HiST5_無効予約(自動運転)
+MPS
+AND M10734               ; U18-3(検査SUB)起動中
+TMR K1045 D5626          ; HiST5検査完了近傍  高温検査先行ﾀｲﾑ設定
+MPP
+LD= D9606 D5563          ; HiST5_ｺﾝﾀｸﾄﾍｯﾄﾞID_Copy  低温槽搬送_検査ﾃｽﾄﾍｯﾄﾞID
+AND= D9601 D5562         ; HiST5_ﾊﾟﾚｯﾄID  低温槽搬送_検査ﾊﾟﾚｯﾄID
+LD T1045                 ; HiST5検査完了近傍
+LD M10920                ; HiST5→搬送ﾜｰｸ供給要求
+AND CR2003               ; 常時OFF
+ORL
+LDB X1402                ; HiST5_部_ﾜｰｸ確認(ON=有)
+ANB M10920               ; HiST5→搬送ﾜｰｸ供給要求
+ANB M10921               ; HiST5→搬送1除材要求
+ORL
+OR M10921                ; HiST5→搬送1除材要求
+ANL
+ANB M6155                ; HI_ST5給材有効ﾜｰｸ有
+ANB M7904                ; 【搬送】搬送→Hi_ST5搬送開始
+ANL
+OUT M6165                ; HI_ST5供給可
+;<h1/>/槽徐材ｻｲｸﾙ
+;設定初期化
+;Setting initialization
+LD M6015                 ; U10_S15_ID照合OK､設定初期化
+MPS
+LDB M56                  ; 自動起動停止指令(ｻｲｸﾙ停止)
+LD M6160                 ; Hi有効ST全治具ID一致
+OR M6161                 ; HI_ST1供給可
+OR M6162                 ; HI_ST2供給可
+OR M6163                 ; HI_ST3供給可
+OR M6164                 ; HI_ST4供給可
+OR M6165                 ; HI_ST5供給可
+OR= D5560 K0             ; 高温槽搬送_ﾛﾎﾞｯﾄNo.
+ANL
+LD= D5556 K1             ; Hi_RB給徐材選択ﾌﾗｸﾞ
+AND M6200                ; Hi#1給徐材中ﾌﾗｸﾞ
+LD= D5556 K2             ; Hi_RB給徐材選択ﾌﾗｸﾞ
+AND M6210                ; Hi#2給徐材中ﾌﾗｸﾞ
+ORL
+ANL
+ANL
+@FMOV K0 D5520 K3        ; Hi_搬送RB Type No.
+MPS
+@FMOV K0 D5530 K3        ; Hi_RB_ﾛﾎﾞｯﾄ制御ﾃﾞｰﾀ1
+MPP
+LD= D5520 K0             ; Hi_搬送RB Type No.
+AND= D5521 K0            ; Hi_搬送RB給徐材槽 No.
+AND= D5522 K0            ; Hi_搬送RB給徐材段 No.
+AND= D5530 K0            ; Hi_RB_ﾛﾎﾞｯﾄ制御ﾃﾞｰﾀ1
+AND= D5531 K0            ; Hi_RB_ﾛﾎﾞｯﾄｺﾏﾝﾄﾞﾃﾞｰﾀ
+AND= D5532 K0            ; Hi_RB_ﾛﾎﾞｯﾄﾌﾟﾛｸﾞﾗﾑ番号
+ANL
+@INC D5500               ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+MPP
+AND M56                  ; 自動起動停止指令(ｻｲｸﾙ停止)
+MOV K149 D5500           ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+;搬送動作開始起動
+LD M6016                 ; U10_S16_設定ｾｯﾄ
+ANB M6491                ; U10_ERR発生
+@MOV D5560 D5520         ; 高温槽搬送_ﾛﾎﾞｯﾄNo.  Hi_搬送RB Type No.
+MPS
+AND= D5556 K1            ; Hi_RB給徐材選択ﾌﾗｸﾞ
+@MOV K1 D5521            ; Hi_搬送RB給徐材槽 No.
+@MOV D5550 D5522         ; Hi#1_徐材ｶｳﾝﾀ  Hi_搬送RB給徐材段 No.
+MRD
+AND= D5556 K2            ; Hi_RB給徐材選択ﾌﾗｸﾞ
+@MOV K2 D5521            ; Hi_搬送RB給徐材槽 No.
+@MOV D5552 D5522         ; Hi#2_徐材ｶｳﾝﾀ  Hi_搬送RB給徐材段 No.
+MRD
+@MOV K2 D5530            ; Hi_RB_ﾛﾎﾞｯﾄ制御ﾃﾞｰﾀ1
+MRD
+@MOV K1 D5531            ; Hi_RB_ﾛﾎﾞｯﾄｺﾏﾝﾄﾞﾃﾞｰﾀ
+MRD
+@MOV K1 D5532            ; Hi_RB_ﾛﾎﾞｯﾄﾌﾟﾛｸﾞﾗﾑ番号
+MPP
+LD= D5530 K2             ; Hi_RB_ﾛﾎﾞｯﾄ制御ﾃﾞｰﾀ1
+AND= D5531 K1            ; Hi_RB_ﾛﾎﾞｯﾄｺﾏﾝﾄﾞﾃﾞｰﾀ
+AND= D5532 K1            ; Hi_RB_ﾛﾎﾞｯﾄﾌﾟﾛｸﾞﾗﾑ番号
+ANL
+@INC D5500               ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+;ﾛﾎﾞｯﾄ起動､起動確認
+LD M6017                 ; U10_S17_取出PRG.ｽﾀｰﾄ
+AND X3621                ; Hi_Sup_RB_RUN
+AND X3625                ; Hi_Sup_RB_Auto
+@INC D5500               ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+;ﾛﾎﾞｯﾄ徐材動作結果判定
+LD M6018                 ; U10_S18_起動確認
+MPS
+LD X3653                 ; Hi_RB_ﾜｰｸ無NG完了(819)
+ANB X3654                ; Hi_RB_ﾜｰｸ有NG完了(820)
+ANB X3652                ; Hi_RB_ﾜｰｸ無正常完了(818)
+ANB X3658                ; Hi_RB ﾁｬｯｸNG(824)
+ANB X3655                ; Hi_RB_高温槽取出完了(821)
+ANL
+MOV K20 D5500            ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+MRD
+LD X3654                 ; Hi_RB_ﾜｰｸ有NG完了(820)
+ANB X3653                ; Hi_RB_ﾜｰｸ無NG完了(819)
+ANB X3652                ; Hi_RB_ﾜｰｸ無正常完了(818)
+ANB X3658                ; Hi_RB ﾁｬｯｸNG(824)
+ANB X3655                ; Hi_RB_高温槽取出完了(821)
+ANL
+MOV K25 D5500            ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+MRD
+LD X3652                 ; Hi_RB_ﾜｰｸ無正常完了(818)
+ANB X3653                ; Hi_RB_ﾜｰｸ無NG完了(819)
+ANB X3654                ; Hi_RB_ﾜｰｸ有NG完了(820)
+ANB X3658                ; Hi_RB ﾁｬｯｸNG(824)
+ANB X3655                ; Hi_RB_高温槽取出完了(821)
+ANL
+MOV K30 D5500            ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+MRD
+LD X3658                 ; Hi_RB ﾁｬｯｸNG(824)
+ANB X3653                ; Hi_RB_ﾜｰｸ無NG完了(819)
+ANB X3654                ; Hi_RB_ﾜｰｸ有NG完了(820)
+ANB X3652                ; Hi_RB_ﾜｰｸ無正常完了(818)
+ANB X3655                ; Hi_RB_高温槽取出完了(821)
+ANL
+MOV K31 D5500            ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+MPP
+LD X3655                 ; Hi_RB_高温槽取出完了(821)
+ANB X3653                ; Hi_RB_ﾜｰｸ無NG完了(819)
+ANB X3654                ; Hi_RB_ﾜｰｸ有NG完了(820)
+ANB X3652                ; Hi_RB_ﾜｰｸ無正常完了(818)
+ANB X3658                ; Hi_RB ﾁｬｯｸNG(824)
+ANL
+MOV K35 D5500            ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+;ﾜｰｸ無NG異常処理
+LD M6020                 ; U10_S20_ﾜｰｸ情報NG確認
+AND Y4658                ; Hi_RB_信号受信Ans(568)
+ANB X3653                ; Hi_RB_ﾜｰｸ無NG完了(819)
+ANB X3650                ; Hi_RB_Lo#1侵入中(816)
+ANB X3651                ; Hi_RB_Lo#2侵入中(817)
+@INC D5500               ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+LD M6021                 ; U10_S21_ﾜｰｸ情報NG_OFF確認
+ANB X3621                ; Hi_Sup_RB_RUN
+AND= D200 K0             ; ｴﾗｰｺｰﾄﾞNo.
+DW K1000 D200            ; ｴﾗｰｺｰﾄﾞNo.
+CON
+@INC D5500               ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+LD M6022                 ; U10_S22_ﾜｰｸ無NG(選択ﾀﾞｲｱﾛｸﾞ)
+MPS
+ANP B1020                ; ﾀﾞｲｱﾛｸﾞ選択PB1
+DW K0 D200               ; ｴﾗｰｺｰﾄﾞNo.
+CON
+MOV K16 D5500            ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+MPP
+ANP B1021                ; ﾀﾞｲｱﾛｸﾞ選択PB2
+DW K0 D200               ; ｴﾗｰｺｰﾄﾞNo.
+CON
+@INC D5500               ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+;ﾜｰｸ有NG異常処理
+LD M6025                 ; U10_S25_ﾜｰｸ情報NG確認
+AND Y4658                ; Hi_RB_信号受信Ans(568)
+ANB X3654                ; Hi_RB_ﾜｰｸ有NG完了(820)
+ANB X3650                ; Hi_RB_Lo#1侵入中(816)
+ANB X3651                ; Hi_RB_Lo#2侵入中(817)
+@INC D5500               ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+LD M6026                 ; U10_S26_ﾜｰｸ情報NG_OFF確認
+ANB X3621                ; Hi_Sup_RB_RUN
+AND= D200 K0             ; ｴﾗｰｺｰﾄﾞNo.
+DW K1001 D200            ; ｴﾗｰｺｰﾄﾞNo.
+CON
+@INC D5500               ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+LD M6027                 ; U10_S27_ﾜｰｸ有NG(選択ﾀﾞｲｱﾛｸﾞ)
+MPS
+ANP B1020                ; ﾀﾞｲｱﾛｸﾞ選択PB1
+DW K0 D200               ; ｴﾗｰｺｰﾄﾞNo.
+CON
+MOV K16 D5500            ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+MPP
+ANP B1021                ; ﾀﾞｲｱﾛｸﾞ選択PB2
+DW K0 D200               ; ｴﾗｰｺｰﾄﾞNo.
+CON
+@INC D5500               ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+;ﾜｰｸ無正常処理
+;徐材ｶｳﾝﾀ +1
+LD M6030                 ; U10_S30_槽内ﾜｰｸ無OK確認
+MPS
+AND= D5556 K1            ; Hi_RB給徐材選択ﾌﾗｸﾞ
+@CAL+ D5550 K1 D5550     ; Hi#1_徐材ｶｳﾝﾀ  Hi#1_徐材ｶｳﾝﾀ
+MRD
+AND= D5556 K2            ; Hi_RB給徐材選択ﾌﾗｸﾞ
+@CAL+ D5552 K1 D5552     ; Hi#2_徐材ｶｳﾝﾀ  Hi#2_徐材ｶｳﾝﾀ
+MPP
+LD Y4658                 ; Hi_RB_信号受信Ans(568)
+ANB X3652                ; Hi_RB_ﾜｰｸ無正常完了(818)
+ANB X3650                ; Hi_RB_Lo#1侵入中(816)
+ANB X3651                ; Hi_RB_Lo#2侵入中(817)
+ANL
+MOV K148 D5500           ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+;ﾁｬｯｸNG処理
+LD M6031                 ; U10_S31_ﾁｬｯｸNG確認
+AND Y4658                ; Hi_RB_信号受信Ans(568)
+ANB X3658                ; Hi_RB ﾁｬｯｸNG(824)
+ANB X3650                ; Hi_RB_Lo#1侵入中(816)
+ANB X3651                ; Hi_RB_Lo#2侵入中(817)
+@INC D5500               ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+LD M6032                 ; U10_S32_ﾁｬｯｸNG_OFF確認
+ANB X3221                ; Low_Sup_RB_RUN
+AND= D200 K0             ; ｴﾗｰｺｰﾄﾞNo.
+DW K1000 D200            ; ｴﾗｰｺｰﾄﾞNo.
+CON
+@INC D5500               ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+LD M6033                 ; U10_S33_ﾁｬｯｸNG中(ﾀﾞｲｱﾛｸﾞ)
+AND<> D200 K0            ; ｴﾗｰｺｰﾄﾞNo.
+ANP B1025                ; 確認TP_PB
+DW K0 D200               ; ｴﾗｰｺｰﾄﾞNo.
+CON
+MOV K15 D5500            ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+;ﾜｰｸ取出OK処理
+;徐材ｶｳﾝﾀ +1
+LD M6035                 ; U10_S35_ﾜｰｸ情報OK
+MPS
+AND= D5556 K1            ; Hi_RB給徐材選択ﾌﾗｸﾞ
+@CAL+ D5550 K1 D5550     ; Hi#1_徐材ｶｳﾝﾀ  Hi#1_徐材ｶｳﾝﾀ
+MRD
+AND= D5556 K2            ; Hi_RB給徐材選択ﾌﾗｸﾞ
+@CAL+ D5552 K1 D5552     ; Hi#2_徐材ｶｳﾝﾀ  Hi#2_徐材ｶｳﾝﾀ
+MPP
+@INC D5500               ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+;/製品取出結果ｾｯﾄ
+LD M6036                 ; U10_S36_取出ﾃﾞｰﾀｾｯﾄ､ｶｳﾝﾀ加算
+MOV D5521 W0148          ; Hi_搬送RB給徐材槽 No.  高温槽No.
+MPS
+MOV D5522 W0149          ; Hi_搬送RB給徐材段 No.  高温槽段数
+MPP
+ANB W04.6                ; 高温槽製品取出完了
+@INC D5500               ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+;/製品取出結果ﾊﾝﾄﾞｼｪｲｸ
+LD M6037                 ; U10_S37_取出完了確認
+AND W0104.6              ; 高温槽製品取出要求
+LD W04.6                 ; 高温槽製品取出完了
+OR M3                    ; OFFLINE_MODE
+ANL
+@INC D5500               ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+LD M6038                 ; U10_S38_取出完了ﾃﾞｰﾀ移動
+ANB W0104.6              ; 高温槽製品取出要求
+ANB W04.6                ; 高温槽製品取出完了
+@INC D5500               ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+LD M6039                 ; U10_S39_ﾃﾞｰﾀ移動確認
+AND Y4658                ; Hi_RB_信号受信Ans(568)
+ANB X3655                ; Hi_RB_高温槽取出完了(821)
+ANB X3650                ; Hi_RB_Lo#1侵入中(816)
+ANB X3651                ; Hi_RB_Lo#2侵入中(817)
+@INC D5500               ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+;全て徐材か判定
+LD M6040                 ; U10_S40_徐材数判定1
+MPS
+LD= D5556 K1             ; Hi_RB給徐材選択ﾌﾗｸﾞ
+AND<= D5550 K3           ; Hi#1_徐材ｶｳﾝﾀ
+LD= D5556 K2             ; Hi_RB給徐材選択ﾌﾗｸﾞ
+AND<= D5552 K3           ; Hi#2_徐材ｶｳﾝﾀ
+ORL
+ANL
+MOV K45 D5500            ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+MPP
+LD= D5556 K1             ; Hi_RB給徐材選択ﾌﾗｸﾞ
+AND> D5550 K3            ; Hi#1_徐材ｶｳﾝﾀ
+LD= D5556 K2             ; Hi_RB給徐材選択ﾌﾗｸﾞ
+AND> D5552 K3            ; Hi#2_徐材ｶｳﾝﾀ
+ORL
+ANL
+@INC D5500               ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+;徐材完了
+LD M6041                 ; U10_S41_全徐材確認1､徐材完了Flg
+LD= D5556 K1             ; Hi_RB給徐材選択ﾌﾗｸﾞ
+AND M6201                ; Hi#1_徐材完了ﾌﾗｸﾞ
+LD= D5556 K2             ; Hi_RB給徐材選択ﾌﾗｸﾞ
+AND M6211                ; Hi#2_徐材完了ﾌﾗｸﾞ
+ORL
+ANL
+MOV K45 D5500            ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+;高温検査搬送ｽｷｬﾅ読取位置移動確認
+LD M6045                 ; U10_S45_徐材確認完了
+AND X364A                ; Hi_RB_ｽｷｬﾅ読取要求(810)
+@FMOV K0 D5700 K7        ; 搬送RB高温検査ﾊﾟﾚｯﾄID
+@INC D5500               ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+;<h1/>/ｽｷｬﾅ読込
+;ｽｷｬﾅ読込後PCからﾜｰｸ情報(W50～)取得後
+;槽内ﾜｰｸ情報(D5562､5563)と合成して(D5570～D5576)へ展開
+LD M6046                 ; U10_S46_高温検査前ｽｷｬﾅ読込
+LD W0104.10              ; 高温検査前ﾜｰｸ読込要求
+AND W04.10               ; 高温槽投入部読込完了
+OR M3                    ; OFFLINE_MODE
+ANL
+MPS
+AND W04.11               ; 高温槽投入部読込ｴﾗｰ
+@INC D5500               ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+MPP
+ANB W04.11               ; 高温槽投入部読込ｴﾗｰ
+@BMOV D5562 D5700 K2     ; 低温槽搬送_検査ﾊﾟﾚｯﾄID  搬送RB高温検査ﾊﾟﾚｯﾄID
+@MOV W068 D5702          ; 冷却槽搬送ｼｬﾄﾙﾊﾟﾚｯﾄID  搬送RB冷却槽搬送ﾊﾟﾚｯﾄID
+@MOV W060 D5703          ; 高温検査ｽﾃｰｼﾞ搬送ﾛﾎﾞｯﾄNo.  搬送RB高温検査搬送ﾛﾎﾞｯﾄNo.
+MPS
+AND W04.12               ; 高温検査Skip
+MOV K1 D5704             ; 搬送RB高温検査Skip(0:ｼﾅ/1:ｽﾙ)
+MRD
+@MOV W061 D5705          ; 高温検査ｺﾝﾀｸﾄﾛﾎﾞｯﾄNo.  搬送RB高温検査ｺﾝﾀｸﾄﾛﾎﾞｯﾄNo.
+MRD
+@MOV W069 D5706          ; 冷却槽搬送ﾛﾎﾞｯﾄNo.  搬送RB冷却槽投入ﾛﾎﾞｯﾄNo.
+MRD
+AND M3                   ; OFFLINE_MODE
+MPS
+DW K7 D5700              ; 搬送RB高温検査ﾊﾟﾚｯﾄID
+CON
+DW K7 D5701              ; 搬送RB高温検査ﾃｽﾄﾍｯﾄﾞID
+CON
+DW K7 D5702              ; 搬送RB冷却槽搬送ﾊﾟﾚｯﾄID
+CON
+DW K7 D5703              ; 搬送RB高温検査搬送ﾛﾎﾞｯﾄNo.
+MPP
+DW K0 D5704              ; 搬送RB高温検査Skip(0:ｼﾅ/1:ｽﾙ)
+CON
+DW K7 D5705              ; 搬送RB高温検査ｺﾝﾀｸﾄﾛﾎﾞｯﾄNo.
+CON
+DW K7 D5706              ; 搬送RB冷却槽投入ﾛﾎﾞｯﾄNo.
+MPP
+MOV K57 D5500            ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+;読込ｴﾗｰ処理選択(ﾀﾞｲｱﾛｸﾞ表示)
+LD M6047                 ; U10_S47_高温検査前読取ｴﾗｰ
+AND= D200 K0             ; ｴﾗｰｺｰﾄﾞNo.
+DW K1003 D200            ; ｴﾗｰｺｰﾄﾞNo.
+CON
+@INC D5500               ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+LD M6048                 ; U10_S48_高温検査前読取ｴﾗｰ中
+AND M1979                ; U2_STEP動作
+MPS
+AND B1020                ; ﾀﾞｲｱﾛｸﾞ選択PB1
+DW K0 D200               ; ｴﾗｰｺｰﾄﾞNo.
+CON
+MOV K46 D5500            ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+MPP
+AND B1021                ; ﾀﾞｲｱﾛｸﾞ選択PB2
+@INC D5500               ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+;<h1/>/NG排出一時停止
+;読取NG排出位置移動
+LD M6049                 ; U10_S49_ﾜｰｸ取出選択
+ANB X364A                ; Hi_RB_ｽｷｬﾅ読取要求(810)
+AND X364C                ; Hi_RB_NG受渡移動完了(812)
+@INC D5500               ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+LD M6050                 ; U10_S50_RB_NG受取位置到着
+ANB X364C                ; Hi_RB_NG受渡移動完了(812)
+AND= D5600 K0            ; ﾜｰｸ有取出中(検査搬送抑制ﾌﾗｸﾞ)
+@INC D5500               ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+;読取NG取出一時停止処理
+LD M6051                 ; U10_S51_一時停止要求
+OR M6176                 ; 高温読取異常一時停止処理中
+ANB M6054                ; U10_S54_ﾃﾞｰﾀｸﾘｱ確認・一時停止解
+OUT M6176                ; 高温読取異常一時停止処理中
+;読取NG品取出確認
+LD M6051                 ; U10_S51_一時停止要求
+AND M6176                ; 高温読取異常一時停止処理中
+AND M180                 ; 高温検査一時停止
+AND M185                 ; 高温検査ﾄﾞｱﾛｯｸ開
+@INC D5500               ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+LD M6052                 ; U10_S52_一時停止確認
+AND B1025                ; 確認TP_PB
+AND T1011                ; 高温給徐材RBﾁｬｯｸ開端
+ANB T1012                ; 高温給徐材RBﾜｰｸ確認
+AND M127                 ; 高温槽ｼｬﾄﾙｶﾊﾞｰ正常
+AND M128                 ; 高温検査安全扉正常
+AND M129                 ; 冷却ｼｬﾄﾙｶﾊﾞｰ正常
+AND X131B                ; 高温検査側面安全ﾌﾟﾗｸﾞ
+@INC D5500               ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+LD M6053                 ; U10_S53_ﾜｰｸ取出確認､ﾃﾞｰﾀｸﾘｱ要求
+AND W0104.14             ; 高温槽投入RBﾜｰｸﾃﾞｰﾀｸﾘｱ要求
+LD W04.14                ; 高温槽投入RBﾜｰｸﾃﾞｰﾀｸﾘｱ完了
+OR M3                    ; OFFLINE_MODE
+ANL
+FMOV K0 D5700 K10        ; 搬送RB高温検査ﾊﾟﾚｯﾄID
+@INC D5500               ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+LD M6054                 ; U10_S54_ﾃﾞｰﾀｸﾘｱ確認・一時停止解
+ANB W0104.14             ; 高温槽投入RBﾜｰｸﾃﾞｰﾀｸﾘｱ要求
+ANB W04.14               ; 高温槽投入RBﾜｰｸﾃﾞｰﾀｸﾘｱ完了
+ANB M6176                ; 高温読取異常一時停止処理中
+ANB M180                 ; 高温検査一時停止
+DW K0 D200               ; ｴﾗｰｺｰﾄﾞNo.
+CON
+MOV K64 D5500            ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+;<h1/>/高温検査RB受渡
+LD M6057                 ; U10_S57_受渡可(→検査RB)
+AND M7555                ; U13_S55_ﾜｰｸ受渡要求　(→Hi搬送)
+@INC D5500               ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+;受渡位置移動
+LD M6058                 ; U10_S58_受渡要求確認
+AND Y466B                ; Hi_RB_検査RB受渡可能(587)
+ANB X364A                ; Hi_RB_ｽｷｬﾅ読取要求(810)
+@INC D5500               ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+LD M6059                 ; U10_S59_読取要求OFF確認
+ANB Y466B                ; Hi_RB_検査RB受渡可能(587)
+AND X3643                ; Hi_RB_検査RB受取要求(803)
+@INC D5500               ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+;低温検査搬送RB受取確認
+LD M6060                 ; U10_S60_受渡位置到着(→検査RB)
+ANB M7555                ; U13_S55_ﾜｰｸ受渡要求　(→Hi搬送)
+AND M7561                ; U13_S61_ﾜｰｸ受取完了　(→Hi搬送)
+@INC D5500               ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+MOV K0 D5600             ; ﾜｰｸ有取出中(検査搬送抑制ﾌﾗｸﾞ)
+;退避移動確認
+LD M6061                 ; U10_S61_受取確認
+ANB X3643                ; Hi_RB_検査RB受取要求(803)
+AND X364B                ; Hi_RB_検査RB受渡完了(811)
+@INC D5500               ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+LD M6062                 ; U10_S62_退避完了確認
+AND Y4658                ; Hi_RB_信号受信Ans(568)
+ANB X364B                ; Hi_RB_検査RB受渡完了(811)
+@INC D5500               ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+LD M6063                 ; U10_S63_受取退避完了(→検査RB)
+ANB M7561                ; U13_S61_ﾜｰｸ受取完了　(→Hi搬送)
+@INC D5500               ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+LD M6064                 ; U10_S64_移動完了OFF確認
+ANB M6491                ; U10_ERR発生
+ANB X3621                ; Hi_Sup_RB_RUN
+ANB X364C                ; Hi_RB_NG受渡移動完了(812)
+ANB X3653                ; Hi_RB_ﾜｰｸ無NG完了(819)
+ANB X3655                ; Hi_RB_高温槽取出完了(821)
+ANB X3657                ; Hi_RB_ﾜｰｸﾃﾞｰﾀ無完了(823)
+AND M6480                ; U10_原点
+@INC D5500               ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+;給徐材要求再確認
+;取出可OFFでﾀｲﾑｱｳﾄの場合は給材完了処理
+LD M6065                 ; U10_S65_給徐材要求再確認
+MPS
+LD= D5556 K1             ; Hi_RB給徐材選択ﾌﾗｸﾞ
+AND M6501                ; Hi#1_給徐材要求ON
+ANL
+MPS
+AND M5520                ; U9-S20_ﾜｰｸ取出可(→High_Sup_RB)
+MOV K70 D5500            ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+MRD
+LDB M6201                ; Hi#1_徐材完了ﾌﾗｸﾞ
+ANB M5520                ; U9-S20_ﾜｰｸ取出可(→High_Sup_RB)
+ANL
+MOV K149 D5500           ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+MPP
+LDB M5520                ; U9-S20_ﾜｰｸ取出可(→High_Sup_RB)
+AND M6201                ; Hi#1_徐材完了ﾌﾗｸﾞ
+AND T1130                ; Hi#1_給材待ちﾀｲﾑｱｳﾄ
+ANL
+@INC D5500               ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+MRD
+LD= D5556 K2             ; Hi_RB給徐材選択ﾌﾗｸﾞ
+AND M7001                ; Hi#2_給徐材要求ON
+ANL
+MPS
+AND M5520                ; U9-S20_ﾜｰｸ取出可(→High_Sup_RB)
+MOV K70 D5500            ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+MRD
+LDB M6211                ; Hi#2_徐材完了ﾌﾗｸﾞ
+ANB M5520                ; U9-S20_ﾜｰｸ取出可(→High_Sup_RB)
+ANL
+MOV K149 D5500           ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+MPP
+LDB M5520                ; U9-S20_ﾜｰｸ取出可(→High_Sup_RB)
+AND M6211                ; Hi#2_徐材完了ﾌﾗｸﾞ
+AND T1230                ; Hi#2_給材待ちﾀｲﾑｱｳﾄ
+ANL
+@INC D5500               ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+MPP
+LD= D5556 K1             ; Hi_RB給徐材選択ﾌﾗｸﾞ
+ANB M6985                ; U11_起動中
+LD= D5556 K2             ; Hi_RB給徐材選択ﾌﾗｸﾞ
+ANB M7485                ; U12_起動中
+ORL
+ANL
+MOV K149 D5500           ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+LD M6066                 ; U10_S66_給材待ちﾀｲﾑｱｳﾄ
+LD= D5556 K1             ; Hi_RB給徐材選択ﾌﾗｸﾞ
+AND M6202                ; Hi#1_給材完了ﾌﾗｸﾞ
+LD= D5556 K2             ; Hi_RB給徐材選択ﾌﾗｸﾞ
+AND M6212                ; Hi#2_給材完了ﾌﾗｸﾞ
+ORL
+ANL
+@INC D5500               ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+LD M6067                 ; U10_S67_給材要求OFF確認
+LD= D5556 K1             ; Hi_RB給徐材選択ﾌﾗｸﾞ
+ANB M6501                ; Hi#1_給徐材要求ON
+LD= D5556 K2             ; Hi_RB給徐材選択ﾌﾗｸﾞ
+ANB M7001                ; Hi#2_給徐材要求ON
+ORL
+ANL
+MOV K149 D5500           ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+;<h1/>/槽給材ｻｲｸﾙ
+;給材ｶｳﾝﾀ確認
+LD M6070                 ; Hi_取出済判定
+MPS
+LD= D5556 K1             ; Hi_RB給徐材選択ﾌﾗｸﾞ
+AND<= D5551 K3           ; Hi#1_給材ｶｳﾝﾀ
+LD= D5556 K2             ; Hi_RB給徐材選択ﾌﾗｸﾞ
+AND<= D5553 K3           ; Hi#2_給材ｶｳﾝﾀ
+ORL
+ANL
+@INC D5500               ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+MPP
+LD= D5556 K1             ; Hi_RB給徐材選択ﾌﾗｸﾞ
+AND> D5551 K3            ; Hi#1_給材ｶｳﾝﾀ
+LD= D5556 K2             ; Hi_RB給徐材選択ﾌﾗｸﾞ
+AND> D5553 K3            ; Hi#2_給材ｶｳﾝﾀ
+ORL
+ANL
+MOV K100 D5500           ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+;設定初期化
+;Setting initialization
+LD M6071                 ; Hi_設定初期化
+ANB M6491                ; U10_ERR発生
+@FMOV K0 D5520 K3        ; Hi_搬送RB Type No.
+MPS
+@FMOV K0 D5530 K3        ; Hi_RB_ﾛﾎﾞｯﾄ制御ﾃﾞｰﾀ1
+MPP
+LD= D5520 K0             ; Hi_搬送RB Type No.
+AND= D5521 K0            ; Hi_搬送RB給徐材槽 No.
+AND= D5522 K0            ; Hi_搬送RB給徐材段 No.
+AND= D5530 K0            ; Hi_RB_ﾛﾎﾞｯﾄ制御ﾃﾞｰﾀ1
+AND= D5531 K0            ; Hi_RB_ﾛﾎﾞｯﾄｺﾏﾝﾄﾞﾃﾞｰﾀ
+AND= D5532 K0            ; Hi_RB_ﾛﾎﾞｯﾄﾌﾟﾛｸﾞﾗﾑ番号
+ANL
+@INC D5500               ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+;搬送動作開始起動
+LD M6072                 ; Hi_給材ﾃﾞｰﾀｾｯﾄ
+ANB M6491                ; U10_ERR発生
+@MOV D5106 D5520         ; Hiｼｬﾄﾙ 高温槽投入ﾛﾎﾞｯﾄNo.  Hi_搬送RB Type No.
+MPS
+AND= D5556 K1            ; Hi_RB給徐材選択ﾌﾗｸﾞ
+@MOV K1 D5521            ; Hi_搬送RB給徐材槽 No.
+@MOV D5551 D5522         ; Hi#1_給材ｶｳﾝﾀ  Hi_搬送RB給徐材段 No.
+MRD
+AND= D5556 K2            ; Hi_RB給徐材選択ﾌﾗｸﾞ
+@MOV K2 D5521            ; Hi_搬送RB給徐材槽 No.
+@MOV D5553 D5522         ; Hi#2_給材ｶｳﾝﾀ  Hi_搬送RB給徐材段 No.
+MRD
+@MOV K2 D5530            ; Hi_RB_ﾛﾎﾞｯﾄ制御ﾃﾞｰﾀ1
+MRD
+@MOV K1 D5531            ; Hi_RB_ﾛﾎﾞｯﾄｺﾏﾝﾄﾞﾃﾞｰﾀ
+MRD
+@MOV K2 D5532            ; Hi_RB_ﾛﾎﾞｯﾄﾌﾟﾛｸﾞﾗﾑ番号
+MPP
+LD= D5530 K2             ; Hi_RB_ﾛﾎﾞｯﾄ制御ﾃﾞｰﾀ1
+AND= D5531 K1            ; Hi_RB_ﾛﾎﾞｯﾄｺﾏﾝﾄﾞﾃﾞｰﾀ
+AND= D5532 K2            ; Hi_RB_ﾛﾎﾞｯﾄﾌﾟﾛｸﾞﾗﾑ番号
+ANL
+@INC D5500               ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+;ﾛﾎﾞｯﾄ起動､起動確認
+LD M6073                 ; Hi_給材PRG.ｽﾀｰﾄ
+AND X3621                ; Hi_Sup_RB_RUN
+AND X3625                ; Hi_Sup_RB_Auto
+@INC D5500               ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+LD M6074                 ; Hi_RB起動確認
+MPS
+LD X3658                 ; Hi_RB ﾁｬｯｸNG(824)
+ANB X3641                ; Hi_RB_給材取出完了(801)
+ANB X3654                ; Hi_RB_ﾜｰｸ有NG完了(820)
+ANL
+MOV K80 D5500            ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+MRD
+LD X3641                 ; Hi_RB_給材取出完了(801)
+ANB X3658                ; Hi_RB ﾁｬｯｸNG(824)
+ANB X3654                ; Hi_RB_ﾜｰｸ有NG完了(820)
+ANL
+MOV K90 D5500            ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+MPP
+LD X3654                 ; Hi_RB_ﾜｰｸ有NG完了(820)
+ANB X3658                ; Hi_RB ﾁｬｯｸNG(824)
+ANB X3641                ; Hi_RB_給材取出完了(801)
+ANL
+@INC D5500               ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+LD M6075                 ; Hi_槽内ﾜｰｸ有NG確認
+AND Y4658                ; Hi_RB_信号受信Ans(568)
+ANB X3654                ; Hi_RB_ﾜｰｸ有NG完了(820)
+@INC D5500               ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+LD M6076                 ; Hi_槽内ﾜｰｸ有NG_OFF確認
+ANB X3621                ; Hi_Sup_RB_RUN
+AND= D200 K0             ; ｴﾗｰｺｰﾄﾞNo.
+DW K1002 D200            ; ｴﾗｰｺｰﾄﾞNo.
+CON
+@INC D5500               ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+LD M6077                 ; Hi_槽内ﾜｰｸ有NG(選択ﾀﾞｲｱﾛｸﾞ)
+MPS
+AND B1020                ; ﾀﾞｲｱﾛｸﾞ選択PB1
+DW K0 D200               ; ｴﾗｰｺｰﾄﾞNo.
+CON
+MOV K72 D5500            ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+MPP
+AND B1021                ; ﾀﾞｲｱﾛｸﾞ選択PB2
+DW K0 D200               ; ｴﾗｰｺｰﾄﾞNo.
+CON
+@INC D5500               ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+;ﾁｬｯｸNG処理
+LD M6080                 ; Hi_RBﾁｬｯｸNG確認
+AND Y4658                ; Hi_RB_信号受信Ans(568)
+ANB X3658                ; Hi_RB ﾁｬｯｸNG(824)
+ANB X3650                ; Hi_RB_Lo#1侵入中(816)
+ANB X3651                ; Hi_RB_Lo#2侵入中(817)
+@INC D5500               ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+LD M6081                 ; Hi_RBﾁｬｯｸNG_OFF確認
+ANB X3621                ; Hi_Sup_RB_RUN
+AND= D200 K0             ; ｴﾗｰｺｰﾄﾞNo.
+DW K1001 D200            ; ｴﾗｰｺｰﾄﾞNo.
+CON
+@INC D5500               ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+LD M6082                 ; Hi_RBﾁｬｯｸNG中(ﾀﾞｲｱﾛｸﾞ)
+AND<> D200 K0            ; ｴﾗｰｺｰﾄﾞNo.
+ANP B1025                ; 確認TP_PB
+DW K0 D200               ; ｴﾗｰｺｰﾄﾞNo.
+CON
+MOV K72 D5500            ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+;給材部取出完了
+LD M6090                 ; Hi_取出完了確認
+ANB M5520                ; U9-S20_ﾜｰｸ取出可(→High_Sup_RB)
+MPS
+ANB W04.0                ; 高温搬送RB取出完了
+@INC D5500               ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+MPP
+@FMOV K0 D5100 K10       ; Hiｼｬﾄﾙ 低温検査ﾊﾟﾚｯﾄID
+LD M6091                 ; Hi_取出完了ﾃﾞｰﾀ移動
+AND W0104.0              ; 高温搬送RB取出要求
+LD W04.0                 ; 高温搬送RB取出完了
+OR M3                    ; OFFLINE_MODE
+ANL
+@INC D5500               ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+LD M6092                 ; Hi_ﾃﾞｰﾀ移動確認
+ANB W0104.0              ; 高温搬送RB取出要求
+ANB W04.0                ; 高温搬送RB取出完了
+@INC D5500               ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+LD M6093                 ; Hi_上流取出ﾃﾞｰﾀ移動完了
+AND Y4658                ; Hi_RB_信号受信Ans(568)
+ANB X3641                ; Hi_RB_給材取出完了(801)
+@INC D5500               ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+;高温槽給材完了
+LD M6094                 ; Hi_取出完了OFF確認
+AND X3656                ; Hi_RB_高温槽給材完了(822)
+@INC D5500               ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+MPS
+AND= D5556 K1            ; Hi_RB給徐材選択ﾌﾗｸﾞ
+@CAL+ D5551 K1 D5551     ; Hi#1_給材ｶｳﾝﾀ  Hi#1_給材ｶｳﾝﾀ
+MPP
+AND= D5556 K2            ; Hi_RB給徐材選択ﾌﾗｸﾞ
+@CAL+ D5553 K1 D5553     ; Hi#2_給材ｶｳﾝﾀ  Hi#2_給材ｶｳﾝﾀ
+LD M6095                 ; Hi_給材完了確認
+AND Y4658                ; Hi_RB_信号受信Ans(568)
+ANB X3656                ; Hi_RB_高温槽給材完了(822)
+ANB W04.2                ; 高温槽製品投入完了
+MOV D5521 W0148          ; Hi_搬送RB給徐材槽 No.  高温槽No.
+MOV D5522 W0149          ; Hi_搬送RB給徐材段 No.  高温槽段数
+@INC D5500               ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+LD M6096                 ; Hi_給材完了ﾃﾞｰﾀ移動
+AND W0104.2              ; 高温槽製品投入要求
+LD W04.2                 ; 高温槽製品投入完了
+OR M3                    ; OFFLINE_MODE
+ANL
+@INC D5500               ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+LD M6097                 ; Hi_ﾃﾞｰﾀ移動確認
+ANB W0104.2              ; 高温槽製品投入要求
+ANB W04.2                ; 高温槽製品投入完了
+@INC D5500               ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+LD M6098                 ; Hi_ﾃﾞｰﾀ移動完了
+ANB X3621                ; Hi_Sup_RB_RUN
+ANB X3653                ; Hi_RB_ﾜｰｸ無NG完了(819)
+ANB X3654                ; Hi_RB_ﾜｰｸ有NG完了(820)
+ANB X3655                ; Hi_RB_高温槽取出完了(821)
+ANB X3656                ; Hi_RB_高温槽給材完了(822)
+ANB X3657                ; Hi_RB_ﾜｰｸﾃﾞｰﾀ無完了(823)
+@INC D5500               ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+;給材数判定
+LD M6099                 ; Hi_給材数判定
+MPS
+LD= D5556 K1             ; Hi_RB給徐材選択ﾌﾗｸﾞ
+AND<= D5551 K3           ; Hi#1_給材ｶｳﾝﾀ
+LD= D5556 K2             ; Hi_RB給徐材選択ﾌﾗｸﾞ
+AND<= D5553 K3           ; Hi#2_給材ｶｳﾝﾀ
+ORL
+ANL
+@MOV K101 D5500          ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+MPP
+LD= D5556 K1             ; Hi_RB給徐材選択ﾌﾗｸﾞ
+AND> D5551 K3            ; Hi#1_給材ｶｳﾝﾀ
+LD= D5556 K2             ; Hi_RB給徐材選択ﾌﾗｸﾞ
+AND> D5553 K3            ; Hi#2_給材ｶｳﾝﾀ
+ORL
+ANL
+@INC D5500               ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+LD M6100                 ; Hi_給材完了
+LD= D5556 K1             ; Hi_RB給徐材選択ﾌﾗｸﾞ
+AND M6202                ; Hi#1_給材完了ﾌﾗｸﾞ
+LD= D5556 K2             ; Hi_RB給徐材選択ﾌﾗｸﾞ
+AND M6212                ; Hi#2_給材完了ﾌﾗｸﾞ
+ORL
+ANL
+@INC D5500               ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+;給材中OFF･給材完了
+LD M6101                 ; Hi_給材中OFF
+LD= D5556 K1             ; Hi_RB給徐材選択ﾌﾗｸﾞ
+ANB M6200                ; Hi#1給徐材中ﾌﾗｸﾞ
+LD= D5556 K2             ; Hi_RB給徐材選択ﾌﾗｸﾞ
+ANB M6210                ; Hi#2給徐材中ﾌﾗｸﾞ
+ORL
+ANL
+@MOV K149 D5500          ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+;ｻｲｸﾙ停止処理
+LD M56                   ; 自動起動停止指令(ｻｲｸﾙ停止)
+AND CR2003               ; 常時OFF
+MOV K148 D5500           ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+;ｻｲｸﾙ終了
+;1Cycle End
+LD CR2003                ; 常時OFF
+OR M6148                 ; ﾕﾆｯﾄ10ｻｲｸﾙ停止処理
+@MOV K149 D5500          ; ﾕﾆｯﾄ10-1自動運転ｽﾃｯﾌﾟ
+;<h1/>/動作条件ﾌﾗｸﾞ
+;各種ﾌﾗｸﾞ
+;Other Flag
+LD M6485                 ; U10_起動中
+ANB M6050                ; U10_S50_RB_NG受取位置到着
+ANB X3653                ; Hi_RB_ﾜｰｸ無NG完了(819)
+ANB X3654                ; Hi_RB_ﾜｰｸ有NG完了(820)
+ANB X3652                ; Hi_RB_ﾜｰｸ無正常完了(818)
+ANB X3658                ; Hi_RB ﾁｬｯｸNG(824)
+ANB M8075                ; Hi_ST1-5 無効予約ｽﾃｰｼﾞ有ﾌﾗｸﾞ
+INV
+MOV K0 D5600             ; ﾜｰｸ有取出中(検査搬送抑制ﾌﾗｸﾞ)
+LDB M6012                ; U10_S12_取出ﾃﾞｰﾀｾｯﾄ
+INV
+AND= D5556 K1            ; Hi_RB給徐材選択ﾌﾗｸﾞ
+OR M6200                 ; Hi#1給徐材中ﾌﾗｸﾞ
+ANB M6066                ; U10_S66_給材待ちﾀｲﾑｱｳﾄ
+ANB M6101                ; Hi_給材中OFF
+AND M6485                ; U10_起動中
+OUT M6200                ; Hi#1給徐材中ﾌﾗｸﾞ
+LDB M6041                ; U10_S41_全徐材確認1､徐材完了Flg
+ANB M6086                ; 全徐材確認2､徐材完了ﾌﾗｸﾞｾｯﾄ
+INV
+AND= D5556 K1            ; Hi_RB給徐材選択ﾌﾗｸﾞ
+OR M6201                 ; Hi#1_徐材完了ﾌﾗｸﾞ
+ANB M6503                ; Hi#1_ﾃｰﾌﾞﾙ回転確認
+AND M6485                ; U10_起動中
+OUT M6201                ; Hi#1_徐材完了ﾌﾗｸﾞ
+LDB M6100                ; Hi_給材完了
+ANB M6066                ; U10_S66_給材待ちﾀｲﾑｱｳﾄ
+INV
+AND= D5556 K1            ; Hi_RB給徐材選択ﾌﾗｸﾞ
+OR M6202                 ; Hi#1_給材完了ﾌﾗｸﾞ
+ANB M6503                ; Hi#1_ﾃｰﾌﾞﾙ回転確認
+AND M6485                ; U10_起動中
+OUT M6202                ; Hi#1_給材完了ﾌﾗｸﾞ
+;/
+LDB M6012                ; U10_S12_取出ﾃﾞｰﾀｾｯﾄ
+INV
+AND= D5556 K2            ; Hi_RB給徐材選択ﾌﾗｸﾞ
+OR M6210                 ; Hi#2給徐材中ﾌﾗｸﾞ
+ANB M6066                ; U10_S66_給材待ちﾀｲﾑｱｳﾄ
+ANB M6101                ; Hi_給材中OFF
+AND M6485                ; U10_起動中
+OUT M6210                ; Hi#2給徐材中ﾌﾗｸﾞ
+LDB M6041                ; U10_S41_全徐材確認1､徐材完了Flg
+ANB M6086                ; 全徐材確認2､徐材完了ﾌﾗｸﾞｾｯﾄ
+INV
+AND= D5556 K2            ; Hi_RB給徐材選択ﾌﾗｸﾞ
+OR M6211                 ; Hi#2_徐材完了ﾌﾗｸﾞ
+ANB M7003                ; Hi#2_ﾃｰﾌﾞﾙ回転確認
+AND M6485                ; U10_起動中
+OUT M6211                ; Hi#2_徐材完了ﾌﾗｸﾞ
+LDB M6100                ; Hi_給材完了
+ANB M6066                ; U10_S66_給材待ちﾀｲﾑｱｳﾄ
+INV
+AND= D5556 K2            ; Hi_RB給徐材選択ﾌﾗｸﾞ
+OR M6212                 ; Hi#2_給材完了ﾌﾗｸﾞ
+ANB M7003                ; Hi#2_ﾃｰﾌﾞﾙ回転確認
+AND M6485                ; U10_起動中
+OUT M6212                ; Hi#2_給材完了ﾌﾗｸﾞ
+LD X365F                 ; Hi_RB_確認動作完了(831)
+AND= D5521 K1            ; Hi_搬送RB給徐材槽 No.
+OR M6240                 ; Hi#1_初期起動ﾜｰｸ確認済ﾌﾗｸﾞ
+AND M41                  ; ﾕﾆｯﾄ_起動中
+OUT M6240                ; Hi#1_初期起動ﾜｰｸ確認済ﾌﾗｸﾞ
+LD X365F                 ; Hi_RB_確認動作完了(831)
+AND= D5521 K2            ; Hi_搬送RB給徐材槽 No.
+OR M6241                 ; Hi#2_初期起動ﾜｰｸ確認済ﾌﾗｸﾞ
+AND M41                  ; ﾕﾆｯﾄ_起動中
+OUT M6241                ; Hi#2_初期起動ﾜｰｸ確認済ﾌﾗｸﾞ
+LD M6139                 ; Hi_初期起動完了
+OR M6245                 ; Hi_Sup_RB_初期起動完了ﾌﾗｸﾞ
+AND M41                  ; ﾕﾆｯﾄ_起動中
+OUT M6245                ; Hi_Sup_RB_初期起動完了ﾌﾗｸﾞ
+;<h1/>■工程処理 PLC→PC I/F
+;各種要求･選択
+LDB M6091                ; Hi_取出完了ﾃﾞｰﾀ移動
+INV
+OUT W0104.0              ; 高温搬送RB取出要求
+LDB M6096                ; Hi_給材完了ﾃﾞｰﾀ移動
+INV
+OUT W0104.2              ; 高温槽製品投入要求
+LDB M6013                ; U10_S13_槽内ﾜｰｸ情報要求
+INV
+OUT W0104.4              ; 高温槽内取出製品情報要求
+LDB M6037                ; U10_S37_取出完了確認
+INV
+OUT W0104.6              ; 高温槽製品取出要求
+LDB M6046                ; U10_S46_高温検査前ｽｷｬﾅ読込
+INV
+OUT W0104.10             ; 高温検査前ﾜｰｸ読込要求
+LDB M6053                ; U10_S53_ﾜｰｸ取出確認､ﾃﾞｰﾀｸﾘｱ要求
+INV
+OUT W0104.14             ; 高温槽投入RBﾜｰｸﾃﾞｰﾀｸﾘｱ要求
+LD CR2002                ; 常時ON
+MOV D18808 W014A         ; 高温槽1ﾃｰﾌﾞﾙNo.  高温槽1Position
+MOV D18812 W014B         ; 高温槽2ﾃｰﾌﾞﾙNo.  高温槽2Position
+;<h1/>■原点復帰回路
+;□□□□□□□□□□□□□□□
+;□　　 UNIT10原点復帰回路 　□
+;□□□□□□□□□□□□□□□
+LD CR2002                ; 常時ON
+ZRES M6250 M6299         ; 原点復帰開始  ﾕﾆｯﾄ10原点終了
+LDB M6484                ; U10_原点復帰中
+MOV K0 D5510             ; ﾕﾆｯﾄ10原点復帰ｽﾃｯﾌﾟ
+LD M6484                 ; U10_原点復帰中
+MOV D5510 Z1             ; ﾕﾆｯﾄ10原点復帰ｽﾃｯﾌﾟ
+OUT M6250:Z1             ; 原点復帰開始
+;原点復帰ｻｲｸﾙ監視
+LD M6484                 ; U10_原点復帰中
+TMR K1000 K300           ; UNIT10原点復帰ﾀｲﾑｱｳﾄ
+;原点復帰ステップ開始
+LD M6250                 ; 原点復帰開始
+AND M128                 ; 高温検査安全扉正常
+@INC D5510               ; ﾕﾆｯﾄ10原点復帰ｽﾃｯﾌﾟ
+;Hi_RBﾜｰｸ有無確認
+LD M6251                 ; Hi_RBﾜｰｸ有無確認
+AND M128                 ; 高温検査安全扉正常
+MPS
+ANB X131C                ; 高温給徐材RBﾁｬｯｸ開端
+@INC D5510               ; ﾕﾆｯﾄ10原点復帰ｽﾃｯﾌﾟ
+MPP
+AND X131C                ; 高温給徐材RBﾁｬｯｸ開端
+@MOV K3 D5510            ; ﾕﾆｯﾄ10原点復帰ｽﾃｯﾌﾟ
+LD M6252                 ; Hi_RBﾜｰｸ取出要求
+AND M128                 ; 高温検査安全扉正常
+AND B0142                ; Hi_Sup_RB原点復帰ﾜｰｸ有取出要求
+MOV K0 D5510             ; ﾕﾆｯﾄ10原点復帰ｽﾃｯﾌﾟ
+;ﾜｰｸ無確認 RB設定初期化
+LD M6253                 ; ﾃﾞｰﾀ初期化
+AND M128                 ; 高温検査安全扉正常
+ANB M6491                ; U10_ERR発生
+@FMOV K0 D16500 K100
+@MOV K0 D5530            ; Hi_RB_ﾛﾎﾞｯﾄ制御ﾃﾞｰﾀ1
+@MOV K0 D5531            ; Hi_RB_ﾛﾎﾞｯﾄｺﾏﾝﾄﾞﾃﾞｰﾀ
+MPS
+@MOV K0 D5532            ; Hi_RB_ﾛﾎﾞｯﾄﾌﾟﾛｸﾞﾗﾑ番号
+MPP
+LD= D5530 K0             ; Hi_RB_ﾛﾎﾞｯﾄ制御ﾃﾞｰﾀ1
+AND= D5531 K0            ; Hi_RB_ﾛﾎﾞｯﾄｺﾏﾝﾄﾞﾃﾞｰﾀ
+AND= D5532 K0            ; Hi_RB_ﾛﾎﾞｯﾄﾌﾟﾛｸﾞﾗﾑ番号
+ANL
+@INC D5510               ; ﾕﾆｯﾄ10原点復帰ｽﾃｯﾌﾟ
+;原点復帰開始
+LD M6254                 ; ﾃﾞｰﾀ初期化確認
+AND M128                 ; 高温検査安全扉正常
+ANB M6491                ; U10_ERR発生
+@MOV K2 D5530            ; Hi_RB_ﾛﾎﾞｯﾄ制御ﾃﾞｰﾀ1
+@MOV K1 D5531            ; Hi_RB_ﾛﾎﾞｯﾄｺﾏﾝﾄﾞﾃﾞｰﾀ
+MPS
+@MOV K50 D5532           ; Hi_RB_ﾛﾎﾞｯﾄﾌﾟﾛｸﾞﾗﾑ番号
+MPP
+LD= D5530 K2             ; Hi_RB_ﾛﾎﾞｯﾄ制御ﾃﾞｰﾀ1
+AND= D5531 K1            ; Hi_RB_ﾛﾎﾞｯﾄｺﾏﾝﾄﾞﾃﾞｰﾀ
+AND= D5532 K50           ; Hi_RB_ﾛﾎﾞｯﾄﾌﾟﾛｸﾞﾗﾑ番号
+ANL
+@INC D5510               ; ﾕﾆｯﾄ10原点復帰ｽﾃｯﾌﾟ
+LD M6255                 ; 原点復帰起動
+AND X3621                ; Hi_Sup_RB_RUN
+@INC D5510               ; ﾕﾆｯﾄ10原点復帰ｽﾃｯﾌﾟ
+LD M6256                 ; 原点復帰起動確認
+ANB X3621                ; Hi_Sup_RB_RUN
+@INC D5510               ; ﾕﾆｯﾄ10原点復帰ｽﾃｯﾌﾟ
+;原点復帰終了
+LD M6257                 ; 原点復帰完了
+AND M6480                ; U10_原点
+@MOV K48 D5510           ; ﾕﾆｯﾄ10原点復帰ｽﾃｯﾌﾟ
+LD M6298                 ; ﾕﾆｯﾄ10原点確認
+ANB M82                  ; 原点復帰開始
+@MOV K49 D5510           ; ﾕﾆｯﾄ10原点復帰ｽﾃｯﾌﾟ
+;<h1/>■手動回路
+;□□□□□□□□□□□□□□□
+;□　　 　UNIT10手動回路 　　□
+;□□□□□□□□□□□□□□□
+LD M31                   ; 手動ﾓｰﾄﾞ
+AND M32                  ; ﾒｲﾝ手動操作可能条件
+ANB M6485                ; U10_起動中
+ANB M6484                ; U10_原点復帰中
+MC
+;<h1/>/手動動作選択
+;給徐材槽選択
+LDB CR2003               ; 常時OFF
+ANB X3621                ; Hi_Sup_RB_RUN
+ANB M6321                ; Hi_取出1ｻｲｸﾙ(手動)
+ANB M6341                ; Hi_供給1ｻｲｸﾙ(手動)
+OUT M6300                ; Hi_槽選択可
+LDP B11A0                ; UNIT10-1-1 TP-PB
+AND M6300                ; Hi_槽選択可
+OR M6301                 ; Hi_槽1選択
+ANPB M6302               ; Hi_槽2選択
+AND X1843                ; Hi#1_ﾏｽﾀ搬送運転中
+OUT M6301                ; Hi_槽1選択
+LDP B11A1                ; UNIT10-1-2 TP-PB
+AND M6300                ; Hi_槽選択可
+OR M6302                 ; Hi_槽2選択
+ANPB M6301               ; Hi_槽1選択
+AND X1863                ; Hi#2_ﾏｽﾀ搬送運転中
+OUT M6302                ; Hi_槽2選択
+;槽給徐材段選択
+LDB CR2003               ; 常時OFF
+ANB X3621                ; Hi_Sup_RB_RUN
+ANB M6321                ; Hi_取出1ｻｲｸﾙ(手動)
+ANB M6341                ; Hi_供給1ｻｲｸﾙ(手動)
+OUT M6304                ; Hi_槽段選択可
+LDP B11A2                ; UNIT10-1-3 TP-PB
+AND M6304                ; Hi_槽段選択可
+OR M6305                 ; Hi_槽上段選択
+ANPB M6306               ; Hi_槽中段選択
+ANPB M6307               ; Hi_槽下段選択
+OUT M6305                ; Hi_槽上段選択
+LDP B11A3                ; UNIT10-1-4 TP-PB
+AND M6304                ; Hi_槽段選択可
+OR M6306                 ; Hi_槽中段選択
+ANPB M6305               ; Hi_槽上段選択
+ANPB M6307               ; Hi_槽下段選択
+OUT M6306                ; Hi_槽中段選択
+LDP B11A4                ; UNIT10-1-5 TP-PB
+AND M6304                ; Hi_槽段選択可
+OR M6307                 ; Hi_槽下段選択
+ANPB M6305               ; Hi_槽上段選択
+ANPB M6306               ; Hi_槽中段選択
+OUT M6307                ; Hi_槽下段選択
+;<h1/>/ﾁｬｯｸ開閉
+LDB M6321                ; Hi_取出1ｻｲｸﾙ(手動)
+ANB M6341                ; Hi_供給1ｻｲｸﾙ(手動)
+ANB X3621                ; Hi_Sup_RB_RUN
+OUT M6310                ; Hi_RBﾁｬｯｸ閉可
+LDPB X3660               ; Hi_RB_ﾁｬｯｸ閉(832)
+ANPB B11A6               ; UNIT10-1-7 TP-PB
+INV
+AND M6310                ; Hi_RBﾁｬｯｸ閉可
+OR M6311                 ; Hi_RBﾁｬｯｸ閉
+ANPB M6313               ; Hi_RBﾁｬｯｸ開
+OUT M6311                ; Hi_RBﾁｬｯｸ閉
+LDB M6321                ; Hi_取出1ｻｲｸﾙ(手動)
+ANB M6341                ; Hi_供給1ｻｲｸﾙ(手動)
+ANB X3621                ; Hi_Sup_RB_RUN
+OUT M6312                ; Hi_RBﾁｬｯｸ開可
+LDPB X3661               ; Hi_RB_ﾁｬｯｸ開(833)
+ANPB B11A7               ; UNIT10-1-8 TP-PB
+INV
+AND M6310                ; Hi_RBﾁｬｯｸ閉可
+OR M6313                 ; Hi_RBﾁｬｯｸ開
+ANPB M6311               ; Hi_RBﾁｬｯｸ閉
+OUT M6313                ; Hi_RBﾁｬｯｸ開
+;<h1/>/高温槽取出1ｻｲｸﾙ
+;槽取出1ｻｲｸﾙ(PRO_No1.)
+LD L1308                 ; ﾊﾝﾄﾞ1投入部ﾜｰｸ受取り動作完了
+LD T1330                 ; ﾜｰｸHi搬送ﾊﾝﾄﾞ旋回端
+AND T1332                ; ﾊﾝﾄﾞ1ﾁｬｯｸ開端
+LD T1331                 ; ﾜｰｸHi搬送ﾊﾝﾄﾞ旋回戻り端
+AND T1333                ; ﾊﾝﾄﾞ2ﾁｬｯｸ開端
+ORL
+ANL
+LD M6301                 ; Hi_槽1選択
+ANB M6302                ; Hi_槽2選択
+LD M6302                 ; Hi_槽2選択
+ANB M6301                ; Hi_槽1選択
+ORL
+ANL
+LD M6305                 ; Hi_槽上段選択
+ANB M6306                ; Hi_槽中段選択
+ANB M6307                ; Hi_槽下段選択
+LD M6306                 ; Hi_槽中段選択
+ANB M6305                ; Hi_槽上段選択
+ANB M6307                ; Hi_槽下段選択
+ORL
+LD M6307                 ; Hi_槽下段選択
+ANB M6305                ; Hi_槽上段選択
+ANB M6306                ; Hi_槽中段選択
+ORL
+ANL
+ANB X3621                ; Hi_Sup_RB_RUN
+AND X3623                ; Hi_Sup_RB_SV_ON
+AND X3624                ; Hi_Sup_RB_Ready
+AND X3625                ; Hi_Sup_RB_Auto
+AND X3626                ; Hi_Sup_RB_EXT
+ANB X3628                ; Hi_Sup_RB_Worning
+AND X3645                ; Hi_Sup_RB_ORG(805)
+ANB M6341                ; Hi_供給1ｻｲｸﾙ(手動)
+AND T1011                ; 高温給徐材RBﾁｬｯｸ開端
+ANB M8100                ; Hi搬送XY位置移動
+AND CR2003               ; 常時OFF
+OUT M6320                ; Hi_取出1ｻｲｸﾙ可
+LDP B11A8                ; UNIT10-1-9 TP-PB
+AND M6320                ; Hi_取出1ｻｲｸﾙ可
+OR M6321                 ; Hi_取出1ｻｲｸﾙ(手動)
+ANB M6483                ; U10_起動OFF
+ANB M6336                ; Hi_取出終了
+OUT M6321                ; Hi_取出1ｻｲｸﾙ(手動)
+;取出ﾃﾞｰﾀ転送
+LD M6321                 ; Hi_取出1ｻｲｸﾙ(手動)
+MPS
+LD M6301                 ; Hi_槽1選択
+ANB M6302                ; Hi_槽2選択
+ANL
+@MOV K1 D5521            ; Hi_搬送RB給徐材槽 No.
+MRD
+LD M6302                 ; Hi_槽2選択
+ANB M6301                ; Hi_槽1選択
+ANL
+@MOV K2 D5521            ; Hi_搬送RB給徐材槽 No.
+MRD
+LD M6305                 ; Hi_槽上段選択
+ANB M6306                ; Hi_槽中段選択
+ANB M6307                ; Hi_槽下段選択
+ANL
+@MOV K1 D5522            ; Hi_搬送RB給徐材段 No.
+MRD
+LD M6306                 ; Hi_槽中段選択
+ANB M6305                ; Hi_槽上段選択
+ANB M6307                ; Hi_槽下段選択
+ANL
+@MOV K2 D5522            ; Hi_搬送RB給徐材段 No.
+MPP
+LD M6307                 ; Hi_槽下段選択
+ANB M6305                ; Hi_槽上段選択
+ANB M6306                ; Hi_槽中段選択
+ANL
+@MOV K3 D5522            ; Hi_搬送RB給徐材段 No.
+LD M6321                 ; Hi_取出1ｻｲｸﾙ(手動)
+OR M6322                 ; Hi_取出ﾃﾞｰﾀｾｯﾄ
+AND M6321                ; Hi_取出1ｻｲｸﾙ(手動)
+MPS
+@MOV D5580 D5520         ; Hi_RB手動取出機種No.  Hi_搬送RB Type No.
+MPP
+LD= D5520 D5580          ; Hi_搬送RB Type No.  Hi_RB手動取出機種No.
+LD M6301                 ; Hi_槽1選択
+AND= D5521 K1            ; Hi_搬送RB給徐材槽 No.
+LD M6302                 ; Hi_槽2選択
+AND= D5521 K2            ; Hi_搬送RB給徐材槽 No.
+ORL
+ANL
+LD M6305                 ; Hi_槽上段選択
+AND= D5522 K1            ; Hi_搬送RB給徐材段 No.
+LD M6306                 ; Hi_槽中段選択
+AND= D5522 K2            ; Hi_搬送RB給徐材段 No.
+ORL
+LD M6307                 ; Hi_槽下段選択
+AND= D5522 K3            ; Hi_搬送RB給徐材段 No.
+ORL
+ANL
+ANL
+OUT M6322                ; Hi_取出ﾃﾞｰﾀｾｯﾄ
+;取出動作開始起動
+LDP M6322                ; Hi_取出ﾃﾞｰﾀｾｯﾄ
+OR M6323                 ; Hi_取出PRG.ｽﾀｰﾄ
+AND M6321                ; Hi_取出1ｻｲｸﾙ(手動)
+ANB M6324                ; Hi_動作開始確認
+@MOV K2 D5530            ; Hi_RB_ﾛﾎﾞｯﾄ制御ﾃﾞｰﾀ1
+@MOV K1 D5531            ; Hi_RB_ﾛﾎﾞｯﾄｺﾏﾝﾄﾞﾃﾞｰﾀ
+MPS
+@MOV K1 D5532            ; Hi_RB_ﾛﾎﾞｯﾄﾌﾟﾛｸﾞﾗﾑ番号
+MPP
+LD= D5530 K2             ; Hi_RB_ﾛﾎﾞｯﾄ制御ﾃﾞｰﾀ1
+AND= D5531 K1            ; Hi_RB_ﾛﾎﾞｯﾄｺﾏﾝﾄﾞﾃﾞｰﾀ
+AND= D5532 K1            ; Hi_RB_ﾛﾎﾞｯﾄﾌﾟﾛｸﾞﾗﾑ番号
+ANL
+OUT M6323                ; Hi_取出PRG.ｽﾀｰﾄ
+;ﾛﾎﾞｯﾄ起動､起動確認
+LD M6323                 ; Hi_取出PRG.ｽﾀｰﾄ
+AND X3621                ; Hi_Sup_RB_RUN
+AND X3625                ; Hi_Sup_RB_Auto
+OR M6324                 ; Hi_動作開始確認
+AND M6321                ; Hi_取出1ｻｲｸﾙ(手動)
+ANB M6325                ; Hi_ﾜｰｸ無し確認
+OUT M6324                ; Hi_動作開始確認
+;ﾜｰｸ無し､終了処理へ
+LD M6324                 ; Hi_動作開始確認
+LD X3652                 ; Hi_RB_ﾜｰｸ無正常完了(818)
+OR X3653                 ; Hi_RB_ﾜｰｸ無NG完了(819)
+OR X3654                 ; Hi_RB_ﾜｰｸ有NG完了(820)
+OR X3658                 ; Hi_RB ﾁｬｯｸNG(824)
+ANL
+OR M6325                 ; Hi_ﾜｰｸ無し確認
+AND M6321                ; Hi_取出1ｻｲｸﾙ(手動)
+ANB M6326                ; Hi_ﾜｰｸ無し完了OFF確認
+OUT M6325                ; Hi_ﾜｰｸ無し確認
+LD M6325                 ; Hi_ﾜｰｸ無し確認
+AND Y4658                ; Hi_RB_信号受信Ans(568)
+ANB X3652                ; Hi_RB_ﾜｰｸ無正常完了(818)
+ANB X3653                ; Hi_RB_ﾜｰｸ無NG完了(819)
+ANB X3654                ; Hi_RB_ﾜｰｸ有NG完了(820)
+ANB X3658                ; Hi_RB ﾁｬｯｸNG(824)
+OR M6326                 ; Hi_ﾜｰｸ無し完了OFF確認
+AND M6321                ; Hi_取出1ｻｲｸﾙ(手動)
+ANB M6336                ; Hi_取出終了
+OUT M6326                ; Hi_ﾜｰｸ無し完了OFF確認
+;取出確認
+LD M6324                 ; Hi_動作開始確認
+AND X3655                ; Hi_RB_高温槽取出完了(821)
+OR M6328                 ; Hi_ﾜｰｸ取出完了
+AND M6321                ; Hi_取出1ｻｲｸﾙ(手動)
+ANB M6329                ; Hi_取出完了OFF確認
+OUT M6328                ; Hi_ﾜｰｸ取出完了
+;ﾜｰｸ有り取出→高温検査給材
+LD M6328                 ; Hi_ﾜｰｸ取出完了
+AND Y4658                ; Hi_RB_信号受信Ans(568)
+ANB X3655                ; Hi_RB_高温槽取出完了(821)
+ANB X3650                ; Hi_RB_Lo#1侵入中(816)
+ANB X3651                ; Hi_RB_Lo#2侵入中(817)
+OR M6329                 ; Hi_取出完了OFF確認
+AND M6321                ; Hi_取出1ｻｲｸﾙ(手動)
+ANB M6330                ; Hi_読取OK (手動1ｻｲｸﾙﾀﾞﾐｰ)
+OUT M6329                ; Hi_取出完了OFF確認
+LD M6329                 ; Hi_取出完了OFF確認
+AND X364A                ; Hi_RB_ｽｷｬﾅ読取要求(810)
+OR M6330                 ; Hi_読取OK (手動1ｻｲｸﾙﾀﾞﾐｰ)
+AND M6321                ; Hi_取出1ｻｲｸﾙ(手動)
+ANB M6331                ; Hi_読取要求OFF確認
+OUT M6330                ; Hi_読取OK (手動1ｻｲｸﾙﾀﾞﾐｰ)
+LD M6330                 ; Hi_読取OK (手動1ｻｲｸﾙﾀﾞﾐｰ)
+AND Y466B                ; Hi_RB_検査RB受渡可能(587)
+ANB X364A                ; Hi_RB_ｽｷｬﾅ読取要求(810)
+OR M6331                 ; Hi_読取要求OFF確認
+AND M6321                ; Hi_取出1ｻｲｸﾙ(手動)
+ANB M6332                ; Hi_低温検査搬送ｸﾗﾝﾌﾟ閉
+OUT M6331                ; Hi_読取要求OFF確認
+LD M6331                 ; Hi_読取要求OFF確認
+AND X3643                ; Hi_RB_検査RB受取要求(803)
+OR M6332                 ; Hi_低温検査搬送ｸﾗﾝﾌﾟ閉
+AND M6321                ; Hi_取出1ｻｲｸﾙ(手動)
+ANB M6333                ; Hi_検査RB受取確認(手動1ｻｲｸﾙﾀﾞﾐｰ)
+OUT M6332                ; Hi_低温検査搬送ｸﾗﾝﾌﾟ閉
+LD M6332                 ; Hi_低温検査搬送ｸﾗﾝﾌﾟ閉
+LD T1330                 ; ﾜｰｸHi搬送ﾊﾝﾄﾞ旋回端
+AND T1320                ; ﾊﾝﾄﾞ1ﾜｰｸﾁｬｯｸ確認ONﾀｲﾏ
+AND Y242B                ; Hi搬送ﾊﾝﾄﾞ1_ﾁｬｯｸ閉
+LD T1331                 ; ﾜｰｸHi搬送ﾊﾝﾄﾞ旋回戻り端
+AND T1322                ; ﾊﾝﾄﾞ2ﾜｰｸﾁｬｯｸ確認ONﾀｲﾏ
+AND Y242D                ; Hi搬送ﾊﾝﾄﾞ2_ﾁｬｯｸ閉
+ORL
+ANL
+OR M6333                 ; Hi_検査RB受取確認(手動1ｻｲｸﾙﾀﾞﾐｰ)
+AND M6321                ; Hi_取出1ｻｲｸﾙ(手動)
+ANB M6334                ; Hi_受渡完了確認(1ｻｲｸﾙﾀﾞﾐｰ)
+OUT M6333                ; Hi_検査RB受取確認(手動1ｻｲｸﾙﾀﾞﾐｰ)
+LD M6333                 ; Hi_検査RB受取確認(手動1ｻｲｸﾙﾀﾞﾐｰ)
+ANB X3643                ; Hi_RB_検査RB受取要求(803)
+AND X364B                ; Hi_RB_検査RB受渡完了(811)
+OR M6334                 ; Hi_受渡完了確認(1ｻｲｸﾙﾀﾞﾐｰ)
+AND M6321                ; Hi_取出1ｻｲｸﾙ(手動)
+ANB M6335                ; Hi_検査給材完了OFF確認
+OUT M6334                ; Hi_受渡完了確認(1ｻｲｸﾙﾀﾞﾐｰ)
+LD M6334                 ; Hi_受渡完了確認(1ｻｲｸﾙﾀﾞﾐｰ)
+AND Y4658                ; Hi_RB_信号受信Ans(568)
+ANB X364B                ; Hi_RB_検査RB受渡完了(811)
+OR M6335                 ; Hi_検査給材完了OFF確認
+ANB M6336                ; Hi_取出終了
+OUT M6335                ; Hi_検査給材完了OFF確認
+;取出1ｻｲｸﾙ完了
+LD M6326                 ; Hi_ﾜｰｸ無し完了OFF確認
+OR M6335                 ; Hi_検査給材完了OFF確認
+ANB X3621                ; Hi_Sup_RB_RUN
+ANB X3643                ; Hi_RB_検査RB受取要求(803)
+ANB X3653                ; Hi_RB_ﾜｰｸ無NG完了(819)
+ANB X3654                ; Hi_RB_ﾜｰｸ有NG完了(820)
+ANB X3655                ; Hi_RB_高温槽取出完了(821)
+ANB X3656                ; Hi_RB_高温槽給材完了(822)
+ANB X3657                ; Hi_RB_ﾜｰｸﾃﾞｰﾀ無完了(823)
+OR M6336                 ; Hi_取出終了
+AND M6321                ; Hi_取出1ｻｲｸﾙ(手動)
+OUT M6336                ; Hi_取出終了
+;<h1/>/高温槽給材1ｻｲｸﾙ
+;槽供給1ｻｲｸﾙ(PRO_No2.)
+LD M5973                 ; RB8_ﾜｰｸ取出位置
+AND X1341                ; 高温槽搬送ｼｬﾄﾙ取出ﾜｰｸ確認
+LD M6301                 ; Hi_槽1選択
+ANB M6302                ; Hi_槽2選択
+LD M6302                 ; Hi_槽2選択
+ANB M6301                ; Hi_槽1選択
+ORL
+ANL
+LD M6305                 ; Hi_槽上段選択
+ANB M6306                ; Hi_槽中段選択
+ANB M6307                ; Hi_槽下段選択
+LD M6306                 ; Hi_槽中段選択
+ANB M6305                ; Hi_槽上段選択
+ANB M6307                ; Hi_槽下段選択
+ORL
+LD M6307                 ; Hi_槽下段選択
+ANB M6305                ; Hi_槽上段選択
+ANB M6306                ; Hi_槽中段選択
+ORL
+ANL
+ANB X3621                ; Hi_Sup_RB_RUN
+AND X3623                ; Hi_Sup_RB_SV_ON
+AND X3623                ; Hi_Sup_RB_SV_ON
+AND X3623                ; Hi_Sup_RB_SV_ON
+AND X3625                ; Hi_Sup_RB_Auto
+AND X3626                ; Hi_Sup_RB_EXT
+ANB X3628                ; Hi_Sup_RB_Worning
+AND X3645                ; Hi_Sup_RB_ORG(805)
+ANB M6321                ; Hi_取出1ｻｲｸﾙ(手動)
+AND T1011                ; 高温給徐材RBﾁｬｯｸ開端
+OUT M6340                ; Hi_供給1ｻｲｸﾙ可
+LDP B11A9                ; UNIT10-1-10 TP-PB
+AND M6340                ; Hi_供給1ｻｲｸﾙ可
+OR M6341                 ; Hi_供給1ｻｲｸﾙ(手動)
+ANB M6483                ; U10_起動OFF
+ANB M6348                ; Hi_槽内ﾜｰｸ有NG(終了)
+ANB M6352                ; Hi_給材終了
+AND T1011                ; 高温給徐材RBﾁｬｯｸ開端
+OUT M6341                ; Hi_供給1ｻｲｸﾙ(手動)
+;取出ﾃﾞｰﾀ転送
+LD M6341                 ; Hi_供給1ｻｲｸﾙ(手動)
+MPS
+LD M6301                 ; Hi_槽1選択
+ANB M6302                ; Hi_槽2選択
+ANL
+@MOV K1 D5521            ; Hi_搬送RB給徐材槽 No.
+MRD
+LD M6302                 ; Hi_槽2選択
+ANB M6301                ; Hi_槽1選択
+ANL
+@MOV K2 D5521            ; Hi_搬送RB給徐材槽 No.
+MRD
+LD M6305                 ; Hi_槽上段選択
+ANB M6306                ; Hi_槽中段選択
+ANB M6307                ; Hi_槽下段選択
+ANL
+@MOV K1 D5522            ; Hi_搬送RB給徐材段 No.
+MRD
+LD M6306                 ; Hi_槽中段選択
+ANB M6305                ; Hi_槽上段選択
+ANB M6307                ; Hi_槽下段選択
+ANL
+@MOV K2 D5522            ; Hi_搬送RB給徐材段 No.
+MPP
+LD M6307                 ; Hi_槽下段選択
+ANB M6305                ; Hi_槽上段選択
+ANB M6306                ; Hi_槽中段選択
+ANL
+@MOV K3 D5522            ; Hi_搬送RB給徐材段 No.
+LD M6341                 ; Hi_供給1ｻｲｸﾙ(手動)
+OR M6342                 ; Hi_供給ﾃﾞｰﾀｾｯﾄ
+AND M6341                ; Hi_供給1ｻｲｸﾙ(手動)
+MPS
+@MOV D5580 D5520         ; Hi_RB手動取出機種No.  Hi_搬送RB Type No.
+MPP
+LD= D5520 D5580          ; Hi_搬送RB Type No.  Hi_RB手動取出機種No.
+LD M6301                 ; Hi_槽1選択
+AND= D5521 K1            ; Hi_搬送RB給徐材槽 No.
+LD M6302                 ; Hi_槽2選択
+AND= D5521 K2            ; Hi_搬送RB給徐材槽 No.
+ORL
+ANL
+LD M6305                 ; Hi_槽上段選択
+AND= D5522 K1            ; Hi_搬送RB給徐材段 No.
+LD M6306                 ; Hi_槽中段選択
+AND= D5522 K2            ; Hi_搬送RB給徐材段 No.
+ORL
+LD M6307                 ; Hi_槽下段選択
+AND= D5522 K3            ; Hi_搬送RB給徐材段 No.
+ORL
+ANL
+ANL
+OUT M6342                ; Hi_供給ﾃﾞｰﾀｾｯﾄ
+;供給動作開始起動
+LDP M6342                ; Hi_供給ﾃﾞｰﾀｾｯﾄ
+OR M6343                 ; Hi_供給PRG.ｽﾀｰﾄ
+AND M6341                ; Hi_供給1ｻｲｸﾙ(手動)
+ANB M6344                ; Hi_動作開始確認
+@MOV K2 D5530            ; Hi_RB_ﾛﾎﾞｯﾄ制御ﾃﾞｰﾀ1
+@MOV K1 D5531            ; Hi_RB_ﾛﾎﾞｯﾄｺﾏﾝﾄﾞﾃﾞｰﾀ
+MPS
+@MOV K2 D5532            ; Hi_RB_ﾛﾎﾞｯﾄﾌﾟﾛｸﾞﾗﾑ番号
+MPP
+LD= D5530 K2             ; Hi_RB_ﾛﾎﾞｯﾄ制御ﾃﾞｰﾀ1
+AND= D5531 K1            ; Hi_RB_ﾛﾎﾞｯﾄｺﾏﾝﾄﾞﾃﾞｰﾀ
+AND= D5532 K2            ; Hi_RB_ﾛﾎﾞｯﾄﾌﾟﾛｸﾞﾗﾑ番号
+ANL
+OUT M6343                ; Hi_供給PRG.ｽﾀｰﾄ
+;ﾛﾎﾞｯﾄ起動､起動確認
+LD M6343                 ; Hi_供給PRG.ｽﾀｰﾄ
+AND X3621                ; Hi_Sup_RB_RUN
+AND X3625                ; Hi_Sup_RB_Auto
+OR M6344                 ; Hi_動作開始確認
+AND M6341                ; Hi_供給1ｻｲｸﾙ(手動)
+ANB M6345                ; Hi_給材取出完了
+ANB M6346                ; Hi_槽内ﾜｰｸ有りNG確認
+OUT M6344                ; Hi_動作開始確認
+LD M6344                 ; Hi_動作開始確認
+AND X3641                ; Hi_RB_給材取出完了(801)
+OR M6345                 ; Hi_給材取出完了
+AND M6341                ; Hi_供給1ｻｲｸﾙ(手動)
+ANB M6349                ; Hi_取出完了OFF確認
+OUT M6345                ; Hi_給材取出完了
+LD M6344                 ; Hi_動作開始確認
+LD X3654                 ; Hi_RB_ﾜｰｸ有NG完了(820)
+OR X3658                 ; Hi_RB ﾁｬｯｸNG(824)
+ANL
+OR M6346                 ; Hi_槽内ﾜｰｸ有りNG確認
+AND M6341                ; Hi_供給1ｻｲｸﾙ(手動)
+ANB M6347                ; Hi_槽内ﾜｰｸ有NG_OFF確認
+OUT M6346                ; Hi_槽内ﾜｰｸ有りNG確認
+LD M6346                 ; Hi_槽内ﾜｰｸ有りNG確認
+AND Y4658                ; Hi_RB_信号受信Ans(568)
+ANB X3654                ; Hi_RB_ﾜｰｸ有NG完了(820)
+ANB X3658                ; Hi_RB ﾁｬｯｸNG(824)
+OR M6347                 ; Hi_槽内ﾜｰｸ有NG_OFF確認
+AND M6341                ; Hi_供給1ｻｲｸﾙ(手動)
+ANB M6348                ; Hi_槽内ﾜｰｸ有NG(終了)
+OUT M6347                ; Hi_槽内ﾜｰｸ有NG_OFF確認
+LD M6347                 ; Hi_槽内ﾜｰｸ有NG_OFF確認
+ANB X3621                ; Hi_Sup_RB_RUN
+ANB X3653                ; Hi_RB_ﾜｰｸ無NG完了(819)
+ANB X3654                ; Hi_RB_ﾜｰｸ有NG完了(820)
+ANB X3655                ; Hi_RB_高温槽取出完了(821)
+ANB X3656                ; Hi_RB_高温槽給材完了(822)
+ANB X3657                ; Hi_RB_ﾜｰｸﾃﾞｰﾀ無完了(823)
+OR M6348                 ; Hi_槽内ﾜｰｸ有NG(終了)
+AND M6341                ; Hi_供給1ｻｲｸﾙ(手動)
+ANB M6352                ; Hi_給材終了
+OUT M6348                ; Hi_槽内ﾜｰｸ有NG(終了)
+;高温槽給材完了
+LD M6345                 ; Hi_給材取出完了
+AND Y4658                ; Hi_RB_信号受信Ans(568)
+ANB X3641                ; Hi_RB_給材取出完了(801)
+OR M6349                 ; Hi_取出完了OFF確認
+AND M6341                ; Hi_供給1ｻｲｸﾙ(手動)
+ANB M6350                ; Hi_給材完了確認
+OUT M6349                ; Hi_取出完了OFF確認
+LD M6349                 ; Hi_取出完了OFF確認
+AND X3656                ; Hi_RB_高温槽給材完了(822)
+OR M6350                 ; Hi_給材完了確認
+AND M6341                ; Hi_供給1ｻｲｸﾙ(手動)
+ANB M6351                ; Hi_給材完了OFF確認
+OUT M6350                ; Hi_給材完了確認
+LD M6350                 ; Hi_給材完了確認
+AND Y4658                ; Hi_RB_信号受信Ans(568)
+ANB X3656                ; Hi_RB_高温槽給材完了(822)
+OR M6351                 ; Hi_給材完了OFF確認
+AND M6341                ; Hi_供給1ｻｲｸﾙ(手動)
+ANB M6352                ; Hi_給材終了
+OUT M6351                ; Hi_給材完了OFF確認
+;取出1ｻｲｸﾙ完了
+LD M6348                 ; Hi_槽内ﾜｰｸ有NG(終了)
+OR M6351                 ; Hi_給材完了OFF確認
+ANB X3621                ; Hi_Sup_RB_RUN
+ANB X3653                ; Hi_RB_ﾜｰｸ無NG完了(819)
+ANB X3654                ; Hi_RB_ﾜｰｸ有NG完了(820)
+ANB X3655                ; Hi_RB_高温槽取出完了(821)
+ANB X3656                ; Hi_RB_高温槽給材完了(822)
+ANB X3657                ; Hi_RB_ﾜｰｸﾃﾞｰﾀ無完了(823)
+OR M6352                 ; Hi_給材終了
+AND M6341                ; Hi_供給1ｻｲｸﾙ(手動)
+OUT M6352                ; Hi_給材終了
+MCR
+;ROBOT AUTO/MANU
+LDP B11AF                ; UNIT10-1-16 TP-PB
+AND M6360                ; Hi_MANUAL_ON
+OUT M6361                ; Hi_MANUAL_OFF
+LDP B11AF                ; UNIT10-1-16 TP-PB
+ANB M6360                ; Hi_MANUAL_ON
+OR M6360                 ; Hi_MANUAL_ON
+ANB M6361                ; Hi_MANUAL_OFF
+AND M31                  ; 手動ﾓｰﾄﾞ
+OUT M6360                ; Hi_MANUAL_ON
+;<h1/>/搬送RB補助回路
+;ﾛﾎﾞｯﾄ初期準備
+LDB X3628                ; Hi_Sup_RB_Worning
+LD M50                   ; 運転準備
+AND X3624                ; Hi_Sup_RB_Ready
+AND X3625                ; Hi_Sup_RB_Auto
+MEP
+LD M30                   ; 自動ﾓｰﾄﾞ
+ANB X3623                ; Hi_Sup_RB_SV_ON
+MEP
+ORL
+ANL
+OR M6402                 ; HI_SUP_RB運転準備
+ANB M6404                ; HI_SUP_RBｻｰﾎﾞON､CAL完了
+AND X3625                ; Hi_Sup_RB_Auto
+TMR K1031 K5             ; 高温搬送RB初期化処理開始ﾃﾞｨﾚｲ
+OUT M6402                ; HI_SUP_RB運転準備
+LD M6402                 ; HI_SUP_RB運転準備
+AND T1031                ; 高温搬送RB初期化処理開始ﾃﾞｨﾚｲ
+MEP
+OR M6403                 ; HI_SUP_RBｻｰﾎﾞON､CAL要求
+ANB M6404                ; HI_SUP_RBｻｰﾎﾞON､CAL完了
+AND M6402                ; HI_SUP_RB運転準備
+MPS
+AND CR2003               ; 常時OFF
+@MOV K131 D5530          ; Hi_RB_ﾛﾎﾞｯﾄ制御ﾃﾞｰﾀ1
+MRD
+ANB CR2003               ; 常時OFF
+@MOV K1 D5530            ; Hi_RB_ﾛﾎﾞｯﾄ制御ﾃﾞｰﾀ1
+MRD
+@MOV K7 D5531            ; Hi_RB_ﾛﾎﾞｯﾄｺﾏﾝﾄﾞﾃﾞｰﾀ
+MPP
+OUT M6403                ; HI_SUP_RBｻｰﾎﾞON､CAL要求
+LD M6403                 ; HI_SUP_RBｻｰﾎﾞON､CAL要求
+AND X362E                ; Hi_Sup_RB_Command_End
+MEP
+OR M6404                 ; HI_SUP_RBｻｰﾎﾞON､CAL完了
+ANB M6405                ; HI_SUP_RB外部ﾓｰﾄﾞ要求
+AND M6402                ; HI_SUP_RB運転準備
+OUT M6404                ; HI_SUP_RBｻｰﾎﾞON､CAL完了
+;調整時速度をペンダントから行う場合(ﾓｰﾀｰON､CAL実行)+(外部ﾓｰﾄﾞ切替)
+;時に使用
+LDB CR2003               ; 常時OFF
+AND M6404                ; HI_SUP_RBｻｰﾎﾞON､CAL完了
+ANB X362E                ; Hi_Sup_RB_Command_End
+MEP
+OR M6405                 ; HI_SUP_RB外部ﾓｰﾄﾞ要求
+ANB M6406                ; HI_SUP_RB外部ﾓｰﾄﾞ完了
+AND M6402                ; HI_SUP_RB運転準備
+@MOV K128 D5530          ; Hi_RB_ﾛﾎﾞｯﾄ制御ﾃﾞｰﾀ1
+@MOV K7 D5531            ; Hi_RB_ﾛﾎﾞｯﾄｺﾏﾝﾄﾞﾃﾞｰﾀ
+OUT M6405                ; HI_SUP_RB外部ﾓｰﾄﾞ要求
+LD M6405                 ; HI_SUP_RB外部ﾓｰﾄﾞ要求
+AND X362E                ; Hi_Sup_RB_Command_End
+OR M6406                 ; HI_SUP_RB外部ﾓｰﾄﾞ完了
+AND M6402                ; HI_SUP_RB運転準備
+OUT M6406                ; HI_SUP_RB外部ﾓｰﾄﾞ完了
+;自動運転時ﾌﾟﾛｸﾞﾗﾑ強制停止
+LDP T15                  ; 強制停止
+ORP M51                  ; 即停止異常(緊急停止)
+ORP M6481                ; U10_即停止異常
+ORP M6483                ; U10_起動OFF
+OR M6407                 ; HI_SUP_RB停止指令
+ANB M6402                ; HI_SUP_RB運転準備
+ANB X362E                ; Hi_Sup_RB_Command_End
+@MOV K64 D5530           ; Hi_RB_ﾛﾎﾞｯﾄ制御ﾃﾞｰﾀ1
+@MOV K1 D5531            ; Hi_RB_ﾛﾎﾞｯﾄｺﾏﾝﾄﾞﾃﾞｰﾀ
+@MOV.S -1 D5532          ; Hi_RB_ﾛﾎﾞｯﾄﾌﾟﾛｸﾞﾗﾑ番号
+OUT M6407                ; HI_SUP_RB停止指令
+;自動運転時ｱﾗｰﾑ発生ｽﾃｯﾌﾟ停止
+LD CR2003                ; 常時OFF
+OR M6409                 ; HI_SUP_RBｽﾃｯﾌﾟ停止
+AND M6485                ; U10_起動中
+AND X3621                ; Hi_Sup_RB_RUN
+@MOV K16 D5530           ; Hi_RB_ﾛﾎﾞｯﾄ制御ﾃﾞｰﾀ1
+@MOV K1 D5531            ; Hi_RB_ﾛﾎﾞｯﾄｺﾏﾝﾄﾞﾃﾞｰﾀ
+@MOV K0 D5532            ; Hi_RB_ﾛﾎﾞｯﾄﾌﾟﾛｸﾞﾗﾑ番号
+OUT M6409                ; HI_SUP_RBｽﾃｯﾌﾟ停止
+;自動運転時ｱﾗｰﾑ解除ｽﾃｯﾌﾟ続行機動
+LDB M140                 ; 全一時停止
+ANB X3622                ; Hi_Sup_RB_Error
+ANB X3628                ; Hi_Sup_RB_Worning
+AND X3623                ; Hi_Sup_RB_SV_ON
+AND X3624                ; Hi_Sup_RB_Ready
+AND X3625                ; Hi_Sup_RB_Auto
+AND X3626                ; Hi_Sup_RB_EXT
+AND X3629                ; Hi_Sup_RB_Continue
+TMR K1020 K15            ; Hi_Sup_RB_Continue_Delay
+LD T1020                 ; Hi_Sup_RB_Continue_Delay
+MEP
+OR M6410                 ; HI_SUP_RBｽﾃｯﾌﾟ起動
+AND X3629                ; Hi_Sup_RB_Continue
+@MOV K4 D5530            ; Hi_RB_ﾛﾎﾞｯﾄ制御ﾃﾞｰﾀ1
+@MOV K1 D5531            ; Hi_RB_ﾛﾎﾞｯﾄｺﾏﾝﾄﾞﾃﾞｰﾀ
+@MOV K0 D5532            ; Hi_RB_ﾛﾎﾞｯﾄﾌﾟﾛｸﾞﾗﾑ番号
+OUT M6410                ; HI_SUP_RBｽﾃｯﾌﾟ起動
+;ﾛﾎﾞｯﾄｱﾗｰﾑﾘｾｯﾄ
+LD M16                   ; ﾘｾｯﾄPB
+OR M6414                 ; HI_SUP_RBｱﾗｰﾑﾘｾｯﾄ記憶
+LD X3622                 ; Hi_Sup_RB_Error
+OR X3628                 ; Hi_Sup_RB_Worning
+ANL
+OUT M6414                ; HI_SUP_RBｱﾗｰﾑﾘｾｯﾄ記憶
+LD M6414                 ; HI_SUP_RBｱﾗｰﾑﾘｾｯﾄ記憶
+ANB T1033                ; 高温搬送RBｱﾗｰﾑﾘｾｯﾄﾘﾄﾗｲ
+@MOV K1000 D5531         ; Hi_RB_ﾛﾎﾞｯﾄｺﾏﾝﾄﾞﾃﾞｰﾀ
+TMR K1033 K10            ; 高温搬送RBｱﾗｰﾑﾘｾｯﾄﾘﾄﾗｲ
+OUT M6408                ; HI_SUP_RBｱﾗｰﾑﾘｾｯﾄ
+;扉開時ﾛﾎﾞｯﾄ警告解除
+LDP M128                 ; 高温検査安全扉正常
+LDB M51                  ; 即停止異常(緊急停止)
+AND M128                 ; 高温検査安全扉正常
+AND X3628                ; Hi_Sup_RB_Worning
+ORL
+OR M6411                 ; HI_SUP_RB扉開時警告解除処理
+AND X3628                ; Hi_Sup_RB_Worning
+ANB T1032                ; 高温搬送RB扉開時警告解除ﾀｲﾏ
+ANB B00                  ; B000_001)非常停止異常
+@MOV K1000 D5531         ; Hi_RB_ﾛﾎﾞｯﾄｺﾏﾝﾄﾞﾃﾞｰﾀ
+TMR K1032 K10            ; 高温搬送RB扉開時警告解除ﾀｲﾏ
+OUT M6411                ; HI_SUP_RB扉開時警告解除処理
+;<h1/>/ｼﾌﾄRB補助回路
+;Low_Sup_RB→ｼﾌﾄRB移動指令動作
+LD X3621                 ; Hi_Sup_RB_RUN
+AND X3645                ; Hi_Sup_RB_ORG(805)
+AND X3662                ; Hi_RB_Sift_取出移動(834)
+MOV K1 D5544             ; Hi_Sift_RB_POS_確定
+OUT M6420                ; ｼﾌﾄRB取出位置移動要求
+LD X3621                 ; Hi_Sup_RB_RUN
+AND X3645                ; Hi_Sup_RB_ORG(805)
+AND X3663                ; Hi_RB_Sift_Hi#1位置移動(835)
+MOV K2 D5544             ; Hi_Sift_RB_POS_確定
+OUT M6421                ; ｼﾌﾄRB_Hi#1位置移動要求
+LD X3621                 ; Hi_Sup_RB_RUN
+AND X3645                ; Hi_Sup_RB_ORG(805)
+AND X3664                ; Hi_RB_Sift_Hi#2位置移動(836)
+MOV K3 D5544             ; Hi_Sift_RB_POS_確定
+OUT M6422                ; ｼﾌﾄRB_Hi#2位置移動開始
+LD X3621                 ; Hi_Sup_RB_RUN
+AND X3645                ; Hi_Sup_RB_ORG(805)
+AND X3665                ; Hi_RB_Sift_検査仮置移動(837)
+MOV K4 D5544             ; Hi_Sift_RB_POS_確定
+OUT M6423                ; ｼﾌﾄRB_Hi検査仮置位置移動開始
+LD X3621                 ; Hi_Sup_RB_RUN
+AND X3645                ; Hi_Sup_RB_ORG(805)
+AND X3666                ; Hi_RB_Sift原点移動(838)
+MOV K5 D5544             ; Hi_Sift_RB_POS_確定
+OUT M6424                ; ｼﾌﾄRB_Hi原点移動開始
+;
+LDB X3640                ; Hi_RB_給材取出侵入中(800)
+ANB X3642                ; Hi_RB_下流受渡侵入中(802)
+ANB X3650                ; Hi_RB_Lo#1侵入中(816)
+ANB X3651                ; Hi_RB_Lo#2侵入中(817)
+ANB X3622                ; Hi_Sup_RB_Error
+LD X3624                 ; Hi_Sup_RB_Ready
+LD M128                  ; 高温検査安全扉正常
+OR M37                   ; ｲﾝﾀｰﾛｯｸ解除ﾓｰﾄﾞ
+ANL
+LD M31                   ; 手動ﾓｰﾄﾞ
+AND X362A                ; Hi_Sup_RB_SS_Mode
+ORL
+ANL
+OUT M6435                ; ｼﾌﾄRB動作可
+LDB M6420                ; ｼﾌﾄRB取出位置移動要求
+ANB M6421                ; ｼﾌﾄRB_Hi#1位置移動要求
+ANB M6422                ; ｼﾌﾄRB_Hi#2位置移動開始
+ANB M6423                ; ｼﾌﾄRB_Hi検査仮置位置移動開始
+ANB M6424                ; ｼﾌﾄRB_Hi原点移動開始
+INV
+AND M6435                ; ｼﾌﾄRB動作可
+MPS
+OUT M6430                ; ｼﾌﾄRB_移動開始(Low_Sup_RB)
+MPP
+ANB M6432                ; 位置決完了OFF確認
+OUT M6431                ; ｼﾌﾄRB_移動(Low_Sup_RB)
+LD M6431                 ; ｼﾌﾄRB_移動(Low_Sup_RB)
+AND X370C                ; Hi_Shift_RB_Busy
+ANB X370D                ; Hi_Shift_RB_END
+OR M6432                 ; 位置決完了OFF確認
+AND M6430                ; ｼﾌﾄRB_移動開始(Low_Sup_RB)
+OUT M6432                ; 位置決完了OFF確認
+LD M6432                 ; 位置決完了OFF確認
+ANB X370C                ; Hi_Shift_RB_Busy
+AND X370D                ; Hi_Shift_RB_END
+OR M6433                 ; 位置決完了確認
+AND M6430                ; ｼﾌﾄRB_移動開始(Low_Sup_RB)
+OUT M6433                ; 位置決完了確認
+;<h1/>■出力
+;□□　　出力回路　　□□
+;ソレノイドバルブ出力
+LDPB X3661               ; Hi_RB_ﾁｬｯｸ開(833)
+ANPB M6313               ; Hi_RBﾁｬｯｸ開
+INV
+LDP X131F                ; 高温給徐材RBﾊﾝﾄﾞ開PB
+LD M31                   ; 手動ﾓｰﾄﾞ
+LD M6052                 ; U10_S52_一時停止確認
+ANB M128                 ; 高温検査安全扉正常
+ANB X131B                ; 高温検査側面安全ﾌﾟﾗｸﾞ
+ORL
+ANL
+ANB X3621                ; Hi_Sup_RB_RUN
+ORL
+LD Y232C                 ; 高温槽給徐材RBﾁｬｯｸ開SV
+ANB Y232D                ; 高温槽給徐材RBﾁｬｯｸ閉SV
+ORL
+OUT Y232C                ; 高温槽給徐材RBﾁｬｯｸ開SV
+LDPB X3660               ; Hi_RB_ﾁｬｯｸ閉(832)
+ANPB M6311               ; Hi_RBﾁｬｯｸ閉
+INV
+LD Y232D                 ; 高温槽給徐材RBﾁｬｯｸ閉SV
+ANB Y232C                ; 高温槽給徐材RBﾁｬｯｸ開SV
+ORL
+OUT Y232D                ; 高温槽給徐材RBﾁｬｯｸ閉SV
+LD X131F                 ; 高温給徐材RBﾊﾝﾄﾞ開PB
+AND M31                  ; 手動ﾓｰﾄﾞ
+ANB M81                  ; 原点復帰動作中
+AND M50                  ; 運転準備
+AND Y232C                ; 高温槽給徐材RBﾁｬｯｸ開SV
+LD M6052                 ; U10_S52_一時停止確認
+OR B0142                 ; Hi_Sup_RB原点復帰ﾜｰｸ有取出要求
+AND CR2006               ; 1sｸﾛｯｸﾊﾟﾙｽ
+ORL
+OUT Y232F                ; 高温槽給徐材RBﾁｬｯｸ開PL
+;高温槽給徐材RB ｼｽﾃﾑI/O
+LD M50                   ; 運転準備
+LD M128                  ; 高温検査安全扉正常
+ORB M9                   ; RB停止処理変更
+ANL
+ANB M6360                ; Hi_MANUAL_ON
+OUT Y2320                ; 高温槽給徐材RBｲﾈｰﾌﾞﾙ
+LD M50                   ; 運転準備
+LD M128                  ; 高温検査安全扉正常
+ORB M9                   ; RB停止処理変更
+ANL
+ANB M6360                ; Hi_MANUAL_ON
+OUT Y2321                ; 高温槽給徐材RB防護柵
+LD M128                  ; 高温検査安全扉正常
+ORB X3646                ; Hi_RB_槽収納中(806)
+LDB M6017                ; U10_S17_取出PRG.ｽﾀｰﾄ
+ANB M6073                ; Hi_給材PRG.ｽﾀｰﾄ
+ANB M6123                ; Hi_RB_確認PRG.ｽﾀｰﾄ
+ANB M6133                ; Hi_RB_確認PRG.ｽﾀｰﾄ
+ANB M6255                ; 原点復帰起動
+ANB M6343                ; Hi_供給PRG.ｽﾀｰﾄ
+ANB M6323                ; Hi_取出PRG.ｽﾀｰﾄ
+INV
+ORL
+OUT Y4620                ; Hi_RB_Step_Stop
+LD M128                  ; 高温検査安全扉正常
+OR X3646                 ; Hi_RB_槽収納中(806)
+LDB M6017                ; U10_S17_取出PRG.ｽﾀｰﾄ
+ANB M6073                ; Hi_給材PRG.ｽﾀｰﾄ
+ANB M6123                ; Hi_RB_確認PRG.ｽﾀｰﾄ
+ANB M6133                ; Hi_RB_確認PRG.ｽﾀｰﾄ
+ANB M6255                ; 原点復帰起動
+ANB M6343                ; Hi_供給PRG.ｽﾀｰﾄ
+ANB M6323                ; Hi_取出PRG.ｽﾀｰﾄ
+INV
+ORL
+OUT Y4622                ; Hi_RB_Instant stop
+;ﾛﾎﾞｯﾄｽﾄﾛｰﾌﾞ
+LDB M6408                ; HI_SUP_RBｱﾗｰﾑﾘｾｯﾄ
+ANB M6411                ; HI_SUP_RB扉開時警告解除処理
+INV
+OUT M6412                ; HI_SUP_RB初期準備
+LDB M6017                ; U10_S17_取出PRG.ｽﾀｰﾄ
+ANB M6073                ; Hi_給材PRG.ｽﾀｰﾄ
+ANB M6123                ; Hi_RB_確認PRG.ｽﾀｰﾄ
+ANB M6133                ; Hi_RB_確認PRG.ｽﾀｰﾄ
+ANB M6255                ; 原点復帰起動
+ANB M6343                ; Hi_供給PRG.ｽﾀｰﾄ
+ANB M6323                ; Hi_取出PRG.ｽﾀｰﾄ
+ANB M6403                ; HI_SUP_RBｻｰﾎﾞON､CAL要求
+ANB M6405                ; HI_SUP_RB外部ﾓｰﾄﾞ要求
+ANB M6407                ; HI_SUP_RB停止指令
+ANB M6409                ; HI_SUP_RBｽﾃｯﾌﾟ停止
+ANB M6410                ; HI_SUP_RBｽﾃｯﾌﾟ起動
+INV
+OUT M6413                ; HI_SUP_RB起動処理
+LDB M6412                ; HI_SUP_RB初期準備
+ANB M6413                ; HI_SUP_RB起動処理
+INV
+MPS
+TMH K1030 K2             ; 高温搬送RBｺﾏﾝﾄﾞｽﾄﾛｰﾌﾞONﾃﾞｨﾚｲ
+MPP
+AND T1030                ; 高温搬送RBｺﾏﾝﾄﾞｽﾄﾛｰﾌﾞONﾃﾞｨﾚｲ
+OUT Y4623                ; Hi_RB_Strobe
+;ﾛﾎﾞｯﾄｺﾏﾝﾄﾞ出力
+LD M6412                 ; HI_SUP_RB初期準備
+OR M6413                 ; HI_SUP_RB起動処理
+MPS
+AND D5531.0
+OUT Y4640                ; Hi_RB_Cmd_0bit
+MRD
+AND D5531.1
+OUT Y4641                ; Hi_RB_Cmd_1bit
+MRD
+AND D5531.2
+OUT Y4642                ; Hi_RB_Cmd_2bit
+MPP
+AND D5531.3
+OUT Y4643                ; Hi_RB_Cmd_3bit
+LD M6413                 ; HI_SUP_RB起動処理
+MPS
+LDA D5530                ; Hi_RB_ﾛﾎﾞｯﾄ制御ﾃﾞｰﾀ1
+CON
+PSTA Y4628 K8            ; Hi_RB_Data1-0bit
+MPP
+LDA D5532                ; Hi_RB_ﾛﾎﾞｯﾄﾌﾟﾛｸﾞﾗﾑ番号
+CON
+PSTA Y4630 K16           ; Hi_RB_Data2-0bit
+LDB M6413                ; HI_SUP_RB起動処理
+MPS
+LDA K0
+CON
+PSTA Y4628 K8            ; Hi_RB_Data1-0bit
+MPP
+LDA K0
+CON
+PSTA Y4630 K16           ; Hi_RB_Data2-0bit
+LD CR2003                ; 常時OFF
+ANB M6412                ; HI_SUP_RB初期準備
+OUT Y4627                ; Hi_RB_Cmd_Odd_Parity
+;低温槽給徐材RBﾌﾟﾛｸﾞﾗﾑI/F I/O
+;動作機種指定
+LD CR2002                ; 常時ON
+MPS
+AND D5520.0
+OUT Y4648                ; Hi_RB_Type_No.1(552)
+MRD
+AND D5520.1
+OUT Y4649                ; Hi_RB_Type_No.2(553)
+MRD
+AND D5520.2
+OUT Y464A                ; Hi_RB_Type_No.4(554)
+MPP
+AND D5520.3
+OUT Y464B                ; Hi_RB_Type_No.8(555)
+;給徐材槽指定
+LD= D5521 K1             ; Hi_搬送RB給徐材槽 No.
+OUT Y4650                ; Hi_RB_給徐材槽1(560)
+LD= D5521 K2             ; Hi_搬送RB給徐材槽 No.
+OUT Y4651                ; Hi_RB_給徐材槽2(561)
+;槽侵入可
+LDB X1848                ; Hi#1_上段扉開端
+ANB X184A                ; Hi#1_中段扉開端
+ANB X184C                ; Hi#1_下段扉開端
+INV
+OUT Y4652                ; Hi_RB_Lo#1侵入可(562)
+LDB X1868                ; Hi#2_上段扉開端
+ANB X186A                ; Hi#2_中段扉開端
+ANB X186C                ; Hi#2_下段扉開端
+INV
+OUT Y4653                ; Hi_RB_Lo#2侵入可(563)
+;給徐材段指示
+LD= D5522 K1             ; Hi_搬送RB給徐材段 No.
+OUT Y4654                ; Hi_RB_給徐材槽上段(564)
+LD= D5522 K2             ; Hi_搬送RB給徐材段 No.
+OUT Y4655                ; Hi_RB_給徐材槽中段(565)
+LD= D5522 K3             ; Hi_搬送RB給徐材段 No.
+OUT Y4656                ; Hi_RB_給徐材槽下段(566)
+LD<> D5520 K0            ; Hi_搬送RB Type No.
+OUT Y4657                ; Hi_RB_ﾜｰｸ有ﾌﾗｸﾞ(567)
+;/
+LDB M6020                ; U10_S20_ﾜｰｸ情報NG確認
+ANB M6025                ; U10_S25_ﾜｰｸ情報NG確認
+ANB M6030                ; U10_S30_槽内ﾜｰｸ無OK確認
+ANB M6031                ; U10_S31_ﾁｬｯｸNG確認
+ANB M6039                ; U10_S39_ﾃﾞｰﾀ移動確認
+ANB M6062                ; U10_S62_退避完了確認
+ANB M6080                ; Hi_RBﾁｬｯｸNG確認
+ANB M6093                ; Hi_上流取出ﾃﾞｰﾀ移動完了
+ANB M6075                ; Hi_槽内ﾜｰｸ有NG確認
+ANB M6095                ; Hi_給材完了確認
+ANB M6325                ; Hi_ﾜｰｸ無し確認
+ANB M6328                ; Hi_ﾜｰｸ取出完了
+ANB M6334                ; Hi_受渡完了確認(1ｻｲｸﾙﾀﾞﾐｰ)
+ANB M6345                ; Hi_給材取出完了
+ANB M6346                ; Hi_槽内ﾜｰｸ有りNG確認
+ANB M6350                ; Hi_給材完了確認
+INV
+OUT Y4658                ; Hi_RB_信号受信Ans(568)
+;徐材済ﾌﾗｸﾞ
+LD= D5521 K1             ; Hi_搬送RB給徐材槽 No.
+AND> D5550 K1            ; Hi#1_徐材ｶｳﾝﾀ
+LD= D5521 K2             ; Hi_搬送RB給徐材槽 No.
+AND> D5552 K1            ; Hi#2_徐材ｶｳﾝﾀ
+ORL
+AND M30                  ; 自動ﾓｰﾄﾞ
+OUT Y4659                ; Hi_RB_槽上段徐材済(569)
+LD= D5521 K1             ; Hi_搬送RB給徐材槽 No.
+AND> D5550 K2            ; Hi#1_徐材ｶｳﾝﾀ
+LD= D5521 K2             ; Hi_搬送RB給徐材槽 No.
+AND> D5552 K2            ; Hi#2_徐材ｶｳﾝﾀ
+ORL
+AND M30                  ; 自動ﾓｰﾄﾞ
+OUT Y465A                ; Hi_RB_槽中段徐材済(570)
+LD= D5521 K1             ; Hi_搬送RB給徐材槽 No.
+AND> D5550 K3            ; Hi#1_徐材ｶｳﾝﾀ
+LD= D5521 K2             ; Hi_搬送RB給徐材槽 No.
+AND> D5552 K3            ; Hi#2_徐材ｶｳﾝﾀ
+ORL
+AND M30                  ; 自動ﾓｰﾄﾞ
+OUT Y465B                ; Hi_RB_槽下段徐材済(571)
+;給材済ﾌﾗｸﾞ
+LD= D5521 K1             ; Hi_搬送RB給徐材槽 No.
+AND> D5551 K1            ; Hi#1_給材ｶｳﾝﾀ
+LD= D5521 K2             ; Hi_搬送RB給徐材槽 No.
+AND> D5553 K1            ; Hi#2_給材ｶｳﾝﾀ
+ORL
+OUT Y465C                ; Hi_RB_槽上段給材済(572)
+LD= D5521 K1             ; Hi_搬送RB給徐材槽 No.
+AND> D5551 K2            ; Hi#1_給材ｶｳﾝﾀ
+LD= D5521 K2             ; Hi_搬送RB給徐材槽 No.
+AND> D5553 K2            ; Hi#2_給材ｶｳﾝﾀ
+ORL
+OUT Y465D                ; Hi_RB_槽中段給材済(573)
+LD= D5521 K1             ; Hi_搬送RB給徐材槽 No.
+AND> D5551 K3            ; Hi#1_給材ｶｳﾝﾀ
+LD= D5521 K2             ; Hi_搬送RB給徐材槽 No.
+AND> D5553 K3            ; Hi#2_給材ｶｳﾝﾀ
+ORL
+OUT Y465E                ; Hi_RB_槽下段給材済(574)
+LD M6240                 ; Hi#1_初期起動ﾜｰｸ確認済ﾌﾗｸﾞ
+AND= D5521 K1            ; Hi_搬送RB給徐材槽 No.
+LD M6241                 ; Hi#2_初期起動ﾜｰｸ確認済ﾌﾗｸﾞ
+AND= D5521 K2            ; Hi_搬送RB給徐材槽 No.
+ORL
+OUT Y465F                ; Hi_RB_初期確認済(575)
+;ﾊﾝﾄﾞ開閉状態
+LD T1010                 ; 高温給徐材RBﾁｬｯｸ閉端
+OUT Y4660                ; Hi_RB_ﾁｬｯｸ閉端(576)
+LD T1011                 ; 高温給徐材RBﾁｬｯｸ開端
+OUT Y4661                ; Hi_RB_ﾁｬｯｸ開端(577)
+;ｼﾌﾄ位置
+;K1=低温検査済POS K2=Hi1 K3=Hi2 K4=下流給材
+LD X370D                 ; Hi_Shift_RB_END
+MPS
+AND= D5548 K1            ; Hi_Sift_RB_完了POS
+OUT Y4662                ; Hi_RB_Sift_取出位置(578)
+MRD
+LD= D5548 K2             ; Hi_Sift_RB_完了POS
+OR= D5548 K5             ; Hi_Sift_RB_完了POS
+ANL
+OUT Y4663                ; Hi_RB_Sift_Hi#1位置(579)
+MRD
+AND= D5548 K3            ; Hi_Sift_RB_完了POS
+OUT Y4664                ; Hi_RB_Sift_Hi#2位置(580)
+MPP
+AND= D5548 K4            ; Hi_Sift_RB_完了POS
+OUT Y4665                ; Hi_RB_Sift_検査仮置位置(581)
+;ﾊﾝﾄﾞﾜｰｸ有無
+LD T1012                 ; 高温給徐材RBﾜｰｸ確認
+LD M6018                 ; U10_S18_起動確認
+AND M35                  ; 空運転ﾓｰﾄﾞ
+ORL
+OUT Y4666                ; Hi_RB_ﾜｰｸ有(582)
+;動作条件
+LD M5520                 ; U9-S20_ﾜｰｸ取出可(→High_Sup_RB)
+OUT Y4667                ; Hi_RB上流取出要求(583)
+LD X370A                 ; Hi_Shift_RB_ZONE
+OUT Y4668                ; Hi_RB_SIFT_ZONE(584)
+LD X3708                 ; Hi_Shift_RB_PZONE
+OUT Y4669                ; Hi_RB_SIFT_POS_ZONE(585)
+LD M6049                 ; U10_S49_ﾜｰｸ取出選択
+OUT Y466A                ; Hi_RB_読取NGﾜｰｸ取出(586)
+LDB M6058                ; U10_S58_受渡要求確認
+ANB M6330                ; Hi_読取OK (手動1ｻｲｸﾙﾀﾞﾐｰ)
+INV
+OUT Y466B                ; Hi_RB_検査RB受渡可能(587)
+LDB M6061                ; U10_S61_受取確認
+ANB M6333                ; Hi_検査RB受取確認(手動1ｻｲｸﾙﾀﾞﾐｰ)
+INV
+OUT Y466C                ; Hi_RB_検査RB受取完了(588
+LD M6054                 ; U10_S54_ﾃﾞｰﾀｸﾘｱ確認・一時停止解
+OUT Y466D                ; Hi_RB_読取NGﾜｰｸ取出完了(589)
+LDB X370C                ; Hi_Shift_RB_Busy
+OUT Y466E                ; Hi_RB_SIFT_END(590)
+LD M30                   ; 自動ﾓｰﾄﾞ
+OUT Y466F                ; Hi_RB_自動ﾓｰﾄﾞ(591)
+LD M7920                 ; 【搬送】Hi搬送→受渡_動作開始
+OUT Y4680                ; Hi_RB_受取動作開始(608)
+;高温槽1ｼｬｯﾀ開閉→RB
+LD X1848                 ; Hi#1_上段扉開端
+OUT Y4670                ; Hi_RB_Hi#1上段ｼｬｯﾀｰ開端(592)
+LD X1849                 ; Hi#1_上段扉閉端
+OUT Y4671                ; Hi_RB_Hi#1上段ｼｬｯﾀｰ閉端(593)
+LD X184A                 ; Hi#1_中段扉開端
+OUT Y4672                ; Hi_RB_Hi#1中段ｼｬｯﾀｰ開端(594)
+LD X184B                 ; Hi#1_中段扉閉端
+OUT Y4673                ; Hi_RB_Hi#1中段ｼｬｯﾀｰ閉端(595)
+LD X184C                 ; Hi#1_下段扉開端
+OUT Y4674                ; Hi_RB_Hi#1下段ｼｬｯﾀｰ開端(596)
+LD X184D                 ; Hi#1_下段扉閉端
+OUT Y4675                ; Hi_RB_Hi#1下段ｼｬｯﾀｰ閉端(597)
+;低温槽2ｼｬｯﾀ開閉→RB
+LD X1868                 ; Hi#2_上段扉開端
+OUT Y4678                ; Hi_RB_Hi#2上段ｼｬｯﾀｰ開端(600)
+LD X1869                 ; Hi#2_上段扉閉端
+OUT Y4679                ; Hi_RB_Hi#2上段ｼｬｯﾀｰ閉端(601)
+LD X186A                 ; Hi#2_中段扉開端
+OUT Y467A                ; Hi_RB_Hi#2中段ｼｬｯﾀｰ開端(602)
+LD X186B                 ; Hi#2_中段扉閉端
+OUT Y467B                ; Hi_RB_Hi#2中段ｼｬｯﾀｰ閉端(603)
+LD X186C                 ; Hi#2_下段扉開端
+OUT Y467C                ; Hi_RB_Hi#2下段ｼｬｯﾀｰ開端(604)
+LD X186D                 ; Hi#2_下段扉閉端
+OUT Y467D                ; Hi_RB_Hi#2下段ｼｬｯﾀｰ閉端(605)
+;ｼﾌﾄﾛﾎﾞｯﾄ
+LDB CR2003               ; 常時OFF
+ANB M6431                ; ｼﾌﾄRB_移動(Low_Sup_RB)
+INV
+MOV D5544 D5546          ; Hi_Sift_RB_POS_確定  Hi_Sift_RB_指令POS
+MPS
+TMH K1090 K3             ; Hi_Sift_RB_POS確定ﾃﾞｨﾚｲ
+MPP
+AND T1090                ; Hi_Sift_RB_POS確定ﾃﾞｨﾚｲ
+OUT Y470D                ; Hi_Sift_RB_Start
+LD CR2002                ; 常時ON
+MPS
+AND D5546.0
+OUT Y4700                ; Hi_Sift_RB_Pin1
+MRD
+AND D5546.1
+OUT Y4701                ; Hi_Sift_RB_Pin2
+MRD
+AND D5546.2
+OUT Y4702                ; Hi_Sift_RB_Pin4
+MRD
+AND D5546.3
+OUT Y4703                ; Hi_Sift_RB_Pin8
+MRD
+AND D5546.4
+OUT Y4704                ; Hi_Sift_RB_Pin16
+MRD
+AND D5546.5
+OUT Y4705                ; Hi_Sift_RB_Pin32
+MRD
+AND D5546.6
+OUT Y4706                ; Hi_Sift_RB_Pin64
+MPP
+AND D5546.7
+OUT Y4707                ; Hi_Sift_RB_Pin128
+LD CR2003                ; 常時OFF
+OUT Y4708                ; Hi_Sift_RB_JOG+
+OUT Y4709                ; Hi_Sift_RB_JOG-
+OUT Y470A                ; Hi_Sift_RB_Manu
+LDB CR2003               ; 常時OFF
+INV
+OUT Y470B                ; Hi_Sift_RB_ORG
+LD M128                  ; 高温検査安全扉正常
+AND M6435                ; ｼﾌﾄRB動作可
+OUT Y470C                ; Hi_Sift_RB_IL
+LD M16                   ; ﾘｾｯﾄPB
+ANB X370E                ; Hi_Shift_RB_Alarm
+OUT Y470E                ; Hi_Sift_RB_Reset
+LD M50                   ; 運転準備
+LD M128                  ; 高温検査安全扉正常
+OR M37                   ; ｲﾝﾀｰﾛｯｸ解除ﾓｰﾄﾞ
+LD M31                   ; 手動ﾓｰﾄﾞ
+AND X362A                ; Hi_Sup_RB_SS_Mode
+ORL
+ANL
+MPS
+ANB X370F                ; Hi_Shift_RB_SV_ON
+MPS
+ANB T1022                ; High_Sift_RB_SV_Reset
+TMR K1021 K10            ; High_Sift_RB_SV_On
+MPP
+AND T1021                ; High_Sift_RB_SV_On
+TMR K1022 K5             ; High_Sift_RB_SV_Reset
+MPP
+ANB T1021                ; High_Sift_RB_SV_On
+OUT Y470F                ; Hi_Sift_RB_SV_ON
+;ﾛﾎﾞｯﾄｻｰﾎﾞ電源
+LD M121                  ; 非常停止正常
+OUT Y2323                ; 高温槽間移動RB電源
+;<h1/>■表示
+;□□　　パネル表示　　□□
+LD M6301                 ; Hi_槽1選択
+OUT B16A0                ; UNIT10-1-1 TP-PL
+LD M6302                 ; Hi_槽2選択
+OUT B16A1                ; UNIT10-1-2 TP-PL
+LD M6305                 ; Hi_槽上段選択
+OUT B16A2                ; UNIT10-1-3 TP-PL
+LD M6306                 ; Hi_槽中段選択
+OUT B16A3                ; UNIT10-1-4 TP-PL
+LD M6307                 ; Hi_槽下段選択
+OUT B16A4                ; UNIT10-1-5 TP-PL
+LD CR2003                ; 常時OFF
+LD CR2003                ; 常時OFF
+AND CR2006               ; 1sｸﾛｯｸﾊﾟﾙｽ
+ORL
+OUT B16A5                ; UNIT10-1-6 TP-PL
+LD X131D                 ; 高温給徐材RBﾁｬｯｸ閉端
+LD Y232D                 ; 高温槽給徐材RBﾁｬｯｸ閉SV
+AND CR2006               ; 1sｸﾛｯｸﾊﾟﾙｽ
+ORL
+OUT B16A6                ; UNIT10-1-7 TP-PL
+LD X131C                 ; 高温給徐材RBﾁｬｯｸ開端
+LD Y232C                 ; 高温槽給徐材RBﾁｬｯｸ開SV
+AND CR2006               ; 1sｸﾛｯｸﾊﾟﾙｽ
+ORL
+OUT B16A7                ; UNIT10-1-8 TP-PL
+LD M6321                 ; Hi_取出1ｻｲｸﾙ(手動)
+AND CR2006               ; 1sｸﾛｯｸﾊﾟﾙｽ
+OUT B16A8                ; UNIT10-1-9 TP-PL
+LD M6341                 ; Hi_供給1ｻｲｸﾙ(手動)
+AND CR2006               ; 1sｸﾛｯｸﾊﾟﾙｽ
+OUT B16A9                ; UNIT10-1-10 TP-PL
+LD CR2003                ; 常時OFF
+LD CR2003                ; 常時OFF
+AND CR2006               ; 1sｸﾛｯｸﾊﾟﾙｽ
+ORL
+OUT B16AA                ; UNIT10-1-11 TP-PL
+LD CR2003                ; 常時OFF
+LD CR2003                ; 常時OFF
+AND CR2006               ; 1sｸﾛｯｸﾊﾟﾙｽ
+ORL
+OUT B16AB                ; UNIT10-1-12 TP-PL
+LD M5973                 ; RB8_ﾜｰｸ取出位置
+AND X1341                ; 高温槽搬送ｼｬﾄﾙ取出ﾜｰｸ確認
+OUT B16AC                ; UNIT10-1-13 TP-PL
+LD L1308                 ; ﾊﾝﾄﾞ1投入部ﾜｰｸ受取り動作完了
+AND T1330                ; ﾜｰｸHi搬送ﾊﾝﾄﾞ旋回端
+AND T1332                ; ﾊﾝﾄﾞ1ﾁｬｯｸ開端
+LD L1309                 ; ﾊﾝﾄﾞ2投入部ﾜｰｸ受取り動作完了
+AND T1331                ; ﾜｰｸHi搬送ﾊﾝﾄﾞ旋回戻り端
+AND T1333                ; ﾊﾝﾄﾞ2ﾁｬｯｸ開端
+ORL
+OUT B16AD                ; UNIT10-1-14 TP-PL
+LD M6982                 ; U11_起動条件
+OUT B16AE                ; UNIT10-1-15 TP-PL
+LD M7482                 ; U12_起動条件
+OUT B16AF                ; UNIT10-1-16 TP-PL
+LD CR2003                ; 常時OFF
+LD CR2003                ; 常時OFF
+AND CR2006               ; 1sｸﾛｯｸﾊﾟﾙｽ
+ORL
+OUT B16BF                ; UNIT10-2-16 TP-PL
+;<h1/>■異常
+;□□    異常検出    □□
+;B140--B14F  B150--B15F
+LD Y232C                 ; 高温槽給徐材RBﾁｬｯｸ開SV
+ANB X131C                ; 高温給徐材RBﾁｬｯｸ開端
+LD Y232D                 ; 高温槽給徐材RBﾁｬｯｸ閉SV
+ANB X131D                ; 高温給徐材RBﾁｬｯｸ閉端
+ORL
+LDB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B0140                ; Hi_Sup_RBﾁｬｯｸ開閉異常
+ORL
+ANB M35                  ; 空運転ﾓｰﾄﾞ
+AND M50                  ; 運転準備
+MPS
+TMR K1050 K50            ; ﾁｬｯｸ開閉確認
+MPP
+AND T1050                ; ﾁｬｯｸ開閉確認
+OUT B0140                ; Hi_Sup_RBﾁｬｯｸ開閉異常
+LDP B0140                ; Hi_Sup_RBﾁｬｯｸ開閉異常
+AND< D900 K64            ; FIFO_DATA_VALUE
+DW H0141 D0              ; エラーコード
+CON
+FIFOW D0 D900            ; エラーコード  FIFO_DATA_VALUE
+LD M110                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B0640                 ; B140_321)Bz停止
+AND B0140                ; Hi_Sup_RBﾁｬｯｸ開閉異常
+OUT B0640                ; B140_321)Bz停止
+LD X3622                 ; Hi_Sup_RB_Error
+AND M50                  ; 運転準備
+LDB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B0141                ; Hi_Sup_RB異常
+ORL
+OUT B0141                ; Hi_Sup_RB異常
+LDP B0141                ; Hi_Sup_RB異常
+AND< D900 K64            ; FIFO_DATA_VALUE
+DW H0142 D0              ; エラーコード
+CON
+FIFOW D0 D900            ; エラーコード  FIFO_DATA_VALUE
+LD M110                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B0641                 ; B141_322)Bz停止
+AND B0141                ; Hi_Sup_RB異常
+OUT B0641                ; B141_322)Bz停止
+LD M6252                 ; Hi_RBﾜｰｸ取出要求
+LDB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B0142                ; Hi_Sup_RB原点復帰ﾜｰｸ有取出要求
+ORL
+OUT B0142                ; Hi_Sup_RB原点復帰ﾜｰｸ有取出要求
+LDP B0142                ; Hi_Sup_RB原点復帰ﾜｰｸ有取出要求
+AND< D900 K64            ; FIFO_DATA_VALUE
+@DW H0143 D0             ; エラーコード
+CON
+FIFOW D0 D900            ; エラーコード  FIFO_DATA_VALUE
+LD M110                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B0642                 ; B142_323)Bz停止
+AND B0142                ; Hi_Sup_RB原点復帰ﾜｰｸ有取出要求
+OUT B0642                ; B142_323)Bz停止
+LD X3627                 ; Hi_Sup_RB_LOW_Battery
+AND M50                  ; 運転準備
+LDB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B0143                ; Hi_Sup_RBﾊﾞｯﾃﾘｰ低下
+ORL
+OUT B0143                ; Hi_Sup_RBﾊﾞｯﾃﾘｰ低下
+LDP B0143                ; Hi_Sup_RBﾊﾞｯﾃﾘｰ低下
+AND< D900 K64            ; FIFO_DATA_VALUE
+DW H0144 D0              ; エラーコード
+CON
+FIFOW D0 D900            ; エラーコード  FIFO_DATA_VALUE
+LD M110                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B0643                 ; B143_324)Bz停止
+AND B0143                ; Hi_Sup_RBﾊﾞｯﾃﾘｰ低下
+OUT B0643                ; B143_324)Bz停止
+LD Y232D                 ; 高温槽給徐材RBﾁｬｯｸ閉SV
+AND T1010                ; 高温給徐材RBﾁｬｯｸ閉端
+AND M6485                ; U10_起動中
+OR M6362                 ; Hi_RB_ﾜｰｸﾁｬｯｸ記憶
+AND Y232D                ; 高温槽給徐材RBﾁｬｯｸ閉SV
+OUT M6362                ; Hi_RB_ﾜｰｸﾁｬｯｸ記憶
+LD Y232D                 ; 高温槽給徐材RBﾁｬｯｸ閉SV
+ANB T1010                ; 高温給徐材RBﾁｬｯｸ閉端
+AND M6362                ; Hi_RB_ﾜｰｸﾁｬｯｸ記憶
+AND M50                  ; 運転準備
+MEP
+LDB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B0144                ; Hi_Sup_RB搬送中ﾜｰｸ無異常
+ORL
+ANB M35                  ; 空運転ﾓｰﾄﾞ
+OUT B0144                ; Hi_Sup_RB搬送中ﾜｰｸ無異常
+LDP B0144                ; Hi_Sup_RB搬送中ﾜｰｸ無異常
+AND< D900 K64            ; FIFO_DATA_VALUE
+DW H0145 D0              ; エラーコード
+CON
+FIFOW D0 D900            ; エラーコード  FIFO_DATA_VALUE
+LD M110                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B0644                 ; B144_325)Bz停止
+AND B0144                ; Hi_Sup_RB搬送中ﾜｰｸ無異常
+OUT B0644                ; B144_325)Bz停止
+LD X3659                 ; Hi_RB 品種ﾃﾞｰﾀ異常(825)
+AND M50                  ; 運転準備
+LDB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B0145                ; RB受信品種ﾃﾞｰﾀ異常
+ORL
+OUT B0145                ; RB受信品種ﾃﾞｰﾀ異常
+LDP B0145                ; RB受信品種ﾃﾞｰﾀ異常
+AND< D900 K64            ; FIFO_DATA_VALUE
+DW H0146 D0              ; エラーコード
+CON
+FIFOW D0 D900            ; エラーコード  FIFO_DATA_VALUE
+LD M110                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B0645                 ; B145_326)Bz停止
+AND B0145                ; RB受信品種ﾃﾞｰﾀ異常
+OUT B0645                ; B145_326)Bz停止
+LD M6028                 ; U10_S28_ﾜ徐材NG選択(異常)
+AND M50                  ; 運転準備
+LDB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B0146                ; Hi_Sup_RB徐材時槽内ﾜｰｸ有異常
+ORL
+OUT B0146                ; Hi_Sup_RB徐材時槽内ﾜｰｸ有異常
+LDP B0146                ; Hi_Sup_RB徐材時槽内ﾜｰｸ有異常
+AND< D900 K64            ; FIFO_DATA_VALUE
+DW H0147 D0              ; エラーコード
+CON
+FIFOW D0 D900            ; エラーコード  FIFO_DATA_VALUE
+LD M110                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B0646                 ; B146_327)Bz停止
+AND B0146                ; Hi_Sup_RB徐材時槽内ﾜｰｸ有異常
+OUT B0646                ; B146_327)Bz停止
+LD M6023                 ; U10_S23_ﾜ徐材NG選択(異常)
+AND M50                  ; 運転準備
+LDB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B0147                ; Hi_Sup_RB徐材時槽内ﾜｰｸ無異常
+ORL
+OUT B0147                ; Hi_Sup_RB徐材時槽内ﾜｰｸ無異常
+LDP B0147                ; Hi_Sup_RB徐材時槽内ﾜｰｸ無異常
+AND< D900 K64            ; FIFO_DATA_VALUE
+DW H0148 D0              ; エラーコード
+CON
+FIFOW D0 D900            ; エラーコード  FIFO_DATA_VALUE
+LD M110                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B0647                 ; B147_328)Bz停止
+AND B0147                ; Hi_Sup_RB徐材時槽内ﾜｰｸ無異常
+OUT B0647                ; B147_328)Bz停止
+LDP X365A                ; Hi_RB_初期起動槽内ﾜｰｸ異常(826)
+LDB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B0148                ; Hi_Sup_RB_初期起動時ﾜｰｸ有異常
+ORL
+OUT B0148                ; Hi_Sup_RB_初期起動時ﾜｰｸ有異常
+LDP B0148                ; Hi_Sup_RB_初期起動時ﾜｰｸ有異常
+AND< D900 K64            ; FIFO_DATA_VALUE
+DW H0149 D0              ; エラーコード
+CON
+FIFOW D0 D900            ; エラーコード  FIFO_DATA_VALUE
+LD M110                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B0648                 ; B148_329)Bz停止
+AND B0148                ; Hi_Sup_RB_初期起動時ﾜｰｸ有異常
+OUT B0648                ; B148_329)Bz停止
+LD CR2003                ; 常時OFF
+LDB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B0149                ; B149_330)
+ORL
+OUT B0149                ; B149_330)
+LDP B0149                ; B149_330)
+AND< D900 K64            ; FIFO_DATA_VALUE
+DW H014A D0              ; エラーコード
+CON
+FIFOW D0 D900            ; エラーコード  FIFO_DATA_VALUE
+LD M110                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B0649                 ; B149_330)Bz停止
+AND B0149                ; B149_330)
+OUT B0649                ; B149_330)Bz停止
+LD M30                   ; 自動ﾓｰﾄﾞ
+LD M6485                 ; U10_起動中
+OR M18                   ; 起動PB
+ANL
+ANB X1850                ; Hi#1_ﾏｽﾀ槽運転有効確認
+ANB X1870                ; Hi#2_ﾏｽﾀ槽運転有効確認
+LDB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B014B                ; 高温槽全停止中
+ORL
+OUT B014B                ; 高温槽全停止中
+LDP B014B                ; 高温槽全停止中
+AND< D900 K64            ; FIFO_DATA_VALUE
+DW H014C D0              ; エラーコード
+CON
+FIFOW D0 D900            ; エラーコード  FIFO_DATA_VALUE
+LD M110                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B064B                 ; B14B_332)Bz停止
+AND B014B                ; 高温槽全停止中
+OUT B064B                ; B14B_332)Bz停止
+LD M6078                 ; Hi_槽内ﾜｰｸ有NG選択(異常)
+LDB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B014C                ; Hi_Sup_RB給材時槽内ﾜｰｸ有異常
+ORL
+OUT B014C                ; Hi_Sup_RB給材時槽内ﾜｰｸ有異常
+LDP B014C                ; Hi_Sup_RB給材時槽内ﾜｰｸ有異常
+AND< D900 K64            ; FIFO_DATA_VALUE
+DW H014D D0              ; エラーコード
+CON
+FIFOW D0 D900            ; エラーコード  FIFO_DATA_VALUE
+LD M110                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B064C                 ; B14C_333)Bz停止
+AND B014C                ; Hi_Sup_RB給材時槽内ﾜｰｸ有異常
+OUT B064C                ; B14C_333)Bz停止
+LDB X370E                ; Hi_Shift_RB_Alarm
+AND T12                  ; 運転準備ONﾃﾞｨﾚｲ(3S)
+LDB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B014D                ; Hi_Sup_ｽﾗｲﾄﾞﾛﾎﾞｯﾄ異常
+ORL
+OUT B014D                ; Hi_Sup_ｽﾗｲﾄﾞﾛﾎﾞｯﾄ異常
+LDP B014D                ; Hi_Sup_ｽﾗｲﾄﾞﾛﾎﾞｯﾄ異常
+AND< D900 K64            ; FIFO_DATA_VALUE
+DW H014E D0              ; エラーコード
+CON
+FIFOW D0 D900            ; エラーコード  FIFO_DATA_VALUE
+LD M110                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B064D                 ; B14D_334)Bz停止
+AND B014D                ; Hi_Sup_ｽﾗｲﾄﾞﾛﾎﾞｯﾄ異常
+OUT B064D                ; B14D_334)Bz停止
+;高温槽1ﾜｰｸ情報異常
+LD= D5555 K1             ; Hi_RB給徐材優先ﾌﾗｸﾞ
+AND= D5550 K1            ; Hi#1_徐材ｶｳﾝﾀ
+MPS
+AND M6022                ; U10_S22_ﾜｰｸ無NG(選択ﾀﾞｲｱﾛｸﾞ)
+OUT B0150                ; High_Sup_RBﾜｰｸ無不一致 槽1上段
+MEP
+AND< D900 K64            ; FIFO_DATA_VALUE
+DW H0151 D0              ; エラーコード
+CON
+FIFOW D0 D900            ; エラーコード  FIFO_DATA_VALUE
+MPP
+AND M6027                ; U10_S27_ﾜｰｸ有NG(選択ﾀﾞｲｱﾛｸﾞ)
+OUT B0151                ; High_Sup_RBﾜｰｸ有不一致 槽1上段
+MEP
+AND< D900 K64            ; FIFO_DATA_VALUE
+DW H0152 D0              ; エラーコード
+CON
+FIFOW D0 D900            ; エラーコード  FIFO_DATA_VALUE
+LD= D5555 K1             ; Hi_RB給徐材優先ﾌﾗｸﾞ
+AND= D5550 K2            ; Hi#1_徐材ｶｳﾝﾀ
+MPS
+AND M6022                ; U10_S22_ﾜｰｸ無NG(選択ﾀﾞｲｱﾛｸﾞ)
+OUT B0152                ; High_Sup_RBﾜｰｸ無不一致 槽1中段
+MEP
+AND< D900 K64            ; FIFO_DATA_VALUE
+DW H0153 D0              ; エラーコード
+CON
+FIFOW D0 D900            ; エラーコード  FIFO_DATA_VALUE
+MPP
+AND M6027                ; U10_S27_ﾜｰｸ有NG(選択ﾀﾞｲｱﾛｸﾞ)
+OUT B0153                ; High_Sup_RBﾜｰｸ有不一致 槽1中段
+MEP
+AND< D900 K64            ; FIFO_DATA_VALUE
+DW H0154 D0              ; エラーコード
+CON
+FIFOW D0 D900            ; エラーコード  FIFO_DATA_VALUE
+LD= D5555 K1             ; Hi_RB給徐材優先ﾌﾗｸﾞ
+AND= D5550 K3            ; Hi#1_徐材ｶｳﾝﾀ
+MPS
+AND M6022                ; U10_S22_ﾜｰｸ無NG(選択ﾀﾞｲｱﾛｸﾞ)
+OUT B0154                ; High_Sup_RBﾜｰｸ無不一致 槽1下段
+MEP
+AND< D900 K64            ; FIFO_DATA_VALUE
+DW H0155 D0              ; エラーコード
+CON
+FIFOW D0 D900            ; エラーコード  FIFO_DATA_VALUE
+MPP
+AND M6027                ; U10_S27_ﾜｰｸ有NG(選択ﾀﾞｲｱﾛｸﾞ)
+OUT B0155                ; High_Sup_RBﾜｰｸ有不一致 槽1下段
+MEP
+AND< D900 K64            ; FIFO_DATA_VALUE
+DW H0156 D0              ; エラーコード
+CON
+FIFOW D0 D900            ; エラーコード  FIFO_DATA_VALUE
+;高温槽2ﾜｰｸ情報異常
+LD= D5555 K2             ; Hi_RB給徐材優先ﾌﾗｸﾞ
+AND= D5550 K1            ; Hi#1_徐材ｶｳﾝﾀ
+MPS
+AND M6022                ; U10_S22_ﾜｰｸ無NG(選択ﾀﾞｲｱﾛｸﾞ)
+OUT B0156                ; High_Sup_RBﾜｰｸ無不一致 槽2上段
+MEP
+AND< D900 K64            ; FIFO_DATA_VALUE
+DW H0157 D0              ; エラーコード
+CON
+FIFOW D0 D900            ; エラーコード  FIFO_DATA_VALUE
+MPP
+AND M6027                ; U10_S27_ﾜｰｸ有NG(選択ﾀﾞｲｱﾛｸﾞ)
+OUT B0157                ; High_Sup_RBﾜｰｸ有不一致 槽2上段
+MEP
+AND< D900 K64            ; FIFO_DATA_VALUE
+DW H0158 D0              ; エラーコード
+CON
+FIFOW D0 D900            ; エラーコード  FIFO_DATA_VALUE
+LD= D5555 K2             ; Hi_RB給徐材優先ﾌﾗｸﾞ
+AND= D5550 K2            ; Hi#1_徐材ｶｳﾝﾀ
+MPS
+AND M6022                ; U10_S22_ﾜｰｸ無NG(選択ﾀﾞｲｱﾛｸﾞ)
+OUT B0158                ; High_Sup_RBﾜｰｸ無不一致 槽2中段
+MEP
+AND< D900 K64            ; FIFO_DATA_VALUE
+DW H0159 D0              ; エラーコード
+CON
+FIFOW D0 D900            ; エラーコード  FIFO_DATA_VALUE
+MPP
+AND M6027                ; U10_S27_ﾜｰｸ有NG(選択ﾀﾞｲｱﾛｸﾞ)
+OUT B0159                ; High_Sup_RBﾜｰｸ有不一致 槽2中段
+MEP
+AND< D900 K64            ; FIFO_DATA_VALUE
+DW H015A D0              ; エラーコード
+CON
+FIFOW D0 D900            ; エラーコード  FIFO_DATA_VALUE
+LD= D5555 K2             ; Hi_RB給徐材優先ﾌﾗｸﾞ
+AND= D5550 K3            ; Hi#1_徐材ｶｳﾝﾀ
+MPS
+AND M6022                ; U10_S22_ﾜｰｸ無NG(選択ﾀﾞｲｱﾛｸﾞ)
+OUT B015A                ; High_Sup_RBﾜｰｸ無不一致 槽2下段
+MEP
+AND< D900 K64            ; FIFO_DATA_VALUE
+DW H015B D0              ; エラーコード
+CON
+FIFOW D0 D900            ; エラーコード  FIFO_DATA_VALUE
+MPP
+AND M6027                ; U10_S27_ﾜｰｸ有NG(選択ﾀﾞｲｱﾛｸﾞ)
+OUT B015B                ; High_Sup_RBﾜｰｸ有不一致 槽2下段
+MEP
+AND< D900 K64            ; FIFO_DATA_VALUE
+DW H015C D0              ; エラーコード
+CON
+FIFOW D0 D900            ; エラーコード  FIFO_DATA_VALUE
+;槽照合NG
+LD M6110                 ; Hi_#1情報確認
+AND X1850                ; Hi#1_ﾏｽﾀ槽運転有効確認
+AND M6230                ; Hi#1_ﾜｰｸ情報異常
+LDB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B015C                ; High_Sup_RB_PC照合異常(Hi#1)
+ORL
+OUT B015C                ; High_Sup_RB_PC照合異常(Hi#1)
+LDP B015C                ; High_Sup_RB_PC照合異常(Hi#1)
+AND< D900 K64            ; FIFO_DATA_VALUE
+DW H015D D0              ; エラーコード
+CON
+FIFOW D0 D900            ; エラーコード  FIFO_DATA_VALUE
+LD M110                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B065C                 ; B15C_349)Bz停止
+AND B015C                ; High_Sup_RB_PC照合異常(Hi#1)
+OUT B065C                ; B15C_349)Bz停止
+LD M6111                 ; Hi_#2情報確認
+AND X1870                ; Hi#2_ﾏｽﾀ槽運転有効確認
+AND M6231                ; Hi#2_ﾜｰｸ情報異常
+LDB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B015D                ; High_Sup_RB_PC照合異常(Hi#2)
+ORL
+OUT B015D                ; High_Sup_RB_PC照合異常(Hi#2)
+LDP B015D                ; High_Sup_RB_PC照合異常(Hi#2)
+AND< D900 K64            ; FIFO_DATA_VALUE
+DW H015E D0              ; エラーコード
+CON
+FIFOW D0 D900            ; エラーコード  FIFO_DATA_VALUE
+LD M110                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B065D                 ; B15D_350)Bz停止
+AND B015D                ; High_Sup_RB_PC照合異常(Hi#2)
+OUT B065D                ; B15D_350)Bz停止
+;異常ﾌﾞｻﾞｰまとめ
+LDB B0140                ; Hi_Sup_RBﾁｬｯｸ開閉異常
+OR B0640                 ; B140_321)Bz停止
+LDB B0141                ; Hi_Sup_RB異常
+OR B0641                 ; B141_322)Bz停止
+ANL
+LDB B0142                ; Hi_Sup_RB原点復帰ﾜｰｸ有取出要求
+OR B0642                 ; B142_323)Bz停止
+ANL
+LDB B0144                ; Hi_Sup_RB搬送中ﾜｰｸ無異常
+OR B0644                 ; B144_325)Bz停止
+ANL
+LDB B0145                ; RB受信品種ﾃﾞｰﾀ異常
+OR B0645                 ; B145_326)Bz停止
+ANL
+LDB B0146                ; Hi_Sup_RB徐材時槽内ﾜｰｸ有異常
+OR B0646                 ; B146_327)Bz停止
+ANL
+LDB B0147                ; Hi_Sup_RB徐材時槽内ﾜｰｸ無異常
+OR B0647                 ; B147_328)Bz停止
+ANL
+LDB B0148                ; Hi_Sup_RB_初期起動時ﾜｰｸ有異常
+OR B0648                 ; B148_329)Bz停止
+ANL
+LDB B0149                ; B149_330)
+OR B0649                 ; B149_330)Bz停止
+ANL
+LDB B014C                ; Hi_Sup_RB給材時槽内ﾜｰｸ有異常
+OR B064C                 ; B14C_333)Bz停止
+ANL
+LDB B014D                ; Hi_Sup_ｽﾗｲﾄﾞﾛﾎﾞｯﾄ異常
+OR B064D                 ; B14D_334)Bz停止
+ANL
+LDB B015C                ; High_Sup_RB_PC照合異常(Hi#1)
+OR B065C                 ; B15C_349)Bz停止
+ANL
+LDB B015D                ; High_Sup_RB_PC照合異常(Hi#2)
+OR B065D                 ; B15D_350)Bz停止
+ANL
+LDB B015E                ; High_Sup_RB_ﾜｰｸ照合異常(Hi#1)
+OR B065E                 ; B15E_351)Bz停止
+ANL
+LDB B015F                ; High_Sup_RB_ﾜｰｸ照合異常(Hi#2)
+OR B065F                 ; B15F_352)Bz停止
+ANL
+INV
+OUT M6489                ; U10_異常BZ補助
+END
+ENDH

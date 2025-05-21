@@ -1,0 +1,301 @@
+DEVICE:53
+;MODULE:MANUAL
+;MODULE_TYPE:0
+LD CR2002                ; 常時ON
+FLIK #30 #30 @DM0        ; 0.3秒ﾌﾘｯｶ
+;ｲﾆｼｬﾗｲｽﾞ/Initialize
+LD CR2008                ; 運転開始時1ｽｷｬﾝON
+ORP MR900                ; 重度異常：電源再投入必要
+ZRES @MR000 @MR5015
+;手動選択/Manual Sekect
+LD>= EM30001 #700        ; (TP)ﾍﾟｰｼﾞ画面切替用No.
+AND<= EM30001 #704       ; (TP)ﾍﾟｰｼﾞ画面切替用No.
+MC
+;QR読取/Manual QR Read TEST
+LDB MR307                ; ﾒﾝﾃ動作中
+ANB MR20202              ; ﾜｰｸBCR_読取中
+OUT MR30814              ; BCR読取可
+LD MR30814               ; BCR読取可
+ANP MR30613              ; BCR読取
+RES MR305                ; 原点復帰完了
+CON
+SET MR307                ; ﾒﾝﾃ動作中
+CON
+FMOV #0 DM20000 #20
+SET @MR1500
+STG @MR1500
+SET MR20200              ; ﾜｰｸBCR_読取開始
+CON
+JMP @MR1501
+STG @MR1501
+AND MR20201              ; ﾜｰｸBCR_読取完了
+RES MR20201              ; ﾜｰｸBCR_読取完了
+CON
+JMP @MR1502
+STG @MR1502
+MPS
+ANB MR20214              ; ﾜｰｸBCR_読取ﾀｲﾑｱｳﾄ
+MPS
+ANB MR20215              ; ﾜｰｸBCR_読取通信異常
+JMP @MR1507
+MPP
+AND MR20215              ; ﾜｰｸBCR_読取通信異常
+JMP @MR1505
+MPP
+AND MR20214              ; ﾜｰｸBCR_読取ﾀｲﾑｱｳﾄ
+JMP @MR1503
+STG @MR1503
+SET MR30614              ; 読取ﾀｲﾑｱｳﾄ異常表示
+CON
+TMR @5 #20
+CON
+AND @T5
+JMP @MR1508
+STG @MR1505
+SET MR30615              ; 通信異常表示
+CON
+TMR @6 #20
+CON
+AND @T6
+JMP @MR1508
+STG @MR1507
+BMOV W06 DM20000 #16     ; N-L20[1]ﾃﾞｰﾀ(0000)
+JMP @MR1508
+STG @MR1508
+RES MR307                ; ﾒﾝﾃ動作中
+CON
+RES MR30614              ; 読取ﾀｲﾑｱｳﾄ異常表示
+CON
+RES MR30615              ; 通信異常表示
+CON
+ENDS
+;首溶着ﾍｯﾄﾞ下降/Manual Neck welding head down operating
+LD MR2101                ; RB1_P1(搬送)給除材位置
+OR MR2103                ; RB1_P3(搬送)首溶着位置
+OR MR2104                ; RB1_P4(搬送)肩溶着位置
+OUT MR30704              ; 首溶着ﾍｯﾄﾞ下降干渉外
+LDB MR307                ; ﾒﾝﾃ動作中
+MPS
+AND MR305                ; 原点復帰完了
+MPS
+LD= DM2020 #3            ; RBT RB Position No
+ANP MR30700              ; 首溶着ｼﾘﾝﾀﾞ下降
+ANL
+RES MR305                ; 原点復帰完了
+CON
+SET MR7012               ; ﾊﾟｯｸ首溶着　下降
+MPP
+LD<> DM2020 #3           ; RBT RB Position No
+AND MR30704              ; 首溶着ﾍｯﾄﾞ下降干渉外
+ANP MR30700              ; 首溶着ｼﾘﾝﾀﾞ下降
+ANL
+RES MR305                ; 原点復帰完了
+CON
+SET MR7012               ; ﾊﾟｯｸ首溶着　下降
+MPP
+LDB MR305                ; 原点復帰完了
+AND MR30704              ; 首溶着ﾍｯﾄﾞ下降干渉外
+ANP MR30700              ; 首溶着ｼﾘﾝﾀﾞ下降
+ANL
+RES MR305                ; 原点復帰完了
+CON
+SET MR7012               ; ﾊﾟｯｸ首溶着　下降
+LD MR7012                ; ﾊﾟｯｸ首溶着　下降
+LD R4006                 ; ﾊﾟｯｸ首溶着 閉限
+LDB R4006                ; ﾊﾟｯｸ首溶着 閉限
+AND @DM0                 ; 0.3秒ﾌﾘｯｶ
+ORL
+ANL
+OUT MR30900              ; ﾊﾟｯｸ首溶着　下降表示灯
+;首溶着ﾍｯﾄﾞ上昇/Manual Neck welding head up operating
+LDB MR307                ; ﾒﾝﾃ動作中
+MPS
+AND MR305                ; 原点復帰完了
+MPS
+LD= DM2020 #3            ; RBT RB Position No
+ANP MR30701              ; 首溶着ｼﾘﾝﾀﾞ上昇
+ANL
+RES MR305                ; 原点復帰完了
+CON
+RES MR7012               ; ﾊﾟｯｸ首溶着　下降
+MPP
+LD<> DM2020 #3           ; RBT RB Position No
+AND MR30704              ; 首溶着ﾍｯﾄﾞ下降干渉外
+ANP MR30701              ; 首溶着ｼﾘﾝﾀﾞ上昇
+ANL
+RES MR305                ; 原点復帰完了
+CON
+RES MR7012               ; ﾊﾟｯｸ首溶着　下降
+MPP
+LDB MR305                ; 原点復帰完了
+AND MR30704              ; 首溶着ﾍｯﾄﾞ下降干渉外
+ANP MR30701              ; 首溶着ｼﾘﾝﾀﾞ上昇
+ANL
+RES MR305                ; 原点復帰完了
+CON
+RES MR7012               ; ﾊﾟｯｸ首溶着　下降
+LDB MR7012               ; ﾊﾟｯｸ首溶着　下降
+LD R4007                 ; ﾊﾟｯｸ首溶着 開限
+LDB R4007                ; ﾊﾟｯｸ首溶着 開限
+AND @DM0                 ; 0.3秒ﾌﾘｯｶ
+ORL
+ANL
+OUT MR30901              ; ﾊﾟｯｸ首溶着　上昇表示灯
+;肩溶着ﾍｯﾄﾞ下降/Manual Sholder welding head down operating
+LD MR2101                ; RB1_P1(搬送)給除材位置
+OR MR2102                ; RB1_P2(搬送)QR読み込み位置
+OR MR2103                ; RB1_P3(搬送)首溶着位置
+OR MR2104                ; RB1_P4(搬送)肩溶着位置
+OUT MR30712              ; 肩溶着ﾍｯﾄﾞ下降干渉外
+LDB MR307                ; ﾒﾝﾃ動作中
+MPS
+AND MR305                ; 原点復帰完了
+MPS
+LD= DM2020 #4            ; RBT RB Position No
+ANP MR30708              ; 肩溶着ｼﾘﾝﾀﾞ下降
+ANL
+RES MR305                ; 原点復帰完了
+CON
+SET MR7014               ; ﾊﾟｯｸ肩/ﾌｨﾙﾑ 溶着
+MPP
+LD<> DM2020 #4           ; RBT RB Position No
+AND MR30712              ; 肩溶着ﾍｯﾄﾞ下降干渉外
+ANP MR30708              ; 肩溶着ｼﾘﾝﾀﾞ下降
+ANL
+RES MR305                ; 原点復帰完了
+CON
+SET MR7014               ; ﾊﾟｯｸ肩/ﾌｨﾙﾑ 溶着
+MPP
+LDB MR305                ; 原点復帰完了
+AND MR30712              ; 肩溶着ﾍｯﾄﾞ下降干渉外
+ANP MR30708              ; 肩溶着ｼﾘﾝﾀﾞ下降
+ANL
+RES MR305                ; 原点復帰完了
+CON
+SET MR7014               ; ﾊﾟｯｸ肩/ﾌｨﾙﾑ 溶着
+LD MR7014                ; ﾊﾟｯｸ肩/ﾌｨﾙﾑ 溶着
+LD R4014                 ; ﾊﾟｯｸ肩/ﾌｨﾙﾑ 熱溶着閉限
+LDB R4014                ; ﾊﾟｯｸ肩/ﾌｨﾙﾑ 熱溶着閉限
+AND @DM0                 ; 0.3秒ﾌﾘｯｶ
+ORL
+ANL
+OUT MR30908              ; ﾊﾟｯｸ肩溶着　下降表示灯
+;肩溶着ﾍｯﾄﾞ上昇/Manual Sholder welding head up operating
+LDB MR307                ; ﾒﾝﾃ動作中
+MPS
+AND MR305                ; 原点復帰完了
+MPS
+LD= DM2020 #4            ; RBT RB Position No
+ANP MR30709              ; 肩溶着ｼﾘﾝﾀﾞ下降
+ANL
+RES MR305                ; 原点復帰完了
+CON
+RES MR7014               ; ﾊﾟｯｸ肩/ﾌｨﾙﾑ 溶着
+MPP
+LD<> DM2020 #4           ; RBT RB Position No
+AND MR30712              ; 肩溶着ﾍｯﾄﾞ下降干渉外
+ANP MR30709              ; 肩溶着ｼﾘﾝﾀﾞ下降
+ANL
+RES MR305                ; 原点復帰完了
+CON
+RES MR7014               ; ﾊﾟｯｸ肩/ﾌｨﾙﾑ 溶着
+MPP
+LDB MR305                ; 原点復帰完了
+AND MR30712              ; 肩溶着ﾍｯﾄﾞ下降干渉外
+ANP MR30709              ; 肩溶着ｼﾘﾝﾀﾞ下降
+ANL
+RES MR305                ; 原点復帰完了
+CON
+RES MR7014               ; ﾊﾟｯｸ肩/ﾌｨﾙﾑ 溶着
+LDB MR7014               ; ﾊﾟｯｸ肩/ﾌｨﾙﾑ 溶着
+LD R4015                 ; ﾊﾟｯｸ肩/ﾌｨﾙﾑ 熱溶着開限
+LDB R4015                ; ﾊﾟｯｸ肩/ﾌｨﾙﾑ 熱溶着開限
+AND @DM0                 ; 0.3秒ﾌﾘｯｶ
+ORL
+ANL
+OUT MR30909              ; ﾊﾟｯｸ肩溶着　上昇表示灯
+;首溶着TEST/Manual Neck weldi test
+LDB MR307                ; ﾒﾝﾃ動作中
+ANB MR902                ; ｴﾗｰ
+ANB MR315                ; 扉開処理中
+AND= DM2020 #3           ; RBT RB Position No
+ANP MR30703              ; 首溶着ﾃｽﾄ開始
+RES MR305                ; 原点復帰完了
+CON
+SET MR307                ; ﾒﾝﾃ動作中
+CON
+SET MR30903              ; 首溶着ﾃｽﾄ開始表示
+CON
+SET @MR1000
+STG @MR1000
+ANB MR902                ; ｴﾗｰ
+ANB MR315                ; 扉開処理中
+SET MR7012               ; ﾊﾟｯｸ首溶着　下降
+CON
+MPS
+AND R4006                ; ﾊﾟｯｸ首溶着 閉限
+JMP @MR1001
+MPP
+ANB R4006                ; ﾊﾟｯｸ首溶着 閉限
+TMR @15 #30
+CON
+AND @T15
+JMP @MR1002
+STG @MR1001
+TMR @16 DM20150          ; 肩溶着ﾃｽﾄ用ﾀｲﾏ
+CON
+AND @T16                 ; 肩溶着ﾃｽﾄ用ﾀｲﾏ
+JMP @MR1002
+STG @MR1002
+RES MR7012               ; ﾊﾟｯｸ首溶着　下降
+CON
+AND R4007                ; ﾊﾟｯｸ首溶着 開限
+RES MR307                ; ﾒﾝﾃ動作中
+CON
+RES MR30903              ; 首溶着ﾃｽﾄ開始表示
+CON
+ENDS
+;肩溶着TEST/Manual Sholder weldi test
+LDB MR307                ; ﾒﾝﾃ動作中
+ANB MR902                ; ｴﾗｰ
+ANB MR315                ; 扉開処理中
+AND= DM2020 #4           ; RBT RB Position No
+ANP MR30711              ; 肩溶着ﾃｽﾄ開始
+RES MR305                ; 原点復帰完了
+CON
+SET MR307                ; ﾒﾝﾃ動作中
+CON
+SET MR30911              ; 肩溶着ﾃｽﾄ開始表示
+CON
+SET @MR1100
+STG @MR1100
+ANB MR902                ; ｴﾗｰ
+ANB MR315                ; 扉開処理中
+SET MR7014               ; ﾊﾟｯｸ肩/ﾌｨﾙﾑ 溶着
+CON
+MPS
+AND R4014                ; ﾊﾟｯｸ肩/ﾌｨﾙﾑ 熱溶着閉限
+JMP @MR1101
+MPP
+ANB R4014                ; ﾊﾟｯｸ肩/ﾌｨﾙﾑ 熱溶着閉限
+TMR @17 #30
+CON
+AND @T17
+JMP @MR1102
+STG @MR1101
+TMR @18 DM20152
+CON
+AND @T18
+JMP @MR1102
+STG @MR1102
+RES MR7014               ; ﾊﾟｯｸ肩/ﾌｨﾙﾑ 溶着
+CON
+AND R4015                ; ﾊﾟｯｸ肩/ﾌｨﾙﾑ 熱溶着開限
+RES MR307                ; ﾒﾝﾃ動作中
+CON
+RES MR30911              ; 肩溶着ﾃｽﾄ開始表示
+CON
+ENDS
+MCR
+END
+ENDH

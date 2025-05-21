@@ -1,0 +1,729 @@
+DEVICE:53
+;MODULE:OneSystem_IO
+;MODULE_TYPE:0
+;OneSystem UserOpen-Module
+;
+;-----------------------------------------
+;ModuleName	:	OneSystem_IO
+;ModuleType	:	User Open Module
+;Function	:	OneSystem-Standard I/O
+;-----------------------------------------
+;
+;Copylight(C) 2011 SEIKO EPSON Corp. All rights reserved.
+;<本ﾓｼﾞｭｰﾙの使用方法>
+;OneSystemPLC標準I/O(操作BOXのI/O、安全回路基板の接続I/O)はﾃﾞﾊﾞｲｽ番号(R)を任意に設定する事ができます。
+;
+;本ﾓｼﾞｭｰﾙに記述されている入力/出力条件は全てﾀﾞﾐｰ信号となっている為、
+;入力/出力条件のﾃﾞﾊﾞｲｽ番号を実際の装置に割り付けられたﾃﾞﾊﾞｲｽ番号に置き換える事により使用可能となります。
+;OneSystem内ではﾗﾍﾞﾙ定義されたﾃﾞﾊﾞｲｽ(MR)を制御しています。
+LD R59915                ; _運転ﾓｰﾄﾞ指定
+CJ #0
+;<h1/>*Input/入力
+;<入力信号>
+;・左側に記述されているﾀﾞﾐｰ接点を装置図面やI/Oﾏｯﾌﾟのﾃﾞﾊﾞｲｽ番号に変更して下さい。(接点論理考慮の事)
+;・未使用機能は変更不要です。(現在のﾀﾞﾐｰ接点で良い)
+;・未使用ｸﾞﾙｰﾌﾟは変更不要です。
+;<h1/>Common Input/共通入力
+;Emergency Stop SW/非常停止SW(N.C)
+LD R001                  ; C 非常停止
+LD R008                  ; C Main 非常停止
+AND MR12701              ; COM_MAIN_非常停止
+OR CR2002                ; 常時ON
+ANL
+OUT R44300               ; *非常停止ｽｲｯﾁ
+;Emergency Stop Sig/非常停止状態(N.C)
+LDB R001                 ; C 非常停止
+LDB R008                 ; C Main 非常停止
+ANB MR12701              ; COM_MAIN_非常停止
+OR CR2002                ; 常時ON
+ANL
+INV
+OUT R44301               ; *非常停止状態
+;<h1/>Group1 Input/ｸﾞﾙｰﾌﾟ1入力
+;Start Sw/ｽﾀｰﾄｽｲｯﾁ(N.O)
+LD R002                  ; C 操作BOX START SW(正面)
+OUT R44400               ; *Group1　ｽﾀｰﾄSW
+;Stop Sw/ｽﾄｯﾌﾟｽｲｯﾁ(N.O)
+LD R003                  ; C 操作BOX STOP SW(正面)
+OR MR10011               ; 指定数搬送完了
+OR MR10100               ; 定停止へ
+TMR #0 #5                ; _Grp1_StopSW_Delay
+CON
+AND T0                   ; _Grp1_StopSW_Delay
+OUT R44401               ; *Group1　ｽﾄｯﾌﾟSW
+;Cover Open Sw/ｶﾊﾞｰ開要求ｽｲｯﾁ(N.O)
+LD MR12709               ; COM_MAIN_PAUSE要求
+ANB R46700               ; _安全ｶﾊﾞｰ1開処理中
+ANB T11                  ; PAUSE要求ALT_OFF時間
+MPS
+ANB T10                  ; PAUSE要求ALT_ON時間
+OUT MR12204              ; COM_装置PAUSE要求ALT_下流よりCOM
+MRD
+TMR #10 #5               ; PAUSE要求ALT_ON時間
+MPP
+AND T10                  ; PAUSE要求ALT_ON時間
+TMR #11 #5               ; PAUSE要求ALT_OFF時間
+LDB MR12709              ; COM_MAIN_PAUSE要求
+ANB R46200               ; _安全ｶﾊﾞｰ1開中
+RES MR12202              ; COM_装置PAUSE中_下流へ
+LDB R004                 ; C 操作BOX PAUSE SW(正面)
+ANB MR12204              ; COM_装置PAUSE要求ALT_下流よりCOM
+INV
+OUT R44402               ; *Group1　ｶﾊﾞｰ開要求SW
+;Buzzer Off Sw/ﾌﾞｻﾞｰｵﾌｽｲｯﾁ(N.O)
+LD R005                  ; C 操作BOX Bz OFF SW(正面)
+OUT R44403               ; *Group1　ﾌﾞｻﾞｰｵﾌSW
+;Area Sensor Continue Sw1/ｴﾘｱｾﾝｻ継続実行ｽｲｯﾁ1(N.O)
+LD @R004
+OUT R44404               ; *Group1　ｴﾘｱｾﾝｻ継続実行SW1
+;Area Sensor Continue Sw2/ｴﾘｱｾﾝｻ継続実行ｽｲｯﾁ2(N.O)
+LD @R005
+OUT R44405               ; *Group1　ｴﾘｱｾﾝｻ継続実行SW2
+;Air Pressure Detect/ｴｱｰ元圧検出(N.C)
+LD R006                  ; C 元圧検出
+OUT R44302               ; *Group1　ｴｱｰ元圧検出
+;Safety Cover Lock Sig/安全ｶﾊﾞｰﾛｯｸ入力(N.O)
+LD CR2002                ; 常時ON
+TMR @1 #100
+LD R007                  ; C 安全ｶﾊﾞｰ
+AND CR2003               ; 常時OFF
+LD MR12000               ; COM_機種_大ﾄﾚｲ(1.3.5)_Flg
+LD R4007                 ; BC_扉閉確認
+OR MR13701               ; T1_ﾄﾚｲ交換Sub_Busy
+ANL
+ORL
+LD MR12001               ; COM_機種_小ﾄﾚｲ(2.4)_Flg
+LD R5007                 ; SC_扉閉確認
+OR MR13701               ; T1_ﾄﾚｲ交換Sub_Busy
+ANL
+ORL
+BOR DM2000 #15           ; _動作ﾊﾟﾗﾒｰﾀ
+ORB @T1
+OUT R44303               ; *Group1　安全ｶﾊﾞｰ入力
+;Area Sensor /ｴﾘｱｾﾝｻ(N.C)
+LD CR2002                ; 常時ON
+OUT R44304               ; *Group1　ｴﾘｱｾﾝｻ入力
+;Continue Start Sw/ｶﾊﾞｰ継続実行ｽｲｯﾁ(N.O)
+LD @R006
+OUT R44406               ; *Group1　ｶﾊﾞｰ継続実行SW
+;<h1/>Group2 Input/ｸﾞﾙｰﾌﾟ2入力
+;Start Sw/ｽﾀｰﾄｽｲｯﾁ(N.O)
+LD @R100
+OUT R44600               ; *Group2　ｽﾀｰﾄSW
+;Stop Sw/ｽﾄｯﾌﾟｽｲｯﾁ(N.O)
+LD @R101
+TMR #1 #5                ; _Grp2_StopSW Delay
+CON
+AND T1                   ; _Grp2_StopSW Delay
+OUT R44601               ; *Group2　ｽﾄｯﾌﾟSW
+;Cover Open Sw/ｶﾊﾞｰ開要求ｽｲｯﾁ(N.O)
+LD @R102
+OUT R44602               ; *Group2　ｶﾊﾞｰ開要求SW
+;Buzzer Off Sw/ﾌﾞｻﾞｰｵﾌｽｲｯﾁ(N.O)
+LD @R103
+OUT R44603               ; *Group2　ﾌﾞｻﾞｰｵﾌSW
+;Area Sensor Continue Sw1/ｴﾘｱｾﾝｻ継続実行ｽｲｯﾁ1(N.O)
+LD @R104
+OUT R44604               ; *Group2　ｴﾘｱｾﾝｻ継続実行SW1
+;Area Sensor Continue Sw2/ｴﾘｱｾﾝｻ継続実行ｽｲｯﾁ2(N.O)
+LD @R105
+OUT R44605               ; *Group2　ｴﾘｱｾﾝｻ継続実行SW2
+;Air Pressure Detect/ｴｱｰ元圧検出(N.C)
+LD CR2002                ; 常時ON
+OUT R44606               ; *Group2　ｴｱｰ元圧検出
+;Safety Cover Lock Sig/安全ｶﾊﾞｰﾛｯｸ入力(N.O)
+LD CR2003                ; 常時OFF
+OUT R44607               ; *Group2　安全ｶﾊﾞｰ入力
+;Area Sensor /ｴﾘｱｾﾝｻ(N.C)
+LD CR2002                ; 常時ON
+OUT R44608               ; *Group2　ｴﾘｱｾﾝｻ入力
+;Continue Start Sw/ｶﾊﾞｰ継続実行ｽｲｯﾁ(N.O)
+LD @R106
+OUT R44609               ; *Group2　ｶﾊﾞｰ継続実行SW
+;<h1/>Group3 Input/ｸﾞﾙｰﾌﾟ3入力
+;Start Sw/ｽﾀｰﾄｽｲｯﾁ(N.O)
+LD @R200
+OUT R44800               ; *Group3　ｽﾀｰﾄSW
+;Stop Sw/ｽﾄｯﾌﾟｽｲｯﾁ(N.O)
+LD @R201
+TMR #2 #5                ; _Grp3_StopSW Delay
+CON
+AND T2                   ; _Grp3_StopSW Delay
+OUT R44801               ; *Group3　ｽﾄｯﾌﾟSW
+;Cover Open Sw/ｶﾊﾞｰ開要求ｽｲｯﾁ(N.O)
+LD @R202
+OUT R44802               ; *Group3　ｶﾊﾞｰ開要求SW
+;Buzzer Off Sw/ﾌﾞｻﾞｰｵﾌｽｲｯﾁ(N.O)
+LD @R203
+OUT R44803               ; *Group3　ﾌﾞｻﾞｰｵﾌSW
+;Area Sensor Continue Sw1/ｴﾘｱｾﾝｻ継続実行ｽｲｯﾁ1(N.O)
+LD @R204
+OUT R44804               ; *Group3　ｴﾘｱｾﾝｻ継続実行SW1
+;Area Sensor Continue Sw2/ｴﾘｱｾﾝｻ継続実行ｽｲｯﾁ2(N.O)
+LD @R205
+OUT R44805               ; *Group3　ｴﾘｱｾﾝｻ継続実行SW2
+;Air Pressure Detect/ｴｱｰ元圧検出(N.C)
+LD CR2002                ; 常時ON
+OUT R44806               ; *Group3　ｴｱｰ元圧検出
+;Safety Cover Lock Sig/安全ｶﾊﾞｰﾛｯｸ入力(N.O)
+LD CR2003                ; 常時OFF
+OUT R44807               ; *Group3　安全ｶﾊﾞｰ入力
+;Area Sensor /ｴﾘｱｾﾝｻ(N.C)
+LD CR2002                ; 常時ON
+OUT R44808               ; *Group3　ｴﾘｱｾﾝｻ入力
+;Continue Start Sw/ｶﾊﾞｰ継続実行ｽｲｯﾁ(N.O)
+LD @R206
+OUT R44809               ; *Group3　ｶﾊﾞｰ継続実行SW
+;<h1/>Group4 Input/ｸﾞﾙｰﾌﾟ4入力
+;Start Sw/ｽﾀｰﾄｽｲｯﾁ(N.O)
+LD @R300
+OUT R45000               ; *Group4　ｽﾀｰﾄSW
+;Stop Sw/ｽﾄｯﾌﾟｽｲｯﾁ(N.O)
+LD @R301
+TMR #3 #5                ; _Grp4_StopSW Delay
+CON
+AND T3                   ; _Grp4_StopSW Delay
+OUT R45001               ; *Group4　ｽﾄｯﾌﾟSW
+;Cover Open Sw/ｶﾊﾞｰ開要求ｽｲｯﾁ(N.O)
+LD @R302
+OUT R45002               ; *Group4　ｶﾊﾞｰ開要求SW
+;Buzzer Off Sw/ﾌﾞｻﾞｰｵﾌｽｲｯﾁ(N.O)
+LD @R303
+OUT R45003               ; *Group4　ﾌﾞｻﾞｰｵﾌSW
+;Area Sensor Continue Sw1/ｴﾘｱｾﾝｻ継続実行ｽｲｯﾁ1(N.O)
+LD @R304
+OUT R45004               ; *Group4　ｴﾘｱｾﾝｻ継続実行SW1
+;Area Sensor Continue Sw2/ｴﾘｱｾﾝｻ継続実行ｽｲｯﾁ2(N.O)
+LD @R305
+OUT R45005               ; *Group4　ｴﾘｱｾﾝｻ継続実行SW2
+;Air Pressure Detect/ｴｱｰ元圧検出(N.C)
+LD CR2002                ; 常時ON
+OUT R45006               ; *Group4　ｴｱｰ元圧検出
+;Safety Cover Lock Sig/安全ｶﾊﾞｰﾛｯｸ入力(N.O)
+LD CR2003                ; 常時OFF
+OUT R45007               ; *Group4　安全ｶﾊﾞｰ入力
+;Area Sensor /ｴﾘｱｾﾝｻ(N.C)
+LD CR2002                ; 常時ON
+OUT R45008               ; *Group4　ｴﾘｱｾﾝｻ入力
+;Continue Start Sw/ｶﾊﾞｰ継続実行ｽｲｯﾁ(N.O)
+LD @R306
+OUT R45009               ; *Group4　ｶﾊﾞｰ継続実行SW
+;<h1/>Group5 Input/ｸﾞﾙｰﾌﾟ5入力
+;Start Sw/ｽﾀｰﾄｽｲｯﾁ(N.O)
+LD @R400
+OUT R45200               ; *Group5　ｽﾀｰﾄSW
+;Stop Sw/ｽﾄｯﾌﾟｽｲｯﾁ(N.O)
+LD @R401
+TMR #4 #5                ; _Grp5_StopSW Delay
+CON
+AND T4                   ; _Grp5_StopSW Delay
+OUT R45201               ; *Group5　ｽﾄｯﾌﾟSW
+;Cover Open Sw/ｶﾊﾞｰ開要求ｽｲｯﾁ(N.O)
+LD @R402
+OUT R45202               ; *Group5　ｶﾊﾞｰ開要求SW
+;Buzzer Off Sw/ﾌﾞｻﾞｰｵﾌｽｲｯﾁ(N.O)
+LD @R403
+OUT R45203               ; *Group5　ﾌﾞｻﾞｰｵﾌSW
+;Area Sensor Continue Sw1/ｴﾘｱｾﾝｻ継続実行ｽｲｯﾁ1(N.O)
+LD @R404
+OUT R45204               ; *Group5　ｴﾘｱｾﾝｻ継続実行SW1
+;Area Sensor Continue Sw2/ｴﾘｱｾﾝｻ継続実行ｽｲｯﾁ2(N.O)
+LD @R405
+OUT R45205               ; *Group5　ｴﾘｱｾﾝｻ継続実行SW2
+;Air Pressure Detect/ｴｱｰ元圧検出(N.C)
+LD CR2002                ; 常時ON
+OUT R45206               ; *Group5　ｴｱｰ元圧検出
+;Safety Cover Lock Sig/安全ｶﾊﾞｰﾛｯｸ入力(N.O)
+LD CR2003                ; 常時OFF
+OUT R45207               ; *Group5　安全ｶﾊﾞｰ入力
+;Area Sensor /ｴﾘｱｾﾝｻ(N.C)
+LD CR2002                ; 常時ON
+OUT R45208               ; *Group5　ｴﾘｱｾﾝｻ入力
+;Continue Start Sw/ｶﾊﾞｰ継続実行ｽｲｯﾁ(N.O)
+LD @R406
+OUT R45209               ; *Group5　ｶﾊﾞｰ継続実行SW
+;<h1/>Group6 Input/ｸﾞﾙｰﾌﾟ6入力
+;Start Sw/ｽﾀｰﾄｽｲｯﾁ(N.O)
+LD @R500
+OUT R45400               ; *Group6　ｽﾀｰﾄSW
+;Stop Sw/ｽﾄｯﾌﾟｽｲｯﾁ(N.O)
+LD @R501
+TMR #5 #5                ; _Grp6_StopSW Delay
+CON
+AND T5                   ; _Grp6_StopSW Delay
+OUT R45401               ; *Group6　ｽﾄｯﾌﾟSW
+;Cover Open Sw/ｶﾊﾞｰ開要求ｽｲｯﾁ(N.O)
+LD @R502
+OUT R45402               ; *Group6　ｶﾊﾞｰ開要求SW
+;Buzzer Off Sw/ﾌﾞｻﾞｰｵﾌｽｲｯﾁ(N.O)
+LD @R503
+OUT R45403               ; *Group6　ﾌﾞｻﾞｰｵﾌSW
+;Area Sensor Continue Sw1/ｴﾘｱｾﾝｻ継続実行ｽｲｯﾁ1(N.O)
+LD @R504
+OUT R45404               ; *Group6　ｴﾘｱｾﾝｻ継続実行SW1
+;Area Sensor Continue Sw2/ｴﾘｱｾﾝｻ継続実行ｽｲｯﾁ2(N.O)
+LD @R505
+OUT R45405               ; *Group6　ｴﾘｱｾﾝｻ継続実行SW2
+;Air Pressure Detect/ｴｱｰ元圧検出(N.C)
+LD CR2002                ; 常時ON
+OUT R45406               ; *Group6　ｴｱｰ元圧検出
+;Safety Cover Lock Sig/安全ｶﾊﾞｰﾛｯｸ入力(N.O)
+LD CR2003                ; 常時OFF
+OUT R45407               ; *Group6　安全ｶﾊﾞｰ入力
+;Area Sensor /ｴﾘｱｾﾝｻ(N.C)
+LD CR2002                ; 常時ON
+OUT R45408               ; *Group6　ｴﾘｱｾﾝｻ入力
+;Continue Start Sw/ｶﾊﾞｰ継続実行ｽｲｯﾁ(N.O)
+LD @R506
+OUT R45409               ; *Group6　ｶﾊﾞｰ継続実行SW
+;<h1/>Group7 Input/ｸﾞﾙｰﾌﾟ7入力
+;Start Sw/ｽﾀｰﾄｽｲｯﾁ(N.O)
+LD @R600
+OUT R45600               ; *Group7　ｽﾀｰﾄSW
+;Stop Sw/ｽﾄｯﾌﾟｽｲｯﾁ(N.O)
+LD @R601
+TMR #6 #5                ; _Grp7_StopSW Delay
+CON
+AND T6                   ; _Grp7_StopSW Delay
+OUT R45601               ; *Group7　ｽﾄｯﾌﾟSW
+;Cover Open Sw/ｶﾊﾞｰ開要求ｽｲｯﾁ(N.O)
+LD @R602
+OUT R45602               ; *Group7　ｶﾊﾞｰ開要求SW
+;Buzzer Off Sw/ﾌﾞｻﾞｰｵﾌｽｲｯﾁ(N.O)
+LD @R603
+OUT R45603               ; *Group7　ﾌﾞｻﾞｰｵﾌSW
+;Area Sensor Continue Sw1/ｴﾘｱｾﾝｻ継続実行ｽｲｯﾁ1(N.O)
+LD @R604
+OUT R45604               ; *Group7　ｴﾘｱｾﾝｻ継続実行SW1
+;Area Sensor Continue Sw2/ｴﾘｱｾﾝｻ継続実行ｽｲｯﾁ2(N.O)
+LD @R605
+OUT R45605               ; *Group7　ｴﾘｱｾﾝｻ継続実行SW2
+;Air Pressure Detect/ｴｱｰ元圧検出(N.C)
+LD CR2002                ; 常時ON
+OUT R45606               ; *Group7　ｴｱｰ元圧検出
+;Safety Cover Lock Sig/安全ｶﾊﾞｰﾛｯｸ入力(N.O)
+LD CR2003                ; 常時OFF
+OUT R45607               ; *Group7　安全ｶﾊﾞｰ入力
+;Area Sensor /ｴﾘｱｾﾝｻ(N.C)
+LD CR2002                ; 常時ON
+OUT R45608               ; *Group7　ｴﾘｱｾﾝｻ入力
+;Continue Start Sw/ｶﾊﾞｰ継続実行ｽｲｯﾁ(N.O)
+LD @R606
+OUT R45609               ; *Group7　ｶﾊﾞｰ継続実行SW
+;<h1/>Group8 Input/ｸﾞﾙｰﾌﾟ8入力
+;Start Sw/ｽﾀｰﾄｽｲｯﾁ(N.O)
+LD @R700
+OUT R45800               ; *Group8　ｽﾀｰﾄSW
+;Stop Sw/ｽﾄｯﾌﾟｽｲｯﾁ(N.O)
+LD @R701
+TMR #7 #5                ; _Grp8_StopSW Delay
+CON
+AND T7                   ; _Grp8_StopSW Delay
+OUT R45801               ; *Group8　ｽﾄｯﾌﾟSW
+;Cover Open Sw/ｶﾊﾞｰ開要求ｽｲｯﾁ(N.O)
+LD @R702
+OUT R45802               ; *Group8　ｶﾊﾞｰ開要求SW
+;Buzzer Off Sw/ﾌﾞｻﾞｰｵﾌｽｲｯﾁ(N.O)
+LD @R703
+OUT R45803               ; *Group8　ﾌﾞｻﾞｰｵﾌSW
+;Area Sensor Continue Sw1/ｴﾘｱｾﾝｻ継続実行ｽｲｯﾁ1(N.O)
+LD @R704
+OUT R45804               ; *Group8　ｴﾘｱｾﾝｻ継続実行SW1
+;Area Sensor Continue Sw2/ｴﾘｱｾﾝｻ継続実行ｽｲｯﾁ2(N.O)
+LD @R705
+OUT R45805               ; *Group8　ｴﾘｱｾﾝｻ継続実行SW2
+;Air Pressure Detect/ｴｱｰ元圧検出(N.C)
+LD CR2002                ; 常時ON
+OUT R45806               ; *Group8　ｴｱｰ元圧検出
+;Safety Cover Lock Sig/安全ｶﾊﾞｰﾛｯｸ入力(N.O)
+LD CR2003                ; 常時OFF
+OUT R45807               ; *Group8　安全ｶﾊﾞｰ入力
+;Area Sensor /ｴﾘｱｾﾝｻ(N.C)
+LD CR2002                ; 常時ON
+OUT R45808               ; *Group8　ｴﾘｱｾﾝｻ入力
+;Continue Start Sw/ｶﾊﾞｰ継続実行ｽｲｯﾁ(N.O)
+LD @R706
+OUT R45809               ; *Group8　ｶﾊﾞｰ継続実行SW
+;<h1/>*Output/出力
+;<出力信号>
+;・右側に記述されているﾀﾞﾐｰ出力ｺｲﾙについて装置図面やI/Oﾏｯﾌﾟのﾃﾞﾊﾞｲｽ番号に変更して下さい。
+;・未使用機能は変更不要です。(現在のﾀﾞﾐｰｺｲﾙのままで良い)
+;・未使用ｸﾞﾙｰﾌﾟは変更不要です。
+;<h1/>Common Output/共通出力
+;Estop Sig to Safety Circuit Board/安全回路基板への非常停止出力
+LD R44308                ; *非常停止出力
+OUT @R800
+;<h1/>Group1 Output/ｸﾞﾙｰﾌﾟ1出力
+;Start Sw Lamp/ｽﾀｰﾄｽｲｯﾁﾗﾝﾌﾟ
+LD R44500                ; *Group1　ｽﾀｰﾄSWﾗﾝﾌﾟ
+OUT R501                 ; C 操作BOX START SWﾗﾝﾌﾟ(正面)
+;Stop Sw Lamp/ｽﾄｯﾌﾟｽｲｯﾁﾗﾝﾌﾟ
+LD R44501                ; *Group1　ｽﾄｯﾌﾟSWﾗﾝﾌﾟ
+OUT R502                 ; C 操作BOX STOP SWﾗﾝﾌﾟ(正面)
+;Cover Sw Lamp/ｶﾊﾞｰ開ｽｲｯﾁﾗﾝﾌﾟ
+LD R44502                ; *Group1　ｶﾊﾞｰ開要求SWﾗﾝﾌﾟ
+OUT R503                 ; C 操作BOX PAUSE SWﾗﾝﾌﾟ(正面)
+;Buzzer Off Sw Lamp/ﾌﾞｻﾞｰｵﾌｽｲｯﾁﾗﾝﾌﾟ
+LD R44503                ; *Group1　ﾌﾞｻﾞｰｵﾌSWﾗﾝﾌﾟ
+OUT R504                 ; C 操作BOX Bz OFF SWﾗﾝﾌﾟ(正面)
+;Buzzer/ﾌﾞｻﾞｰ
+LD R44504                ; *Group1　ﾌﾞｻﾞｰ
+OUT MR7003               ; C ﾀﾜｰﾗﾝﾌﾟ Bz1
+;Area Sensor Continue Sw1 Lamp/ｴﾘｱｾﾝｻ継続ｽｲｯﾁ1ﾗﾝﾌﾟ
+LD R44505                ; *Group1　ｴﾘｱｾﾝｻ継続実行SW1ﾗﾝﾌﾟ
+OUT @R905
+;Area Sensor Continue Sw2 Lamp/ｴﾘｱｾﾝｻ継続ｽｲｯﾁ2ﾗﾝﾌﾟ
+LD R44506                ; *Group1　ｴﾘｱｾﾝｻ継続実行SW2ﾗﾝﾌﾟ
+OUT @R906
+;Air Pressure Latch Cancel Sig/ｴｱｰ元圧検出ﾗｯﾁ解除
+LD R44309                ; *Group1　ｴｱｰ元圧検出ﾗｯﾁ解除
+OUT @R907
+;Safety Cover Lock Sig/安全ｶﾊﾞｰﾛｯｸ
+LD R44310                ; *Group1　安全ｶﾊﾞｰﾛｯｸ
+OUT R506                 ; C ｶﾊﾞｰ 開
+;Area Sensor Latch Cancel Sig/ｴﾘｱｾﾝｻﾗｯﾁ解除
+LD R44311                ; *Group1　ｴﾘｱｾﾝｻﾗｯﾁ解除
+OUT @R909
+;Tower Lamp(R)/ﾀﾜｰﾗﾝﾌﾟ赤
+LD R44507                ; *Group1　ﾀﾜｰﾗﾝﾌﾟ赤
+OUT MR7000               ; C ﾀﾜｰﾗﾝﾌﾟ(R)
+;Tower Lamp(G)/ﾀﾜｰﾗﾝﾌﾟ緑
+LD R44508                ; *Group1　ﾀﾜｰﾗﾝﾌﾟ緑
+OUT MR7002               ; C ﾀﾜｰﾗﾝﾌﾟ(G)
+;Tower Lamp(Y)/ﾀﾜｰﾗﾝﾌﾟ黄
+LD R44509                ; *Group1　ﾀﾜｰﾗﾝﾌﾟ黄
+OUT MR7001               ; C ﾀﾜｰﾗﾝﾌﾟ(Y)
+;Continue Start Sw Lamp/ｶﾊﾞｰ継続実行ｽｲｯﾁﾗﾝﾌﾟ
+LD R44510                ; *Group1　ｶﾊﾞｰ継続実行SWﾗﾝﾌﾟ
+OUT @R913
+;Cover Open Sw Lamp(Triple SW)/3連ｶﾊﾞｰ開要求ｽｲｯﾁﾗﾝﾌﾟ
+LD R44511                ; *Group1　3連ｶﾊﾞｰ開要求SWﾗﾝﾌﾟ
+OUT @R914
+;ﾛﾎﾞｯﾄ非常停止
+LDB R44308               ; *非常停止出力
+OUT R507                 ; C RB非常停止
+;<h1/>Group2 Output/ｸﾞﾙｰﾌﾟ2出力
+;Start Sw Lamp/ｽﾀｰﾄｽｲｯﾁﾗﾝﾌﾟ
+LD R44700                ; *Group2　ｽﾀｰﾄSWﾗﾝﾌﾟ
+OUT @R1000
+;Stop Sw Lamp/ｽﾄｯﾌﾟｽｲｯﾁﾗﾝﾌﾟ
+LD R44701                ; *Group2　ｽﾄｯﾌﾟSWﾗﾝﾌﾟ
+OUT @R1001
+;Cover Sw Lamp/ｶﾊﾞｰ開ｽｲｯﾁﾗﾝﾌﾟ
+LD R44702                ; *Group2　ｶﾊﾞｰ開要求SWﾗﾝﾌﾟ
+OUT @R1002
+;Buzzer Off Sw Lamp/ﾌﾞｻﾞｰｵﾌｽｲｯﾁﾗﾝﾌﾟ
+LD R44703                ; *Group2　ﾌﾞｻﾞｰｵﾌSWﾗﾝﾌﾟ
+OUT @R1003
+;Buzzer/ﾌﾞｻﾞｰ
+LD R44704                ; *Group2　ﾌﾞｻﾞｰ
+OUT @R1004
+;Area Sensor Continue Sw1 Lamp/ｴﾘｱｾﾝｻ継続ｽｲｯﾁ1ﾗﾝﾌﾟ
+LD R44705                ; *Group2　ｴﾘｱｾﾝｻ継続実行SW1ﾗﾝﾌﾟ
+OUT @R1005
+;Area Sensor Continue Sw2 Lamp/ｴﾘｱｾﾝｻ継続ｽｲｯﾁ2ﾗﾝﾌﾟ
+LD R44706                ; *Group2　ｴﾘｱｾﾝｻ継続実行SW2ﾗﾝﾌﾟ
+OUT @R1006
+;Air Pressure Latch Cancel Sig/ｴｱｰ元圧検出ﾗｯﾁ解除
+LD R44707                ; *Group2　ｴｱｰ元圧検出ﾗｯﾁ解除
+OUT @R1007
+;Safety Cover Lock Sig/安全ｶﾊﾞｰﾛｯｸ
+LD R44708                ; *Group2　安全ｶﾊﾞｰﾛｯｸ
+OUT @R1008
+;Area Sensor Latch Cancel Sig/ｴﾘｱｾﾝｻﾗｯﾁ解除
+LD R44709                ; *Group2　ｴﾘｱｾﾝｻﾗｯﾁ解除
+OUT @R1009
+;Tower Lamp(R)/ﾀﾜｰﾗﾝﾌﾟ赤
+LD R44710                ; *Group2　ﾀﾜｰﾗﾝﾌﾟ赤
+OUT @R1010
+;Tower Lamp(G)/ﾀﾜｰﾗﾝﾌﾟ緑
+LD R44711                ; *Group2　ﾀﾜｰﾗﾝﾌﾟ緑
+OUT @R1011
+;Tower Lamp(Y)/ﾀﾜｰﾗﾝﾌﾟ黄
+LD R44712                ; *Group2　ﾀﾜｰﾗﾝﾌﾟ黄
+OUT @R1012
+;Continue Start Sw Lamp/ｶﾊﾞｰ継続実行ｽｲｯﾁﾗﾝﾌﾟ
+LD R44713                ; *Group2　ｶﾊﾞｰ継続実行SWﾗﾝﾌﾟ
+OUT @R1013
+;Cover Open Sw Lamp(Triple SW)/3連ｶﾊﾞｰ開要求ｽｲｯﾁﾗﾝﾌﾟ
+LD R44714                ; *Group2　3連ｶﾊﾞｰ開要求SWﾗﾝﾌﾟ
+OUT @R1014
+;<h1/>Group3 Output/ｸﾞﾙｰﾌﾟ3出力
+;Start Sw Lamp/ｽﾀｰﾄｽｲｯﾁﾗﾝﾌﾟ
+LD R44900                ; *Group3　ｽﾀｰﾄSWﾗﾝﾌﾟ
+OUT @R1100
+;Stop Sw Lamp/ｽﾄｯﾌﾟｽｲｯﾁﾗﾝﾌﾟ
+LD R44901                ; *Group3　ｽﾄｯﾌﾟSWﾗﾝﾌﾟ
+OUT @R1101
+;Cover Sw Lamp/ｶﾊﾞｰ開ｽｲｯﾁﾗﾝﾌﾟ
+LD R44902                ; *Group3　ｶﾊﾞｰ開要求SWﾗﾝﾌﾟ
+OUT @R1102
+;Buzzer Off Sw Lamp/ﾌﾞｻﾞｰｵﾌｽｲｯﾁﾗﾝﾌﾟ
+LD R44903                ; *Group3　ﾌﾞｻﾞｰｵﾌSWﾗﾝﾌﾟ
+OUT @R1103
+;Buzzer/ﾌﾞｻﾞｰ
+LD R44904                ; *Group3　ﾌﾞｻﾞｰ
+OUT @R1104
+;Area Sensor Continue Sw1 Lamp/ｴﾘｱｾﾝｻ継続ｽｲｯﾁ1ﾗﾝﾌﾟ
+LD R44905                ; *Group3　ｴﾘｱｾﾝｻ継続実行SW1ﾗﾝﾌﾟ
+OUT @R1105
+;Area Sensor Continue Sw2 Lamp/ｴﾘｱｾﾝｻ継続ｽｲｯﾁ2ﾗﾝﾌﾟ
+LD R44906                ; *Group3　ｴﾘｱｾﾝｻ継続実行SW2ﾗﾝﾌﾟ
+OUT @R1106
+;Air Pressure Latch Cancel Sig/ｴｱｰ元圧検出ﾗｯﾁ解除
+LD R44907                ; *Group3　ｴｱｰ元圧検出ﾗｯﾁ解除
+OUT @R1107
+;Safety Cover Lock Sig/安全ｶﾊﾞｰﾛｯｸ
+LD R44908                ; *Group3　安全ｶﾊﾞｰﾛｯｸ
+OUT @R1108
+;Area Sensor Latch Cancel Sig/ｴﾘｱｾﾝｻﾗｯﾁ解除
+LD R44909                ; *Group3　ｴﾘｱｾﾝｻﾗｯﾁ解除
+OUT @R1109
+;Tower Lamp(R)/ﾀﾜｰﾗﾝﾌﾟ赤
+LD R44910                ; *Group3　ﾀﾜｰﾗﾝﾌﾟ赤
+OUT @R1110
+;Tower Lamp(G)/ﾀﾜｰﾗﾝﾌﾟ緑
+LD R44911                ; *Group3　ﾀﾜｰﾗﾝﾌﾟ緑
+OUT @R1111
+;Tower Lamp(Y)/ﾀﾜｰﾗﾝﾌﾟ黄
+LD R44912                ; *Group3　ﾀﾜｰﾗﾝﾌﾟ黄
+OUT @R1112
+;Continue Start Sw Lamp/ｶﾊﾞｰ継続実行ｽｲｯﾁﾗﾝﾌﾟ
+LD R44913                ; *Group3　ｴﾘｱｾﾝｻ継続実行SW1ﾗﾝﾌﾟ
+OUT @R1113
+;Cover Open Sw Lamp(Triple SW)/3連ｶﾊﾞｰ開要求ｽｲｯﾁﾗﾝﾌﾟ
+LD R44914                ; *Group3　ｴﾘｱｾﾝｻ継続実行SW2ﾗﾝﾌﾟ
+OUT @R1114
+;<h1/>Group4 Output/ｸﾞﾙｰﾌﾟ4出力
+;Start Sw Lamp/ｽﾀｰﾄｽｲｯﾁﾗﾝﾌﾟ
+LD R45100                ; *Group4　ｽﾀｰﾄSWﾗﾝﾌﾟ
+OUT @R1200
+;Stop Sw Lamp/ｽﾄｯﾌﾟｽｲｯﾁﾗﾝﾌﾟ
+LD R45101                ; *Group4　ｽﾄｯﾌﾟSWﾗﾝﾌﾟ
+OUT @R1201
+;Cover Sw Lamp/ｶﾊﾞｰ開ｽｲｯﾁﾗﾝﾌﾟ
+LD R45102                ; *Group4　ｶﾊﾞｰ開要求SWﾗﾝﾌﾟ
+OUT @R1202
+;Buzzer Off Sw Lamp/ﾌﾞｻﾞｰｵﾌｽｲｯﾁﾗﾝﾌﾟ
+LD R45103                ; *Group4　ﾌﾞｻﾞｰｵﾌSWﾗﾝﾌﾟ
+OUT @R1203
+;Buzzer/ﾌﾞｻﾞｰ
+LD R45104                ; *Group4　ﾌﾞｻﾞｰ
+OUT @R1204
+;Area Sensor Continue Sw1 Lamp/ｴﾘｱｾﾝｻ継続ｽｲｯﾁ1ﾗﾝﾌﾟ
+LD R45105                ; *Group4　ｴﾘｱｾﾝｻ継続実行SW1ﾗﾝﾌﾟ
+OUT @R1205
+;Area Sensor Continue Sw2 Lamp/ｴﾘｱｾﾝｻ継続ｽｲｯﾁ2ﾗﾝﾌﾟ
+LD R45106                ; *Group4　ｴﾘｱｾﾝｻ継続実行SW2ﾗﾝﾌﾟ
+OUT @R1206
+;Air Pressure Latch Cancel Sig/ｴｱｰ元圧検出ﾗｯﾁ解除
+LD R45107                ; *Group4　ｴｱｰ元圧検出ﾗｯﾁ解除
+OUT @R1207
+;Safety Cover Lock Sig/安全ｶﾊﾞｰﾛｯｸ
+LD R45108                ; *Group4　安全ｶﾊﾞｰﾛｯｸ
+OUT @R1208
+;Area Sensor Latch Cancel Sig/ｴﾘｱｾﾝｻﾗｯﾁ解除
+LD R45109                ; *Group4　ｴﾘｱｾﾝｻﾗｯﾁ解除
+OUT @R1209
+;Tower Lamp(R)/ﾀﾜｰﾗﾝﾌﾟ赤
+LD R45110                ; *Group4　ﾀﾜｰﾗﾝﾌﾟ赤
+OUT @R1210
+;Tower Lamp(G)/ﾀﾜｰﾗﾝﾌﾟ緑
+LD R45111                ; *Group4　ﾀﾜｰﾗﾝﾌﾟ緑
+OUT @R1211
+;Tower Lamp(Y)/ﾀﾜｰﾗﾝﾌﾟ黄
+LD R45112                ; *Group4　ﾀﾜｰﾗﾝﾌﾟ黄
+OUT @R1212
+;Continue Start Sw Lamp/ｶﾊﾞｰ継続実行ｽｲｯﾁﾗﾝﾌﾟ
+LD R45113                ; *Group4　ｶﾊﾞｰ継続実行SWﾗﾝﾌﾟ
+OUT @R1213
+;Cover Open Sw Lamp(Triple SW)/3連ｶﾊﾞｰ開要求ｽｲｯﾁﾗﾝﾌﾟ
+LD R45114                ; *Group4　3連ｶﾊﾞｰ開要求SWﾗﾝﾌﾟ
+OUT @R1214
+;<h1/>Group5 Output/ｸﾞﾙｰﾌﾟ5出力
+;Start Sw Lamp/ｽﾀｰﾄｽｲｯﾁﾗﾝﾌﾟ
+LD R45300                ; *Group5　ｽﾀｰﾄSWﾗﾝﾌﾟ
+OUT @R1300
+;Stop Sw Lamp/ｽﾄｯﾌﾟｽｲｯﾁﾗﾝﾌﾟ
+LD R45301                ; *Group5　ｽﾄｯﾌﾟSWﾗﾝﾌﾟ
+OUT @R1301
+;Cover Sw Lamp/ｶﾊﾞｰ開ｽｲｯﾁﾗﾝﾌﾟ
+LD R45302                ; *Group5　ｶﾊﾞｰ開要求SWﾗﾝﾌﾟ
+OUT @R1302
+;Buzzer Off Sw Lamp/ﾌﾞｻﾞｰｵﾌｽｲｯﾁﾗﾝﾌﾟ
+LD R45303                ; *Group5　ﾌﾞｻﾞｰｵﾌSWﾗﾝﾌﾟ
+OUT @R1303
+;Buzzer/ﾌﾞｻﾞｰ
+LD R45304                ; *Group5　ﾌﾞｻﾞｰ
+OUT @R1304
+;Area Sensor Continue Sw1 Lamp/ｴﾘｱｾﾝｻ継続ｽｲｯﾁ1ﾗﾝﾌﾟ
+LD R45305                ; *Group5　ｴﾘｱｾﾝｻ継続実行SW1ﾗﾝﾌﾟ
+OUT @R1305
+;Area Sensor Continue Sw2 Lamp/ｴﾘｱｾﾝｻ継続ｽｲｯﾁ2ﾗﾝﾌﾟ
+LD R45306                ; *Group5　ｴﾘｱｾﾝｻ継続実行SW2ﾗﾝﾌﾟ
+OUT @R1306
+;Air Pressure Latch Cancel Sig/ｴｱｰ元圧検出ﾗｯﾁ解除
+LD R45307                ; *Group5　ｴｱｰ元圧検出ﾗｯﾁ解除
+OUT @R1307
+;Safety Cover Lock Sig/安全ｶﾊﾞｰﾛｯｸ
+LD R45308                ; *Group5　安全ｶﾊﾞｰﾛｯｸ
+OUT @R1308
+;Area Sensor Latch Cancel Sig/ｴﾘｱｾﾝｻﾗｯﾁ解除
+LD R45309                ; *Group5　ｴﾘｱｾﾝｻﾗｯﾁ解除
+OUT @R1309
+;Tower Lamp(R)/ﾀﾜｰﾗﾝﾌﾟ赤
+LD R45310                ; *Group5　ﾀﾜｰﾗﾝﾌﾟ赤
+OUT @R1310
+;Tower Lamp(G)/ﾀﾜｰﾗﾝﾌﾟ緑
+LD R45311                ; *Group5　ﾀﾜｰﾗﾝﾌﾟ緑
+OUT @R1311
+;Tower Lamp(Y)/ﾀﾜｰﾗﾝﾌﾟ黄
+LD R45312                ; *Group5　ﾀﾜｰﾗﾝﾌﾟ黄
+OUT @R1312
+;Continue Start Sw Lamp/ｶﾊﾞｰ継続実行ｽｲｯﾁﾗﾝﾌﾟ
+LD R45313                ; *Group5　ｶﾊﾞｰ継続実行SWﾗﾝﾌﾟ
+OUT @R1313
+;Cover Open Sw Lamp(Triple SW)/3連ｶﾊﾞｰ開要求ｽｲｯﾁﾗﾝﾌﾟ
+LD R45314                ; *Group5　3連ｶﾊﾞｰ開要求SWﾗﾝﾌﾟ
+OUT @R1314
+;<h1/>Group6 Output/ｸﾞﾙｰﾌﾟ6出力
+;Start Sw Lamp/ｽﾀｰﾄｽｲｯﾁﾗﾝﾌﾟ
+LD R45500                ; *Group6　ｽﾀｰﾄSWﾗﾝﾌﾟ
+OUT @R1400
+;Stop Sw Lamp/ｽﾄｯﾌﾟｽｲｯﾁﾗﾝﾌﾟ
+LD R45501                ; *Group6　ｽﾄｯﾌﾟSWﾗﾝﾌﾟ
+OUT @R1401
+;Cover Sw Lamp/ｶﾊﾞｰ開ｽｲｯﾁﾗﾝﾌﾟ
+LD R45502                ; *Group6　ｶﾊﾞｰ開要求SWﾗﾝﾌﾟ
+OUT @R1402
+;Buzzer Off Sw Lamp/ﾌﾞｻﾞｰｵﾌｽｲｯﾁﾗﾝﾌﾟ
+LD R45503                ; *Group6　ﾌﾞｻﾞｰｵﾌSWﾗﾝﾌﾟ
+OUT @R1403
+;Buzzer/ﾌﾞｻﾞｰ
+LD R45504                ; *Group6　ﾌﾞｻﾞｰ
+OUT @R1404
+;Area Sensor Continue Sw1 Lamp/ｴﾘｱｾﾝｻ継続ｽｲｯﾁ1ﾗﾝﾌﾟ
+LD R45505                ; *Group6　ｴﾘｱｾﾝｻ継続実行SW1ﾗﾝﾌﾟ
+OUT @R1405
+;Area Sensor Continue Sw2 Lamp/ｴﾘｱｾﾝｻ継続ｽｲｯﾁ2ﾗﾝﾌﾟ
+LD R45506                ; *Group6　ｴﾘｱｾﾝｻ継続実行SW2ﾗﾝﾌﾟ
+OUT @R1406
+;Air Pressure Latch Cancel Sig/ｴｱｰ元圧検出ﾗｯﾁ解除
+LD R45507                ; *Group6　ｴｱｰ元圧検出ﾗｯﾁ解除
+OUT @R1407
+;Safety Cover Lock Sig/安全ｶﾊﾞｰﾛｯｸ
+LD R45508                ; *Group6　安全ｶﾊﾞｰﾛｯｸ
+OUT @R1408
+;Area Sensor Latch Cancel Sig/ｴﾘｱｾﾝｻﾗｯﾁ解除
+LD R45509                ; *Group6　ｴﾘｱｾﾝｻﾗｯﾁ解除
+OUT @R1409
+;Tower Lamp(R)/ﾀﾜｰﾗﾝﾌﾟ赤
+LD R45510                ; *Group6　ﾀﾜｰﾗﾝﾌﾟ赤
+OUT @R1410
+;Tower Lamp(G)/ﾀﾜｰﾗﾝﾌﾟ緑
+LD R45511                ; *Group6　ﾀﾜｰﾗﾝﾌﾟ緑
+OUT @R1411
+;Tower Lamp(Y)/ﾀﾜｰﾗﾝﾌﾟ黄
+LD R45512                ; *Group6　ﾀﾜｰﾗﾝﾌﾟ黄
+OUT @R1412
+;Continue Start Sw Lamp/ｶﾊﾞｰ継続実行ｽｲｯﾁﾗﾝﾌﾟ
+LD R45513                ; *Group6　ｶﾊﾞｰ継続実行SWﾗﾝﾌﾟ
+OUT @R1413
+;Cover Open Sw Lamp(Triple SW)/3連ｶﾊﾞｰ開要求ｽｲｯﾁﾗﾝﾌﾟ
+LD R45514                ; *Group6　3連ｶﾊﾞｰ開要求SWﾗﾝﾌﾟ
+OUT @R1414
+;<h1/>Group7 Output/ｸﾞﾙｰﾌﾟ7出力
+;Start Sw Lamp/ｽﾀｰﾄｽｲｯﾁﾗﾝﾌﾟ
+LD R45700                ; *Group7　ｽﾀｰﾄSWﾗﾝﾌﾟ
+OUT @R1500
+;Stop Sw Lamp/ｽﾄｯﾌﾟｽｲｯﾁﾗﾝﾌﾟ
+LD R45701                ; *Group7　ｽﾄｯﾌﾟSWﾗﾝﾌﾟ
+OUT @R1501
+;Cover Sw Lamp/ｶﾊﾞｰ開ｽｲｯﾁﾗﾝﾌﾟ
+LD R45702                ; *Group7　ｶﾊﾞｰ開要求SWﾗﾝﾌﾟ
+OUT @R1502
+;Buzzer Off Sw Lamp/ﾌﾞｻﾞｰｵﾌｽｲｯﾁﾗﾝﾌﾟ
+LD R45703                ; *Group7　ﾌﾞｻﾞｰｵﾌSWﾗﾝﾌﾟ
+OUT @R1503
+;Buzzer/ﾌﾞｻﾞｰ
+LD R45704                ; *Group7　ﾌﾞｻﾞｰ
+OUT @R1504
+;Area Sensor Continue Sw1 Lamp/ｴﾘｱｾﾝｻ継続ｽｲｯﾁ1ﾗﾝﾌﾟ
+LD R45705                ; *Group7　ｴﾘｱｾﾝｻ継続実行SW1ﾗﾝﾌﾟ
+OUT @R1505
+;Area Sensor Continue Sw2 Lamp/ｴﾘｱｾﾝｻ継続ｽｲｯﾁ2ﾗﾝﾌﾟ
+LD R45706                ; *Group7　ｴﾘｱｾﾝｻ継続実行SW2ﾗﾝﾌﾟ
+OUT @R1506
+;Air Pressure Latch Cancel Sig/ｴｱｰ元圧検出ﾗｯﾁ解除
+LD R45707                ; *Group7　ｴｱｰ元圧検出ﾗｯﾁ解除
+OUT @R1507
+;Safety Cover Lock Sig/安全ｶﾊﾞｰﾛｯｸ
+LD R45708                ; *Group7　安全ｶﾊﾞｰﾛｯｸ
+OUT @R1508
+;Area Sensor Latch Cancel Sig/ｴﾘｱｾﾝｻﾗｯﾁ解除
+LD R45709                ; *Group7　ｴﾘｱｾﾝｻﾗｯﾁ解除
+OUT @R1509
+;Tower Lamp(R)/ﾀﾜｰﾗﾝﾌﾟ赤
+LD R45710                ; *Group7　ﾀﾜｰﾗﾝﾌﾟ赤
+OUT @R1510
+;Tower Lamp(G)/ﾀﾜｰﾗﾝﾌﾟ緑
+LD R45711                ; *Group7　ﾀﾜｰﾗﾝﾌﾟ緑
+OUT @R1511
+;Tower Lamp(Y)/ﾀﾜｰﾗﾝﾌﾟ黄
+LD R45712                ; *Group7　ﾀﾜｰﾗﾝﾌﾟ黄
+OUT @R1512
+;Continue Start Sw Lamp/ｶﾊﾞｰ継続実行ｽｲｯﾁﾗﾝﾌﾟ
+LD R45713                ; *Group7　ｶﾊﾞｰ継続実行SWﾗﾝﾌﾟ
+OUT @R1513
+;Cover Open Sw Lamp(Triple SW)/3連ｶﾊﾞｰ開要求ｽｲｯﾁﾗﾝﾌﾟ
+LD R45714                ; *Group7　3連ｶﾊﾞｰ開要求SWﾗﾝﾌﾟ
+OUT @R1514
+;<h1/>Group8 Output/ｸﾞﾙｰﾌﾟ8出力
+;Start Sw Lamp/ｽﾀｰﾄｽｲｯﾁﾗﾝﾌﾟ
+LD R45900                ; *Group8　ｽﾀｰﾄSWﾗﾝﾌﾟ
+OUT @R1600
+;Stop Sw Lamp/ｽﾄｯﾌﾟｽｲｯﾁﾗﾝﾌﾟ
+LD R45901                ; *Group8　ｽﾄｯﾌﾟSWﾗﾝﾌﾟ
+OUT @R1601
+;Cover Sw Lamp/ｶﾊﾞｰ開ｽｲｯﾁﾗﾝﾌﾟ
+LD R45902                ; *Group8　ｶﾊﾞｰ開要求SWﾗﾝﾌﾟ
+OUT @R1602
+;Buzzer Off Sw Lamp/ﾌﾞｻﾞｰｵﾌｽｲｯﾁﾗﾝﾌﾟ
+LD R45903                ; *Group8　ﾌﾞｻﾞｰｵﾌSWﾗﾝﾌﾟ
+OUT @R1603
+;Buzzer/ﾌﾞｻﾞｰ
+LD R45904                ; *Group8　ﾌﾞｻﾞｰ
+OUT @R1604
+;Area Sensor Continue Sw1 Lamp/ｴﾘｱｾﾝｻ継続ｽｲｯﾁ1ﾗﾝﾌﾟ
+LD R45905                ; *Group8　ｴﾘｱｾﾝｻ継続実行SW1ﾗﾝﾌﾟ
+OUT @R1605
+;Area Sensor Continue Sw2 Lamp/ｴﾘｱｾﾝｻ継続ｽｲｯﾁ2ﾗﾝﾌﾟ
+LD R45906                ; *Group8　ｴﾘｱｾﾝｻ継続実行SW2ﾗﾝﾌﾟ
+OUT @R1606
+;Air Pressure Latch Cancel Sig/ｴｱｰ元圧検出ﾗｯﾁ解除
+LD R45907                ; *Group8　ｴｱｰ元圧検出ﾗｯﾁ解除
+OUT @R1607
+;Safety Cover Lock Sig/安全ｶﾊﾞｰﾛｯｸ
+LD R45908                ; *Group8　安全ｶﾊﾞｰﾛｯｸ
+OUT @R1608
+;Area Sensor Latch Cancel Sig/ｴﾘｱｾﾝｻﾗｯﾁ解除
+LD R45909                ; *Group8　ｴﾘｱｾﾝｻﾗｯﾁ解除
+OUT @R1609
+;Tower Lamp(R)/ﾀﾜｰﾗﾝﾌﾟ赤
+LD R45910                ; *Group8　ﾀﾜｰﾗﾝﾌﾟ赤
+OUT @R1610
+;Tower Lamp(G)/ﾀﾜｰﾗﾝﾌﾟ緑
+LD R45911                ; *Group8　ﾀﾜｰﾗﾝﾌﾟ緑
+OUT @R1611
+;Tower Lamp(Y)/ﾀﾜｰﾗﾝﾌﾟ黄
+LD R45912                ; *Group8　ﾀﾜｰﾗﾝﾌﾟ黄
+OUT @R1612
+;Continue Start Sw Lamp/ｶﾊﾞｰ継続実行ｽｲｯﾁﾗﾝﾌﾟ
+LD R45913                ; *Group8　ｶﾊﾞｰ継続実行SWﾗﾝﾌﾟ
+OUT @R1613
+;Cover Open Sw Lamp(Triple SW)/3連ｶﾊﾞｰ開要求ｽｲｯﾁﾗﾝﾌﾟ
+LD R45914                ; *Group8　3連ｶﾊﾞｰ開要求SWﾗﾝﾌﾟ
+OUT @R1614
+LABEL #0
+END
+ENDH

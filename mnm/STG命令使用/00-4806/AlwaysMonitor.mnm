@@ -1,0 +1,155 @@
+DEVICE:53
+;MODULE:AlwaysMonitor
+;MODULE_TYPE:0
+;SCRIPT_TYPE:
+;OneSystem Sub-Module
+;
+;---------------------------------------
+;ModuleName	:	AlwaysMonitor
+;ModuleType	:	Sub Module
+;Function	:	常時監視
+;---------------------------------------
+;<使用方法>
+;常時監視が必要な物は本ﾓｼﾞｭｰﾙ内に記述して下さい
+;・ﾋｰﾀｰ過昇温検知による非常停止
+;・ﾁｬﾝﾊﾞｰ排気量低下によるｴﾗｰ出力
+;など
+;洗浄ﾗｲﾝ <--> RB1 同時起動I/L
+LD LR20000               ; RB1 洗浄ﾗｲﾝ1 ｱｸｾｽ中
+ANB B2082                ; 洗浄給材 ﾗｲﾝ1より ｲﾝﾀｰﾛｯｸ
+MEP
+MSTRT F_ERROR_DISP #10
+LD LR20001               ; RB1 洗浄ﾗｲﾝ2 ｱｸｾｽ中
+ANB B2083                ; 洗浄給材 ﾗｲﾝ2より ｲﾝﾀｰﾛｯｸ
+MEP
+MSTRT F_ERROR_DISP #11
+;LD <--> RB1 同時起動I/L
+LD LR20002               ; RB1 LDﾄﾚｰ ｱｸｾｽ中
+ANB B2012                ; LDより ｲﾝﾀｰﾛｯｸ信号
+ANB MR9013               ; LDなし
+MEP
+MSTRT F_ERROR_DISP #12
+;洗浄ﾗｲﾝ <--> RB2 同時起動I/L
+LD LR20100               ; RB2 洗浄ｼｬﾄﾙ1 ｱｸｾｽ中
+ANB B2084                ; 洗浄除材 ﾗｲﾝ1より ｲﾝﾀｰﾛｯｸ
+MEP
+MSTRT F_ERROR_DISP #13
+LD LR20101               ; RB2 洗浄ｼｬﾄﾙ2 ｱｸｾｽ中
+ANB B2085                ; 洗浄除材 ﾗｲﾝ2より ｲﾝﾀｰﾛｯｸ
+MEP
+MSTRT F_ERROR_DISP #14
+;ULD <--> RB2 同時起動I/L
+LD LR20102               ; RB1 ULDﾄﾚｰ ｱｸｾｽ中
+ANB B2032                ; ULDより ｲﾝﾀｰﾛｯｸ信号
+ANB MR9014               ; ULDなし
+MEP
+MSTRT F_ERROR_DISP #15
+;仮置台 <--> RB1 同時起動I/L
+LD LR20003               ; RB1 仮置き台 ｱｸｾｽ中
+ANB B20B2                ; 洗浄機より LD反転 仮置台 上昇限
+ANB B20B3                ; 洗浄機より LD反転 仮置台 下降限
+MEP
+MSTRT F_ERROR_DISP #16
+;仮置台 <--> RB2 同時起動I/L
+LD LR20103               ; RB2 仮置き台 ｱｸｾｽ中
+ANB B20BA                ; 洗浄機より ULD反転 仮置台 上昇限
+ANB B20BB                ; 洗浄機より ULD反転 仮置台 下降限
+MEP
+MSTRT F_ERROR_DISP #17
+;ULD --> ﾒｲﾝ 非常停止
+LD R46100                ; _自動運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+AND B203D                ; ULDより 非常停止
+MEP
+MSTRT F_ERROR_DISP #17
+;洗浄機漏液検知による　非常停止追加　2013.12.16　S.HIDO
+;下記ｲﾝﾀｰﾌｪｰｽ信号追加
+;MAIN側		B20BE：洗浄機より漏水検知
+;洗浄機側	B207E：ﾒｲﾝへ洗浄機漏水検知
+LD B20BE                 ; 洗浄機より漏水検知
+TMR @0 #10
+CON
+AND @T0
+MSTRT F_ERROR_DISP #18
+;<h1/>ﾒｯｾｰｼﾞ表示
+;RB1ｺﾝﾄﾛｰﾗ起動中
+;@EM0.T = "RB1コントローラ未起動"
+LDB DM10501.8            ; RB1 RB_READY
+NCJ #1001
+;@EM0.T = "RB1コントローラ未起動"
+LD CR2002                ; 常時ON
+SMOV "RB1コントローラ未起動" @EM0
+LABEL #1001
+;
+LDB DM10501.8            ; RB1 RB_READY
+MSTRT BBS_MSG_W #1 #1 @EM0
+LD DM10501.8             ; RB1 RB_READY
+MSTRT BBS_MSG_C #1 #1
+;RB2ｺﾝﾄﾛｰﾗ起動中
+;@EM0.T = "RB2コントローラ未起動"
+LDB DM10505.8            ; RB2 RB_READY
+NCJ #1000
+;@EM0.T = "RB2コントローラ未起動"
+LD CR2002                ; 常時ON
+SMOV "RB2コントローラ未起動" @EM0
+LABEL #1000
+;
+LDB DM10505.8            ; RB2 RB_READY
+MSTRT BBS_MSG_W #1 #2 @EM0
+LD DM10505.8             ; RB2 RB_READY
+MSTRT BBS_MSG_C #1 #2
+;<h1/>ERROR
+;MyTask Error Process Substance/エラー処理実体
+STG @MR100               ; ERROR
+ANB R39002               ; ERROR_DISP Busy
+MPS
+ZRES @MR105 @MR108       ; SW1  SW4
+CON
+LDA @DM9                 ; ReturnSW /ERROR_DISP
+CON
+TBCD
+CON
+STA @DM10
+CON
+DISN @DM10 @DM3 #4
+MRD
+DW #5 @DM0               ; TaskNo /ERROR_DISP
+CON
+BMOV @DM0 DM60000 #7     ; TaskNo /ERROR_DISP  TaskNo /ERROR_DISP
+MPP
+SET R39000               ; ERROR_DISP Start
+CON
+SET @MR102               ; Task0 ERROR Busy
+CON
+JMP @MR103
+STG @MR103
+AND R39002               ; ERROR_DISP Busy
+AND= DM60008 @DM1        ; ReturnNo /ERROR_DISP  ErrorNo /ERROR_DISP
+MPS
+AND= DM60007 @DM6        ; ReturnSW /ERROR_DISP
+SET @MR105               ; SW1
+CON
+JMP @MR104
+MRD
+AND= DM60007 @DM5        ; ReturnSW /ERROR_DISP
+SET @MR106               ; SW2
+CON
+JMP @MR104
+MRD
+AND= DM60007 @DM4        ; ReturnSW /ERROR_DISP
+SET @MR107               ; SW3
+CON
+JMP @MR104
+MPP
+AND= DM60007 @DM3        ; ReturnSW /ERROR_DISP
+SET @MR108               ; SW4
+CON
+JMP @MR104
+STG @MR104
+ANB R39002               ; ERROR_DISP Busy
+RES @MR102               ; Task0 ERROR Busy
+CON
+SET @MR101               ; ｴﾗｰ完了
+CON
+ENDS
+END
+ENDH

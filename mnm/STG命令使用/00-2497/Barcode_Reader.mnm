@@ -1,0 +1,600 @@
+DEVICE:52
+;MODULE:Barcode_Reader
+;MODULE_TYPE:0
+;SCRIPT_TYPE:
+LD R50000                ; 即停止
+OR R50900                ; TRAP
+OR R50914                ; HOME_ON_PLS
+ZRES @MR000 @MR1115      ; 0.3SﾌﾘｯｶｰPLS
+;ﾃﾞｰﾀ照合
+LD CR2003                ; 常時OFF
+ANP T120                 ; 動作中遅延
+DW $0000 DM10616         ; Port2 ﾓｰﾄﾞ設定
+CON
+DW $0000 DM10620         ; Port2 受信ﾍｯﾀﾞ設定
+CON
+DW $000D DM10621         ; Port2 受信ﾃﾞﾘﾐﾀ設定
+CON
+DW $0000 DM10622         ; Port2 受信ﾃﾞｰﾀ長設定
+CON
+SET @MR1000
+LD CR2003                ; 常時OFF
+AND LR500                ; ﾛｯﾄ照合有
+OUT R33200               ; Port2 通信許可
+STG @MR1000
+AND R33100               ; Port2 通信可能
+AND R33102               ; Port2 受信ﾃﾞｰﾀ読出要求
+JMP @MR1001
+BMOV DM10359 DM1100 #5   ; Port2 受信ﾃﾞｰﾀ1  取込ﾃﾞｰﾀ1
+STG @MR1001
+LDA DM1100               ; 取込ﾃﾞｰﾀ1
+CON
+SRA #8
+CON
+STA DM1110               ; 照合用取込ﾃﾞｰﾀ
+CON
+JMP @MR1002
+STG @MR1002
+LDA DM2705               ; 加工機種ﾛｯﾄNo.1
+CON
+SRA #8
+CON
+STA DM1111               ; 照合用ﾚｼﾋﾟﾃﾞｰﾀ
+CON
+JMP @MR1003
+LD= DM1110 DM1111        ; 照合用取込ﾃﾞｰﾀ  照合用ﾚｼﾋﾟﾃﾞｰﾀ
+OUT R42600               ; 照合OK
+LD R42600                ; 照合OK
+ORB LR500                ; ﾛｯﾄ照合有
+OUT R42603               ; ﾒｲﾝ照合表示
+STG @MR1003
+SET R33202               ; Port2 受信ﾃﾞｰﾀ読出完了
+CON
+JMP @MR1004
+STG @MR1004
+ANB R33102               ; Port2 受信ﾃﾞｰﾀ読出要求
+RES R33202               ; Port2 受信ﾃﾞｰﾀ読出完了
+CON
+JMP @MR1005
+LD @MR1005
+FLIK #10 #10 @MR1015     ; 0.1sﾌﾘｯｶｰ
+LD @MR1014               ; ﾌﾞｻﾞｰON
+LD @MR1015               ; 0.1sﾌﾘｯｶｰ
+ORB R42600               ; 照合OK
+ANL
+OUT R42602               ; 照合ﾌﾞｻﾞｰON
+STG @MR1005
+SET @MR1014              ; ﾌﾞｻﾞｰON
+CON
+MPS
+AND R42600               ; 照合OK
+TMR #104 #4              ; 照合OKﾌﾞｻﾞｰON
+CON
+AND T104                 ; 照合OKﾌﾞｻﾞｰON
+JMP @MR1006
+MPP
+ANB R42600               ; 照合OK
+TMR #105 #20             ; 照合NGﾌﾞｻﾞｰON
+CON
+AND T105                 ; 照合NGﾌﾞｻﾞｰON
+JMP @MR1006
+STG @MR1006
+RES @MR1014              ; ﾌﾞｻﾞｰON
+CON
+JMP @MR1000
+;現製造ﾃﾞｰﾀ登録・編集
+;if R45206 = 1 then
+;   Z6 = 0
+;   Z7 = 0
+;   Z8 = 0
+;end if
+;if R45207 = 1 then
+;   Z6 = 1
+;   Z7 = 5
+;   Z8 = 10
+;end if
+;if R45208 = 1 then
+;   Z6 = 2
+;   Z7 = 10
+;   Z8 = 20
+;end if
+;if R45209 = 1 then
+;   Z6 = 3
+;   Z7 = 15
+;   Z8 = 30
+;end if
+;if R45210 = 1 then
+;   Z6 = 4
+;   Z7 = 20
+;   Z8 = 40
+;end if
+;BMOV(DM2595:Z6,DM2700,1)
+;BMOV(DM2650:Z8,DM2720,10)
+;BMOV(DM2600:Z8,DM2710,10)
+;BMOV(DM2570:Z7,DM2705,5)
+;zres(R45206,R45210)
+LDF R45212               ; 変更選択sw
+AND= DM3000 #171         ; 現在表示中   画面
+NCJ #1002
+;if R45206 = 1 then
+;
+LD R45206                ; 0段選択
+NCJ #2000
+;   Z6 = 0
+;
+LD CR2002                ; 常時ON
+MOV.L +0 Z6
+;   Z7 = 0
+;
+LD CR2002                ; 常時ON
+MOV.L +0 Z7
+;   Z8 = 0
+;
+LD CR2002                ; 常時ON
+MOV.L +0 Z8
+;end if
+;
+LABEL #2000
+;if R45207 = 1 then
+;
+LD R45207                ; 1段選択
+NCJ #2001
+;   Z6 = 1
+;
+LD CR2002                ; 常時ON
+MOV.L +1 Z6
+;   Z7 = 5
+;
+LD CR2002                ; 常時ON
+MOV.L +5 Z7
+;   Z8 = 10
+;
+LD CR2002                ; 常時ON
+MOV.L +10 Z8
+;end if
+;
+LABEL #2001
+;if R45208 = 1 then
+;
+LD R45208                ; 2段選択
+NCJ #2002
+;   Z6 = 2
+;
+LD CR2002                ; 常時ON
+MOV.L +2 Z6
+;   Z7 = 10
+;
+LD CR2002                ; 常時ON
+MOV.L +10 Z7
+;   Z8 = 20
+;
+LD CR2002                ; 常時ON
+MOV.L +20 Z8
+;end if
+;
+LABEL #2002
+;if R45209 = 1 then
+;
+LD R45209                ; 3段選択
+NCJ #2003
+;   Z6 = 3
+;
+LD CR2002                ; 常時ON
+MOV.L +3 Z6
+;   Z7 = 15
+;
+LD CR2002                ; 常時ON
+MOV.L +15 Z7
+;   Z8 = 30
+;
+LD CR2002                ; 常時ON
+MOV.L +30 Z8
+;end if
+;
+LABEL #2003
+;if R45210 = 1 then
+;
+LD R45210                ; 4段選択
+NCJ #2004
+;   Z6 = 4
+;
+LD CR2002                ; 常時ON
+MOV.L +4 Z6
+;   Z7 = 20
+;
+LD CR2002                ; 常時ON
+MOV.L +20 Z7
+;   Z8 = 40
+;
+LD CR2002                ; 常時ON
+MOV.L +40 Z8
+;end if
+;
+LABEL #2004
+;BMOV(DM2595:Z6,DM2700,1)
+;
+LD CR2002                ; 常時ON
+BMOV DM2595:Z6 DM2700 #1 ; ﾃﾞｰﾀNo1  加工機種No.
+;BMOV(DM2650:Z8,DM2720,10)
+;
+LD CR2002                ; 常時ON
+BMOV DM2650:Z8 DM2720 #10; 表示機種2ﾃﾞｰﾀ1-0  加工機種2ﾃﾞｰﾀ-0
+;BMOV(DM2600:Z8,DM2710,10)
+;
+LD CR2002                ; 常時ON
+BMOV DM2600:Z8 DM2710 #10; 表示機種1ﾃﾞｰﾀ1-0  加工機種1ﾃﾞｰﾀ-0
+;BMOV(DM2570:Z7,DM2705,5)
+;
+LD CR2002                ; 常時ON
+BMOV DM2570:Z7 DM2705 #5 ; ﾛｯﾄNo1ﾃﾞｰﾀ1  加工機種ﾛｯﾄNo.1
+;zres(R45206,R45210)
+LD CR2002                ; 常時ON
+ZRES R45206 R45210       ; 0段選択  4段選択
+LABEL #1002
+;
+;if R45206 = 1 then
+;   Z6 = 0
+;   Z7 = 0
+;   Z8 = 0
+;end if
+;if R45207 = 1 then
+;   Z6 = 1
+;   Z7 = 5
+;   Z8 = 10
+;end if
+;if R45208 = 1 then
+;   Z6 = 2
+;   Z7 = 10
+;   Z8 = 20
+;end if
+;if R45209 = 1 then
+;   Z6 = 3
+;   Z7 = 15
+;   Z8 = 30
+;end if
+;if R45210 = 1 then
+;   Z6 = 4
+;   Z7 = 20
+;   Z8 = 40
+;end if
+;BMOV(DM2595:Z6,DM2730,1)
+;BMOV(DM2650:Z8,DM2750,10)
+;BMOV(DM2600:Z8,DM2740,10)
+;BMOV(DM2570:Z7,DM2735,5)
+LDF R45213               ; 編集選択sw
+AND= DM3000 #171         ; 現在表示中   画面
+NCJ #1003
+;if R45206 = 1 then
+;
+LD R45206                ; 0段選択
+NCJ #2005
+;   Z6 = 0
+;
+LD CR2002                ; 常時ON
+MOV.L +0 Z6
+;   Z7 = 0
+;
+LD CR2002                ; 常時ON
+MOV.L +0 Z7
+;   Z8 = 0
+;
+LD CR2002                ; 常時ON
+MOV.L +0 Z8
+;end if
+;
+LABEL #2005
+;if R45207 = 1 then
+;
+LD R45207                ; 1段選択
+NCJ #2006
+;   Z6 = 1
+;
+LD CR2002                ; 常時ON
+MOV.L +1 Z6
+;   Z7 = 5
+;
+LD CR2002                ; 常時ON
+MOV.L +5 Z7
+;   Z8 = 10
+;
+LD CR2002                ; 常時ON
+MOV.L +10 Z8
+;end if
+;
+LABEL #2006
+;if R45208 = 1 then
+;
+LD R45208                ; 2段選択
+NCJ #2007
+;   Z6 = 2
+;
+LD CR2002                ; 常時ON
+MOV.L +2 Z6
+;   Z7 = 10
+;
+LD CR2002                ; 常時ON
+MOV.L +10 Z7
+;   Z8 = 20
+;
+LD CR2002                ; 常時ON
+MOV.L +20 Z8
+;end if
+;
+LABEL #2007
+;if R45209 = 1 then
+;
+LD R45209                ; 3段選択
+NCJ #2008
+;   Z6 = 3
+;
+LD CR2002                ; 常時ON
+MOV.L +3 Z6
+;   Z7 = 15
+;
+LD CR2002                ; 常時ON
+MOV.L +15 Z7
+;   Z8 = 30
+;
+LD CR2002                ; 常時ON
+MOV.L +30 Z8
+;end if
+;
+LABEL #2008
+;if R45210 = 1 then
+;
+LD R45210                ; 4段選択
+NCJ #2009
+;   Z6 = 4
+;
+LD CR2002                ; 常時ON
+MOV.L +4 Z6
+;   Z7 = 20
+;
+LD CR2002                ; 常時ON
+MOV.L +20 Z7
+;   Z8 = 40
+;
+LD CR2002                ; 常時ON
+MOV.L +40 Z8
+;end if
+;
+LABEL #2009
+;BMOV(DM2595:Z6,DM2730,1)
+;
+LD CR2002                ; 常時ON
+BMOV DM2595:Z6 DM2730 #1 ; ﾃﾞｰﾀNo1  編集機種No.
+;BMOV(DM2650:Z8,DM2750,10)
+;
+LD CR2002                ; 常時ON
+BMOV DM2650:Z8 DM2750 #10; 表示機種2ﾃﾞｰﾀ1-0  編集機種2ﾃﾞｰﾀ-0
+;BMOV(DM2600:Z8,DM2740,10)
+;
+LD CR2002                ; 常時ON
+BMOV DM2600:Z8 DM2740 #10; 表示機種1ﾃﾞｰﾀ1-0  編集機種1ﾃﾞｰﾀ-0
+;BMOV(DM2570:Z7,DM2735,5)
+LD CR2002                ; 常時ON
+BMOV DM2570:Z7 DM2735 #5 ; ﾛｯﾄNo1ﾃﾞｰﾀ1  編集機種ﾛｯﾄNo.1
+LABEL #1003
+;
+;Z3 = DM2730 * 10
+;Z4 = DM2730 * 5
+;BMOV(DM2750,DM2000:Z3,10)
+;BMOV(DM2740,DM1500:Z3,10)
+;BMOV(DM2735,DM1200:Z4,5)
+LDF R45214               ; 編集終了sw
+AND= DM3000 #172         ; 現在表示中   画面
+NCJ #1000
+;Z3 = DM2730 * 10
+;
+LD CR2002                ; 常時ON
+LDA DM2730               ; 編集機種No.
+CON
+EXT
+CON
+MUL.L +10
+CON
+STA.L Z3
+;Z4 = DM2730 * 5
+;
+LD CR2002                ; 常時ON
+LDA DM2730               ; 編集機種No.
+CON
+EXT
+CON
+MUL.L +5
+CON
+STA.L Z4
+;BMOV(DM2750,DM2000:Z3,10)
+;
+LD CR2002                ; 常時ON
+BMOV DM2750 DM2000:Z3 #10; 編集機種2ﾃﾞｰﾀ-0  登録機種1-0_00
+;BMOV(DM2740,DM1500:Z3,10)
+;
+LD CR2002                ; 常時ON
+BMOV DM2740 DM1500:Z3 #10; 編集機種1ﾃﾞｰﾀ-0  登録機種2-0_00
+;BMOV(DM2735,DM1200:Z4,5)
+LD CR2002                ; 常時ON
+BMOV DM2735 DM1200:Z4 #5 ; 編集機種ﾛｯﾄNo.1  ﾚｼﾋﾟ0ﾃﾞｰﾀ1
+LABEL #1000
+;
+;一覧画面制御
+LDP R45100               ; ﾃﾞｰﾀ選択0
+DW #0 DM1090             ; ﾃﾞｰﾀ呼出先頭No.
+LDP R45101               ; ﾃﾞｰﾀ選択1
+DW #5 DM1090             ; ﾃﾞｰﾀ呼出先頭No.
+LDP R45102               ; ﾃﾞｰﾀ選択2
+DW #10 DM1090            ; ﾃﾞｰﾀ呼出先頭No.
+LDP R45103               ; ﾃﾞｰﾀ選択3
+DW #15 DM1090            ; ﾃﾞｰﾀ呼出先頭No.
+LDP R45104               ; ﾃﾞｰﾀ選択4
+DW #20 DM1090            ; ﾃﾞｰﾀ呼出先頭No.
+LDP R45105               ; ﾃﾞｰﾀ選択5
+DW #25 DM1090            ; ﾃﾞｰﾀ呼出先頭No.
+LDP R45106               ; ﾃﾞｰﾀ選択6
+DW #30 DM1090            ; ﾃﾞｰﾀ呼出先頭No.
+LDP R45107               ; ﾃﾞｰﾀ選択7
+DW #35 DM1090            ; ﾃﾞｰﾀ呼出先頭No.
+LDP R45108               ; ﾃﾞｰﾀ選択8
+DW #40 DM1090            ; ﾃﾞｰﾀ呼出先頭No.
+LDP R45109               ; ﾃﾞｰﾀ選択9
+DW #45 DM1090            ; ﾃﾞｰﾀ呼出先頭No.
+LD= DM1090 #0            ; ﾃﾞｰﾀ呼出先頭No.
+OUT R45000               ; ﾃﾞｰﾀ呼出0
+LD= DM1090 #5            ; ﾃﾞｰﾀ呼出先頭No.
+OUT R45001               ; ﾃﾞｰﾀ呼出1
+LD= DM1090 #10           ; ﾃﾞｰﾀ呼出先頭No.
+OUT R45002               ; ﾃﾞｰﾀ呼出2
+LD= DM1090 #15           ; ﾃﾞｰﾀ呼出先頭No.
+OUT R45003               ; ﾃﾞｰﾀ呼出3
+LD= DM1090 #20           ; ﾃﾞｰﾀ呼出先頭No.
+OUT R45004               ; ﾃﾞｰﾀ呼出4
+LD= DM1090 #25           ; ﾃﾞｰﾀ呼出先頭No.
+OUT R45005               ; ﾃﾞｰﾀ呼出5
+LD= DM1090 #30           ; ﾃﾞｰﾀ呼出先頭No.
+OUT R45006               ; ﾃﾞｰﾀ呼出6
+LD= DM1090 #35           ; ﾃﾞｰﾀ呼出先頭No.
+OUT R45007               ; ﾃﾞｰﾀ呼出7
+LD= DM1090 #40           ; ﾃﾞｰﾀ呼出先頭No.
+OUT R45008               ; ﾃﾞｰﾀ呼出8
+LD= DM1090 #45           ; ﾃﾞｰﾀ呼出先頭No.
+OUT R45009               ; ﾃﾞｰﾀ呼出9
+;DM2595 = dm1090
+;DM2596 = dm1090 + 1
+;DM2597 = dm1090 + 2
+;DM2598 = dm1090 + 3
+;DM2599 = dm1090 + 4
+;Z7 = DM1090 * 5
+;BMOV(DM1200:Z7,DM2570,25)
+;Z8 = DM1090 * 10
+;BMOV(DM1500:Z8,DM2600,50)
+;BMOV(DM2000:Z8,DM2650,50)
+;DM1091 = DM1090
+;ZRES(R45206,R45210)
+LD<> DM1090 DM1091       ; ﾃﾞｰﾀ呼出先頭No.  ﾃﾞｰﾀNo.変更確認用
+LD= DM3000 #171          ; 現在表示中   画面
+MEP
+ORL
+NCJ #1001
+;DM2595 = dm1090
+;
+LD CR2002                ; 常時ON
+MOV DM1090 DM2595        ; ﾃﾞｰﾀ呼出先頭No.  ﾃﾞｰﾀNo1
+;DM2596 = dm1090 + 1
+;
+LD CR2002                ; 常時ON
+LDA DM1090               ; ﾃﾞｰﾀ呼出先頭No.
+CON
+EXT
+CON
+ADD.L +1
+CON
+STA DM2596               ; ﾃﾞｰﾀNo2
+;DM2597 = dm1090 + 2
+;
+LD CR2002                ; 常時ON
+LDA DM1090               ; ﾃﾞｰﾀ呼出先頭No.
+CON
+EXT
+CON
+ADD.L +2
+CON
+STA DM2597               ; ﾃﾞｰﾀNo3
+;DM2598 = dm1090 + 3
+;
+LD CR2002                ; 常時ON
+LDA DM1090               ; ﾃﾞｰﾀ呼出先頭No.
+CON
+EXT
+CON
+ADD.L +3
+CON
+STA DM2598               ; ﾃﾞｰﾀNo4
+;DM2599 = dm1090 + 4
+;
+LD CR2002                ; 常時ON
+LDA DM1090               ; ﾃﾞｰﾀ呼出先頭No.
+CON
+EXT
+CON
+ADD.L +4
+CON
+STA DM2599               ; ﾃﾞｰﾀNo5
+;Z7 = DM1090 * 5
+;
+LD CR2002                ; 常時ON
+LDA DM1090               ; ﾃﾞｰﾀ呼出先頭No.
+CON
+EXT
+CON
+MUL.L +5
+CON
+STA.L Z7
+;BMOV(DM1200:Z7,DM2570,25)
+;
+LD CR2002                ; 常時ON
+BMOV DM1200:Z7 DM2570 #25; ﾚｼﾋﾟ0ﾃﾞｰﾀ1  ﾛｯﾄNo1ﾃﾞｰﾀ1
+;Z8 = DM1090 * 10
+;
+LD CR2002                ; 常時ON
+LDA DM1090               ; ﾃﾞｰﾀ呼出先頭No.
+CON
+EXT
+CON
+MUL.L +10
+CON
+STA.L Z8
+;BMOV(DM1500:Z8,DM2600,50)
+;
+LD CR2002                ; 常時ON
+BMOV DM1500:Z8 DM2600 #50; 登録機種2-0_00  表示機種1ﾃﾞｰﾀ1-0
+;BMOV(DM2000:Z8,DM2650,50)
+;
+LD CR2002                ; 常時ON
+BMOV DM2000:Z8 DM2650 #50; 登録機種1-0_00  表示機種2ﾃﾞｰﾀ1-0
+;DM1091 = DM1090
+;
+LD CR2002                ; 常時ON
+MOV DM1090 DM1091        ; ﾃﾞｰﾀ呼出先頭No.  ﾃﾞｰﾀNo.変更確認用
+;ZRES(R45206,R45210)
+LD CR2002                ; 常時ON
+ZRES R45206 R45210       ; 0段選択  4段選択
+LABEL #1001
+;
+LDP R45200               ; 0段選択sw
+ZRES R45206 R45210       ; 0段選択  4段選択
+CON
+SET R45206               ; 0段選択
+CON
+DIFU R42604
+LDP R45201               ; 1段選択sw
+ZRES R45206 R45210       ; 0段選択  4段選択
+CON
+SET R45207               ; 1段選択
+CON
+DIFU R42604
+LDP R45202               ; 2段選択sw
+ZRES R45206 R45210       ; 0段選択  4段選択
+CON
+SET R45208               ; 2段選択
+CON
+DIFU R42604
+LDP R45203               ; 3段選択sw
+ZRES R45206 R45210       ; 0段選択  4段選択
+CON
+SET R45209               ; 3段選択
+CON
+DIFU R42604
+LDP R45204               ; 4段選択sw
+ZRES R45206 R45210       ; 0段選択  4段選択
+CON
+SET R45210               ; 4段選択
+CON
+DIFU R42604
+LDB R45206               ; 0段選択
+ANB R45207               ; 1段選択
+ANB R45208               ; 2段選択
+ANB R45209               ; 3段選択
+ANB R45210               ; 4段選択
+OUB R45215               ; 段選択有り
+END
+ENDH

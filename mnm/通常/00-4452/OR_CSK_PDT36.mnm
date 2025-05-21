@@ -1,0 +1,342 @@
+DEVICE:53
+;MODULE:OR_CSK_PDT36
+;MODULE_TYPE:1
+;SCRIPT_TYPE:
+;ﾓｰﾀｰ	ｵﾘｴﾝﾀﾙ　CSK513PAP
+;ﾄﾞﾗｲﾊﾞ	ｵﾘｴﾝﾀﾙ	SD5103P3
+;****各軸ﾎﾟｲﾝﾄﾊﾟﾗﾒｰﾀ転送****
+;軸No　		#1～＃2
+;動作DATA　　10word占有
+;			先頭ﾜｰﾄﾞｱﾄﾞﾚｽ+0　 目標値
+;			先頭ﾜｰﾄﾞｱﾄﾞﾚｽ+2   起動速度
+;			先頭ﾜｰﾄﾞｱﾄﾞﾚｽ+3   加減速時間
+;			先頭ﾜｰﾄﾞｱﾄﾞﾚｽ+4   運転速度
+;			先頭ﾜｰﾄﾞｱﾄﾞﾚｽ+6   運転ﾓｰﾄﾞ
+;			先頭ﾜｰﾄﾞｱﾄﾞﾚｽ+7   停止ｾﾝｻ規定ﾊﾟﾙｽ数
+;			先頭ﾜｰﾄﾞｱﾄﾞﾚｽ+8   送り現在値
+;
+;'位置決めﾊﾟﾗﾒｰﾀ
+;''1ﾊﾟﾙｽ当りの移動量@DM10 =基本角0.18度/Pulse*桁合せ
+;
+;@DM10 = 0.18*100
+;
+;'目標値
+;@DM12.L = P1.L:#0/@DM10						'P1:#0の角度からﾊﾟﾙｽ数算出
+;@DM14.L = P1.L:#0 MOD @DM10					'基本角0.36度/Pulsの余り算出
+;
+;IF @DM14.L <= 9 and @DM14.L > -9 THEN		'余りが0.18度以下-0.18度以上
+;	@DM0.L = @DM12.L						'余り削除
+;ELSE 
+;	IF @DM14.L >= 9 THEN					'余りが0.18度以上
+;		@DM0.L = @DM12.L + 1				'1ﾊﾟﾙｽﾌﾟﾗｽ
+;	ELSE									'余りが-0.18度以上以外
+;		@DM0.L = @DM12.L - 1				'1ﾊﾟﾙｽﾏｲﾅｽ
+;	END IF
+;END IF
+;
+;'起動速度
+;IF P1:#2 < P1:#4 THEN
+;	@DM2 = INT(FLOAT(P1:#2/9*50))
+;ELSE
+;	@DM2 = INT(FLOAT(P1:#4/9*50))
+;END IF
+;IF @DM2 < 50 THEN
+;	@DM2 = 50
+;END IF
+;IF @DM2 > 8300 THEN
+;	@DM2 = 8300
+;END IF
+;
+;'加減速時間
+;@DM3 = P1:#3
+;							
+;'運転速度
+;@DM4.D = INT(FLOAT(P1:#4/9*50))
+;		
+;'運転ﾓｰﾄﾞ
+;@DM6 = P1:#6
+;							
+;'停止ｾﾝｻ規定ﾊﾟﾙｽ数
+;@DM7 = P1:#7							
+LD CR2002                ; 常時ON
+NCJ #1000
+;'位置決めﾊﾟﾗﾒｰﾀ
+;
+;''1ﾊﾟﾙｽ当りの移動量@DM10 =基本角0.18度/Pulse*桁合せ
+;
+;@DM10 = 0.18*100
+;
+LD CR2002                ; 常時ON
+LDA.F +18
+CON
+INTG
+CON
+STA @DM10
+;'目標値
+;
+;@DM12.L = P1.L:#0/@DM10						'P1:#0の角度からﾊﾟﾙｽ数算出
+;
+LD CR2002                ; 常時ON
+LDA @DM10
+CON
+EXT
+CON
+STA.L @VM0
+CON
+LDA.L P1                 ; 動作DATA
+CON
+EXT.L
+CON
+DIV.L @VM0
+CON
+STA.L @DM12
+;@DM14.L = P1.L:#0 MOD @DM10					'基本角0.36度/Pulsの余り算出
+;
+LD CR2002                ; 常時ON
+LDA @DM10
+CON
+EXT
+CON
+STA.L @VM2
+CON
+LDA.L P1                 ; 動作DATA
+CON
+EXT.L
+CON
+DIV.L @VM2
+CON
+LDA.L TM2
+CON
+STA.L @DM14
+;IF @DM14.L <= 9 and @DM14.L > -9 THEN		'余りが0.18度以下-0.18度以上
+;
+LD<=.L @DM14 +9
+OUT @VB00
+LD>.L @DM14 -9
+AND @VB00
+NCJ #2000
+;	@DM0.L = @DM12.L						'余り削除
+;
+LD CR2002                ; 常時ON
+MOV.L @DM12 @DM0
+;ELSE 
+;
+LD CR2002                ; 常時ON
+CJ #2001
+LABEL #2000
+;	IF @DM14.L >= 9 THEN					'余りが0.18度以上
+;
+LD>=.L @DM14 +9
+NCJ #2002
+;		@DM0.L = @DM12.L + 1				'1ﾊﾟﾙｽﾌﾟﾗｽ
+;
+LD CR2002                ; 常時ON
+LDA.L @DM12
+CON
+ADD.L +1
+CON
+STA.L @DM0
+;	ELSE									'余りが-0.18度以上以外
+;
+LD CR2002                ; 常時ON
+CJ #2003
+LABEL #2002
+;		@DM0.L = @DM12.L - 1				'1ﾊﾟﾙｽﾏｲﾅｽ
+;
+LD CR2002                ; 常時ON
+LDA.L @DM12
+CON
+SUB.L +1
+CON
+STA.L @DM0
+;	END IF
+;
+LABEL #2003
+;END IF
+;
+LABEL #2001
+;'起動速度
+;
+;IF P1:#2 < P1:#4 THEN
+;
+LD< P1:#2 P1:#4          ; 動作DATA  動作DATA
+NCJ #2004
+;	@DM2 = INT(FLOAT(P1:#2/9*50))
+;
+LD CR2002                ; 常時ON
+LDA P1:#2                ; 動作DATA
+CON
+EXT
+CON
+EXT.L
+CON
+DIV.L +9
+CON
+MUL.L +50
+CON
+FLOAT.L
+CON
+INTG.L
+CON
+STA @DM2
+;ELSE
+;
+LD CR2002                ; 常時ON
+CJ #2005
+LABEL #2004
+;	@DM2 = INT(FLOAT(P1:#4/9*50))
+;
+LD CR2002                ; 常時ON
+LDA P1:#4                ; 動作DATA
+CON
+EXT
+CON
+EXT.L
+CON
+DIV.L +9
+CON
+MUL.L +50
+CON
+FLOAT.L
+CON
+INTG.L
+CON
+STA @DM2
+;END IF
+;
+LABEL #2005
+;IF @DM2 < 50 THEN
+;
+LD< @DM2 #50
+NCJ #2006
+;	@DM2 = 50
+;
+LD CR2002                ; 常時ON
+MOV #50 @DM2
+;END IF
+;
+LABEL #2006
+;IF @DM2 > 8300 THEN
+;
+LD> @DM2 #8300
+NCJ #2007
+;	@DM2 = 8300
+;
+LD CR2002                ; 常時ON
+MOV #8300 @DM2
+;END IF
+;
+LABEL #2007
+;'加減速時間
+;
+;@DM3 = P1:#3
+;
+LD CR2002                ; 常時ON
+MOV P1:#3 @DM3           ; 動作DATA
+;'運転速度
+;
+;@DM4.D = INT(FLOAT(P1:#4/9*50))
+;
+LD CR2002                ; 常時ON
+LDA P1:#4                ; 動作DATA
+CON
+EXT
+CON
+EXT.L
+CON
+DIV.L +9
+CON
+MUL.L +50
+CON
+FLOAT.L
+CON
+INTG.L
+CON
+STA.D @DM4
+;'運転ﾓｰﾄﾞ
+;
+;@DM6 = P1:#6
+;
+LD CR2002                ; 常時ON
+MOV P1:#6 @DM6           ; 動作DATA
+;'停止ｾﾝｻ規定ﾊﾟﾙｽ数
+;
+;@DM7 = P1:#7							
+LD CR2002                ; 常時ON
+MOV P1:#7 @DM7           ; 動作DATA
+LABEL #1000
+;
+;'X軸位置決めﾊﾟﾗﾒｰﾀ転送
+;CM2060.L = @DM0.L		'目標値	
+;CM2062 = @DM2		'起動速度
+;CM2063 = @DM3		'加減速時間
+;CM2064.D= @DM4.D	'運転速度
+;CM2066 = @DM6		'運転ﾓｰﾄﾞ
+;CM2067 = @DM7		'停止ｾﾝｻ規定ﾊﾟﾙｽ数
+LD= V0 #1                ; 軸No
+NCJ #1001
+;'X軸位置決めﾊﾟﾗﾒｰﾀ転送
+;
+;CM2060.L = @DM0.L		'目標値	
+;
+LD CR2002                ; 常時ON
+MOV.L @DM0 CM2060        ; ﾎﾟｲﾝﾄ0 目標値/移動量
+;CM2062 = @DM2		'起動速度
+;
+LD CR2002                ; 常時ON
+MOV @DM2 CM2062          ; ﾎﾟｲﾝﾄ0 起動速度
+;CM2063 = @DM3		'加減速時間
+;
+LD CR2002                ; 常時ON
+MOV @DM3 CM2063          ; ﾎﾟｲﾝﾄ0 加減速時間
+;CM2064.D= @DM4.D	'運転速度
+;
+LD CR2002                ; 常時ON
+MOV.D @DM4 CM2064        ; ﾎﾟｲﾝﾄ0 運転速度
+;CM2066 = @DM6		'運転ﾓｰﾄﾞ
+;
+LD CR2002                ; 常時ON
+MOV @DM6 CM2066          ; ﾎﾟｲﾝﾄ0 動作ﾓｰﾄﾞ
+;CM2067 = @DM7		'停止ｾﾝｻ規定ﾊﾟﾙｽ数
+LD CR2002                ; 常時ON
+MOV @DM7 CM2067          ; ﾎﾟｲﾝﾄ0 停止ｾﾝｻ規程ﾊﾟﾙｽ数
+LABEL #1001
+;
+;'Y軸位置決めﾊﾟﾗﾒｰﾀ転送
+;CM2070.L = @DM0.L		'目標値	
+;CM2072 = @DM2		'起動速度
+;CM2073 = @DM3		'加減速時間
+;CM2074.D= @DM4.D	'運転速度
+;CM2076 = @DM6		'運転ﾓｰﾄﾞ
+;CM2077 = @DM7		'停止ｾﾝｻ規定ﾊﾟﾙｽ数
+LD= V0 #2                ; 軸No
+NCJ #1003
+;'Y軸位置決めﾊﾟﾗﾒｰﾀ転送
+;
+;CM2070.L = @DM0.L		'目標値	
+;
+LD CR2002                ; 常時ON
+MOV.L @DM0 CM2070        ; ﾎﾟｲﾝﾄ1 目標値/移動量
+;CM2072 = @DM2		'起動速度
+;
+LD CR2002                ; 常時ON
+MOV @DM2 CM2072          ; ﾎﾟｲﾝﾄ1 起動速度
+;CM2073 = @DM3		'加減速時間
+;
+LD CR2002                ; 常時ON
+MOV @DM3 CM2073          ; ﾎﾟｲﾝﾄ1 加減速時間
+;CM2074.D= @DM4.D	'運転速度
+;
+LD CR2002                ; 常時ON
+MOV.D @DM4 CM2074        ; ﾎﾟｲﾝﾄ1 運転速度
+;CM2076 = @DM6		'運転ﾓｰﾄﾞ
+;
+LD CR2002                ; 常時ON
+MOV @DM6 CM2076          ; ﾎﾟｲﾝﾄ1 動作ﾓｰﾄﾞ
+;CM2077 = @DM7		'停止ｾﾝｻ規定ﾊﾟﾙｽ数
+LD CR2002                ; 常時ON
+MOV @DM7 CM2077          ; ﾎﾟｲﾝﾄ1 停止ｾﾝｻ規程ﾊﾟﾙｽ数
+LABEL #1003
+;
+END
+ENDH

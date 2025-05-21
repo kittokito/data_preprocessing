@@ -1,0 +1,440 @@
+DEVICE:53
+;MODULE:OneSystem7_DataCollect
+;MODULE_TYPE:0
+;OneSystem Master-Module
+;
+;-----------------------------------------
+;ModuleName	:	OneSystem7_DataCollect
+;ModuleType	:	Master Module
+;Function	:	Data Collection
+;-----------------------------------------
+;
+;Copylight(C) 2011 SEIKO EPSON Corp. All rights reserved.
+;<h1/>M/C Infomation Making/装置情報生成
+;[Task]
+;OneSystem起動中
+;RES要求：無し
+LD CR2008                ; 運転開始時1ｽｷｬﾝON
+RES OneSystemRUN         ; _OneSystem起動中
+LDB CR2008               ; 運転開始時1ｽｷｬﾝON
+SET OneSystemRUN         ; _OneSystem起動中
+;[Task]
+;ﾊﾞｰｼﾞｮﾝ情報転送
+;・ﾌﾟﾛｼﾞｪｸﾄ名称
+;・OneSystemﾊﾞｰｼﾞｮﾝ
+;・ﾕｰｻﾞｰｿﾌﾄﾊﾞｰｼﾞｮﾝ
+LD CR2008                ; 運転開始時1ｽｷｬﾝON
+SET DC_VerCheck          ; _ﾃﾞｰﾀ収集　ﾊﾞｰｼﾞｮﾝ確認
+LD CR2002                ; 常時ON
+SMOV CM1740 DC_Project   ; ﾗﾀﾞｰﾌﾟﾛｼﾞｪｸﾄ名  _ﾌﾟﾛｼﾞｪｸﾄ名称
+SMOV OS_Ver DC_OS_Ver    ; _OneSystemﾊﾞｰｼﾞｮﾝ情報  _OneSystemｿﾌﾄﾊﾞｰｼﾞｮﾝ
+SMOV User_Ver DC_User_Ver; _ﾕｰｻﾞｰｿﾌﾄﾊﾞｰｼﾞｮﾝ情報  _ﾕｰｻﾞｰｿﾌﾄﾊﾞｰｼﾞｮﾝ
+;[Task]
+;生産ｶｳﾝﾀ収集ﾀｲﾐﾝｸﾞ生成
+;(AUTO中1minｸﾛｯｸﾊﾟﾙｽ)
+LDP AUTODO               ; _自動運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+MOV.D #0 @EM0            ; 1sec→60count
+LD AUTODO                ; _自動運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+MPS
+ANP CR2006               ; 1sｸﾛｯｸﾊﾟﾙｽ
+INC.D @EM0               ; 1sec→60count
+MPP
+AND=.D @EM0 #60          ; 1sec→60count
+SET DC_PrdCnt            ; _ﾃﾞｰﾀ収集　自動動作中1分ﾊﾟﾙｽ
+MOV.D #0 @EM0            ; 1sec→60count
+;[Task]
+;AUTO開始時ﾛｯﾄ流動履歴
+LDP AUTODO               ; _自動運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+SET DC_PrdStart          ; _ﾃﾞｰﾀ収集　ﾛｯﾄ切替
+;[Task]
+;優先ｴﾗｰ発生情報
+;通常ｴﾗｰはERROR_DISP、WAIT_***にて実施
+;自動ﾘﾄﾗｲはSILENT_ERRORにて実施
+;警報はWARNING_DISPにて実施
+LDP TRAPDO               ; _非常停止中　ﾓｰﾄﾞﾌﾗｸﾞ
+MOV KtoV_FERR_ERR DC_FErrCode;_優先ｴﾗｰ　ｴﾗｰ番号  _ﾃﾞｰﾀ収集　優先ｴﾗｰｺｰﾄﾞ
+SET DC_FErrOcc           ; _ﾃﾞｰﾀ収集　優先ｴﾗｰ発生
+;<h1/>From D/C Reset Request/ﾃﾞｰﾀ収集からのﾘｾｯﾄ要求
+;[Task]
+;ﾃﾞｰﾀ収集からのﾘｾｯﾄ要求が来たら対応する収集ﾄﾘｶﾞとﾘｾｯﾄ要求をｸﾘｱする
+;ﾃﾞｰﾀ収集ｱﾌﾟﾘ起動中
+LD R51000                ; _ﾃﾞｰﾀ収集　ﾘｾｯﾄ要求1
+TMR @0 #1
+CON
+AND @T0
+RES R51000               ; _ﾃﾞｰﾀ収集　ﾘｾｯﾄ要求1
+;生産ｶｳﾝﾀ
+LD R51001                ; _ﾃﾞｰﾀ収集　ﾘｾｯﾄ要求2
+RES DC_PrdCnt            ; _ﾃﾞｰﾀ収集　自動動作中1分ﾊﾟﾙｽ
+CON
+RES R51001               ; _ﾃﾞｰﾀ収集　ﾘｾｯﾄ要求2
+;ｻｲｸﾙﾀｲﾑ
+LD R51002                ; _ﾃﾞｰﾀ収集　ﾘｾｯﾄ要求3
+RES DC_CycleRec          ; _ﾃﾞｰﾀ収集　ｻｲｸﾙﾀｲﾑ要求
+CON
+RES R51002               ; _ﾃﾞｰﾀ収集　ﾘｾｯﾄ要求3
+;通常ｴﾗｰ
+LD R51003                ; _ﾃﾞｰﾀ収集　ﾘｾｯﾄ要求4
+RES DC_ErrRet            ; _ﾃﾞｰﾀ収集　通常ｴﾗｰ解除
+CON
+RES R51003               ; _ﾃﾞｰﾀ収集　ﾘｾｯﾄ要求4
+LD R51004                ; _ﾃﾞｰﾀ収集　ﾘｾｯﾄ要求5
+RES DC_ErrRet:#1         ; _ﾃﾞｰﾀ収集　通常ｴﾗｰ解除
+CON
+RES R51004               ; _ﾃﾞｰﾀ収集　ﾘｾｯﾄ要求5
+LD R51005                ; _ﾃﾞｰﾀ収集　ﾘｾｯﾄ要求6
+RES DC_ErrRet:#2         ; _ﾃﾞｰﾀ収集　通常ｴﾗｰ解除
+CON
+RES R51005               ; _ﾃﾞｰﾀ収集　ﾘｾｯﾄ要求6
+LD R51006                ; _ﾃﾞｰﾀ収集　ﾘｾｯﾄ要求7
+RES DC_ErrRet:#3         ; _ﾃﾞｰﾀ収集　通常ｴﾗｰ解除
+CON
+RES R51006               ; _ﾃﾞｰﾀ収集　ﾘｾｯﾄ要求7
+LD R51007                ; _ﾃﾞｰﾀ収集　ﾘｾｯﾄ要求8
+RES DC_ErrRet:#4         ; _ﾃﾞｰﾀ収集　通常ｴﾗｰ解除
+CON
+RES R51007               ; _ﾃﾞｰﾀ収集　ﾘｾｯﾄ要求8
+LD R51008                ; _ﾃﾞｰﾀ収集　ﾘｾｯﾄ要求9
+RES DC_ErrRet:#5         ; _ﾃﾞｰﾀ収集　通常ｴﾗｰ解除
+CON
+RES R51008               ; _ﾃﾞｰﾀ収集　ﾘｾｯﾄ要求9
+LD R51009                ; _ﾃﾞｰﾀ収集　ﾘｾｯﾄ要求10
+RES DC_ErrRet:#6         ; _ﾃﾞｰﾀ収集　通常ｴﾗｰ解除
+CON
+RES R51009               ; _ﾃﾞｰﾀ収集　ﾘｾｯﾄ要求10
+LD R51010                ; _ﾃﾞｰﾀ収集　ﾘｾｯﾄ要求11
+RES DC_ErrRet:#7         ; _ﾃﾞｰﾀ収集　通常ｴﾗｰ解除
+CON
+RES R51010               ; _ﾃﾞｰﾀ収集　ﾘｾｯﾄ要求11
+;自動ﾘﾄﾗｲ
+LD R51011                ; _ﾃﾞｰﾀ収集　ﾘｾｯﾄ要求12
+MOV #0 DC_SErr1Retry     ; _ﾃﾞｰﾀ収集　ﾘﾄﾗｲ回数
+RES DC_SErrOcc           ; _ﾃﾞｰﾀ収集　自動ﾘﾄﾗｲ発生
+CON
+RES R51011               ; _ﾃﾞｰﾀ収集　ﾘｾｯﾄ要求12
+LD R51012                ; _ﾃﾞｰﾀ収集　ﾘｾｯﾄ要求13
+MOV #0 DC_SErr2Retry     ; _ﾃﾞｰﾀ収集　ﾘﾄﾗｲ回数
+RES DC_SErrOcc:#1        ; _ﾃﾞｰﾀ収集　自動ﾘﾄﾗｲ発生
+CON
+RES R51012               ; _ﾃﾞｰﾀ収集　ﾘｾｯﾄ要求13
+LD R51013                ; _ﾃﾞｰﾀ収集　ﾘｾｯﾄ要求14
+MOV #0 DC_SErr3Retry     ; _ﾃﾞｰﾀ収集　ﾘﾄﾗｲ回数
+RES DC_SErrOcc:#2        ; _ﾃﾞｰﾀ収集　自動ﾘﾄﾗｲ発生
+CON
+RES R51013               ; _ﾃﾞｰﾀ収集　ﾘｾｯﾄ要求14
+LD R51014                ; _ﾃﾞｰﾀ収集　ﾘｾｯﾄ要求15
+MOV #0 DC_SErr4Retry     ; _ﾃﾞｰﾀ収集　ﾘﾄﾗｲ回数
+RES DC_SErrOcc:#3        ; _ﾃﾞｰﾀ収集　自動ﾘﾄﾗｲ発生
+CON
+RES R51014               ; _ﾃﾞｰﾀ収集　ﾘｾｯﾄ要求15
+LD R51015                ; _ﾃﾞｰﾀ収集　ﾘｾｯﾄ要求16
+MOV #0 DC_SErr5Retry     ; _ﾃﾞｰﾀ収集　ﾘﾄﾗｲ回数
+RES DC_SErrOcc:#4        ; _ﾃﾞｰﾀ収集　自動ﾘﾄﾗｲ発生
+CON
+RES R51015               ; _ﾃﾞｰﾀ収集　ﾘｾｯﾄ要求16
+LD R51100                ; _ﾃﾞｰﾀ収集　ﾘｾｯﾄ要求17
+MOV #0 DC_SErr6Retry     ; _ﾃﾞｰﾀ収集　ﾘﾄﾗｲ回数
+RES DC_SErrOcc:#5        ; _ﾃﾞｰﾀ収集　自動ﾘﾄﾗｲ発生
+CON
+RES R51100               ; _ﾃﾞｰﾀ収集　ﾘｾｯﾄ要求17
+LD R51101                ; _ﾃﾞｰﾀ収集　ﾘｾｯﾄ要求18
+MOV #0 DC_SErr7Retry     ; _ﾃﾞｰﾀ収集　ﾘﾄﾗｲ回数
+RES DC_SErrOcc:#6        ; _ﾃﾞｰﾀ収集　自動ﾘﾄﾗｲ発生
+CON
+RES R51101               ; _ﾃﾞｰﾀ収集　ﾘｾｯﾄ要求18
+LD R51102                ; _ﾃﾞｰﾀ収集　ﾘｾｯﾄ要求19
+MOV #0 DC_SErr8Retry     ; _ﾃﾞｰﾀ収集用　ﾘﾄﾗｲ回数
+RES DC_SErrOcc:#7        ; _ﾃﾞｰﾀ収集　自動ﾘﾄﾗｲ発生
+CON
+RES R51102               ; _ﾃﾞｰﾀ収集　ﾘｾｯﾄ要求19
+;警告
+LD R51103                ; _ﾃﾞｰﾀ収集　ﾘｾｯﾄ要求20
+RES DC_WarnOcc           ; _ﾃﾞｰﾀ収集　警告発生
+CON
+RES R51103               ; _ﾃﾞｰﾀ収集　ﾘｾｯﾄ要求20
+LD R51104                ; _ﾃﾞｰﾀ収集　ﾘｾｯﾄ要求21
+RES DC_WarnOcc:#1        ; _ﾃﾞｰﾀ収集　警告発生
+CON
+RES R51104               ; _ﾃﾞｰﾀ収集　ﾘｾｯﾄ要求21
+LD R51105                ; _ﾃﾞｰﾀ収集　ﾘｾｯﾄ要求22
+RES DC_WarnOcc:#2        ; _ﾃﾞｰﾀ収集　警告発生
+CON
+RES R51105               ; _ﾃﾞｰﾀ収集　ﾘｾｯﾄ要求22
+LD R51106                ; _ﾃﾞｰﾀ収集　ﾘｾｯﾄ要求23
+RES DC_WarnOcc:#3        ; _ﾃﾞｰﾀ収集　警告発生
+CON
+RES R51106               ; _ﾃﾞｰﾀ収集　ﾘｾｯﾄ要求23
+LD R51107                ; _ﾃﾞｰﾀ収集　ﾘｾｯﾄ要求24
+RES DC_WarnOcc:#4        ; _ﾃﾞｰﾀ収集　警告発生
+CON
+RES R51107               ; _ﾃﾞｰﾀ収集　ﾘｾｯﾄ要求24
+LD R51108                ; _ﾃﾞｰﾀ収集　ﾘｾｯﾄ要求25
+RES DC_WarnOcc:#5        ; _ﾃﾞｰﾀ収集　警告発生
+CON
+RES R51108               ; _ﾃﾞｰﾀ収集　ﾘｾｯﾄ要求25
+LD R51109                ; _ﾃﾞｰﾀ収集　ﾘｾｯﾄ要求26
+RES DC_WarnOcc:#6        ; _ﾃﾞｰﾀ収集　警告発生
+CON
+RES R51109               ; _ﾃﾞｰﾀ収集　ﾘｾｯﾄ要求26
+LD R51110                ; _ﾃﾞｰﾀ収集　ﾘｾｯﾄ要求27
+RES DC_WarnOcc:#7        ; _ﾃﾞｰﾀ収集　警告発生
+CON
+RES R51110               ; _ﾃﾞｰﾀ収集　ﾘｾｯﾄ要求27
+;優先ｴﾗｰ
+LD R51111                ; _ﾃﾞｰﾀ収集　ﾘｾｯﾄ要求28
+RES DC_FErrOcc           ; _ﾃﾞｰﾀ収集　優先ｴﾗｰ発生
+CON
+RES R51111               ; _ﾃﾞｰﾀ収集　ﾘｾｯﾄ要求28
+;生産開始ﾛｯﾄﾛｸﾞ
+LD R51112                ; _ﾃﾞｰﾀ収集　ﾘｾｯﾄ要求29
+RES DC_PrdStart          ; _ﾃﾞｰﾀ収集　ﾛｯﾄ切替
+CON
+RES R51112               ; _ﾃﾞｰﾀ収集　ﾘｾｯﾄ要求29
+;ﾌﾟﾛｸﾞﾗﾑ更新履歴
+LD R51113                ; _ﾃﾞｰﾀ収集　ﾘｾｯﾄ要求30
+RES DC_VerCheck          ; _ﾃﾞｰﾀ収集　ﾊﾞｰｼﾞｮﾝ確認
+CON
+RES R51113               ; _ﾃﾞｰﾀ収集　ﾘｾｯﾄ要求30
+;ﾕｰｻﾞｰﾃﾞｰﾀ
+LD R51114                ; _ﾃﾞｰﾀ収集　ﾘｾｯﾄ要求31
+RES DC_Request           ; _ﾃﾞｰﾀ収集　ﾕｰｻﾞｰﾃﾞｰﾀ1収集ﾄﾘｶﾞ
+CON
+RES R51114               ; _ﾃﾞｰﾀ収集　ﾘｾｯﾄ要求31
+LD R51115                ; _ﾃﾞｰﾀ収集　ﾘｾｯﾄ要求32
+RES DC_Request:#1        ; _ﾃﾞｰﾀ収集　ﾕｰｻﾞｰﾃﾞｰﾀ2収集ﾄﾘｶﾞ
+CON
+RES R51115               ; _ﾃﾞｰﾀ収集　ﾘｾｯﾄ要求32
+LD R51200                ; _ﾃﾞｰﾀ収集　ﾘｾｯﾄ要求33
+RES DC_Request:#2        ; _ﾃﾞｰﾀ収集　ﾕｰｻﾞｰﾃﾞｰﾀ3収集ﾄﾘｶﾞ
+CON
+RES R51200               ; _ﾃﾞｰﾀ収集　ﾘｾｯﾄ要求33
+LD R51201                ; _ﾃﾞｰﾀ収集　ﾘｾｯﾄ要求34
+RES DC_Request:#3        ; _ﾃﾞｰﾀ収集　ﾕｰｻﾞｰﾃﾞｰﾀ4収集ﾄﾘｶﾞ
+CON
+RES R51201               ; _ﾃﾞｰﾀ収集　ﾘｾｯﾄ要求34
+LD R51202                ; _ﾃﾞｰﾀ収集　ﾘｾｯﾄ要求35
+RES DC_Request:#4        ; _ﾃﾞｰﾀ収集　ﾕｰｻﾞｰﾃﾞｰﾀ5収集ﾄﾘｶﾞ
+CON
+RES R51202               ; _ﾃﾞｰﾀ収集　ﾘｾｯﾄ要求35
+LD R51203                ; _ﾃﾞｰﾀ収集　ﾘｾｯﾄ要求36
+RES DC_Request:#5        ; _ﾃﾞｰﾀ収集　ﾕｰｻﾞｰﾃﾞｰﾀ6収集ﾄﾘｶﾞ
+CON
+RES R51203               ; _ﾃﾞｰﾀ収集　ﾘｾｯﾄ要求36
+LD R51204                ; _ﾃﾞｰﾀ収集　ﾘｾｯﾄ要求37
+RES DC_Request:#6        ; _ﾃﾞｰﾀ収集　ﾕｰｻﾞｰﾃﾞｰﾀ7収集ﾄﾘｶﾞ
+CON
+RES R51204               ; _ﾃﾞｰﾀ収集　ﾘｾｯﾄ要求37
+LD R51205                ; _ﾃﾞｰﾀ収集　ﾘｾｯﾄ要求38
+RES DC_Request:#7        ; _ﾃﾞｰﾀ収集　ﾕｰｻﾞｰﾃﾞｰﾀ8収集ﾄﾘｶﾞ
+CON
+RES R51205               ; _ﾃﾞｰﾀ収集　ﾘｾｯﾄ要求38
+;<h1/>Data Collection/ﾃﾞｰﾀ収集
+;[Task]
+;ﾋﾞｯﾄﾃﾞﾊﾞｲｽON/OFF状態変化監視→ﾃﾞｰﾀ収集ﾄﾘｶﾞ要求(まとめDMにBOUT)
+;OneSystem運転中
+LD OneSystemRUN          ; _OneSystem起動中
+BOUT DC_Collect1 #0      ; _ﾃﾞｰﾀ収集　収集まとめ1
+;運転ﾓｰﾄﾞ変化
+LD AUTODO                ; _自動運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+BOUT DC_Collect1 #1      ; _ﾃﾞｰﾀ収集　収集まとめ1
+LD HOMEDO                ; _原点復帰中　ﾓｰﾄﾞﾌﾗｸﾞ
+BOUT DC_Collect1 #2      ; _ﾃﾞｰﾀ収集　収集まとめ1
+LD MAINTEDO              ; _ﾒﾝﾃﾅﾝｽ運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+BOUT DC_Collect1 #3      ; _ﾃﾞｰﾀ収集　収集まとめ1
+LD STOPDO                ; _停止中　ﾓｰﾄﾞﾌﾗｸﾞ
+BOUT DC_Collect1 #4      ; _ﾃﾞｰﾀ収集　収集まとめ1
+;ERROR状態
+LD ERROR1                ; _Group1　ｴﾗｰ発生中
+BOUT DC_Collect1 #5      ; _ﾃﾞｰﾀ収集　収集まとめ1
+LD ERROR2                ; _Group2　ｴﾗｰ発生中
+BOUT DC_Collect1 #6      ; _ﾃﾞｰﾀ収集　収集まとめ1
+LD ERROR3                ; _Group3　ｴﾗｰ発生中
+BOUT DC_Collect1 #7      ; _ﾃﾞｰﾀ収集　収集まとめ1
+LD ERROR4                ; _Group4　ｴﾗｰ発生中
+BOUT DC_Collect1 #8      ; _ﾃﾞｰﾀ収集　収集まとめ1
+LD ERROR5                ; _Group5　ｴﾗｰ発生中
+BOUT DC_Collect1 #9      ; _ﾃﾞｰﾀ収集　収集まとめ1
+LD ERROR6                ; _Group6　ｴﾗｰ発生中
+BOUT DC_Collect1 #10     ; _ﾃﾞｰﾀ収集　収集まとめ1
+LD ERROR7                ; _Group7　ｴﾗｰ発生中
+BOUT DC_Collect1 #11     ; _ﾃﾞｰﾀ収集　収集まとめ1
+LD ERROR8                ; _Group8　ｴﾗｰ発生中
+BOUT DC_Collect1 #12     ; _ﾃﾞｰﾀ収集　収集まとめ1
+;PAUSE状態(安全ｶﾊﾞｰ開状態をPAUSEとする)
+LD OPEN1                 ; _安全ｶﾊﾞｰ1開中
+BOUT DC_Collect1 #13     ; _ﾃﾞｰﾀ収集　収集まとめ1
+LD OPEN2                 ; _安全ｶﾊﾞｰ2開中
+BOUT DC_Collect1 #14     ; _ﾃﾞｰﾀ収集　収集まとめ1
+LD OPEN3                 ; _安全ｶﾊﾞｰ3開中
+BOUT DC_Collect1 #15     ; _ﾃﾞｰﾀ収集　収集まとめ1
+LD OPEN4                 ; _安全ｶﾊﾞｰ4開中
+BOUT DC_Collect2 #0      ; _ﾃﾞｰﾀ収集　収集まとめ2
+LD OPEN5                 ; _安全ｶﾊﾞｰ5開中
+BOUT DC_Collect2 #1      ; _ﾃﾞｰﾀ収集　収集まとめ2
+LD OPEN6                 ; _安全ｶﾊﾞｰ6開中
+BOUT DC_Collect2 #2      ; _ﾃﾞｰﾀ収集　収集まとめ2
+LD OPEN7                 ; _安全ｶﾊﾞｰ7開中
+BOUT DC_Collect2 #3      ; _ﾃﾞｰﾀ収集　収集まとめ2
+LD OPEN8                 ; _安全ｶﾊﾞｰ8開中
+BOUT DC_Collect2 #4      ; _ﾃﾞｰﾀ収集　収集まとめ2
+;ｴﾘｱｾﾝｻ状態
+LD AREADO1               ; _Group1　ｴﾘｱｾﾝｻ遮断中
+BOUT DC_Collect2 #5      ; _ﾃﾞｰﾀ収集　収集まとめ2
+LD AREADO2               ; _Group2　ｴﾘｱｾﾝｻ遮断中
+BOUT DC_Collect2 #6      ; _ﾃﾞｰﾀ収集　収集まとめ2
+LD AREADO3               ; _Group3　ｴﾘｱｾﾝｻ遮断中
+BOUT DC_Collect2 #7      ; _ﾃﾞｰﾀ収集　収集まとめ2
+LD AREADO4               ; _Group4　ｴﾘｱｾﾝｻ遮断中
+BOUT DC_Collect2 #8      ; _ﾃﾞｰﾀ収集　収集まとめ2
+LD AREADO5               ; _Group5　ｴﾘｱｾﾝｻ遮断中
+BOUT DC_Collect2 #9      ; _ﾃﾞｰﾀ収集　収集まとめ2
+LD AREADO6               ; _Group6　ｴﾘｱｾﾝｻ遮断中
+BOUT DC_Collect2 #10     ; _ﾃﾞｰﾀ収集　収集まとめ2
+LD AREADO7               ; _Group7　ｴﾘｱｾﾝｻ遮断中
+BOUT DC_Collect2 #11     ; _ﾃﾞｰﾀ収集　収集まとめ2
+LD AREADO8               ; _Group8　ｴﾘｱｾﾝｻ遮断中
+BOUT DC_Collect2 #12     ; _ﾃﾞｰﾀ収集　収集まとめ2
+;元圧低下状態
+LD AIR_LOW               ; _Group1 ｴｱｰ圧低下状態
+BOUT DC_Collect2 #13     ; _ﾃﾞｰﾀ収集　収集まとめ2
+LD AIR_LOW2              ; _Group2 ｴｱｰ圧低下状態
+BOUT DC_Collect2 #14     ; _ﾃﾞｰﾀ収集　収集まとめ2
+LD AIR_LOW3              ; _Group3 ｴｱｰ圧低下状態
+BOUT DC_Collect2 #15     ; _ﾃﾞｰﾀ収集　収集まとめ2
+LD AIR_LOW4              ; _Group4 ｴｱｰ圧低下状態
+BOUT DC_Collect3 #0      ; _ﾃﾞｰﾀ収集　収集まとめ3
+LD AIR_LOW5              ; _Group5 ｴｱｰ圧低下状態
+BOUT DC_Collect3 #1      ; _ﾃﾞｰﾀ収集　収集まとめ3
+LD AIR_LOW6              ; _Group6 ｴｱｰ圧低下状態
+BOUT DC_Collect3 #2      ; _ﾃﾞｰﾀ収集　収集まとめ3
+LD AIR_LOW7              ; _Group7 ｴｱｰ圧低下状態
+BOUT DC_Collect3 #3      ; _ﾃﾞｰﾀ収集　収集まとめ3
+LD AIR_LOW8              ; _Group8 ｴｱｰ圧低下状態
+BOUT DC_Collect3 #4      ; _ﾃﾞｰﾀ収集　収集まとめ3
+;ESTOP状態
+LD TRAPDO                ; _非常停止中　ﾓｰﾄﾞﾌﾗｸﾞ
+BOUT DC_Collect3 #5      ; _ﾃﾞｰﾀ収集　収集まとめ3
+;生産ｶｳﾝﾀ収集
+LD DC_PrdCnt             ; _ﾃﾞｰﾀ収集　自動動作中1分ﾊﾟﾙｽ
+BOUT DC_Collect3 #6      ; _ﾃﾞｰﾀ収集　収集まとめ3
+;ｻｲｸﾙﾀｲﾑ収集
+LD DC_CycleRec           ; _ﾃﾞｰﾀ収集　ｻｲｸﾙﾀｲﾑ要求
+BOUT DC_Collect3 #7      ; _ﾃﾞｰﾀ収集　収集まとめ3
+;通常ｴﾗｰ解除
+LD DC_ErrRet             ; _ﾃﾞｰﾀ収集　通常ｴﾗｰ解除
+BOUT DC_Collect3 #8      ; _ﾃﾞｰﾀ収集　収集まとめ3
+LD DC_ErrRet:#1          ; _ﾃﾞｰﾀ収集　通常ｴﾗｰ解除
+BOUT DC_Collect3 #9      ; _ﾃﾞｰﾀ収集　収集まとめ3
+LD DC_ErrRet:#2          ; _ﾃﾞｰﾀ収集　通常ｴﾗｰ解除
+BOUT DC_Collect3 #10     ; _ﾃﾞｰﾀ収集　収集まとめ3
+LD DC_ErrRet:#3          ; _ﾃﾞｰﾀ収集　通常ｴﾗｰ解除
+BOUT DC_Collect3 #11     ; _ﾃﾞｰﾀ収集　収集まとめ3
+LD DC_ErrRet:#4          ; _ﾃﾞｰﾀ収集　通常ｴﾗｰ解除
+BOUT DC_Collect3 #12     ; _ﾃﾞｰﾀ収集　収集まとめ3
+LD DC_ErrRet:#5          ; _ﾃﾞｰﾀ収集　通常ｴﾗｰ解除
+BOUT DC_Collect3 #13     ; _ﾃﾞｰﾀ収集　収集まとめ3
+LD DC_ErrRet:#6          ; _ﾃﾞｰﾀ収集　通常ｴﾗｰ解除
+BOUT DC_Collect3 #14     ; _ﾃﾞｰﾀ収集　収集まとめ3
+LD DC_ErrRet:#7          ; _ﾃﾞｰﾀ収集　通常ｴﾗｰ解除
+BOUT DC_Collect3 #15     ; _ﾃﾞｰﾀ収集　収集まとめ3
+;自動ﾘﾄﾗｲ発生
+LD DC_SErrOcc            ; _ﾃﾞｰﾀ収集　自動ﾘﾄﾗｲ発生
+BOUT DC_Collect4 #0      ; _ﾃﾞｰﾀ収集　収集まとめ4
+LD DC_SErrOcc:#1         ; _ﾃﾞｰﾀ収集　自動ﾘﾄﾗｲ発生
+BOUT DC_Collect4 #1      ; _ﾃﾞｰﾀ収集　収集まとめ4
+LD DC_SErrOcc:#2         ; _ﾃﾞｰﾀ収集　自動ﾘﾄﾗｲ発生
+BOUT DC_Collect4 #2      ; _ﾃﾞｰﾀ収集　収集まとめ4
+LD DC_SErrOcc:#3         ; _ﾃﾞｰﾀ収集　自動ﾘﾄﾗｲ発生
+BOUT DC_Collect4 #3      ; _ﾃﾞｰﾀ収集　収集まとめ4
+LD DC_SErrOcc:#4         ; _ﾃﾞｰﾀ収集　自動ﾘﾄﾗｲ発生
+BOUT DC_Collect4 #4      ; _ﾃﾞｰﾀ収集　収集まとめ4
+LD DC_SErrOcc:#5         ; _ﾃﾞｰﾀ収集　自動ﾘﾄﾗｲ発生
+BOUT DC_Collect4 #5      ; _ﾃﾞｰﾀ収集　収集まとめ4
+LD DC_SErrOcc:#6         ; _ﾃﾞｰﾀ収集　自動ﾘﾄﾗｲ発生
+BOUT DC_Collect4 #6      ; _ﾃﾞｰﾀ収集　収集まとめ4
+LD DC_SErrOcc:#7         ; _ﾃﾞｰﾀ収集　自動ﾘﾄﾗｲ発生
+BOUT DC_Collect4 #7      ; _ﾃﾞｰﾀ収集　収集まとめ4
+;警告発生
+LD DC_WarnOcc            ; _ﾃﾞｰﾀ収集　警告発生
+BOUT DC_Collect4 #8      ; _ﾃﾞｰﾀ収集　収集まとめ4
+LD DC_WarnOcc:#1         ; _ﾃﾞｰﾀ収集　警告発生
+BOUT DC_Collect4 #9      ; _ﾃﾞｰﾀ収集　収集まとめ4
+LD DC_WarnOcc:#2         ; _ﾃﾞｰﾀ収集　警告発生
+BOUT DC_Collect4 #10     ; _ﾃﾞｰﾀ収集　収集まとめ4
+LD DC_WarnOcc:#3         ; _ﾃﾞｰﾀ収集　警告発生
+BOUT DC_Collect4 #11     ; _ﾃﾞｰﾀ収集　収集まとめ4
+LD DC_WarnOcc:#4         ; _ﾃﾞｰﾀ収集　警告発生
+BOUT DC_Collect4 #12     ; _ﾃﾞｰﾀ収集　収集まとめ4
+LD DC_WarnOcc:#5         ; _ﾃﾞｰﾀ収集　警告発生
+BOUT DC_Collect4 #13     ; _ﾃﾞｰﾀ収集　収集まとめ4
+LD DC_WarnOcc:#6         ; _ﾃﾞｰﾀ収集　警告発生
+BOUT DC_Collect4 #14     ; _ﾃﾞｰﾀ収集　収集まとめ4
+LD DC_WarnOcc:#7         ; _ﾃﾞｰﾀ収集　警告発生
+BOUT DC_Collect4 #15     ; _ﾃﾞｰﾀ収集　収集まとめ4
+;優先ｴﾗｰ発生
+LD DC_FErrOcc            ; _ﾃﾞｰﾀ収集　優先ｴﾗｰ発生
+BOUT DC_Collect5 #0      ; _ﾃﾞｰﾀ収集　収集まとめ5
+;生産開始ﾛｯﾄﾛｸﾞ
+LD DC_PrdStart           ; _ﾃﾞｰﾀ収集　ﾛｯﾄ切替
+BOUT DC_Collect5 #1      ; _ﾃﾞｰﾀ収集　収集まとめ5
+;ﾌﾟﾛｸﾞﾗﾑ変更履歴
+LD DC_VerCheck           ; _ﾃﾞｰﾀ収集　ﾊﾞｰｼﾞｮﾝ確認
+BOUT DC_Collect5 #2      ; _ﾃﾞｰﾀ収集　収集まとめ5
+;ﾕｰｻﾞｰﾃﾞｰﾀ
+LD DC_Request            ; _ﾃﾞｰﾀ収集　ﾕｰｻﾞｰﾃﾞｰﾀ1収集ﾄﾘｶﾞ
+BOUT DC_Collect5 #3      ; _ﾃﾞｰﾀ収集　収集まとめ5
+LD DC_Request:#1         ; _ﾃﾞｰﾀ収集　ﾕｰｻﾞｰﾃﾞｰﾀ2収集ﾄﾘｶﾞ
+BOUT DC_Collect5 #4      ; _ﾃﾞｰﾀ収集　収集まとめ5
+LD DC_Request:#2         ; _ﾃﾞｰﾀ収集　ﾕｰｻﾞｰﾃﾞｰﾀ3収集ﾄﾘｶﾞ
+BOUT DC_Collect5 #5      ; _ﾃﾞｰﾀ収集　収集まとめ5
+LD DC_Request:#3         ; _ﾃﾞｰﾀ収集　ﾕｰｻﾞｰﾃﾞｰﾀ4収集ﾄﾘｶﾞ
+BOUT DC_Collect5 #6      ; _ﾃﾞｰﾀ収集　収集まとめ5
+LD DC_Request:#4         ; _ﾃﾞｰﾀ収集　ﾕｰｻﾞｰﾃﾞｰﾀ5収集ﾄﾘｶﾞ
+BOUT DC_Collect5 #7      ; _ﾃﾞｰﾀ収集　収集まとめ5
+LD DC_Request:#5         ; _ﾃﾞｰﾀ収集　ﾕｰｻﾞｰﾃﾞｰﾀ6収集ﾄﾘｶﾞ
+BOUT DC_Collect5 #8      ; _ﾃﾞｰﾀ収集　収集まとめ5
+LD DC_Request:#6         ; _ﾃﾞｰﾀ収集　ﾕｰｻﾞｰﾃﾞｰﾀ7収集ﾄﾘｶﾞ
+BOUT DC_Collect5 #9      ; _ﾃﾞｰﾀ収集　収集まとめ5
+LD DC_Request:#7         ; _ﾃﾞｰﾀ収集　ﾕｰｻﾞｰﾃﾞｰﾀ8収集ﾄﾘｶﾞ
+BOUT DC_Collect5 #10     ; _ﾃﾞｰﾀ収集　収集まとめ5
+;秒換算積算値格納
+;1秒経過でﾃﾞｰﾀ変化が無ければOneSystemPLC未起動かPLC電源断
+LD CR2002                ; 常時ON
+SEC CM700 DC_RunTimer    ; ｶﾚﾝﾀﾞﾀｲﾏ（年）  _ﾃﾞｰﾀ収集　System起動中ｶﾚﾝﾀﾞﾀｲﾏ
+;ｴﾗｰ発生中電源遮断に備えてｴﾗｰｺｰﾄﾞ格納
+;(通常ｴﾗｰとﾀｲﾑｱｯﾌﾟｴﾗｰのみ)
+LD KtoV_ERR1_OPN         ; _通常ｴﾗｰ画面表示
+MOV KtoV_ERR1_ERR DC_ErrOcc1;_通常ｴﾗｰ　ｴﾗｰ番号  _ﾃﾞｰﾀ収集　通常ｴﾗｰｺｰﾄﾞ発生時
+LD KtoV_TERR1_OPN        ; _ﾀｲﾑｱｯﾌﾟｴﾗｰ表示要求
+MOV KtoV_TERR1_ERR DC_ErrOcc1;_ﾀｲﾑｱｯﾌﾟｴﾗｰ　ｴﾗｰ番号  _ﾃﾞｰﾀ収集　通常ｴﾗｰｺｰﾄﾞ発生時
+LD KtoV_ERR2_OPN         ; _通常ｴﾗｰ画面表示
+MOV KtoV_ERR2_ERR DC_ErrOcc2;_通常ｴﾗｰ　ｴﾗｰ番号  _ﾃﾞｰﾀ収集　通常ｴﾗｰｺｰﾄﾞ発生時
+LD KtoV_TERR2_OPN        ; _ﾀｲﾑｱｯﾌﾟｴﾗｰ表示要求
+MOV KtoV_TERR2_ERR DC_ErrOcc2;_ﾀｲﾑｱｯﾌﾟｴﾗｰ　ｴﾗｰ番号  _ﾃﾞｰﾀ収集　通常ｴﾗｰｺｰﾄﾞ発生時
+LD KtoV_ERR3_OPN         ; _通常ｴﾗｰ画面表示
+MOV KtoV_ERR3_ERR DC_ErrOcc3;_通常ｴﾗｰ　ｴﾗｰ番号  _ﾃﾞｰﾀ収集　通常ｴﾗｰｺｰﾄﾞ発生時
+LD KtoV_TERR3_OPN        ; _ﾀｲﾑｱｯﾌﾟｴﾗｰ表示要求
+MOV KtoV_TERR3_ERR DC_ErrOcc3;_ﾀｲﾑｱｯﾌﾟｴﾗｰ　ｴﾗｰ番号  _ﾃﾞｰﾀ収集　通常ｴﾗｰｺｰﾄﾞ発生時
+LD KtoV_ERR4_OPN         ; _通常ｴﾗｰ画面表示
+MOV KtoV_ERR4_ERR DC_ErrOcc4;_通常ｴﾗｰ　ｴﾗｰ番号  _ﾃﾞｰﾀ収集　通常ｴﾗｰｺｰﾄﾞ発生時
+LD KtoV_TERR4_OPN        ; _ﾀｲﾑｱｯﾌﾟｴﾗｰ表示要求
+MOV KtoV_TERR4_ERR DC_ErrOcc4;_ﾀｲﾑｱｯﾌﾟｴﾗｰ　ｴﾗｰ番号  _ﾃﾞｰﾀ収集　通常ｴﾗｰｺｰﾄﾞ発生時
+LD KtoV_ERR5_OPN         ; _通常ｴﾗｰ画面表示
+MOV KtoV_ERR5_ERR DC_ErrOcc5;_通常ｴﾗｰ　ｴﾗｰ番号  _ﾃﾞｰﾀ収集　通常ｴﾗｰｺｰﾄﾞ発生時
+LD KtoV_TERR5_OPN        ; _ﾀｲﾑｱｯﾌﾟｴﾗｰ表示要求
+MOV KtoV_TERR5_ERR DC_ErrOcc5;_ﾀｲﾑｱｯﾌﾟｴﾗｰ　ｴﾗｰ番号  _ﾃﾞｰﾀ収集　通常ｴﾗｰｺｰﾄﾞ発生時
+LD KtoV_ERR6_OPN         ; _通常ｴﾗｰ画面表示
+MOV KtoV_ERR6_ERR DC_ErrOcc6;_通常ｴﾗｰ　ｴﾗｰ番号  _ﾃﾞｰﾀ収集　通常ｴﾗｰｺｰﾄﾞ発生時
+LD KtoV_TERR6_OPN        ; _ﾀｲﾑｱｯﾌﾟｴﾗｰ表示要求
+MOV KtoV_TERR6_ERR DC_ErrOcc6;_ﾀｲﾑｱｯﾌﾟｴﾗｰ　ｴﾗｰ番号  _ﾃﾞｰﾀ収集　通常ｴﾗｰｺｰﾄﾞ発生時
+LD KtoV_ERR7_OPN         ; _通常ｴﾗｰ画面表示
+MOV KtoV_ERR7_ERR DC_ErrOcc7;_通常ｴﾗｰ　ｴﾗｰ番号  _ﾃﾞｰﾀ収集　通常ｴﾗｰｺｰﾄﾞ発生時
+LD KtoV_TERR7_OPN        ; _ﾀｲﾑｱｯﾌﾟｴﾗｰ表示要求
+MOV KtoV_TERR7_ERR DC_ErrOcc7;_ﾀｲﾑｱｯﾌﾟｴﾗｰ　ｴﾗｰ番号  _ﾃﾞｰﾀ収集　通常ｴﾗｰｺｰﾄﾞ発生時
+LD KtoV_ERR8_OPN         ; _通常ｴﾗｰ画面表示
+MOV KtoV_ERR8_ERR DC_ErrOcc8;_通常ｴﾗｰ　ｴﾗｰ番号  _ﾃﾞｰﾀ収集　通常ｴﾗｰｺｰﾄﾞ発生時
+LD KtoV_TERR8_OPN        ; _ﾀｲﾑｱｯﾌﾟｴﾗｰ表示要求
+MOV KtoV_TERR8_ERR DC_ErrOcc8;_ﾀｲﾑｱｯﾌﾟｴﾗｰ　ｴﾗｰ番号  _ﾃﾞｰﾀ収集　通常ｴﾗｰｺｰﾄﾞ発生時
+;
+END
+ENDH

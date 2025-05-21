@@ -1,0 +1,83 @@
+DEVICE:51
+;MODULE:ErrorReset
+;MODULE_TYPE:0
+;エラーリセット方法
+;異常発生と同時に、エラー表示とブザーがなります。
+;エラー画面で、エラー内容を確認し、エラーリセットＳＷを押す。
+;ブザーが消音します。
+;その後、スタートＳＷランプが点滅するので、押して下さい。
+;異常解除となり、エラーリセットです。
+;Ｅｒｒｏｒ Ｒｅｓｅｔ
+;Ｉｆ ａｎ ｅｒｒｏｒ ｏｃｃｕｒｓ， ａｎ ｅｒｒｏｒ ｗｉｌｌ ｂｅ ｄｉｓｐｌａｙｅｄ ａｎｄ ｂｕｚｚｅｒ ｗｉｌｌ ｓｏｕｎｄ．
+;Ｂｕｚｚｅｒ ｉｓ ｓｔｏｐｐｅｄ ａｆｔｅｒ ｅｒｒｏｒ ｒｅｓｅｔｔｉｎｇ.
+;Ｔｈｅｎ ｓｔａｒｔ ＳＷ ｂｌｉｎｋｓ ｐｌｅａｓｅ ｐｕｓｈ ｗｉｔｈ ｂｏｔｈ ｈａｎｄｓ． 
+;Ｉｔ ｗｉｌｌ ｂｅ ｅｒｒｏｒ ｒｅｓｅｔ.
+;
+LD R50103                ; 警報ｾｯﾄﾌﾗｸﾞ
+OR R50900                ; TRAP
+OR R50901                ; ｼﾘﾝﾀﾞｰｴﾗｰ
+OR R50006                ; 異常発生中
+OR R50902                ; Trapしない   異常
+OR R49915                ; 表示用　　 TRAP
+LD T200                  ; 動作中遅延
+OR R49915                ; 表示用　　 TRAP
+ANL
+ANB R51300               ; ｴﾗｰﾘｾｯﾄsw ON
+MPS
+ANB @MR003               ; Error reset delay
+DIFU @MR000              ; Error start PLS
+SET MR50108              ; エラー中
+MPP
+SET MR50008              ; Error
+LD @MR000                ; Error start PLS
+OR R50013                ; 異常発生    表示
+ANB R50014               ; 異常発生ｴﾗｰﾘｾｯﾄsw ON
+OUT R50013               ; 異常発生    表示
+TMR @1 #5                ; ｴﾗｰ解除受付ﾃﾞｨﾚｲ
+LD R50013                ; 異常発生    表示
+AND @T1                  ; ｴﾗｰ解除受付ﾃﾞｨﾚｲ
+AND R40001               ; ｴﾗｰﾘｾｯﾄSW
+OR R50014                ; 異常発生ｴﾗｰﾘｾｯﾄsw ON
+ANB R51300               ; ｴﾗｰﾘｾｯﾄsw ON
+AND R55000               ; 即停止/TRAP 入力無し
+OUT R50014               ; 異常発生ｴﾗｰﾘｾｯﾄsw ON
+LD R50900                ; TRAP
+OR R50103                ; 警報ｾｯﾄﾌﾗｸﾞ
+OR R50109                ; Err MAIN
+OR R50110                ; Err ﾄﾚｲﾁｪﾝｼﾞｬｰ
+LD R50006                ; 異常発生中
+OR R50901                ; ｼﾘﾝﾀﾞｰｴﾗｰ
+AND R50111               ; Err 全体
+ORL
+OR R50902                ; Trapしない   異常
+OR R49915                ; 表示用　　 TRAP
+LD R50014                ; 異常発生ｴﾗｰﾘｾｯﾄsw ON
+AND R51000               ; ｽﾀｰﾄsw ON PLS
+LDB R50110               ; Err ﾄﾚｲﾁｪﾝｼﾞｬｰ
+ANB R50301               ; Pause
+LD R50110                ; Err ﾄﾚｲﾁｪﾝｼﾞｬｰ
+ANB R50306               ; PAUSE中
+ORL
+ANL
+OR R50000                ; 即停止
+ANL
+OUT R51300               ; ｴﾗｰﾘｾｯﾄsw ON
+RES R50006               ; 異常発生中
+MOV #0 DM500             ; ｴﾗｰ内容表示
+MOV #0 DM5016            ; ｾﾝｻｰNo
+LD R51300                ; ｴﾗｰﾘｾｯﾄsw ON
+OR @MR003                ; Error reset delay
+ANB @T0
+OUT @MR003               ; Error reset delay
+TMR @0 #15
+@SET MR50109             ; エラー解除
+CON
+@RES MR50108             ; エラー中
+CON
+@RES MR50008             ; Error
+LD @T0
+RES MR50109              ; エラー解除
+LD CR2002                ; 常時ON
+MOV DM500 DM5015         ; ｴﾗｰ内容表示
+END
+ENDH

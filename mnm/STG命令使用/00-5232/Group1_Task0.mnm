@@ -1,0 +1,2334 @@
+DEVICE:53
+;MODULE:Group1_Task0
+;MODULE_TYPE:0
+;SCRIPT_TYPE:
+;OneSystem Main-Module
+;
+;-----------------------------------------
+;ModuleName	:	Group1_Task0
+;ModuleType	:	Main Module
+;Line		:	Gaga組立ﾗｲﾝ
+;Cell		:	固定板ｺﾏ転写装置
+;Function	:	固定ﾌﾟﾚｰﾄ給材搬送UT	
+;-----------------------------------------
+;<<Task LocalDevice>>
+;/*項目			/*割付ｴﾘｱ				/*備考
+;---------------------------------------------------------------------			
+;Emergency		@MR000～@MR015			Emergency処理時RESET禁止ｴﾘｱ
+;Free			@MR100～@MR915			ﾕｰｻﾞｰﾌﾘｰｴﾘｱ
+;HOME			@MR1000～@MR1515		HOME動作時使用ｴﾘｱ
+;MAINTENANCE		@MR2000～@MR2915		MAINTE動作時使用ｴﾘｱ
+;AUTO(Main1)		@MR3000～@MR3915		AUTO(Main1)動作時使用ｴﾘｱ
+;	(Main2)		@MR4000～@MR4415		AUTO(Main2)動作時使用ｴﾘｱ
+;SubRoutine		@MR4500～@MR6415		ｻﾌﾞﾙｰﾁﾝ共通動作使用ｴﾘｱ　※状況により増設してください。
+;----------------------------------------------------------------------
+;<h1/>Device_Init/ﾃﾞﾊﾞｲｽ初期化
+;[内容]
+;・非常停止、優先ｴﾗｰ発生時に初期化したいﾃﾞﾊﾞｲｽを指定して下さい
+;※本Taskで使用するﾛｰｶﾙﾃﾞﾊﾞｲｽなど
+;※STG～JMPにて使用しているﾃﾞﾊﾞｲｽは必須
+LDP R46104               ; _非常停止中　ﾓｰﾄﾞﾌﾗｸﾞ
+ZRES @MR100 @MR6415      ; Task0 ERROR
+;<h1/>Task_Monitor/ﾀｽｸﾓﾆﾀｰ
+LD CR2002                ; 常時ON
+FLIK #50 #50 @MR000
+LD= DM60000 MyTask       ; TaskNo /ERROR_DISP  自ﾀｽｸ番号
+AND R46208               ; _Group1　ｴﾗｰ発生中
+OUT @MR001               ; TASK0 ERROR
+;ON STG Main1
+;TYPE EM600.U,EM601.U,@MR000.U,@MR3000.U
+;
+;FOR EM600 = EM600 TO 160 STEP 16
+;	IF @MR3000:EM600 <> 0 THEN
+;		BREAK
+;	END IF	
+;NEXT
+;	
+;IF EM600 < 160 THEN
+;	EM601 = (EM600 / 16) * 100 + DMX(@MR3000:EM600) + #3000
+;END IF		
+;		
+;EM600 = EM600 + 16		
+;IF EM600 > 160 THEN		
+;	EM600 = 0	
+;END IF
+LDP @MR000
+NCJ #1000
+;TYPE EM600.U,EM601.U,@MR000.U,@MR3000.U
+;
+;FOR EM600 = EM600 TO 160 STEP 16
+;
+LD CR2002                ; 常時ON
+MOV EM600 EM600          ; Task0 Main1@MR  Task0 Main1@MR
+LABEL #2000
+LD> EM600 #160           ; Task0 Main1@MR
+CJ #2001
+;	IF @MR3000:EM600 <> 0 THEN
+;
+LD CR2002                ; 常時ON
+LDA EM600                ; Task0 Main1@MR
+CON
+EXT
+CON
+STA.L Z12
+LD<> @MR3000:Z12 #0      ; AUTO Main1
+NCJ #2002
+;		BREAK
+;
+LD CR2002                ; 常時ON
+CJ #2003
+;	END IF	
+;
+LABEL #2002
+;NEXT
+;
+LD CR2002                ; 常時ON
+LDA EM600                ; Task0 Main1@MR
+CON
+ADD #16
+CON
+STA EM600                ; Task0 Main1@MR
+LDB CR2009               ; 演算結果が負
+CJ #2000
+LABEL #2003
+LABEL #2001
+;IF EM600 < 160 THEN
+;
+LD< EM600 #160           ; Task0 Main1@MR
+NCJ #2004
+;	EM601 = (EM600 / 16) * 100 + DMX(@MR3000:EM600) + #3000
+;
+LD CR2002                ; 常時ON
+LDA EM600                ; Task0 Main1@MR
+CON
+EXT
+CON
+STA.L Z12
+CON
+LDA @MR3000:Z12          ; AUTO Main1
+CON
+DMX
+CON
+STA @VM0
+CON
+LDA EM600                ; Task0 Main1@MR
+CON
+EXT
+CON
+EXT.L
+CON
+DIV.L +16
+CON
+MUL.L +100
+CON
+STA.L @VM1
+CON
+LDA @VM0
+CON
+EXT
+CON
+ADD.L @VM1
+CON
+ADD.L +3000
+CON
+STA EM601                ; Task0 Main1@MR
+;END IF		
+;
+LABEL #2004
+;EM600 = EM600 + 16		
+;
+LD CR2002                ; 常時ON
+LDA EM600                ; Task0 Main1@MR
+CON
+EXT
+CON
+ADD.L +16
+CON
+STA EM600                ; Task0 Main1@MR
+;IF EM600 > 160 THEN		
+;
+LD> EM600 #160           ; Task0 Main1@MR
+NCJ #2005
+;	EM600 = 0	
+;
+LD CR2002                ; 常時ON
+MOV #0 EM600             ; Task0 Main1@MR
+;END IF
+LABEL #2005
+LABEL #1000
+;
+;ON STG Main2
+;TYPE EM602.U,EM603.U,@MR4000.U
+;
+;FOR EM602 = EM602 TO 80 STEP 16
+;	IF @MR4000:EM602 <> 0 THEN
+;		BREAK
+;	END IF	
+;NEXT	
+;
+;IF EM602 < 80 THEN
+;	EM603 = (EM602 / 16) * 100 + DMX(@MR4000:EM602) + #4000
+;END IF
+;
+;EM602 = EM602 + 16		
+;
+;IF EM602 > 80 THEN
+;	EM602 = 0	
+;END IF
+LDP @MR000
+NCJ #1001
+;TYPE EM602.U,EM603.U,@MR4000.U
+;
+;FOR EM602 = EM602 TO 80 STEP 16
+;
+LD CR2002                ; 常時ON
+MOV EM602 EM602          ; Task0 Main2@MR  Task0 Main2@MR
+LABEL #2006
+LD> EM602 #80            ; Task0 Main2@MR
+CJ #2007
+;	IF @MR4000:EM602 <> 0 THEN
+;
+LD CR2002                ; 常時ON
+LDA EM602                ; Task0 Main2@MR
+CON
+EXT
+CON
+STA.L Z12
+LD<> @MR4000:Z12 #0      ; AUTO Main2
+NCJ #2008
+;		BREAK
+;
+LD CR2002                ; 常時ON
+CJ #2009
+;	END IF	
+;
+LABEL #2008
+;NEXT	
+;
+LD CR2002                ; 常時ON
+LDA EM602                ; Task0 Main2@MR
+CON
+ADD #16
+CON
+STA EM602                ; Task0 Main2@MR
+LDB CR2009               ; 演算結果が負
+CJ #2006
+LABEL #2009
+LABEL #2007
+;IF EM602 < 80 THEN
+;
+LD< EM602 #80            ; Task0 Main2@MR
+NCJ #2010
+;	EM603 = (EM602 / 16) * 100 + DMX(@MR4000:EM602) + #4000
+;
+LD CR2002                ; 常時ON
+LDA EM602                ; Task0 Main2@MR
+CON
+EXT
+CON
+STA.L Z12
+CON
+LDA @MR4000:Z12          ; AUTO Main2
+CON
+DMX
+CON
+STA @VM3
+CON
+LDA EM602                ; Task0 Main2@MR
+CON
+EXT
+CON
+EXT.L
+CON
+DIV.L +16
+CON
+MUL.L +100
+CON
+STA.L @VM4
+CON
+LDA @VM3
+CON
+EXT
+CON
+ADD.L @VM4
+CON
+ADD.L +4000
+CON
+STA EM603                ; Task0 Main2@MR
+;END IF
+;
+LABEL #2010
+;EM602 = EM602 + 16		
+;
+LD CR2002                ; 常時ON
+LDA EM602                ; Task0 Main2@MR
+CON
+EXT
+CON
+ADD.L +16
+CON
+STA EM602                ; Task0 Main2@MR
+;IF EM602 > 80 THEN
+;
+LD> EM602 #80            ; Task0 Main2@MR
+NCJ #2011
+;	EM602 = 0	
+;
+LD CR2002                ; 常時ON
+MOV #0 EM602             ; Task0 Main2@MR
+;END IF
+LABEL #2011
+LABEL #1001
+;
+;ON STG SubRoutine
+;TYPE EM604.U,EM605.U,@MR4500.U
+;	
+;FOR EM604 = EM604 TO 320 STEP 16
+;	IF @MR4500:EM604 <> 0 THEN
+;		BREAK
+;	END IF	
+;NEXT
+;		
+;IF EM604 < 320 THEN
+;	EM605 = (EM604 / 16) * 100 + DMX(@MR4500:EM604) + #4500
+;END IF
+;		
+;EM604 = EM604 + 16	
+;
+;IF EM604 > 320 THEN
+;   EM604 = 0
+;END IF
+LDP @MR000
+NCJ #1002
+;TYPE EM604.U,EM605.U,@MR4500.U
+;
+;FOR EM604 = EM604 TO 320 STEP 16
+;
+LD CR2002                ; 常時ON
+MOV EM604 EM604          ; Task0 Sub@MR  Task0 Sub@MR
+LABEL #2012
+LD> EM604 #320           ; Task0 Sub@MR
+CJ #2013
+;	IF @MR4500:EM604 <> 0 THEN
+;
+LD CR2002                ; 常時ON
+LDA EM604                ; Task0 Sub@MR
+CON
+EXT
+CON
+STA.L Z12
+LD<> @MR4500:Z12 #0
+NCJ #2014
+;		BREAK
+;
+LD CR2002                ; 常時ON
+CJ #2015
+;	END IF	
+;
+LABEL #2014
+;NEXT
+;
+LD CR2002                ; 常時ON
+LDA EM604                ; Task0 Sub@MR
+CON
+ADD #16
+CON
+STA EM604                ; Task0 Sub@MR
+LDB CR2009               ; 演算結果が負
+CJ #2012
+LABEL #2015
+LABEL #2013
+;IF EM604 < 320 THEN
+;
+LD< EM604 #320           ; Task0 Sub@MR
+NCJ #2016
+;	EM605 = (EM604 / 16) * 100 + DMX(@MR4500:EM604) + #4500
+;
+LD CR2002                ; 常時ON
+LDA EM604                ; Task0 Sub@MR
+CON
+EXT
+CON
+STA.L Z12
+CON
+LDA @MR4500:Z12
+CON
+DMX
+CON
+STA @VM6
+CON
+LDA EM604                ; Task0 Sub@MR
+CON
+EXT
+CON
+EXT.L
+CON
+DIV.L +16
+CON
+MUL.L +100
+CON
+STA.L @VM7
+CON
+LDA @VM6
+CON
+EXT
+CON
+ADD.L @VM7
+CON
+ADD.L +4500
+CON
+STA EM605                ; Task0 Sub@MR
+;END IF
+;
+LABEL #2016
+;EM604 = EM604 + 16	
+;
+LD CR2002                ; 常時ON
+LDA EM604                ; Task0 Sub@MR
+CON
+EXT
+CON
+ADD.L +16
+CON
+STA EM604                ; Task0 Sub@MR
+;IF EM604 > 320 THEN
+;
+LD> EM604 #320           ; Task0 Sub@MR
+NCJ #2017
+;   EM604 = 0
+;
+LD CR2002                ; 常時ON
+MOV #0 EM604             ; Task0 Sub@MR
+;END IF
+LABEL #2017
+LABEL #1002
+;
+;<h1/>Task_Init/ﾀｽｸ初期化
+;[本STG内容]
+;・本Task起動時に必要な初期化処理を記述して下さい
+;・起動Taskの全Init処理終了後、Task_StartのSTGが起動します
+STG LR800                ; _Grp1_Task0_Init.STG
+ENDS
+;<h1/>Task_Start/ﾀｽｸ開始
+;[本STG内容]
+;・Task起動後、以下運転ﾓｰﾄﾞに従い、各STGにJMPします
+;【HOME】	→	LR5200
+;【AUTO】	→	LR5400
+;【MAINTE】	→	LR5600
+;・本STGは追記、修正不要です
+STG LR400                ; _Grp1_Task0_Start.STG
+MPS
+AND R46101               ; _原点復帰中　ﾓｰﾄﾞﾌﾗｸﾞ
+JMP LR5200               ; _Grp1_Task0_HOME.STG
+MRD
+AND R46100               ; _自動運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+JMP LR5400               ; _Grp1_Task0_AUTO.STG
+MPP
+AND R46102               ; _ﾒﾝﾃﾅﾝｽ運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+JMP LR5600               ; _Grp1_Task0_MAINTE.STG
+;<h1/>Task_Finish/ﾀｽｸ終了
+;[本STG内容]
+;・各Taskの終了STGになります
+;・運転ﾓｰﾄﾞに係わらず終了時は本STGを経由して終了して下さい
+;・本STGは追記、修正不要です
+STG LR600                ; _Grp1_Task0_Fin.STG
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+ANB @MR001               ; TASK0 ERROR
+ANL
+RES R42600               ; Grp1_Task0_ﾎﾟｰｽﾞ許可
+CON
+RES R41000               ; _Grp1_Task0_起動中ﾌﾗｸﾞ
+CON
+ENDS
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+;<h1/>HOME/原点復帰
+;[本STG内容]
+;・STG @MR1000の続きから各Taskの原点復帰動作を記述する
+;・動作終了時は@MR1515にJMPする事
+STG LR5200               ; _Grp1_Task0_HOME.STG
+JMP @MR1000              ; HOME
+STG @MR1000              ; HOME
+SET @MR1002              ; HOME中
+CON
+JMP @MR1100
+STG @MR1100
+RES MR7215               ; 位置決めﾋﾟﾝ 上昇
+CON
+MPS
+LDB MR4405               ; 位置決めﾋﾟﾝ 下降端ｴﾗｰ
+AND R4405                ; 位置決めﾋﾟﾝ 下降端
+ANB R4404                ; 位置決めﾋﾟﾝ 上昇端
+ANL
+JMP @MR1200
+MPP
+LD MR4405                ; 位置決めﾋﾟﾝ 下降端ｴﾗｰ
+AND R41200               ; TASK0 PAUSE 要求
+ANL
+SET @MR1900              ; Main1 HALT許可
+;TASK7→TASK0  Z軸上昇完了待ち  MR10000  (RB10)
+;TASK9→TASK0  Z軸上昇完了待ち  MR10001  (RB9)
+;TASK2→TASK0  Z軸上昇完了待ち  MR10002  (RB6)
+STG @MR1200
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+AND MR10000              ; TASK7→TASK0  Z軸上昇完了
+AND MR10001              ; TASK9→TASK0  Z軸上昇完了
+AND MR10002              ; TASK2→TASK0  Z軸上昇完了
+ANL
+JMP @MR1201
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+;給材RB(RB1)  原点復帰
+STG @MR1201
+ZRES MR10000 MR10002     ; TASK7→TASK0  Z軸上昇完了  TASK2→TASK0  Z軸上昇完了
+CON
+JMP @MR1202
+STG @MR1202
+ZRES MR10000 MR10002     ; TASK7→TASK0  Z軸上昇完了  TASK2→TASK0  Z軸上昇完了
+CON
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+SET @MR5000              ; 給材側搬送RB(RB1)原点復帰要求
+CON
+JMP @MR1203
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR1203
+AND @MR5001              ; 給材側搬送RB(RB1)原点復帰完了
+RES @MR5001              ; 給材側搬送RB(RB1)原点復帰完了
+CON
+JMP @MR1204
+;給材RB(RB1)  待機位置移動
+STG @MR1204
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+DW #1 EM1300             ; RB1Target Pos
+CON
+SET @MR5100              ; 給材側搬送RB(RB1)移動要求
+CON
+JMP @MR1205
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR1205
+AND @MR5101              ; 給材側搬送RB(RB1)移動完了
+RES @MR5101              ; 給材側搬送RB(RB1)移動完了
+CON
+JMP @MR1300
+;画像移動 Y軸RB(RB8)原点復帰
+STG @MR1300
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+SET @MR5200              ; 画像移動 Y軸 原点復帰要求
+CON
+JMP @MR1301
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR1301
+AND @MR5201              ; 画像移動 Y軸 原点復帰完了
+RES @MR5201              ; 画像移動 Y軸 原点復帰完了
+CON
+JMP @MR1305
+;画像移動 Y軸RB(RB8)待機位置移動
+STG @MR1305
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+DW #1 EM1314             ; RB8Target Pos
+CON
+SET @MR5300              ; 画像移動 Y軸 動作要求
+CON
+JMP @MR1306
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR1306
+AND @MR5301              ; 画像移動 Y軸 動作完了
+RES @MR5301              ; 画像移動 Y軸 動作完了
+CON
+JMP @MR1400
+;固定ﾌﾟﾚｰﾄ搬送ｽﾗｲﾀﾞﾜｰｸ有無確認
+STG @MR1400
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+SET @MR6000              ; 固定ﾌﾟﾚｰﾄ搬送ｽﾗｲﾀﾞﾜｰｸ有無確認
+CON
+JMP @MR1401
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR1401
+AND @MR6001              ; 固定ﾌﾟﾚｰﾄ搬送ｽﾗｲﾀﾞﾜｰｸ有無確認完
+RES @MR6001              ; 固定ﾌﾟﾚｰﾄ搬送ｽﾗｲﾀﾞﾜｰｸ有無確認完
+CON
+JMP @MR1515              ; HOME END
+;
+STG @MR1515              ; HOME END
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+ANB @MR001               ; TASK0 ERROR
+ANL
+SET MR7300               ; ｲｵﾅｲｻﾞｴｱ-
+CON
+RES @MR1002              ; HOME中
+CON
+JMP LR600                ; _Grp1_Task0_Fin.STG
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+;<h1/>AUTO/自動動作
+STG LR5400               ; _Grp1_Task0_AUTO.STG
+RES @MR3900              ; 清掃後の2回目接着剤塗布
+CON
+JMP @MR3000              ; AUTO Main1
+;<h1/>Auto-Main1/Autoﾒｲﾝﾙｰﾁﾝ1
+;[本STG内容]
+;・各TaskのAUTO動作を記述して下さい
+;・動作ﾓｰﾄﾞは「AUTOAC」に格納されています(1～32)
+;・@MR3000:AUTO_Main1開始、@MR3001:AUTO_Main1完了、@MR3002:AUTO_Main1動作中
+STG @MR3000              ; AUTO Main1
+MPS
+ANB R47800               ; _Group1　ﾒﾝﾃ動作定停止移行中
+MPS
+ANB R57300               ; Task0 停止要求
+RES MR10111              ; 2回目接着剤塗布
+CON
+RES MR10209              ; T0_固定ﾌP給材ｼｬﾄﾙ載替え完了
+CON
+SET @MR3002              ; AUTO Main1 Busy
+CON
+JMP @MR3003
+MPP
+AND R57300               ; Task0 停止要求
+JMP @MR3910
+MPP
+AND R47800               ; _Group1　ﾒﾝﾃ動作定停止移行中
+JMP @MR3910
+;固定ﾌﾟﾚｰﾄ給材搬送ｼｬﾄﾙ  初回固定ﾌﾟﾚｰﾄ確認
+STG @MR3003
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+MPS
+LDB R57300               ; Task0 停止要求
+AND MR20800              ; 給材ｽﾗｲﾀﾞ在荷確認(TASK1→0)
+ANL
+SET MR20802              ; 給材ｽﾗｲﾀﾞ在荷確認中(TASK0→1)
+CON
+JMP @MR3004
+MPP
+AND R57300               ; Task0 停止要求
+JMP @MR3910
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR3004
+SET @MR6000              ; 固定ﾌﾟﾚｰﾄ搬送ｽﾗｲﾀﾞﾜｰｸ有無確認
+CON
+JMP @MR3005
+STG @MR3005
+AND @MR6001              ; 固定ﾌﾟﾚｰﾄ搬送ｽﾗｲﾀﾞﾜｰｸ有無確認完
+RES MR10209              ; T0_固定ﾌP給材ｼｬﾄﾙ載替え完了
+CON
+RES @MR6001              ; 固定ﾌﾟﾚｰﾄ搬送ｽﾗｲﾀﾞﾜｰｸ有無確認完
+CON
+JMP @MR3006
+STG @MR3006
+ANB MR20800              ; 給材ｽﾗｲﾀﾞ在荷確認(TASK1→0)
+RES MR20802              ; 給材ｽﾗｲﾀﾞ在荷確認中(TASK0→1)
+CON
+JMP @MR3010
+;固定ﾌﾟﾚｰﾄ給材搬送ｼｬﾄﾙ  
+;  AUTOｱｸｼｮﾝ  #1  ：  通常運転
+;  AUTOｱｸｼｮﾝ  #2  ：  手動固定ﾌﾟﾚｰﾄ給材運転      →  固定ﾌﾟﾚｰﾄの投入位置は、ｾｯﾄ治具に乗せた状態で行う
+;                                                      除材RBを載替え位置に搬送し、載替えRBでﾋﾟｯｸｱｯﾌﾟし、給材RBに
+;                                                      載せ替える。
+STG @MR3010
+MPS
+AND= DM5010 #1           ; _AUTO動作番号
+JMP @MR3106
+MPP
+LD= DM5010 #2            ; _AUTO動作番号
+OR= DM5010 #29           ; _AUTO動作番号
+ANL
+MPS
+AND MR10209              ; T0_固定ﾌP給材ｼｬﾄﾙ載替え完了
+JMP @MR3012
+MPP
+ANB MR10209              ; T0_固定ﾌP給材ｼｬﾄﾙ載替え完了
+JMP @MR3100
+;手動固定板投入ﾓｰﾄﾞ：
+;    給材RBを転写位置へ移動させる
+STG @MR3012
+MPS
+AND= DM5010 #2           ; _AUTO動作番号
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+DW #2 EM1300             ; RB1Target Pos
+CON
+SET @MR5100              ; 給材側搬送RB(RB1)移動要求
+CON
+JMP @MR3013
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+MPP
+AND= DM5010 #29          ; _AUTO動作番号
+RES MR20606              ; 転写位置移動中(TASK0→9)
+CON
+JMP @MR3109
+STG @MR3013
+LD @MR5101               ; 給材側搬送RB(RB1)移動完了
+OR MR22713               ; 給材側搬送RB(RB1)移動完了
+ANL
+RES MR20606              ; 転写位置移動中(TASK0→9)
+CON
+RES MR22713              ; 給材側搬送RB(RB1)移動完了
+CON
+RES @MR5101              ; 給材側搬送RB(RB1)移動完了
+CON
+JMP @MR3106
+;固定ﾌﾟﾚｰﾄ載替え位置へ移動   (TASK1  H/S）
+STG @MR3100
+MPS
+ANB R57300               ; Task0 停止要求
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+AND MR20508              ; 給材RB載替位置移動要求(TASK1→0)
+ANL
+SET MR20510              ; 給材RB載替位置移動中(TASK0→1)
+CON
+JMP @MR3101
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+MPP
+AND R57300               ; Task0 停止要求
+JMP @MR3910
+STG @MR3101
+DW #3 EM1300             ; RB1Target Pos
+CON
+SET @MR5100              ; 給材側搬送RB(RB1)移動要求
+CON
+JMP @MR3102
+STG @MR3102
+AND @MR5101              ; 給材側搬送RB(RB1)移動完了
+RES @MR5101              ; 給材側搬送RB(RB1)移動完了
+CON
+JMP @MR3103
+STG @MR3103
+ANB MR20508              ; 給材RB載替位置移動要求(TASK1→0)
+RES MR20510              ; 給材RB載替位置移動中(TASK0→1)
+CON
+JMP @MR3104
+;給材完了  転写位置移動開始  (TASK9  H/S）
+STG @MR3104
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+MPS
+LDB R57300               ; Task0 停止要求
+AND MR20604              ; 転写位置移動要求(TASK9→0)
+ANL
+SET MR20606              ; 転写位置移動中(TASK0→9)
+CON
+JMP @MR3105
+MPP
+AND R57300               ; Task0 停止要求
+JMP @MR3910
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR3105
+SET MR10209              ; T0_固定ﾌP給材ｼｬﾄﾙ載替え完了
+CON
+JMP @MR3010
+;ﾄﾚｲより固定ﾌﾟﾚｰﾄ取出し  (TASK7  H/S）
+STG @MR3106
+MPS
+LD= DM5010 #1            ; _AUTO動作番号
+ANB MR10209              ; T0_固定ﾌP給材ｼｬﾄﾙ載替え完了
+ANL
+SET MR20005              ; 固定ﾌﾟﾚｰﾄ給材要求(TASK0→7)
+CON
+JMP @MR3107
+MPP
+AND MR10209              ; T0_固定ﾌP給材ｼｬﾄﾙ載替え完了
+JMP @MR3109
+STG @MR3107
+MPS
+ANB R57300               ; Task0 停止要求
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+AND MR20007              ; 固定ﾌﾟﾚｰﾄ給材動作中(TASK7→0)
+ANL
+RES MR20005              ; 固定ﾌﾟﾚｰﾄ給材要求(TASK0→7)
+CON
+JMP @MR3108
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+MPP
+AND R57300               ; Task0 停止要求
+JMP @MR3910
+STG @MR3108
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+ANB MR20007              ; 固定ﾌﾟﾚｰﾄ給材動作中(TASK7→0)
+ANL
+JMP @MR3109
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+;位置きめﾋﾟﾝ上昇
+STG @MR3109
+SET MR7215               ; 位置決めﾋﾟﾝ 上昇
+CON
+MPS
+LDB MR4404               ; 位置決めﾋﾟﾝ 上昇端ｴﾗｰ
+AND R4404                ; 位置決めﾋﾟﾝ 上昇端
+ANB R4405                ; 位置決めﾋﾟﾝ 下降端
+ANL
+JMP @MR3110
+MPP
+LD MR4404                ; 位置決めﾋﾟﾝ 上昇端ｴﾗｰ
+AND R41200               ; TASK0 PAUSE 要求
+ANL
+SET @MR1900              ; Main1 HALT許可
+;固定ﾌﾟﾚｰﾄ給材搬送ｼｬﾄﾙ  固定ﾌﾟﾚｰﾄ吸着
+STG @MR3110
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+SET @MR6100              ; 固定ﾌﾟﾚｰﾄ搬送ｽﾗｲﾀﾞﾜｰｸ吸着
+CON
+JMP @MR3111
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR3111
+AND @MR6101              ; 固定ﾌﾟﾚｰﾄ搬送ｽﾗｲﾀﾞﾜｰｸ吸着OK
+RES @MR6101              ; 固定ﾌﾟﾚｰﾄ搬送ｽﾗｲﾀﾞﾜｰｸ吸着OK
+CON
+JMP @MR3200
+;固定ﾌﾟﾚｰﾄ給材搬送ｼｬﾄﾙ  転写位置移動
+STG @MR3200
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+MPS
+LD= DM5010 #1            ; _AUTO動作番号
+ANB MR10209              ; T0_固定ﾌP給材ｼｬﾄﾙ載替え完了
+ANL
+DW #2 EM1300             ; RB1Target Pos
+CON
+SET @MR5100              ; 給材側搬送RB(RB1)移動要求
+CON
+JMP @MR3201
+MPP
+AND MR10209              ; T0_固定ﾌP給材ｼｬﾄﾙ載替え完了
+JMP @MR3203
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR3201
+LD @MR5101               ; 給材側搬送RB(RB1)移動完了
+OR MR22713               ; 給材側搬送RB(RB1)移動完了
+ANL
+RES MR22713              ; 給材側搬送RB(RB1)移動完了
+CON
+RES @MR5101              ; 給材側搬送RB(RB1)移動完了
+CON
+JMP @MR3203
+;転写動作  (TASK2  H/S）
+STG @MR3203
+MPS
+LD= DM5010 #1            ; _AUTO動作番号
+OR= DM5010 #2            ; _AUTO動作番号
+ANL
+SET MR20008              ; 転写要求(TASK0→2)
+CON
+JMP @MR3204
+MPP
+AND= DM5010 #29          ; _AUTO動作番号
+JMP @MR3500
+STG @MR3204
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+AND MR20010              ; 転写動作中(TASK2→0)
+ANL
+RES MR20008              ; 転写要求(TASK0→2)
+CON
+JMP @MR3205
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR3205
+MPS
+ANB R57300               ; Task0 停止要求
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+ANB MR20010              ; 転写動作中(TASK2→0)
+ANL
+MPS
+ANB LR10001              ; 転写ｺﾏ清掃済みﾌﾗｸﾞ
+JMP @MR3208
+MPP
+AND LR10001              ; 転写ｺﾏ清掃済みﾌﾗｸﾞ
+JMP @MR3900              ; 清掃後の2回目接着剤塗布
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+MPP
+AND R57300               ; Task0 停止要求
+JMP @MR3910
+;転写ｺﾏ清掃後は、2回接着剤塗布する
+;ﾙﾐﾗｰ動作開始  (TASK3  H/S）
+STG @MR3900              ; 清掃後の2回目接着剤塗布
+SET MR10111              ; 2回目接着剤塗布
+CON
+SET MR20401              ; 動作許開始(TASK0→3)
+CON
+AND MR20403              ; 動作開始(TASK3→0)
+TMR @7 #5
+CON
+AND @T7
+JMP @MR3901
+STG @MR3901
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+RES MR20401              ; 動作許開始(TASK0→3)
+CON
+ANB MR20403              ; 動作開始(TASK3→0)
+JMP @MR3902
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+;2回目転写動作  (TASK2  H/S）
+STG @MR3902
+SET MR20008              ; 転写要求(TASK0→2)
+CON
+JMP @MR3904
+STG @MR3904
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+AND MR20010              ; 転写動作中(TASK2→0)
+ANL
+RES MR20008              ; 転写要求(TASK0→2)
+CON
+JMP @MR3905
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR3905
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+ANB MR20010              ; 転写動作中(TASK2→0)
+ANL
+RES MR10111              ; 2回目接着剤塗布
+CON
+RES LR10001              ; 転写ｺﾏ清掃済みﾌﾗｸﾞ
+CON
+JMP @MR3208
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+;給材搬送台  固定ﾌﾟﾚｰﾄ有無確認
+STG @MR3208
+MPS
+AND R4508                ; 固定P搬送ｽﾃｰｼﾞ 吸着確認 OUT1
+TMR @30 #3
+CON
+AND @T30
+JMP @MR3500
+MPP
+ANB R4508                ; 固定P搬送ｽﾃｰｼﾞ 吸着確認 OUT1
+TMR @31 #20
+CON
+AND @T31
+RES MR7100               ; 固定P搬送ｽﾃｰｼﾞ 吸着ON
+CON
+SET MR7101               ; 固定P搬送ｽﾃｰｼﾞ 吸着OFF
+CON
+RES MR7102               ; 固定P搬送ｽﾃｰｼﾞ 吸着破壊ON
+CON
+JMP @MR3209
+;給材搬送X軸 ｽﾃｰｼﾞ固定ﾌﾟﾚｰﾄ無し  ｴﾗｰ130
+STG @MR3209
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+ANB R39004               ; ｴﾗｰ中
+ANL
+SET R39004               ; ｴﾗｰ中
+CON
+DW #130 @DM1             ; ErrorNo /ERROR_DISP
+CON
+DW $2040 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #0 @DM2               ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task0 ERROR
+CON
+JMP @MR3210
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR3210
+SET @MR1900              ; Main1 HALT許可
+CON
+AND @MR101               ; Task0 ERROR_End
+RES @MR101               ; Task0 ERROR_End
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+MPS
+AND @MR105               ; SW1
+JMP @MR3211
+MPP
+AND @MR107               ; SW3
+JMP @MR3212
+STG @MR3211
+SET MR7100               ; 固定P搬送ｽﾃｰｼﾞ 吸着ON
+CON
+RES MR7101               ; 固定P搬送ｽﾃｰｼﾞ 吸着OFF
+CON
+RES MR7102               ; 固定P搬送ｽﾃｰｼﾞ 吸着破壊ON
+CON
+TMR @32 #20
+CON
+AND @T32
+JMP @MR3208
+STG @MR3212
+SET MR7100               ; 固定P搬送ｽﾃｰｼﾞ 吸着ON
+CON
+RES MR7101               ; 固定P搬送ｽﾃｰｼﾞ 吸着OFF
+CON
+RES MR7102               ; 固定P搬送ｽﾃｰｼﾞ 吸着破壊ON
+CON
+MPS
+AND R4509                ; 固定P搬送ｽﾃｰｼﾞ 吸着確認 OUT2
+TMR @33 #5
+CON
+AND @T33
+JMP @MR3302
+MPP
+ANB R4509                ; 固定P搬送ｽﾃｰｼﾞ 吸着確認 OUT2
+TMR @34 #10
+CON
+AND @T34
+JMP @MR3213
+;給材搬送X軸 ｽﾃｰｼﾞ固定ﾌﾟﾚｰﾄ除材要求  ｴﾗｰ101
+STG @MR3213
+RES MR7100               ; 固定P搬送ｽﾃｰｼﾞ 吸着ON
+CON
+SET MR7101               ; 固定P搬送ｽﾃｰｼﾞ 吸着OFF
+CON
+SET MR7102               ; 固定P搬送ｽﾃｰｼﾞ 吸着破壊ON
+CON
+TMR @35 #5
+CON
+AND @T35
+JMP @MR3214
+STG @MR3214
+RES MR7100               ; 固定P搬送ｽﾃｰｼﾞ 吸着ON
+CON
+SET MR7101               ; 固定P搬送ｽﾃｰｼﾞ 吸着OFF
+CON
+RES MR7102               ; 固定P搬送ｽﾃｰｼﾞ 吸着破壊ON
+CON
+JMP @MR3300
+STG @MR3300
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+ANB R39004               ; ｴﾗｰ中
+ANL
+SET R39004               ; ｴﾗｰ中
+CON
+DW #101 @DM1             ; ErrorNo /ERROR_DISP
+CON
+DW $2000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #0 @DM2               ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task0 ERROR
+CON
+JMP @MR3301
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR3301
+SET @MR1900              ; Main1 HALT許可
+CON
+AND @MR101               ; Task0 ERROR_End
+RES @MR101               ; Task0 ERROR_End
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+AND @MR105               ; SW1
+JMP @MR3212
+STG @MR3302
+RES MR7100               ; 固定P搬送ｽﾃｰｼﾞ 吸着ON
+CON
+SET MR7101               ; 固定P搬送ｽﾃｰｼﾞ 吸着OFF
+CON
+SET MR7102               ; 固定P搬送ｽﾃｰｼﾞ 吸着破壊ON
+CON
+TMR @36 #5
+CON
+AND @T36
+JMP @MR3303
+STG @MR3303
+RES MR7100               ; 固定P搬送ｽﾃｰｼﾞ 吸着ON
+CON
+SET MR7101               ; 固定P搬送ｽﾃｰｼﾞ 吸着OFF
+CON
+RES MR7102               ; 固定P搬送ｽﾃｰｼﾞ 吸着破壊ON
+CON
+SET MR20301              ; 除材処理(TASK0→1)
+CON
+SET MR20305              ; 除材処理(TASK0→9)
+CON
+SET @MR3306              ; 除材処理
+CON
+JMP @MR3500
+;固定ﾌﾟﾚｰﾄ給材搬送ｼｬﾄﾙ  画像検査
+STG @MR3500
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+MPS
+ANB @MR3306              ; 除材処理
+SET R47001               ; _処理時間2計測開始
+CON
+DW #0 DM20001            ; 画像検査結果
+CON
+DW #1 DM20030            ; 画像検査位置
+CON
+JMP @MR3501
+MPP
+AND @MR3306              ; 除材処理
+JMP @MR3800
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR3501
+MPS
+ANB DM2000.4
+JMP @MR3502
+MPP
+AND DM2000.4
+JMP @MR3600
+;画像検査位置移動
+STG @MR3502
+LDA DM20030              ; 画像検査位置
+CON
+ADD #10
+CON
+STA EM1300               ; RB1Target Pos
+CON
+STA EM1314               ; RB8Target Pos
+CON
+SET @MR5300              ; 画像移動 Y軸 動作要求
+CON
+SET @MR5100              ; 給材側搬送RB(RB1)移動要求
+CON
+JMP @MR3503              ; ﾛﾎﾞｯﾄ位置確認
+STG @MR3503              ; ﾛﾎﾞｯﾄ位置確認
+AND @MR5301              ; 画像移動 Y軸 動作完了
+AND @MR5101              ; 給材側搬送RB(RB1)移動完了
+RES @MR5301              ; 画像移動 Y軸 動作完了
+CON
+RES @MR5101              ; 給材側搬送RB(RB1)移動完了
+CON
+JMP @MR3506
+;画像処理  (TASK2  H/S）
+STG @MR3506
+SET MR20012              ; 画像検査要求(TASK0→8)
+CON
+JMP @MR3507
+STG @MR3507
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+AND MR20014              ; 画像検査動作中(TASK8→0)
+ANL
+RES MR20012              ; 画像検査要求(TASK0→8)
+CON
+JMP @MR3508
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR3508
+ANB MR20014              ; 画像検査動作中(TASK8→0)
+JMP @MR3509
+;画像処理移動
+STG @MR3509
+@INC DM20030             ; 画像検査位置
+CON
+JMP @MR3510
+STG @MR3510
+MPS
+AND<= DM20030 #12        ; 画像検査位置
+@INC EM1300              ; RB1Target Pos
+CON
+JMP @MR3501
+MPP
+AND> DM20030 #12         ; 画像検査位置
+RES R47001               ; _処理時間2計測開始
+CON
+DW #1 EM1314             ; RB8Target Pos
+CON
+JMP @MR3511
+;画像移動 Y軸RB(RB8)待機位置移動
+STG @MR3511
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+DW #1 EM1314             ; RB8Target Pos
+CON
+SET @MR5300              ; 画像移動 Y軸 動作要求
+CON
+JMP @MR3512
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR3512
+AND @MR5301              ; 画像移動 Y軸 動作完了
+RES @MR5301              ; 画像移動 Y軸 動作完了
+CON
+JMP @MR3600
+;固定ﾌﾟﾚｰﾄ給材搬送ｼｬﾄﾙ  載替え位置移動
+STG @MR3600
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+DW #3 EM1300             ; RB1Target Pos
+CON
+SET @MR5100              ; 給材側搬送RB(RB1)移動要求
+CON
+JMP @MR3601
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR3601
+LD @MR5101               ; 給材側搬送RB(RB1)移動完了
+OR MR22713               ; 給材側搬送RB(RB1)移動完了
+ANL
+RES MR22713              ; 給材側搬送RB(RB1)移動完了
+CON
+RES @MR5101              ; 給材側搬送RB(RB1)移動完了
+CON
+JMP @MR3602
+;載せ替え前ﾋﾟｯｸｱｯﾌﾟ動作  載せ替え下降  (TASK9  H/S）
+STG @MR3602
+SET MR20100              ; 固定P載替え下降要求(TASK0→9)
+CON
+JMP @MR3603
+STG @MR3603
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+AND MR20102              ; 固定P載替え下降動作中(TASK9→0)
+ANL
+RES MR20100              ; 固定P載替え下降要求(TASK0→9)
+CON
+JMP @MR3604
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR3604
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+ANB MR20102              ; 固定P載替え下降動作中(TASK9→0)
+ANL
+JMP @MR3605
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+;載せ替え前ﾋﾟｯｸｱｯﾌﾟ動作  吸着ON  (TASK9  H/S）
+STG @MR3605
+SET MR20104              ; 吸着ﾊﾟｯﾄﾞ吸着ON要求(TASK0→9)
+CON
+JMP @MR3606
+STG @MR3606
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+AND MR20106              ; 吸着ﾊﾟｯﾄﾞ吸着ON動作中(TASK9→0)
+ANL
+RES MR20104              ; 吸着ﾊﾟｯﾄﾞ吸着ON要求(TASK0→9)
+CON
+JMP @MR3607
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR3607
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+ANB MR20106              ; 吸着ﾊﾟｯﾄﾞ吸着ON動作中(TASK9→0)
+ANL
+JMP @MR3608
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR3608
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR3609
+;固定ﾌﾟﾚｰﾄ給材搬送ｼｬﾄﾙ  吸着破壊
+STG @MR3609
+RES MR7100               ; 固定P搬送ｽﾃｰｼﾞ 吸着ON
+CON
+SET MR7101               ; 固定P搬送ｽﾃｰｼﾞ 吸着OFF
+CON
+SET MR7102               ; 固定P搬送ｽﾃｰｼﾞ 吸着破壊ON
+CON
+TMR @5 #5                ; ｳｪｲﾄﾀｲﾏ
+CON
+AND @T5                  ; ｳｪｲﾄﾀｲﾏ
+JMP @MR3610
+;載せ替え前ﾋﾟｯｸｱｯﾌﾟ動作  載せ替え上昇  (TASK9  H/S）
+STG @MR3610
+SET MR20108              ; 固定P載替え上昇要求(TASK0→9)
+CON
+JMP @MR3611
+STG @MR3611
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+AND MR20110              ; 固定P載替え上昇動作中(TASK9→0)
+ANL
+RES MR7102               ; 固定P搬送ｽﾃｰｼﾞ 吸着破壊ON
+CON
+RES MR20108              ; 固定P載替え上昇要求(TASK0→9)
+CON
+JMP @MR3612
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR3612
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+ANB MR20110              ; 固定P載替え上昇動作中(TASK9→0)
+ANL
+MPS
+ANB MR20501              ; 要求除材処理
+JMP @MR3800
+MPP
+AND MR20501              ; 要求除材処理
+SET @MR3613              ; 固定ﾌﾟﾚｰﾄ除材
+CON
+JMP @MR3700
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR3700
+SET @MR6000              ; 固定ﾌﾟﾚｰﾄ搬送ｽﾗｲﾀﾞﾜｰｸ有無確認
+CON
+JMP @MR3701
+STG @MR3701
+AND @MR6001              ; 固定ﾌﾟﾚｰﾄ搬送ｽﾗｲﾀﾞﾜｰｸ有無確認完
+RES @MR6001              ; 固定ﾌﾟﾚｰﾄ搬送ｽﾗｲﾀﾞﾜｰｸ有無確認完
+CON
+JMP @MR3800
+;給材RB(RB1)  待機位置移動
+STG @MR3800
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+DW #1 EM1300             ; RB1Target Pos
+CON
+SET @MR5100              ; 給材側搬送RB(RB1)移動要求
+CON
+JMP @MR3801
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR3801
+LD @MR5101               ; 給材側搬送RB(RB1)移動完了
+OR MR22713               ; 給材側搬送RB(RB1)移動完了
+ANL
+RES MR22713              ; 給材側搬送RB(RB1)移動完了
+CON
+RES @MR5101              ; 給材側搬送RB(RB1)移動完了
+CON
+JMP @MR3802
+STG @MR3802
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR3803
+;位置きめﾋﾟﾝ下降
+STG @MR3803
+RES MR7215               ; 位置決めﾋﾟﾝ 上昇
+CON
+MPS
+LDB MR4405               ; 位置決めﾋﾟﾝ 下降端ｴﾗｰ
+AND R4405                ; 位置決めﾋﾟﾝ 下降端
+ANB R4404                ; 位置決めﾋﾟﾝ 上昇端
+ANL
+JMP @MR3804
+MPP
+LD MR4405                ; 位置決めﾋﾟﾝ 下降端ｴﾗｰ
+AND R41200               ; TASK0 PAUSE 要求
+ANL
+SET @MR1900              ; Main1 HALT許可
+STG @MR3804
+MPS
+LD= DM5010 #1            ; _AUTO動作番号
+ANB MR10209              ; T0_固定ﾌP給材ｼｬﾄﾙ載替え完了
+ANB MR20112              ; 動作要求(TASK1→0)
+ANL
+RES MR20114              ; 動作開始(TASK0→1)
+CON
+ANB MR20114              ; 動作開始(TASK0→1)
+JMP @MR3010
+MRD
+LD R46102                ; _ﾒﾝﾃﾅﾝｽ運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+ANB MR20112              ; 動作要求(TASK1→0)
+ANL
+RES MR20114              ; 動作開始(TASK0→1)
+CON
+ANB MR20114              ; 動作開始(TASK0→1)
+JMP @MR2113
+MRD
+LD= DM5010 #3            ; _AUTO動作番号
+ANB R46102               ; _ﾒﾝﾃﾅﾝｽ運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+ANB MR20112              ; 動作要求(TASK1→0)
+ANL
+RES MR20114              ; 動作開始(TASK0→1)
+CON
+JMP @MR3805
+MPP
+LD= DM5010 #2            ; _AUTO動作番号
+OR= DM5010 #29           ; _AUTO動作番号
+LD MR10209               ; T0_固定ﾌP給材ｼｬﾄﾙ載替え完了
+OR @MR3306               ; 除材処理
+OR @MR3613               ; 固定ﾌﾟﾚｰﾄ除材
+ANL
+ANB MR20112              ; 動作要求(TASK1→0)
+ANL
+RES MR20114              ; 動作開始(TASK0→1)
+CON
+RES MR10209              ; T0_固定ﾌP給材ｼｬﾄﾙ載替え完了
+CON
+ANB MR20114              ; 動作開始(TASK0→1)
+RES @MR3306              ; 除材処理
+CON
+RES @MR3613              ; 固定ﾌﾟﾚｰﾄ除材
+CON
+JMP @MR3810
+STG @MR3810
+ANB MR20303              ; 除材処理中(TASK1→0)
+ANB MR20307              ; 除材処理中(TASK9→0)
+RES MR20301              ; 除材処理(TASK0→1)
+CON
+RES MR20305              ; 除材処理(TASK0→9)
+CON
+JMP @MR3010
+;給材ｼｬﾄﾙ  転写位置戻し動作  (TASK1  H/S）
+STG @MR3805
+AND MR20408              ; 給材ｼｬﾄﾙ転写位置戻要求(TASK1→0)
+SET MR20410              ; 給材ｼｬﾄﾙ転写位置戻中(TAS0→1)
+CON
+JMP @MR3806
+STG @MR3806
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+DW #2 EM1300             ; RB1Target Pos
+CON
+SET @MR5100              ; 給材側搬送RB(RB1)移動要求
+CON
+JMP @MR3807
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR3807
+LD @MR5101               ; 給材側搬送RB(RB1)移動完了
+OR MR22713               ; 給材側搬送RB(RB1)移動完了
+ANL
+RES MR22713              ; 給材側搬送RB(RB1)移動完了
+CON
+RES @MR5101              ; 給材側搬送RB(RB1)移動完了
+CON
+JMP @MR3808
+STG @MR3808
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+ANB MR20408              ; 給材ｼｬﾄﾙ転写位置戻要求(TASK1→0)
+ANL
+RES MR20410              ; 給材ｼｬﾄﾙ転写位置戻中(TAS0→1)
+CON
+JMP @MR3809
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR3809
+ANB MR20112              ; 動作要求(TASK1→0)
+RES MR20114              ; 動作開始(TASK0→1)
+CON
+ANB MR20114              ; 動作開始(TASK0→1)
+JMP @MR3010
+;<h1/>Auto終了処理
+STG @MR3910
+MPS
+AND= EM1301 #1           ; RB1Now Pos
+JMP @MR3915
+MPP
+AND<> EM1301 #1          ; RB1Now Pos
+DW #1 EM1300             ; RB1Target Pos
+CON
+SET @MR5100              ; 給材側搬送RB(RB1)移動要求
+CON
+JMP @MR3911
+STG @MR3911
+LD @MR5101               ; 給材側搬送RB(RB1)移動完了
+OR MR22713               ; 給材側搬送RB(RB1)移動完了
+ANL
+RES MR22713              ; 給材側搬送RB(RB1)移動完了
+CON
+RES @MR5101              ; 給材側搬送RB(RB1)移動完了
+CON
+JMP @MR3915
+STG @MR3915
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+ANB @MR001               ; TASK0 ERROR
+ANB @MR4002              ; Main2 Busy
+ANL
+RES @MR3900              ; 清掃後の2回目接着剤塗布
+CON
+RES @MR3002              ; AUTO Main1 Busy
+CON
+JMP LR600                ; _Grp1_Task0_Fin.STG
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+;<h1/>Auto-Main2/Autoﾒｲﾝﾙｰﾁﾝ2
+;[本STG内容]
+;・@MR4000の起動はMain1にて行う事
+;・@MR4000:AUTO_Main2開始、@MR4001:AUTO_Main2完了、@MR4002:AUTO_Main2動作中
+STG @MR4000              ; AUTO Main2
+SET @MR4002              ; Main2 Busy
+CON
+JMP @MR4003
+STG @MR4003
+JMP @MR4415              ; Main2 END
+STG @MR4415              ; Main2 END
+SET @MR4001              ; Main2 END
+CON
+RES @MR4002              ; Main2 Busy
+CON
+ENDS
+;<h1/>MAINTE/ﾒﾝﾃﾅﾝｽ動作
+;[本STG内容]
+;・各TaskのMAINTE動作を記述して下さい
+;・動作ﾓｰﾄﾞは「MAINTEAC*」に格納されています(1～32)
+;・動作終了時は@MR2915にJMPして下さい
+STG LR5600               ; _Grp1_Task0_MAINTE.STG
+JMP @MR2000
+STG @MR2000
+SET @MR2002              ; ﾒﾝﾃ中
+CON
+JMP @MR2003
+STG @MR2003
+MPS
+LD= DM4110 #11           ; _Group1　ﾒﾝﾃ動作番号
+AND= EM1303 #1           ; RB2Now Pos
+AND DM11071.12           ; RB9 ZONE1
+ANL
+JMP @MR2004
+MPP
+LD<> DM4110 #11          ; _Group1　ﾒﾝﾃ動作番号
+OR<> EM1303 #1           ; RB2Now Pos
+ORB DM11071.12           ; RB9 ZONE1
+ANL
+JMP @MR2914              ; ﾒﾝﾃ終了
+;ｽﾃｯﾌﾟor通常　か選択
+STG @MR2004
+MPS
+MSTRT SELECT_POST #1 MyTask #0 @MR2005;自ﾀｽｸ番号
+MPP
+AND @MR2005
+RES @MR2005
+CON
+JMP @MR2100
+;位置きめﾋﾟﾝ上昇
+STG @MR2100
+SET MR7215               ; 位置決めﾋﾟﾝ 上昇
+CON
+MPS
+LDB MR4404               ; 位置決めﾋﾟﾝ 上昇端ｴﾗｰ
+AND R4404                ; 位置決めﾋﾟﾝ 上昇端
+ANB R4405                ; 位置決めﾋﾟﾝ 下降端
+ANL
+JMP @MR2101
+MPP
+LD MR4404                ; 位置決めﾋﾟﾝ 上昇端ｴﾗｰ
+AND R41200               ; TASK0 PAUSE 要求
+ANL
+SET @MR1900              ; Main1 HALT許可
+STG @MR2101
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR2102
+;固定ﾌﾟﾚｰﾄ給材搬送ｼｬﾄﾙ  固定ﾌﾟﾚｰﾄ吸着
+STG @MR2102
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+SET @MR6100              ; 固定ﾌﾟﾚｰﾄ搬送ｽﾗｲﾀﾞﾜｰｸ吸着
+CON
+JMP @MR2103
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR2103
+AND @MR6101              ; 固定ﾌﾟﾚｰﾄ搬送ｽﾗｲﾀﾞﾜｰｸ吸着OK
+RES @MR6101              ; 固定ﾌﾟﾚｰﾄ搬送ｽﾗｲﾀﾞﾜｰｸ吸着OK
+CON
+JMP @MR2104
+STG @MR2104
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR2106
+;固定ﾌﾟﾚｰﾄ給材搬送ｼｬﾄﾙ  載替え位置移動
+STG @MR2106
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+DW #3 EM1300             ; RB1Target Pos
+CON
+SET MR22712              ; 給材側搬送RB(RB1)移動要求
+CON
+JMP @MR2107
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR2107
+AND MR22713              ; 給材側搬送RB(RB1)移動完了
+RES MR22713              ; 給材側搬送RB(RB1)移動完了
+CON
+JMP @MR2108
+STG @MR2108
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR2109
+STG @MR2109
+SET MR10200              ; 載せ替えRB下降要求
+CON
+JMP @MR2110
+STG @MR2110
+AND MR10201              ; 載せ替えRB下降完了
+RES MR10201              ; 載せ替えRB下降完了
+CON
+JMP @MR2111
+STG @MR2111
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR3605
+STG @MR2113
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR2914              ; ﾒﾝﾃ終了
+;Maintenance 終了
+STG @MR2914              ; ﾒﾝﾃ終了
+MCALL MODE_INDI #2
+MCALL HOLD_REQUEST MyGroup;自ｸﾞﾙｰﾌﾟ番号
+JMP @MR2915              ; Mainte END
+STG @MR2915              ; Mainte END
+MPS
+LD R41200                ; TASK0 PAUSE 要求
+ANB @MR001               ; TASK0 ERROR
+ANL
+SET @MR1900              ; Main1 HALT許可
+MPP
+ANB R41200               ; TASK0 PAUSE 要求
+RES @MR2002              ; ﾒﾝﾃ中
+CON
+JMP LR600                ; _Grp1_Task0_Fin.STG
+;<h1/>SubRoutines/ｻﾌﾞﾙｰﾁﾝ
+;[記述方法]
+;・ｻﾌﾞﾙｰﾁﾝは本ﾌﾞｯｸﾏｰｸから下に記述していって下さい
+;・ｻﾌﾞﾙｰﾁﾝは必ずﾌﾞｯｸﾏｰｸを挿入して処理内容を明確にする事
+;<h1/>給材側搬送 X軸RB(RB1)HOME動作
+STG @MR5000              ; 給材側搬送RB(RB1)原点復帰要求
+SET @MR5002              ; 給材側搬送RB(RB1)原点復帰中
+CON
+JMP @MR5003
+;ｱﾗｰﾑﾘｾｯﾄ &ｻｰﾎﾞON　ｱﾗｰﾑﾘｾｯﾄできない場合は、ｻｰﾎﾞOFFしError発生
+STG @MR5003
+MPS
+RES DM11207.2            ; RB1 STP
+CON
+SET DM11207.3            ; RB1 RES
+CON
+ANB DM11007.3            ; RB1 ALM
+SET DM11207.4            ; RB1 SON
+CON
+AND DM11007.4            ; RB1 SV
+RES DM11207.3            ; RB1 RES
+CON
+JMP @MR5004
+MPP
+TMR @46 #20
+CON
+AND @T46
+RES DM11207.3            ; RB1 RES
+CON
+RES DM11207.4            ; RB1 SON
+CON
+JMP @MR700
+STG @MR5004
+MPS
+LD DM11007.1             ; RB1 HEND
+OR CR2002                ; 常時ON
+ANL
+JMP @MR5007
+MPP
+LDB DM11007.1            ; RB1 HEND
+ANB CR2002               ; 常時ON
+ANL
+SET R35008               ; RB1 HOME
+CON
+JMP @MR5005
+STG @MR5005
+AND R35009               ; RB1 HOME END
+RES R35009               ; RB1 HOME END
+CON
+JMP @MR5006
+STG @MR5006
+MPS
+ANB R35003               ; RB1 Alarm
+JMP @MR5007
+MPP
+AND R35003               ; RB1 Alarm
+RES R35003               ; RB1 Alarm
+CON
+JMP @MR700
+STG @MR5007
+SET @MR5001              ; 給材側搬送RB(RB1)原点復帰完了
+CON
+RES @MR5002              ; 給材側搬送RB(RB1)原点復帰中
+CON
+ENDS
+;<h1/>給材側搬送 X軸RB(RB1)動作
+STG @MR5100              ; 給材側搬送RB(RB1)移動要求
+SET @MR5102              ; 給材側搬送RB(RB1)移動中
+CON
+JMP @MR5103
+STG MR22712              ; 給材側搬送RB(RB1)移動要求
+SET @MR5102              ; 給材側搬送RB(RB1)移動中
+CON
+JMP @MR5103
+;ｱﾗｰﾑﾘｾｯﾄ &ｻｰﾎﾞON　ｱﾗｰﾑﾘｾｯﾄできない場合は、ｻｰﾎﾞOFFしError発生
+STG @MR5103
+MPS
+RES DM11207.3            ; RB1 RES
+CON
+ANB DM11007.3            ; RB1 ALM
+SET DM11207.4            ; RB1 SON
+CON
+AND DM11007.4            ; RB1 SV
+RES DM11207.3            ; RB1 RES
+CON
+JMP @MR5104
+MPP
+TMR @48 #20
+CON
+AND @T48
+RES DM11207.3            ; RB1 RES
+CON
+RES DM11207.4            ; RB1 SON
+CON
+JMP @MR700
+STG @MR5104
+SET R35000               ; RB1 MOVE
+CON
+JMP @MR5105
+STG @MR5105
+AND R35001               ; RB1 MOVE END
+RES R35001               ; RB1 MOVE END
+CON
+JMP @MR5106
+STG @MR5106
+MPS
+ANB R35003               ; RB1 Alarm
+JMP @MR5107
+MPP
+AND R35003               ; RB1 Alarm
+RES R35003               ; RB1 Alarm
+CON
+JMP @MR700
+STG @MR5107
+MPS
+ANB R46102               ; _ﾒﾝﾃﾅﾝｽ運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+SET @MR5101              ; 給材側搬送RB(RB1)移動完了
+CON
+RES @MR5102              ; 給材側搬送RB(RB1)移動中
+CON
+ENDS
+MPP
+AND R46102               ; _ﾒﾝﾃﾅﾝｽ運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+SET MR22713              ; 給材側搬送RB(RB1)移動完了
+CON
+RES @MR5102              ; 給材側搬送RB(RB1)移動中
+CON
+ENDS
+;Error 1 RB1動作異常
+STG @MR700
+ANB R39900               ; RB動作中
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+ANB R39004               ; ｴﾗｰ中
+ANL
+SET R39004               ; ｴﾗｰ中
+CON
+MPS
+DW $1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #1 @DM1               ; ErrorNo /ERROR_DISP
+CON
+DW #0 @DM2               ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task0 ERROR
+CON
+JMP @MR701
+MPP
+SET B3990                ; ｱﾗｰﾑ詳細表示
+CON
+LDA DM11006              ; RB1 ｱﾗｰﾑｺｰﾄﾞ
+CON
+STA DM50310              ; RB ｱﾗｰﾑ表示
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR701
+SET @MR1900              ; Main1 HALT許可
+CON
+AND @MR101               ; Task0 ERROR_End
+RES @MR101               ; Task0 ERROR_End
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+AND @MR105               ; SW1
+RES B3990                ; ｱﾗｰﾑ詳細表示
+CON
+DW #0 DM50310            ; RB ｱﾗｰﾑ表示
+CON
+MPS
+AND @MR5002              ; 給材側搬送RB(RB1)原点復帰中
+JMP @MR5003
+MPP
+AND @MR5102              ; 給材側搬送RB(RB1)移動中
+JMP @MR5103
+;<h1/>画像移動 Y軸RB(RB8)HOME動作
+STG @MR5200              ; 画像移動 Y軸 原点復帰要求
+SET @MR5202              ; 画像移動 Y軸 原点復帰中
+CON
+JMP @MR5203
+;ｱﾗｰﾑﾘｾｯﾄ &ｻｰﾎﾞON　ｱﾗｰﾑﾘｾｯﾄできない場合は、ｻｰﾎﾞOFFしError発生
+STG @MR5203
+MPS
+SET DM11263.3            ; RB8 RES
+CON
+ANB DM11063.3            ; RB8 ALM
+SET DM11263.4            ; RB8 SON
+CON
+AND DM11063.4            ; RB8 SV
+RES DM11263.3            ; RB8 RES
+CON
+JMP @MR5204
+MPP
+TMR @47 #20
+CON
+AND @T47
+RES DM11263.3            ; RB8 RES
+CON
+RES DM11263.4            ; RB8 SON
+CON
+JMP @MR708
+STG @MR5204
+MPS
+AND DM11063.1            ; RB8 HEND
+JMP @MR5207
+MPP
+ANB DM11063.1            ; RB8 HEND
+SET R35708               ; RB8 HOME
+CON
+JMP @MR5205
+STG @MR5205
+AND R35709               ; RB8 HOME END
+RES R35709               ; RB8 HOME END
+CON
+JMP @MR5206
+STG @MR5206
+MPS
+ANB R35703               ; RB8 Alarm
+JMP @MR5207
+MPP
+AND R35703               ; RB8 Alarm
+RES R35703               ; RB8 Alarm
+CON
+JMP @MR708
+STG @MR5207
+SET @MR5201              ; 画像移動 Y軸 原点復帰完了
+CON
+RES @MR5202              ; 画像移動 Y軸 原点復帰中
+CON
+ENDS
+;<h1/>画像移動 Y軸RB(RB8)動作
+STG @MR5300              ; 画像移動 Y軸 動作要求
+SET @MR5302              ; 画像移動 Y軸 動作中
+CON
+JMP @MR5303
+STG MR22714              ; 画像検査　RB8移動
+SET @MR5302              ; 画像移動 Y軸 動作中
+CON
+JMP @MR5303
+;ｱﾗｰﾑﾘｾｯﾄ &ｻｰﾎﾞON　ｱﾗｰﾑﾘｾｯﾄできない場合は、ｻｰﾎﾞOFFしError発生
+STG @MR5303
+MPS
+SET DM11263.3            ; RB8 RES
+CON
+ANB DM11063.3            ; RB8 ALM
+SET DM11263.4            ; RB8 SON
+CON
+AND DM11063.4            ; RB8 SV
+RES DM11263.3            ; RB8 RES
+CON
+JMP @MR5304
+MPP
+TMR @49 #20
+CON
+AND @T49
+RES DM11263.3            ; RB8 RES
+CON
+RES DM11263.4            ; RB8 SON
+CON
+JMP @MR708
+STG @MR5304
+SET R35700               ; RB8 MOVE
+CON
+JMP @MR5305
+STG @MR5305
+AND R35701               ; RB8 MOVE END
+RES R35701               ; RB8 MOVE END
+CON
+JMP @MR5306
+STG @MR5306
+MPS
+ANB R35703               ; RB8 Alarm
+JMP @MR5307
+MPP
+AND R35703               ; RB8 Alarm
+RES R35703               ; RB8 Alarm
+CON
+JMP @MR708
+STG @MR5307
+MPS
+ANB R46102               ; _ﾒﾝﾃﾅﾝｽ運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+SET @MR5301              ; 画像移動 Y軸 動作完了
+CON
+RES @MR5302              ; 画像移動 Y軸 動作中
+CON
+ENDS
+MPP
+AND R46102               ; _ﾒﾝﾃﾅﾝｽ運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+SET MR22715              ; 画像検査　RB8移動完了
+CON
+RES @MR5302              ; 画像移動 Y軸 動作中
+CON
+ENDS
+;Error 8 RB8動作異常
+STG @MR708
+ANB R39900               ; RB動作中
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+ANB R39004               ; ｴﾗｰ中
+ANL
+SET R39004               ; ｴﾗｰ中
+CON
+MPS
+DW $1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #8 @DM1               ; ErrorNo /ERROR_DISP
+CON
+DW #0 @DM2               ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task0 ERROR
+CON
+JMP @MR709
+MPP
+SET B3990                ; ｱﾗｰﾑ詳細表示
+CON
+LDA DM11062              ; RB8 ｱﾗｰﾑｺｰﾄﾞ
+CON
+STA DM50310              ; RB ｱﾗｰﾑ表示
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR709
+SET @MR1900              ; Main1 HALT許可
+CON
+AND @MR101               ; Task0 ERROR_End
+RES @MR101               ; Task0 ERROR_End
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+AND @MR105               ; SW1
+RES B3990                ; ｱﾗｰﾑ詳細表示
+CON
+DW #0 DM50310            ; RB ｱﾗｰﾑ表示
+CON
+MPS
+AND @MR5202              ; 画像移動 Y軸 原点復帰中
+JMP @MR5203
+MPP
+AND @MR5302              ; 画像移動 Y軸 動作中
+JMP @MR5303
+;<h1/>固定ﾌﾟﾚｰﾄ搬送ｽﾗｲﾀﾞﾜｰｸ有無確認
+STG @MR6000              ; 固定ﾌﾟﾚｰﾄ搬送ｽﾗｲﾀﾞﾜｰｸ有無確認
+SET @MR6002              ; 固定ﾌﾟﾚｰﾄ搬送ｽﾗｲﾀﾞﾜｰｸ有無確認中
+CON
+JMP @MR6003
+STG @MR6003
+SET MR7100               ; 固定P搬送ｽﾃｰｼﾞ 吸着ON
+CON
+RES MR7101               ; 固定P搬送ｽﾃｰｼﾞ 吸着OFF
+CON
+RES MR7102               ; 固定P搬送ｽﾃｰｼﾞ 吸着破壊ON
+CON
+MPS
+AND R4509                ; 固定P搬送ｽﾃｰｼﾞ 吸着確認 OUT2
+TMR @10 #5               ; ｳｪｲﾄﾀｲﾏ
+CON
+AND @T10                 ; ｳｪｲﾄﾀｲﾏ
+JMP @MR6010
+MPP
+ANB R4509                ; 固定P搬送ｽﾃｰｼﾞ 吸着確認 OUT2
+TMR @15 #20              ; ｳｪｲﾄﾀｲﾏ
+CON
+AND @T15                 ; ｳｪｲﾄﾀｲﾏ
+JMP @MR6004
+STG @MR6004
+RES MR7100               ; 固定P搬送ｽﾃｰｼﾞ 吸着ON
+CON
+SET MR7101               ; 固定P搬送ｽﾃｰｼﾞ 吸着OFF
+CON
+SET MR7102               ; 固定P搬送ｽﾃｰｼﾞ 吸着破壊ON
+CON
+TMR @17 #5
+CON
+AND @T17
+JMP @MR6005
+STG @MR6005
+RES MR7100               ; 固定P搬送ｽﾃｰｼﾞ 吸着ON
+CON
+SET MR7101               ; 固定P搬送ｽﾃｰｼﾞ 吸着OFF
+CON
+RES MR7102               ; 固定P搬送ｽﾃｰｼﾞ 吸着破壊ON
+CON
+JMP @MR6006
+;給材搬送X軸 ｽﾃｰｼﾞ固定ﾌﾟﾚｰﾄ除材要求  ｴﾗｰ101
+STG @MR6006
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+ANB R39004               ; ｴﾗｰ中
+ANL
+SET R39004               ; ｴﾗｰ中
+CON
+DW #101 @DM1             ; ErrorNo /ERROR_DISP
+CON
+DW $2000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #0 @DM2               ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task0 ERROR
+CON
+JMP @MR6007
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR6007
+SET @MR1900              ; Main1 HALT許可
+CON
+AND @MR101               ; Task0 ERROR_End
+RES @MR101               ; Task0 ERROR_End
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+AND @MR105               ; SW1
+JMP @MR6003
+;
+STG @MR6010
+RES MR7100               ; 固定P搬送ｽﾃｰｼﾞ 吸着ON
+CON
+SET MR7101               ; 固定P搬送ｽﾃｰｼﾞ 吸着OFF
+CON
+RES MR7102               ; 固定P搬送ｽﾃｰｼﾞ 吸着破壊ON
+CON
+JMP @MR6011
+STG @MR6011
+RES @MR6002              ; 固定ﾌﾟﾚｰﾄ搬送ｽﾗｲﾀﾞﾜｰｸ有無確認中
+CON
+SET @MR6001              ; 固定ﾌﾟﾚｰﾄ搬送ｽﾗｲﾀﾞﾜｰｸ有無確認完
+CON
+ENDS
+;<h1/>固定ﾌﾟﾚｰﾄ搬送ｽﾗｲﾀﾞﾜｰｸ吸着
+STG @MR6100              ; 固定ﾌﾟﾚｰﾄ搬送ｽﾗｲﾀﾞﾜｰｸ吸着
+SET @MR6102              ; 固定ﾌﾟﾚｰﾄ搬送ｽﾗｲﾀﾞﾜｰｸ吸着中
+CON
+JMP @MR6103
+STG @MR6103
+SET MR7100               ; 固定P搬送ｽﾃｰｼﾞ 吸着ON
+CON
+RES MR7101               ; 固定P搬送ｽﾃｰｼﾞ 吸着OFF
+CON
+RES MR7102               ; 固定P搬送ｽﾃｰｼﾞ 吸着破壊ON
+CON
+MPS
+AND R4508                ; 固定P搬送ｽﾃｰｼﾞ 吸着確認 OUT1
+TMR @11 #5               ; ｳｪｲﾄﾀｲﾏ
+CON
+AND @T11                 ; ｳｪｲﾄﾀｲﾏ
+JMP @MR6110
+MPP
+ANB R4508                ; 固定P搬送ｽﾃｰｼﾞ 吸着確認 OUT1
+TMR @16 #30              ; ｳｪｲﾄﾀｲﾏ
+CON
+AND @T16                 ; ｳｪｲﾄﾀｲﾏ
+JMP @MR6104
+STG @MR6104
+RES MR7100               ; 固定P搬送ｽﾃｰｼﾞ 吸着ON
+CON
+SET MR7101               ; 固定P搬送ｽﾃｰｼﾞ 吸着OFF
+CON
+SET MR7102               ; 固定P搬送ｽﾃｰｼﾞ 吸着破壊ON
+CON
+TMR @18 #5
+CON
+AND @T18
+JMP @MR6105
+STG @MR6105
+RES MR7100               ; 固定P搬送ｽﾃｰｼﾞ 吸着ON
+CON
+SET MR7101               ; 固定P搬送ｽﾃｰｼﾞ 吸着OFF
+CON
+RES MR7102               ; 固定P搬送ｽﾃｰｼﾞ 吸着破壊ON
+CON
+JMP @MR6106
+;給材搬送X軸 ｽﾃｰｼﾞ固定ﾌﾟﾚｰﾄ吸着ｴﾗｰ  ｴﾗｰ106
+;
+STG @MR6106
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+ANB R39004               ; ｴﾗｰ中
+ANL
+SET R39004               ; ｴﾗｰ中
+CON
+DW #106 @DM1             ; ErrorNo /ERROR_DISP
+CON
+DW $2000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #0 @DM2               ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task0 ERROR
+CON
+JMP @MR6107
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR6107
+SET @MR1900              ; Main1 HALT許可
+CON
+AND @MR101               ; Task0 ERROR_End
+RES @MR101               ; Task0 ERROR_End
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+AND @MR105               ; SW1
+JMP @MR6103
+;
+STG @MR6110
+RES @MR6102              ; 固定ﾌﾟﾚｰﾄ搬送ｽﾗｲﾀﾞﾜｰｸ吸着中
+CON
+SET @MR6101              ; 固定ﾌﾟﾚｰﾄ搬送ｽﾗｲﾀﾞﾜｰｸ吸着OK
+CON
+ENDS
+;<h1/>-----------------------------------------------------------
+;<h1/>*ERROR
+;MyTask Error Process Substance/エラー処理実体
+STG @MR100               ; Task0 ERROR
+ANB R39002               ; ERROR_DISP Busy
+MPS
+ZRES @MR105 @MR108       ; SW1  SW4
+CON
+DISN @DM9 @DM3 #4        ; ReturnSW /ERROR_DISP
+MRD
+DW MyTask @DM0           ; 自ﾀｽｸ番号  TaskNo /ERROR_DISP
+CON
+BMOV @DM0 DM60000 #7     ; TaskNo /ERROR_DISP  TaskNo /ERROR_DISP
+MPP
+SET R39000               ; ERROR_DISP Start
+CON
+SET @MR102               ; Task0 ERROR Busy
+CON
+JMP @MR103
+STG @MR103
+AND R39002               ; ERROR_DISP Busy
+AND= DM60008 @DM1        ; ReturnNo /ERROR_DISP  ErrorNo /ERROR_DISP
+MPS
+AND= DM60007 @DM6        ; ReturnSW /ERROR_DISP
+SET @MR105               ; SW1
+CON
+JMP @MR104
+MRD
+AND= DM60007 @DM5        ; ReturnSW /ERROR_DISP
+SET @MR106               ; SW2
+CON
+JMP @MR104
+MRD
+AND= DM60007 @DM4        ; ReturnSW /ERROR_DISP
+SET @MR107               ; SW3
+CON
+JMP @MR104
+MPP
+AND= DM60007 @DM3        ; ReturnSW /ERROR_DISP
+SET @MR108               ; SW4
+CON
+JMP @MR104
+STG @MR104
+ANB R39002               ; ERROR_DISP Busy
+RES @MR102               ; Task0 ERROR Busy
+CON
+SET @MR101               ; Task0 ERROR_End
+CON
+ENDS
+;<h1/>*Select_Y_N 
+;MyTask Select_Y_N Process Substance/SELECT_Y_N処理実体
+STG @MR300               ; Task0 SELECT_Y_N
+ANB R39102               ; SELECT_Y_N Busy
+MPS
+ZRES @MR306 @MR307       ; Task0 Y/N
+CON
+DW #0 @DM20              ; TaskNo /SELECT_Y_N
+CON
+BMOV @DM20 DM60020 #3    ; TaskNo /SELECT_Y_N  TaskNo /SELECT_Y_N
+MPP
+SET R39100               ; SELECT_Y_N Start
+CON
+SET @MR302               ; Task0 Y_N Busy
+CON
+JMP @MR303
+STG @MR303
+AND R39102               ; SELECT_Y_N Busy
+MPS
+AND= DM60023 #1          ; Y_N /SELECT_Y_N
+SET @MR306               ; Task0 Y/N
+CON
+JMP @MR304
+MPP
+AND= DM60023 #2          ; Y_N /SELECT_Y_N
+RES @MR306               ; Task0 Y/N
+CON
+JMP @MR304
+STG @MR304
+ANB R39102               ; SELECT_Y_N Busy
+RES @MR302               ; Task0 Y_N Busy
+CON
+SET @MR301               ; Task0 Y/N END
+CON
+ENDS
+;<h1/>*TIMEUP ERROR
+;MyTask TIMEUP_ERROR Process Substance/TIMEUP_ERROR処理実体
+STG @MR400               ; Task0 TIMEUP_ERR
+ANB R39302               ; TIMEUP_ERR Busy
+MPS
+DW #0 @DM40              ; TaskNo /TIMEUP_ERR
+CON
+BMOV @DM40 DM60040 #2    ; TaskNo /TIMEUP_ERR  TaskNo /TIMEUP_ERR
+MPP
+SET R39300               ; TIMEUP_ERR Start
+CON
+SET @MR402               ; Task0 TIMEUP Busy
+CON
+JMP @MR403
+STG @MR403
+AND R39302               ; TIMEUP_ERR Busy
+JMP @MR404
+STG @MR404
+ANB R39302               ; TIMEUP_ERR Busy
+RES @MR402               ; Task0 TIMEUP Busy
+CON
+SET @MR401               ; Task0 TIMEUP_END
+CON
+ENDS
+;<h1/>*Select_ACT 
+;MyTask Select_ACT Process Substance/SELECT_ACT処理実体
+STG @MR200               ; Task0 SELECT_ACT
+ANB R39202               ; SELECT_ACT Busy
+MPS
+ZRES @MR205 @MR208       ; SW1  SW4
+CON
+DW #0 @DM30              ; TaskNo /SELECT_ACT
+CON
+BMOV @DM30 DM60030 #7    ; TaskNo /SELECT_ACT  TaskNo /SELECT_ACT
+MPP
+SET R39200               ; SELECT_ACT Start
+CON
+SET @MR202               ; Task0 SEL_ACT Busy
+CON
+JMP @MR203
+STG @MR203
+AND R39202               ; SELECT_ACT Busy
+AND<> DM60037 #0         ; SelectSW /SELECT_ACT
+MPS
+AND= DM60037 #1          ; SelectSW /SELECT_ACT
+SET @MR205               ; SW1
+CON
+JMP @MR204
+MRD
+AND= DM60037 #2          ; SelectSW /SELECT_ACT
+SET @MR206               ; SW2
+CON
+JMP @MR204
+MRD
+AND= DM60037 #3          ; SelectSW /SELECT_ACT
+SET @MR207               ; SW3
+CON
+JMP @MR204
+MPP
+AND= DM60037 #4          ; SelectSW /SELECT_ACT
+SET @MR208               ; SW4
+CON
+JMP @MR204
+STG @MR204
+ANB R39202               ; SELECT_ACT Busy
+RES @MR202               ; Task0 SEL_ACT Busy
+CON
+SET @MR201               ; Task0 SEL_ACT END
+CON
+ENDS
+;<h1/>※機能Macro呼出し見本- 削除して下さい。-------------------------------------
+;<h1/>※Error:記述見本
+;ERR163 "****Error"
+;<h1/>※SELECT_ACT　:記述見本
+;画面番号33をブザー有りで選択SW番号を左から#5,#10,#0(無し),#34の並びで表示する
+;<h1/>※ SELECT_Y_N　記述見本
+;//*Select_Y_N
+;<h1/>HALT
+LD R41200                ; TASK0 PAUSE 要求
+AND @MR1900              ; Main1 HALT許可
+LD @MR1901               ; Main2 HALT許可
+ORB @MR4002              ; Main2 Busy
+ANL
+TMR @40 #5               ; HALT許可 遅延
+CON
+AND @T40                 ; HALT許可 遅延
+SET R42600               ; Grp1_Task0_ﾎﾟｰｽﾞ許可
+LD R42600                ; Grp1_Task0_ﾎﾟｰｽﾞ許可
+ORB R41200               ; TASK0 PAUSE 要求
+ANB @MR001               ; TASK0 ERROR
+RES @MR1900              ; Main1 HALT許可
+CON
+RES @MR1901              ; Main2 HALT許可
+END
+ENDH

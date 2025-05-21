@@ -1,0 +1,659 @@
+DEVICE:53
+;MODULE:FH_COM
+;MODULE_TYPE:0
+;SCRIPT_TYPE:
+;FH-3050との通信
+LDP R46104               ; _非常停止中　ﾓｰﾄﾞﾌﾗｸﾞ
+RES R37900               ; FH通信ｲﾝﾀｰﾛｯｸ
+CON
+ZRES @R100 @R515
+;<h1/>通信 MAIN
+;ｺﾏﾝﾄﾞ番号説明
+;EM1993
+;#0		"S 1" ｼｰﾝ番号切替
+;#1		"SG 0" ｸﾞﾙｰﾌﾟ番号切替
+;#2		"CLRMEAS" 計測値初期化
+;#3		-
+;#4		"M" 計測実行
+;#5		"UD 2 5" 結果読出し
+;#6		"UD 2 6" 詳細読出し
+;#7		-
+;#8		-
+;#9		-
+STG R37800               ; FH_通信START
+ZRES @DM0 @DM599         ; 通信設定先頭
+CON
+SET R37802               ; FH_通信中
+CON
+JMP @R100
+STG @R100
+LDA EM1993               ; FH通信ｺｰﾄﾞ番号
+CON
+STA @DM50                ; 通信ｺｰﾄﾞ
+CON
+JMP @R101
+;'ディレクトリ名指定
+;@DM600.T = "UD 1 direct LOTNO$="	'ヘッダ
+;@DM620.T = "LOT"					'LOT名
+;@DM630.T = "\" + STR (@DM610.D)		'追い番
+;
+;'@DM700.T = @DM600.T + @DM620.T' + @DM630.T
+;'@DM700.T ="UD 1 direct LOTNO$="\LO\1234""
+;@DM10.T = @DM700.T
+LD CR2002                ; 常時ON
+NCJ #1002
+;'ディレクトリ名指定
+;
+;@DM600.T = "UD 1 direct LOTNO$="	'ヘッダ
+;
+LD CR2002                ; 常時ON
+SMOV "UD 1 direct LOTNO$=" @DM600
+;@DM620.T = "LOT"					'LOT名
+;
+LD CR2002                ; 常時ON
+SMOV "LOT" @DM620
+;@DM630.T = "\" + STR (@DM610.D)		'追い番
+;
+LD CR2002                ; 常時ON
+ADRSET VM2 VM0
+MOV #0 VM2
+MOV.D VM0 @VM1
+LD CR2002                ; 常時ON
+MOV CR2800 @VM0          ; ﾌﾞﾚｰｸ信号送出
+SET CR2814               ; ASCII変換ｾﾞﾛｻﾌﾟﾚｽ設定
+SET CR2815               ; ASCII変換+符号省略
+DASC.D @DM610 *@VM1
+MOV @VM0 CR2800          ; ﾌﾞﾚｰｸ信号送出
+LD CR2002                ; 常時ON
+LEN *VM0 @VM3
+LD CR2002                ; 常時ON
+LDA @VM3
+CON
+SRA #1
+CON
+STA @VM3
+CON
+INC @VM3
+CON
+ADRADD.S @VM3 VM0
+LD CR2002                ; 常時ON
+MOV.D VM0 @VM4
+SMOV "\" *@VM4
+LD CR2002                ; 常時ON
+SADD *@VM4 *@VM1 *@VM4
+SMOV *@VM4 @DM630
+;'@DM700.T = @DM600.T + @DM620.T' + @DM630.T
+;
+;'@DM700.T ="UD 1 direct LOTNO$="\LO\1234""
+;
+;@DM10.T = @DM700.T
+LD CR2002                ; 常時ON
+SMOV @DM700 @DM10        ; 送信内容
+LABEL #1002
+;
+STG @R101
+MPS
+AND= #0 @DM50            ; 通信ｺｰﾄﾞ
+SMOV "S 1" @DM10         ; 送信内容
+JMP @R200                ; 汎用通信
+MRD
+AND= #1 @DM50            ; 通信ｺｰﾄﾞ
+MPS
+AND=.D DM4300 #0         ; _機種別ﾃﾞｰﾀ　ﾃﾝﾎﾟﾗﾘ_51
+SMOV "SG 0" @DM10        ; 送信内容
+MRD
+AND=.D DM4300 #1         ; _機種別ﾃﾞｰﾀ　ﾃﾝﾎﾟﾗﾘ_51
+SMOV "SG 1" @DM10        ; 送信内容
+MPP
+JMP @R200                ; 汎用通信
+MRD
+AND= #2 @DM50            ; 通信ｺｰﾄﾞ
+SMOV "CLRMEAS" @DM10     ; 送信内容
+JMP @R200                ; 汎用通信
+MRD
+AND= #4 @DM50            ; 通信ｺｰﾄﾞ
+SMOV "M" @DM10           ; 送信内容
+JMP @R200                ; 汎用通信
+MRD
+AND= #5 @DM50            ; 通信ｺｰﾄﾞ
+SMOV "UD 2 5" @DM10      ; 送信内容
+JMP @R200                ; 汎用通信
+MPP
+AND= #6 @DM50            ; 通信ｺｰﾄﾞ
+SMOV "UD 2 6" @DM10      ; 送信内容
+JMP @R200                ; 汎用通信
+;<h1/>汎用通信
+STG @R200                ; 汎用通信
+ANB @R502                ; 通信中
+RES R37803               ; FH_通信異常
+CON
+RES R37804               ; FH_通信NG
+CON
+SET @R500                ; 通信ｽﾀｰﾄ
+CON
+JMP @R201
+STG @R201
+AND @R501                ; 通信完了
+MPS
+ANB @R503                ; 通信異常
+RES @R501                ; 通信完了
+CON
+RES @R204                ; 変換完了
+CON
+JMP @R203                ; ﾚｽﾎﾟﾝｽ変換
+MPP
+AND @R503                ; 通信異常
+RES @R501                ; 通信完了
+CON
+JMP @R202
+STG @R202
+@INC EM4400
+CON
+SET R37803               ; FH_通信異常
+CON
+SET R37804               ; FH_通信NG
+CON
+RES @R503                ; 通信異常
+CON
+JMP @R215                ; 終了処理
+;@DM300.T = CPSASC (@DM200.T)		'CIP文字列変換
+;
+;'通常通信時のﾚｽﾎﾟﾝｽ
+;IF (@DM50 <> 6) THEN
+;	IF @DM300.T = "OK" THEN	'OKの時	#20
+;		@DM51 = #20
+;	ELSE
+;		IF @DM300.T = "ER" THEN	'ERの時	#21
+;			@DM51 = #21
+;		ELSE
+;			@DM52.F = VAL (@DM300.T)
+;			SELECT CASE @DM52.F
+;			CASE 1		'ｶｼﾒOKの時	#22
+;				@DM51 = #22
+;			CASE -9999	'ｶｼﾒNGの時	#23
+;				@DM51 = #23
+;			CASE ELSE
+;				@DM51 = #24
+;			END SELECT
+;		END IF
+;	END IF	
+;ELSE	'ｴﾗｰ詳細読み込み時のﾚｽﾎﾟﾝｽ
+;	
+;	IF @DM300.T = "ER" THEN	'ERの時	#21
+;		@DM51 = #21
+;	ELSE
+;		@DM52.F = VAL (@DM300.T)
+;		SELECT CASE @DM52.F
+;		CASE 2		'ｶｼﾒ詳細"頭飛び"の時		#40 + ｺｰﾄﾞ格納
+;			@DM51 = #40
+;			@DM54.F = VAL (@DM300.T)
+;		CASE -9999	'ｶｼﾒ詳細"基準取得失敗"の時	#40 + ｺｰﾄﾞ格納
+;			@DM51 = #40
+;			@DM54.F = VAL (@DM300.T)
+;		END SELECT
+;	END IF
+;END IF
+;
+;'変換完了
+;SET (@R204)
+LD @R203                 ; ﾚｽﾎﾟﾝｽ変換
+NCJ #1003
+;@DM300.T = CPSASC (@DM200.T)		'CIP文字列変換
+;
+LD CR2002                ; 常時ON
+ADRSET VM2 VM0
+MOV #0 VM2
+MOV.D VM0 @VM6
+LD CR2002                ; 常時ON
+CPSASC @DM200 *@VM6      ; 受信ﾃﾞｰﾀ先頭
+LD CR2002                ; 常時ON
+SMOV *@VM6 @DM300
+;'通常通信時のﾚｽﾎﾟﾝｽ
+;
+;IF (@DM50 <> 6) THEN
+;
+LD<> @DM50 #6            ; 通信ｺｰﾄﾞ
+NCJ #2000
+;	IF @DM300.T = "OK" THEN	'OKの時	#20
+;
+LD CR2002                ; 常時ON
+ADRSET VM2 VM0
+MOV #0 VM2
+MOV.D VM0 @VM8
+SMOV "OK" *@VM8
+LD CR2002                ; 常時ON
+SCMP @DM300 *@VM8
+LD CR2010                ; 演算結果がｾﾞﾛ
+NCJ #2001
+;		@DM51 = #20
+;
+LD CR2002                ; 常時ON
+MOV #20 @DM51
+;	ELSE
+;
+LD CR2002                ; 常時ON
+CJ #2002
+LABEL #2001
+;		IF @DM300.T = "ER" THEN	'ERの時	#21
+;
+LD CR2002                ; 常時ON
+ADRSET VM2 VM0
+MOV #0 VM2
+MOV.D VM0 @VM10
+SMOV "ER" *@VM10
+LD CR2002                ; 常時ON
+SCMP @DM300 *@VM10
+LD CR2010                ; 演算結果がｾﾞﾛ
+NCJ #2003
+;			@DM51 = #21
+;
+LD CR2002                ; 常時ON
+MOV #21 @DM51
+;		ELSE
+;
+LD CR2002                ; 常時ON
+CJ #2004
+LABEL #2003
+;			@DM52.F = VAL (@DM300.T)
+;
+LD CR2002                ; 常時ON
+MOV.F +0 @VM12
+RFASC @DM300 @VM12
+LD CR2002                ; 常時ON
+MOV.F @VM12 @DM52
+;			SELECT CASE @DM52.F
+;
+LD CR2002                ; 常時ON
+MOV.F @DM52 @VM14
+;			CASE 1		'ｶｼﾒOKの時	#22
+;
+LD=.F @VM14 +1
+NCJ #2005
+;				@DM51 = #22
+;
+LD CR2002                ; 常時ON
+MOV #22 @DM51
+LD CR2002                ; 常時ON
+CJ #2006
+LABEL #2005
+;			CASE -9999	'ｶｼﾒNGの時	#23
+;
+LD=.F @VM14 -9999
+NCJ #2007
+;				@DM51 = #23
+;
+LD CR2002                ; 常時ON
+MOV #23 @DM51
+LD CR2002                ; 常時ON
+CJ #2008
+LABEL #2007
+;			CASE ELSE
+;
+;				@DM51 = #24
+;
+LD CR2002                ; 常時ON
+MOV #24 @DM51
+;			END SELECT
+;
+LABEL #2008
+LABEL #2006
+;		END IF
+;
+LABEL #2004
+;	END IF	
+;
+LABEL #2002
+;ELSE	'ｴﾗｰ詳細読み込み時のﾚｽﾎﾟﾝｽ
+;
+LD CR2002                ; 常時ON
+CJ #2009
+LABEL #2000
+;	IF @DM300.T = "ER" THEN	'ERの時	#21
+;
+LD CR2002                ; 常時ON
+ADRSET VM2 VM0
+MOV #0 VM2
+MOV.D VM0 @VM16
+SMOV "ER" *@VM16
+LD CR2002                ; 常時ON
+SCMP @DM300 *@VM16
+LD CR2010                ; 演算結果がｾﾞﾛ
+NCJ #2010
+;		@DM51 = #21
+;
+LD CR2002                ; 常時ON
+MOV #21 @DM51
+;	ELSE
+;
+LD CR2002                ; 常時ON
+CJ #2011
+LABEL #2010
+;		@DM52.F = VAL (@DM300.T)
+;
+LD CR2002                ; 常時ON
+MOV.F +0 @VM18
+RFASC @DM300 @VM18
+LD CR2002                ; 常時ON
+MOV.F @VM18 @DM52
+;		SELECT CASE @DM52.F
+;
+LD CR2002                ; 常時ON
+MOV.F @DM52 @VM20
+;		CASE 2		'ｶｼﾒ詳細"頭飛び"の時		#40 + ｺｰﾄﾞ格納
+;
+LD=.F @VM20 +2
+NCJ #2012
+;			@DM51 = #40
+;
+LD CR2002                ; 常時ON
+MOV #40 @DM51
+;			@DM54.F = VAL (@DM300.T)
+;
+LD CR2002                ; 常時ON
+MOV.F +0 @VM22
+RFASC @DM300 @VM22
+LD CR2002                ; 常時ON
+MOV.F @VM22 @DM54        ; 数値ﾃﾞｰﾀ
+LD CR2002                ; 常時ON
+CJ #2013
+LABEL #2012
+;		CASE -9999	'ｶｼﾒ詳細"基準取得失敗"の時	#40 + ｺｰﾄﾞ格納
+;
+LD=.F @VM20 -9999
+NCJ #2014
+;			@DM51 = #40
+;
+LD CR2002                ; 常時ON
+MOV #40 @DM51
+;			@DM54.F = VAL (@DM300.T)
+;
+LD CR2002                ; 常時ON
+MOV.F +0 @VM24
+RFASC @DM300 @VM24
+LD CR2002                ; 常時ON
+MOV.F @VM24 @DM54        ; 数値ﾃﾞｰﾀ
+;		END SELECT
+;
+LABEL #2014
+LABEL #2013
+;	END IF
+;
+LABEL #2011
+;END IF
+;
+LABEL #2009
+;'変換完了
+;
+;SET (@R204)
+LD CR2002                ; 常時ON
+SET @R204                ; 変換完了
+LABEL #1003
+;
+STG @R203                ; ﾚｽﾎﾟﾝｽ変換
+AND @R204                ; 変換完了
+MPS
+AND= @DM51 #20
+RES @R204                ; 変換完了
+CON
+JMP @R215                ; 終了処理
+MRD
+AND= @DM51 #21
+MPS
+AND<> #3 @DM50           ; 通信ｺｰﾄﾞ
+@INC EM4401
+CON
+SET R37803               ; FH_通信異常
+CON
+SET R37805               ; FH_ﾚｽﾎﾟﾝｽER
+CON
+RES @R204                ; 変換完了
+CON
+JMP @R215                ; 終了処理
+MRD
+AND= #0 @DM50            ; 通信ｺｰﾄﾞ
+@INC EM4402
+CON
+SET R37803               ; FH_通信異常
+CON
+SET R37806               ; FH_ｼｰﾝ切替NG
+CON
+RES @R204                ; 変換完了
+CON
+JMP @R215                ; 終了処理
+MRD
+AND= #1 @DM50            ; 通信ｺｰﾄﾞ
+@INC EM4403
+CON
+SET R37803               ; FH_通信異常
+CON
+SET R37807               ; FH_ｸﾞﾙｰﾌﾟ切替NG
+CON
+RES @R204                ; 変換完了
+CON
+JMP @R215                ; 終了処理
+MRD
+AND= #2 @DM50            ; 通信ｺｰﾄﾞ
+@INC EM4404
+CON
+SET R37803               ; FH_通信異常
+CON
+SET R37808               ; 計測値初期化NG
+CON
+RES @R204                ; 変換完了
+CON
+JMP @R215                ; 終了処理
+MRD
+AND= #4 @DM50            ; 通信ｺｰﾄﾞ
+@INC EM4405
+CON
+SET R37803               ; FH_通信異常
+CON
+SET R37810               ; 計測実行NG
+CON
+RES @R204                ; 変換完了
+CON
+JMP @R215                ; 終了処理
+MRD
+AND= #5 @DM50            ; 通信ｺｰﾄﾞ
+@INC EM4406
+CON
+SET R37803               ; FH_通信異常
+CON
+SET R37811               ; 結果読出しNG
+CON
+RES @R204                ; 変換完了
+CON
+JMP @R215                ; 終了処理
+MPP
+AND= #6 @DM50            ; 通信ｺｰﾄﾞ
+@INC EM4407
+CON
+SET R37803               ; FH_通信異常
+CON
+SET R37812               ; 詳細読出しNG
+CON
+RES @R204                ; 変換完了
+CON
+JMP @R215                ; 終了処理
+MRD
+AND= @DM51 #22
+SET R37814               ; FH_ｶｼﾒ結果OK
+CON
+RES R37815               ; FH_ｶｼﾒ結果NG
+CON
+RES @R204                ; 変換完了
+CON
+JMP @R208                ; 結果格納
+MRD
+AND= @DM51 #23
+RES R37814               ; FH_ｶｼﾒ結果OK
+CON
+SET R37815               ; FH_ｶｼﾒ結果NG
+CON
+RES @R204                ; 変換完了
+CON
+JMP @R206                ; ｴﾗｰ詳細読み出し
+MRD
+AND= @DM51 #24
+@INC EM4408
+CON
+SET R37803               ; FH_通信異常
+CON
+RES @R204                ; 変換完了
+CON
+JMP @R215                ; 終了処理
+MPP
+AND= @DM51 #40
+RES R37814               ; FH_ｶｼﾒ結果OK
+CON
+SET R37815               ; FH_ｶｼﾒ結果NG
+CON
+RES @R204                ; 変換完了
+CON
+JMP @R208                ; 結果格納
+;ｴﾗｰ詳細読み出し
+STG @R206                ; ｴﾗｰ詳細読み出し
+DW #6 EM1993             ; FH通信ｺｰﾄﾞ番号
+CON
+SET R37800               ; FH_通信START
+CON
+ENDS
+;結果格納
+STG @R208                ; 結果格納
+MPS
+AND MR13012              ; R3 R13選択記憶
+LDA.F @DM54              ; 数値ﾃﾞｰﾀ
+CON
+STA.F DM5310             ; _ﾃﾞｰﾀ収集　ﾕｰｻﾞｰﾃﾞｰﾀ1_6
+MRD
+AND MR13013              ; R3 R14選択記憶
+LDA.F @DM54              ; 数値ﾃﾞｰﾀ
+CON
+STA.F DM5330             ; _ﾃﾞｰﾀ収集　ﾕｰｻﾞｰﾃﾞｰﾀ2_6
+MRD
+AND MR13014              ; R3 R15選択記憶
+LDA.F @DM54              ; 数値ﾃﾞｰﾀ
+CON
+STA.F DM5350             ; _ﾃﾞｰﾀ収集　ﾕｰｻﾞｰﾃﾞｰﾀ3_6
+MRD
+AND MR13015              ; R3 R16選択記憶
+LDA.F @DM54              ; 数値ﾃﾞｰﾀ
+CON
+STA.F DM5370             ; _ﾃﾞｰﾀ収集　ﾕｰｻﾞｰﾃﾞｰﾀ4_6
+MRD
+AND MR13100              ; R3 R17選択記憶
+LDA.F @DM54              ; 数値ﾃﾞｰﾀ
+CON
+STA.F DM5430             ; _ﾃﾞｰﾀ収集　ﾕｰｻﾞｰﾃﾞｰﾀ7_6
+MRD
+AND MR13101              ; R3 R18選択記憶
+LDA.F @DM54              ; 数値ﾃﾞｰﾀ
+CON
+STA.F DM5450             ; _ﾃﾞｰﾀ収集　ﾕｰｻﾞｰﾃﾞｰﾀ8_6
+MPP
+JMP @R209
+STG @R209
+JMP @R215                ; 終了処理
+STG @R215                ; 終了処理
+SET R37801               ; FH_通信完了
+CON
+RES R37802               ; FH_通信中
+CON
+ENDS
+;<h1/>通信START
+;IPｱﾄﾞﾚｽ設定
+;'通信の為に以下の設定を行う
+;@DM0 = 192	' IPアドレス1バイト目
+;@DM1 = 168	' IPアドレス2バイト目
+;@DM2 = 0	' IPアドレス3バイト目
+;@DM3 = 147	' IPアドレス4バイト目
+;@DM4 = $32	' サービスコード
+;@DM5 = $64	' クラスID
+;@DM6 = $01	' インスタンスID
+;@DM7 = $01	' アトリビュートID
+LD CR2002                ; 常時ON
+NCJ #1000
+;'通信の為に以下の設定を行う
+;
+;@DM0 = 192	' IPアドレス1バイト目
+;
+LD CR2002                ; 常時ON
+MOV #192 @DM0            ; 通信設定先頭
+;@DM1 = 168	' IPアドレス2バイト目
+;
+LD CR2002                ; 常時ON
+MOV #168 @DM1
+;@DM2 = 0	' IPアドレス3バイト目
+;
+LD CR2002                ; 常時ON
+MOV #0 @DM2
+;@DM3 = 147	' IPアドレス4バイト目
+;
+LD CR2002                ; 常時ON
+MOV #147 @DM3
+;@DM4 = $32	' サービスコード
+;
+LD CR2002                ; 常時ON
+MOV $0032 @DM4
+;@DM5 = $64	' クラスID
+;
+LD CR2002                ; 常時ON
+MOV $0064 @DM5
+;@DM6 = $01	' インスタンスID
+;
+LD CR2002                ; 常時ON
+MOV $0001 @DM6
+;@DM7 = $01	' アトリビュートID
+LD CR2002                ; 常時ON
+MOV $0001 @DM7
+LABEL #1000
+;
+STG @R500                ; 通信ｽﾀｰﾄ
+ANB R30700               ; ﾒｯｾｰｼﾞ通信実行要求
+ANB R31700               ; ﾒｯｾｰｼﾞ通信完了
+ANB R37502               ; FJ通信中
+ANB R37600               ; FJ通信ｲﾝﾀｰﾛｯｸ
+SET @R502                ; 通信中
+CON
+JMP @R504
+STG @R504
+U_MSGTO #0 @DM0          ; 通信設定先頭
+RCPSASC @DM10 @DM100 @DM100;送信内容  送信ﾃﾞｰﾀ先頭  送信ﾃﾞｰﾀ先頭
+U_MSGSND #0 @DM100       ; 送信ﾃﾞｰﾀ先頭
+SET R30700               ; ﾒｯｾｰｼﾞ通信実行要求
+CON
+JMP @R505
+STG @R505
+MPS
+AND R31700               ; ﾒｯｾｰｼﾞ通信完了
+MPS
+ANB R31701               ; ﾒｯｾｰｼﾞ通信失敗
+@U_MSGRCV #0 @DM200      ; 受信ﾃﾞｰﾀ先頭
+RES R30700               ; ﾒｯｾｰｼﾞ通信実行要求
+CON
+JMP @R515
+MPP
+AND R31701               ; ﾒｯｾｰｼﾞ通信失敗
+SET @R503                ; 通信異常
+CON
+RES R30700               ; ﾒｯｾｰｼﾞ通信実行要求
+CON
+JMP @R515
+MPP
+ANB R31700               ; ﾒｯｾｰｼﾞ通信完了
+TMR @0 #30               ; 通信ﾀｲﾑｱｯﾌﾟ
+CON
+AND @T0                  ; 通信ﾀｲﾑｱｯﾌﾟ
+SET @R503                ; 通信異常
+CON
+RES R30700               ; ﾒｯｾｰｼﾞ通信実行要求
+CON
+JMP @R515
+STG @R515
+RES @R502                ; 通信中
+CON
+SET @R501                ; 通信完了
+CON
+ENDS
+END
+ENDH

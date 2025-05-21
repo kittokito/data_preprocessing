@@ -1,0 +1,115 @@
+DEVICE:53
+;MODULE:MEM_FREE
+;MODULE_TYPE:1
+;SCRIPT_TYPE:
+;★★★  MEMFREE メモリーカードの空き容量を確認する  ★★★
+;★ ★ ★ MEMFREE Check the free space of the memory card ★ ★ ★
+;■ 引数説明
+;  P0		: ﾒﾓﾘｰｶｰﾄﾞの指定空き容量				[DMxxx,EMxxx等]
+;  P1		: ﾒﾓﾘｰｶｰﾄﾞの現在空き容量				[DMxxx,EMxxx等]
+;  P2		: エラーフラグ
+;　P3		: エラー情報							[DMxxx,EMxxx等]
+;■ Argument Description
+;   P0: Specified free space of memory card [DMxxx, EMxxx, etc.]
+;   P1: Current free space of memory card [DMxxx, EMxxx, etc.]
+;   P2: Error flag
+;P3: Error information [DMxxx, EMxxx, etc.]
+;■ 機能
+;　・ﾒﾓﾘｰｶｰﾄﾞの空き容量が、P0 で指定されたエリアの容量以上あるか確認する。
+;  ・P1で指定されたエリアに、ﾒﾓﾘｰｶｰﾄﾞの現在の空き容量を格納する。
+;　・エラーが発生した場合は、エラーフラグをセットし処理を終了する。
+;　
+;■ Function
+;? Make sure that the free space of the memory card is larger than the capacity of the area specified by P0.
+;   Store the current free space of the memory card in the area specified by P1.
+;? If an error occurs, set an error flag and terminate processing.
+;■ エラーフラグ(P2)をセットする条件
+;  ・空き容量が、P0 での指定量より小さい場合。
+;  ・ﾒﾓﾘｰｶｰﾄﾞ命令が正しく実行されなかった場合。
+;
+;  ・P3にエラー情報を格納する。
+;  　( 1～9  : ﾒﾓﾘｰｶｰﾄﾞ命令ｴﾗｰｺｰﾄﾞ )
+;  　( 10 	: 指定の空き容量なし )
+;  　  
+;■ Conditions for setting the error flag (P2)
+;   ? When the free space is smaller than the specified amount at P0.
+;   ? The memory card instruction is not executed correctly.
+;
+;   ? Store error information in P3.
+;   (1 to 9: memory card instruction error code)
+;   (10: No free space specified)
+;<<  初期化処理  >>/<< Initialization processing >>
+LD @CR2008
+RES P2                   ; Error relay
+CON
+DW #0 P3                 ; Error inform
+CON
+ZRES @DM0 @DM1
+CON
+ZRES @MR000 @MR015
+;
+;'処理開始
+;SET( @MR0 )
+;
+;
+LDF @CR2008
+NCJ #1000
+;'処理開始
+;
+;SET( @MR0 )
+;
+LD CR2002                ; always on
+SET @MR000
+LABEL #1000
+;
+;<<　メモリ空き容量取得　>>
+;@DM0　　：ﾒﾓﾘｰｶｰﾄﾞの現在空き容量を格納するｴﾘｱ
+;
+;@MR10	：命令完了 通知ﾋﾞｯﾄ
+;@MR11	：ｴﾗｰﾋﾞｯﾄ ON=ｴﾗｰ OFF=ｴﾗｰ無し
+;<< Acquisition of free memory space >>
+;@ DM 0: Area storing the current free space of the memory card
+;
+;@ MR 10: Instruction completion notification bit
+;@ MR 11: Error bit ON = Error OFF = No error
+LD @MR000
+ANB CR3214               ; mem card instr executing
+ANB @MR010
+MFREE @DM0 @MR010
+LD @MR000
+AND @MR010
+TMH @0 #3
+CON
+AND @T0
+DIFU @MR005
+LD @MR005
+MPS
+ANB @MR011
+MPS
+AND>=.D @DM0 P0          ; Free space
+RES @MR000
+CON
+RES P2                   ; Error relay
+CON
+MOV.D @DM0 P1            ; Current free
+MEND
+MPP
+AND<.D @DM0 P0           ; Free space
+RES @MR000
+CON
+SET P2                   ; Error relay
+CON
+DW #10 P3                ; Error inform
+MEND
+MPP
+LD @MR011
+AND<> CM2390 #0          ; mem card instr err code
+ANL
+RES @MR000
+CON
+SET P2                   ; Error relay
+CON
+MOV CM2390 P3            ; mem card instr err code  Error inform
+MEND
+END
+ENDH

@@ -1,0 +1,169 @@
+DEVICE:53
+;MODULE:CON_HOME
+;MODULE_TYPE:1
+;OneSystem SupportMacro
+;
+;-----------------------------------------
+;Macro Name 	: 	CON_HOME2
+;Macro Type	:	Self Holding
+;Function	:	IAI CON HOME MACRO 2
+;-----------------------------------------
+;引数：
+;	P0	=	RB入力先頭番地	DM番号で指定	P0	=	Input Leading Address for RB
+;	P1	=	RB出力先頭番地	DM番号で指定	P1	=	Output Leading Address for RB
+;	P2	=	完了コード						P2	=	Macro Complete Code
+;			#20			=	正常終了				#20			=	No Error
+;			#21			=	RB応答なし				#21			=	Non Responce
+;			#22			=	ｽﾃｰﾀｽ異常				#22			=	Status Abnormal
+;			Alarmcode	=	Alarm					#Alarmcode	=	Alarm
+;
+;機能：CON系 MSEP 数直移動指令ﾏｸﾛ/ Robot Move Macro for Numerical Move Mode
+;IN
+BLD P0:#7 #0             ; RB_IN
+OUT PEND                 ; IN PEND
+BLD P0:#7 #1             ; RB_IN
+OUT HEND                 ; IN HEND
+BLD P0:#7 #2             ; RB_IN
+OUT MOVE                 ; IN MOVE
+BLD P0:#7 #3             ; RB_IN
+OUT ALM                  ; IN ALM
+BLD P0:#7 #4             ; RB_IN
+OUT SV                   ; IN SV
+BLD P0:#7 #5             ; RB_IN
+OUT PSFL                 ; IN PSFL
+BLD P0:#7 #7             ; RB_IN
+OUT ALML                 ; IN ALML
+BLD P0:#7 #8             ; RB_IN
+OUT M_END                ; IN MEND
+BLD P0:#7 #12            ; RB_IN
+OUT ZONE1                ; IN ZONE1
+BLD P0:#7 #13            ; RB_IN
+OUT ZONE2                ; IN ZONE2
+BLD P0:#7 #14            ; RB_IN
+OUT CRDY                 ; IN CRDY
+BLD P0:#7 #15            ; RB_IN
+OUT EMGS                 ; IN EMGS
+;OUT
+LD CSTR                  ; OUT START
+BOUT P1:#7 #0            ; RB_OUT
+LD HOME                  ; OUT HOME
+BOUT P1:#7 #1            ; RB_OUT
+LD STOP                  ; OUT STOP
+BOUT P1:#7 #2            ; RB_OUT
+LD RSET                  ; OUT RESET
+BOUT P1:#7 #3            ; RB_OUT
+LD JISL                  ; OUT ON=JOG
+BOUT P1:#7 #5            ; RB_OUT
+LD JOG_Minus             ; JOG-
+BOUT P1:#7 #7            ; RB_OUT
+LD JOG_Plus              ; JOG+
+BOUT P1:#7 #8            ; RB_OUT
+LD PUSH                  ; OUT Push
+BOUT P1:#7 #12           ; RB_OUT
+LD DIR                   ; OUT Push ON=+Dir
+BOUT P1:#7 #13           ; RB_OUT
+LD Incre                 ; OUT ON=INC
+BOUT P1:#7 #14           ; RB_OUT
+LD BKRL                  ; OUT Brake Release
+BOUT P1:#7 #15           ; RB_OUT
+;
+LD MR19915               ; _運転ﾓｰﾄﾞ指定
+ORP MR6104               ; _非常停止中　ﾓｰﾄﾞﾌﾗｸﾞ
+JMP @R012                ; 終了処理
+;初期化　/ Initialize
+LD @CR2008
+SET @R000
+;RBｽﾃｰﾀｽﾓﾆﾀｰ / Status Monitoring
+LDB EMGS                 ; IN EMGS
+AND SV                   ; IN SV
+AND CRDY                 ; IN CRDY
+ANB MOVE                 ; IN MOVE
+OUT @R014                ; RB Status OK
+;Move Parameter storage
+STG @R000
+TMH @0 #0
+CON
+AND @T0
+JMP @R001
+STG @R001
+MPS
+LD @R014                 ; RB Status OK
+ANB ALM                  ; IN ALM
+ANL
+SET HOME                 ; OUT HOME
+CON
+JMP @R002
+MRD
+ANB @R014                ; RB Status OK
+MPS
+ANB MR004                ; ﾃﾞﾊﾞｯｸ用？？
+DW #22 P2                ; C_CODE
+CON
+JMP @R012                ; 終了処理
+MPP
+AND MR004                ; ﾃﾞﾊﾞｯｸ用？？
+DW #20 P2                ; C_CODE
+CON
+JMP @R012                ; 終了処理
+MPP
+AND ALM                  ; IN ALM
+JMP @R011                ; Alarm
+STG @R002
+MPS
+LD MOVE                  ; IN MOVE
+ANB ALM                  ; IN ALM
+ANB @T2
+ANL
+RES HOME                 ; OUT HOME
+CON
+JMP @R003
+MRD
+AND ALM                  ; IN ALM
+RES HOME                 ; OUT HOME
+CON
+JMP @R011                ; Alarm
+MPP
+TMR @2 #600
+CON
+AND @T2
+RES HOME                 ; OUT HOME
+CON
+DW #21 P2                ; C_CODE
+CON
+JMP @R012                ; 終了処理
+STG @R003
+MPS
+LDB ALM                  ; IN ALM
+ANB @T3
+AND HEND                 ; IN HEND
+ANL
+DW #20 P2                ; C_CODE
+CON
+JMP @R012                ; 終了処理
+MRD
+AND ALM                  ; IN ALM
+JMP @R011                ; Alarm
+MPP
+TMR @3 #600
+CON
+AND @T3
+DW #21 P2                ; C_CODE
+CON
+JMP @R012                ; 終了処理
+;Alarm code Stroge
+STG @R011                ; Alarm
+LDA P0:#6                ; RB_IN
+CON
+STA P2                   ; C_CODE
+CON
+JMP @R012                ; 終了処理
+;終了処理
+STG @R012                ; 終了処理
+MPS
+ZRES @R001 @R100         ; ﾏｸﾛ異常発生
+CON
+ENDS
+MPP
+MEND
+END
+ENDH

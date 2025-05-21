@@ -1,0 +1,197 @@
+DEVICE:51
+;MODULE:Master
+;MODULE_TYPE:0
+;<h1/>CPU起動時、モジュール起動
+;Module start when CPU starts
+LD CR2002                ; 常時ON
+AND CR2007               ; 運転開始時1ｽｷｬﾝOFF
+ANB R50000               ; 元圧ｴﾗｰ
+ANB R55000               ; TRAP
+TMH #200 #50             ; 起動遅延
+MDSTRT MAIN
+;<h1/>スタートスイッチ管理
+;Management of start switch
+LD R4001                 ; START     switch(left)
+OR R4002                 ; START     switch(right)
+SHOT #30 @MR004          ; ｽﾀｰﾄ ON
+LD @MR004                ; ｽﾀｰﾄ ON
+LD R4001                 ; START     switch(left)
+OR R4002                 ; START     switch(right)
+ANL
+AND _MAIN
+DIFU @MR000              ; ｽﾀｰﾄSW ON PLS
+LD @MR000                ; ｽﾀｰﾄSW ON PLS
+OR @MR001                ; ｽﾀｰﾄSW ON
+ANB @MR002               ; ｽﾀｰﾄSW OFF
+OUT @MR001               ; ｽﾀｰﾄSW ON
+LD @MR001                ; ｽﾀｰﾄSW ON
+LDB R4001                ; START     switch(left)
+ORB R4002                ; START     switch(right)
+ANL
+OUT @MR002               ; ｽﾀｰﾄSW OFF
+LD @MR001                ; ｽﾀｰﾄSW ON
+DIFU R50100              ; ｽﾀｰﾄSW PLS
+;<h1/>Call Post
+LDB R50002               ; 手動中
+ZRES R50403 R50405       ; ｽﾀｰﾄSW OFFOK  STEP再ｽﾀｰﾄOK
+STG R50400               ; Call Post
+ANB R50403               ; ｽﾀｰﾄSW OFFOK
+LDB R4001                ; START     switch(left)
+ORB R4002                ; START     switch(right)
+ANL
+AND R50002               ; 手動中
+SET R50403               ; ｽﾀｰﾄSW OFFOK
+CON
+JMP R50404               ; STEP再ｽﾀｰﾄ要求
+STG R50404               ; STEP再ｽﾀｰﾄ要求
+AND R50100               ; ｽﾀｰﾄSW PLS
+ANB R50006               ; 異常発生中
+ANB R50009               ; 一時停止中(ｴﾘｱｾﾝｻｰ)
+ANB R50000               ; 元圧ｴﾗｰ
+ANB R55000               ; TRAP
+AND R4003                ; Main Air
+AND R4004                ; Area Sensor(B接遮断)
+AND R4007                ; Vacuum source pressure
+JMP R50405               ; STEP再ｽﾀｰﾄOK
+STG R50405               ; STEP再ｽﾀｰﾄOK
+ANB R50400               ; Call Post
+RES R50403               ; ｽﾀｰﾄSW OFFOK
+CON
+ENDS
+LD R50400                ; Call Post
+AND R50404               ; STEP再ｽﾀｰﾄ要求
+OUT R50401               ; Post Busy
+LD R50002                ; 手動中
+AND R50405               ; STEP再ｽﾀｰﾄOK
+ORB R50002               ; 手動中
+OUT R50402               ; Post Ok
+;<h1/>HOME
+;Moving Home Position
+LDB R50007               ; 原点復帰　完了
+ANB R50001               ; 自動中
+ANB R50002               ; 手動中
+ANB R50003               ; 原点復帰中
+ANB R50004               ; 動作中
+ANB R50006               ; 異常発生中
+AND R4003                ; Main Air
+AND R4004                ; Area Sensor(B接遮断)
+AND R4007                ; Vacuum source pressure
+OUT @MR100               ; 原点復帰  ｽﾀｰﾄ条件
+LD @MR100                ; 原点復帰  ｽﾀｰﾄ条件
+AND= DM20000 #0          ; 表示中    ﾍﾟｰｼﾞNo.
+AND R50100               ; ｽﾀｰﾄSW PLS
+OR R50003                ; 原点復帰中
+AND T200                 ; 起動遅延
+ANB R50000               ; 元圧ｴﾗｰ
+ANB R55000               ; TRAP
+ANB R50007               ; 原点復帰　完了
+ANB @MR104               ; 原点復帰 終了
+OUT R50003               ; 原点復帰中
+LD R50003                ; 原点復帰中
+DIFU @MR101              ; 原点復帰　ｽﾀｰﾄPLS
+LD @MR101                ; 原点復帰　ｽﾀｰﾄPLS
+OR @MR102                ; 原点復帰　ｽﾀｰﾄ確認
+AND R50003               ; 原点復帰中
+ANB @MR103               ; 各ﾀｽｸ動作中
+OUT @MR102               ; 原点復帰　ｽﾀｰﾄ確認
+LD @MR102                ; 原点復帰　ｽﾀｰﾄ確認
+AND R50004               ; 動作中
+OR @MR103                ; 各ﾀｽｸ動作中
+AND R50003               ; 原点復帰中
+ANB @MR104               ; 原点復帰 終了
+OUT @MR103               ; 各ﾀｽｸ動作中
+LD @MR103                ; 各ﾀｽｸ動作中
+ANB R50004               ; 動作中
+OUT @MR104               ; 原点復帰 終了
+;<h1/>STEP
+LD R50007                ; 原点復帰　完了
+ANB R50001               ; 自動中
+ANB R50002               ; 手動中
+ANB R50003               ; 原点復帰中
+ANB R50004               ; 動作中
+ANB R50006               ; 異常発生中
+AND R4003                ; Main Air
+AND R4004                ; Area Sensor(B接遮断)
+AND R4007                ; Vacuum source pressure
+OUT @MR200               ; STEPｽﾀｰﾄ 条件
+LD @MR200                ; STEPｽﾀｰﾄ 条件
+LD= DM20000 #100         ; 表示中    ﾍﾟｰｼﾞNo.
+OR= DM20000 #101         ; 表示中    ﾍﾟｰｼﾞNo.
+OR= DM20000 #102         ; 表示中    ﾍﾟｰｼﾞNo.
+OR= DM20000 #111         ; 表示中    ﾍﾟｰｼﾞNo.
+OR= DM20000 #112         ; 表示中    ﾍﾟｰｼﾞNo.
+ANL
+AND R50100               ; ｽﾀｰﾄSW PLS
+OR R50002                ; 手動中
+AND T200                 ; 起動遅延
+ANB R50000               ; 元圧ｴﾗｰ
+ANB R55000               ; TRAP
+AND R50007               ; 原点復帰　完了
+ANB @MR204               ; STEP終了
+OUT R50002               ; 手動中
+LD R50002                ; 手動中
+DIFU @MR201              ; STEPｽﾀｰﾄ  PLS
+LD @MR201                ; STEPｽﾀｰﾄ  PLS
+OR @MR202                ; STEPｽﾀｰﾄ 確認
+AND R50002               ; 手動中
+ANB @MR203               ; 各ﾀｽｸ動作中
+OUT @MR202               ; STEPｽﾀｰﾄ 確認
+LD @MR202                ; STEPｽﾀｰﾄ 確認
+AND R50004               ; 動作中
+OR @MR203                ; 各ﾀｽｸ動作中
+AND R50002               ; 手動中
+ANB @MR204               ; STEP終了
+OUT @MR203               ; 各ﾀｽｸ動作中
+LD @MR203                ; 各ﾀｽｸ動作中
+ANB R50004               ; 動作中
+OUT @MR204               ; STEP終了
+;<h1/>AUTO
+;Auto Drive
+LD R50007                ; 原点復帰　完了
+ANB R50001               ; 自動中
+ANB R50002               ; 手動中
+ANB R50003               ; 原点復帰中
+ANB R50004               ; 動作中
+ANB R50006               ; 異常発生中
+AND R4003                ; Main Air
+AND R4004                ; Area Sensor(B接遮断)
+AND R4007                ; Vacuum source pressure
+OUT @MR300               ; 自動ｽﾀｰﾄ 条件
+LD @MR300                ; 自動ｽﾀｰﾄ 条件
+LD= DM20000 #5           ; 表示中    ﾍﾟｰｼﾞNo.
+OR= DM20000 #6           ; 表示中    ﾍﾟｰｼﾞNo.
+OR= DM20000 #10          ; 表示中    ﾍﾟｰｼﾞNo.
+OR= DM20000 #11          ; 表示中    ﾍﾟｰｼﾞNo.
+ANL
+AND R50100               ; ｽﾀｰﾄSW PLS
+OR R50001                ; 自動中
+AND T200                 ; 起動遅延
+ANB R50000               ; 元圧ｴﾗｰ
+ANB R55000               ; TRAP
+AND R50007               ; 原点復帰　完了
+ANB @MR304               ; 自動終了
+OUT R50001               ; 自動中
+LD R50001                ; 自動中
+DIFU @MR301              ; 自動ｽﾀｰﾄ  PLS
+LD @MR301                ; 自動ｽﾀｰﾄ  PLS
+OR @MR302                ; 自動ｽﾀｰﾄ 確認
+AND R50001               ; 自動中
+ANB @MR303               ; 各ﾀｽｸ動作中
+OUT @MR302               ; 自動ｽﾀｰﾄ 確認
+LD @MR302                ; 自動ｽﾀｰﾄ 確認
+AND R50004               ; 動作中
+OR @MR303                ; 各ﾀｽｸ動作中
+AND R50001               ; 自動中
+ANB @MR304               ; 自動終了
+OUT @MR303               ; 各ﾀｽｸ動作中
+LD @MR303                ; 各ﾀｽｸ動作中
+ANB R50004               ; 動作中
+OUT @MR304               ; 自動終了
+LD @MR304                ; 自動終了
+OR R50006                ; 異常発生中
+LD R50004                ; 動作中
+ANB LR22000              ; ｻﾝﾌﾟﾘﾝｸﾞﾃﾞｰﾀ取得
+ORL
+LOGD #0
+END
+ENDH

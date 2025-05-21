@@ -1,0 +1,261 @@
+DEVICE:53
+;MODULE:Communication
+;MODULE_TYPE:0
+;<h1/>ＰＣ動作チェック
+LD W00.0                 ; PC動作中
+TMR K2500 K20            ; PC正常確認ﾀｲﾏ
+LDB W00.0                ; PC動作中
+TMR K2501 K20            ; PC正常確認ﾀｲﾏ
+LDB T2500                ; PC正常確認ﾀｲﾏ
+ANB T2501                ; PC正常確認ﾀｲﾏ
+OUT M300                 ; PC通信正常
+;<h1/>ｴﾗｰｺｰﾄﾞ送信（ｴﾗｰﾛｸﾞ用)
+LD CR2008                ; 運転開始時1ｽｷｬﾝON
+FMOV K0 D900 K32         ; 異常内容
+DW K0 D900               ; 異常内容
+CON
+DW K30 D901              ; 格納異常数
+LD<> D902 K0             ; ｴﾗｰｺｰﾄﾞ最終
+ANB M13020               ; 異常ﾛｸﾞ通信開始
+AND= D13000 K0
+ANB W00.4                ; ｴﾗｰﾛｸﾞ完了
+OR M13020                ; 異常ﾛｸﾞ通信開始
+ANB M13015               ; ｴﾗｰﾛｸﾞ完了
+OUT M13020               ; 異常ﾛｸﾞ通信開始
+LD CR2002                ; 常時ON
+FMOV K0 M13000 K1        ; 異常ﾛｸﾞ通信中
+LDB M13020               ; 異常ﾛｸﾞ通信開始
+MOV K0 D13000
+LD M13020                ; 異常ﾛｸﾞ通信開始
+MOV D13000 Z2
+OUT M13000:Z2            ; 異常ﾛｸﾞ通信中
+LD M13000                ; 異常ﾛｸﾞ通信中
+INC D13000
+LD M13001                ; 異常内容読出し
+@FIFOR D900 W0112        ; 異常内容  ｴﾗｰｺｰﾄﾞ(ﾛｸﾞ保存用)
+INC D13000
+LD M13002                ; ｴﾗｰﾛｸﾞ読込み要求ON
+MPS
+LDB M35                  ; 空運転ﾓｰﾄﾞ
+AND M300                 ; PC通信正常
+ANL
+MPS
+OUT W0100.5              ; ｴﾗｰﾛｸﾞ要求
+MPP
+AND W00.4                ; ｴﾗｰﾛｸﾞ完了
+INC D13000
+MPP
+LD M35                   ; 空運転ﾓｰﾄﾞ
+ORB M300                 ; PC通信正常
+ANL
+INC D13000
+LD M13003                ; ﾃﾞｰﾀｸﾘｱｰ
+LDB M35                  ; 空運転ﾓｰﾄﾞ
+AND M300                 ; PC通信正常
+ANB W00.4                ; ｴﾗｰﾛｸﾞ完了
+OR M35                   ; 空運転ﾓｰﾄﾞ
+ORB M300                 ; PC通信正常
+ANL
+@MOV K0 W0112            ; ｴﾗｰｺｰﾄﾞ(ﾛｸﾞ保存用)
+INC D13000
+LD M13004                ; ｴﾗｰﾛｸﾞ完了確認
+MOV K15 D13000
+;<h1/>ｴﾗｰｺｰﾄﾞ送信（表示用）
+LD CR2002                ; 常時ON
+ANB M13120               ; 異常発生Ｂｉｔｻｰﾁ開始ON
+AND= D13100 K0
+OR M13120                ; 異常発生Ｂｉｔｻｰﾁ開始ON
+ANB M13115               ; 異常発生Ｂｉｔｻｰﾁ終了
+OUT M13120               ; 異常発生Ｂｉｔｻｰﾁ開始ON
+LD CR2002                ; 常時ON
+FMOV K0 M13100 K1        ; 異常発生Ｂｉｔｻｰﾁ開始
+LDB M13120               ; 異常発生Ｂｉｔｻｰﾁ開始ON
+MOV K0 D13100
+LD M13120                ; 異常発生Ｂｉｔｻｰﾁ開始ON
+MOV D13100 Z2
+OUT M13100:Z2            ; 異常発生Ｂｉｔｻｰﾁ開始
+LD M13100                ; 異常発生Ｂｉｔｻｰﾁ開始
+INC D13100
+LD M13101                ; ｻｰﾁ番号ﾘｾｯﾄ
+MOV K0 Z6
+INC D13100
+LD M13102                ; ﾙｰﾌﾟ開始/ｴﾗｰBitON確認
+MPS
+AND B00:Z6               ; 0)異常無し
+INC D13100
+MPP
+ANB B00:Z6               ; 0)異常無し
+MOV K5 D13100
+LD M13103                ; ｴﾗｰｺｰﾄﾞｾｯﾄ
+MOV Z6 W0111             ; ｴﾗｰｺｰﾄﾞ(表示用)
+INC D13100
+LD M13104                ; 表示中
+MPS
+TMR K2504 K20            ; 表示時間
+MPP
+AND T2504                ; 表示時間
+INC D13100
+LD M13105                ; 最終Ｂｉｔ確認
+MPS
+AND>= Z6 K544
+@MOV K7 D13100
+MPP
+AND< Z6 K544
+INC D13100
+LD M13106                ; ｻｰﾁ番号ｶｳﾝﾄｱｯﾌﾟﾙｰﾌﾟ開始へ
+@INC Z6
+MOV K2 D13100
+LD M13107                ; 異常発生Ｂｉｔｻｰﾁ終了
+MOV K15 D13100
+LDB M13104               ; 表示中
+MPS
+TMR K2505 K25            ; 表示無し確認
+MPP
+AND T2505                ; 表示無し確認
+@MOV K0 W0111            ; ｴﾗｰｺｰﾄﾞ(表示用)
+;<h1/>ＰＣからブザー要求
+LD W00.2                 ; PC Busy
+OR M13130                ; PC　BUSY　受付
+ANB M13133               ; PC　BUSY　OFF確認
+AND M300                 ; PC通信正常
+OUT M13130               ; PC　BUSY　受付
+LDP M13130               ; PC　BUSY　受付
+OR M13131                ; ﾌﾞｻﾞｰON
+ANB M13132               ; PCへReset sw　ON
+AND M13130               ; PC　BUSY　受付
+OUT M13131               ; ﾌﾞｻﾞｰON
+LD M13131                ; ﾌﾞｻﾞｰON
+ANP M110                 ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR M13135                ; BZ停止
+ANB M13133               ; PC　BUSY　OFF確認
+AND M13130               ; PC　BUSY　受付
+OUT M13135               ; BZ停止
+LD M13131                ; ﾌﾞｻﾞｰON
+LDP M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+ORP X1020                ; ﾜｰｸ投入部確認PB
+ORB W00.2                ; PC Busy
+ANL
+OR M13132                ; PCへReset sw　ON
+ANB M13133               ; PC　BUSY　OFF確認
+AND M13130               ; PC　BUSY　受付
+OUT M13132               ; PCへReset sw　ON
+LD M13132                ; PCへReset sw　ON
+ANB W00.2                ; PC Busy
+OR M13133                ; PC　BUSY　OFF確認
+AND M13130               ; PC　BUSY　受付
+OUT M13133               ; PC　BUSY　OFF確認
+;<h1/>ＰＣ　Ｅｒｒｏｒ　処理
+LDB M71                  ; 自動運転開始BZ
+ANP M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+OR M13140                ; PCへReset SW　ON
+AND W00.1                ; PC Error
+AND M300                 ; PC通信正常
+OUT M13140               ; PCへReset SW　ON
+LDP X1020                ; ﾜｰｸ投入部確認PB
+ORP X126C                ; 基板供給確認PB
+ORP X1499                ; ｶﾊﾞｰ供給確認PB
+ORP B1023                ; 基板取出確認TP-PB
+ORP B1024                ; ﾘﾄﾗｲ確認TP-PB
+ORP B1025                ; ﾗﾍﾞﾙ再発行PB
+OR M13141                ; PCへReset SW ON
+ANB T2506                ; ﾘｾｯﾄ信号ﾀｲﾏ
+TMR K2506 K5             ; ﾘｾｯﾄ信号ﾀｲﾏ
+OUT M13141               ; PCへReset SW ON
+;<h1/>停止ﾓｰﾄﾞ処理
+LD M71                   ; 自動運転開始BZ
+OR M13150                ; 自動運転中保持
+ANB M13153               ; 停止ﾓｰﾄﾞ処理終了
+OUT M13150               ; 自動運転中保持
+LD M13150                ; 自動運転中保持
+AND<> W010 K0            ; 停止ﾓｰﾄﾞ(PC)
+@MOV W010 W0110          ; 停止ﾓｰﾄﾞ(PC)  停止ﾓｰﾄﾞ(PLC)
+OUT M13151               ; PC→自動運転停止ﾌﾗｸﾞ
+LDB T15                  ; 強制停止
+ANB M51                  ; 即停止異常(緊急停止)
+INV
+MEP
+OR M13160                ; 即停止異常(緊急停止)記憶
+AND M13150               ; 自動運転中保持
+OUT M13160               ; 即停止異常(緊急停止)記憶
+LDP M56                  ; 自動起動停止指令(ｻｲｸﾙ停止)
+AND M52                  ; ｻｲｸﾙ停止異常(ｻｲｸﾙ停止)
+OR M13161                ; ｻｲｸﾙ停止異常(ｻｲｸﾙ停止)記憶
+AND M13150               ; 自動運転中保持
+OUT M13161               ; ｻｲｸﾙ停止異常(ｻｲｸﾙ停止)記憶
+LDP M56                  ; 自動起動停止指令(ｻｲｸﾙ停止)
+AND M57                  ; 自動起動停止指令(払出停止)
+OR M13162                ; 自動起動停止指令(払出停止)記憶
+AND M13150               ; 自動運転中保持
+OUT M13162               ; 自動起動停止指令(払出停止)記憶
+LD M13150                ; 自動運転中保持
+ANF M71                  ; 自動運転開始BZ
+OR M13152                ; PCﾃﾞｰﾀ送信
+AND M13150               ; 自動運転中保持
+OUT M13152               ; PCﾃﾞｰﾀ送信
+MPS
+LD M13160                ; 即停止異常(緊急停止)記憶
+OR M13161                ; ｻｲｸﾙ停止異常(ｻｲｸﾙ停止)記憶
+ANL
+@MOV K2 W0110            ; 停止ﾓｰﾄﾞ(PLC)
+MPP
+LD M13162                ; 自動起動停止指令(払出停止)記憶
+ANB M13151               ; PC→自動運転停止ﾌﾗｸﾞ
+ANL
+@MOV K1 W0110            ; 停止ﾓｰﾄﾞ(PLC)
+LD M13152                ; PCﾃﾞｰﾀ送信
+ANB W0100.2              ; 自動/手動
+OR M13153                ; 停止ﾓｰﾄﾞ処理終了
+AND M13150               ; 自動運転中保持
+MPS
+OUT M13153               ; 停止ﾓｰﾄﾞ処理終了
+MPP
+AND CR2003               ; 常時OFF
+@MOV K0 W0110            ; 停止ﾓｰﾄﾞ(PLC)
+;<h1/>ＰＣへの出力
+LD CR2002                ; 常時ON
+ANB T2503                ; PLC起動ﾀｲﾏ2
+TMR K2502 K15            ; PLC起動ﾀｲﾏ1
+LD T2502                 ; PLC起動ﾀｲﾏ1
+TMR K2503 K15            ; PLC起動ﾀｲﾏ2
+LD M1                    ; CPU正常
+ANB T2502                ; PLC起動ﾀｲﾏ1
+OUT W0100.0              ; PLC動作中
+LDB M51                  ; 即停止異常(緊急停止)
+ANB T15                  ; 強制停止
+INV
+OUT W0100.1              ; PLC Error
+LD M41                   ; 全ﾕﾆｯﾄ起動中
+OUT W0100.2              ; 自動/手動
+LDB M13132               ; PCへReset sw　ON
+ANB M13140               ; PCへReset SW　ON
+ANB M13141               ; PCへReset SW ON
+INV
+OUT W0100.3              ; Reset SW受付
+LD CR2003                ; 常時OFF
+OUT W0100.4              ; ﾀﾞｲｱﾛｸﾞ要求
+LD Y203C                 ; ｼｸﾞﾅﾙﾀﾜｰ赤
+OUT W0100.8              ; ﾀﾜｰﾗｲﾄ赤
+LD Y203D                 ; ｼｸﾞﾅﾙﾀﾜｰ黄
+OUT W0100.9              ; ﾀﾜｰﾗｲﾄ黄
+LD Y203E                 ; ｼｸﾞﾅﾙﾀﾜｰ緑
+OUT W0100.10             ; ﾀﾜｰﾗｲﾄ緑
+;ﾃﾞｰﾀｸﾘｱ処理
+LD D211.0
+OUT W0102.8              ; ﾃﾞｰﾀｸﾘｱﾎﾟｼﾞｼｮﾝ#1(Bin)
+LD D211.1
+OUT W0102.9              ; ﾃﾞｰﾀｸﾘｱﾎﾟｼﾞｼｮﾝ#2(Bin)
+LD D211.2
+OUT W0102.10             ; ﾃﾞｰﾀｸﾘｱﾎﾟｼﾞｼｮﾝ#4(Bin)
+LD D211.3
+OUT W0102.11             ; ﾃﾞｰﾀｸﾘｱﾎﾟｼﾞｼｮﾝ#8(Bin)
+LD B1019                 ; DATA_Clear
+ANB W00.2                ; PC Busy
+OR W0102.1               ; ﾃﾞｰﾀｸﾘｱ要求
+ANB W00.1                ; PC Error
+ANB W02.1                ; 行程ﾃﾞｰﾀｸﾘｱ完了
+LDB M41                  ; 全ﾕﾆｯﾄ起動中
+OR M130                  ; 全体PAUSE
+ANL
+OUT W0102.1              ; ﾃﾞｰﾀｸﾘｱ要求
+END
+ENDH

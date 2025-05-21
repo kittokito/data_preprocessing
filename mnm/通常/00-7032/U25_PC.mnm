@@ -1,0 +1,210 @@
+DEVICE:128
+;MODULE:U25_PC
+;MODULE_TYPE:0
+;<h1/>★★★HOST PC
+;<h1/>□_PC確認
+;■PC→PLC
+LD W00.0                 ; HOST_PC動作中
+TMR K351 K30             ; 搬送ｴﾗｰ
+LDB W00.0                ; HOST_PC動作中
+TMR K352 K30             ; PC動作中確認ﾀｲﾏ
+LDB T351                 ; 搬送ｴﾗｰ
+ANB T352                 ; PC動作中確認ﾀｲﾏ
+OUT B1519                ; HOST PCｷﾄﾞｳ中PL
+LDB T351                 ; 搬送ｴﾗｰ
+ANB T352                 ; PC動作中確認ﾀｲﾏ
+OR M3                    ; OFFLINE_MODE
+OUT M300                 ; HOST PC通信正常
+;<h1/>□_PC_ｴﾗｰﾛｸﾞ送信
+LDB M0                   ; 常時OFF
+OUT M7000                ; FIFO_TBL_設定
+MOV K64 D13511           ; 格納ﾃﾞｰﾀ数
+LD L20                   ; ｴﾗｰLOG(0=ON/1=OFF)
+OUT M7001                ; ｴﾗｰﾛｸﾞ_PC_送信無し
+MOV K0 D13510            ; 発生ｴﾗｰｺｰﾄﾞ格納先
+LDB M7001                ; ｴﾗｰﾛｸﾞ_PC_送信無し
+LD M300                  ; HOST PC通信正常
+ANB B0B                  ; 011)HOST PC通信異常
+OR M3                    ; OFFLINE_MODE
+ANL
+OUT M7002                ; ｴﾗｰﾛｸﾞ_PC_送信有効
+LD<> D13510 K0           ; 発生ｴﾗｰｺｰﾄﾞ格納先
+ANB W00.4                ; ｴﾗｰﾛｸﾞ完了
+OR M7004                 ; ｴﾗｰﾛｸﾞ送信_開始
+AND M7002                ; ｴﾗｰﾛｸﾞ_PC_送信有効
+ANB M7007                ; ｴﾗｰﾛｸﾞ送信_完了
+OUT M7004                ; ｴﾗｰﾛｸﾞ送信_開始
+@FIFOR D13510 D13504     ; 発生ｴﾗｰｺｰﾄﾞ格納先  送信ｴﾗｰｺｰﾄﾞ読出しを送信先へ格納
+TMH K353 K5              ; ｴﾗｰﾛｸﾞ要求ﾃﾞｨﾚｲ
+LD W00.4                 ; ｴﾗｰﾛｸﾞ完了
+OR M3                    ; OFFLINE_MODE
+OR M7006                 ; ｴﾗｰﾛｸﾞ送信_ﾚｽﾎﾟﾝｽ確認
+AND T353                 ; ｴﾗｰﾛｸﾞ要求ﾃﾞｨﾚｲ
+MPS
+TMH K354 K5              ; ｴﾗｰﾛｸﾞ完了ﾃﾞｨﾚｲ
+MPP
+AND T354                 ; ｴﾗｰﾛｸﾞ完了ﾃﾞｨﾚｲ
+OUT M7006                ; ｴﾗｰﾛｸﾞ送信_ﾚｽﾎﾟﾝｽ確認
+LDB W00.4                ; ｴﾗｰﾛｸﾞ完了
+OR M3                    ; OFFLINE_MODE
+OR M7007                 ; ｴﾗｰﾛｸﾞ送信_完了
+AND M7006                ; ｴﾗｰﾛｸﾞ送信_ﾚｽﾎﾟﾝｽ確認
+OUT M7007                ; ｴﾗｰﾛｸﾞ送信_完了
+LDB M0                   ; 常時OFF
+MPS
+AND M7004                ; ｴﾗｰﾛｸﾞ送信_開始
+MOV D13504 W0112         ; 送信ｴﾗｰｺｰﾄﾞ読出しを送信先へ格納  ｴﾗｰｺｰﾄﾞ(ﾛｸﾞ保存用)
+MPP
+ANB M7004                ; ｴﾗｰﾛｸﾞ送信_開始
+MOV K0 W0112             ; ｴﾗｰｺｰﾄﾞ(ﾛｸﾞ保存用)
+LD M51                   ; 即停止異常(緊急停止)
+OUT W0100.1              ; PLC Error
+LD T353                  ; ｴﾗｰﾛｸﾞ要求ﾃﾞｨﾚｲ
+ANB M7006                ; ｴﾗｰﾛｸﾞ送信_ﾚｽﾎﾟﾝｽ確認
+ANB M3                   ; OFFLINE_MODE
+OUT W0100.5              ; エラーログ要求
+;<h1/>□_PC_ｴﾗｰｺｰﾄﾞ送信
+LDB M0                   ; 常時OFF
+OUT M7020                ; ｴﾗｰｺｰﾄﾞ_PC出力
+@MOV K0 D13400           ; 発生中ｴﾗｰｺｰﾄﾞ送信
+LD M7020                 ; ｴﾗｰｺｰﾄﾞ_PC出力
+ANB M7026                ; 次のｴﾗｰをﾁｪｯｸする
+OUT M7022                ; ｴﾗｰBit_ﾁｪｯｸ
+@MOV D13400 Z8           ; 発生中ｴﾗｰｺｰﾄﾞ送信
+LDP M7022                ; ｴﾗｰBit_ﾁｪｯｸ
+AND B00:Z8               ; 000)
+OR M7023                 ; ｴﾗｰBit_検出
+AND M7022                ; ｴﾗｰBit_ﾁｪｯｸ
+OUT M7023                ; ｴﾗｰBit_検出
+TMR K355 K20             ; ｴﾗｰｺｰﾄﾞ表示中時間
+LD M7023                 ; ｴﾗｰBit_検出
+MOV D13400 W0111         ; 発生中ｴﾗｰｺｰﾄﾞ送信  ｴﾗｰｺｰﾄﾞ(表示用)
+LDB M7023                ; ｴﾗｰBit_検出
+MPS
+TMR K356 K30             ; ｴﾗｰｸﾘｱ時間
+MPP
+AND T356                 ; ｴﾗｰｸﾘｱ時間
+MOV K0 W0111             ; ｴﾗｰｺｰﾄﾞ(表示用)
+LD M7022                 ; ｴﾗｰBit_ﾁｪｯｸ
+ANB M7023                ; ｴﾗｰBit_検出
+OR T355                  ; ｴﾗｰｺｰﾄﾞ表示中時間
+OR M7026                 ; 次のｴﾗｰをﾁｪｯｸする
+AND M7022                ; ｴﾗｰBit_ﾁｪｯｸ
+OUT M7026                ; 次のｴﾗｰをﾁｪｯｸする
+MPS
+@INC D13400              ; 発生中ｴﾗｰｺｰﾄﾞ送信
+MPP
+AND>= D13400 K1000       ; 発生中ｴﾗｰｺｰﾄﾞ送信
+@MOV.D K0 D13400         ; 発生中ｴﾗｰｺｰﾄﾞ送信
+;<h1/>□_出力回路
+;<h1/>__PLC→PCへ出力
+;　　PLC_RUN
+LD CR2002                ; 常時ON
+MPS
+ANB T358                 ; PLC起動中ﾀｲﾏ
+TMR K357 K5              ; PLC起動中ﾀｲﾏ
+MPP
+AND T357                 ; PLC起動中ﾀｲﾏ
+TMR K358 K5              ; PLC起動中ﾀｲﾏ
+LD T357                  ; PLC起動中ﾀｲﾏ
+OUT W0100.0              ; PLC動作中
+;
+LDB M1440                ; 電特検査開始要求1
+ANB M1441                ; 電特検査開始要求2
+ANB M1442                ; 電特検査開始要求3
+INV
+OUT W0102.0              ; 電特検査開始要求
+;
+LDB M1455                ; パレット取り出し要求
+ANB M1456                ; パレット取り出し要求
+INV
+OUT W0101.8              ; パレット取り出し要求
+;<h1/>__PCからのﾌﾞｻﾞｰ要求
+LD W00.2                 ; HOST_PC Busy
+ANB M3                   ; OFFLINE_MODE
+MPS
+OUT M210                 ; HOST_PCﾌﾞｻﾞｰ要求(PC_Busy)
+MPP
+AND M55                  ; 異常なし
+OUT B010F                ; 271)HOST_PC ﾌﾞｻﾞｰ要求
+LDP B010F                ; 271)HOST_PC ﾌﾞｻﾞｰ要求
+AND< D13510 K64          ; 発生ｴﾗｰｺｰﾄﾞ格納先
+MOV H010F D13500         ; ｴﾗｰｺｰﾄﾞ
+FIFOW D13500 D13510      ; ｴﾗｰｺｰﾄﾞ  発生ｴﾗｰｺｰﾄﾞ格納先
+;<h1/>__PCからの非常停止
+LD B0B                   ; 011)HOST PC通信異常
+OUT M214                 ; PC非常停止
+LD M214                  ; PC非常停止
+AND M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+OR M215                  ; PC非常停止ﾘｾｯﾄ
+ANB M215                 ; PC非常停止ﾘｾｯﾄ
+OUT M215                 ; PC非常停止ﾘｾｯﾄ
+LD M215                  ; PC非常停止ﾘｾｯﾄ
+ANB W00.1                ; HOST_PC Error
+OUT M216                 ; PC非常停止OFF確認
+;状態表示用出力
+LD M150                  ; 日常点検1ﾓｰﾄﾞ
+AND CR2003               ; 常時OFF
+OUT W0114.0              ; 日常点検ﾓｰﾄﾞ1
+LD M152                  ; 日常点検2ﾓｰﾄﾞ
+AND CR2003               ; 常時OFF
+OUT W0114.1              ; 日常点検ﾓｰﾄﾞ2
+;<h1/>★★★共通
+;<h1/>__AUTO/MANUAL
+LD M72                   ; 自動運転開始
+OR M218                  ; PCへ自動運転状態
+ANB M221                 ; 停止ﾓｰﾄﾞ処理終了
+MPS
+OUT M218                 ; PCへ自動運転状態
+MPP
+ANB M220                 ; PCﾃﾞｰﾀ送信開始
+OUT W0100.2              ; 自動/手動
+;<h1/>__停止ﾓｰﾄﾞ処理
+LD M218                  ; PCへ自動運転状態
+AND<> W010 K0            ; 停止ﾓｰﾄﾞ(PC)
+@MOV W010 W0110          ; 停止ﾓｰﾄﾞ(PC)  停止ﾓｰﾄﾞ(PLC)
+OUT M219                 ; PC→自動運転停止ﾌﾗｸﾞ
+LDB M51                  ; 即停止異常(緊急停止)
+ANB M52                  ; ｻｲｸﾙ停止異常(ｻｲｸﾙ停止)
+INV
+OR M222                  ; 異常で停止メモリ
+AND M218                 ; PCへ自動運転状態
+OUT M222                 ; 異常で停止メモリ
+LDF M71                  ; 自動運転開始BZ
+OR M220                  ; PCﾃﾞｰﾀ送信開始
+AND M218                 ; PCへ自動運転状態
+OUT M220                 ; PCﾃﾞｰﾀ送信開始
+MPS
+ANB M219                 ; PC→自動運転停止ﾌﾗｸﾞ
+@MOV K1 W0110            ; 停止ﾓｰﾄﾞ(PLC)
+MPP
+AND M222                 ; 異常で停止メモリ
+@MOV K2 W0110            ; 停止ﾓｰﾄﾞ(PLC)
+LD M220                  ; PCﾃﾞｰﾀ送信開始
+ANB W0100.2              ; 自動/手動
+MPS
+TMR K359 K10             ; 送信完了_ﾃﾞｨﾚｲ
+MPP
+AND T359                 ; 送信完了_ﾃﾞｨﾚｲ
+OUT M221                 ; 停止ﾓｰﾄﾞ処理終了
+@MOV K0 W0110            ; 停止ﾓｰﾄﾞ(PLC)
+;<h1/>__ﾘｾｯﾄSW受付
+LD M16                   ; ﾘｾｯﾄPB
+LD W0100.3               ; Reset SW受付
+ANB T360                 ; ﾘｾｯﾄ信号送信時間
+ORL
+OUT W0100.3              ; Reset SW受付
+TMR K360 K5              ; ﾘｾｯﾄ信号送信時間
+;<h1/>__異常ﾌﾞｻﾞｰまとめ
+LD M110                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR M212                  ; ﾌﾞｻﾞｰ停止要求
+LD M210                  ; HOST_PCﾌﾞｻﾞｰ要求(PC_Busy)
+OR M210                  ; HOST_PCﾌﾞｻﾞｰ要求(PC_Busy)
+ANL
+OUT M212                 ; ﾌﾞｻﾞｰ停止要求
+LDB M210                 ; HOST_PCﾌﾞｻﾞｰ要求(PC_Busy)
+OR M212                  ; ﾌﾞｻﾞｰ停止要求
+INV
+OUT M213                 ; PC ﾌﾞｻﾞｰまとめ
+END
+ENDH

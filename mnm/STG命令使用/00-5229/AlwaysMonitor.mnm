@@ -1,0 +1,436 @@
+DEVICE:53
+;MODULE:AlwaysMonitor
+;MODULE_TYPE:0
+;OneSystem Sub-Module
+;
+;---------------------------------------
+;ModuleName	:	AlwaysMonitor
+;ModuleType	:	Sub Module
+;Function	:	常時監視
+;---------------------------------------
+;<使用方法>
+;常時監視が必要な物は本ﾓｼﾞｭｰﾙ内に記述して下さい
+;・ﾋｰﾀｰ過昇温検知による非常停止
+;・ﾁｬﾝﾊﾞｰ排気量低下によるｴﾗｰ出力
+;など
+;<h1/>常時監視異常
+; ｴｱｰ元圧低下
+LD CR2007                ; 運転開始時1ｽｷｬﾝOFF
+ANB R44302               ; *Group1　ｴｱｰ元圧検出
+MEP
+LDF R46104               ; _非常停止中　ﾓｰﾄﾞﾌﾗｸﾞ
+ANB R44302               ; *Group1　ｴｱｰ元圧検出
+ORL
+MSTRT F_ERROR_DISP #2
+; 巻取りﾓｰﾀL 温度過昇
+LDB R014                 ; 巻取ﾓｰﾀL 温度過昇
+MSTRT F_ERROR_DISP #5
+; 巻取りﾓｰﾀR 温度過昇
+LD LR10000               ; R側ﾕﾆｯﾄ(ON=有)
+ANB R015                 ; 巻取ﾓｰﾀR 温度過昇
+MSTRT F_ERROR_DISP #6
+; RB10 BUSYﾌﾗｸﾞ異常停止
+LDB DM10573.9            ; RB10 RB_BUSY(537)
+ANB DM10573.13           ; RB10 RB_COMP(541)
+LD DM10573.9             ; RB10 RB_BUSY(537)
+AND DM10573.13           ; RB10 RB_COMP(541)
+ORL
+AND MR23504              ; RB10 ｺﾝﾄﾛｰﾗ起動完了
+AND MR23505              ; D-NET通信状態OK
+TMR @9 #1
+CON
+AND @T9
+MSTRT F_ERROR_DISP #14
+; 真空圧低下異常
+LDB R008                 ; 元真空圧正常
+LD MR008                 ; 元真空圧異常
+ANB @MR101
+ORL
+OUT MR008                ; 元真空圧異常
+LD MR008                 ; 元真空圧異常
+ANB R39004               ; ｴﾗｰ中
+SET R39004               ; ｴﾗｰ中
+CON
+DW #1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #6 @DM1               ; ErrorNo /ERROR_DISP
+CON
+DW #0 @DM2               ; SensorNo /ERROR_DISP
+CON
+SET @MR100
+CON
+SET @MR501
+STG @MR501
+AND @MR101
+RES @MR101
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+JMP @MR502
+STG @MR502
+ENDS
+;<h1/>ｴｱｰｸﾘｰﾝUT異常
+LD CR2002                ; 常時ON
+TMR @10 #100
+CON
+AND @T10
+OUT MR100                ; エラー監視条件_ON監視
+LD R3805                 ; ｵﾝﾗｲﾝ状態
+AND MR100                ; エラー監視条件_ON監視
+MC
+LDB R4012                ; ｴｱｰｸﾘｰﾝﾕﾆｯﾄ1 ALM1
+ANB R39004               ; ｴﾗｰ中
+SET R39004               ; ｴﾗｰ中
+CON
+DW #1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #2 @DM1               ; ErrorNo /ERROR_DISP
+CON
+DW #4012 @DM2            ; SensorNo /ERROR_DISP
+CON
+SET @MR100
+CON
+SET @MR500
+LDB R4013                ; ｴｱｰｸﾘｰﾝﾕﾆｯﾄ1 ALM2
+ANB R39004               ; ｴﾗｰ中
+SET R39004               ; ｴﾗｰ中
+CON
+DW #1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #3 @DM1               ; ErrorNo /ERROR_DISP
+CON
+DW #4013 @DM2            ; SensorNo /ERROR_DISP
+CON
+SET @MR100
+CON
+SET @MR500
+LDB R4014                ; ｴｱｰｸﾘｰﾝﾕﾆｯﾄ2 ALM1
+ANB R39004               ; ｴﾗｰ中
+SET R39004               ; ｴﾗｰ中
+CON
+DW #1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #4 @DM1               ; ErrorNo /ERROR_DISP
+CON
+DW #4014 @DM2            ; SensorNo /ERROR_DISP
+CON
+SET @MR100
+CON
+SET @MR500
+LDB R4015                ; ｴｱｰｸﾘｰﾝﾕﾆｯﾄ2 ALM2
+ANB R39004               ; ｴﾗｰ中
+SET R39004               ; ｴﾗｰ中
+CON
+DW #1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #5 @DM1               ; ErrorNo /ERROR_DISP
+CON
+DW #4015 @DM2            ; SensorNo /ERROR_DISP
+CON
+SET @MR100
+CON
+SET @MR500
+MCR
+LD R1005                 ; 溶着機(L) TC Open
+ANB R39004               ; ｴﾗｰ中
+SET R39004               ; ｴﾗｰ中
+CON
+DW #1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #106 @DM1             ; ErrorNo /ERROR_DISP
+CON
+DW #0 @DM2               ; SensorNo /ERROR_DISP
+CON
+SET @MR100
+CON
+SET @MR500
+LD R1013                 ; 溶着機(R) TC Open
+ANB R39004               ; ｴﾗｰ中
+SET R39004               ; ｴﾗｰ中
+CON
+DW #1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #146 @DM1             ; ErrorNo /ERROR_DISP
+CON
+DW #0 @DM2               ; SensorNo /ERROR_DISP
+CON
+SET @MR100
+CON
+SET @MR500
+STG @MR500
+AND @MR101
+RES @MR101
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+ENDS
+;<h1/>ｴﾘｱｾﾝｻ異常
+; 給材EV側ｴﾘｱｾﾝｻ
+LDB R4506                ; 給材側ｴﾘｱｾﾝｻ(L-On)
+AND MR9901               ; 給材ｶﾊﾞｰ 開
+ANB R46103               ; _停止中　ﾓｰﾄﾞﾌﾗｸﾞ
+ANB R46200               ; _安全ｶﾊﾞｰ1開中
+LD R46102                ; _ﾒﾝﾃﾅﾝｽ運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+ANB T2010                ; RB1 Pos11(段ﾊﾞﾗｼ後戻)
+ANB T2011                ; RB1 Pos12(段ﾊﾞﾗｼ)
+ORB R46102               ; _ﾒﾝﾃﾅﾝｽ運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+ANL
+MSTRT F_ERROR_DISP #10
+; 除材EV側ｴﾘｱｾﾝｻ
+LDB R4507                ; 除材側ｴﾘｱｾﾝｻ(L-On)
+AND MR9905               ; 除材ｶﾊﾞｰ 開
+ANB R46103               ; _停止中　ﾓｰﾄﾞﾌﾗｸﾞ
+ANB R46200               ; _安全ｶﾊﾞｰ1開中
+LD R46102                ; _ﾒﾝﾃﾅﾝｽ運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+ANB T2050                ; RB2 Pos11(段積後戻)
+ANB T2051                ; RB2 Pos12(段積)
+ORB R46102               ; _ﾒﾝﾃﾅﾝｽ運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+ANL
+MSTRT F_ERROR_DISP #11
+; L側給材口ｴﾘｱｾﾝｻ
+LD CR2002                ; 常時ON
+LDA MR20000              ; TPSW ｴｱｰﾌﾞﾛｰ(L) ON
+CON
+ANDA $3F00
+CON
+STA TM10
+LDB MR10409              ; T4 L側ｴﾘｱｾﾝｻ 無効
+ANB R46103               ; _停止中　ﾓｰﾄﾞﾌﾗｸﾞ
+LD R46102                ; _ﾒﾝﾃﾅﾝｽ運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+BLD DM10531 #2           ; RB4 STATUS
+BOR DM10539 #2           ; RB5 STATUS
+OR<> #0 TM10
+ANL
+ORB R46102               ; _ﾒﾝﾃﾅﾝｽ運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+ANL
+LD DM10531.1             ; RB4 HEND
+AND>=.L +14000 DM10524   ; RB4 Current POS
+ORB DM10531.1            ; RB4 HEND
+ANL
+OUT MR7108               ; L側ｴﾘｱｾﾝｻ
+LDB R4508                ; L側ｴﾘｱｾﾝｻ(L-On)
+AND MR7108               ; L側ｴﾘｱｾﾝｻ
+SET MR10408              ; T4 L側ｴﾘｱｾﾝｻ 遮光検出
+LD MR10408               ; T4 L側ｴﾘｱｾﾝｻ 遮光検出
+ANB R39004               ; ｴﾗｰ中
+SET R39004               ; ｴﾗｰ中
+CON
+DW #1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #10 @DM1              ; ErrorNo /ERROR_DISP
+CON
+DW #4506 @DM2            ; SensorNo /ERROR_DISP
+CON
+SET @MR100
+CON
+SET @MR200
+STG @MR200
+AND @MR101
+RES @MR101
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+AND @MR105
+RES MR10408              ; T4 L側ｴﾘｱｾﾝｻ 遮光検出
+CON
+ENDS
+; R側給材口ｴﾘｱｾﾝｻ
+LD LR10000               ; R側ﾕﾆｯﾄ(ON=有)
+MC
+LD CR2002                ; 常時ON
+LDA MR20200              ; TPSW ｴｱｰﾌﾞﾛｰ(R) ON
+CON
+ANDA $3F00
+CON
+STA TM11
+LDB MR10609              ; T6 R側ｴﾘｱｾﾝｻ 無効
+ANB R46103               ; _停止中　ﾓｰﾄﾞﾌﾗｸﾞ
+LD R46102                ; _ﾒﾝﾃﾅﾝｽ運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+BLD DM10555 #2           ; RB7 STATUS
+BOR DM10563 #2           ; RB8 STATUS
+OR<> #0 TM11
+ANL
+ORB R46102               ; _ﾒﾝﾃﾅﾝｽ運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+ANL
+LD DM10555.1             ; RB7 HEND
+AND>=.L +14000 DM10548   ; RB7 Current POS
+ORB DM10555.1            ; RB7 HEND
+ANL
+OUT MR7109               ; R側ｴﾘｱｾﾝｻ
+LDB R4509                ; R側ｴﾘｱｾﾝｻ(L-On)
+AND MR7109               ; R側ｴﾘｱｾﾝｻ
+SET MR10608              ; T6 R側ｴﾘｱｾﾝｻ 遮光検出
+LD MR10608               ; T6 R側ｴﾘｱｾﾝｻ 遮光検出
+ANB R39004               ; ｴﾗｰ中
+SET R39004               ; ｴﾗｰ中
+CON
+DW #1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #11 @DM1              ; ErrorNo /ERROR_DISP
+CON
+DW #4507 @DM2            ; SensorNo /ERROR_DISP
+CON
+SET @MR100
+CON
+SET @MR201
+STG @MR201
+AND @MR101
+RES @MR101
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+AND @MR105
+RES MR10608              ; T6 R側ｴﾘｱｾﾝｻ 遮光検出
+CON
+ENDS
+MCR
+;<h1/>RB干渉監視
+; RB3 <--> RB10
+LDB R35202               ; During RB3 MOVE
+ANB R35206               ; During RB3 PUSH
+ANB R35210               ; During RB3 HOME
+INV
+AND DM10573.0            ; RB10 ﾄﾚｲ位置(528)
+ANB DM10573.5            ; RB10 上昇位置(533)
+MSTRT F_ERROR_DISP #15
+; RB4 <--> RB5 <--> RB10
+LDB R35302               ; During RB4 MOVE
+ANB R35306               ; During RB4 PUSH
+ANB R35310               ; During RB4 HOME
+ANB R35402               ; During RB5 MOVE
+ANB R35406               ; During RB5 PUSH
+ANB R35410               ; During RB5 HOME
+INV
+AND DM10573.3            ; RB10 L位置(531)
+ANB DM10573.5            ; RB10 上昇位置(533)
+MSTRT F_ERROR_DISP #17
+; RB7 <--> RB8 <--> RB10
+LDB R35602               ; During RB7 MOVE
+ANB R35606               ; During RB7 PUSH
+ANB R35610               ; During RB7 HOME
+ANB R35702               ; During RB8 MOVE
+ANB R35706               ; During RB8 PUSH
+ANB R35710               ; During RB8 HOME
+INV
+AND DM10573.4            ; RB10 R位置(532)
+ANB DM10573.5            ; RB10 上昇位置(533)
+MSTRT F_ERROR_DISP #19
+; RB4 <--> RB5 <--> RB6
+LDB R35302               ; During RB4 MOVE
+ANB R35306               ; During RB4 PUSH
+ANB R35310               ; During RB4 HOME
+ANB R35402               ; During RB5 MOVE
+ANB R35406               ; During RB5 PUSH
+ANB R35410               ; During RB5 HOME
+INV
+LD R35502                ; During RB6 MOVE
+OR R35506                ; During RB6 PUSH
+OR R35510                ; During RB6 HOME
+ANL
+MSTRT F_ERROR_DISP #16
+; RB7 <--> RB8 <--> RB9
+LDB R35602               ; During RB7 MOVE
+ANB R35606               ; During RB7 PUSH
+ANB R35610               ; During RB7 HOME
+ANB R35702               ; During RB8 MOVE
+ANB R35706               ; During RB8 PUSH
+ANB R35710               ; During RB8 HOME
+INV
+LD R35802                ; During RB9 MOVE
+OR R35806                ; During RB9 PUSH
+OR R35810                ; During RB9 HOME
+ANL
+MSTRT F_ERROR_DISP #18
+;<h1/>▽_異常処理
+STG @MR100
+ANB R39002               ; ERROR_DISP Busy
+MPS
+ZRES @MR105 @MR108
+CON
+LDA @DM9                 ; ReturnSW /ERROR_DISP
+CON
+TBCD
+CON
+STA @DM10
+CON
+DISN @DM10 @DM3 #4
+MRD
+DW #6 @DM0
+CON
+BMOV @DM0 DM60000 #7     ; TaskNo /ERROR_DISP
+MPP
+SET R39000               ; ERROR_DISP Start
+CON
+SET @MR102
+CON
+JMP @MR103
+STG @MR103
+AND R39002               ; ERROR_DISP Busy
+AND= DM60008 @DM1        ; ReturnNo /ERROR_DISP  ErrorNo /ERROR_DISP
+MPS
+AND= DM60007 @DM6        ; ReturnSW /ERROR_DISP
+SET @MR105
+CON
+JMP @MR104
+MRD
+AND= DM60007 @DM5        ; ReturnSW /ERROR_DISP
+SET @MR106
+CON
+JMP @MR104
+MRD
+AND= DM60007 @DM4        ; ReturnSW /ERROR_DISP
+SET @MR107
+CON
+JMP @MR104
+MPP
+AND= DM60007 @DM3        ; ReturnSW /ERROR_DISP
+SET @MR108
+CON
+JMP @MR104
+STG @MR104
+ANB R39002               ; ERROR_DISP Busy
+RES @MR102
+CON
+SET @MR101
+CON
+ENDS
+;<h1/>Warning表示
+LD MR12015               ; ﾄﾚｲ給材要求
+AND=.D DM9000 #0         ; _WARNING1表示状態
+@SET @MR300
+STG @MR300
+MPS
+MSTRT WARNING_DISP #1 #1 #1 #1
+MPP
+BAND.D DM9000 #1         ; _WARNING1表示状態
+JMP @MR301
+STG @MR301
+BANB.D DM9000 #1         ; _WARNING1表示状態
+ENDS
+LDP R53608               ; _WARN画面消去
+ORB MR12015              ; ﾄﾚｲ給材要求
+BAND.D DM9000 #1         ; _WARNING1表示状態
+MSTRT WARNING_DEL #1 #1
+LD MR14010               ; 除材ﾄﾚｲ満杯
+AND=.D DM9000 #0         ; _WARNING1表示状態
+@SET @MR304
+STG @MR304
+MPS
+MSTRT WARNING_DISP #1 #2 #1 #1
+MPP
+BAND.D DM9000 #2         ; _WARNING1表示状態
+JMP @MR305
+STG @MR305
+BANB.D DM9000 #2         ; _WARNING1表示状態
+ENDS
+LDP R53608               ; _WARN画面消去
+ORB MR14010              ; 除材ﾄﾚｲ満杯
+BAND.D DM9000 #2         ; _WARNING1表示状態
+MSTRT WARNING_DEL #1 #2
+;<h1/>ｽﾃｰﾀｽ表示
+LD R46103                ; _停止中　ﾓｰﾄﾞﾌﾗｸﾞ
+DW #0 DM55005            ; L側ｽﾃｰﾀｽ
+CON
+DW #0 DM55006            ; R側ｽﾃｰﾀｽ
+END
+ENDH

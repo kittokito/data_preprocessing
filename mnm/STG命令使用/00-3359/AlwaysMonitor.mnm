@@ -1,0 +1,1427 @@
+DEVICE:53
+;MODULE:AlwaysMonitor
+;MODULE_TYPE:0
+;SCRIPT_TYPE:
+;OneSystem Sub-Module
+;
+;---------------------------------------
+;ModuleName	:	AlwaysMonitor
+;ModuleType	:	Sub Module
+;Function	:	常時監視
+;---------------------------------------
+;<使用方法>
+;常時監視が必要な物は本ﾓｼﾞｭｰﾙ内に記述して下さい
+;・ﾋｰﾀｰ過昇温検知による非常停止
+;・ﾁｬﾝﾊﾞｰ排気量低下によるｴﾗｰ出力
+;など
+;<h1/>CELL間 PAUSE 許可
+LD R41200                ; _Grp2_Task0_起動中ﾌﾗｸﾞ
+ORB R41000               ; _Grp1_Task0_起動中ﾌﾗｸﾞ
+LD R41201                ; _Grp2_Task1_起動中ﾌﾗｸﾞ
+ORB R41001               ; _Grp1_Task1_起動中ﾌﾗｸﾞ
+ANL
+LD R41202                ; _Grp2_Task2_起動中ﾌﾗｸﾞ
+ORB R41002               ; _Grp1_Task2_起動中ﾌﾗｸﾞ
+ANL
+LD R41203                ; _Grp2_Task3_起動中ﾌﾗｸﾞ
+ORB R41003               ; _Grp1_Task3_起動中ﾌﾗｸﾞ
+ANL
+LD R41204                ; _Grp2_Task4_起動中ﾌﾗｸﾞ
+ORB R41004               ; _Grp1_Task4_起動中ﾌﾗｸﾞ
+ANL
+LD R41205                ; _Grp2_Task5_起動中ﾌﾗｸﾞ
+ORB R41005               ; _Grp1_Task5_起動中ﾌﾗｸﾞ
+ANL
+LD R41206                ; _Grp2_Task6_起動中ﾌﾗｸﾞ
+ORB R41006               ; _Grp1_Task6_起動中ﾌﾗｸﾞ
+ANL
+LD R41207                ; _Grp2_Task7_起動中ﾌﾗｸﾞ
+ORB R41007               ; _Grp1_Task7_起動中ﾌﾗｸﾞ
+ANL
+LD R41208                ; _Grp2_Task8_起動中ﾌﾗｸﾞ
+ORB R41008               ; _Grp1_Task8_起動中ﾌﾗｸﾞ
+ANL
+LD R41209                ; _Grp2_Task9_起動中ﾌﾗｸﾞ
+ORB R41009               ; _Grp1_Task9_起動中ﾌﾗｸﾞ
+ANL
+LD R41210                ; _Grp2_Task10_起動中ﾌﾗｸﾞ
+ORB R41010               ; _Grp1_Task10_起動中ﾌﾗｸﾞ
+ANL
+OUT B020
+;扉開放表示
+;@DM20.T = "ｻﾌﾞｶﾊﾞｰ解放中"
+LD CR2002                ; 常時ON
+NCJ #1000
+;@DM20.T = "ｻﾌﾞｶﾊﾞｰ解放中"
+LD CR2002                ; 常時ON
+SMOV "ｻﾌﾞｶﾊﾞｰ解放中" @DM20
+LABEL #1000
+;
+LDB MR10001              ; ｶｼﾒUT1     ｶﾊﾞｰ開
+ANB MR10005              ; ｶｼﾒUT2     ｶﾊﾞｰ開
+ANB MR10009              ; ｶｼﾒUT3     ｶﾊﾞｰ開
+ANB MR10013              ; NG排出 ｶﾊﾞｰ開
+MPS
+MEP
+MSTRT BBS_MSG_C #1 #1
+MPP
+INV
+MEP
+MSTRT BBS_MSG_W #1 #1 @DM20
+;下流ｾﾙIL待ちﾒｯｾｰｼﾞ
+;@DM40.T = "下流ｾﾙ動作許可待ち"
+LD CR2008                ; 運転開始時1ｽｷｬﾝON
+NCJ #1003
+;@DM40.T = "下流ｾﾙ動作許可待ち"
+LD CR2002                ; 常時ON
+SMOV "下流ｾﾙ動作許可待ち" @DM40
+LABEL #1003
+;
+LD MR11400               ; 下流ｾﾙ待ち
+MPS
+INV
+MEP
+MSTRT BBS_MSG_C #1 #2
+MPP
+MEP
+MSTRT BBS_MSG_W #1 #2 @DM40
+;<h1/>ERROR
+;//*Error Sample
+;[使用方法]
+;・@DM1にERROR番号を代入
+;・@DM2にSensor番号を代入(センサ無しエラーの場合は0)
+;・@DM9に復帰SW番号(1～9、0はSW無し)をdegit単位で4桁入力
+;・Task0 ERROR SET(@MR100)でエラー処理開始
+;・エラー復帰でTask0 ERROR END(@MR101)がON
+;・押下復帰SW番号により左から対応した@MR105,@MR106,@MR107,@MR108のいずれかがON
+;・上記ONが成立したらJMPするSTGに対応する処理を記述
+;Error0を左側から1,2,3,4の番号に対応した復帰選択SWを出力する
+;Error Sample *//
+;Error Sample *//
+;＠DM1のSW内容
+;1:「ErrorReset」
+;2:「再検出」
+;3:「再検査」
+;4:「動作継続」
+;5:「定停止」
+;6:「ﾜｰｸ除去」
+;7:「電源断要求」
+;8:「Retry」
+;9:「再確認」
+;MyTask Error Process Substance/エラー処理実体
+;<h1/>▽_優先異常
+;	ﾃﾞﾊﾞｲｽﾈｯﾄ通信異常
+LD R3805                 ; ｵﾝﾗｲﾝ状態
+LDA DM10015              ; 正常通信ﾉｰﾄﾞ一覧(16-31)
+CON
+CMP DM10011              ; 登録ﾉｰﾄﾞ一覧(16-31)
+CON
+AND CR2010               ; 演算結果がｾﾞﾛ
+LDA DM10016              ; 正常通信ﾉｰﾄﾞ一覧(32-47)
+CON
+CMP DM10012              ; 登録ﾉｰﾄﾞ一覧(32-47)
+CON
+AND CR2010               ; 演算結果がｾﾞﾛ
+OUT MR24915              ; IAI通信状態OK
+LD R46100                ; _自動運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+OR R46101                ; _原点復帰中　ﾓｰﾄﾞﾌﾗｸﾞ
+ANB MR24915              ; IAI通信状態OK
+MSTRT F_ERROR_DISP #1
+;<h1/>上流 H/S I/L ERROR
+LDB DM2000.14            ; 上流ﾊﾝﾄﾞｼｪｲｸ有無(0:有/1:無)
+AND B2003                ; 上流ｾﾙへ動作開始通知
+ANB B2012                ; 上流ｾﾙよりIL信号
+MSTRT F_ERROR_DISP #2
+;<h1/>下流 H/S I/L ERROR
+LD CR2002                ; 常時ON
+ANB DM2000.15            ; 下流ﾊﾝﾄﾞｼｪｲｸ有無(0:有/1:無)
+AND B2026                ; ③下流ｾﾙより補助動作開始要求
+ANB B2022                ; 下流ｾﾙよりIL信号
+MSTRT F_ERROR_DISP #3
+;<h1/>▽_異常
+;　　真空圧低下異常
+LDB R008                 ; 元真空検出1
+ANB R39004               ; ｴﾗｰ中
+AND CR2003               ; 常時OFF
+SET R39004               ; ｴﾗｰ中
+CON
+DW #1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #5 @DM1               ; ErrorNo /ERROR_DISP
+CON
+DW #6608 @DM2            ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task_Error
+CON
+SET @MR500
+LDB R010                 ; 元真空検出2
+ANB R39004               ; ｴﾗｰ中
+SET R39004               ; ｴﾗｰ中
+CON
+DW #1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #6 @DM1               ; ErrorNo /ERROR_DISP
+CON
+DW #6610 @DM2            ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task_Error
+CON
+SET @MR500
+;　　照明エラー
+LD R4915                 ; ｶｼﾒ用画像検査_OC
+ANB R39004               ; ｴﾗｰ中
+SET R39004               ; ｴﾗｰ中
+CON
+DW #1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #210 @DM1             ; ErrorNo /ERROR_DISP
+CON
+DW #0 @DM2               ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task_Error
+CON
+SET @MR500
+;	FFU異常
+LD R3805                 ; ｵﾝﾗｲﾝ状態
+AND MR100                ; PLC_Run
+MC
+LDB R4010                ; ｴｱｸﾘｰﾝﾕﾆｯﾄ(上流ｾﾙ間ｽﾗｲﾀﾞ)ALM1
+ANB R39004               ; ｴﾗｰ中
+SET R39004               ; ｴﾗｰ中
+CON
+DW #1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #4 @DM1               ; ErrorNo /ERROR_DISP
+CON
+DW #4010 @DM2            ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task_Error
+CON
+@SET @MR500
+LDB R4011                ; ｴｱｸﾘｰﾝﾕﾆｯﾄ(上流ｾﾙ間ｽﾗｲﾀﾞ)ALM2
+ANB R39004               ; ｴﾗｰ中
+SET R39004               ; ｴﾗｰ中
+CON
+DW #1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #4 @DM1               ; ErrorNo /ERROR_DISP
+CON
+DW #4011 @DM2            ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task_Error
+CON
+@SET @MR500
+LDB R4012                ; ｴｱｸﾘｰﾝﾕﾆｯﾄ(ｶｼﾒ1)ALM1
+ANB R39004               ; ｴﾗｰ中
+SET R39004               ; ｴﾗｰ中
+CON
+DW #1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #4 @DM1               ; ErrorNo /ERROR_DISP
+CON
+DW #4012 @DM2            ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task_Error
+CON
+@SET @MR500
+LDB R4013                ; ｴｱｸﾘｰﾝﾕﾆｯﾄ(ｶｼﾒ1)ALM2
+ANB R39004               ; ｴﾗｰ中
+SET R39004               ; ｴﾗｰ中
+CON
+DW #1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #4 @DM1               ; ErrorNo /ERROR_DISP
+CON
+DW #4013 @DM2            ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task_Error
+CON
+@SET @MR500
+LDB R4014                ; ｴｱｸﾘｰﾝﾕﾆｯﾄ(ﾒｲﾝｽﾗｲﾀﾞ1中間)ALM1
+ANB R39004               ; ｴﾗｰ中
+SET R39004               ; ｴﾗｰ中
+CON
+DW #1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #4 @DM1               ; ErrorNo /ERROR_DISP
+CON
+DW #4014 @DM2            ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task_Error
+CON
+@SET @MR500
+LDB R4015                ; ｴｱｸﾘｰﾝﾕﾆｯﾄ(ﾒｲﾝｽﾗｲﾀﾞ1中間)ALM2
+ANB R39004               ; ｴﾗｰ中
+SET R39004               ; ｴﾗｰ中
+CON
+DW #1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #4 @DM1               ; ErrorNo /ERROR_DISP
+CON
+DW #4015 @DM2            ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task_Error
+CON
+@SET @MR500
+LDB R4104                ; ｴｱｸﾘｰﾝﾕﾆｯﾄ(ﾒｲﾝｽﾗｲﾀﾞ1奥)ALM1
+ANB R39004               ; ｴﾗｰ中
+SET R39004               ; ｴﾗｰ中
+CON
+DW #1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #4 @DM1               ; ErrorNo /ERROR_DISP
+CON
+DW #4104 @DM2            ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task_Error
+CON
+@SET @MR500
+LDB R4105                ; ｴｱｸﾘｰﾝﾕﾆｯﾄ(ﾒｲﾝｽﾗｲﾀﾞ1奥)ALM2
+ANB R39004               ; ｴﾗｰ中
+SET R39004               ; ｴﾗｰ中
+CON
+DW #1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #4 @DM1               ; ErrorNo /ERROR_DISP
+CON
+DW #4105 @DM2            ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task_Error
+CON
+@SET @MR500
+LDB R4106                ; ｴｱｸﾘｰﾝﾕﾆｯﾄ(ｶｼﾒ2)ALM1
+ANB R39004               ; ｴﾗｰ中
+SET R39004               ; ｴﾗｰ中
+CON
+DW #1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #4 @DM1               ; ErrorNo /ERROR_DISP
+CON
+DW #4106 @DM2            ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task_Error
+CON
+@SET @MR500
+LDB R4107                ; ｴｱｸﾘｰﾝﾕﾆｯﾄ(ｶｼﾒ2)ALM2
+ANB R39004               ; ｴﾗｰ中
+SET R39004               ; ｴﾗｰ中
+CON
+DW #1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #4 @DM1               ; ErrorNo /ERROR_DISP
+CON
+DW #4107 @DM2            ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task_Error
+CON
+@SET @MR500
+LDB R4108                ; ｴｱｸﾘｰﾝﾕﾆｯﾄ(ﾒｲﾝｽﾗｲﾀﾞ2中間)ALM1
+ANB R39004               ; ｴﾗｰ中
+SET R39004               ; ｴﾗｰ中
+CON
+DW #1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #4 @DM1               ; ErrorNo /ERROR_DISP
+CON
+DW #4108 @DM2            ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task_Error
+CON
+@SET @MR500
+LDB R4109                ; ｴｱｸﾘｰﾝﾕﾆｯﾄ(ﾒｲﾝｽﾗｲﾀﾞ2中間)ALM2
+ANB R39004               ; ｴﾗｰ中
+SET R39004               ; ｴﾗｰ中
+CON
+DW #1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #4 @DM1               ; ErrorNo /ERROR_DISP
+CON
+DW #4109 @DM2            ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task_Error
+CON
+@SET @MR500
+LDB R4110                ; ｴｱｸﾘｰﾝﾕﾆｯﾄ(ﾒｲﾝｽﾗｲﾀﾞ2奥)ALM1
+ANB R39004               ; ｴﾗｰ中
+SET R39004               ; ｴﾗｰ中
+CON
+DW #1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #4 @DM1               ; ErrorNo /ERROR_DISP
+CON
+DW #4110 @DM2            ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task_Error
+CON
+@SET @MR500
+LDB R4111                ; ｴｱｸﾘｰﾝﾕﾆｯﾄ(ﾒｲﾝｽﾗｲﾀﾞ2奥)ALM2
+ANB R39004               ; ｴﾗｰ中
+SET R39004               ; ｴﾗｰ中
+CON
+DW #1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #4 @DM1               ; ErrorNo /ERROR_DISP
+CON
+DW #4111 @DM2            ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task_Error
+CON
+@SET @MR500
+LDB R4112                ; ｴｱｸﾘｰﾝﾕﾆｯﾄ(ﾒｲﾝｽﾗｲﾀﾞ中間)ALM1
+ANB R39004               ; ｴﾗｰ中
+SET R39004               ; ｴﾗｰ中
+CON
+DW #1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #4 @DM1               ; ErrorNo /ERROR_DISP
+CON
+DW #4112 @DM2            ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task_Error
+CON
+@SET @MR500
+LDB R4113                ; ｴｱｸﾘｰﾝﾕﾆｯﾄ(ﾒｲﾝｽﾗｲﾀﾞ中間)ALM2
+ANB R39004               ; ｴﾗｰ中
+SET R39004               ; ｴﾗｰ中
+CON
+DW #1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #4 @DM1               ; ErrorNo /ERROR_DISP
+CON
+DW #4113 @DM2            ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task_Error
+CON
+@SET @MR500
+LDB R4114                ; ｴｱｸﾘｰﾝﾕﾆｯﾄ(ﾒｲﾝｽﾗｲﾀﾞ奥)ALM1
+ANB R39004               ; ｴﾗｰ中
+SET R39004               ; ｴﾗｰ中
+CON
+DW #1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #4 @DM1               ; ErrorNo /ERROR_DISP
+CON
+DW #4114 @DM2            ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task_Error
+CON
+@SET @MR500
+LDB R4115                ; ｴｱｸﾘｰﾝﾕﾆｯﾄ(ﾒｲﾝｽﾗｲﾀﾞ奥)ALM2
+ANB R39004               ; ｴﾗｰ中
+SET R39004               ; ｴﾗｰ中
+CON
+DW #1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #4 @DM1               ; ErrorNo /ERROR_DISP
+CON
+DW #4115 @DM2            ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task_Error
+CON
+@SET @MR500
+LDB R5000                ; ｴｱｰｸﾘｰﾝﾕﾆｯﾄ(NG排出)ALM1
+ANB R39004               ; ｴﾗｰ中
+SET R39004               ; ｴﾗｰ中
+CON
+DW #1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #4 @DM1               ; ErrorNo /ERROR_DISP
+CON
+DW #5000 @DM2            ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task_Error
+CON
+@SET @MR500
+LDB R5001                ; ｴｱｰｸﾘｰﾝﾕﾆｯﾄ(NG排出)ALM2
+ANB R39004               ; ｴﾗｰ中
+SET R39004               ; ｴﾗｰ中
+CON
+DW #1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #4 @DM1               ; ErrorNo /ERROR_DISP
+CON
+DW #5001 @DM2            ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task_Error
+CON
+@SET @MR500
+LDB R5002                ; ｴｱｰｸﾘｰﾝﾕﾆｯﾄ(NG排出奥)ALM1
+ANB R39004               ; ｴﾗｰ中
+SET R39004               ; ｴﾗｰ中
+CON
+DW #1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #4 @DM1               ; ErrorNo /ERROR_DISP
+CON
+DW #5002 @DM2            ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task_Error
+CON
+@SET @MR500
+LDB R5003                ; ｴｱｰｸﾘｰﾝﾕﾆｯﾄ(NG排出奥)ALM2
+ANB R39004               ; ｴﾗｰ中
+SET R39004               ; ｴﾗｰ中
+CON
+DW #1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #4 @DM1               ; ErrorNo /ERROR_DISP
+CON
+DW #5003 @DM2            ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task_Error
+CON
+@SET @MR500
+MCR
+STG @MR500
+AND @MR101               ; Task0 ｴﾗｰ完了
+RES R39004               ; ｴﾗｰ中
+CON
+RES @MR101               ; Task0 ｴﾗｰ完了
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+ENDS
+;巻取りﾓｰﾀｰ異常
+;▽_熱ｶｼﾒﾕﾆｯﾄ1
+LD CR2007                ; 運転開始時1ｽｷｬﾝOFF
+ANB R1004                ;  ﾌﾞﾚｰｷﾊﾟｯｸ1_ｱﾗｰﾑ(ON正常)
+ANB R39004               ; ｴﾗｰ中
+SET R39004               ; ｴﾗｰ中
+CON
+DW #1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #220 @DM1             ; ErrorNo /ERROR_DISP
+CON
+DW #1004 @DM2            ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task_Error
+CON
+SET MR24800              ; 熱ｶｼﾒﾕﾆｯﾄ1_巻取りﾓｰﾀｰ異常
+CON
+@SET @MR400
+;▽_熱ｶｼﾒﾕﾆｯﾄ2
+LD CR2007                ; 運転開始時1ｽｷｬﾝOFF
+ANB R1005                ;  ﾌﾞﾚｰｷﾊﾟｯｸ2_ｱﾗｰﾑ(ON正常)
+ANB R39004               ; ｴﾗｰ中
+SET R39004               ; ｴﾗｰ中
+CON
+DW #1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #221 @DM1             ; ErrorNo /ERROR_DISP
+CON
+DW #1005 @DM2            ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task_Error
+CON
+SET MR24801              ; 熱ｶｼﾒﾕﾆｯﾄ2_巻取りﾓｰﾀｰ異常
+CON
+@SET @MR400
+;ｴﾗｰ処理
+STG @MR400
+AND @MR101               ; Task0 ｴﾗｰ完了
+RES @MR101               ; Task0 ｴﾗｰ完了
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+AND @MR105               ; SW1
+JMP @MR401
+STG @MR401
+TMR @14 #10
+CON
+MPS
+AND MR24800              ; 熱ｶｼﾒﾕﾆｯﾄ1_巻取りﾓｰﾀｰ異常
+@SET MR1107              ; ﾌﾞﾚｰｷﾊﾟｯｸ1_ALM-RST
+CON
+AND @T14
+RES MR1107               ; ﾌﾞﾚｰｷﾊﾟｯｸ1_ALM-RST
+CON
+ENDS
+MPP
+AND MR24801              ; 熱ｶｼﾒﾕﾆｯﾄ2_巻取りﾓｰﾀｰ異常
+@SET MR1110              ; ﾌﾞﾚｰｷﾊﾟｯｸ2_ALM-RST
+CON
+AND @T14
+RES MR1110               ; ﾌﾞﾚｰｷﾊﾟｯｸ2_ALM-RST
+CON
+ENDS
+;<h1/>温調器_温度管理
+;	▽_温度Ok
+LD R1200                 ; Heater1動作中
+AND R1202                ; Heater1ALM2（適温）
+AND R1203                ; Heater2動作中
+AND R1205                ; Heater2ALM2（適温）
+LD DM2000.4              ; ｶｼﾒUT1 休止ﾓｰﾄﾞ(0_無効/1_有効)
+OR DM2001.4              ; ｶｼﾒ1動作有無(0:有/1:無)
+ANB R46102               ; _ﾒﾝﾃﾅﾝｽ運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+ORL
+OR MR24914               ; ﾃﾞﾊﾞｯｸ(ﾋｰﾀｰ無し空運転)
+TMR @0 #50
+CON
+AND @T0
+OUT LR10200              ; ｶｼﾒﾕﾆｯﾄ1温度OK
+LD R1206                 ; Heater3動作中
+AND R1208                ; Heater3ALM2（適温）
+AND R1209                ; Heater4動作中
+AND R1211                ; Heater4ALM2（適温）
+LD DM2000.5              ; ｶｼﾒUT2 休止ﾓｰﾄﾞ
+OR DM2001.5              ; ｶｼﾒ2動作有無(0_有/1_無)
+ANB R46102               ; _ﾒﾝﾃﾅﾝｽ運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+ORL
+OR MR24914               ; ﾃﾞﾊﾞｯｸ(ﾋｰﾀｰ無し空運転)
+TMR @1 #50
+CON
+AND @T1
+OUT LR10201              ; ｶｼﾒﾕﾆｯﾄ2温度OK
+;	▽_低温表示
+LD R1200                 ; Heater1動作中
+AND R1201                ; Heater1ALM1(低温or断線)
+ANB R1202                ; Heater1ALM2（適温）
+MEP
+ANB MR24914              ; ﾃﾞﾊﾞｯｸ(ﾋｰﾀｰ無し空運転)
+MSTRT WARNING_DISP #1 #0 #1 #1
+LD R1202                 ; Heater1ALM2（適温）
+MEP
+MSTRT WARNING_DEL #1 #0
+LD R1203                 ; Heater2動作中
+AND R1204                ; Heater2ALM1(低温or断線)
+ANB R1205                ; Heater2ALM2（適温）
+MEP
+ANB MR24914              ; ﾃﾞﾊﾞｯｸ(ﾋｰﾀｰ無し空運転)
+MSTRT WARNING_DISP #1 #1 #1 #1
+LD R1205                 ; Heater2ALM2（適温）
+MEP
+MSTRT WARNING_DEL #1 #1
+LD R1206                 ; Heater3動作中
+AND R1207                ; Heater3ALM1(低温or断線)
+ANB R1208                ; Heater3ALM2（適温）
+MEP
+ANB MR24914              ; ﾃﾞﾊﾞｯｸ(ﾋｰﾀｰ無し空運転)
+MSTRT WARNING_DISP #1 #2 #1 #1
+LD R1208                 ; Heater3ALM2（適温）
+MEP
+MSTRT WARNING_DEL #1 #2
+LD R1209                 ; Heater4動作中
+AND R1210                ; Heater4ALM1(低温or断線)
+ANB R1211                ; Heater4ALM2（適温）
+MEP
+ANB MR24914              ; ﾃﾞﾊﾞｯｸ(ﾋｰﾀｰ無し空運転)
+MSTRT WARNING_DISP #1 #3 #1 #1
+LD R1211                 ; Heater4ALM2（適温）
+MEP
+MSTRT WARNING_DEL #1 #3
+;<h1/>	▽_ﾋｰﾀｰ過昇温警報
+;過昇温警報にてﾋｰﾀｰ出力OFFすること！！
+LD R1300                 ; ﾋｰﾀｰ1ON
+ANB R1200                ; Heater1動作中
+TMR @15 #10              ; ﾋｰﾀｰ1過昇温監視時間
+CON
+AND @T15                 ; ﾋｰﾀｰ1過昇温監視時間
+OUT LR10202              ; ﾋｰﾀｰ1_温度超過PL
+CON
+ANB R39004               ; ｴﾗｰ中
+SET R39004               ; ｴﾗｰ中
+CON
+DW #1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #220 @DM1             ; ErrorNo /ERROR_DISP
+CON
+DW #0 @DM2               ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task_Error
+CON
+SET MR24700              ; ﾋｰﾀｰ1過昇温異常
+CON
+@SET @MR115              ; ﾋｰﾀｰ系温度異常ﾏﾄﾒ
+LD R1301                 ; ﾋｰﾀｰ2ON
+ANB R1203                ; Heater2動作中
+TMR @16 #10              ; ﾋｰﾀｰ2過昇温監視時間
+CON
+AND @T16                 ; ﾋｰﾀｰ2過昇温監視時間
+OUT LR10203              ; ﾋｰﾀｰ2_温度超過PL
+CON
+ANB R39004               ; ｴﾗｰ中
+SET R39004               ; ｴﾗｰ中
+CON
+DW #1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #221 @DM1             ; ErrorNo /ERROR_DISP
+CON
+DW #0 @DM2               ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task_Error
+CON
+SET MR24701              ; ﾋｰﾀｰ2過昇温異常
+CON
+@SET @MR115              ; ﾋｰﾀｰ系温度異常ﾏﾄﾒ
+LD R1302                 ; ﾋｰﾀｰ3ON
+ANB R1206                ; Heater3動作中
+TMR @17 #10              ; ﾋｰﾀｰ3過昇温監視時間
+CON
+AND @T17                 ; ﾋｰﾀｰ3過昇温監視時間
+OUT LR10204              ; ﾋｰﾀｰ3_温度超過PL
+CON
+ANB R39004               ; ｴﾗｰ中
+SET R39004               ; ｴﾗｰ中
+CON
+DW #1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #222 @DM1             ; ErrorNo /ERROR_DISP
+CON
+DW #0 @DM2               ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task_Error
+CON
+SET MR24702              ; ﾋｰﾀｰ3過昇温異常
+CON
+@SET @MR115              ; ﾋｰﾀｰ系温度異常ﾏﾄﾒ
+LD R1303                 ; ﾋｰﾀｰ4ON
+ANB R1209                ; Heater4動作中
+TMR @18 #10              ; ﾋｰﾀｰ4過昇温監視時間
+CON
+AND @T18                 ; ﾋｰﾀｰ4過昇温監視時間
+OUT LR10205              ; ﾋｰﾀｰ4_温度超過PL
+CON
+ANB R39004               ; ｴﾗｰ中
+SET R39004               ; ｴﾗｰ中
+CON
+DW #1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #223 @DM1             ; ErrorNo /ERROR_DISP
+CON
+DW #0 @DM2               ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task_Error
+CON
+SET MR24703              ; ﾋｰﾀｰ4過昇温異常
+CON
+@SET @MR115              ; ﾋｰﾀｰ系温度異常ﾏﾄﾒ
+;	▽_ﾋｰﾀｰ異常警報
+;	低温警報とﾋｰﾀｰ断線等の警報はORにて出力されるので、温度が適温中に低温がONした場合、
+;	および、ﾋｰﾀｰ動作中で適温が設定時間内にONしなかった場合異常とする。
+;▽_ﾋｰﾀｰ1
+LD R1300                 ; ﾋｰﾀｰ1ON
+AND R1200                ; Heater1動作中
+MPS
+LD R1201                 ; Heater1ALM1(低温or断線)
+AND R1202                ; Heater1ALM2（適温）
+ANL
+TMR @19 #50              ; ﾋｰﾀｰ1ﾋｰﾀｰ異常監視時間
+CON
+AND @T19                 ; ﾋｰﾀｰ1ﾋｰﾀｰ異常監視時間
+ANB R39004               ; ｴﾗｰ中
+SET R39004               ; ｴﾗｰ中
+CON
+DW #1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #224 @DM1             ; ErrorNo /ERROR_DISP
+CON
+DW #0 @DM2               ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task_Error
+CON
+@SET @MR115              ; ﾋｰﾀｰ系温度異常ﾏﾄﾒ
+MPP
+ANB R1202                ; Heater1ALM2（適温）
+TMR @20 #3000            ; ﾋｰﾀｰ温度上昇監視時間
+CON
+AND @T20                 ; ﾋｰﾀｰ温度上昇監視時間
+ANB R39004               ; ｴﾗｰ中
+SET R39004               ; ｴﾗｰ中
+CON
+DW #1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #234 @DM1             ; ErrorNo /ERROR_DISP
+CON
+DW #0 @DM2               ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task_Error
+CON
+SET MR24704              ; ﾋｰﾀｰ1ﾋｰﾀｰ系異常
+CON
+@SET @MR115              ; ﾋｰﾀｰ系温度異常ﾏﾄﾒ
+;▽_ﾋｰﾀｰ2
+LD R1301                 ; ﾋｰﾀｰ2ON
+AND R1203                ; Heater2動作中
+MPS
+LD R1204                 ; Heater2ALM1(低温or断線)
+AND R1205                ; Heater2ALM2（適温）
+ANL
+TMR @21 #50
+CON
+AND @T21
+ANB R39004               ; ｴﾗｰ中
+SET R39004               ; ｴﾗｰ中
+CON
+DW #1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #225 @DM1             ; ErrorNo /ERROR_DISP
+CON
+DW #0 @DM2               ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task_Error
+CON
+@SET @MR115              ; ﾋｰﾀｰ系温度異常ﾏﾄﾒ
+MPP
+ANB R1205                ; Heater2ALM2（適温）
+TMR @22 #3000
+CON
+AND @T22
+ANB R39004               ; ｴﾗｰ中
+SET R39004               ; ｴﾗｰ中
+CON
+DW #1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #235 @DM1             ; ErrorNo /ERROR_DISP
+CON
+DW #0 @DM2               ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task_Error
+CON
+SET MR24705              ; ﾋｰﾀｰ2ﾋｰﾀｰ系異常
+CON
+@SET @MR115              ; ﾋｰﾀｰ系温度異常ﾏﾄﾒ
+;▽_ﾋｰﾀｰ3
+LD R1302                 ; ﾋｰﾀｰ3ON
+AND R1206                ; Heater3動作中
+MPS
+LD R1207                 ; Heater3ALM1(低温or断線)
+AND R1208                ; Heater3ALM2（適温）
+ANL
+TMR @23 #50
+CON
+AND @T23
+ANB R39004               ; ｴﾗｰ中
+SET R39004               ; ｴﾗｰ中
+CON
+DW #1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #226 @DM1             ; ErrorNo /ERROR_DISP
+CON
+DW #0 @DM2               ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task_Error
+CON
+@SET @MR115              ; ﾋｰﾀｰ系温度異常ﾏﾄﾒ
+MPP
+ANB R1208                ; Heater3ALM2（適温）
+TMR @24 #3000
+CON
+AND @T24
+ANB R39004               ; ｴﾗｰ中
+SET R39004               ; ｴﾗｰ中
+CON
+DW #1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #236 @DM1             ; ErrorNo /ERROR_DISP
+CON
+DW #0 @DM2               ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task_Error
+CON
+SET MR24706              ; ﾋｰﾀｰ3ﾋｰﾀｰ系異常
+CON
+@SET @MR115              ; ﾋｰﾀｰ系温度異常ﾏﾄﾒ
+;▽_ﾋｰﾀｰ4
+LD R1303                 ; ﾋｰﾀｰ4ON
+AND R1209                ; Heater4動作中
+MPS
+LD R1210                 ; Heater4ALM1(低温or断線)
+AND R1211                ; Heater4ALM2（適温）
+ANL
+TMR @25 #50
+CON
+AND @T25
+ANB R39004               ; ｴﾗｰ中
+SET R39004               ; ｴﾗｰ中
+CON
+DW #1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #227 @DM1             ; ErrorNo /ERROR_DISP
+CON
+DW #0 @DM2               ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task_Error
+CON
+@SET @MR115              ; ﾋｰﾀｰ系温度異常ﾏﾄﾒ
+MPP
+ANB R1211                ; Heater4ALM2（適温）
+TMR @26 #3000
+CON
+AND @T26
+ANB R39004               ; ｴﾗｰ中
+SET R39004               ; ｴﾗｰ中
+CON
+DW #1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #237 @DM1             ; ErrorNo /ERROR_DISP
+CON
+DW #0 @DM2               ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task_Error
+CON
+SET MR24707              ; ﾋｰﾀｰ4ﾋｰﾀｰ系異常
+CON
+@SET @MR115              ; ﾋｰﾀｰ系温度異常ﾏﾄﾒ
+;ﾋｰﾀｰ異常系ｴﾗｰ処理
+STG @MR115               ; ﾋｰﾀｰ系温度異常ﾏﾄﾒ
+SET R39004               ; ｴﾗｰ中
+CON
+SET @MR100               ; Task_Error
+CON
+JMP @MR114
+STG @MR114
+AND @MR101               ; Task0 ｴﾗｰ完了
+RES @MR101               ; Task0 ｴﾗｰ完了
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+AND @MR105               ; SW1
+ZRES MR24700 MR24707     ; ﾋｰﾀｰ1過昇温異常  ﾋｰﾀｰ4ﾋｰﾀｰ系異常
+CON
+ENDS
+;<h1/>温調器_通信管理
+;☆現在温度読出ﾏｸﾛ_
+;　温調器1～4の現在温度を一定間隔で読み取っていく
+LD CR2002                ; 常時ON
+TMR @10 #100             ; 温調器立上り時間
+CON
+AND @T10                 ; 温調器立上り時間
+OUT R20700               ; Port2 動作許可
+LDB CR2003               ; 常時OFF
+AND R22000               ; Port2 動作可能
+ANB @MR215               ; 現在温度読出処理中
+LD @MR314                ; 温調器目標値読出し完了
+OR< DM3000 #2025         ; _MainTP　表示中ﾍﾟｰｼﾞNo
+OR> DM3000 #2028         ; _MainTP　表示中ﾍﾟｰｼﾞNo
+ANL
+TMH @11 #1               ; 通信間隔
+CON
+LD @T11                  ; 通信間隔
+OR CR2002                ; 常時ON
+ANL
+ANB R20701               ; Port2 ｴﾗｰｸﾘｱ要求
+ANB R20100               ; Port2 ﾏｸﾛ開始1
+ANB R20101               ; Port2 ﾏｸﾛ開始2
+@DW $0001 DM54010        ; 通信局番
+CON
+SET @MR215               ; 現在温度読出処理中
+CON
+SET @MR200               ; Task0 SELECT_ACT
+STG @MR200               ; Task0 SELECT_ACT
+LDA DM54010              ; 通信局番
+CON
+STA DM51002              ; Port2 ﾏｸﾛ変数先頭
+CON
+DW $0000 DM51003         ; 読み出し開始ｱﾄﾞﾚｽ
+CON
+DW $0001 DM51004         ; 要素数
+CON
+SET R20100               ; Port2 ﾏｸﾛ開始1
+CON
+JMP @MR201               ; Task0 SEL_ACT END
+STG @MR201               ; Task0 SEL_ACT END
+MPS
+LD R21700                ; Port2 送信完了1
+ANP R21400               ; Port2 受信読出要求1
+AND R20800               ; Port2 受信照合1
+ANL
+MPS
+AND= DM51007 #0
+LDA.D DM51008
+CON
+MPS
+AND= DM54010 $0001       ; 通信局番
+STA.D DM54020            ; 温調器1現在温度
+CON
+JMP @MR202               ; Task0 SEL_ACT Busy
+MRD
+AND= DM54010 $0002       ; 通信局番
+STA.D DM54022            ; 温調器2現在温度
+CON
+JMP @MR202               ; Task0 SEL_ACT Busy
+MRD
+AND= DM54010 $0003       ; 通信局番
+STA.D DM54024            ; 温調器3現在温度
+CON
+JMP @MR202               ; Task0 SEL_ACT Busy
+MPP
+AND= DM54010 $0004       ; 通信局番
+STA.D DM54026            ; 温調器4現在温度
+CON
+JMP @MR202               ; Task0 SEL_ACT Busy
+MPP
+AND<> DM51007 #0
+JMP @MR208               ; sw4
+MPP
+LD R22008                ; Port2 受信照合不一致ｴﾗｰ
+OR R22002                ; Port2 受信待ちﾀｲﾑｱｳﾄｴﾗｰ
+OR R22010                ; Port2 ﾏｸﾛ実行ｴﾗｰ
+OR R22003                ; Port2 受信完了ﾀｲﾑｱｳﾄｴﾗｰ
+OR R22004                ; Port2 ﾌﾚｰﾐﾝｸﾞｴﾗｰ
+ANL
+SET R20701               ; Port2 ｴﾗｰｸﾘｱ要求
+CON
+JMP @MR210
+STG @MR202               ; Task0 SEL_ACT Busy
+RES R20100               ; Port2 ﾏｸﾛ開始1
+CON
+TMR @12 #1
+CON
+LD @T12
+OR CR2002                ; 常時ON
+ANL
+@INC DM54010             ; 通信局番
+CON
+JMP @MR203
+STG @MR203
+MPS
+AND<= DM54010 $0004      ; 通信局番
+JMP @MR200               ; Task0 SELECT_ACT
+MPP
+AND> DM54010 $0004       ; 通信局番
+RES @MR215               ; 現在温度読出処理中
+CON
+ENDS
+;	ﾚｽﾎﾟﾝｽｺｰﾄﾞ異常(温調器より)
+STG @MR208               ; sw4
+ANB R39004               ; ｴﾗｰ中
+SET R39004               ; ｴﾗｰ中
+CON
+DW #1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #211 @DM1             ; ErrorNo /ERROR_DISP
+CON
+DW #0 @DM2               ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task_Error
+CON
+JMP @MR209
+STG @MR209
+AND @MR101               ; Task0 ｴﾗｰ完了
+RES @MR215               ; 現在温度読出処理中
+CON
+RES @MR101               ; Task0 ｴﾗｰ完了
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+RES R20100               ; Port2 ﾏｸﾛ開始1
+CON
+ENDS
+;	通信照合ｴﾗｰ(LV21より)
+STG @MR210
+ANB R39004               ; ｴﾗｰ中
+SET R39004               ; ｴﾗｰ中
+CON
+DW #1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #212 @DM1             ; ErrorNo /ERROR_DISP
+CON
+DW #0 @DM2               ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task_Error
+CON
+JMP @MR211
+STG @MR211
+AND @MR101               ; Task0 ｴﾗｰ完了
+AND R22001               ; Port2 ｴﾗｰｸﾘｱ完了
+RES R20100               ; Port2 ﾏｸﾛ開始1
+CON
+RES @MR215               ; 現在温度読出処理中
+CON
+RES @MR101               ; Task0 ｴﾗｰ完了
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+RES R20701               ; Port2 ｴﾗｰｸﾘｱ要求
+CON
+ENDS
+;<h1/>　　▽PV読出し処理
+LD R22000                ; Port2 動作可能
+ANB @MR215               ; 現在温度読出処理中
+ANB @MR315               ; 目標値読出し処理中
+AND>= DM3000 #2025       ; _MainTP　表示中ﾍﾟｰｼﾞNo
+AND<= DM3000 #2028       ; _MainTP　表示中ﾍﾟｰｼﾞNo
+@DW $0001 DM54010        ; 通信局番
+CON
+SET @MR315               ; 目標値読出し処理中
+CON
+@SET @MR300
+STG @MR300
+LDA DM54010              ; 通信局番
+CON
+STA DM51010
+CON
+DW $0003 DM51011
+CON
+DW $0001 DM51012
+CON
+SET R20101               ; Port2 ﾏｸﾛ開始2
+CON
+JMP @MR301
+STG @MR301
+MPS
+LD R21701                ; Port2 送信完了2
+ANP R21401               ; Port2 受信読出要求2
+AND R20801               ; Port2 受信照合2
+ANL
+MPS
+AND= DM51015 #0
+LDA.D DM51016
+CON
+MPS
+AND= DM54010 $0001       ; 通信局番
+STA.D DM54030            ; 温調器1目標値温度
+CON
+JMP @MR302
+MRD
+AND= DM54010 $0002       ; 通信局番
+STA.D DM54032            ; 温調器2目標値温度
+CON
+JMP @MR302
+MRD
+AND= DM54010 $0003       ; 通信局番
+STA.D DM54034            ; 温調器3目標値温度
+CON
+JMP @MR302
+MPP
+AND= DM54010 $0004       ; 通信局番
+STA.D DM54036            ; 温調器4目標値温度
+CON
+JMP @MR302
+MPP
+AND<> DM51015 #0
+JMP @MR308
+MPP
+LD R22008                ; Port2 受信照合不一致ｴﾗｰ
+OR R22002                ; Port2 受信待ちﾀｲﾑｱｳﾄｴﾗｰ
+OR R22010                ; Port2 ﾏｸﾛ実行ｴﾗｰ
+OR R22003                ; Port2 受信完了ﾀｲﾑｱｳﾄｴﾗｰ
+OR R22004                ; Port2 ﾌﾚｰﾐﾝｸﾞｴﾗｰ
+ANL
+SET R20701               ; Port2 ｴﾗｰｸﾘｱ要求
+CON
+JMP @MR310
+STG @MR302
+RES R20101               ; Port2 ﾏｸﾛ開始2
+CON
+TMR @13 #1
+CON
+AND @T13
+@INC DM54010             ; 通信局番
+CON
+JMP @MR303
+STG @MR303
+MPS
+AND<= DM54010 $0004      ; 通信局番
+JMP @MR300
+MPP
+AND> DM54010 $0004       ; 通信局番
+SET @MR314               ; 温調器目標値読出し完了
+CON
+ENDS
+;	ﾌﾗｸﾞﾘｾｯﾄ
+LD R22000                ; Port2 動作可能
+LD< DM3000 #2025         ; _MainTP　表示中ﾍﾟｰｼﾞNo
+OR> DM3000 #2028         ; _MainTP　表示中ﾍﾟｰｼﾞNo
+ANL
+RES @MR314               ; 温調器目標値読出し完了
+CON
+RES @MR315               ; 目標値読出し処理中
+;	ﾚｽﾎﾟﾝｽｺｰﾄﾞ異常(温調器より)
+STG @MR308
+ANB R39004               ; ｴﾗｰ中
+SET R39004               ; ｴﾗｰ中
+CON
+DW #1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #211 @DM1             ; ErrorNo /ERROR_DISP
+CON
+DW #0 @DM2               ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task_Error
+CON
+JMP @MR309
+STG @MR309
+AND @MR101               ; Task0 ｴﾗｰ完了
+RES @MR315               ; 目標値読出し処理中
+CON
+RES @MR101               ; Task0 ｴﾗｰ完了
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+RES R20101               ; Port2 ﾏｸﾛ開始2
+CON
+SET @MR314               ; 温調器目標値読出し完了
+CON
+ENDS
+;	通信照合ｴﾗｰ(LV21より)
+STG @MR310
+ANB R39004               ; ｴﾗｰ中
+SET R39004               ; ｴﾗｰ中
+CON
+DW #1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #212 @DM1             ; ErrorNo /ERROR_DISP
+CON
+DW #0 @DM2               ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task_Error
+CON
+JMP @MR311
+STG @MR311
+AND @MR101               ; Task0 ｴﾗｰ完了
+AND R22001               ; Port2 ｴﾗｰｸﾘｱ完了
+RES @MR315               ; 目標値読出し処理中
+CON
+RES R20101               ; Port2 ﾏｸﾛ開始2
+CON
+RES @MR101               ; Task0 ｴﾗｰ完了
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+RES R20701               ; Port2 ｴﾗｰｸﾘｱ要求
+CON
+SET @MR314               ; 温調器目標値読出し完了
+CON
+ENDS
+;<h1/>▽_異常処理
+STG @MR100               ; Task_Error
+ANB R39002               ; ERROR_DISP Busy
+MPS
+ZRES @MR105 @MR108       ; SW1
+CON
+LDA @DM9                 ; ReturnSW /ERROR_DISP
+CON
+TBCD
+CON
+STA @DM10
+CON
+DISN @DM10 @DM3 #4
+MRD
+DW #6 @DM0               ; TaskNo /ERROR_DISP
+CON
+BMOV @DM0 DM60000 #7     ; TaskNo /ERROR_DISP  TaskNo /ERROR_DISP
+MPP
+SET R39000               ; ERROR_DISP Start
+CON
+SET @MR102               ; Task6 ERROR Busy
+CON
+JMP @MR103
+STG @MR103
+AND R39002               ; ERROR_DISP Busy
+AND= DM60008 @DM1        ; ReturnNo /ERROR_DISP  ErrorNo /ERROR_DISP
+MPS
+AND= DM60007 @DM6        ; ReturnSW /ERROR_DISP
+SET @MR105               ; SW1
+CON
+JMP @MR104
+MRD
+AND= DM60007 @DM5        ; ReturnSW /ERROR_DISP
+SET @MR106               ; SW2
+CON
+JMP @MR104
+MRD
+AND= DM60007 @DM4        ; ReturnSW /ERROR_DISP
+SET @MR107               ; SW3
+CON
+JMP @MR104
+MPP
+AND= DM60007 @DM3        ; ReturnSW /ERROR_DISP
+SET @MR108
+CON
+JMP @MR104
+STG @MR104
+ANB R39002               ; ERROR_DISP Busy
+RES @MR102               ; Task6 ERROR Busy
+CON
+SET @MR101               ; Task0 ｴﾗｰ完了
+CON
+ENDS
+;<h1/>▼　ｾﾚｸﾄ
+LD R46100                ; _自動運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+MPS
+LD= #0 DM2000            ; _動作ﾊﾟﾗﾒｰﾀ
+AND= #0 DM2001
+ANL
+OUT MR2000               ; PARA変更無し
+MPP
+ANB MR2000               ; PARA変更無し
+@SET MR2001              ; SELECT_ACT
+STG MR2001               ; SELECT_ACT
+ANB R39204               ; SELECT_ACT Interlock
+SET R39204               ; SELECT_ACT Interlock
+CON
+DW #3 @DM31              ; ScreenNo /SELECT_ACT
+CON
+DW #1 @DM32              ; SW1 /SELECT_ACT
+CON
+DW #0 @DM33              ; SW2 /SELECT_ACT
+CON
+DW #0 @DM34              ; SW3 /SELECT_ACT
+CON
+DW #2 @DM35              ; SW4 /SELECT_ACT
+CON
+DW #0 @DM36              ; Bz_Use /SELECT_ACT
+CON
+SET @MR700
+CON
+JMP MR2002
+STG MR2002
+AND @MR701
+RES @MR701
+CON
+RES R39204               ; SELECT_ACT Interlock
+CON
+JMP MR2003
+STG MR2003
+MPS
+AND @MR705
+SET MR2014               ; 自動運転動作許可
+CON
+ENDS
+MPP
+AND @MR708
+SET MR2015               ; 自動運転停止
+CON
+ENDS
+LDF R46100               ; _自動運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+RES MR2014               ; 自動運転動作許可
+CON
+RES MR2015               ; 自動運転停止
+STG @MR700
+ANB R39202               ; SELECT_ACT Busy
+MPS
+ZRES @MR705 @MR708
+CON
+DW #0 @DM30              ; TaskNo /SELECT_ACT
+CON
+BMOV @DM30 DM60030 #7    ; TaskNo /SELECT_ACT  TaskNo /SELECT_ACT
+MPP
+SET R39200               ; SELECT_ACT Start
+CON
+SET @MR702
+CON
+JMP @MR703
+STG @MR703
+AND R39202               ; SELECT_ACT Busy
+AND<> DM60037 #0         ; SelectSW /SELECT_ACT
+MPS
+AND= DM60037 #1          ; SelectSW /SELECT_ACT
+SET @MR705
+CON
+JMP @MR704
+MRD
+AND= DM60037 #2          ; SelectSW /SELECT_ACT
+SET @MR706
+CON
+JMP @MR704
+MRD
+AND= DM60037 #3          ; SelectSW /SELECT_ACT
+SET @MR707
+CON
+JMP @MR704
+MPP
+AND= DM60037 #4          ; SelectSW /SELECT_ACT
+SET @MR708
+CON
+JMP @MR704
+STG @MR704
+ANB R39202               ; SELECT_ACT Busy
+RES @MR702
+CON
+SET @MR701
+CON
+ENDS
+;<h1/>画像検査結果表示処理
+;'画像検査結果処理
+;
+;IF D41000.U <= #0 THEN
+;   D41000.U = 1
+;END IF
+;
+;D41001.U = ( D41000.U - 1 ) * 10
+;BMOV( D41020:D41001, D41010 , #10 )
+;
+;
+;
+;
+LD CR2002                ; 常時ON
+NCJ #1001
+;'画像検査結果処理
+;
+;IF D41000.U <= #0 THEN
+;
+LD<= DM41000 #0          ; 画像履歴ﾍﾟｰｼﾞ
+NCJ #2000
+;   D41000.U = 1
+;
+LD CR2002                ; 常時ON
+MOV #1 DM41000           ; 画像履歴ﾍﾟｰｼﾞ
+;END IF
+;
+LABEL #2000
+;D41001.U = ( D41000.U - 1 ) * 10
+;
+LD CR2002                ; 常時ON
+LDA DM41000              ; 画像履歴ﾍﾟｰｼﾞ
+CON
+EXT
+CON
+SUB.L +1
+CON
+MUL.L +10
+CON
+STA DM41001
+;BMOV( D41020:D41001, D41010 , #10 )
+;
+LD CR2002                ; 常時ON
+LDA DM41001
+CON
+EXT
+CON
+STA.L Z12
+BMOV DM41020:Z12 DM41010 #10;画像検査結果1  画像履歴表示ｴﾘｱ
+LABEL #1001
+;
+;COF挿入確認結果
+;'画像検査結果処理
+;
+;IF D40099.U <= #0 THEN
+;   D40099.U = 1
+;END IF
+;
+;BMOV( D40101:(D40099 - #1), D40098 , #1 )
+;
+;
+;
+;
+LD CR2002                ; 常時ON
+NCJ #1002
+;'画像検査結果処理
+;
+;IF D40099.U <= #0 THEN
+;
+LD<= DM40099 #0          ; 間接指定
+NCJ #2001
+;   D40099.U = 1
+;
+LD CR2002                ; 常時ON
+MOV #1 DM40099           ; 間接指定
+;END IF
+;
+LABEL #2001
+;BMOV( D40101:(D40099 - #1), D40098 , #1 )
+;
+LD CR2002                ; 常時ON
+LDA DM40099              ; 間接指定
+CON
+EXT
+CON
+SUB.L +1
+CON
+STA.L Z12
+BMOV DM40101:Z12 DM40098 #1
+LABEL #1002
+;
+END
+ENDH

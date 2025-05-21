@@ -1,0 +1,4073 @@
+DEVICE:51
+;MODULE:Analog
+;MODULE_TYPE:0
+;SCRIPT_TYPE:
+;<h1/>A-AI48
+;KL-4AD 高精度平均処理ﾓｰﾄﾞ=ON(8回数固定単純平均)
+;ﾜｰｸ1　流路圧力
+;'ﾍｯﾄﾞSUNX DPH-101-M5 ｱﾝﾌﾟDPC-101Z
+;'連成圧ﾀｲﾌﾟ ﾚﾝｼﾞ -100.0～100.0KPa
+;'ｱﾅﾛｸﾞ出力 1～5Ⅴ(AD値 0～4000)
+;@DM0.S = -1000 '圧力計最小値(ｽｹｰﾘﾝｸﾞ値は必要に応じて調整する)
+;@DM1.S = 1000 '圧力計最大値(ｽｹｰﾘﾝｸﾞ値は必要に応じて調整する)
+;@DM2.S = 0 '最小値時のAD変換値
+;@DM3.S = 4000 '最大値時のAD変換値
+;@DM6.S = TOS(R4800.U) + (DM29010.S) 'CH0のAD変換値
+;'CH0のAD変換値で条件分岐
+;SELECT CASE @DM6.S
+;'AD変換値が（下限値）以下のﾃﾞｰﾀは-30000(必要に応じて変更の事)
+;CASE IS < @DM2.S
+;DM11000.S = -1000	'-30000
+;'AD変換値が（上限値）以上のﾃﾞｰﾀは30000(必要に応じて変更の事)
+;CASE IS > @DM3.S
+;DM11000.S = 1000	'30000
+;'範囲内の場合、ｽｹｰﾘﾝｸﾞ
+;CASE ELSE
+;DM11000.S = (@DM1.S-@DM0.S)*(@DM6.S-@DM2.S)/(@DM3.S-@DM2.S)+@DM0.S
+;END SELECT
+;'ﾍｯﾄﾞSUNX DPH-101-M5 ｱﾝﾌﾟDPC-101Z
+;
+;'連成圧ﾀｲﾌﾟ ﾚﾝｼﾞ -100.0～100.0KPa
+;
+;'ｱﾅﾛｸﾞ出力 1～5Ⅴ(AD値 0～4000)
+;
+;@DM0.S = -1000 '圧力計最小値(ｽｹｰﾘﾝｸﾞ値は必要に応じて調整する)
+;
+LD CR2002                ; 常時ON
+MOV.S -1000 @DM0         ; ﾜｰｸ1 流路圧力計 最小値
+;@DM1.S = 1000 '圧力計最大値(ｽｹｰﾘﾝｸﾞ値は必要に応じて調整する)
+;
+LD CR2002                ; 常時ON
+MOV.S +1000 @DM1         ; ﾜｰｸ1 流路圧力計 最大値
+;@DM2.S = 0 '最小値時のAD変換値
+;
+LD CR2002                ; 常時ON
+MOV.S +0 @DM2            ; ﾜｰｸ1 流路圧力計 最小値AD変換値
+;@DM3.S = 4000 '最大値時のAD変換値
+;
+LD CR2002                ; 常時ON
+MOV.S +4000 @DM3         ; ﾜｰｸ1 流路圧力計 最大地AD変換値
+;@DM6.S = TOS(R4800.U) + (DM29010.S) 'CH0のAD変換値
+;
+LD CR2002                ; 常時ON
+LDA.S DM29010            ; ﾜｰｸ1 流路圧力計 ADｵﾌｾｯﾄ
+CON
+EXT.S
+CON
+STA.L @VM0
+CON
+LDA.S R4800              ; ﾜｰｸ1      流路圧力
+CON
+EXT.S
+CON
+ADD.L @VM0
+CON
+STA.S @DM6               ; ﾜｰｸ1 流路圧力計 AD変換圧力値
+;'CH0のAD変換値で条件分岐
+;
+;SELECT CASE @DM6.S
+;
+LD CR2002                ; 常時ON
+MOV.S @DM6 @VM2          ; ﾜｰｸ1 流路圧力計 AD変換圧力値
+;'AD変換値が（下限値）以下のﾃﾞｰﾀは-30000(必要に応じて変更の事)
+;
+;CASE IS < @DM2.S
+;
+LD<.S @VM2 @DM2          ; ﾜｰｸ1 流路圧力計 最小値AD変換値
+NCJ #2000
+;DM11000.S = -1000	'-30000
+;
+LD CR2002                ; 常時ON
+MOV.S -1000 DM11000      ; AD11 W1   ｽｹｰﾘﾝｸﾞ値
+;'AD変換値が（上限値）以上のﾃﾞｰﾀは30000(必要に応じて変更の事)
+;
+LD CR2002                ; 常時ON
+CJ #2001
+LABEL #2000
+;CASE IS > @DM3.S
+;
+LD>.S @VM2 @DM3          ; ﾜｰｸ1 流路圧力計 最大地AD変換値
+NCJ #2002
+;DM11000.S = 1000	'30000
+;
+LD CR2002                ; 常時ON
+MOV.S +1000 DM11000      ; AD11 W1   ｽｹｰﾘﾝｸﾞ値
+;'範囲内の場合、ｽｹｰﾘﾝｸﾞ
+;
+LD CR2002                ; 常時ON
+CJ #2003
+LABEL #2002
+;CASE ELSE
+;
+;DM11000.S = (@DM1.S-@DM0.S)*(@DM6.S-@DM2.S)/(@DM3.S-@DM2.S)+@DM0.S
+;
+LD CR2002                ; 常時ON
+LDA.S @DM2               ; ﾜｰｸ1 流路圧力計 最小値AD変換値
+CON
+EXT.S
+CON
+STA.L @VM3
+CON
+LDA.S @DM3               ; ﾜｰｸ1 流路圧力計 最大地AD変換値
+CON
+EXT.S
+CON
+SUB.L @VM3
+CON
+STA.L @VM5
+CON
+LDA.S @DM2               ; ﾜｰｸ1 流路圧力計 最小値AD変換値
+CON
+EXT.S
+CON
+STA.L @VM7
+CON
+LDA.S @DM6               ; ﾜｰｸ1 流路圧力計 AD変換圧力値
+CON
+EXT.S
+CON
+SUB.L @VM7
+CON
+STA.L @VM9
+CON
+LDA.S @DM0               ; ﾜｰｸ1 流路圧力計 最小値
+CON
+EXT.S
+CON
+STA.L @VM11
+CON
+LDA.S @DM1               ; ﾜｰｸ1 流路圧力計 最大値
+CON
+EXT.S
+CON
+SUB.L @VM11
+CON
+MUL.L @VM9
+CON
+DIV.L @VM5
+CON
+STA.L @VM13
+CON
+LDA.S @DM0               ; ﾜｰｸ1 流路圧力計 最小値
+CON
+EXT.S
+CON
+ADD.L @VM13
+CON
+STA.S DM11000            ; AD11 W1   ｽｹｰﾘﾝｸﾞ値
+;END SELECT
+LABEL #2003
+LABEL #2001
+;
+;ﾜｰｸ1　外周流量
+;'流量計CKD FSM-H-N-005ML-6A
+;'ﾚﾝｼﾞ 0.25～5.00ml/min
+;'ｱﾅﾛｸﾞ出力 1～5Ⅴ(AD値 0～4000)
+;@DM10.S = 0 '流量計最小値(ｽｹｰﾘﾝｸﾞ値は必要に応じて調整する)
+;@DM11.S = 495 '流量計最大値(ｽｹｰﾘﾝｸﾞ値は必要に応じて調整する)
+;@DM12.S = 0 '最小値時のAD変換値
+;@DM13.S = 4000 '最大値時のAD変換値
+;@DM16.S = TOS(R4900.U) + (DM29030.S) 'CH1のAD変換値
+;'CH1のAD変換値で条件分岐
+;SELECT CASE @DM16.S
+;'AD変換値が（下限値）以下のﾃﾞｰﾀは-30000(必要に応じて変更の事)
+;CASE IS < @DM12.S
+;DM11002.S = 0	'-30000
+;'AD変換値が（上限値）以上のﾃﾞｰﾀは30000(必要に応じて変更の事)
+;CASE IS > @DM13.S
+;DM11002.S = 500	'30000
+;'範囲内の場合、ｽｹｰﾘﾝｸﾞ
+;CASE ELSE
+;DM11002.S = (@DM11.S-@DM10.S)*(@DM16.S-@DM12.S)/(@DM13.S-@DM12.S)+@DM10.S
+;END SELECT
+;'流量計CKD FSM-H-N-005ML-6A
+;
+;'ﾚﾝｼﾞ 0.25～5.00ml/min
+;
+;'ｱﾅﾛｸﾞ出力 1～5Ⅴ(AD値 0～4000)
+;
+;@DM10.S = 0 '流量計最小値(ｽｹｰﾘﾝｸﾞ値は必要に応じて調整する)
+;
+LD CR2002                ; 常時ON
+MOV.S +0 @DM10           ; ﾜｰｸ1 外周流量計 最小値
+;@DM11.S = 495 '流量計最大値(ｽｹｰﾘﾝｸﾞ値は必要に応じて調整する)
+;
+LD CR2002                ; 常時ON
+MOV.S +495 @DM11         ; ﾜｰｸ1 外周流量計 最大値
+;@DM12.S = 0 '最小値時のAD変換値
+;
+LD CR2002                ; 常時ON
+MOV.S +0 @DM12           ; ﾜｰｸ1 外周流量計 最小値AD変換値
+;@DM13.S = 4000 '最大値時のAD変換値
+;
+LD CR2002                ; 常時ON
+MOV.S +4000 @DM13        ; ﾜｰｸ1 外周流量計 最大値AD変換値
+;@DM16.S = TOS(R4900.U) + (DM29030.S) 'CH1のAD変換値
+;
+LD CR2002                ; 常時ON
+LDA.S DM29030            ; ﾜｰｸ1 外周流量計 ADｵﾌｾｯﾄ
+CON
+EXT.S
+CON
+STA.L @VM15
+CON
+LDA.S R4900              ; ﾜｰｸ1      流路流量
+CON
+EXT.S
+CON
+ADD.L @VM15
+CON
+STA.S @DM16              ; ﾜｰｸ1 外周流量計 AD変換流量値
+;'CH1のAD変換値で条件分岐
+;
+;SELECT CASE @DM16.S
+;
+LD CR2002                ; 常時ON
+MOV.S @DM16 @VM17        ; ﾜｰｸ1 外周流量計 AD変換流量値
+;'AD変換値が（下限値）以下のﾃﾞｰﾀは-30000(必要に応じて変更の事)
+;
+;CASE IS < @DM12.S
+;
+LD<.S @VM17 @DM12        ; ﾜｰｸ1 外周流量計 最小値AD変換値
+NCJ #2004
+;DM11002.S = 0	'-30000
+;
+LD CR2002                ; 常時ON
+MOV.S +0 DM11002         ; AD12 W1   ｽｹｰﾘﾝｸﾞ値
+;'AD変換値が（上限値）以上のﾃﾞｰﾀは30000(必要に応じて変更の事)
+;
+LD CR2002                ; 常時ON
+CJ #2005
+LABEL #2004
+;CASE IS > @DM13.S
+;
+LD>.S @VM17 @DM13        ; ﾜｰｸ1 外周流量計 最大値AD変換値
+NCJ #2006
+;DM11002.S = 500	'30000
+;
+LD CR2002                ; 常時ON
+MOV.S +500 DM11002       ; AD12 W1   ｽｹｰﾘﾝｸﾞ値
+;'範囲内の場合、ｽｹｰﾘﾝｸﾞ
+;
+LD CR2002                ; 常時ON
+CJ #2007
+LABEL #2006
+;CASE ELSE
+;
+;DM11002.S = (@DM11.S-@DM10.S)*(@DM16.S-@DM12.S)/(@DM13.S-@DM12.S)+@DM10.S
+;
+LD CR2002                ; 常時ON
+LDA.S @DM12              ; ﾜｰｸ1 外周流量計 最小値AD変換値
+CON
+EXT.S
+CON
+STA.L @VM18
+CON
+LDA.S @DM13              ; ﾜｰｸ1 外周流量計 最大値AD変換値
+CON
+EXT.S
+CON
+SUB.L @VM18
+CON
+STA.L @VM20
+CON
+LDA.S @DM12              ; ﾜｰｸ1 外周流量計 最小値AD変換値
+CON
+EXT.S
+CON
+STA.L @VM22
+CON
+LDA.S @DM16              ; ﾜｰｸ1 外周流量計 AD変換流量値
+CON
+EXT.S
+CON
+SUB.L @VM22
+CON
+STA.L @VM24
+CON
+LDA.S @DM10              ; ﾜｰｸ1 外周流量計 最小値
+CON
+EXT.S
+CON
+STA.L @VM26
+CON
+LDA.S @DM11              ; ﾜｰｸ1 外周流量計 最大値
+CON
+EXT.S
+CON
+SUB.L @VM26
+CON
+MUL.L @VM24
+CON
+DIV.L @VM20
+CON
+STA.L @VM28
+CON
+LDA.S @DM10              ; ﾜｰｸ1 外周流量計 最小値
+CON
+EXT.S
+CON
+ADD.L @VM28
+CON
+STA.S DM11002            ; AD12 W1   ｽｹｰﾘﾝｸﾞ値
+;END SELECT
+LABEL #2007
+LABEL #2005
+;
+;ﾜｰｸ1　外周圧力
+;'ﾍｯﾄﾞSUNX DPH-101-M5 ｱﾝﾌﾟDPC-101Z
+;'連成圧ﾀｲﾌﾟ ﾚﾝｼﾞ -100.0～100.0KPa
+;'ｱﾅﾛｸﾞ出力 1～5Ⅴ(AD値 0～4000)
+;@DM20.S = -1003 '圧力計最小値(ｽｹｰﾘﾝｸﾞ値は必要に応じて調整する)
+;@DM21.S = 1003 '圧力計最大値(ｽｹｰﾘﾝｸﾞ値は必要に応じて調整する)
+;@DM22.S = 0 '最小値時のAD変換値
+;@DM23.S = 4000 '最大値時のAD変換値
+;@DM26.S = TOS(R5000.U) 'CH2のAD変換値
+;'CH2のAD変換値で条件分岐
+;SELECT CASE @DM26.S
+;'AD変換値が（下限値）以下のﾃﾞｰﾀは-30000(必要に応じて変更の事)
+;CASE IS < @DM22.S
+;DM11004.S = -1000	'-30000
+;'AD変換値が（上限値）以上のﾃﾞｰﾀは30000(必要に応じて変更の事)
+;CASE IS > @DM23.S
+;DM11004.S = 1000	'30000
+;'範囲内の場合、ｽｹｰﾘﾝｸﾞ
+;CASE ELSE
+;DM11004.S = (@DM21.S-@DM20.S)*(@DM26.S-@DM22.S)/(@DM23.S-@DM22.S)+@DM20.S
+;END SELECT
+;'ﾍｯﾄﾞSUNX DPH-101-M5 ｱﾝﾌﾟDPC-101Z
+;
+;'連成圧ﾀｲﾌﾟ ﾚﾝｼﾞ -100.0～100.0KPa
+;
+;'ｱﾅﾛｸﾞ出力 1～5Ⅴ(AD値 0～4000)
+;
+;@DM20.S = -1003 '圧力計最小値(ｽｹｰﾘﾝｸﾞ値は必要に応じて調整する)
+;
+LD CR2002                ; 常時ON
+MOV.S -1003 @DM20        ; ﾜｰｸ1 外周圧力計 最小値
+;@DM21.S = 1003 '圧力計最大値(ｽｹｰﾘﾝｸﾞ値は必要に応じて調整する)
+;
+LD CR2002                ; 常時ON
+MOV.S +1003 @DM21        ; ﾜｰｸ1 外周圧力計 最大値
+;@DM22.S = 0 '最小値時のAD変換値
+;
+LD CR2002                ; 常時ON
+MOV.S +0 @DM22           ; ﾜｰｸ1 外周圧力計 最小値AD変換値
+;@DM23.S = 4000 '最大値時のAD変換値
+;
+LD CR2002                ; 常時ON
+MOV.S +4000 @DM23        ; ﾜｰｸ1 外周圧力計 最大値AD変換値
+;@DM26.S = TOS(R5000.U) 'CH2のAD変換値
+;
+LD CR2002                ; 常時ON
+MOV.S R5000 @DM26        ; ﾜｰｸ1      外周圧力  ﾜｰｸ1 外周圧力計 AD変換圧力値
+;'CH2のAD変換値で条件分岐
+;
+;SELECT CASE @DM26.S
+;
+LD CR2002                ; 常時ON
+MOV.S @DM26 @VM30        ; ﾜｰｸ1 外周圧力計 AD変換圧力値
+;'AD変換値が（下限値）以下のﾃﾞｰﾀは-30000(必要に応じて変更の事)
+;
+;CASE IS < @DM22.S
+;
+LD<.S @VM30 @DM22        ; ﾜｰｸ1 外周圧力計 最小値AD変換値
+NCJ #2008
+;DM11004.S = -1000	'-30000
+;
+LD CR2002                ; 常時ON
+MOV.S -1000 DM11004      ; AD13 W1   ｽｹｰﾘﾝｸﾞ値
+;'AD変換値が（上限値）以上のﾃﾞｰﾀは30000(必要に応じて変更の事)
+;
+LD CR2002                ; 常時ON
+CJ #2009
+LABEL #2008
+;CASE IS > @DM23.S
+;
+LD>.S @VM30 @DM23        ; ﾜｰｸ1 外周圧力計 最大値AD変換値
+NCJ #2010
+;DM11004.S = 1000	'30000
+;
+LD CR2002                ; 常時ON
+MOV.S +1000 DM11004      ; AD13 W1   ｽｹｰﾘﾝｸﾞ値
+;'範囲内の場合、ｽｹｰﾘﾝｸﾞ
+;
+LD CR2002                ; 常時ON
+CJ #2011
+LABEL #2010
+;CASE ELSE
+;
+;DM11004.S = (@DM21.S-@DM20.S)*(@DM26.S-@DM22.S)/(@DM23.S-@DM22.S)+@DM20.S
+;
+LD CR2002                ; 常時ON
+LDA.S @DM22              ; ﾜｰｸ1 外周圧力計 最小値AD変換値
+CON
+EXT.S
+CON
+STA.L @VM31
+CON
+LDA.S @DM23              ; ﾜｰｸ1 外周圧力計 最大値AD変換値
+CON
+EXT.S
+CON
+SUB.L @VM31
+CON
+STA.L @VM33
+CON
+LDA.S @DM22              ; ﾜｰｸ1 外周圧力計 最小値AD変換値
+CON
+EXT.S
+CON
+STA.L @VM35
+CON
+LDA.S @DM26              ; ﾜｰｸ1 外周圧力計 AD変換圧力値
+CON
+EXT.S
+CON
+SUB.L @VM35
+CON
+STA.L @VM37
+CON
+LDA.S @DM20              ; ﾜｰｸ1 外周圧力計 最小値
+CON
+EXT.S
+CON
+STA.L @VM39
+CON
+LDA.S @DM21              ; ﾜｰｸ1 外周圧力計 最大値
+CON
+EXT.S
+CON
+SUB.L @VM39
+CON
+MUL.L @VM37
+CON
+DIV.L @VM33
+CON
+STA.L @VM41
+CON
+LDA.S @DM20              ; ﾜｰｸ1 外周圧力計 最小値
+CON
+EXT.S
+CON
+ADD.L @VM41
+CON
+STA.S DM11004            ; AD13 W1   ｽｹｰﾘﾝｸﾞ値
+;END SELECT
+LABEL #2011
+LABEL #2009
+;
+;ﾜｰｸ2　流路圧力
+;'ﾍｯﾄﾞSUNX DPH-101-M5 ｱﾝﾌﾟDPC-101Z
+;'連成圧ﾀｲﾌﾟ ﾚﾝｼﾞ -100.0～100.0KPa
+;'ｱﾅﾛｸﾞ出力 1～5Ⅴ(AD値 0～4000)
+;@DM30.S = -1000 '圧力計最小値(ｽｹｰﾘﾝｸﾞ値は必要に応じて調整する)
+;@DM31.S = 1000 '圧力計最大値(ｽｹｰﾘﾝｸﾞ値は必要に応じて調整する)
+;@DM32.S = 0 '最小値時のAD変換値
+;@DM33.S = 4000 '最大値時のAD変換値
+;@DM36.S = TOS(R5100.U) + (DM29012.S) 'CH0のAD変換値
+;'CH0のAD変換値で条件分岐
+;SELECT CASE @DM36.S
+;'AD変換値が（下限値）以下のﾃﾞｰﾀは-30000(必要に応じて変更の事)
+;CASE IS < @DM32.S
+;DM11010.S = -1000	'-30000
+;'AD変換値が（上限値）以上のﾃﾞｰﾀは30000(必要に応じて変更の事)
+;CASE IS > @DM33.S
+;DM11010.S = 1000	'30000
+;'範囲内の場合、ｽｹｰﾘﾝｸﾞ
+;CASE ELSE
+;DM11010.S = (@DM31.S-@DM30.S)*(@DM36.S-@DM32.S)/(@DM33.S-@DM32.S)+@DM30.S
+;END SELECT
+;'ﾍｯﾄﾞSUNX DPH-101-M5 ｱﾝﾌﾟDPC-101Z
+;
+;'連成圧ﾀｲﾌﾟ ﾚﾝｼﾞ -100.0～100.0KPa
+;
+;'ｱﾅﾛｸﾞ出力 1～5Ⅴ(AD値 0～4000)
+;
+;@DM30.S = -1000 '圧力計最小値(ｽｹｰﾘﾝｸﾞ値は必要に応じて調整する)
+;
+LD CR2002                ; 常時ON
+MOV.S -1000 @DM30        ; ﾜｰｸ2 流路圧力計 最小値
+;@DM31.S = 1000 '圧力計最大値(ｽｹｰﾘﾝｸﾞ値は必要に応じて調整する)
+;
+LD CR2002                ; 常時ON
+MOV.S +1000 @DM31        ; ﾜｰｸ2 流路圧力計 最大値
+;@DM32.S = 0 '最小値時のAD変換値
+;
+LD CR2002                ; 常時ON
+MOV.S +0 @DM32           ; ﾜｰｸ2 流路圧力計 最小値AD変換値
+;@DM33.S = 4000 '最大値時のAD変換値
+;
+LD CR2002                ; 常時ON
+MOV.S +4000 @DM33        ; ﾜｰｸ2 流路圧力計 最大地AD変換値
+;@DM36.S = TOS(R5100.U) + (DM29012.S) 'CH0のAD変換値
+;
+LD CR2002                ; 常時ON
+LDA.S DM29012            ; ﾜｰｸ2 流路圧力計 ADｵﾌｾｯﾄ
+CON
+EXT.S
+CON
+STA.L @VM43
+CON
+LDA.S R5100              ; ﾜｰｸ2      流路圧力
+CON
+EXT.S
+CON
+ADD.L @VM43
+CON
+STA.S @DM36              ; ﾜｰｸ2 流路圧力計 AD変換圧力値
+;'CH0のAD変換値で条件分岐
+;
+;SELECT CASE @DM36.S
+;
+LD CR2002                ; 常時ON
+MOV.S @DM36 @VM45        ; ﾜｰｸ2 流路圧力計 AD変換圧力値
+;'AD変換値が（下限値）以下のﾃﾞｰﾀは-30000(必要に応じて変更の事)
+;
+;CASE IS < @DM32.S
+;
+LD<.S @VM45 @DM32        ; ﾜｰｸ2 流路圧力計 最小値AD変換値
+NCJ #2012
+;DM11010.S = -1000	'-30000
+;
+LD CR2002                ; 常時ON
+MOV.S -1000 DM11010      ; AD14 W2   ｽｹｰﾘﾝｸﾞ値
+;'AD変換値が（上限値）以上のﾃﾞｰﾀは30000(必要に応じて変更の事)
+;
+LD CR2002                ; 常時ON
+CJ #2013
+LABEL #2012
+;CASE IS > @DM33.S
+;
+LD>.S @VM45 @DM33        ; ﾜｰｸ2 流路圧力計 最大地AD変換値
+NCJ #2014
+;DM11010.S = 1000	'30000
+;
+LD CR2002                ; 常時ON
+MOV.S +1000 DM11010      ; AD14 W2   ｽｹｰﾘﾝｸﾞ値
+;'範囲内の場合、ｽｹｰﾘﾝｸﾞ
+;
+LD CR2002                ; 常時ON
+CJ #2015
+LABEL #2014
+;CASE ELSE
+;
+;DM11010.S = (@DM31.S-@DM30.S)*(@DM36.S-@DM32.S)/(@DM33.S-@DM32.S)+@DM30.S
+;
+LD CR2002                ; 常時ON
+LDA.S @DM32              ; ﾜｰｸ2 流路圧力計 最小値AD変換値
+CON
+EXT.S
+CON
+STA.L @VM46
+CON
+LDA.S @DM33              ; ﾜｰｸ2 流路圧力計 最大地AD変換値
+CON
+EXT.S
+CON
+SUB.L @VM46
+CON
+STA.L @VM48
+CON
+LDA.S @DM32              ; ﾜｰｸ2 流路圧力計 最小値AD変換値
+CON
+EXT.S
+CON
+STA.L @VM50
+CON
+LDA.S @DM36              ; ﾜｰｸ2 流路圧力計 AD変換圧力値
+CON
+EXT.S
+CON
+SUB.L @VM50
+CON
+STA.L @VM52
+CON
+LDA.S @DM30              ; ﾜｰｸ2 流路圧力計 最小値
+CON
+EXT.S
+CON
+STA.L @VM54
+CON
+LDA.S @DM31              ; ﾜｰｸ2 流路圧力計 最大値
+CON
+EXT.S
+CON
+SUB.L @VM54
+CON
+MUL.L @VM52
+CON
+DIV.L @VM48
+CON
+STA.L @VM56
+CON
+LDA.S @DM30              ; ﾜｰｸ2 流路圧力計 最小値
+CON
+EXT.S
+CON
+ADD.L @VM56
+CON
+STA.S DM11010            ; AD14 W2   ｽｹｰﾘﾝｸﾞ値
+;END SELECT
+LABEL #2015
+LABEL #2013
+;
+;<h1/>A-AI52
+;KL-4AD 高精度平均処理ﾓｰﾄﾞ=ON(8回数固定単純平均)
+;ﾜｰｸ2　外周流量
+;'流量計CKD FSM-H-N-005ML-6A
+;'ﾚﾝｼﾞ 0.25～5.00ml/min
+;'ｱﾅﾛｸﾞ出力 1～5Ⅴ(AD値 0～4000)
+;@DM40.S = 0 '流量計最小値(ｽｹｰﾘﾝｸﾞ値は必要に応じて調整する)
+;@DM41.S = 495 '流量計最大値(ｽｹｰﾘﾝｸﾞ値は必要に応じて調整する)
+;@DM42.S = 0 '最小値時のAD変換値
+;@DM43.S = 4000 '最大値時のAD変換値
+;@DM46.S = TOS(R5200.U) + (DM29032.S) 'CH1のAD変換値
+;'CH1のAD変換値で条件分岐
+;SELECT CASE @DM46.S
+;'AD変換値が（下限値）以下のﾃﾞｰﾀは-30000(必要に応じて変更の事)
+;CASE IS < @DM42.S
+;DM11012.S = 0	'-30000
+;'AD変換値が（上限値）以上のﾃﾞｰﾀは30000(必要に応じて変更の事)
+;CASE IS > @DM43.S
+;DM11012.S = 500	'30000
+;'範囲内の場合、ｽｹｰﾘﾝｸﾞ
+;CASE ELSE
+;DM11012.S = (@DM41.S-@DM40.S)*(@DM46.S-@DM42.S)/(@DM43.S-@DM42.S)+@DM40.S
+;END SELECT
+;'流量計CKD FSM-H-N-005ML-6A
+;
+;'ﾚﾝｼﾞ 0.25～5.00ml/min
+;
+;'ｱﾅﾛｸﾞ出力 1～5Ⅴ(AD値 0～4000)
+;
+;@DM40.S = 0 '流量計最小値(ｽｹｰﾘﾝｸﾞ値は必要に応じて調整する)
+;
+LD CR2002                ; 常時ON
+MOV.S +0 @DM40           ; ﾜｰｸ2 外周流量計 最小値
+;@DM41.S = 495 '流量計最大値(ｽｹｰﾘﾝｸﾞ値は必要に応じて調整する)
+;
+LD CR2002                ; 常時ON
+MOV.S +495 @DM41         ; ﾜｰｸ2 外周流量計 最大値
+;@DM42.S = 0 '最小値時のAD変換値
+;
+LD CR2002                ; 常時ON
+MOV.S +0 @DM42           ; ﾜｰｸ2 外周流量計 最小値AD変換値
+;@DM43.S = 4000 '最大値時のAD変換値
+;
+LD CR2002                ; 常時ON
+MOV.S +4000 @DM43        ; ﾜｰｸ2 外周流量計 最大値AD変換値
+;@DM46.S = TOS(R5200.U) + (DM29032.S) 'CH1のAD変換値
+;
+LD CR2002                ; 常時ON
+LDA.S DM29032            ; ﾜｰｸ2 外周流量計 ADｵﾌｾｯﾄ
+CON
+EXT.S
+CON
+STA.L @VM58
+CON
+LDA.S R5200              ; ﾜｰｸ2      流路流量
+CON
+EXT.S
+CON
+ADD.L @VM58
+CON
+STA.S @DM46              ; ﾜｰｸ2 外周流量計 AD変換流量値
+;'CH1のAD変換値で条件分岐
+;
+;SELECT CASE @DM46.S
+;
+LD CR2002                ; 常時ON
+MOV.S @DM46 @VM60        ; ﾜｰｸ2 外周流量計 AD変換流量値
+;'AD変換値が（下限値）以下のﾃﾞｰﾀは-30000(必要に応じて変更の事)
+;
+;CASE IS < @DM42.S
+;
+LD<.S @VM60 @DM42        ; ﾜｰｸ2 外周流量計 最小値AD変換値
+NCJ #2016
+;DM11012.S = 0	'-30000
+;
+LD CR2002                ; 常時ON
+MOV.S +0 DM11012         ; AD21 W2   ｽｹｰﾘﾝｸﾞ値
+;'AD変換値が（上限値）以上のﾃﾞｰﾀは30000(必要に応じて変更の事)
+;
+LD CR2002                ; 常時ON
+CJ #2017
+LABEL #2016
+;CASE IS > @DM43.S
+;
+LD>.S @VM60 @DM43        ; ﾜｰｸ2 外周流量計 最大値AD変換値
+NCJ #2018
+;DM11012.S = 500	'30000
+;
+LD CR2002                ; 常時ON
+MOV.S +500 DM11012       ; AD21 W2   ｽｹｰﾘﾝｸﾞ値
+;'範囲内の場合、ｽｹｰﾘﾝｸﾞ
+;
+LD CR2002                ; 常時ON
+CJ #2019
+LABEL #2018
+;CASE ELSE
+;
+;DM11012.S = (@DM41.S-@DM40.S)*(@DM46.S-@DM42.S)/(@DM43.S-@DM42.S)+@DM40.S
+;
+LD CR2002                ; 常時ON
+LDA.S @DM42              ; ﾜｰｸ2 外周流量計 最小値AD変換値
+CON
+EXT.S
+CON
+STA.L @VM61
+CON
+LDA.S @DM43              ; ﾜｰｸ2 外周流量計 最大値AD変換値
+CON
+EXT.S
+CON
+SUB.L @VM61
+CON
+STA.L @VM63
+CON
+LDA.S @DM42              ; ﾜｰｸ2 外周流量計 最小値AD変換値
+CON
+EXT.S
+CON
+STA.L @VM65
+CON
+LDA.S @DM46              ; ﾜｰｸ2 外周流量計 AD変換流量値
+CON
+EXT.S
+CON
+SUB.L @VM65
+CON
+STA.L @VM67
+CON
+LDA.S @DM40              ; ﾜｰｸ2 外周流量計 最小値
+CON
+EXT.S
+CON
+STA.L @VM69
+CON
+LDA.S @DM41              ; ﾜｰｸ2 外周流量計 最大値
+CON
+EXT.S
+CON
+SUB.L @VM69
+CON
+MUL.L @VM67
+CON
+DIV.L @VM63
+CON
+STA.L @VM71
+CON
+LDA.S @DM40              ; ﾜｰｸ2 外周流量計 最小値
+CON
+EXT.S
+CON
+ADD.L @VM71
+CON
+STA.S DM11012            ; AD21 W2   ｽｹｰﾘﾝｸﾞ値
+;END SELECT
+LABEL #2019
+LABEL #2017
+;
+;ﾜｰｸ2　外周圧力
+;'ﾍｯﾄﾞSUNX DPH-101-M5 ｱﾝﾌﾟDPC-101Z
+;'連成圧ﾀｲﾌﾟ ﾚﾝｼﾞ -100.0～100.0KPa
+;'ｱﾅﾛｸﾞ出力 1～5Ⅴ(AD値 0～4000)
+;@DM50.S = -1003 '圧力計最小値(ｽｹｰﾘﾝｸﾞ値は必要に応じて調整する)
+;@DM51.S = 1003 '圧力計最大値(ｽｹｰﾘﾝｸﾞ値は必要に応じて調整する)
+;@DM52.S = 0 '最小値時のAD変換値
+;@DM53.S = 4000 '最大値時のAD変換値
+;@DM56.S = TOS(R5300.U) 'CH2のAD変換値
+;'CH2のAD変換値で条件分岐
+;SELECT CASE @DM56.S
+;'AD変換値が（下限値）以下のﾃﾞｰﾀは-30000(必要に応じて変更の事)
+;CASE IS < @DM52.S
+;DM11014.S = -1000	'-30000
+;'AD変換値が（上限値）以上のﾃﾞｰﾀは30000(必要に応じて変更の事)
+;CASE IS > @DM53.S
+;DM11014.S = 1000	'30000
+;'範囲内の場合、ｽｹｰﾘﾝｸﾞ
+;CASE ELSE
+;DM11014.S = (@DM51.S-@DM50.S)*(@DM56.S-@DM52.S)/(@DM53.S-@DM52.S)+@DM50.S
+;END SELECT
+;'ﾍｯﾄﾞSUNX DPH-101-M5 ｱﾝﾌﾟDPC-101Z
+;
+;'連成圧ﾀｲﾌﾟ ﾚﾝｼﾞ -100.0～100.0KPa
+;
+;'ｱﾅﾛｸﾞ出力 1～5Ⅴ(AD値 0～4000)
+;
+;@DM50.S = -1003 '圧力計最小値(ｽｹｰﾘﾝｸﾞ値は必要に応じて調整する)
+;
+LD CR2002                ; 常時ON
+MOV.S -1003 @DM50        ; ﾜｰｸ2 外周圧力計 最小値
+;@DM51.S = 1003 '圧力計最大値(ｽｹｰﾘﾝｸﾞ値は必要に応じて調整する)
+;
+LD CR2002                ; 常時ON
+MOV.S +1003 @DM51        ; ﾜｰｸ2 外周圧力計 最大値
+;@DM52.S = 0 '最小値時のAD変換値
+;
+LD CR2002                ; 常時ON
+MOV.S +0 @DM52           ; ﾜｰｸ2 外周圧力計 最小値AD変換値
+;@DM53.S = 4000 '最大値時のAD変換値
+;
+LD CR2002                ; 常時ON
+MOV.S +4000 @DM53        ; ﾜｰｸ2 外周圧力計 最大値AD変換値
+;@DM56.S = TOS(R5300.U) 'CH2のAD変換値
+;
+LD CR2002                ; 常時ON
+MOV.S R5300 @DM56        ; ﾜｰｸ2      外周圧力  ﾜｰｸ2 外周圧力計 AD変換圧力値
+;'CH2のAD変換値で条件分岐
+;
+;SELECT CASE @DM56.S
+;
+LD CR2002                ; 常時ON
+MOV.S @DM56 @VM73        ; ﾜｰｸ2 外周圧力計 AD変換圧力値
+;'AD変換値が（下限値）以下のﾃﾞｰﾀは-30000(必要に応じて変更の事)
+;
+;CASE IS < @DM52.S
+;
+LD<.S @VM73 @DM52        ; ﾜｰｸ2 外周圧力計 最小値AD変換値
+NCJ #2020
+;DM11014.S = -1000	'-30000
+;
+LD CR2002                ; 常時ON
+MOV.S -1000 DM11014      ; AD22 W2   ｽｹｰﾘﾝｸﾞ値
+;'AD変換値が（上限値）以上のﾃﾞｰﾀは30000(必要に応じて変更の事)
+;
+LD CR2002                ; 常時ON
+CJ #2021
+LABEL #2020
+;CASE IS > @DM53.S
+;
+LD>.S @VM73 @DM53        ; ﾜｰｸ2 外周圧力計 最大値AD変換値
+NCJ #2022
+;DM11014.S = 1000	'30000
+;
+LD CR2002                ; 常時ON
+MOV.S +1000 DM11014      ; AD22 W2   ｽｹｰﾘﾝｸﾞ値
+;'範囲内の場合、ｽｹｰﾘﾝｸﾞ
+;
+LD CR2002                ; 常時ON
+CJ #2023
+LABEL #2022
+;CASE ELSE
+;
+;DM11014.S = (@DM51.S-@DM50.S)*(@DM56.S-@DM52.S)/(@DM53.S-@DM52.S)+@DM50.S
+;
+LD CR2002                ; 常時ON
+LDA.S @DM52              ; ﾜｰｸ2 外周圧力計 最小値AD変換値
+CON
+EXT.S
+CON
+STA.L @VM74
+CON
+LDA.S @DM53              ; ﾜｰｸ2 外周圧力計 最大値AD変換値
+CON
+EXT.S
+CON
+SUB.L @VM74
+CON
+STA.L @VM76
+CON
+LDA.S @DM52              ; ﾜｰｸ2 外周圧力計 最小値AD変換値
+CON
+EXT.S
+CON
+STA.L @VM78
+CON
+LDA.S @DM56              ; ﾜｰｸ2 外周圧力計 AD変換圧力値
+CON
+EXT.S
+CON
+SUB.L @VM78
+CON
+STA.L @VM80
+CON
+LDA.S @DM50              ; ﾜｰｸ2 外周圧力計 最小値
+CON
+EXT.S
+CON
+STA.L @VM82
+CON
+LDA.S @DM51              ; ﾜｰｸ2 外周圧力計 最大値
+CON
+EXT.S
+CON
+SUB.L @VM82
+CON
+MUL.L @VM80
+CON
+DIV.L @VM76
+CON
+STA.L @VM84
+CON
+LDA.S @DM50              ; ﾜｰｸ2 外周圧力計 最小値
+CON
+EXT.S
+CON
+ADD.L @VM84
+CON
+STA.S DM11014            ; AD22 W2   ｽｹｰﾘﾝｸﾞ値
+;END SELECT
+LABEL #2023
+LABEL #2021
+;
+;ﾜｰｸ3　流路圧力
+;'ﾍｯﾄﾞSUNX DPH-101-M5 ｱﾝﾌﾟDPC-101Z
+;'連成圧ﾀｲﾌﾟ ﾚﾝｼﾞ -100.0～100.0KPa
+;'ｱﾅﾛｸﾞ出力 1～5Ⅴ(AD値 0～4000)
+;@DM60.S = -1000 '圧力計最小値(ｽｹｰﾘﾝｸﾞ値は必要に応じて調整する)
+;@DM61.S = 1000 '圧力計最大値(ｽｹｰﾘﾝｸﾞ値は必要に応じて調整する)
+;@DM62.S = 0 '最小値時のAD変換値
+;@DM63.S = 4000 '最大値時のAD変換値
+;@DM66.S = TOS(R5400.U) + (DM29014.S) 'CH0のAD変換値
+;'CH0のAD変換値で条件分岐
+;SELECT CASE @DM66.S
+;'AD変換値が（下限値）以下のﾃﾞｰﾀは-30000(必要に応じて変更の事)
+;CASE IS < @DM62.S
+;DM11020.S = -1000	'-30000
+;'AD変換値が（上限値）以上のﾃﾞｰﾀは30000(必要に応じて変更の事)
+;CASE IS > @DM63.S
+;DM11020.S = 1000	'30000
+;'範囲内の場合、ｽｹｰﾘﾝｸﾞ
+;CASE ELSE
+;DM11020.S = (@DM61.S-@DM60.S)*(@DM66.S-@DM62.S)/(@DM63.S-@DM62.S)+@DM60.S
+;END SELECT
+;'ﾍｯﾄﾞSUNX DPH-101-M5 ｱﾝﾌﾟDPC-101Z
+;
+;'連成圧ﾀｲﾌﾟ ﾚﾝｼﾞ -100.0～100.0KPa
+;
+;'ｱﾅﾛｸﾞ出力 1～5Ⅴ(AD値 0～4000)
+;
+;@DM60.S = -1000 '圧力計最小値(ｽｹｰﾘﾝｸﾞ値は必要に応じて調整する)
+;
+LD CR2002                ; 常時ON
+MOV.S -1000 @DM60        ; ﾜｰｸ3 流路圧力計 最小値
+;@DM61.S = 1000 '圧力計最大値(ｽｹｰﾘﾝｸﾞ値は必要に応じて調整する)
+;
+LD CR2002                ; 常時ON
+MOV.S +1000 @DM61        ; ﾜｰｸ3 流路圧力計 最大値
+;@DM62.S = 0 '最小値時のAD変換値
+;
+LD CR2002                ; 常時ON
+MOV.S +0 @DM62           ; ﾜｰｸ3 流路圧力計 最小値AD変換値
+;@DM63.S = 4000 '最大値時のAD変換値
+;
+LD CR2002                ; 常時ON
+MOV.S +4000 @DM63        ; ﾜｰｸ3 流路圧力計 最大地AD変換値
+;@DM66.S = TOS(R5400.U) + (DM29014.S) 'CH0のAD変換値
+;
+LD CR2002                ; 常時ON
+LDA.S DM29014            ; ﾜｰｸ3 流路圧力計 ADｵﾌｾｯﾄ
+CON
+EXT.S
+CON
+STA.L @VM86
+CON
+LDA.S R5400              ; ﾜｰｸ3      流路圧力
+CON
+EXT.S
+CON
+ADD.L @VM86
+CON
+STA.S @DM66              ; ﾜｰｸ3 流路圧力計 AD変換圧力値
+;'CH0のAD変換値で条件分岐
+;
+;SELECT CASE @DM66.S
+;
+LD CR2002                ; 常時ON
+MOV.S @DM66 @VM88        ; ﾜｰｸ3 流路圧力計 AD変換圧力値
+;'AD変換値が（下限値）以下のﾃﾞｰﾀは-30000(必要に応じて変更の事)
+;
+;CASE IS < @DM62.S
+;
+LD<.S @VM88 @DM62        ; ﾜｰｸ3 流路圧力計 最小値AD変換値
+NCJ #2024
+;DM11020.S = -1000	'-30000
+;
+LD CR2002                ; 常時ON
+MOV.S -1000 DM11020      ; AD23 W3   ｽｹｰﾘﾝｸﾞ値
+;'AD変換値が（上限値）以上のﾃﾞｰﾀは30000(必要に応じて変更の事)
+;
+LD CR2002                ; 常時ON
+CJ #2025
+LABEL #2024
+;CASE IS > @DM63.S
+;
+LD>.S @VM88 @DM63        ; ﾜｰｸ3 流路圧力計 最大地AD変換値
+NCJ #2026
+;DM11020.S = 1000	'30000
+;
+LD CR2002                ; 常時ON
+MOV.S +1000 DM11020      ; AD23 W3   ｽｹｰﾘﾝｸﾞ値
+;'範囲内の場合、ｽｹｰﾘﾝｸﾞ
+;
+LD CR2002                ; 常時ON
+CJ #2027
+LABEL #2026
+;CASE ELSE
+;
+;DM11020.S = (@DM61.S-@DM60.S)*(@DM66.S-@DM62.S)/(@DM63.S-@DM62.S)+@DM60.S
+;
+LD CR2002                ; 常時ON
+LDA.S @DM62              ; ﾜｰｸ3 流路圧力計 最小値AD変換値
+CON
+EXT.S
+CON
+STA.L @VM89
+CON
+LDA.S @DM63              ; ﾜｰｸ3 流路圧力計 最大地AD変換値
+CON
+EXT.S
+CON
+SUB.L @VM89
+CON
+STA.L @VM91
+CON
+LDA.S @DM62              ; ﾜｰｸ3 流路圧力計 最小値AD変換値
+CON
+EXT.S
+CON
+STA.L @VM93
+CON
+LDA.S @DM66              ; ﾜｰｸ3 流路圧力計 AD変換圧力値
+CON
+EXT.S
+CON
+SUB.L @VM93
+CON
+STA.L @VM95
+CON
+LDA.S @DM60              ; ﾜｰｸ3 流路圧力計 最小値
+CON
+EXT.S
+CON
+STA.L @VM97
+CON
+LDA.S @DM61              ; ﾜｰｸ3 流路圧力計 最大値
+CON
+EXT.S
+CON
+SUB.L @VM97
+CON
+MUL.L @VM95
+CON
+DIV.L @VM91
+CON
+STA.L @VM99
+CON
+LDA.S @DM60              ; ﾜｰｸ3 流路圧力計 最小値
+CON
+EXT.S
+CON
+ADD.L @VM99
+CON
+STA.S DM11020            ; AD23 W3   ｽｹｰﾘﾝｸﾞ値
+;END SELECT
+LABEL #2027
+LABEL #2025
+;
+;ﾜｰｸ3　外周流量
+;'流量計CKD FSM-H-N-005ML-6A
+;'ﾚﾝｼﾞ 0.25～5.00ml/min
+;'ｱﾅﾛｸﾞ出力 1～5Ⅴ(AD値 0～4000)
+;@DM70.S = 0 '流量計最小値(ｽｹｰﾘﾝｸﾞ値は必要に応じて調整する)
+;@DM71.S = 495 '流量計最大値(ｽｹｰﾘﾝｸﾞ値は必要に応じて調整する)
+;@DM72.S = 0 '最小値時のAD変換値
+;@DM73.S = 4000 '最大値時のAD変換値
+;@DM76.S = TOS(R5500.U) + (DM29034.S) 'CH1のAD変換値
+;'CH1のAD変換値で条件分岐
+;SELECT CASE @DM76.S
+;'AD変換値が（下限値）以下のﾃﾞｰﾀは-30000(必要に応じて変更の事)
+;CASE IS < @DM72.S
+;DM11022.S = 0	'-30000
+;'AD変換値が（上限値）以上のﾃﾞｰﾀは30000(必要に応じて変更の事)
+;CASE IS > @D73.S
+;DM11022.S = 500	'30000
+;'範囲内の場合、ｽｹｰﾘﾝｸﾞ
+;CASE ELSE
+;DM11022.S = (@DM71.S-@DM70.S)*(@DM76.S-@DM72.S)/(@DM73.S-@DM72.S)+@DM70.S
+;END SELECT
+;'流量計CKD FSM-H-N-005ML-6A
+;
+;'ﾚﾝｼﾞ 0.25～5.00ml/min
+;
+;'ｱﾅﾛｸﾞ出力 1～5Ⅴ(AD値 0～4000)
+;
+;@DM70.S = 0 '流量計最小値(ｽｹｰﾘﾝｸﾞ値は必要に応じて調整する)
+;
+LD CR2002                ; 常時ON
+MOV.S +0 @DM70           ; ﾜｰｸ3 外周流量計 最小値
+;@DM71.S = 495 '流量計最大値(ｽｹｰﾘﾝｸﾞ値は必要に応じて調整する)
+;
+LD CR2002                ; 常時ON
+MOV.S +495 @DM71         ; ﾜｰｸ3 外周流量計 最大値
+;@DM72.S = 0 '最小値時のAD変換値
+;
+LD CR2002                ; 常時ON
+MOV.S +0 @DM72           ; ﾜｰｸ3 外周流量計 最小値AD変換値
+;@DM73.S = 4000 '最大値時のAD変換値
+;
+LD CR2002                ; 常時ON
+MOV.S +4000 @DM73        ; ﾜｰｸ3 外周流量計 最大値AD変換値
+;@DM76.S = TOS(R5500.U) + (DM29034.S) 'CH1のAD変換値
+;
+LD CR2002                ; 常時ON
+LDA.S DM29034            ; ﾜｰｸ3 外周流量計 ADｵﾌｾｯﾄ
+CON
+EXT.S
+CON
+STA.L @VM101
+CON
+LDA.S R5500              ; ﾜｰｸ3      流路流量
+CON
+EXT.S
+CON
+ADD.L @VM101
+CON
+STA.S @DM76              ; ﾜｰｸ3 外周流量計 AD変換流量値
+;'CH1のAD変換値で条件分岐
+;
+;SELECT CASE @DM76.S
+;
+LD CR2002                ; 常時ON
+MOV.S @DM76 @VM103       ; ﾜｰｸ3 外周流量計 AD変換流量値
+;'AD変換値が（下限値）以下のﾃﾞｰﾀは-30000(必要に応じて変更の事)
+;
+;CASE IS < @DM72.S
+;
+LD<.S @VM103 @DM72       ; ﾜｰｸ3 外周流量計 最小値AD変換値
+NCJ #2028
+;DM11022.S = 0	'-30000
+;
+LD CR2002                ; 常時ON
+MOV.S +0 DM11022         ; AD24 W3   ｽｹｰﾘﾝｸﾞ値
+;'AD変換値が（上限値）以上のﾃﾞｰﾀは30000(必要に応じて変更の事)
+;
+LD CR2002                ; 常時ON
+CJ #2029
+LABEL #2028
+;CASE IS > @D73.S
+;
+LD>.S @VM103 @DM73       ; ﾜｰｸ3 外周流量計 最大値AD変換値
+NCJ #2030
+;DM11022.S = 500	'30000
+;
+LD CR2002                ; 常時ON
+MOV.S +500 DM11022       ; AD24 W3   ｽｹｰﾘﾝｸﾞ値
+;'範囲内の場合、ｽｹｰﾘﾝｸﾞ
+;
+LD CR2002                ; 常時ON
+CJ #2031
+LABEL #2030
+;CASE ELSE
+;
+;DM11022.S = (@DM71.S-@DM70.S)*(@DM76.S-@DM72.S)/(@DM73.S-@DM72.S)+@DM70.S
+;
+LD CR2002                ; 常時ON
+LDA.S @DM72              ; ﾜｰｸ3 外周流量計 最小値AD変換値
+CON
+EXT.S
+CON
+STA.L @VM104
+CON
+LDA.S @DM73              ; ﾜｰｸ3 外周流量計 最大値AD変換値
+CON
+EXT.S
+CON
+SUB.L @VM104
+CON
+STA.L @VM106
+CON
+LDA.S @DM72              ; ﾜｰｸ3 外周流量計 最小値AD変換値
+CON
+EXT.S
+CON
+STA.L @VM108
+CON
+LDA.S @DM76              ; ﾜｰｸ3 外周流量計 AD変換流量値
+CON
+EXT.S
+CON
+SUB.L @VM108
+CON
+STA.L @VM110
+CON
+LDA.S @DM70              ; ﾜｰｸ3 外周流量計 最小値
+CON
+EXT.S
+CON
+STA.L @VM112
+CON
+LDA.S @DM71              ; ﾜｰｸ3 外周流量計 最大値
+CON
+EXT.S
+CON
+SUB.L @VM112
+CON
+MUL.L @VM110
+CON
+DIV.L @VM106
+CON
+STA.L @VM114
+CON
+LDA.S @DM70              ; ﾜｰｸ3 外周流量計 最小値
+CON
+EXT.S
+CON
+ADD.L @VM114
+CON
+STA.S DM11022            ; AD24 W3   ｽｹｰﾘﾝｸﾞ値
+;END SELECT
+LABEL #2031
+LABEL #2029
+;
+;<h1/>A-AI56
+;KL-4AD 高精度平均処理ﾓｰﾄﾞ=ON(8回数固定単純平均)
+;ﾜｰｸ3　外周圧力
+;'ﾍｯﾄﾞSUNX DPH-101-M5 ｱﾝﾌﾟDPC-101Z
+;'連成圧ﾀｲﾌﾟ ﾚﾝｼﾞ -100.0～100.0KPa
+;'ｱﾅﾛｸﾞ出力 1～5Ⅴ(AD値 0～4000)
+;@DM80.S = -1003 '圧力計最小値(ｽｹｰﾘﾝｸﾞ値は必要に応じて調整する)
+;@DM81.S = 1003 '圧力計最大値(ｽｹｰﾘﾝｸﾞ値は必要に応じて調整する)
+;@DM82.S = 0 '最小値時のAD変換値
+;@DM83.S = 4000 '最大値時のAD変換値
+;@DM86.S = TOS(R5600.U) 'CH2のAD変換値
+;'CH2のAD変換値で条件分岐
+;SELECT CASE @DM86.S
+;'AD変換値が（下限値）以下のﾃﾞｰﾀは-30000(必要に応じて変更の事)
+;CASE IS < @DM82.S
+;DM11024.S = -1000	'-30000
+;'AD変換値が（上限値）以上のﾃﾞｰﾀは30000(必要に応じて変更の事)
+;CASE IS > @DM83.S
+;DM11024.S = 1000	'30000
+;'範囲内の場合、ｽｹｰﾘﾝｸﾞ
+;CASE ELSE
+;DM11024.S = (@DM81.S-@DM80.S)*(@DM86.S-@DM82.S)/(@DM83.S-@DM82.S)+@DM80.S
+;END SELECT
+;'ﾍｯﾄﾞSUNX DPH-101-M5 ｱﾝﾌﾟDPC-101Z
+;
+;'連成圧ﾀｲﾌﾟ ﾚﾝｼﾞ -100.0～100.0KPa
+;
+;'ｱﾅﾛｸﾞ出力 1～5Ⅴ(AD値 0～4000)
+;
+;@DM80.S = -1003 '圧力計最小値(ｽｹｰﾘﾝｸﾞ値は必要に応じて調整する)
+;
+LD CR2002                ; 常時ON
+MOV.S -1003 @DM80        ; ﾜｰｸ3 外周圧力計 最小値
+;@DM81.S = 1003 '圧力計最大値(ｽｹｰﾘﾝｸﾞ値は必要に応じて調整する)
+;
+LD CR2002                ; 常時ON
+MOV.S +1003 @DM81        ; ﾜｰｸ3 外周圧力計 最大値
+;@DM82.S = 0 '最小値時のAD変換値
+;
+LD CR2002                ; 常時ON
+MOV.S +0 @DM82           ; ﾜｰｸ3 外周圧力計 最小値AD変換値
+;@DM83.S = 4000 '最大値時のAD変換値
+;
+LD CR2002                ; 常時ON
+MOV.S +4000 @DM83        ; ﾜｰｸ3 外周圧力計 最大値AD変換値
+;@DM86.S = TOS(R5600.U) 'CH2のAD変換値
+;
+LD CR2002                ; 常時ON
+MOV.S R5600 @DM86        ; ﾜｰｸ3      外周圧力  ﾜｰｸ3 外周圧力計 AD変換圧力値
+;'CH2のAD変換値で条件分岐
+;
+;SELECT CASE @DM86.S
+;
+LD CR2002                ; 常時ON
+MOV.S @DM86 @VM116       ; ﾜｰｸ3 外周圧力計 AD変換圧力値
+;'AD変換値が（下限値）以下のﾃﾞｰﾀは-30000(必要に応じて変更の事)
+;
+;CASE IS < @DM82.S
+;
+LD<.S @VM116 @DM82       ; ﾜｰｸ3 外周圧力計 最小値AD変換値
+NCJ #2032
+;DM11024.S = -1000	'-30000
+;
+LD CR2002                ; 常時ON
+MOV.S -1000 DM11024      ; AD31 W3   ｽｹｰﾘﾝｸﾞ値
+;'AD変換値が（上限値）以上のﾃﾞｰﾀは30000(必要に応じて変更の事)
+;
+LD CR2002                ; 常時ON
+CJ #2033
+LABEL #2032
+;CASE IS > @DM83.S
+;
+LD>.S @VM116 @DM83       ; ﾜｰｸ3 外周圧力計 最大値AD変換値
+NCJ #2034
+;DM11024.S = 1000	'30000
+;
+LD CR2002                ; 常時ON
+MOV.S +1000 DM11024      ; AD31 W3   ｽｹｰﾘﾝｸﾞ値
+;'範囲内の場合、ｽｹｰﾘﾝｸﾞ
+;
+LD CR2002                ; 常時ON
+CJ #2035
+LABEL #2034
+;CASE ELSE
+;
+;DM11024.S = (@DM81.S-@DM80.S)*(@DM86.S-@DM82.S)/(@DM83.S-@DM82.S)+@DM80.S
+;
+LD CR2002                ; 常時ON
+LDA.S @DM82              ; ﾜｰｸ3 外周圧力計 最小値AD変換値
+CON
+EXT.S
+CON
+STA.L @VM117
+CON
+LDA.S @DM83              ; ﾜｰｸ3 外周圧力計 最大値AD変換値
+CON
+EXT.S
+CON
+SUB.L @VM117
+CON
+STA.L @VM119
+CON
+LDA.S @DM82              ; ﾜｰｸ3 外周圧力計 最小値AD変換値
+CON
+EXT.S
+CON
+STA.L @VM121
+CON
+LDA.S @DM86              ; ﾜｰｸ3 外周圧力計 AD変換圧力値
+CON
+EXT.S
+CON
+SUB.L @VM121
+CON
+STA.L @VM123
+CON
+LDA.S @DM80              ; ﾜｰｸ3 外周圧力計 最小値
+CON
+EXT.S
+CON
+STA.L @VM125
+CON
+LDA.S @DM81              ; ﾜｰｸ3 外周圧力計 最大値
+CON
+EXT.S
+CON
+SUB.L @VM125
+CON
+MUL.L @VM123
+CON
+DIV.L @VM119
+CON
+STA.L @VM127
+CON
+LDA.S @DM80              ; ﾜｰｸ3 外周圧力計 最小値
+CON
+EXT.S
+CON
+ADD.L @VM127
+CON
+STA.S DM11024            ; AD31 W3   ｽｹｰﾘﾝｸﾞ値
+;END SELECT
+LABEL #2035
+LABEL #2033
+;
+;ﾜｰｸ4　流路圧力
+;'ﾍｯﾄﾞSUNX DPH-101-M5 ｱﾝﾌﾟDPC-101Z
+;'連成圧ﾀｲﾌﾟ ﾚﾝｼﾞ -100.0～100.0KPa
+;'ｱﾅﾛｸﾞ出力 1～5Ⅴ(AD値 0～4000)
+;@DM90.S = -1000 '圧力計最小値(ｽｹｰﾘﾝｸﾞ値は必要に応じて調整する)
+;@DM91.S = 1000 '圧力計最大値(ｽｹｰﾘﾝｸﾞ値は必要に応じて調整する)
+;@DM92.S = 0 '最小値時のAD変換値
+;@DM93.S = 4000 '最大値時のAD変換値
+;@DM96.S = TOS(R5700.U) + (DM29016.S) 'CH0のAD変換値
+;'CH0のAD変換値で条件分岐
+;SELECT CASE @DM96.S
+;'AD変換値が（下限値）以下のﾃﾞｰﾀは-30000(必要に応じて変更の事)
+;CASE IS < @DM92.S
+;DM11030.S = -1000	'-30000
+;'AD変換値が（上限値）以上のﾃﾞｰﾀは30000(必要に応じて変更の事)
+;CASE IS > @DM93.S
+;DM11030.S = 1000	'30000
+;'範囲内の場合、ｽｹｰﾘﾝｸﾞ
+;CASE ELSE
+;DM11030.S = (@DM91.S-@DM90.S)*(@DM96.S-@DM92.S)/(@DM93.S-@DM92.S)+@DM90.S
+;END SELECT
+;'ﾍｯﾄﾞSUNX DPH-101-M5 ｱﾝﾌﾟDPC-101Z
+;
+;'連成圧ﾀｲﾌﾟ ﾚﾝｼﾞ -100.0～100.0KPa
+;
+;'ｱﾅﾛｸﾞ出力 1～5Ⅴ(AD値 0～4000)
+;
+;@DM90.S = -1000 '圧力計最小値(ｽｹｰﾘﾝｸﾞ値は必要に応じて調整する)
+;
+LD CR2002                ; 常時ON
+MOV.S -1000 @DM90        ; ﾜｰｸ4 流路圧力計 最小値
+;@DM91.S = 1000 '圧力計最大値(ｽｹｰﾘﾝｸﾞ値は必要に応じて調整する)
+;
+LD CR2002                ; 常時ON
+MOV.S +1000 @DM91        ; ﾜｰｸ4 流路圧力計 最大値
+;@DM92.S = 0 '最小値時のAD変換値
+;
+LD CR2002                ; 常時ON
+MOV.S +0 @DM92           ; ﾜｰｸ4 流路圧力計 最小値AD変換値
+;@DM93.S = 4000 '最大値時のAD変換値
+;
+LD CR2002                ; 常時ON
+MOV.S +4000 @DM93        ; ﾜｰｸ4 流路圧力計 最大地AD変換値
+;@DM96.S = TOS(R5700.U) + (DM29016.S) 'CH0のAD変換値
+;
+LD CR2002                ; 常時ON
+LDA.S DM29016            ; ﾜｰｸ4 流路圧力計 ADｵﾌｾｯﾄ
+CON
+EXT.S
+CON
+STA.L @VM129
+CON
+LDA.S R5700              ; ﾜｰｸ4      流路圧力
+CON
+EXT.S
+CON
+ADD.L @VM129
+CON
+STA.S @DM96              ; ﾜｰｸ4 流路圧力計 AD変換圧力値
+;'CH0のAD変換値で条件分岐
+;
+;SELECT CASE @DM96.S
+;
+LD CR2002                ; 常時ON
+MOV.S @DM96 @VM131       ; ﾜｰｸ4 流路圧力計 AD変換圧力値
+;'AD変換値が（下限値）以下のﾃﾞｰﾀは-30000(必要に応じて変更の事)
+;
+;CASE IS < @DM92.S
+;
+LD<.S @VM131 @DM92       ; ﾜｰｸ4 流路圧力計 最小値AD変換値
+NCJ #2036
+;DM11030.S = -1000	'-30000
+;
+LD CR2002                ; 常時ON
+MOV.S -1000 DM11030      ; AD32 W4   ｽｹｰﾘﾝｸﾞ値
+;'AD変換値が（上限値）以上のﾃﾞｰﾀは30000(必要に応じて変更の事)
+;
+LD CR2002                ; 常時ON
+CJ #2037
+LABEL #2036
+;CASE IS > @DM93.S
+;
+LD>.S @VM131 @DM93       ; ﾜｰｸ4 流路圧力計 最大地AD変換値
+NCJ #2038
+;DM11030.S = 1000	'30000
+;
+LD CR2002                ; 常時ON
+MOV.S +1000 DM11030      ; AD32 W4   ｽｹｰﾘﾝｸﾞ値
+;'範囲内の場合、ｽｹｰﾘﾝｸﾞ
+;
+LD CR2002                ; 常時ON
+CJ #2039
+LABEL #2038
+;CASE ELSE
+;
+;DM11030.S = (@DM91.S-@DM90.S)*(@DM96.S-@DM92.S)/(@DM93.S-@DM92.S)+@DM90.S
+;
+LD CR2002                ; 常時ON
+LDA.S @DM92              ; ﾜｰｸ4 流路圧力計 最小値AD変換値
+CON
+EXT.S
+CON
+STA.L @VM132
+CON
+LDA.S @DM93              ; ﾜｰｸ4 流路圧力計 最大地AD変換値
+CON
+EXT.S
+CON
+SUB.L @VM132
+CON
+STA.L @VM134
+CON
+LDA.S @DM92              ; ﾜｰｸ4 流路圧力計 最小値AD変換値
+CON
+EXT.S
+CON
+STA.L @VM136
+CON
+LDA.S @DM96              ; ﾜｰｸ4 流路圧力計 AD変換圧力値
+CON
+EXT.S
+CON
+SUB.L @VM136
+CON
+STA.L @VM138
+CON
+LDA.S @DM90              ; ﾜｰｸ4 流路圧力計 最小値
+CON
+EXT.S
+CON
+STA.L @VM140
+CON
+LDA.S @DM91              ; ﾜｰｸ4 流路圧力計 最大値
+CON
+EXT.S
+CON
+SUB.L @VM140
+CON
+MUL.L @VM138
+CON
+DIV.L @VM134
+CON
+STA.L @VM142
+CON
+LDA.S @DM90              ; ﾜｰｸ4 流路圧力計 最小値
+CON
+EXT.S
+CON
+ADD.L @VM142
+CON
+STA.S DM11030            ; AD32 W4   ｽｹｰﾘﾝｸﾞ値
+;END SELECT
+LABEL #2039
+LABEL #2037
+;
+;ﾜｰｸ4　外周流量
+;'流量計CKD FSM-H-N-005ML-6A
+;'ﾚﾝｼﾞ 0.25～5.00ml/min
+;'ｱﾅﾛｸﾞ出力 1～5Ⅴ(AD値 0～4000)
+;@DM100.S = 0 '流量計最小値(ｽｹｰﾘﾝｸﾞ値は必要に応じて調整する)
+;@DM101.S = 495 '流量計最大値(ｽｹｰﾘﾝｸﾞ値は必要に応じて調整する)
+;@DM102.S = 0 '最小値時のAD変換値
+;@DM103.S = 4000 '最大値時のAD変換値
+;@DM106.S = TOS(R5800.U) + (DM29036.S) 'CH1のAD変換値
+;'CH1のAD変換値で条件分岐
+;SELECT CASE @DM106.S
+;'AD変換値が（下限値）以下のﾃﾞｰﾀは-30000(必要に応じて変更の事)
+;CASE IS < @DM102.S
+;DM11032.S = 0	'-30000
+;'AD変換値が（上限値）以上のﾃﾞｰﾀは30000(必要に応じて変更の事)
+;CASE IS > @DM103.S
+;DM11032.S = 500	'30000
+;'範囲内の場合、ｽｹｰﾘﾝｸﾞ
+;CASE ELSE
+;DM11032.S = (@DM101.S-@DM100.S)*(@DM106.S-@DM102.S)/(@DM103.S-@DM102.S)+@DM100.S
+;END SELECT
+;'流量計CKD FSM-H-N-005ML-6A
+;
+;'ﾚﾝｼﾞ 0.25～5.00ml/min
+;
+;'ｱﾅﾛｸﾞ出力 1～5Ⅴ(AD値 0～4000)
+;
+;@DM100.S = 0 '流量計最小値(ｽｹｰﾘﾝｸﾞ値は必要に応じて調整する)
+;
+LD CR2002                ; 常時ON
+MOV.S +0 @DM100          ; ﾜｰｸ4 外周流量計 最小値
+;@DM101.S = 495 '流量計最大値(ｽｹｰﾘﾝｸﾞ値は必要に応じて調整する)
+;
+LD CR2002                ; 常時ON
+MOV.S +495 @DM101        ; ﾜｰｸ4 外周流量計 最大値
+;@DM102.S = 0 '最小値時のAD変換値
+;
+LD CR2002                ; 常時ON
+MOV.S +0 @DM102          ; ﾜｰｸ4 外周流量計 最小値AD変換値
+;@DM103.S = 4000 '最大値時のAD変換値
+;
+LD CR2002                ; 常時ON
+MOV.S +4000 @DM103       ; ﾜｰｸ4 外周流量計 最大値AD変換値
+;@DM106.S = TOS(R5800.U) + (DM29036.S) 'CH1のAD変換値
+;
+LD CR2002                ; 常時ON
+LDA.S DM29036            ; ﾜｰｸ4 外周流量計 ADｵﾌｾｯﾄ
+CON
+EXT.S
+CON
+STA.L @VM144
+CON
+LDA.S R5800              ; ﾜｰｸ4      流路流量
+CON
+EXT.S
+CON
+ADD.L @VM144
+CON
+STA.S @DM106             ; ﾜｰｸ4 外周流量計 AD変換流量値
+;'CH1のAD変換値で条件分岐
+;
+;SELECT CASE @DM106.S
+;
+LD CR2002                ; 常時ON
+MOV.S @DM106 @VM146      ; ﾜｰｸ4 外周流量計 AD変換流量値
+;'AD変換値が（下限値）以下のﾃﾞｰﾀは-30000(必要に応じて変更の事)
+;
+;CASE IS < @DM102.S
+;
+LD<.S @VM146 @DM102      ; ﾜｰｸ4 外周流量計 最小値AD変換値
+NCJ #2040
+;DM11032.S = 0	'-30000
+;
+LD CR2002                ; 常時ON
+MOV.S +0 DM11032         ; AD33 W4   ｽｹｰﾘﾝｸﾞ値
+;'AD変換値が（上限値）以上のﾃﾞｰﾀは30000(必要に応じて変更の事)
+;
+LD CR2002                ; 常時ON
+CJ #2041
+LABEL #2040
+;CASE IS > @DM103.S
+;
+LD>.S @VM146 @DM103      ; ﾜｰｸ4 外周流量計 最大値AD変換値
+NCJ #2042
+;DM11032.S = 500	'30000
+;
+LD CR2002                ; 常時ON
+MOV.S +500 DM11032       ; AD33 W4   ｽｹｰﾘﾝｸﾞ値
+;'範囲内の場合、ｽｹｰﾘﾝｸﾞ
+;
+LD CR2002                ; 常時ON
+CJ #2043
+LABEL #2042
+;CASE ELSE
+;
+;DM11032.S = (@DM101.S-@DM100.S)*(@DM106.S-@DM102.S)/(@DM103.S-@DM102.S)+@DM100.S
+;
+LD CR2002                ; 常時ON
+LDA.S @DM102             ; ﾜｰｸ4 外周流量計 最小値AD変換値
+CON
+EXT.S
+CON
+STA.L @VM147
+CON
+LDA.S @DM103             ; ﾜｰｸ4 外周流量計 最大値AD変換値
+CON
+EXT.S
+CON
+SUB.L @VM147
+CON
+STA.L @VM149
+CON
+LDA.S @DM102             ; ﾜｰｸ4 外周流量計 最小値AD変換値
+CON
+EXT.S
+CON
+STA.L @VM151
+CON
+LDA.S @DM106             ; ﾜｰｸ4 外周流量計 AD変換流量値
+CON
+EXT.S
+CON
+SUB.L @VM151
+CON
+STA.L @VM153
+CON
+LDA.S @DM100             ; ﾜｰｸ4 外周流量計 最小値
+CON
+EXT.S
+CON
+STA.L @VM155
+CON
+LDA.S @DM101             ; ﾜｰｸ4 外周流量計 最大値
+CON
+EXT.S
+CON
+SUB.L @VM155
+CON
+MUL.L @VM153
+CON
+DIV.L @VM149
+CON
+STA.L @VM157
+CON
+LDA.S @DM100             ; ﾜｰｸ4 外周流量計 最小値
+CON
+EXT.S
+CON
+ADD.L @VM157
+CON
+STA.S DM11032            ; AD33 W4   ｽｹｰﾘﾝｸﾞ値
+;END SELECT
+LABEL #2043
+LABEL #2041
+;
+;ﾜｰｸ4　外周圧力
+;'ﾍｯﾄﾞSUNX DPH-101-M5 ｱﾝﾌﾟDPC-101Z
+;'連成圧ﾀｲﾌﾟ ﾚﾝｼﾞ -100.0～100.0KPa
+;'ｱﾅﾛｸﾞ出力 1～5Ⅴ(AD値 0～4000)
+;@DM110.S = -1003 '圧力計最小値(ｽｹｰﾘﾝｸﾞ値は必要に応じて調整する)
+;@DM111.S = 1003 '圧力計最大値(ｽｹｰﾘﾝｸﾞ値は必要に応じて調整する)
+;@DM112.S = 0 '最小値時のAD変換値
+;@DM113.S = 4000 '最大値時のAD変換値
+;@DM116.S = TOS(R5900.U) 'CH2のAD変換値
+;'CH2のAD変換値で条件分岐
+;SELECT CASE @DM116.S
+;'AD変換値が（下限値）以下のﾃﾞｰﾀは-30000(必要に応じて変更の事)
+;CASE IS < @DM112.S
+;DM11034.S = -1000	'-30000
+;'AD変換値が（上限値）以上のﾃﾞｰﾀは30000(必要に応じて変更の事)
+;CASE IS > @DM113.S
+;DM11034.S = 1000	'30000
+;'範囲内の場合、ｽｹｰﾘﾝｸﾞ
+;CASE ELSE
+;DM11034.S = (@DM111.S-@DM110.S)*(@DM116.S-@DM112.S)/(@DM113.S-@DM112.S)+@DM110.S
+;END SELECT
+;'ﾍｯﾄﾞSUNX DPH-101-M5 ｱﾝﾌﾟDPC-101Z
+;
+;'連成圧ﾀｲﾌﾟ ﾚﾝｼﾞ -100.0～100.0KPa
+;
+;'ｱﾅﾛｸﾞ出力 1～5Ⅴ(AD値 0～4000)
+;
+;@DM110.S = -1003 '圧力計最小値(ｽｹｰﾘﾝｸﾞ値は必要に応じて調整する)
+;
+LD CR2002                ; 常時ON
+MOV.S -1003 @DM110       ; ﾜｰｸ4 外周圧力計 最小値
+;@DM111.S = 1003 '圧力計最大値(ｽｹｰﾘﾝｸﾞ値は必要に応じて調整する)
+;
+LD CR2002                ; 常時ON
+MOV.S +1003 @DM111       ; ﾜｰｸ4 外周圧力計 最大値
+;@DM112.S = 0 '最小値時のAD変換値
+;
+LD CR2002                ; 常時ON
+MOV.S +0 @DM112          ; ﾜｰｸ4 外周圧力計 最小値AD変換値
+;@DM113.S = 4000 '最大値時のAD変換値
+;
+LD CR2002                ; 常時ON
+MOV.S +4000 @DM113       ; ﾜｰｸ4 外周圧力計 最大値AD変換値
+;@DM116.S = TOS(R5900.U) 'CH2のAD変換値
+;
+LD CR2002                ; 常時ON
+MOV.S R5900 @DM116       ; ﾜｰｸ4      外周圧力  ﾜｰｸ4 外周圧力計 AD変換圧力値
+;'CH2のAD変換値で条件分岐
+;
+;SELECT CASE @DM116.S
+;
+LD CR2002                ; 常時ON
+MOV.S @DM116 @VM159      ; ﾜｰｸ4 外周圧力計 AD変換圧力値
+;'AD変換値が（下限値）以下のﾃﾞｰﾀは-30000(必要に応じて変更の事)
+;
+;CASE IS < @DM112.S
+;
+LD<.S @VM159 @DM112      ; ﾜｰｸ4 外周圧力計 最小値AD変換値
+NCJ #2044
+;DM11034.S = -1000	'-30000
+;
+LD CR2002                ; 常時ON
+MOV.S -1000 DM11034      ; AD34 W4   ｽｹｰﾘﾝｸﾞ値
+;'AD変換値が（上限値）以上のﾃﾞｰﾀは30000(必要に応じて変更の事)
+;
+LD CR2002                ; 常時ON
+CJ #2045
+LABEL #2044
+;CASE IS > @DM113.S
+;
+LD>.S @VM159 @DM113      ; ﾜｰｸ4 外周圧力計 最大値AD変換値
+NCJ #2046
+;DM11034.S = 1000	'30000
+;
+LD CR2002                ; 常時ON
+MOV.S +1000 DM11034      ; AD34 W4   ｽｹｰﾘﾝｸﾞ値
+;'範囲内の場合、ｽｹｰﾘﾝｸﾞ
+;
+LD CR2002                ; 常時ON
+CJ #2047
+LABEL #2046
+;CASE ELSE
+;
+;DM11034.S = (@DM111.S-@DM110.S)*(@DM116.S-@DM112.S)/(@DM113.S-@DM112.S)+@DM110.S
+;
+LD CR2002                ; 常時ON
+LDA.S @DM112             ; ﾜｰｸ4 外周圧力計 最小値AD変換値
+CON
+EXT.S
+CON
+STA.L @VM160
+CON
+LDA.S @DM113             ; ﾜｰｸ4 外周圧力計 最大値AD変換値
+CON
+EXT.S
+CON
+SUB.L @VM160
+CON
+STA.L @VM162
+CON
+LDA.S @DM112             ; ﾜｰｸ4 外周圧力計 最小値AD変換値
+CON
+EXT.S
+CON
+STA.L @VM164
+CON
+LDA.S @DM116             ; ﾜｰｸ4 外周圧力計 AD変換圧力値
+CON
+EXT.S
+CON
+SUB.L @VM164
+CON
+STA.L @VM166
+CON
+LDA.S @DM110             ; ﾜｰｸ4 外周圧力計 最小値
+CON
+EXT.S
+CON
+STA.L @VM168
+CON
+LDA.S @DM111             ; ﾜｰｸ4 外周圧力計 最大値
+CON
+EXT.S
+CON
+SUB.L @VM168
+CON
+MUL.L @VM166
+CON
+DIV.L @VM162
+CON
+STA.L @VM170
+CON
+LDA.S @DM110             ; ﾜｰｸ4 外周圧力計 最小値
+CON
+EXT.S
+CON
+ADD.L @VM170
+CON
+STA.S DM11034            ; AD34 W4   ｽｹｰﾘﾝｸﾞ値
+;END SELECT
+LABEL #2047
+LABEL #2045
+;
+;<h1/>設定値の入力規制
+;'☆☆未使用☆☆
+;
+;'流路ﾘｰｸ上限下限設定の規制
+;'0kpa～100.0kpa
+;'上限設定は下限設定より下に設定できない。
+;'下限設定を上げると上限設定は追従して上がる。
+;SELECT CASE DM100.S		'上限設定値
+;CASE IS > +1000 
+;	DM100.S = +1000
+;CASE IS < DM102.S
+;	DM100.S = DM102.S
+;CASE ELSE
+;END SELECT	
+;SELECT CASE DM102.S		'下限設定値
+;CASE IS > DM100.S 
+;	DM102.S = DM100.S
+;CASE IS < -1000
+;	DM102.S = -1000
+;CASE ELSE
+;END SELECT
+;'☆☆未使用☆☆
+;
+;'流路ﾘｰｸ上限下限設定の規制
+;
+;'0kpa～100.0kpa
+;
+;'上限設定は下限設定より下に設定できない。
+;
+;'下限設定を上げると上限設定は追従して上がる。
+;
+;SELECT CASE DM100.S		'上限設定値
+;
+LD CR2002                ; 常時ON
+MOV.S DM100 @VM172       ; 流路ﾘｰｸ元圧上限　☆未使用
+;CASE IS > +1000 
+;
+LD>.S @VM172 +1000
+NCJ #2048
+;	DM100.S = +1000
+;
+LD CR2002                ; 常時ON
+MOV.S +1000 DM100        ; 流路ﾘｰｸ元圧上限　☆未使用
+LD CR2002                ; 常時ON
+CJ #2049
+LABEL #2048
+;CASE IS < DM102.S
+;
+LD<.S @VM172 DM102       ; 流路ﾘｰｸ元圧下限　☆未使用
+NCJ #2050
+;	DM100.S = DM102.S
+;
+LD CR2002                ; 常時ON
+MOV.S DM102 DM100        ; 流路ﾘｰｸ元圧下限　☆未使用  流路ﾘｰｸ元圧上限　☆未使用
+LD CR2002                ; 常時ON
+CJ #2051
+LABEL #2050
+;CASE ELSE
+;
+;END SELECT	
+;
+LABEL #2051
+LABEL #2049
+;SELECT CASE DM102.S		'下限設定値
+;
+LD CR2002                ; 常時ON
+MOV.S DM102 @VM173       ; 流路ﾘｰｸ元圧下限　☆未使用
+;CASE IS > DM100.S 
+;
+LD>.S @VM173 DM100       ; 流路ﾘｰｸ元圧上限　☆未使用
+NCJ #2052
+;	DM102.S = DM100.S
+;
+LD CR2002                ; 常時ON
+MOV.S DM100 DM102        ; 流路ﾘｰｸ元圧上限　☆未使用  流路ﾘｰｸ元圧下限　☆未使用
+LD CR2002                ; 常時ON
+CJ #2053
+LABEL #2052
+;CASE IS < -1000
+;
+LD CR2002                ; 常時ON
+LDA.S @VM173
+CON
+EXT.S
+CON
+CMP.L -1000
+LD CR2009                ; 演算結果が負
+NCJ #2054
+;	DM102.S = -1000
+;
+LD CR2002                ; 常時ON
+MOV.S -1000 DM102        ; 流路ﾘｰｸ元圧下限　☆未使用
+LD CR2002                ; 常時ON
+CJ #2055
+LABEL #2054
+;CASE ELSE
+;
+;END SELECT
+LABEL #2055
+LABEL #2053
+;
+;'☆☆未使用☆☆
+;
+;'流量ﾘｰｸ設定の規制
+;'0ml/min～5.00ml/min
+;SELECT CASE DM104.S		'しきい値1流路
+;CASE IS > +500 
+;	DM104.S = +500
+;CASE IS < 0
+;	DM104.S = 0
+;CASE ELSE
+;END SELECT
+;SELECT CASE DM106.S		'しきい値2流路
+;CASE IS > +500 
+;	DM106.S = +500
+;CASE IS < 0
+;	DM106.S = 0
+;CASE ELSE
+;END SELECT	
+;'☆☆未使用☆☆
+;
+;'流量ﾘｰｸ設定の規制
+;
+;'0ml/min～5.00ml/min
+;
+;SELECT CASE DM104.S		'しきい値1流路
+;
+LD CR2002                ; 常時ON
+MOV.S DM104 @VM174       ; 流路ﾘｰｸしきい値1　☆未使用
+;CASE IS > +500 
+;
+LD>.S @VM174 +500
+NCJ #2056
+;	DM104.S = +500
+;
+LD CR2002                ; 常時ON
+MOV.S +500 DM104         ; 流路ﾘｰｸしきい値1　☆未使用
+LD CR2002                ; 常時ON
+CJ #2057
+LABEL #2056
+;CASE IS < 0
+;
+LD<.S @VM174 +0
+NCJ #2058
+;	DM104.S = 0
+;
+LD CR2002                ; 常時ON
+MOV.S +0 DM104           ; 流路ﾘｰｸしきい値1　☆未使用
+LD CR2002                ; 常時ON
+CJ #2059
+LABEL #2058
+;CASE ELSE
+;
+;END SELECT
+;
+LABEL #2059
+LABEL #2057
+;SELECT CASE DM106.S		'しきい値2流路
+;
+LD CR2002                ; 常時ON
+MOV.S DM106 @VM175       ; 流路ﾘｰｸしきい値2　☆未使用
+;CASE IS > +500 
+;
+LD>.S @VM175 +500
+NCJ #2060
+;	DM106.S = +500
+;
+LD CR2002                ; 常時ON
+MOV.S +500 DM106         ; 流路ﾘｰｸしきい値2　☆未使用
+LD CR2002                ; 常時ON
+CJ #2061
+LABEL #2060
+;CASE IS < 0
+;
+LD<.S @VM175 +0
+NCJ #2062
+;	DM106.S = 0
+;
+LD CR2002                ; 常時ON
+MOV.S +0 DM106           ; 流路ﾘｰｸしきい値2　☆未使用
+LD CR2002                ; 常時ON
+CJ #2063
+LABEL #2062
+;CASE ELSE
+;
+;END SELECT	
+LABEL #2063
+LABEL #2061
+;
+;'☆☆未使用☆☆
+;
+;'外周ﾘｰｸ上限下限設定の規制
+;'0kpa～100.0kpa
+;'上限設定は下限設定より下に設定できない。
+;'下限設定を上げると上限設定は追従して上がる。
+;SELECT CASE DM112.S		'上限設定値
+;CASE IS > +1000 
+;	DM112.S = +1000
+;CASE IS < DM114.S
+;	DM112.S = DM114.S
+;CASE ELSE
+;END SELECT	
+;SELECT CASE DM114.S		'下限設定値
+;CASE IS > DM112.S 
+;	DM114.S = DM112.S
+;CASE IS < 0
+;	DM114.S = 0
+;CASE ELSE
+;END SELECT
+;'☆☆未使用☆☆
+;
+;'外周ﾘｰｸ上限下限設定の規制
+;
+;'0kpa～100.0kpa
+;
+;'上限設定は下限設定より下に設定できない。
+;
+;'下限設定を上げると上限設定は追従して上がる。
+;
+;SELECT CASE DM112.S		'上限設定値
+;
+LD CR2002                ; 常時ON
+MOV.S DM112 @VM176       ; 外周ﾘｰｸ元圧上限　☆未使用
+;CASE IS > +1000 
+;
+LD>.S @VM176 +1000
+NCJ #2064
+;	DM112.S = +1000
+;
+LD CR2002                ; 常時ON
+MOV.S +1000 DM112        ; 外周ﾘｰｸ元圧上限　☆未使用
+LD CR2002                ; 常時ON
+CJ #2065
+LABEL #2064
+;CASE IS < DM114.S
+;
+LD<.S @VM176 DM114       ; 外周ﾘｰｸ元圧下限　☆未使用
+NCJ #2066
+;	DM112.S = DM114.S
+;
+LD CR2002                ; 常時ON
+MOV.S DM114 DM112        ; 外周ﾘｰｸ元圧下限　☆未使用  外周ﾘｰｸ元圧上限　☆未使用
+LD CR2002                ; 常時ON
+CJ #2067
+LABEL #2066
+;CASE ELSE
+;
+;END SELECT	
+;
+LABEL #2067
+LABEL #2065
+;SELECT CASE DM114.S		'下限設定値
+;
+LD CR2002                ; 常時ON
+MOV.S DM114 @VM177       ; 外周ﾘｰｸ元圧下限　☆未使用
+;CASE IS > DM112.S 
+;
+LD>.S @VM177 DM112       ; 外周ﾘｰｸ元圧上限　☆未使用
+NCJ #2068
+;	DM114.S = DM112.S
+;
+LD CR2002                ; 常時ON
+MOV.S DM112 DM114        ; 外周ﾘｰｸ元圧上限　☆未使用  外周ﾘｰｸ元圧下限　☆未使用
+LD CR2002                ; 常時ON
+CJ #2069
+LABEL #2068
+;CASE IS < 0
+;
+LD<.S @VM177 +0
+NCJ #2070
+;	DM114.S = 0
+;
+LD CR2002                ; 常時ON
+MOV.S +0 DM114           ; 外周ﾘｰｸ元圧下限　☆未使用
+LD CR2002                ; 常時ON
+CJ #2071
+LABEL #2070
+;CASE ELSE
+;
+;END SELECT
+LABEL #2071
+LABEL #2069
+;
+;'☆☆未使用☆☆
+;
+;'微少ﾘｰｸ設定の規制
+;'0kpa～100.0kpa
+;SELECT CASE DM116.S		'しきい値
+;CASE IS > +1000 
+;	DM116.S = +1000
+;CASE IS < 0
+;	DM116.S = 0
+;CASE ELSE
+;END SELECT
+;DM130.S = DM116.S		'+しきい値
+;DM132.S = DM116.S * -1	'-しきい値
+;'☆☆未使用☆☆
+;
+;'微少ﾘｰｸ設定の規制
+;
+;'0kpa～100.0kpa
+;
+;SELECT CASE DM116.S		'しきい値
+;
+LD CR2002                ; 常時ON
+MOV.S DM116 @VM178       ; 微少ﾘｰｸしきい値　☆未使用
+;CASE IS > +1000 
+;
+LD>.S @VM178 +1000
+NCJ #2072
+;	DM116.S = +1000
+;
+LD CR2002                ; 常時ON
+MOV.S +1000 DM116        ; 微少ﾘｰｸしきい値　☆未使用
+LD CR2002                ; 常時ON
+CJ #2073
+LABEL #2072
+;CASE IS < 0
+;
+LD<.S @VM178 +0
+NCJ #2074
+;	DM116.S = 0
+;
+LD CR2002                ; 常時ON
+MOV.S +0 DM116           ; 微少ﾘｰｸしきい値　☆未使用
+LD CR2002                ; 常時ON
+CJ #2075
+LABEL #2074
+;CASE ELSE
+;
+;END SELECT
+;
+LABEL #2075
+LABEL #2073
+;DM130.S = DM116.S		'+しきい値
+;
+LD CR2002                ; 常時ON
+MOV.S DM116 DM130        ; 微少ﾘｰｸしきい値　☆未使用  微少ﾘｰｸしきい値+　☆未使用
+;DM132.S = DM116.S * -1	'-しきい値
+LD CR2002                ; 常時ON
+LDA.S DM116              ; 微少ﾘｰｸしきい値　☆未使用
+CON
+EXT.S
+CON
+MUL.L -1
+CON
+STA.S DM132              ; 微少ﾘｰｸしきい値-　☆未使用
+;
+;'追加作成_201404
+;'ﾍﾋﾞ道ﾘｰｸ時間判定開始値、終了値の設定規制_機種1 ﾜｰｸ1
+;'0s～99.99s
+;'開始値は終了値より下に設定できない。
+;'終了値を上げると開始値は追従して上がる。
+;SELECT CASE DM30202.S		'開始値
+;CASE IS > +1000 
+;	DM30202.S = +1000
+;CASE IS < DM30204.S
+;	DM30202.S = DM30204.S
+;CASE ELSE
+;END SELECT	
+;SELECT CASE DM30204.S		'終了値
+;CASE IS > DM30202.S 
+;	DM30204.S = DM30202.S
+;CASE IS < 0
+;	DM30204.S = 0
+;CASE ELSE
+;END SELECT
+;'追加作成_201404
+;
+;'ﾍﾋﾞ道ﾘｰｸ時間判定開始値、終了値の設定規制_機種1 ﾜｰｸ1
+;
+;'0s～99.99s
+;
+;'開始値は終了値より下に設定できない。
+;
+;'終了値を上げると開始値は追従して上がる。
+;
+;SELECT CASE DM30202.S		'開始値
+;
+LD CR2002                ; 常時ON
+MOV.S DM30202 @VM179     ; ﾜｰｸ1 ﾍﾋﾞ道ﾘｰｸ判定開始(1)
+;CASE IS > +1000 
+;
+LD>.S @VM179 +1000
+NCJ #2076
+;	DM30202.S = +1000
+;
+LD CR2002                ; 常時ON
+MOV.S +1000 DM30202      ; ﾜｰｸ1 ﾍﾋﾞ道ﾘｰｸ判定開始(1)
+LD CR2002                ; 常時ON
+CJ #2077
+LABEL #2076
+;CASE IS < DM30204.S
+;
+LD<.S @VM179 DM30204     ; ﾜｰｸ1 ﾍﾋﾞ道ﾘｰｸ判定終了(1)
+NCJ #2078
+;	DM30202.S = DM30204.S
+;
+LD CR2002                ; 常時ON
+MOV.S DM30204 DM30202    ; ﾜｰｸ1 ﾍﾋﾞ道ﾘｰｸ判定終了(1)  ﾜｰｸ1 ﾍﾋﾞ道ﾘｰｸ判定開始(1)
+LD CR2002                ; 常時ON
+CJ #2079
+LABEL #2078
+;CASE ELSE
+;
+;END SELECT	
+;
+LABEL #2079
+LABEL #2077
+;SELECT CASE DM30204.S		'終了値
+;
+LD CR2002                ; 常時ON
+MOV.S DM30204 @VM180     ; ﾜｰｸ1 ﾍﾋﾞ道ﾘｰｸ判定終了(1)
+;CASE IS > DM30202.S 
+;
+LD>.S @VM180 DM30202     ; ﾜｰｸ1 ﾍﾋﾞ道ﾘｰｸ判定開始(1)
+NCJ #2080
+;	DM30204.S = DM30202.S
+;
+LD CR2002                ; 常時ON
+MOV.S DM30202 DM30204    ; ﾜｰｸ1 ﾍﾋﾞ道ﾘｰｸ判定開始(1)  ﾜｰｸ1 ﾍﾋﾞ道ﾘｰｸ判定終了(1)
+LD CR2002                ; 常時ON
+CJ #2081
+LABEL #2080
+;CASE IS < 0
+;
+LD<.S @VM180 +0
+NCJ #2082
+;	DM30204.S = 0
+;
+LD CR2002                ; 常時ON
+MOV.S +0 DM30204         ; ﾜｰｸ1 ﾍﾋﾞ道ﾘｰｸ判定終了(1)
+LD CR2002                ; 常時ON
+CJ #2083
+LABEL #2082
+;CASE ELSE
+;
+;END SELECT
+LABEL #2083
+LABEL #2081
+;
+;'追加作成_201404
+;'ﾍﾋﾞ道ﾘｰｸ時間判定開始値、終了値の設定規制_機種1 ﾜｰｸ2
+;'0s～99.99s
+;'開始値は終了値より下に設定できない。
+;'終了値を上げると開始値は追従して上がる。
+;SELECT CASE DM30702.S		'開始値
+;CASE IS > +1000 
+;	DM30702.S = +1000
+;CASE IS < DM30704.S
+;	DM30702.S = DM30704.S
+;CASE ELSE
+;END SELECT	
+;SELECT CASE DM30704.S		'終了値
+;CASE IS > DM30702.S 
+;	DM30704.S = DM30702.S
+;CASE IS < 0
+;	DM30704.S = 0
+;CASE ELSE
+;END SELECT
+;'追加作成_201404
+;
+;'ﾍﾋﾞ道ﾘｰｸ時間判定開始値、終了値の設定規制_機種1 ﾜｰｸ2
+;
+;'0s～99.99s
+;
+;'開始値は終了値より下に設定できない。
+;
+;'終了値を上げると開始値は追従して上がる。
+;
+;SELECT CASE DM30702.S		'開始値
+;
+LD CR2002                ; 常時ON
+MOV.S DM30702 @VM181     ; ﾜｰｸ2 ﾍﾋﾞ道ﾘｰｸ判定開始(1)
+;CASE IS > +1000 
+;
+LD>.S @VM181 +1000
+NCJ #2084
+;	DM30702.S = +1000
+;
+LD CR2002                ; 常時ON
+MOV.S +1000 DM30702      ; ﾜｰｸ2 ﾍﾋﾞ道ﾘｰｸ判定開始(1)
+LD CR2002                ; 常時ON
+CJ #2085
+LABEL #2084
+;CASE IS < DM30704.S
+;
+LD<.S @VM181 DM30704     ; ﾜｰｸ2 ﾍﾋﾞ道ﾘｰｸ判定終了(1)
+NCJ #2086
+;	DM30702.S = DM30704.S
+;
+LD CR2002                ; 常時ON
+MOV.S DM30704 DM30702    ; ﾜｰｸ2 ﾍﾋﾞ道ﾘｰｸ判定終了(1)  ﾜｰｸ2 ﾍﾋﾞ道ﾘｰｸ判定開始(1)
+LD CR2002                ; 常時ON
+CJ #2087
+LABEL #2086
+;CASE ELSE
+;
+;END SELECT	
+;
+LABEL #2087
+LABEL #2085
+;SELECT CASE DM30704.S		'終了値
+;
+LD CR2002                ; 常時ON
+MOV.S DM30704 @VM182     ; ﾜｰｸ2 ﾍﾋﾞ道ﾘｰｸ判定終了(1)
+;CASE IS > DM30702.S 
+;
+LD>.S @VM182 DM30702     ; ﾜｰｸ2 ﾍﾋﾞ道ﾘｰｸ判定開始(1)
+NCJ #2088
+;	DM30704.S = DM30702.S
+;
+LD CR2002                ; 常時ON
+MOV.S DM30702 DM30704    ; ﾜｰｸ2 ﾍﾋﾞ道ﾘｰｸ判定開始(1)  ﾜｰｸ2 ﾍﾋﾞ道ﾘｰｸ判定終了(1)
+LD CR2002                ; 常時ON
+CJ #2089
+LABEL #2088
+;CASE IS < 0
+;
+LD<.S @VM182 +0
+NCJ #2090
+;	DM30704.S = 0
+;
+LD CR2002                ; 常時ON
+MOV.S +0 DM30704         ; ﾜｰｸ2 ﾍﾋﾞ道ﾘｰｸ判定終了(1)
+LD CR2002                ; 常時ON
+CJ #2091
+LABEL #2090
+;CASE ELSE
+;
+;END SELECT
+LABEL #2091
+LABEL #2089
+;
+;'追加作成_201404
+;'ﾍﾋﾞ道ﾘｰｸ時間判定開始値、終了値の設定規制_機種1 ﾜｰｸ3
+;'0s～99.99s
+;'開始値は終了値より下に設定できない。
+;'終了値を上げると開始値は追従して上がる。
+;SELECT CASE DM31202.S		'開始値
+;CASE IS > +1000 
+;	DM31202.S = +1000
+;CASE IS < DM31204.S
+;	DM31202.S = DM31204.S
+;CASE ELSE
+;END SELECT	
+;SELECT CASE DM31204.S		'終了値
+;CASE IS > DM31202.S 
+;	DM31204.S = DM31202.S
+;CASE IS < 0
+;	DM31204.S = 0
+;CASE ELSE
+;END SELECT
+;'追加作成_201404
+;
+;'ﾍﾋﾞ道ﾘｰｸ時間判定開始値、終了値の設定規制_機種1 ﾜｰｸ3
+;
+;'0s～99.99s
+;
+;'開始値は終了値より下に設定できない。
+;
+;'終了値を上げると開始値は追従して上がる。
+;
+;SELECT CASE DM31202.S		'開始値
+;
+LD CR2002                ; 常時ON
+MOV.S DM31202 @VM183     ; ﾜｰｸ3 ﾍﾋﾞ道ﾘｰｸ判定開始(1)
+;CASE IS > +1000 
+;
+LD>.S @VM183 +1000
+NCJ #2092
+;	DM31202.S = +1000
+;
+LD CR2002                ; 常時ON
+MOV.S +1000 DM31202      ; ﾜｰｸ3 ﾍﾋﾞ道ﾘｰｸ判定開始(1)
+LD CR2002                ; 常時ON
+CJ #2093
+LABEL #2092
+;CASE IS < DM31204.S
+;
+LD<.S @VM183 DM31204     ; ﾜｰｸ3 ﾍﾋﾞ道ﾘｰｸ判定終了(1)
+NCJ #2094
+;	DM31202.S = DM31204.S
+;
+LD CR2002                ; 常時ON
+MOV.S DM31204 DM31202    ; ﾜｰｸ3 ﾍﾋﾞ道ﾘｰｸ判定終了(1)  ﾜｰｸ3 ﾍﾋﾞ道ﾘｰｸ判定開始(1)
+LD CR2002                ; 常時ON
+CJ #2095
+LABEL #2094
+;CASE ELSE
+;
+;END SELECT	
+;
+LABEL #2095
+LABEL #2093
+;SELECT CASE DM31204.S		'終了値
+;
+LD CR2002                ; 常時ON
+MOV.S DM31204 @VM184     ; ﾜｰｸ3 ﾍﾋﾞ道ﾘｰｸ判定終了(1)
+;CASE IS > DM31202.S 
+;
+LD>.S @VM184 DM31202     ; ﾜｰｸ3 ﾍﾋﾞ道ﾘｰｸ判定開始(1)
+NCJ #2096
+;	DM31204.S = DM31202.S
+;
+LD CR2002                ; 常時ON
+MOV.S DM31202 DM31204    ; ﾜｰｸ3 ﾍﾋﾞ道ﾘｰｸ判定開始(1)  ﾜｰｸ3 ﾍﾋﾞ道ﾘｰｸ判定終了(1)
+LD CR2002                ; 常時ON
+CJ #2097
+LABEL #2096
+;CASE IS < 0
+;
+LD<.S @VM184 +0
+NCJ #2098
+;	DM31204.S = 0
+;
+LD CR2002                ; 常時ON
+MOV.S +0 DM31204         ; ﾜｰｸ3 ﾍﾋﾞ道ﾘｰｸ判定終了(1)
+LD CR2002                ; 常時ON
+CJ #2099
+LABEL #2098
+;CASE ELSE
+;
+;END SELECT
+LABEL #2099
+LABEL #2097
+;
+;'追加作成_201404
+;'ﾍﾋﾞ道ﾘｰｸ時間判定開始値、終了値の設定規制_機種1 ﾜｰｸ4
+;'0s～99.99s
+;'開始値は終了値より下に設定できない。
+;'終了値を上げると開始値は追従して上がる。
+;SELECT CASE DM31702.S		'開始値
+;CASE IS > +1000 
+;	DM31702.S = +1000
+;CASE IS < DM31704.S
+;	DM31702.S = DM31704.S
+;CASE ELSE
+;END SELECT	
+;SELECT CASE DM31704.S		'終了値
+;CASE IS > DM31702.S 
+;	DM31704.S = DM31702.S
+;CASE IS < 0
+;	DM31704.S = 0
+;CASE ELSE
+;END SELECT
+;'追加作成_201404
+;
+;'ﾍﾋﾞ道ﾘｰｸ時間判定開始値、終了値の設定規制_機種1 ﾜｰｸ4
+;
+;'0s～99.99s
+;
+;'開始値は終了値より下に設定できない。
+;
+;'終了値を上げると開始値は追従して上がる。
+;
+;SELECT CASE DM31702.S		'開始値
+;
+LD CR2002                ; 常時ON
+MOV.S DM31702 @VM185     ; ﾜｰｸ4 ﾍﾋﾞ道ﾘｰｸ判定開始(1)
+;CASE IS > +1000 
+;
+LD>.S @VM185 +1000
+NCJ #2100
+;	DM31702.S = +1000
+;
+LD CR2002                ; 常時ON
+MOV.S +1000 DM31702      ; ﾜｰｸ4 ﾍﾋﾞ道ﾘｰｸ判定開始(1)
+LD CR2002                ; 常時ON
+CJ #2101
+LABEL #2100
+;CASE IS < DM31704.S
+;
+LD<.S @VM185 DM31704     ; ﾜｰｸ4 ﾍﾋﾞ道ﾘｰｸ判定終了(1)
+NCJ #2102
+;	DM31702.S = DM31704.S
+;
+LD CR2002                ; 常時ON
+MOV.S DM31704 DM31702    ; ﾜｰｸ4 ﾍﾋﾞ道ﾘｰｸ判定終了(1)  ﾜｰｸ4 ﾍﾋﾞ道ﾘｰｸ判定開始(1)
+LD CR2002                ; 常時ON
+CJ #2103
+LABEL #2102
+;CASE ELSE
+;
+;END SELECT	
+;
+LABEL #2103
+LABEL #2101
+;SELECT CASE DM31704.S		'終了値
+;
+LD CR2002                ; 常時ON
+MOV.S DM31704 @VM186     ; ﾜｰｸ4 ﾍﾋﾞ道ﾘｰｸ判定終了(1)
+;CASE IS > DM31702.S 
+;
+LD>.S @VM186 DM31702     ; ﾜｰｸ4 ﾍﾋﾞ道ﾘｰｸ判定開始(1)
+NCJ #2104
+;	DM31704.S = DM31702.S
+;
+LD CR2002                ; 常時ON
+MOV.S DM31702 DM31704    ; ﾜｰｸ4 ﾍﾋﾞ道ﾘｰｸ判定開始(1)  ﾜｰｸ4 ﾍﾋﾞ道ﾘｰｸ判定終了(1)
+LD CR2002                ; 常時ON
+CJ #2105
+LABEL #2104
+;CASE IS < 0
+;
+LD<.S @VM186 +0
+NCJ #2106
+;	DM31704.S = 0
+;
+LD CR2002                ; 常時ON
+MOV.S +0 DM31704         ; ﾜｰｸ4 ﾍﾋﾞ道ﾘｰｸ判定終了(1)
+LD CR2002                ; 常時ON
+CJ #2107
+LABEL #2106
+;CASE ELSE
+;
+;END SELECT
+LABEL #2107
+LABEL #2105
+;
+;'追加作成_201404
+;'ﾍﾋﾞ道ﾘｰｸ時間判定開始値、終了値の設定規制_機種2 ﾜｰｸ1
+;'0s～99.99s
+;'開始値は終了値より下に設定できない。
+;'終了値を上げると開始値は追従して上がる。
+;SELECT CASE DM32202.S		'開始値
+;CASE IS > +1000 
+;	DM32202.S = +1000
+;CASE IS < DM32204.S
+;	DM32202.S = DM32204.S
+;CASE ELSE
+;END SELECT	
+;SELECT CASE DM32204.S		'終了値
+;CASE IS > DM32202.S 
+;	DM32204.S = DM32202.S
+;CASE IS < 0
+;	DM32204.S = 0
+;CASE ELSE
+;END SELECT
+;'追加作成_201404
+;
+;'ﾍﾋﾞ道ﾘｰｸ時間判定開始値、終了値の設定規制_機種2 ﾜｰｸ1
+;
+;'0s～99.99s
+;
+;'開始値は終了値より下に設定できない。
+;
+;'終了値を上げると開始値は追従して上がる。
+;
+;SELECT CASE DM32202.S		'開始値
+;
+LD CR2002                ; 常時ON
+MOV.S DM32202 @VM187     ; ﾜｰｸ1 ﾍﾋﾞ道ﾘｰｸ判定開始(2)
+;CASE IS > +1000 
+;
+LD>.S @VM187 +1000
+NCJ #2108
+;	DM32202.S = +1000
+;
+LD CR2002                ; 常時ON
+MOV.S +1000 DM32202      ; ﾜｰｸ1 ﾍﾋﾞ道ﾘｰｸ判定開始(2)
+LD CR2002                ; 常時ON
+CJ #2109
+LABEL #2108
+;CASE IS < DM32204.S
+;
+LD<.S @VM187 DM32204     ; ﾜｰｸ1 ﾍﾋﾞ道ﾘｰｸ判定終了(2)
+NCJ #2110
+;	DM32202.S = DM32204.S
+;
+LD CR2002                ; 常時ON
+MOV.S DM32204 DM32202    ; ﾜｰｸ1 ﾍﾋﾞ道ﾘｰｸ判定終了(2)  ﾜｰｸ1 ﾍﾋﾞ道ﾘｰｸ判定開始(2)
+LD CR2002                ; 常時ON
+CJ #2111
+LABEL #2110
+;CASE ELSE
+;
+;END SELECT	
+;
+LABEL #2111
+LABEL #2109
+;SELECT CASE DM32204.S		'終了値
+;
+LD CR2002                ; 常時ON
+MOV.S DM32204 @VM188     ; ﾜｰｸ1 ﾍﾋﾞ道ﾘｰｸ判定終了(2)
+;CASE IS > DM32202.S 
+;
+LD>.S @VM188 DM32202     ; ﾜｰｸ1 ﾍﾋﾞ道ﾘｰｸ判定開始(2)
+NCJ #2112
+;	DM32204.S = DM32202.S
+;
+LD CR2002                ; 常時ON
+MOV.S DM32202 DM32204    ; ﾜｰｸ1 ﾍﾋﾞ道ﾘｰｸ判定開始(2)  ﾜｰｸ1 ﾍﾋﾞ道ﾘｰｸ判定終了(2)
+LD CR2002                ; 常時ON
+CJ #2113
+LABEL #2112
+;CASE IS < 0
+;
+LD<.S @VM188 +0
+NCJ #2114
+;	DM32204.S = 0
+;
+LD CR2002                ; 常時ON
+MOV.S +0 DM32204         ; ﾜｰｸ1 ﾍﾋﾞ道ﾘｰｸ判定終了(2)
+LD CR2002                ; 常時ON
+CJ #2115
+LABEL #2114
+;CASE ELSE
+;
+;END SELECT
+LABEL #2115
+LABEL #2113
+;
+;'追加作成_201404
+;'ﾍﾋﾞ道ﾘｰｸ時間判定開始値、終了値の設定規制_機種2 ﾜｰｸ2
+;'0s～99.99s
+;'開始値は終了値より下に設定できない。
+;'終了値を上げると開始値は追従して上がる。
+;SELECT CASE DM32702.S		'開始値
+;CASE IS > +1000 
+;	DM32702.S = +1000
+;CASE IS < DM32704.S
+;	DM32702.S = DM32704.S
+;CASE ELSE
+;END SELECT	
+;SELECT CASE DM32704.S		'終了値
+;CASE IS > DM32702.S 
+;	DM32704.S = DM32702.S
+;CASE IS < 0
+;	DM32704.S = 0
+;CASE ELSE
+;END SELECT
+;'追加作成_201404
+;
+;'ﾍﾋﾞ道ﾘｰｸ時間判定開始値、終了値の設定規制_機種2 ﾜｰｸ2
+;
+;'0s～99.99s
+;
+;'開始値は終了値より下に設定できない。
+;
+;'終了値を上げると開始値は追従して上がる。
+;
+;SELECT CASE DM32702.S		'開始値
+;
+LD CR2002                ; 常時ON
+MOV.S DM32702 @VM189     ; ﾜｰｸ2 ﾍﾋﾞ道ﾘｰｸ判定開始(2)
+;CASE IS > +1000 
+;
+LD>.S @VM189 +1000
+NCJ #2116
+;	DM32702.S = +1000
+;
+LD CR2002                ; 常時ON
+MOV.S +1000 DM32702      ; ﾜｰｸ2 ﾍﾋﾞ道ﾘｰｸ判定開始(2)
+LD CR2002                ; 常時ON
+CJ #2117
+LABEL #2116
+;CASE IS < DM32704.S
+;
+LD<.S @VM189 DM32704     ; ﾜｰｸ2 ﾍﾋﾞ道ﾘｰｸ判定終了(2)
+NCJ #2118
+;	DM32702.S = DM32704.S
+;
+LD CR2002                ; 常時ON
+MOV.S DM32704 DM32702    ; ﾜｰｸ2 ﾍﾋﾞ道ﾘｰｸ判定終了(2)  ﾜｰｸ2 ﾍﾋﾞ道ﾘｰｸ判定開始(2)
+LD CR2002                ; 常時ON
+CJ #2119
+LABEL #2118
+;CASE ELSE
+;
+;END SELECT	
+;
+LABEL #2119
+LABEL #2117
+;SELECT CASE DM32704.S		'終了値
+;
+LD CR2002                ; 常時ON
+MOV.S DM32704 @VM190     ; ﾜｰｸ2 ﾍﾋﾞ道ﾘｰｸ判定終了(2)
+;CASE IS > DM32702.S 
+;
+LD>.S @VM190 DM32702     ; ﾜｰｸ2 ﾍﾋﾞ道ﾘｰｸ判定開始(2)
+NCJ #2120
+;	DM32704.S = DM32702.S
+;
+LD CR2002                ; 常時ON
+MOV.S DM32702 DM32704    ; ﾜｰｸ2 ﾍﾋﾞ道ﾘｰｸ判定開始(2)  ﾜｰｸ2 ﾍﾋﾞ道ﾘｰｸ判定終了(2)
+LD CR2002                ; 常時ON
+CJ #2121
+LABEL #2120
+;CASE IS < 0
+;
+LD<.S @VM190 +0
+NCJ #2122
+;	DM32704.S = 0
+;
+LD CR2002                ; 常時ON
+MOV.S +0 DM32704         ; ﾜｰｸ2 ﾍﾋﾞ道ﾘｰｸ判定終了(2)
+LD CR2002                ; 常時ON
+CJ #2123
+LABEL #2122
+;CASE ELSE
+;
+;END SELECT
+LABEL #2123
+LABEL #2121
+;
+;'追加作成_201404
+;'ﾍﾋﾞ道ﾘｰｸ時間判定開始値、終了値の設定規制_機種2 ﾜｰｸ3
+;'0s～99.99s
+;'開始値は終了値より下に設定できない。
+;'終了値を上げると開始値は追従して上がる。
+;SELECT CASE DM33202.S		'開始値
+;CASE IS > +1000 
+;	DM33202.S = +1000
+;CASE IS < DM33204.S
+;	DM33202.S = DM33204.S
+;CASE ELSE
+;END SELECT	
+;SELECT CASE DM33204.S		'終了値
+;CASE IS > DM33202.S 
+;	DM33204.S = DM33202.S
+;CASE IS < 0
+;	DM33204.S = 0
+;CASE ELSE
+;END SELECT
+;'追加作成_201404
+;
+;'ﾍﾋﾞ道ﾘｰｸ時間判定開始値、終了値の設定規制_機種2 ﾜｰｸ3
+;
+;'0s～99.99s
+;
+;'開始値は終了値より下に設定できない。
+;
+;'終了値を上げると開始値は追従して上がる。
+;
+;SELECT CASE DM33202.S		'開始値
+;
+LD CR2002                ; 常時ON
+MOV.S DM33202 @VM191     ; ﾜｰｸ3 ﾍﾋﾞ道ﾘｰｸ判定開始(2)
+;CASE IS > +1000 
+;
+LD>.S @VM191 +1000
+NCJ #2124
+;	DM33202.S = +1000
+;
+LD CR2002                ; 常時ON
+MOV.S +1000 DM33202      ; ﾜｰｸ3 ﾍﾋﾞ道ﾘｰｸ判定開始(2)
+LD CR2002                ; 常時ON
+CJ #2125
+LABEL #2124
+;CASE IS < DM33204.S
+;
+LD<.S @VM191 DM33204     ; ﾜｰｸ3 ﾍﾋﾞ道ﾘｰｸ判定終了(2)
+NCJ #2126
+;	DM33202.S = DM33204.S
+;
+LD CR2002                ; 常時ON
+MOV.S DM33204 DM33202    ; ﾜｰｸ3 ﾍﾋﾞ道ﾘｰｸ判定終了(2)  ﾜｰｸ3 ﾍﾋﾞ道ﾘｰｸ判定開始(2)
+LD CR2002                ; 常時ON
+CJ #2127
+LABEL #2126
+;CASE ELSE
+;
+;END SELECT	
+;
+LABEL #2127
+LABEL #2125
+;SELECT CASE DM33204.S		'終了値
+;
+LD CR2002                ; 常時ON
+MOV.S DM33204 @VM192     ; ﾜｰｸ3 ﾍﾋﾞ道ﾘｰｸ判定終了(2)
+;CASE IS > DM33202.S 
+;
+LD>.S @VM192 DM33202     ; ﾜｰｸ3 ﾍﾋﾞ道ﾘｰｸ判定開始(2)
+NCJ #2128
+;	DM33204.S = DM33202.S
+;
+LD CR2002                ; 常時ON
+MOV.S DM33202 DM33204    ; ﾜｰｸ3 ﾍﾋﾞ道ﾘｰｸ判定開始(2)  ﾜｰｸ3 ﾍﾋﾞ道ﾘｰｸ判定終了(2)
+LD CR2002                ; 常時ON
+CJ #2129
+LABEL #2128
+;CASE IS < 0
+;
+LD<.S @VM192 +0
+NCJ #2130
+;	DM33204.S = 0
+;
+LD CR2002                ; 常時ON
+MOV.S +0 DM33204         ; ﾜｰｸ3 ﾍﾋﾞ道ﾘｰｸ判定終了(2)
+LD CR2002                ; 常時ON
+CJ #2131
+LABEL #2130
+;CASE ELSE
+;
+;END SELECT
+LABEL #2131
+LABEL #2129
+;
+;'追加作成_201404
+;'ﾍﾋﾞ道ﾘｰｸ時間判定開始値、終了値の設定規制_機種2 ﾜｰｸ4
+;'0s～99.99s
+;'開始値は終了値より下に設定できない。
+;'終了値を上げると開始値は追従して上がる。
+;SELECT CASE DM33702.S		'開始値
+;CASE IS > +1000 
+;	DM33702.S = +1000
+;CASE IS < DM33704.S
+;	DM33702.S = DM33704.S
+;CASE ELSE
+;END SELECT	
+;SELECT CASE DM33704.S		'終了値
+;CASE IS > DM33702.S 
+;	DM33704.S = DM33702.S
+;CASE IS < 0
+;	DM33704.S = 0
+;CASE ELSE
+;END SELECT
+;'追加作成_201404
+;
+;'ﾍﾋﾞ道ﾘｰｸ時間判定開始値、終了値の設定規制_機種2 ﾜｰｸ4
+;
+;'0s～99.99s
+;
+;'開始値は終了値より下に設定できない。
+;
+;'終了値を上げると開始値は追従して上がる。
+;
+;SELECT CASE DM33702.S		'開始値
+;
+LD CR2002                ; 常時ON
+MOV.S DM33702 @VM193     ; ﾜｰｸ4 ﾍﾋﾞ道ﾘｰｸ判定開始(2)
+;CASE IS > +1000 
+;
+LD>.S @VM193 +1000
+NCJ #2132
+;	DM33702.S = +1000
+;
+LD CR2002                ; 常時ON
+MOV.S +1000 DM33702      ; ﾜｰｸ4 ﾍﾋﾞ道ﾘｰｸ判定開始(2)
+LD CR2002                ; 常時ON
+CJ #2133
+LABEL #2132
+;CASE IS < DM33704.S
+;
+LD<.S @VM193 DM33704     ; ﾜｰｸ4 ﾍﾋﾞ道ﾘｰｸ判定終了(2)
+NCJ #2134
+;	DM33702.S = DM33704.S
+;
+LD CR2002                ; 常時ON
+MOV.S DM33704 DM33702    ; ﾜｰｸ4 ﾍﾋﾞ道ﾘｰｸ判定終了(2)  ﾜｰｸ4 ﾍﾋﾞ道ﾘｰｸ判定開始(2)
+LD CR2002                ; 常時ON
+CJ #2135
+LABEL #2134
+;CASE ELSE
+;
+;END SELECT	
+;
+LABEL #2135
+LABEL #2133
+;SELECT CASE DM33704.S		'終了値
+;
+LD CR2002                ; 常時ON
+MOV.S DM33704 @VM194     ; ﾜｰｸ4 ﾍﾋﾞ道ﾘｰｸ判定終了(2)
+;CASE IS > DM33702.S 
+;
+LD>.S @VM194 DM33702     ; ﾜｰｸ4 ﾍﾋﾞ道ﾘｰｸ判定開始(2)
+NCJ #2136
+;	DM33704.S = DM33702.S
+;
+LD CR2002                ; 常時ON
+MOV.S DM33702 DM33704    ; ﾜｰｸ4 ﾍﾋﾞ道ﾘｰｸ判定開始(2)  ﾜｰｸ4 ﾍﾋﾞ道ﾘｰｸ判定終了(2)
+LD CR2002                ; 常時ON
+CJ #2137
+LABEL #2136
+;CASE IS < 0
+;
+LD<.S @VM194 +0
+NCJ #2138
+;	DM33704.S = 0
+;
+LD CR2002                ; 常時ON
+MOV.S +0 DM33704         ; ﾜｰｸ4 ﾍﾋﾞ道ﾘｰｸ判定終了(2)
+LD CR2002                ; 常時ON
+CJ #2139
+LABEL #2138
+;CASE ELSE
+;
+;END SELECT
+LABEL #2139
+LABEL #2137
+;
+;'追加作成_201404
+;'ﾍﾋﾞ道ﾘｰｸ時間判定開始値、終了値の設定規制_機種3 ﾜｰｸ1
+;'0s～99.99s
+;'開始値は終了値より下に設定できない。
+;'終了値を上げると開始値は追従して上がる。
+;SELECT CASE DM34202.S		'開始値
+;CASE IS > +1000 
+;	DM34202.S = +1000
+;CASE IS < DM34204.S
+;	DM34202.S = DM34204.S
+;CASE ELSE
+;END SELECT	
+;SELECT CASE DM34204.S		'終了値
+;CASE IS > DM34202.S 
+;	DM34204.S = DM34202.S
+;CASE IS < 0
+;	DM34204.S = 0
+;CASE ELSE
+;END SELECT
+;'追加作成_201404
+;
+;'ﾍﾋﾞ道ﾘｰｸ時間判定開始値、終了値の設定規制_機種3 ﾜｰｸ1
+;
+;'0s～99.99s
+;
+;'開始値は終了値より下に設定できない。
+;
+;'終了値を上げると開始値は追従して上がる。
+;
+;SELECT CASE DM34202.S		'開始値
+;
+LD CR2002                ; 常時ON
+MOV.S DM34202 @VM195     ; ﾜｰｸ1 ﾍﾋﾞ道ﾘｰｸ判定開始(3)
+;CASE IS > +1000 
+;
+LD>.S @VM195 +1000
+NCJ #2140
+;	DM34202.S = +1000
+;
+LD CR2002                ; 常時ON
+MOV.S +1000 DM34202      ; ﾜｰｸ1 ﾍﾋﾞ道ﾘｰｸ判定開始(3)
+LD CR2002                ; 常時ON
+CJ #2141
+LABEL #2140
+;CASE IS < DM34204.S
+;
+LD<.S @VM195 DM34204     ; ﾜｰｸ1 ﾍﾋﾞ道ﾘｰｸ判定終了(3)
+NCJ #2142
+;	DM34202.S = DM34204.S
+;
+LD CR2002                ; 常時ON
+MOV.S DM34204 DM34202    ; ﾜｰｸ1 ﾍﾋﾞ道ﾘｰｸ判定終了(3)  ﾜｰｸ1 ﾍﾋﾞ道ﾘｰｸ判定開始(3)
+LD CR2002                ; 常時ON
+CJ #2143
+LABEL #2142
+;CASE ELSE
+;
+;END SELECT	
+;
+LABEL #2143
+LABEL #2141
+;SELECT CASE DM34204.S		'終了値
+;
+LD CR2002                ; 常時ON
+MOV.S DM34204 @VM196     ; ﾜｰｸ1 ﾍﾋﾞ道ﾘｰｸ判定終了(3)
+;CASE IS > DM34202.S 
+;
+LD>.S @VM196 DM34202     ; ﾜｰｸ1 ﾍﾋﾞ道ﾘｰｸ判定開始(3)
+NCJ #2144
+;	DM34204.S = DM34202.S
+;
+LD CR2002                ; 常時ON
+MOV.S DM34202 DM34204    ; ﾜｰｸ1 ﾍﾋﾞ道ﾘｰｸ判定開始(3)  ﾜｰｸ1 ﾍﾋﾞ道ﾘｰｸ判定終了(3)
+LD CR2002                ; 常時ON
+CJ #2145
+LABEL #2144
+;CASE IS < 0
+;
+LD<.S @VM196 +0
+NCJ #2146
+;	DM34204.S = 0
+;
+LD CR2002                ; 常時ON
+MOV.S +0 DM34204         ; ﾜｰｸ1 ﾍﾋﾞ道ﾘｰｸ判定終了(3)
+LD CR2002                ; 常時ON
+CJ #2147
+LABEL #2146
+;CASE ELSE
+;
+;END SELECT
+LABEL #2147
+LABEL #2145
+;
+;'追加作成_201404
+;'ﾍﾋﾞ道ﾘｰｸ時間判定開始値、終了値の設定規制_機種3 ﾜｰｸ2
+;'0s～99.99s
+;'開始値は終了値より下に設定できない。
+;'終了値を上げると開始値は追従して上がる。
+;SELECT CASE DM34702.S		'開始値
+;CASE IS > +1000 
+;	DM34702.S = +1000
+;CASE IS < DM34704.S
+;	DM34702.S = DM34704.S
+;CASE ELSE
+;END SELECT	
+;SELECT CASE DM34704.S		'終了値
+;CASE IS > DM34702.S 
+;	DM34704.S = DM34702.S
+;CASE IS < 0
+;	DM34704.S = 0
+;CASE ELSE
+;END SELECT
+;'追加作成_201404
+;
+;'ﾍﾋﾞ道ﾘｰｸ時間判定開始値、終了値の設定規制_機種3 ﾜｰｸ2
+;
+;'0s～99.99s
+;
+;'開始値は終了値より下に設定できない。
+;
+;'終了値を上げると開始値は追従して上がる。
+;
+;SELECT CASE DM34702.S		'開始値
+;
+LD CR2002                ; 常時ON
+MOV.S DM34702 @VM197     ; ﾜｰｸ2 ﾍﾋﾞ道ﾘｰｸ判定開始(3)
+;CASE IS > +1000 
+;
+LD>.S @VM197 +1000
+NCJ #2148
+;	DM34702.S = +1000
+;
+LD CR2002                ; 常時ON
+MOV.S +1000 DM34702      ; ﾜｰｸ2 ﾍﾋﾞ道ﾘｰｸ判定開始(3)
+LD CR2002                ; 常時ON
+CJ #2149
+LABEL #2148
+;CASE IS < DM34704.S
+;
+LD<.S @VM197 DM34704     ; ﾜｰｸ2 ﾍﾋﾞ道ﾘｰｸ判定終了(3)
+NCJ #2150
+;	DM34702.S = DM34704.S
+;
+LD CR2002                ; 常時ON
+MOV.S DM34704 DM34702    ; ﾜｰｸ2 ﾍﾋﾞ道ﾘｰｸ判定終了(3)  ﾜｰｸ2 ﾍﾋﾞ道ﾘｰｸ判定開始(3)
+LD CR2002                ; 常時ON
+CJ #2151
+LABEL #2150
+;CASE ELSE
+;
+;END SELECT	
+;
+LABEL #2151
+LABEL #2149
+;SELECT CASE DM34704.S		'終了値
+;
+LD CR2002                ; 常時ON
+MOV.S DM34704 @VM198     ; ﾜｰｸ2 ﾍﾋﾞ道ﾘｰｸ判定終了(3)
+;CASE IS > DM34702.S 
+;
+LD>.S @VM198 DM34702     ; ﾜｰｸ2 ﾍﾋﾞ道ﾘｰｸ判定開始(3)
+NCJ #2152
+;	DM34704.S = DM34702.S
+;
+LD CR2002                ; 常時ON
+MOV.S DM34702 DM34704    ; ﾜｰｸ2 ﾍﾋﾞ道ﾘｰｸ判定開始(3)  ﾜｰｸ2 ﾍﾋﾞ道ﾘｰｸ判定終了(3)
+LD CR2002                ; 常時ON
+CJ #2153
+LABEL #2152
+;CASE IS < 0
+;
+LD<.S @VM198 +0
+NCJ #2154
+;	DM34704.S = 0
+;
+LD CR2002                ; 常時ON
+MOV.S +0 DM34704         ; ﾜｰｸ2 ﾍﾋﾞ道ﾘｰｸ判定終了(3)
+LD CR2002                ; 常時ON
+CJ #2155
+LABEL #2154
+;CASE ELSE
+;
+;END SELECT
+LABEL #2155
+LABEL #2153
+;
+;'追加作成_201404
+;'ﾍﾋﾞ道ﾘｰｸ時間判定開始値、終了値の設定規制_機種3 ﾜｰｸ3
+;'0s～99.99s
+;'開始値は終了値より下に設定できない。
+;'終了値を上げると開始値は追従して上がる。
+;SELECT CASE DM35202.S		'開始値
+;CASE IS > +1000 
+;	DM35202.S = +1000
+;CASE IS < DM35204.S
+;	DM35202.S = DM35204.S
+;CASE ELSE
+;END SELECT	
+;SELECT CASE DM35204.S		'終了値
+;CASE IS > DM35202.S 
+;	DM35204.S = DM35202.S
+;CASE IS < 0
+;	DM35204.S = 0
+;CASE ELSE
+;END SELECT
+;'追加作成_201404
+;
+;'ﾍﾋﾞ道ﾘｰｸ時間判定開始値、終了値の設定規制_機種3 ﾜｰｸ3
+;
+;'0s～99.99s
+;
+;'開始値は終了値より下に設定できない。
+;
+;'終了値を上げると開始値は追従して上がる。
+;
+;SELECT CASE DM35202.S		'開始値
+;
+LD CR2002                ; 常時ON
+MOV.S DM35202 @VM199     ; ﾜｰｸ3 ﾍﾋﾞ道ﾘｰｸ判定開始(3)
+;CASE IS > +1000 
+;
+LD>.S @VM199 +1000
+NCJ #2156
+;	DM35202.S = +1000
+;
+LD CR2002                ; 常時ON
+MOV.S +1000 DM35202      ; ﾜｰｸ3 ﾍﾋﾞ道ﾘｰｸ判定開始(3)
+LD CR2002                ; 常時ON
+CJ #2157
+LABEL #2156
+;CASE IS < DM35204.S
+;
+LD<.S @VM199 DM35204     ; ﾜｰｸ3 ﾍﾋﾞ道ﾘｰｸ判定終了(3)
+NCJ #2158
+;	DM35202.S = DM35204.S
+;
+LD CR2002                ; 常時ON
+MOV.S DM35204 DM35202    ; ﾜｰｸ3 ﾍﾋﾞ道ﾘｰｸ判定終了(3)  ﾜｰｸ3 ﾍﾋﾞ道ﾘｰｸ判定開始(3)
+LD CR2002                ; 常時ON
+CJ #2159
+LABEL #2158
+;CASE ELSE
+;
+;END SELECT	
+;
+LABEL #2159
+LABEL #2157
+;SELECT CASE DM35204.S		'終了値
+;
+LD CR2002                ; 常時ON
+MOV.S DM35204 @VM200     ; ﾜｰｸ3 ﾍﾋﾞ道ﾘｰｸ判定終了(3)
+;CASE IS > DM35202.S 
+;
+LD>.S @VM200 DM35202     ; ﾜｰｸ3 ﾍﾋﾞ道ﾘｰｸ判定開始(3)
+NCJ #2160
+;	DM35204.S = DM35202.S
+;
+LD CR2002                ; 常時ON
+MOV.S DM35202 DM35204    ; ﾜｰｸ3 ﾍﾋﾞ道ﾘｰｸ判定開始(3)  ﾜｰｸ3 ﾍﾋﾞ道ﾘｰｸ判定終了(3)
+LD CR2002                ; 常時ON
+CJ #2161
+LABEL #2160
+;CASE IS < 0
+;
+LD<.S @VM200 +0
+NCJ #2162
+;	DM35204.S = 0
+;
+LD CR2002                ; 常時ON
+MOV.S +0 DM35204         ; ﾜｰｸ3 ﾍﾋﾞ道ﾘｰｸ判定終了(3)
+LD CR2002                ; 常時ON
+CJ #2163
+LABEL #2162
+;CASE ELSE
+;
+;END SELECT
+LABEL #2163
+LABEL #2161
+;
+;'追加作成_201404
+;'ﾍﾋﾞ道ﾘｰｸ時間判定開始値、終了値の設定規制_機種3 ﾜｰｸ4
+;'0s～99.99s
+;'開始値は終了値より下に設定できない。
+;'終了値を上げると開始値は追従して上がる。
+;SELECT CASE DM35702.S		'開始値
+;CASE IS > +1000 
+;	DM35702.S = +1000
+;CASE IS < DM35704.S
+;	DM35702.S = DM35704.S
+;CASE ELSE
+;END SELECT	
+;SELECT CASE DM35704.S		'終了値
+;CASE IS > DM35702.S 
+;	DM35704.S = DM35702.S
+;CASE IS < 0
+;	DM35704.S = 0
+;CASE ELSE
+;END SELECT
+;'追加作成_201404
+;
+;'ﾍﾋﾞ道ﾘｰｸ時間判定開始値、終了値の設定規制_機種3 ﾜｰｸ4
+;
+;'0s～99.99s
+;
+;'開始値は終了値より下に設定できない。
+;
+;'終了値を上げると開始値は追従して上がる。
+;
+;SELECT CASE DM35702.S		'開始値
+;
+LD CR2002                ; 常時ON
+MOV.S DM35702 @VM201     ; ﾜｰｸ4 ﾍﾋﾞ道ﾘｰｸ判定開始(3)
+;CASE IS > +1000 
+;
+LD>.S @VM201 +1000
+NCJ #2164
+;	DM35702.S = +1000
+;
+LD CR2002                ; 常時ON
+MOV.S +1000 DM35702      ; ﾜｰｸ4 ﾍﾋﾞ道ﾘｰｸ判定開始(3)
+LD CR2002                ; 常時ON
+CJ #2165
+LABEL #2164
+;CASE IS < DM35704.S
+;
+LD<.S @VM201 DM35704     ; ﾜｰｸ4 ﾍﾋﾞ道ﾘｰｸ判定終了(3)
+NCJ #2166
+;	DM35702.S = DM35704.S
+;
+LD CR2002                ; 常時ON
+MOV.S DM35704 DM35702    ; ﾜｰｸ4 ﾍﾋﾞ道ﾘｰｸ判定終了(3)  ﾜｰｸ4 ﾍﾋﾞ道ﾘｰｸ判定開始(3)
+LD CR2002                ; 常時ON
+CJ #2167
+LABEL #2166
+;CASE ELSE
+;
+;END SELECT	
+;
+LABEL #2167
+LABEL #2165
+;SELECT CASE DM35704.S		'終了値
+;
+LD CR2002                ; 常時ON
+MOV.S DM35704 @VM202     ; ﾜｰｸ4 ﾍﾋﾞ道ﾘｰｸ判定終了(3)
+;CASE IS > DM35702.S 
+;
+LD>.S @VM202 DM35702     ; ﾜｰｸ4 ﾍﾋﾞ道ﾘｰｸ判定開始(3)
+NCJ #2168
+;	DM35704.S = DM35702.S
+;
+LD CR2002                ; 常時ON
+MOV.S DM35702 DM35704    ; ﾜｰｸ4 ﾍﾋﾞ道ﾘｰｸ判定開始(3)  ﾜｰｸ4 ﾍﾋﾞ道ﾘｰｸ判定終了(3)
+LD CR2002                ; 常時ON
+CJ #2169
+LABEL #2168
+;CASE IS < 0
+;
+LD<.S @VM202 +0
+NCJ #2170
+;	DM35704.S = 0
+;
+LD CR2002                ; 常時ON
+MOV.S +0 DM35704         ; ﾜｰｸ4 ﾍﾋﾞ道ﾘｰｸ判定終了(3)
+LD CR2002                ; 常時ON
+CJ #2171
+LABEL #2170
+;CASE ELSE
+;
+;END SELECT
+LABEL #2171
+LABEL #2169
+;
+;'追加作成_201404
+;'ﾍﾋﾞ道ﾘｰｸ時間判定開始値、終了値の設定規制_機種4 ﾜｰｸ1
+;'0s～99.99s
+;'開始値は終了値より下に設定できない。
+;'終了値を上げると開始値は追従して上がる。
+;SELECT CASE DM36202.S		'開始値
+;CASE IS > +1000 
+;	DM36202.S = +1000
+;CASE IS < DM36204.S
+;	DM36202.S = DM36204.S
+;CASE ELSE
+;END SELECT	
+;SELECT CASE DM36204.S		'終了値
+;CASE IS > DM36202.S 
+;	DM36204.S = DM36202.S
+;CASE IS < 0
+;	DM36204.S = 0
+;CASE ELSE
+;END SELECT
+;'追加作成_201404
+;
+;'ﾍﾋﾞ道ﾘｰｸ時間判定開始値、終了値の設定規制_機種4 ﾜｰｸ1
+;
+;'0s～99.99s
+;
+;'開始値は終了値より下に設定できない。
+;
+;'終了値を上げると開始値は追従して上がる。
+;
+;SELECT CASE DM36202.S		'開始値
+;
+LD CR2002                ; 常時ON
+MOV.S DM36202 @VM203     ; ﾜｰｸ1 ﾍﾋﾞ道ﾘｰｸ判定開始(4)
+;CASE IS > +1000 
+;
+LD>.S @VM203 +1000
+NCJ #2172
+;	DM36202.S = +1000
+;
+LD CR2002                ; 常時ON
+MOV.S +1000 DM36202      ; ﾜｰｸ1 ﾍﾋﾞ道ﾘｰｸ判定開始(4)
+LD CR2002                ; 常時ON
+CJ #2173
+LABEL #2172
+;CASE IS < DM36204.S
+;
+LD<.S @VM203 DM36204     ; ﾜｰｸ1 ﾍﾋﾞ道ﾘｰｸ判定終了(4)
+NCJ #2174
+;	DM36202.S = DM36204.S
+;
+LD CR2002                ; 常時ON
+MOV.S DM36204 DM36202    ; ﾜｰｸ1 ﾍﾋﾞ道ﾘｰｸ判定終了(4)  ﾜｰｸ1 ﾍﾋﾞ道ﾘｰｸ判定開始(4)
+LD CR2002                ; 常時ON
+CJ #2175
+LABEL #2174
+;CASE ELSE
+;
+;END SELECT	
+;
+LABEL #2175
+LABEL #2173
+;SELECT CASE DM36204.S		'終了値
+;
+LD CR2002                ; 常時ON
+MOV.S DM36204 @VM204     ; ﾜｰｸ1 ﾍﾋﾞ道ﾘｰｸ判定終了(4)
+;CASE IS > DM36202.S 
+;
+LD>.S @VM204 DM36202     ; ﾜｰｸ1 ﾍﾋﾞ道ﾘｰｸ判定開始(4)
+NCJ #2176
+;	DM36204.S = DM36202.S
+;
+LD CR2002                ; 常時ON
+MOV.S DM36202 DM36204    ; ﾜｰｸ1 ﾍﾋﾞ道ﾘｰｸ判定開始(4)  ﾜｰｸ1 ﾍﾋﾞ道ﾘｰｸ判定終了(4)
+LD CR2002                ; 常時ON
+CJ #2177
+LABEL #2176
+;CASE IS < 0
+;
+LD<.S @VM204 +0
+NCJ #2178
+;	DM36204.S = 0
+;
+LD CR2002                ; 常時ON
+MOV.S +0 DM36204         ; ﾜｰｸ1 ﾍﾋﾞ道ﾘｰｸ判定終了(4)
+LD CR2002                ; 常時ON
+CJ #2179
+LABEL #2178
+;CASE ELSE
+;
+;END SELECT
+LABEL #2179
+LABEL #2177
+;
+;'追加作成_201404
+;'ﾍﾋﾞ道ﾘｰｸ時間判定開始値、終了値の設定規制_機種4 ﾜｰｸ2
+;'0s～99.99s
+;'開始値は終了値より下に設定できない。
+;'終了値を上げると開始値は追従して上がる。
+;SELECT CASE DM36702.S		'開始値
+;CASE IS > +1000 
+;	DM36702.S = +1000
+;CASE IS < DM36704.S
+;	DM36702.S = DM36704.S
+;CASE ELSE
+;END SELECT	
+;SELECT CASE DM36704.S		'終了値
+;CASE IS > DM36702.S 
+;	DM36704.S = DM36702.S
+;CASE IS < 0
+;	DM36704.S = 0
+;CASE ELSE
+;END SELECT
+;'追加作成_201404
+;
+;'ﾍﾋﾞ道ﾘｰｸ時間判定開始値、終了値の設定規制_機種4 ﾜｰｸ2
+;
+;'0s～99.99s
+;
+;'開始値は終了値より下に設定できない。
+;
+;'終了値を上げると開始値は追従して上がる。
+;
+;SELECT CASE DM36702.S		'開始値
+;
+LD CR2002                ; 常時ON
+MOV.S DM36702 @VM205     ; ﾜｰｸ2 ﾍﾋﾞ道ﾘｰｸ判定開始(4)
+;CASE IS > +1000 
+;
+LD>.S @VM205 +1000
+NCJ #2180
+;	DM36702.S = +1000
+;
+LD CR2002                ; 常時ON
+MOV.S +1000 DM36702      ; ﾜｰｸ2 ﾍﾋﾞ道ﾘｰｸ判定開始(4)
+LD CR2002                ; 常時ON
+CJ #2181
+LABEL #2180
+;CASE IS < DM36704.S
+;
+LD<.S @VM205 DM36704     ; ﾜｰｸ2 ﾍﾋﾞ道ﾘｰｸ判定終了(4)
+NCJ #2182
+;	DM36702.S = DM36704.S
+;
+LD CR2002                ; 常時ON
+MOV.S DM36704 DM36702    ; ﾜｰｸ2 ﾍﾋﾞ道ﾘｰｸ判定終了(4)  ﾜｰｸ2 ﾍﾋﾞ道ﾘｰｸ判定開始(4)
+LD CR2002                ; 常時ON
+CJ #2183
+LABEL #2182
+;CASE ELSE
+;
+;END SELECT	
+;
+LABEL #2183
+LABEL #2181
+;SELECT CASE DM36704.S		'終了値
+;
+LD CR2002                ; 常時ON
+MOV.S DM36704 @VM206     ; ﾜｰｸ2 ﾍﾋﾞ道ﾘｰｸ判定終了(4)
+;CASE IS > DM36702.S 
+;
+LD>.S @VM206 DM36702     ; ﾜｰｸ2 ﾍﾋﾞ道ﾘｰｸ判定開始(4)
+NCJ #2184
+;	DM36704.S = DM36702.S
+;
+LD CR2002                ; 常時ON
+MOV.S DM36702 DM36704    ; ﾜｰｸ2 ﾍﾋﾞ道ﾘｰｸ判定開始(4)  ﾜｰｸ2 ﾍﾋﾞ道ﾘｰｸ判定終了(4)
+LD CR2002                ; 常時ON
+CJ #2185
+LABEL #2184
+;CASE IS < 0
+;
+LD<.S @VM206 +0
+NCJ #2186
+;	DM36704.S = 0
+;
+LD CR2002                ; 常時ON
+MOV.S +0 DM36704         ; ﾜｰｸ2 ﾍﾋﾞ道ﾘｰｸ判定終了(4)
+LD CR2002                ; 常時ON
+CJ #2187
+LABEL #2186
+;CASE ELSE
+;
+;END SELECT
+LABEL #2187
+LABEL #2185
+;
+;'追加作成_201404
+;'ﾍﾋﾞ道ﾘｰｸ時間判定開始値、終了値の設定規制_機種4 ﾜｰｸ3
+;'0s～99.99s
+;'開始値は終了値より下に設定できない。
+;'終了値を上げると開始値は追従して上がる。
+;SELECT CASE DM37202.S		'開始値
+;CASE IS > +1000 
+;	DM37202.S = +1000
+;CASE IS < DM37204.S
+;	DM37202.S = DM37204.S
+;CASE ELSE
+;END SELECT	
+;SELECT CASE DM37204.S		'終了値
+;CASE IS > DM37202.S 
+;	DM37204.S = DM37202.S
+;CASE IS < 0
+;	DM37204.S = 0
+;CASE ELSE
+;END SELECT
+;'追加作成_201404
+;
+;'ﾍﾋﾞ道ﾘｰｸ時間判定開始値、終了値の設定規制_機種4 ﾜｰｸ3
+;
+;'0s～99.99s
+;
+;'開始値は終了値より下に設定できない。
+;
+;'終了値を上げると開始値は追従して上がる。
+;
+;SELECT CASE DM37202.S		'開始値
+;
+LD CR2002                ; 常時ON
+MOV.S DM37202 @VM207     ; ﾜｰｸ3 ﾍﾋﾞ道ﾘｰｸ判定開始(4)
+;CASE IS > +1000 
+;
+LD>.S @VM207 +1000
+NCJ #2188
+;	DM37202.S = +1000
+;
+LD CR2002                ; 常時ON
+MOV.S +1000 DM37202      ; ﾜｰｸ3 ﾍﾋﾞ道ﾘｰｸ判定開始(4)
+LD CR2002                ; 常時ON
+CJ #2189
+LABEL #2188
+;CASE IS < DM37204.S
+;
+LD<.S @VM207 DM37204     ; ﾜｰｸ3 ﾍﾋﾞ道ﾘｰｸ判定終了(4)
+NCJ #2190
+;	DM37202.S = DM37204.S
+;
+LD CR2002                ; 常時ON
+MOV.S DM37204 DM37202    ; ﾜｰｸ3 ﾍﾋﾞ道ﾘｰｸ判定終了(4)  ﾜｰｸ3 ﾍﾋﾞ道ﾘｰｸ判定開始(4)
+LD CR2002                ; 常時ON
+CJ #2191
+LABEL #2190
+;CASE ELSE
+;
+;END SELECT	
+;
+LABEL #2191
+LABEL #2189
+;SELECT CASE DM37204.S		'終了値
+;
+LD CR2002                ; 常時ON
+MOV.S DM37204 @VM208     ; ﾜｰｸ3 ﾍﾋﾞ道ﾘｰｸ判定終了(4)
+;CASE IS > DM37202.S 
+;
+LD>.S @VM208 DM37202     ; ﾜｰｸ3 ﾍﾋﾞ道ﾘｰｸ判定開始(4)
+NCJ #2192
+;	DM37204.S = DM37202.S
+;
+LD CR2002                ; 常時ON
+MOV.S DM37202 DM37204    ; ﾜｰｸ3 ﾍﾋﾞ道ﾘｰｸ判定開始(4)  ﾜｰｸ3 ﾍﾋﾞ道ﾘｰｸ判定終了(4)
+LD CR2002                ; 常時ON
+CJ #2193
+LABEL #2192
+;CASE IS < 0
+;
+LD<.S @VM208 +0
+NCJ #2194
+;	DM37204.S = 0
+;
+LD CR2002                ; 常時ON
+MOV.S +0 DM37204         ; ﾜｰｸ3 ﾍﾋﾞ道ﾘｰｸ判定終了(4)
+LD CR2002                ; 常時ON
+CJ #2195
+LABEL #2194
+;CASE ELSE
+;
+;END SELECT
+LABEL #2195
+LABEL #2193
+;
+;'追加作成_201404
+;'ﾍﾋﾞ道ﾘｰｸ時間判定開始値、終了値の設定規制_機種4 ﾜｰｸ4
+;'0s～99.99s
+;'開始値は終了値より下に設定できない。
+;'終了値を上げると開始値は追従して上がる。
+;SELECT CASE DM37702.S		'開始値
+;CASE IS > +1000 
+;	DM37702.S = +1000
+;CASE IS < DM37704.S
+;	DM37702.S = DM37704.S
+;CASE ELSE
+;END SELECT	
+;SELECT CASE DM37704.S		'終了値
+;CASE IS > DM37702.S 
+;	DM37704.S = DM37702.S
+;CASE IS < 0
+;	DM37704.S = 0
+;CASE ELSE
+;END SELECT
+;'追加作成_201404
+;
+;'ﾍﾋﾞ道ﾘｰｸ時間判定開始値、終了値の設定規制_機種4 ﾜｰｸ4
+;
+;'0s～99.99s
+;
+;'開始値は終了値より下に設定できない。
+;
+;'終了値を上げると開始値は追従して上がる。
+;
+;SELECT CASE DM37702.S		'開始値
+;
+LD CR2002                ; 常時ON
+MOV.S DM37702 @VM209     ; ﾜｰｸ4 ﾍﾋﾞ道ﾘｰｸ判定開始(4)
+;CASE IS > +1000 
+;
+LD>.S @VM209 +1000
+NCJ #2196
+;	DM37702.S = +1000
+;
+LD CR2002                ; 常時ON
+MOV.S +1000 DM37702      ; ﾜｰｸ4 ﾍﾋﾞ道ﾘｰｸ判定開始(4)
+LD CR2002                ; 常時ON
+CJ #2197
+LABEL #2196
+;CASE IS < DM37704.S
+;
+LD<.S @VM209 DM37704     ; ﾜｰｸ4 ﾍﾋﾞ道ﾘｰｸ判定終了(4)
+NCJ #2198
+;	DM37702.S = DM37704.S
+;
+LD CR2002                ; 常時ON
+MOV.S DM37704 DM37702    ; ﾜｰｸ4 ﾍﾋﾞ道ﾘｰｸ判定終了(4)  ﾜｰｸ4 ﾍﾋﾞ道ﾘｰｸ判定開始(4)
+LD CR2002                ; 常時ON
+CJ #2199
+LABEL #2198
+;CASE ELSE
+;
+;END SELECT	
+;
+LABEL #2199
+LABEL #2197
+;SELECT CASE DM37704.S		'終了値
+;
+LD CR2002                ; 常時ON
+MOV.S DM37704 @VM210     ; ﾜｰｸ4 ﾍﾋﾞ道ﾘｰｸ判定終了(4)
+;CASE IS > DM37702.S 
+;
+LD>.S @VM210 DM37702     ; ﾜｰｸ4 ﾍﾋﾞ道ﾘｰｸ判定開始(4)
+NCJ #2200
+;	DM37704.S = DM37702.S
+;
+LD CR2002                ; 常時ON
+MOV.S DM37702 DM37704    ; ﾜｰｸ4 ﾍﾋﾞ道ﾘｰｸ判定開始(4)  ﾜｰｸ4 ﾍﾋﾞ道ﾘｰｸ判定終了(4)
+LD CR2002                ; 常時ON
+CJ #2201
+LABEL #2200
+;CASE IS < 0
+;
+LD<.S @VM210 +0
+NCJ #2202
+;	DM37704.S = 0
+;
+LD CR2002                ; 常時ON
+MOV.S +0 DM37704         ; ﾜｰｸ4 ﾍﾋﾞ道ﾘｰｸ判定終了(4)
+LD CR2002                ; 常時ON
+CJ #2203
+LABEL #2202
+;CASE ELSE
+;
+;END SELECT
+LABEL #2203
+LABEL #2201
+;
+;'追加作成_201404
+;'ﾍﾋﾞ道ﾘｰｸ時間判定開始値、終了値の設定規制_機種5 ﾜｰｸ1
+;'0s～99.99s
+;'開始値は終了値より下に設定できない。
+;'終了値を上げると開始値は追従して上がる。
+;SELECT CASE DM38202.S		'開始値
+;CASE IS > +1000 
+;	DM38202.S = +1000
+;CASE IS < DM38204.S
+;	DM38202.S = DM38204.S
+;CASE ELSE
+;END SELECT	
+;SELECT CASE DM38204.S		'終了値
+;CASE IS > DM38202.S 
+;	DM38204.S = DM38202.S
+;CASE IS < 0
+;	DM38204.S = 0
+;CASE ELSE
+;END SELECT
+;'追加作成_201404
+;
+;'ﾍﾋﾞ道ﾘｰｸ時間判定開始値、終了値の設定規制_機種5 ﾜｰｸ1
+;
+;'0s～99.99s
+;
+;'開始値は終了値より下に設定できない。
+;
+;'終了値を上げると開始値は追従して上がる。
+;
+;SELECT CASE DM38202.S		'開始値
+;
+LD CR2002                ; 常時ON
+MOV.S DM38202 @VM211     ; ﾜｰｸ1 ﾍﾋﾞ道ﾘｰｸ判定開始(5)
+;CASE IS > +1000 
+;
+LD>.S @VM211 +1000
+NCJ #2204
+;	DM38202.S = +1000
+;
+LD CR2002                ; 常時ON
+MOV.S +1000 DM38202      ; ﾜｰｸ1 ﾍﾋﾞ道ﾘｰｸ判定開始(5)
+LD CR2002                ; 常時ON
+CJ #2205
+LABEL #2204
+;CASE IS < DM38204.S
+;
+LD<.S @VM211 DM38204     ; ﾜｰｸ1 ﾍﾋﾞ道ﾘｰｸ判定終了(5)
+NCJ #2206
+;	DM38202.S = DM38204.S
+;
+LD CR2002                ; 常時ON
+MOV.S DM38204 DM38202    ; ﾜｰｸ1 ﾍﾋﾞ道ﾘｰｸ判定終了(5)  ﾜｰｸ1 ﾍﾋﾞ道ﾘｰｸ判定開始(5)
+LD CR2002                ; 常時ON
+CJ #2207
+LABEL #2206
+;CASE ELSE
+;
+;END SELECT	
+;
+LABEL #2207
+LABEL #2205
+;SELECT CASE DM38204.S		'終了値
+;
+LD CR2002                ; 常時ON
+MOV.S DM38204 @VM212     ; ﾜｰｸ1 ﾍﾋﾞ道ﾘｰｸ判定終了(5)
+;CASE IS > DM38202.S 
+;
+LD>.S @VM212 DM38202     ; ﾜｰｸ1 ﾍﾋﾞ道ﾘｰｸ判定開始(5)
+NCJ #2208
+;	DM38204.S = DM38202.S
+;
+LD CR2002                ; 常時ON
+MOV.S DM38202 DM38204    ; ﾜｰｸ1 ﾍﾋﾞ道ﾘｰｸ判定開始(5)  ﾜｰｸ1 ﾍﾋﾞ道ﾘｰｸ判定終了(5)
+LD CR2002                ; 常時ON
+CJ #2209
+LABEL #2208
+;CASE IS < 0
+;
+LD<.S @VM212 +0
+NCJ #2210
+;	DM38204.S = 0
+;
+LD CR2002                ; 常時ON
+MOV.S +0 DM38204         ; ﾜｰｸ1 ﾍﾋﾞ道ﾘｰｸ判定終了(5)
+LD CR2002                ; 常時ON
+CJ #2211
+LABEL #2210
+;CASE ELSE
+;
+;END SELECT
+LABEL #2211
+LABEL #2209
+;
+;'追加作成_201404
+;'ﾍﾋﾞ道ﾘｰｸ時間判定開始値、終了値の設定規制_機種5 ﾜｰｸ2
+;'0s～99.99s
+;'開始値は終了値より下に設定できない。
+;'終了値を上げると開始値は追従して上がる。
+;SELECT CASE DM38702.S		'開始値
+;CASE IS > +1000 
+;	DM38702.S = +1000
+;CASE IS < DM38704.S
+;	DM38702.S = DM38704.S
+;CASE ELSE
+;END SELECT	
+;SELECT CASE DM38704.S		'終了値
+;CASE IS > DM38702.S 
+;	DM38704.S = DM38702.S
+;CASE IS < 0
+;	DM38704.S = 0
+;CASE ELSE
+;END SELECT
+;'追加作成_201404
+;
+;'ﾍﾋﾞ道ﾘｰｸ時間判定開始値、終了値の設定規制_機種5 ﾜｰｸ2
+;
+;'0s～99.99s
+;
+;'開始値は終了値より下に設定できない。
+;
+;'終了値を上げると開始値は追従して上がる。
+;
+;SELECT CASE DM38702.S		'開始値
+;
+LD CR2002                ; 常時ON
+MOV.S DM38702 @VM213     ; ﾜｰｸ2 ﾍﾋﾞ道ﾘｰｸ判定開始(5)
+;CASE IS > +1000 
+;
+LD>.S @VM213 +1000
+NCJ #2212
+;	DM38702.S = +1000
+;
+LD CR2002                ; 常時ON
+MOV.S +1000 DM38702      ; ﾜｰｸ2 ﾍﾋﾞ道ﾘｰｸ判定開始(5)
+LD CR2002                ; 常時ON
+CJ #2213
+LABEL #2212
+;CASE IS < DM38704.S
+;
+LD<.S @VM213 DM38704     ; ﾜｰｸ2 ﾍﾋﾞ道ﾘｰｸ判定終了(5)
+NCJ #2214
+;	DM38702.S = DM38704.S
+;
+LD CR2002                ; 常時ON
+MOV.S DM38704 DM38702    ; ﾜｰｸ2 ﾍﾋﾞ道ﾘｰｸ判定終了(5)  ﾜｰｸ2 ﾍﾋﾞ道ﾘｰｸ判定開始(5)
+LD CR2002                ; 常時ON
+CJ #2215
+LABEL #2214
+;CASE ELSE
+;
+;END SELECT	
+;
+LABEL #2215
+LABEL #2213
+;SELECT CASE DM38704.S		'終了値
+;
+LD CR2002                ; 常時ON
+MOV.S DM38704 @VM214     ; ﾜｰｸ2 ﾍﾋﾞ道ﾘｰｸ判定終了(5)
+;CASE IS > DM38702.S 
+;
+LD>.S @VM214 DM38702     ; ﾜｰｸ2 ﾍﾋﾞ道ﾘｰｸ判定開始(5)
+NCJ #2216
+;	DM38704.S = DM38702.S
+;
+LD CR2002                ; 常時ON
+MOV.S DM38702 DM38704    ; ﾜｰｸ2 ﾍﾋﾞ道ﾘｰｸ判定開始(5)  ﾜｰｸ2 ﾍﾋﾞ道ﾘｰｸ判定終了(5)
+LD CR2002                ; 常時ON
+CJ #2217
+LABEL #2216
+;CASE IS < 0
+;
+LD<.S @VM214 +0
+NCJ #2218
+;	DM38704.S = 0
+;
+LD CR2002                ; 常時ON
+MOV.S +0 DM38704         ; ﾜｰｸ2 ﾍﾋﾞ道ﾘｰｸ判定終了(5)
+LD CR2002                ; 常時ON
+CJ #2219
+LABEL #2218
+;CASE ELSE
+;
+;END SELECT
+LABEL #2219
+LABEL #2217
+;
+;'追加作成_201404
+;'ﾍﾋﾞ道ﾘｰｸ時間判定開始値、終了値の設定規制_機種5 ﾜｰｸ3
+;'0s～99.99s
+;'開始値は終了値より下に設定できない。
+;'終了値を上げると開始値は追従して上がる。
+;SELECT CASE DM39202.S		'開始値
+;CASE IS > +1000 
+;	DM39202.S = +1000
+;CASE IS < DM39204.S
+;	DM39202.S = DM39204.S
+;CASE ELSE
+;END SELECT	
+;SELECT CASE DM39204.S		'終了値
+;CASE IS > DM39202.S 
+;	DM39204.S = DM39202.S
+;CASE IS < 0
+;	DM39204.S = 0
+;CASE ELSE
+;END SELECT
+;'追加作成_201404
+;
+;'ﾍﾋﾞ道ﾘｰｸ時間判定開始値、終了値の設定規制_機種5 ﾜｰｸ3
+;
+;'0s～99.99s
+;
+;'開始値は終了値より下に設定できない。
+;
+;'終了値を上げると開始値は追従して上がる。
+;
+;SELECT CASE DM39202.S		'開始値
+;
+LD CR2002                ; 常時ON
+MOV.S DM39202 @VM215     ; ﾜｰｸ3 ﾍﾋﾞ道ﾘｰｸ判定開始(5)
+;CASE IS > +1000 
+;
+LD>.S @VM215 +1000
+NCJ #2220
+;	DM39202.S = +1000
+;
+LD CR2002                ; 常時ON
+MOV.S +1000 DM39202      ; ﾜｰｸ3 ﾍﾋﾞ道ﾘｰｸ判定開始(5)
+LD CR2002                ; 常時ON
+CJ #2221
+LABEL #2220
+;CASE IS < DM39204.S
+;
+LD<.S @VM215 DM39204     ; ﾜｰｸ3 ﾍﾋﾞ道ﾘｰｸ判定終了(5)
+NCJ #2222
+;	DM39202.S = DM39204.S
+;
+LD CR2002                ; 常時ON
+MOV.S DM39204 DM39202    ; ﾜｰｸ3 ﾍﾋﾞ道ﾘｰｸ判定終了(5)  ﾜｰｸ3 ﾍﾋﾞ道ﾘｰｸ判定開始(5)
+LD CR2002                ; 常時ON
+CJ #2223
+LABEL #2222
+;CASE ELSE
+;
+;END SELECT	
+;
+LABEL #2223
+LABEL #2221
+;SELECT CASE DM39204.S		'終了値
+;
+LD CR2002                ; 常時ON
+MOV.S DM39204 @VM216     ; ﾜｰｸ3 ﾍﾋﾞ道ﾘｰｸ判定終了(5)
+;CASE IS > DM39202.S 
+;
+LD>.S @VM216 DM39202     ; ﾜｰｸ3 ﾍﾋﾞ道ﾘｰｸ判定開始(5)
+NCJ #2224
+;	DM39204.S = DM39202.S
+;
+LD CR2002                ; 常時ON
+MOV.S DM39202 DM39204    ; ﾜｰｸ3 ﾍﾋﾞ道ﾘｰｸ判定開始(5)  ﾜｰｸ3 ﾍﾋﾞ道ﾘｰｸ判定終了(5)
+LD CR2002                ; 常時ON
+CJ #2225
+LABEL #2224
+;CASE IS < 0
+;
+LD<.S @VM216 +0
+NCJ #2226
+;	DM39204.S = 0
+;
+LD CR2002                ; 常時ON
+MOV.S +0 DM39204         ; ﾜｰｸ3 ﾍﾋﾞ道ﾘｰｸ判定終了(5)
+LD CR2002                ; 常時ON
+CJ #2227
+LABEL #2226
+;CASE ELSE
+;
+;END SELECT
+LABEL #2227
+LABEL #2225
+;
+;'追加作成_201404
+;'ﾍﾋﾞ道ﾘｰｸ時間判定開始値、終了値の設定規制_機種5 ﾜｰｸ4
+;'0s～99.99s
+;'開始値は終了値より下に設定できない。
+;'終了値を上げると開始値は追従して上がる。
+;SELECT CASE DM39702.S		'開始値
+;CASE IS > +1000 
+;	DM39702.S = +1000
+;CASE IS < DM39704.S
+;	DM39702.S = DM39704.S
+;CASE ELSE
+;END SELECT	
+;SELECT CASE DM39704.S		'終了値
+;CASE IS > DM39702.S 
+;	DM39704.S = DM39702.S
+;CASE IS < 0
+;	DM39704.S = 0
+;CASE ELSE
+;END SELECT
+;'追加作成_201404
+;
+;'ﾍﾋﾞ道ﾘｰｸ時間判定開始値、終了値の設定規制_機種5 ﾜｰｸ4
+;
+;'0s～99.99s
+;
+;'開始値は終了値より下に設定できない。
+;
+;'終了値を上げると開始値は追従して上がる。
+;
+;SELECT CASE DM39702.S		'開始値
+;
+LD CR2002                ; 常時ON
+MOV.S DM39702 @VM217     ; ﾜｰｸ4 ﾍﾋﾞ道ﾘｰｸ判定開始(5)
+;CASE IS > +1000 
+;
+LD>.S @VM217 +1000
+NCJ #2228
+;	DM39702.S = +1000
+;
+LD CR2002                ; 常時ON
+MOV.S +1000 DM39702      ; ﾜｰｸ4 ﾍﾋﾞ道ﾘｰｸ判定開始(5)
+LD CR2002                ; 常時ON
+CJ #2229
+LABEL #2228
+;CASE IS < DM39704.S
+;
+LD<.S @VM217 DM39704     ; ﾜｰｸ4 ﾍﾋﾞ道ﾘｰｸ判定終了(5)
+NCJ #2230
+;	DM39702.S = DM39704.S
+;
+LD CR2002                ; 常時ON
+MOV.S DM39704 DM39702    ; ﾜｰｸ4 ﾍﾋﾞ道ﾘｰｸ判定終了(5)  ﾜｰｸ4 ﾍﾋﾞ道ﾘｰｸ判定開始(5)
+LD CR2002                ; 常時ON
+CJ #2231
+LABEL #2230
+;CASE ELSE
+;
+;END SELECT	
+;
+LABEL #2231
+LABEL #2229
+;SELECT CASE DM39704.S		'終了値
+;
+LD CR2002                ; 常時ON
+MOV.S DM39704 @VM218     ; ﾜｰｸ4 ﾍﾋﾞ道ﾘｰｸ判定終了(5)
+;CASE IS > DM39702.S 
+;
+LD>.S @VM218 DM39702     ; ﾜｰｸ4 ﾍﾋﾞ道ﾘｰｸ判定開始(5)
+NCJ #2232
+;	DM39704.S = DM39702.S
+;
+LD CR2002                ; 常時ON
+MOV.S DM39702 DM39704    ; ﾜｰｸ4 ﾍﾋﾞ道ﾘｰｸ判定開始(5)  ﾜｰｸ4 ﾍﾋﾞ道ﾘｰｸ判定終了(5)
+LD CR2002                ; 常時ON
+CJ #2233
+LABEL #2232
+;CASE IS < 0
+;
+LD<.S @VM218 +0
+NCJ #2234
+;	DM39704.S = 0
+;
+LD CR2002                ; 常時ON
+MOV.S +0 DM39704         ; ﾜｰｸ4 ﾍﾋﾞ道ﾘｰｸ判定終了(5)
+LD CR2002                ; 常時ON
+CJ #2235
+LABEL #2234
+;CASE ELSE
+;
+;END SELECT
+LABEL #2235
+LABEL #2233
+;
+LD= DM20000 #499         ; 表示中    ﾍﾟｰｼﾞNo.
+MOV.S @DM6 DM29000       ; ﾜｰｸ1 流路圧力計 AD変換圧力値  ﾜｰｸ1 流路圧力計 AD変換圧力値
+MOV.S @DM36 DM29002      ; ﾜｰｸ2 流路圧力計 AD変換圧力値  ﾜｰｸ2 流路圧力計 AD変換圧力値
+MOV.S @DM66 DM29004      ; ﾜｰｸ3 流路圧力計 AD変換圧力値  ﾜｰｸ3 流路圧力計 AD変換圧力値
+MOV.S @DM96 DM29006      ; ﾜｰｸ4 流路圧力計 AD変換圧力値  ﾜｰｸ4 流路圧力計 AD変換圧力値
+MOV.S @DM16 DM29020      ; ﾜｰｸ1 外周流量計 AD変換流量値  ﾜｰｸ1 外周流量計 AD変換流量値
+MOV.S @DM46 DM29022      ; ﾜｰｸ2 外周流量計 AD変換流量値  ﾜｰｸ2 外周流量計 AD変換流量値
+MOV.S @DM76 DM29024      ; ﾜｰｸ3 外周流量計 AD変換流量値  ﾜｰｸ3 外周流量計 AD変換流量値
+MOV.S @DM106 DM29026     ; ﾜｰｸ4 外周流量計 AD変換流量値  ﾜｰｸ4 外周流量計 AD変換流量値
+RES MR6104               ; ﾜｰｸ1      流路圧空ON
+CON
+SET MR6105               ; ﾜｰｸ1 流路 大気開放(ON=開)
+CON
+RES MR6204               ; ﾜｰｸ2      流路圧空ON
+CON
+SET MR6205               ; ﾜｰｸ2 流路 大気開放(ON=開)
+CON
+RES MR6304               ; ﾜｰｸ3      流路圧空ON
+CON
+SET MR6305               ; ﾜｰｸ3 流路 大気開放(ON=開)
+CON
+RES MR6404               ; ﾜｰｸ4      流路圧空ON
+CON
+SET MR6405               ; ﾜｰｸ4 流路 大気開放(ON=開)
+LD<> DM20000 #499        ; 表示中    ﾍﾟｰｼﾞNo.
+MEP
+RES MR6104               ; ﾜｰｸ1      流路圧空ON
+CON
+RES MR6105               ; ﾜｰｸ1 流路 大気開放(ON=開)
+CON
+RES MR6204               ; ﾜｰｸ2      流路圧空ON
+CON
+RES MR6205               ; ﾜｰｸ2 流路 大気開放(ON=開)
+CON
+RES MR6304               ; ﾜｰｸ3      流路圧空ON
+CON
+RES MR6305               ; ﾜｰｸ3 流路 大気開放(ON=開)
+CON
+RES MR6404               ; ﾜｰｸ4      流路圧空ON
+CON
+RES MR6405               ; ﾜｰｸ4 流路 大気開放(ON=開)
+END
+ENDH

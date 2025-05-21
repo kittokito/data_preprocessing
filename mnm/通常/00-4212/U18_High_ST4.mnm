@@ -1,0 +1,1236 @@
+DEVICE:53
+;MODULE:U18_High_ST4
+;MODULE_TYPE:0
+;<h1/>□_入力受け
+;関連する入力受け(ｾﾝｻのﾃﾞｨﾚｲﾀｲﾏ等)を必要があれば作成する。
+;通常は入力ﾕﾆｯﾄに入力時定数(ﾃﾞｨﾚｲ)があるので直接使用しても問題は無い。
+LD X1438                 ; 高温検査正面上流安全扉正常
+AND X1439                ; 高温検査正面下流安全扉正常
+AND X143A                ; 高温検査背面上流安全扉正常
+AND X143B                ; 高温検査背面下流安全扉正常
+OR M37                   ; ｲﾝﾀｰﾛｯｸ解除ﾓｰﾄﾞ
+TMR K1801 K5             ; HiST4扉閉
+LD X1472                 ; HiST4_部_ﾜｰｸ押_下降端
+TMH K1802 K50            ; HiST4_部_ﾜｰｸ押_下降端
+LD CR2003                ; 常時OFF
+TMR K1803 K3
+LD X1471                 ; HiST4_部_ﾊﾟﾚｯﾄ_後退端
+TMR K1804 K5             ; HiST4_部_ﾊﾟﾚｯﾄ_後退端
+;ｺﾝﾀｸﾄﾍｯﾄﾞID
+LD X1476                 ; HiST4_部_ｺﾝﾀｸﾄﾍｯﾄﾞID_1
+OUT D9606.0
+LD X1477                 ; HiST4_部_ｺﾝﾀｸﾄﾍｯﾄﾞID_2
+OUT D9606.1
+LD X1478                 ; HiST4_部_ｺﾝﾀｸﾄﾍｯﾄﾞID_4
+OUT D9606.2
+;ﾊﾟﾚｯﾄID
+LD X1479                 ; HiST4_部_ﾊﾟﾚｯﾄID_1
+OUT D9607.0
+LD X147A                 ; HiST4_部_ﾊﾟﾚｯﾄID_2
+OUT D9607.1
+LD X147B                 ; HiST4_部_ﾊﾟﾚｯﾄID_4
+OUT D9607.2
+;ＩＤ保持
+LD M71                   ; 自動運転開始BZ
+AND L1800                ; HiST4_有効状態
+LD M10912                ; HiST4_ID保持ﾄﾘｶﾞ
+ANB M10910               ; HiST4_無効中
+ORL
+AND M71                  ; 自動運転開始BZ
+OUT M10912               ; HiST4_ID保持ﾄﾘｶﾞ
+;____ｺﾝﾀｸﾄﾍｯﾄﾞＩＤ保持
+;※PC送信用は生ﾃﾞｰﾀに変更
+LD L1800                 ; HiST4_有効状態
+MPS
+TMR K1806 K5             ; HiST4_ｺﾝﾀｸﾄﾍｯﾄﾞID_更新_DLY
+MPP
+AND T1806                ; HiST4_ｺﾝﾀｸﾄﾍｯﾄﾞID_更新_DLY
+@MOV D9606 D9600         ; HiST4_ｺﾝﾀｸﾄﾍｯﾄﾞID_Copy  HiST4_ｺﾝﾀｸﾄﾍｯﾄﾞID
+LD CR2002                ; 常時ON
+MOV D9606 W013D          ; HiST4_ｺﾝﾀｸﾄﾍｯﾄﾞID_Copy  ﾃｽﾄﾍｯﾄﾞID#4
+LDB L1800                ; HiST4_有効状態
+MOV K0 D9600             ; HiST4_ｺﾝﾀｸﾄﾍｯﾄﾞID
+;____ﾊﾟﾚｯﾄＩＤ保持
+LD L1800                 ; HiST4_有効状態
+LDB Y250C                ; HiST4ｽﾃｰｼﾞ前後前進
+AND T1804                ; HiST4_部_ﾊﾟﾚｯﾄ_後退端
+OR T1807                 ; HiST4_ﾊﾟﾚｯﾄID_更新_DLY
+ANL
+TMR K1807 K5             ; HiST4_ﾊﾟﾚｯﾄID_更新_DLY
+@MOV D9607 D9601         ; HiST4_ﾊﾟﾚｯﾄID_ｾﾝｻ状態  HiST4_ﾊﾟﾚｯﾄID
+LD CR2002                ; 常時ON
+MOV D9601 W0139          ; HiST4_ﾊﾟﾚｯﾄID  ﾊﾟﾚｯﾄID#4
+LDB L1800                ; HiST4_有効状態
+MOV K0 D9601             ; HiST4_ﾊﾟﾚｯﾄID
+;<h1/>__ST_有効/無効選択
+;段取り状態中ﾌﾗｸﾞの追加
+;自動中は段取り状態中に、ST上のﾜｰｸ無、RBﾊﾝﾄﾞﾜｰｸ無し、供給部ﾜｰｸ無しにて無効状態OKとなる
+LDPB X147F               ; HiST4_検査_有効/無効SW
+ANPB B12AA               ; HiST4検査_有効/無効_Tpb
+INV
+ANB L1800                ; HiST4_有効状態
+OR M10904                ; HiST4検査_有効確認要求
+LD M300                  ; PC通信正常
+OR M3                    ; OFFLINE_MODE
+ANL
+ANB M10905               ; HiST4検査_有効確認OK
+OUT M10904               ; HiST4検査_有効確認要求
+LD M10904                ; HiST4検査_有効確認要求
+AND W0107.6              ; Hi_ST4ﾁｪｯｶ-確認要求
+LD W07.6                 ; Hi_ST4ﾁｪｯｶ-確認完了
+OR M3                    ; OFFLINE_MODE
+ANL
+OUT M10905               ; HiST4検査_有効確認OK
+LD M10905                ; HiST4検査_有効確認OK
+ANB W05.7                ; ｽﾃｰｼﾞ#4 無効切替要求
+LDB X147F                ; HiST4_検査_有効/無効SW
+ANB B12AA                ; HiST4検査_有効/無効_Tpb
+ANB W05.7                ; ｽﾃｰｼﾞ#4 無効切替要求
+INV
+AND L1800                ; HiST4_有効状態
+ORL
+OUT M10906               ; HiST4検査_有効/無効要求
+LD M71                   ; 自動運転開始BZ
+LDB M8482                ; ﾊﾝﾄﾞ1_Hi検査未了品
+ANB M8489                ; ﾊﾝﾄﾞ1_Hi検査ST4再検品
+OR M8483                 ; ﾊﾝﾄﾞ1_Hi検査完了品(排出ﾜｰｸ)
+ANL
+LDB M8492                ; ﾊﾝﾄﾞ2_Hi検査未了品
+ANB M8499                ; ﾊﾝﾄﾞ2_Hi検査ST4再検品
+OR M8493                 ; ﾊﾝﾄﾞ2_Hi検査完了品(排出ﾜｰｸ)
+ANL
+AND= D9701 K0            ; HiST4 ﾜｰｸ有無記憶
+LDB M10985               ; ﾕﾆｯﾄ18起動中
+LD M10501                ; U18-1_S01
+ANB M8404                ; 【搬送】搬送→Hi_ST4搬送開始
+ORL
+ANL
+ANB M8536                ; ﾊﾝﾄﾞ1_HiST4給材中ﾌﾗｸﾞ
+ANB M8537                ; ﾊﾝﾄﾞ2_HiST4給材中ﾌﾗｸﾞ
+OUT M10907               ; HiST4_自動中無効条件OK
+LDB M71                  ; 自動運転開始BZ
+OR M10907                ; HiST4_自動中無効条件OK
+OUT M10908               ; HiST4_無効OK条件
+LD M10909                ; HiST4_無効予約(自動運転)
+ANB M10910               ; HiST4_無効中
+ANP M10906               ; HiST4検査_有効/無効要求
+OUT M10911               ; HiST4_予約ｷｬﾝｾﾙ
+LDP M10906               ; HiST4検査_有効/無効要求
+AND L1800                ; HiST4_有効状態
+AND M71                  ; 自動運転開始BZ
+ANB M10909               ; HiST4_無効予約(自動運転)
+LD M10909                ; HiST4_無効予約(自動運転)
+ANB M10910               ; HiST4_無効中
+ANB M10911               ; HiST4_予約ｷｬﾝｾﾙ
+ORL
+OUT M10909               ; HiST4_無効予約(自動運転)
+LD M10909                ; HiST4_無効予約(自動運転)
+AND M10908               ; HiST4_無効OK条件
+LDP M10906               ; HiST4検査_有効/無効要求
+ANB M41                  ; ﾕﾆｯﾄ_起動中
+ORL
+LDB B0242                ; B242_578)HiST4_ﾃｽﾄﾍｯﾄﾞID_不一致
+ANB B0243                ; B243_579)HiST4_ﾊﾟﾚｯﾄID_不一致
+INV
+MEP
+ORL
+LD M10910                ; HiST4_無効中
+ANB L1800                ; HiST4_有効状態
+ORL
+OUT M10910               ; HiST4_無効中
+;<h1/>__ST_有効処理
+LDP M10906               ; HiST4検査_有効/無効要求
+LD<> D9606 K0            ; HiST4_ｺﾝﾀｸﾄﾍｯﾄﾞID_Copy
+AND<> D9607 K0           ; HiST4_ﾊﾟﾚｯﾄID_ｾﾝｻ状態
+AND X1471                ; HiST4_部_ﾊﾟﾚｯﾄ_後退端
+LD M35                   ; 空運転ﾓｰﾄﾞ
+AND= D9606 K0            ; HiST4_ｺﾝﾀｸﾄﾍｯﾄﾞID_Copy
+AND= D9607 K0            ; HiST4_ﾊﾟﾚｯﾄID_ｾﾝｻ状態
+ORL
+ANL
+ANB L1800                ; HiST4_有効状態
+LD L1800                 ; HiST4_有効状態
+ANB M10910               ; HiST4_無効中
+LD M300                  ; PC通信正常
+OR M3                    ; OFFLINE_MODE
+ANL
+ORL
+OUT L1800                ; HiST4_有効状態
+;JIG_ID一致確認
+LD L1800                 ; HiST4_有効状態
+MPS
+LD= D9600 D7711          ; HiST4_ｺﾝﾀｸﾄﾍｯﾄﾞID  ﾊﾝﾄﾞ1 高温検査ﾃｽﾄﾍｯﾄﾞID
+AND= D9601 D7710         ; HiST4_ﾊﾟﾚｯﾄID  ﾊﾝﾄﾞ1 高温検査ﾊﾟﾚｯﾄID
+LD M35                   ; 空運転ﾓｰﾄﾞ
+AND= D9600 K0            ; HiST4_ｺﾝﾀｸﾄﾍｯﾄﾞID
+AND= D9601 K0            ; HiST4_ﾊﾟﾚｯﾄID
+ORL
+ANL
+OUT M10901               ; HiST4-搬送ﾊﾝﾄﾞ1ID一致ﾌﾗｸﾞ
+MPP
+LD= D9600 D7811          ; HiST4_ｺﾝﾀｸﾄﾍｯﾄﾞID  ﾊﾝﾄﾞ2 高温検査ﾃｽﾄﾍｯﾄﾞID
+AND= D9601 D7810         ; HiST4_ﾊﾟﾚｯﾄID  ﾊﾝﾄﾞ2 高温検査ﾊﾟﾚｯﾄID
+LD M35                   ; 空運転ﾓｰﾄﾞ
+AND= D9600 K0            ; HiST4_ｺﾝﾀｸﾄﾍｯﾄﾞID
+AND= D9601 K0            ; HiST4_ﾊﾟﾚｯﾄID
+ORL
+ANL
+OUT M10902               ; HiST4-搬送ﾊﾝﾄﾞ2ID一致ﾌﾗｸﾞ
+;<h1/>__ﾛﾎﾞｯﾄ等機器入力受け
+;<h1/>□_装置状態・動作条件
+;ﾕﾆｯﾄまとめ
+LD M10570                ; U18-1原点
+AND M10730               ; U18-3原点
+OUT M10980               ; ﾕﾆｯﾄ18原点
+;□ 非常停止
+LDB M10571               ; U18-1全異常
+ANB M10731               ; U18-3全異常
+INV
+OUT M10981               ; ﾕﾆｯﾄ18即停止異常
+;□ 起動条件
+LD CR2003                ; 常時OFF
+OUT M10982               ; ﾕﾆｯﾄ18起動条件
+;□ 起動OFF
+LDB M50                  ; 運転準備
+LD M60                   ; ｴﾗｰ発生
+OR M56                   ; 自動起動停止指令(ｻｲｸﾙ停止)
+AND M10984               ; ﾕﾆｯﾄ18原点復帰中
+ORL
+OR M10986                ; ﾕﾆｯﾄ18ｻｲｸﾙ停止異常
+OR T15                   ; 強制停止
+OUT M10983               ; ﾕﾆｯﾄ18起動OFF
+;□ 原点復帰
+LD M82                   ; 原点復帰開始
+ANB M10984               ; ﾕﾆｯﾄ18原点復帰中
+OR M10984                ; ﾕﾆｯﾄ18原点復帰中
+ANB M10983               ; ﾕﾆｯﾄ18起動OFF
+ANB M10991               ; ﾕﾆｯﾄ18ｴﾗｰ発生
+ANB M10797               ; OriStepEND
+OUT M10984               ; ﾕﾆｯﾄ18原点復帰中
+;□ 起動中
+LDB M10574               ; U18-1起動中
+ANB M10734               ; U18-3(検査SUB)起動中
+INV
+OUT M10985               ; ﾕﾆｯﾄ18起動中
+;□ ｻｲｸﾙ停止異常
+LDB M10575               ; U18-1ｻｲｸﾙ停止異常
+ANB M10735               ; U18-3ｻｲｸﾙ停止異常
+INV
+OUT M10986               ; ﾕﾆｯﾄ18ｻｲｸﾙ停止異常
+;□ 払出停止異常
+LDB CR2003               ; 常時OFF
+INV
+OUT M10987               ; ﾕﾆｯﾄ18払出停止異常
+;□ 警報補助
+LDB CR2003               ; 常時OFF
+INV
+OUT M10988               ; ﾕﾆｯﾄ18警報補助
+;□ 機器準備確認
+LD CR2002                ; 常時ON
+OUT M10990               ; ﾕﾆｯﾄ18機器準備完了
+;□ ｴﾗｰ発生　一時停止
+LDB M10576               ; U18-1ｴﾗｰ発生
+ANB M10736               ; U18-3ｴﾗｰ発生
+INV
+OUT M10991               ; ﾕﾆｯﾄ18ｴﾗｰ発生
+;□ 動作中ﾕﾆｯﾄ無し
+LD M10577                ; U18-1動作無し
+AND M10737               ; U18-3動作無し
+OUT M10992               ; ﾕﾆｯﾄ18動作無し確認
+;□ 払出しﾜｰｸ無し
+LDB X1474                ; HiST4_部_ﾜｰｸ確認(ON=有)
+ANB M8482                ; ﾊﾝﾄﾞ1_Hi検査未了品
+ANB M8489                ; ﾊﾝﾄﾞ1_Hi検査ST4再検品
+ANB M8492                ; ﾊﾝﾄﾞ2_Hi検査未了品
+ANB M8499                ; ﾊﾝﾄﾞ2_Hi検査ST4再検品
+TMR K1814 K10
+LD T1814
+OUT M10993               ; ﾕﾆｯﾄ18ﾜｰｸ無し
+;□ ｽﾃｯﾌﾟ起動
+LD M30                   ; 自動ﾓｰﾄﾞ
+OR M31                   ; 手動ﾓｰﾄﾞ
+AND T1801                ; HiST4扉閉
+ANB M51                  ; 即停止異常(緊急停止)
+ANB M52                  ; ｻｲｸﾙ停止異常(ｻｲｸﾙ停止)
+ANB M57                  ; 全ﾕﾆｯﾄ払出完了
+ANB M59                  ; 払出停止異常まとめ
+ANB M10991               ; ﾕﾆｯﾄ18ｴﾗｰ発生
+LDB M130                 ; 一時停止
+ORB M10517               ; U18-1_S17
+ANL
+OUT M10979               ; ﾕﾆｯﾄ18ｽﾃｯﾌﾟ動作
+;<h1/>□_自動回路
+;<h1/>◇_状態・動作条件(補助)
+LD X1473                 ; HiST4_部_ﾜｰｸ押_上昇端
+AND X1471                ; HiST4_部_ﾊﾟﾚｯﾄ_後退端
+ANB X1474                ; HiST4_部_ﾜｰｸ確認(ON=有)
+AND= D9701 K0            ; HiST4 ﾜｰｸ有無記憶
+OUT M10570               ; U18-1原点
+LDB B0242                ; B242_578)HiST4_ﾃｽﾄﾍｯﾄﾞID_不一致
+ANB B0243                ; B243_579)HiST4_ﾊﾟﾚｯﾄID_不一致
+ANB B0244                ; B244_580)HiST4_ﾜｰｸ受取異常
+ANB B0245                ; B245_581)HiST4_ﾜｰｸ受渡し異常
+ANB B0246                ; B246_582)HiST4 ﾜｰｸ情報不一致
+INV
+OUT M10571               ; U18-1全異常
+LD M10570                ; U18-1原点
+ANB M10574               ; U18-1起動中
+AND M10979               ; ﾕﾆｯﾄ18ｽﾃｯﾌﾟ動作
+LD M10901                ; HiST4-搬送ﾊﾝﾄﾞ1ID一致ﾌﾗｸﾞ
+OR M10902                ; HiST4-搬送ﾊﾝﾄﾞ2ID一致ﾌﾗｸﾞ
+ANL
+ANB M10908               ; HiST4_無効OK条件
+OUT M10572               ; U18-1起動条件
+LDB M50                  ; 運転準備
+ORB L1800                ; HiST4_有効状態
+OR M10986                ; ﾕﾆｯﾄ18ｻｲｸﾙ停止異常
+OR T15                   ; 強制停止
+OUT M10573               ; U18-1起動OFF
+LD M73                   ; 各工程起動指令
+AND M10572               ; U18-1起動条件
+OR M10574                ; U18-1起動中
+ANB M10573               ; U18-1起動OFF
+ANB M10563               ; U18-1 StepEnd
+OUT M10574               ; U18-1起動中
+;ﾕﾆｯﾄ1-1 ｻｲｸﾙ停止異常
+LDB CR2003               ; 常時OFF
+INV
+OUT M10575               ; U18-1ｻｲｸﾙ停止異常
+;ﾕﾆｯﾄ1-1 ｴﾗｰ発生まとめ
+LDB B0240                ; B240_576)HiST4ｽﾃｰｼﾞ前後CL異常
+ANB B0241                ; B241_577)HiST4ｸﾗﾝﾌﾟ開閉CLS異常
+ANB B025E                ; B25E_606)HiST4ﾜｰｸ除去要求
+ANB B025F                ; B25F_607)HiST4ﾜｰｸ検査中
+INV
+OUT M10576               ; U18-1ｴﾗｰ発生
+;ﾕﾆｯﾄ1-1 停止判定
+LD= D9500 D9505          ; HiST4-1自動運転ｽﾃｯﾌﾟ  HiST4-1動作中判定
+ORB M10574               ; U18-1起動中
+TMR K1810 K20            ; 停止完了判定ﾀｲﾏｰ
+LD CR2002                ; 常時ON
+MOV D9500 D9505          ; HiST4-1自動運転ｽﾃｯﾌﾟ  HiST4-1動作中判定
+LD T1810                 ; 停止完了判定ﾀｲﾏｰ
+OUT M10577               ; U18-1動作無し
+;□
+;□　ﾕﾆｯﾄ1-1 自動運転ステップ開始
+;□
+LD CR2002                ; 常時ON
+FMOV K0 M10500 K4        ; U18-1_S00
+LDB M10574               ; U18-1起動中
+MOV K0 D9500             ; HiST4-1自動運転ｽﾃｯﾌﾟ
+LD M10574                ; U18-1起動中
+MOV D9500 Z1             ; HiST4-1自動運転ｽﾃｯﾌﾟ
+SET M10500:Z1            ; U18-1_S00
+;ﾜｰｸ有無判定等
+LD M10500                ; U18-1_S00
+AND M10979               ; ﾕﾆｯﾄ18ｽﾃｯﾌﾟ動作
+INC D9500                ; HiST4-1自動運転ｽﾃｯﾌﾟ
+LD M10501                ; U18-1_S01
+MPS
+ANB M10993               ; ﾕﾆｯﾄ18ﾜｰｸ無し
+MPS
+AND M8404                ; 【搬送】搬送→Hi_ST4搬送開始
+INC D9500                ; HiST4-1自動運転ｽﾃｯﾌﾟ
+MPP
+LD M10901                ; HiST4-搬送ﾊﾝﾄﾞ1ID一致ﾌﾗｸﾞ
+OR M10902                ; HiST4-搬送ﾊﾝﾄﾞ2ID一致ﾌﾗｸﾞ
+ANB X1474                ; HiST4_部_ﾜｰｸ確認(ON=有)
+ANL
+OUT M10920               ; HiST4→搬送ﾜｰｸ供給要求
+MPP
+LD M10993                ; ﾕﾆｯﾄ18ﾜｰｸ無し
+AND M36                  ; 払出ﾓｰﾄﾞ
+ANL
+MOV K63 D9500            ; HiST4-1自動運転ｽﾃｯﾌﾟ
+LD M10502                ; U18-1_S02
+LD M8408                 ; 【搬送】搬送→Hi_ST4搬送完了
+OR M10922                ; HiST4→搬送ﾜｰｸ受取り完了
+ANL
+MPS
+LDB M8404                ; 【搬送】搬送→Hi_ST4搬送開始
+ANB M8408                ; 【搬送】搬送→Hi_ST4搬送完了
+ANL
+INC D9500                ; HiST4-1自動運転ｽﾃｯﾌﾟ
+MPP
+OUT M10922               ; HiST4→搬送ﾜｰｸ受取り完了
+LD M10503                ; U18-1_S03
+AND M10979               ; ﾕﾆｯﾄ18ｽﾃｯﾌﾟ動作
+AND= D9701 K1            ; HiST4 ﾜｰｸ有無記憶
+MPS
+LD X1474                 ; HiST4_部_ﾜｰｸ確認(ON=有)
+OR M35                   ; 空運転ﾓｰﾄﾞ
+ANL
+INC D9500                ; HiST4-1自動運転ｽﾃｯﾌﾟ
+MPP
+LDB X1474                ; HiST4_部_ﾜｰｸ確認(ON=有)
+ANB M35                  ; 空運転ﾓｰﾄﾞ
+ANL
+MOV K60 D9500            ; HiST4-1自動運転ｽﾃｯﾌﾟ
+LD M10560                ; U18-1_S60 HiST4_ﾜｰｸ受取異常
+AND B0244                ; B244_580)HiST4_ﾜｰｸ受取異常
+MOV K63 D9500            ; HiST4-1自動運転ｽﾃｯﾌﾟ
+;　　ｸﾗﾝﾌﾟ指令
+LD M10504                ; U18-1_S04_ｸﾗﾝﾌﾟ指令
+AND M10979               ; ﾕﾆｯﾄ18ｽﾃｯﾌﾟ動作
+AND X1472                ; HiST4_部_ﾜｰｸ押_下降端
+ANB B0241                ; B241_577)HiST4ｸﾗﾝﾌﾟ開閉CLS異常
+INC D9500                ; HiST4-1自動運転ｽﾃｯﾌﾟ
+;　　Z軸上昇確認
+LD M10505                ; U18-1_S05_開始確認待ち
+AND T1801                ; HiST4扉閉
+AND M10979               ; ﾕﾆｯﾄ18ｽﾃｯﾌﾟ動作
+LD L1452                 ; Hi搬送高さ移動完了(HIGH)
+OR L1451                 ; Hi搬送高さ移動完了(MIDLE)
+ANL
+INC D9500                ; HiST4-1自動運転ｽﾃｯﾌﾟ
+@INC D9520               ; HiST4投入回数
+LD M10506                ; U18-1_S06
+INC D9500                ; HiST4-1自動運転ｽﾃｯﾌﾟ
+LD M10507                ; U18-1_S07
+INC D9500                ; HiST4-1自動運転ｽﾃｯﾌﾟ
+LD M10508                ; U18-1_S08
+INC D9500                ; HiST4-1自動運転ｽﾃｯﾌﾟ
+LD M10509                ; U18-1_S09
+INC D9500                ; HiST4-1自動運転ｽﾃｯﾌﾟ
+;　　■電特検査前処理
+LD M10510                ; U18-1_S10
+INC D9500                ; HiST4-1自動運転ｽﾃｯﾌﾟ
+LD M10511                ; U18-1_S11
+INC D9500                ; HiST4-1自動運転ｽﾃｯﾌﾟ
+LD M10512                ; U18-1_S12_
+INC D9500                ; HiST4-1自動運転ｽﾃｯﾌﾟ
+LD M10513                ; U18-1_S13
+AND M10979               ; ﾕﾆｯﾄ18ｽﾃｯﾌﾟ動作
+INC D9500                ; HiST4-1自動運転ｽﾃｯﾌﾟ
+LD M10514                ; U18-1_S14_ﾊﾟﾚｯﾄ前進指令
+AND M10979               ; ﾕﾆｯﾄ18ｽﾃｯﾌﾟ動作
+AND X1470                ; HiST4_部_ﾊﾟﾚｯﾄ_前進端
+INC D9500                ; HiST4-1自動運転ｽﾃｯﾌﾟ
+;<h1/>__S15_電特検査処理開始
+LD M10515                ; U18-1_S15
+AND M10979               ; ﾕﾆｯﾄ18ｽﾃｯﾌﾟ動作
+ANB M10734               ; U18-3(検査SUB)起動中
+INC D9500                ; HiST4-1自動運転ｽﾃｯﾌﾟ
+LD M10516                ; U18-1_S16_検査SUB開始ﾌﾗｸﾞ
+AND M10979               ; ﾕﾆｯﾄ18ｽﾃｯﾌﾟ動作
+AND M10734               ; U18-3(検査SUB)起動中
+INC D9500                ; HiST4-1自動運転ｽﾃｯﾌﾟ
+LD M10517                ; U18-1_S17
+AND M10979               ; ﾕﾆｯﾄ18ｽﾃｯﾌﾟ動作
+ANB M10734               ; U18-3(検査SUB)起動中
+ANB M130                 ; 一時停止
+INC D9500                ; HiST4-1自動運転ｽﾃｯﾌﾟ
+LD M10518                ; U18-1_S18
+AND M10979               ; ﾕﾆｯﾄ18ｽﾃｯﾌﾟ動作
+INC D9500                ; HiST4-1自動運転ｽﾃｯﾌﾟ
+LD M10519                ; U18-1_S19
+AND M10979               ; ﾕﾆｯﾄ18ｽﾃｯﾌﾟ動作
+INC D9500                ; HiST4-1自動運転ｽﾃｯﾌﾟ
+;　　ｽﾃｰｼﾞ後退
+LD M10520                ; U18-1_S20_ｽﾃｰｼﾞ後退命令
+AND M10979               ; ﾕﾆｯﾄ18ｽﾃｯﾌﾟ動作
+AND X1471                ; HiST4_部_ﾊﾟﾚｯﾄ_後退端
+INC D9500                ; HiST4-1自動運転ｽﾃｯﾌﾟ
+;　　ｸﾗﾝﾌﾟ解除
+LD M10521                ; U18-1_S21_
+AND M10979               ; ﾕﾆｯﾄ18ｽﾃｯﾌﾟ動作
+INC D9500                ; HiST4-1自動運転ｽﾃｯﾌﾟ
+LD M10522                ; U18-1_S22
+AND M10979               ; ﾕﾆｯﾄ18ｽﾃｯﾌﾟ動作
+INC D9500                ; HiST4-1自動運転ｽﾃｯﾌﾟ
+LD M10523                ; U18-1_S23
+AND M10979               ; ﾕﾆｯﾄ18ｽﾃｯﾌﾟ動作
+INC D9500                ; HiST4-1自動運転ｽﾃｯﾌﾟ
+LD M10524                ; U18-1_S24
+AND M10979               ; ﾕﾆｯﾄ18ｽﾃｯﾌﾟ動作
+INC D9500                ; HiST4-1自動運転ｽﾃｯﾌﾟ
+;<h1/>__S25_ﾜｰｸ除材要求
+LDB M8482                ; ﾊﾝﾄﾞ1_Hi検査未了品
+ANB M8489                ; ﾊﾝﾄﾞ1_Hi検査ST4再検品
+ANB M8492                ; ﾊﾝﾄﾞ2_Hi検査未了品
+ANB M8499                ; ﾊﾝﾄﾞ2_Hi検査ST4再検品
+ANB M8526                ; ﾊﾝﾄﾞ1HiST4除材中ﾌﾗｸﾞ
+ANB M8527                ; ﾊﾝﾄﾞ2HiST4除材中ﾌﾗｸﾞ
+ANB M9409                ; HiST1_無効予約(自動運転)
+ANB M9909                ; HiST2_無効予約(自動運転)
+ANB M10409               ; HiST3_無効予約(自動運転)
+ANB M10909               ; HiST4_無効予約(自動運転)
+INV
+OUT M10925               ; HiST4_ﾜｰｸ除去要求発行許可
+;M9　M1304を上流仮置きよりﾜｰｸ除材要求なしに入れ替え
+LD M10525                ; U18-1_S25
+MPS
+AND M8414                ; 【搬送】HiST4除材開始
+INC D9500                ; HiST4-1自動運転ｽﾃｯﾌﾟ
+MPP
+LDB M7511                ; 仮置き台ﾜｰｸ取出可
+OR M10925                ; HiST4_ﾜｰｸ除去要求発行許可
+ANL
+OUT M10921               ; HiST4→搬送1除材要求
+LD M10526                ; U18-1_S26
+LD M8418                 ; 【搬送】HiST4除材完了
+OR M10923                ; HiST4→搬送除材完了受取
+ANL
+MPS
+LDB M8414                ; 【搬送】HiST4除材開始
+ANB M8418                ; 【搬送】HiST4除材完了
+ANL
+INC D9500                ; HiST4-1自動運転ｽﾃｯﾌﾟ
+MPP
+OUT M10923               ; HiST4→搬送除材完了受取
+LD M10527                ; U18-1_S27
+AND M10979               ; ﾕﾆｯﾄ18ｽﾃｯﾌﾟ動作
+AND= D9701 K0            ; HiST4 ﾜｰｸ有無記憶
+LD L1452                 ; Hi搬送高さ移動完了(HIGH)
+OR L1451                 ; Hi搬送高さ移動完了(MIDLE)
+OR L1450                 ; ﾜｰｸ入替高さ移動完了(HiW)
+ANL
+MPS
+ANB X1474                ; HiST4_部_ﾜｰｸ確認(ON=有)
+INC D9500                ; HiST4-1自動運転ｽﾃｯﾌﾟ
+MPP
+AND X1474                ; HiST4_部_ﾜｰｸ確認(ON=有)
+OUT M10930               ; HiST4_ﾜｰｸ受渡し異常
+LD M10528                ; U18-1_S28
+AND M10979               ; ﾕﾆｯﾄ18ｽﾃｯﾌﾟ動作
+INC D9500                ; HiST4-1自動運転ｽﾃｯﾌﾟ
+LD M10529                ; U18-1_S29
+AND M10979               ; ﾕﾆｯﾄ18ｽﾃｯﾌﾟ動作
+MOV K63 D9500            ; HiST4-1自動運転ｽﾃｯﾌﾟ
+;ｻｲｸﾙ終了
+LD M10562                ; U18-1_S62
+OR CR2003                ; 常時OFF
+@MOV K63 D9500           ; HiST4-1自動運転ｽﾃｯﾌﾟ
+;<h1/>◇_電特検査SUB 状態・動作条件(補助)
+LD CR2002                ; 常時ON
+OUT M10730               ; U18-3原点
+LDB CR2003               ; 常時OFF
+INV
+OUT M10731               ; U18-3全異常
+LD M10730                ; U18-3原点
+ANB M10734               ; U18-3(検査SUB)起動中
+AND M10979               ; ﾕﾆｯﾄ18ｽﾃｯﾌﾟ動作
+LD M300                  ; PC通信正常
+OR M3                    ; OFFLINE_MODE
+ANL
+OUT M10732               ; U18-3起動条件
+LDB M50                  ; 運転準備
+OR M10986                ; ﾕﾆｯﾄ18ｻｲｸﾙ停止異常
+OR T15                   ; 強制停止
+OUT M10733               ; U18-3起動OFF
+LD M10516                ; U18-1_S16_検査SUB開始ﾌﾗｸﾞ
+AND M10732               ; U18-3起動条件
+OR M10734                ; U18-3(検査SUB)起動中
+ANB M10733               ; U18-3起動OFF
+ANB M10723               ; U18-3 StepEnd
+OUT M10734               ; U18-3(検査SUB)起動中
+;tp表示
+LD CR2002                ; 常時ON
+DW K0 D9900              ; Hi検査_ｽﾃｰﾀｽ表示
+LD M10734                ; U18-3(検査SUB)起動中
+DW K1 D9900              ; Hi検査_ｽﾃｰﾀｽ表示
+LD= D9704 K1             ; HiST4 Hi検査結果(1=OK_2=NG)
+DW K2 D9900              ; Hi検査_ｽﾃｰﾀｽ表示
+LD= D9704 K2             ; HiST4 Hi検査結果(1=OK_2=NG)
+DW K3 D9900              ; Hi検査_ｽﾃｰﾀｽ表示
+LDB L1800                ; HiST4_有効状態
+DW K4 D9900              ; Hi検査_ｽﾃｰﾀｽ表示
+;ﾕﾆｯﾄ1-3ｻｲｸﾙ停止異常
+LDB CR2003               ; 常時OFF
+INV
+OUT M10735               ; U18-3ｻｲｸﾙ停止異常
+;ﾕﾆｯﾄ1-3ｴﾗｰ発生まとめ
+LDB CR2003               ; 常時OFF
+INV
+OUT M10736               ; U18-3ｴﾗｰ発生
+;ﾕﾆｯﾄ1-3停止判定
+LD= D9502 D9507          ; HiST4-3自動運転ｽﾃｯﾌﾟ  HiST4-3動作中判定
+TMR K1812 K20
+LD CR2002                ; 常時ON
+MOV D9502 D9507          ; HiST4-3自動運転ｽﾃｯﾌﾟ  HiST4-3動作中判定
+LD T1812
+ORB M10734               ; U18-3(検査SUB)起動中
+OUT M10737               ; U18-3動作無し
+;□
+;□　ﾕﾆｯﾄ1-3自動運転ステップ開始
+;□
+LD CR2002                ; 常時ON
+FMOV K0 M10660 K4        ; U18-3_S0
+LDB M10734               ; U18-3(検査SUB)起動中
+MOV K0 D9502             ; HiST4-3自動運転ｽﾃｯﾌﾟ
+LD M10734                ; U18-3(検査SUB)起動中
+MOV D9502 Z1             ; HiST4-3自動運転ｽﾃｯﾌﾟ
+SET M10660:Z1            ; U18-3_S0
+;<h1/>__S0_ﾜｰｸ有無判定
+LD M10660                ; U18-3_S0
+MPS
+LD T1801                 ; HiST4扉閉
+AND M10979               ; ﾕﾆｯﾄ18ｽﾃｯﾌﾟ動作
+ANB M35                  ; 空運転ﾓｰﾄﾞ
+ANB M3                   ; OFFLINE_MODE
+ANL
+INC D9502                ; HiST4-3自動運転ｽﾃｯﾌﾟ
+MPP
+LD M35                   ; 空運転ﾓｰﾄﾞ
+OR M3                    ; OFFLINE_MODE
+ANL
+MPS
+AND T1830                ; Hi検査時間(仮)
+INC D9502                ; HiST4-3自動運転ｽﾃｯﾌﾟ
+MPP
+TMR K1830 K50            ; Hi検査時間(仮)
+LD M10661                ; U18-3_S1Hi検査ｽﾀｰﾄ要求
+AND W0105.11             ; 電気特性検査開始要求#4
+LD W05.11                ; 電気特性検査ｽﾃｰｼﾞ状態#4
+ANB W05.15               ; 電気特性検査結果#4
+OR M3                    ; OFFLINE_MODE
+OR M35                   ; 空運転ﾓｰﾄﾞ
+ANL
+INC D9502                ; HiST4-3自動運転ｽﾃｯﾌﾟ
+LD M10662                ; U18-3_S2
+LDB W05.11               ; 電気特性検査ｽﾃｰｼﾞ状態#4
+OR M3                    ; OFFLINE_MODE
+ANL
+INC D9502                ; HiST4-3自動運転ｽﾃｯﾌﾟ
+LD M10663                ; U18-3_S3
+MPS
+AND<> D9704 K0           ; HiST4 Hi検査結果(1=OK_2=NG)
+INC D9502                ; HiST4-3自動運転ｽﾃｯﾌﾟ
+MRD
+LDB M35                  ; 空運転ﾓｰﾄﾞ
+ANB M3                   ; OFFLINE_MODE
+ANL
+MPS
+AND W05.15               ; 電気特性検査結果#4
+MOV K1 D9704             ; HiST4 Hi検査結果(1=OK_2=NG)
+MPP
+ANB W05.15               ; 電気特性検査結果#4
+MOV K2 D9704             ; HiST4 Hi検査結果(1=OK_2=NG)
+MPP
+LD M3                    ; OFFLINE_MODE
+OR M35                   ; 空運転ﾓｰﾄﾞ
+ANL
+MPS
+ANB B1038                ; B3C8_968)Bz停止
+MOV K1 D9704             ; HiST4 Hi検査結果(1=OK_2=NG)
+MPP
+AND B1038                ; B3C8_968)Bz停止
+MOV K2 D9704             ; HiST4 Hi検査結果(1=OK_2=NG)
+LD M10664                ; U18-3_S4
+INC D9502                ; HiST4-3自動運転ｽﾃｯﾌﾟ
+LD M10665                ; U18-3_S5
+INC D9502                ; HiST4-3自動運転ｽﾃｯﾌﾟ
+LD M10666                ; U18-3_S6
+INC D9502                ; HiST4-3自動運転ｽﾃｯﾌﾟ
+LD M10667                ; U18-3_S7
+INC D9502                ; HiST4-3自動運転ｽﾃｯﾌﾟ
+LD M10668                ; U18-3_S8
+INC D9502                ; HiST4-3自動運転ｽﾃｯﾌﾟ
+LD M10669                ; U18-3_S9
+AND T1801                ; HiST4扉閉
+AND M10979               ; ﾕﾆｯﾄ18ｽﾃｯﾌﾟ動作
+MOV K63 D9502            ; HiST4-3自動運転ｽﾃｯﾌﾟ
+;<h1/>□_原点復帰回路
+LD CR2002                ; 常時ON
+FMOV K0 M10750 K3        ; OriStep0
+LDB M10984               ; ﾕﾆｯﾄ18原点復帰中
+MOV K0 D9510             ; HiST4 原点復帰ｽﾃｯﾌﾟ
+LD M10984                ; ﾕﾆｯﾄ18原点復帰中
+MOV D9510 Z1             ; HiST4 原点復帰ｽﾃｯﾌﾟ
+SET M10750:Z1            ; OriStep0
+;原点復帰ｻｲｸﾙ監視
+LD M10984                ; ﾕﾆｯﾄ18原点復帰中
+TMR K1800 K200           ; UNIT18原点復帰ﾀｲﾑｱｳﾄ
+;原点復帰ステップ開始
+LD M10750                ; OriStep0
+AND T1801                ; HiST4扉閉
+AND M10979               ; ﾕﾆｯﾄ18ｽﾃｯﾌﾟ動作
+AND M66                  ; Lo_Hi_RB & Chamber原点
+DW K0 D9520              ; HiST4投入回数
+CON
+INC D9510                ; HiST4 原点復帰ｽﾃｯﾌﾟ
+LD M10751                ; OriStep1
+AND T1801                ; HiST4扉閉
+AND M10979               ; ﾕﾆｯﾄ18ｽﾃｯﾌﾟ動作
+ANB W05.11               ; 電気特性検査ｽﾃｰｼﾞ状態#4
+INC D9510                ; HiST4 原点復帰ｽﾃｯﾌﾟ
+LD M10752                ; OriStep2
+AND T1801                ; HiST4扉閉
+AND M10979               ; ﾕﾆｯﾄ18ｽﾃｯﾌﾟ動作
+INC D9510                ; HiST4 原点復帰ｽﾃｯﾌﾟ
+LD M10753                ; OriStep3_ｽﾃｰｼﾞ戻り指令
+AND T1801                ; HiST4扉閉
+AND M10979               ; ﾕﾆｯﾄ18ｽﾃｯﾌﾟ動作
+AND X1471                ; HiST4_部_ﾊﾟﾚｯﾄ_後退端
+INC D9510                ; HiST4 原点復帰ｽﾃｯﾌﾟ
+LD M10754                ; OriStep4
+AND T1801                ; HiST4扉閉
+AND M10979               ; ﾕﾆｯﾄ18ｽﾃｯﾌﾟ動作
+INC D9510                ; HiST4 原点復帰ｽﾃｯﾌﾟ
+LD M10755                ; OriStep5_
+AND T1801                ; HiST4扉閉
+AND M10979               ; ﾕﾆｯﾄ18ｽﾃｯﾌﾟ動作
+AND L1452                ; Hi搬送高さ移動完了(HIGH)
+INC D9510                ; HiST4 原点復帰ｽﾃｯﾌﾟ
+LD M10756                ; OriStep6_ｸﾗﾝﾌﾟ上昇指令
+AND T1801                ; HiST4扉閉
+AND M10979               ; ﾕﾆｯﾄ18ｽﾃｯﾌﾟ動作
+AND X1473                ; HiST4_部_ﾜｰｸ押_上昇端
+INC D9510                ; HiST4 原点復帰ｽﾃｯﾌﾟ
+;　　ﾜｰｸ有無ﾁｪｯｸ
+LD M10757                ; OriStep7
+AND T1801                ; HiST4扉閉
+AND M10979               ; ﾕﾆｯﾄ18ｽﾃｯﾌﾟ動作
+MPS
+ANB X1474                ; HiST4_部_ﾜｰｸ確認(ON=有)
+MOV K10 D9510            ; HiST4 原点復帰ｽﾃｯﾌﾟ
+MPP
+AND X1474                ; HiST4_部_ﾜｰｸ確認(ON=有)
+INC D9510                ; HiST4 原点復帰ｽﾃｯﾌﾟ
+;　　ﾜｰｸ除去要求
+LD M10758                ; OriStep8_ORGﾜｰｸ除去要求
+AND T1801                ; HiST4扉閉
+AND M10979               ; ﾕﾆｯﾄ18ｽﾃｯﾌﾟ動作
+AND B025E                ; B25E_606)HiST4ﾜｰｸ除去要求
+MOV K46 D9510            ; HiST4 原点復帰ｽﾃｯﾌﾟ
+;　　
+LD M10759                ; OriStep9
+AND T1801                ; HiST4扉閉
+AND M10979               ; ﾕﾆｯﾄ18ｽﾃｯﾌﾟ動作
+INC D9510                ; HiST4 原点復帰ｽﾃｯﾌﾟ
+LD M10760                ; OriStep10
+MPS
+AND M10980               ; ﾕﾆｯﾄ18原点
+MOV K46 D9510            ; HiST4 原点復帰ｽﾃｯﾌﾟ
+MPP
+FMOV K0 D9700 K20        ; HiST4 INDEX NO.
+LD M10796                ; OriStep46
+ANB M82                  ; 原点復帰開始
+MOV K47 D9510            ; HiST4 原点復帰ｽﾃｯﾌﾟ
+;<h1/>□_手動回路
+LD M31                   ; 手動ﾓｰﾄﾞ
+AND M32                  ; ﾒｲﾝ手動操作可能条件
+ANB M10985               ; ﾕﾆｯﾄ18起動中
+ANB M10984               ; ﾕﾆｯﾄ18原点復帰中
+MC
+;ｺﾝﾀｸﾄﾍｯﾄﾞ前後
+LD CR2002                ; 常時ON
+AND M129                 ; 安全入力OK
+AND M8302                ; U14-3_RCX240起動条件
+AND M8311                ; RCX240動作完了
+AND L1452                ; Hi搬送高さ移動完了(HIGH)
+AND X1472                ; HiST4_部_ﾜｰｸ押_下降端
+OUT M10800               ; HiST4ﾊﾟﾚｯﾄ前進_OK
+LDP B12A0                ; UNIT9-2-1 TP-PB
+LD M10812                ; HiST4SwBoxMode_ﾊﾟﾚｯﾄ前後Flag
+ANP X1209                ; Lo#1_上段扉閉端
+ANB X1208                ; Lo#1_上段扉開端
+ORL
+ORP M10824               ; HiST4ｸﾗﾝﾌﾟ&前進_ﾊﾟﾚｯﾄ前進指令
+AND M10800               ; HiST4ﾊﾟﾚｯﾄ前進_OK
+LD M10801                ; HiST4ﾊﾟﾚｯﾄ前進指令
+ANB M10803               ; HiST4ﾊﾟﾚｯﾄ後退指令
+ORL
+OUT M10801               ; HiST4ﾊﾟﾚｯﾄ前進指令
+LD CR2002                ; 常時ON
+ANB W05.11               ; 電気特性検査ｽﾃｰｼﾞ状態#4
+AND L1452                ; Hi搬送高さ移動完了(HIGH)
+OUT M10802               ; HiST4ﾊﾟﾚｯﾄ後退_OK
+LDP B12A1                ; UNIT9-2-2 TP-PB
+LD M10812                ; HiST4SwBoxMode_ﾊﾟﾚｯﾄ前後Flag
+ANP X1208                ; Lo#1_上段扉開端
+ANB X1209                ; Lo#1_上段扉閉端
+ORL
+ORP M10832               ; HiST4ｸﾗﾝﾌﾟ&前進_ﾊﾟﾚｯﾄ後退指令
+AND M10802               ; HiST4ﾊﾟﾚｯﾄ後退_OK
+LD M10803                ; HiST4ﾊﾟﾚｯﾄ後退指令
+ANB M10801               ; HiST4ﾊﾟﾚｯﾄ前進指令
+ORL
+OUT M10803               ; HiST4ﾊﾟﾚｯﾄ後退指令
+;　　ｸﾗﾝﾌﾟ上下
+LD CR2002                ; 常時ON
+AND M129                 ; 安全入力OK
+AND M8302                ; U14-3_RCX240起動条件
+AND M8311                ; RCX240動作完了
+AND L1452                ; Hi搬送高さ移動完了(HIGH)
+AND X1471                ; HiST4_部_ﾊﾟﾚｯﾄ_後退端
+OUT M10804               ; HiST4ｸﾗﾝﾌﾟ開閉_閉_起動OK
+LDP B12A2                ; UNIT9-2-3 TP-PB
+ORP M10822               ; HiST4ｸﾗﾝﾌﾟ&前進_ｸﾗﾝﾌﾟ閉指令
+AND M10804               ; HiST4ｸﾗﾝﾌﾟ開閉_閉_起動OK
+LD M10805                ; HiST4ｸﾗﾝﾌﾟ開閉_閉_指令
+ANB M10807               ; HiST4ｸﾗﾝﾌﾟ開閉_開__指令
+ORL
+OUT M10805               ; HiST4ｸﾗﾝﾌﾟ開閉_閉_指令
+LD CR2002                ; 常時ON
+ANB W05.11               ; 電気特性検査ｽﾃｰｼﾞ状態#4
+AND X1471                ; HiST4_部_ﾊﾟﾚｯﾄ_後退端
+OUT M10806               ; HiST4ｸﾗﾝﾌﾟ開閉_開_起動OK
+LDP B12A3                ; UNIT9-2-4 TP-PB
+ORP M10834               ; HiST4ｸﾗﾝﾌﾟ&前進_ｸﾗﾝﾌﾟ開指令
+AND M10806               ; HiST4ｸﾗﾝﾌﾟ開閉_開_起動OK
+LD M10807                ; HiST4ｸﾗﾝﾌﾟ開閉_開__指令
+ANB M10805               ; HiST4ｸﾗﾝﾌﾟ開閉_閉_指令
+ORL
+OUT M10807               ; HiST4ｸﾗﾝﾌﾟ開閉_開__指令
+;ｸﾗﾝﾌﾟ閉→ﾊﾟﾚｯﾄ前進
+LD M129                  ; 安全入力OK
+AND M8302                ; U14-3_RCX240起動条件
+AND M8311                ; RCX240動作完了
+AND L1452                ; Hi搬送高さ移動完了(HIGH)
+AND X1471                ; HiST4_部_ﾊﾟﾚｯﾄ_後退端
+OUT M10820               ; HiST4ｸﾗﾝﾌﾟ&前進指令条件
+LD M10813                ; HiST4SwBoxMode_ｸﾗﾝﾌﾟ&ﾊﾟﾚｯﾄFlag
+ANP X1209                ; Lo#1_上段扉閉端
+ANB X1208                ; Lo#1_上段扉開端
+AND M10804               ; HiST4ｸﾗﾝﾌﾟ開閉_閉_起動OK
+AND M10820               ; HiST4ｸﾗﾝﾌﾟ&前進指令条件
+OR M10821                ; HiST4ｸﾗﾝﾌﾟ&前進開始
+ANB M10826               ; HiST4ｸﾗﾝﾌﾟ閉→ﾊﾟﾚｯﾄ前進動作完了
+ANB B0240                ; B240_576)HiST4ｽﾃｰｼﾞ前後CL異常
+ANB B0241                ; B241_577)HiST4ｸﾗﾝﾌﾟ開閉CLS異常
+AND M10813               ; HiST4SwBoxMode_ｸﾗﾝﾌﾟ&ﾊﾟﾚｯﾄFlag
+OUT M10821               ; HiST4ｸﾗﾝﾌﾟ&前進開始
+LD M10821                ; HiST4ｸﾗﾝﾌﾟ&前進開始
+AND M10804               ; HiST4ｸﾗﾝﾌﾟ開閉_閉_起動OK
+OR M10822                ; HiST4ｸﾗﾝﾌﾟ&前進_ｸﾗﾝﾌﾟ閉指令
+AND M10821               ; HiST4ｸﾗﾝﾌﾟ&前進開始
+OUT M10822               ; HiST4ｸﾗﾝﾌﾟ&前進_ｸﾗﾝﾌﾟ閉指令
+LD M10822                ; HiST4ｸﾗﾝﾌﾟ&前進_ｸﾗﾝﾌﾟ閉指令
+AND T1802                ; HiST4_部_ﾜｰｸ押_下降端
+OR M10823                ; HiST4ｸﾗﾝﾌﾟ&前進_ｸﾗﾝﾌﾟ確認
+AND M10821               ; HiST4ｸﾗﾝﾌﾟ&前進開始
+OUT M10823               ; HiST4ｸﾗﾝﾌﾟ&前進_ｸﾗﾝﾌﾟ確認
+LD M10823                ; HiST4ｸﾗﾝﾌﾟ&前進_ｸﾗﾝﾌﾟ確認
+AND M10800               ; HiST4ﾊﾟﾚｯﾄ前進_OK
+OR M10824                ; HiST4ｸﾗﾝﾌﾟ&前進_ﾊﾟﾚｯﾄ前進指令
+AND M10821               ; HiST4ｸﾗﾝﾌﾟ&前進開始
+OUT M10824               ; HiST4ｸﾗﾝﾌﾟ&前進_ﾊﾟﾚｯﾄ前進指令
+LD M10824                ; HiST4ｸﾗﾝﾌﾟ&前進_ﾊﾟﾚｯﾄ前進指令
+AND X1470                ; HiST4_部_ﾊﾟﾚｯﾄ_前進端
+OR M10825                ; HiST4ｸﾗﾝﾌﾟ&前進_ﾊﾟﾚｯﾄ前進確認
+AND M10821               ; HiST4ｸﾗﾝﾌﾟ&前進開始
+OUT M10825               ; HiST4ｸﾗﾝﾌﾟ&前進_ﾊﾟﾚｯﾄ前進確認
+LD M10825                ; HiST4ｸﾗﾝﾌﾟ&前進_ﾊﾟﾚｯﾄ前進確認
+OUT M10826               ; HiST4ｸﾗﾝﾌﾟ閉→ﾊﾟﾚｯﾄ前進動作完了
+;ﾊﾟﾚｯﾄ後退→ｸﾗﾝﾌﾟ解除
+LD M129                  ; 安全入力OK
+AND M8302                ; U14-3_RCX240起動条件
+AND M8311                ; RCX240動作完了
+AND L1452                ; Hi搬送高さ移動完了(HIGH)
+OUT M10830               ; HiST4ｸﾗﾝﾌﾟ解除&ﾊﾟﾚｯﾄ後退_指令条
+LD M10813                ; HiST4SwBoxMode_ｸﾗﾝﾌﾟ&ﾊﾟﾚｯﾄFlag
+ANP X1208                ; Lo#1_上段扉開端
+ANB X1209                ; Lo#1_上段扉閉端
+AND M10802               ; HiST4ﾊﾟﾚｯﾄ後退_OK
+AND M10830               ; HiST4ｸﾗﾝﾌﾟ解除&ﾊﾟﾚｯﾄ後退_指令条
+OR M10831                ; HiST4ﾊﾟﾚｯﾄ後退&ｸﾗﾝﾌﾟ解除開始
+ANB M10836               ; HiST4ﾊﾟﾚｯﾄ後退→ｸﾗﾝﾌﾟ開動作完了
+ANB B0240                ; B240_576)HiST4ｽﾃｰｼﾞ前後CL異常
+ANB B0241                ; B241_577)HiST4ｸﾗﾝﾌﾟ開閉CLS異常
+AND M10813               ; HiST4SwBoxMode_ｸﾗﾝﾌﾟ&ﾊﾟﾚｯﾄFlag
+OUT M10831               ; HiST4ﾊﾟﾚｯﾄ後退&ｸﾗﾝﾌﾟ解除開始
+LD M10831                ; HiST4ﾊﾟﾚｯﾄ後退&ｸﾗﾝﾌﾟ解除開始
+AND M10802               ; HiST4ﾊﾟﾚｯﾄ後退_OK
+OR M10832                ; HiST4ｸﾗﾝﾌﾟ&前進_ﾊﾟﾚｯﾄ後退指令
+AND M10831               ; HiST4ﾊﾟﾚｯﾄ後退&ｸﾗﾝﾌﾟ解除開始
+OUT M10832               ; HiST4ｸﾗﾝﾌﾟ&前進_ﾊﾟﾚｯﾄ後退指令
+LD M10832                ; HiST4ｸﾗﾝﾌﾟ&前進_ﾊﾟﾚｯﾄ後退指令
+AND X1471                ; HiST4_部_ﾊﾟﾚｯﾄ_後退端
+OR M10833                ; HiST4ｸﾗﾝﾌﾟ&前進_ﾊﾟﾚｯﾄ後退確認
+AND M10831               ; HiST4ﾊﾟﾚｯﾄ後退&ｸﾗﾝﾌﾟ解除開始
+OUT M10833               ; HiST4ｸﾗﾝﾌﾟ&前進_ﾊﾟﾚｯﾄ後退確認
+LD M10833                ; HiST4ｸﾗﾝﾌﾟ&前進_ﾊﾟﾚｯﾄ後退確認
+AND M10806               ; HiST4ｸﾗﾝﾌﾟ開閉_開_起動OK
+OR M10834                ; HiST4ｸﾗﾝﾌﾟ&前進_ｸﾗﾝﾌﾟ開指令
+AND M10831               ; HiST4ﾊﾟﾚｯﾄ後退&ｸﾗﾝﾌﾟ解除開始
+OUT M10834               ; HiST4ｸﾗﾝﾌﾟ&前進_ｸﾗﾝﾌﾟ開指令
+LD M10834                ; HiST4ｸﾗﾝﾌﾟ&前進_ｸﾗﾝﾌﾟ開指令
+AND X1473                ; HiST4_部_ﾜｰｸ押_上昇端
+OR M10835                ; HiST4ｸﾗﾝﾌﾟ&前進_ｸﾗﾝﾌﾟ開確認
+AND M10831               ; HiST4ﾊﾟﾚｯﾄ後退&ｸﾗﾝﾌﾟ解除開始
+OUT M10835               ; HiST4ｸﾗﾝﾌﾟ&前進_ｸﾗﾝﾌﾟ開確認
+LD M10835                ; HiST4ｸﾗﾝﾌﾟ&前進_ｸﾗﾝﾌﾟ開確認
+OUT M10836               ; HiST4ﾊﾟﾚｯﾄ後退→ｸﾗﾝﾌﾟ開動作完了
+MCR
+LDP B12A6                ; SWBox_ﾊﾟﾚｯﾄ前後ﾓｰﾄﾞsw
+ANB M10812               ; HiST4SwBoxMode_ﾊﾟﾚｯﾄ前後Flag
+LDPB B12A6               ; SWBox_ﾊﾟﾚｯﾄ前後ﾓｰﾄﾞsw
+AND M10812               ; HiST4SwBoxMode_ﾊﾟﾚｯﾄ前後Flag
+ANB M6312                ; Hi_RBﾁｬｯｸ開可
+ANB M10813               ; HiST4SwBoxMode_ｸﾗﾝﾌﾟ&ﾊﾟﾚｯﾄFlag
+ORL
+AND= D50 K201            ; TpM-K_表示中ページNo.
+AND M31                  ; 手動ﾓｰﾄﾞ
+ANB M81                  ; 原点復帰動作中
+AND M50                  ; 運転準備
+AND M29                  ; 未使用
+OUT M10812               ; HiST4SwBoxMode_ﾊﾟﾚｯﾄ前後Flag
+LDP B12A7                ; SWBox_ｸﾗﾝﾌﾟ&ﾊﾟﾚｯﾄﾓｰﾄﾞsw
+ANB M10813               ; HiST4SwBoxMode_ｸﾗﾝﾌﾟ&ﾊﾟﾚｯﾄFlag
+LDPB B12A7               ; SWBox_ｸﾗﾝﾌﾟ&ﾊﾟﾚｯﾄﾓｰﾄﾞsw
+AND M10813               ; HiST4SwBoxMode_ｸﾗﾝﾌﾟ&ﾊﾟﾚｯﾄFlag
+ANB M10812               ; HiST4SwBoxMode_ﾊﾟﾚｯﾄ前後Flag
+ANB M6312                ; Hi_RBﾁｬｯｸ開可
+ORL
+AND= D50 K201            ; TpM-K_表示中ページNo.
+AND M31                  ; 手動ﾓｰﾄﾞ
+ANB M81                  ; 原点復帰動作中
+AND M50                  ; 運転準備
+AND M29                  ; 未使用
+OUT M10813               ; HiST4SwBoxMode_ｸﾗﾝﾌﾟ&ﾊﾟﾚｯﾄFlag
+;<h1/>□_出力回路
+;ソレノイドバルブ出力
+;ｽﾃｰｼﾞ(ﾊﾟﾚｯﾄ前後)
+LD M10801                ; HiST4ﾊﾟﾚｯﾄ前進指令
+AND M10800               ; HiST4ﾊﾟﾚｯﾄ前進_OK
+LDB M10514               ; U18-1_S14_ﾊﾟﾚｯﾄ前進指令
+INV
+ORL
+LD Y250C                 ; HiST4ｽﾃｰｼﾞ前後前進
+ANB Y250D                ; HiST4ｽﾃｰｼﾞ前後後退
+ORL
+AND M50                  ; 運転準備
+OUT Y250C                ; HiST4ｽﾃｰｼﾞ前後前進
+LD M10803                ; HiST4ﾊﾟﾚｯﾄ後退指令
+AND M10802               ; HiST4ﾊﾟﾚｯﾄ後退_OK
+LDB M10753               ; OriStep3_ｽﾃｰｼﾞ戻り指令
+ANB M10520               ; U18-1_S20_ｽﾃｰｼﾞ後退命令
+INV
+ORL
+LD Y250D                 ; HiST4ｽﾃｰｼﾞ前後後退
+ANB Y250C                ; HiST4ｽﾃｰｼﾞ前後前進
+ORL
+AND M50                  ; 運転準備
+OUT Y250D                ; HiST4ｽﾃｰｼﾞ前後後退
+;ｸﾗﾝﾌﾟ/ｱﾝｸﾗﾝﾌﾟ
+LD M10805                ; HiST4ｸﾗﾝﾌﾟ開閉_閉_指令
+AND M10804               ; HiST4ｸﾗﾝﾌﾟ開閉_閉_起動OK
+OR M8457                 ; HiST4 ｸﾗﾝﾌﾟ指令(Hi給材)
+OR M10504                ; U18-1_S04_ｸﾗﾝﾌﾟ指令
+LD Y250E                 ; HiST4ﾜｰｸ押さえ下降
+ANB Y250F                ; HiST4ﾜｰｸ押さえ上昇
+ORL
+AND M50                  ; 運転準備
+OUT Y250E                ; HiST4ﾜｰｸ押さえ下降
+LD M10807                ; HiST4ｸﾗﾝﾌﾟ開閉_開__指令
+AND M10806               ; HiST4ｸﾗﾝﾌﾟ開閉_開_起動OK
+OR M8467                 ; HiST4_ｱﾝｸﾗﾝﾌﾟ指令(Hi除材)
+OR M10756                ; OriStep6_ｸﾗﾝﾌﾟ上昇指令
+LD Y250F                 ; HiST4ﾜｰｸ押さえ上昇
+ANB Y250E                ; HiST4ﾜｰｸ押さえ下降
+ORL
+AND M50                  ; 運転準備
+OUT Y250F                ; HiST4ﾜｰｸ押さえ上昇
+;■その他制御出力
+LD M10661                ; U18-3_S1Hi検査ｽﾀｰﾄ要求
+OUT W0105.11             ; 電気特性検査開始要求#4
+LD L1800                 ; HiST4_有効状態
+OUT W0105.15             ; 電気特性検査ｽﾃｰｼﾞ有効/無効#4
+LD M10904                ; HiST4検査_有効確認要求
+OUT W0107.6              ; Hi_ST4ﾁｪｯｶ-確認要求
+LD L1800                 ; HiST4_有効状態
+ANB M10909               ; HiST4_無効予約(自動運転)
+LD M10909                ; HiST4_無効予約(自動運転)
+AND CR2006               ; 1sｸﾛｯｸﾊﾟﾙｽ
+ORL
+OUT Y2483                ; HiST4__有効/無効表示
+OUT B17AA                ; HiST4__有効/無効表示
+;□□　　パネル表示　　□□
+LD Y250C                 ; HiST4ｽﾃｰｼﾞ前後前進
+AND CR2006               ; 1sｸﾛｯｸﾊﾟﾙｽ
+OR X1470                 ; HiST4_部_ﾊﾟﾚｯﾄ_前進端
+OUT B17A0                ; UNIT9-2-1 TP-PL
+LD Y250D                 ; HiST4ｽﾃｰｼﾞ前後後退
+AND CR2006               ; 1sｸﾛｯｸﾊﾟﾙｽ
+OR X1471                 ; HiST4_部_ﾊﾟﾚｯﾄ_後退端
+OUT B17A1                ; UNIT9-2-2 TP-PL
+LD Y250E                 ; HiST4ﾜｰｸ押さえ下降
+AND CR2006               ; 1sｸﾛｯｸﾊﾟﾙｽ
+OR X1472                 ; HiST4_部_ﾜｰｸ押_下降端
+OUT B17A2                ; UNIT9-2-3 TP-PL
+LD Y250F                 ; HiST4ﾜｰｸ押さえ上昇
+AND CR2006               ; 1sｸﾛｯｸﾊﾟﾙｽ
+OR X1473                 ; HiST4_部_ﾜｰｸ押_上昇端
+OUT B17A3                ; UNIT9-2-4 TP-PL
+LD M10812                ; HiST4SwBoxMode_ﾊﾟﾚｯﾄ前後Flag
+OUT B17A6                ; SwBoxMode_ﾊﾟﾚｯﾄFlag_ONPL
+LD M10813                ; HiST4SwBoxMode_ｸﾗﾝﾌﾟ&ﾊﾟﾚｯﾄFlag
+OUT B17A7                ; SWBox_ｸﾗﾝﾌﾟ&ﾊﾟﾚｯﾄﾓｰﾄﾞONPL
+;<h1/>□_異常検出
+LD Y250C                 ; HiST4ｽﾃｰｼﾞ前後前進
+ANB X1470                ; HiST4_部_ﾊﾟﾚｯﾄ_前進端
+LD Y250D                 ; HiST4ｽﾃｰｼﾞ前後後退
+ANB X1471                ; HiST4_部_ﾊﾟﾚｯﾄ_後退端
+ORL
+LD X1470                 ; HiST4_部_ﾊﾟﾚｯﾄ_前進端
+AND X1471                ; HiST4_部_ﾊﾟﾚｯﾄ_後退端
+ORL
+LD CR2003                ; 常時OFF
+ANB B0740                ; B240_576)Bz停止
+ORB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B0240                ; B240_576)HiST4ｽﾃｰｼﾞ前後CL異常
+ORL
+MPS
+AND T1890                ; CLSﾀｲﾑｱｳﾄ
+OUT B0240                ; B240_576)HiST4ｽﾃｰｼﾞ前後CL異常
+MPP
+TMR K1890 K100           ; CLSﾀｲﾑｱｳﾄ
+LDP B0240                ; B240_576)HiST4ｽﾃｰｼﾞ前後CL異常
+AND< D900 K64            ; FIFO_DATA_VALUE
+MOV H0240 D0             ; エラーコード
+FIFOW D0 D900            ; エラーコード  FIFO_DATA_VALUE
+LD M110                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B0740                 ; B240_576)Bz停止
+AND B0240                ; B240_576)HiST4ｽﾃｰｼﾞ前後CL異常
+OUT B0740                ; B240_576)Bz停止
+;　　
+LD Y250E                 ; HiST4ﾜｰｸ押さえ下降
+ANB X1472                ; HiST4_部_ﾜｰｸ押_下降端
+LD Y250F                 ; HiST4ﾜｰｸ押さえ上昇
+ANB X1473                ; HiST4_部_ﾜｰｸ押_上昇端
+ORL
+LD X1472                 ; HiST4_部_ﾜｰｸ押_下降端
+AND X1473                ; HiST4_部_ﾜｰｸ押_上昇端
+ORL
+LD CR2003                ; 常時OFF
+ANB B0741                ; B241_577)Bz停止
+ORB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B0241                ; B241_577)HiST4ｸﾗﾝﾌﾟ開閉CLS異常
+ORL
+MPS
+AND T1891                ; CLSﾀｲﾑｱｳﾄ
+OUT B0241                ; B241_577)HiST4ｸﾗﾝﾌﾟ開閉CLS異常
+MPP
+TMR K1891 K100           ; CLSﾀｲﾑｱｳﾄ
+LDP B0241                ; B241_577)HiST4ｸﾗﾝﾌﾟ開閉CLS異常
+AND< D900 K64            ; FIFO_DATA_VALUE
+MOV H0241 D0             ; エラーコード
+FIFOW D0 D900            ; エラーコード  FIFO_DATA_VALUE
+LD M110                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B0741                 ; B241_577)Bz停止
+AND B0241                ; B241_577)HiST4ｸﾗﾝﾌﾟ開閉CLS異常
+OUT B0741                ; B241_577)Bz停止
+;
+LD T1806                 ; HiST4_ｺﾝﾀｸﾄﾍｯﾄﾞID_更新_DLY
+AND L1800                ; HiST4_有効状態
+AND<> D9600 D9606        ; HiST4_ｺﾝﾀｸﾄﾍｯﾄﾞID  HiST4_ｺﾝﾀｸﾄﾍｯﾄﾞID_Copy
+LD CR2003                ; 常時OFF
+ANB B0742                ; B242_578)Bz停止
+ORB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B0242                ; B242_578)HiST4_ﾃｽﾄﾍｯﾄﾞID_不一致
+ORL
+OUT B0242                ; B242_578)HiST4_ﾃｽﾄﾍｯﾄﾞID_不一致
+LDP B0242                ; B242_578)HiST4_ﾃｽﾄﾍｯﾄﾞID_不一致
+AND< D900 K64            ; FIFO_DATA_VALUE
+MOV H0242 D0             ; エラーコード
+FIFOW D0 D900            ; エラーコード  FIFO_DATA_VALUE
+LD M110                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B0742                 ; B242_578)Bz停止
+AND B0242                ; B242_578)HiST4_ﾃｽﾄﾍｯﾄﾞID_不一致
+OUT B0742                ; B242_578)Bz停止
+;
+LD T1807                 ; HiST4_ﾊﾟﾚｯﾄID_更新_DLY
+AND L1800                ; HiST4_有効状態
+AND<> D9601 D9607        ; HiST4_ﾊﾟﾚｯﾄID  HiST4_ﾊﾟﾚｯﾄID_ｾﾝｻ状態
+ANB Y250C                ; HiST4ｽﾃｰｼﾞ前後前進
+AND T1804                ; HiST4_部_ﾊﾟﾚｯﾄ_後退端
+LD CR2003                ; 常時OFF
+ANB B0743                ; B243_579)Bz停止
+ORB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B0243                ; B243_579)HiST4_ﾊﾟﾚｯﾄID_不一致
+ORL
+OUT B0243                ; B243_579)HiST4_ﾊﾟﾚｯﾄID_不一致
+LDP B0243                ; B243_579)HiST4_ﾊﾟﾚｯﾄID_不一致
+AND< D900 K64            ; FIFO_DATA_VALUE
+MOV H0243 D0             ; エラーコード
+FIFOW D0 D900            ; エラーコード  FIFO_DATA_VALUE
+LD M110                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B0743                 ; B243_579)Bz停止
+AND B0243                ; B243_579)HiST4_ﾊﾟﾚｯﾄID_不一致
+OUT B0743                ; B243_579)Bz停止
+;
+LD M10560                ; U18-1_S60 HiST4_ﾜｰｸ受取異常
+LD CR2003                ; 常時OFF
+ANB B0744                ; B244_580)Bz停止
+ORB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B0244                ; B244_580)HiST4_ﾜｰｸ受取異常
+ORL
+OUT B0244                ; B244_580)HiST4_ﾜｰｸ受取異常
+LDP B0244                ; B244_580)HiST4_ﾜｰｸ受取異常
+AND< D900 K64            ; FIFO_DATA_VALUE
+MOV H0244 D0             ; エラーコード
+FIFOW D0 D900            ; エラーコード  FIFO_DATA_VALUE
+LD M110                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B0744                 ; B244_580)Bz停止
+AND B0244                ; B244_580)HiST4_ﾜｰｸ受取異常
+OUT B0744                ; B244_580)Bz停止
+;
+LD M10930                ; HiST4_ﾜｰｸ受渡し異常
+LD CR2003                ; 常時OFF
+ANB B0745                ; B245_581)Bz停止
+ORB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B0245                ; B245_581)HiST4_ﾜｰｸ受渡し異常
+ORL
+OUT B0245                ; B245_581)HiST4_ﾜｰｸ受渡し異常
+LDP B0245                ; B245_581)HiST4_ﾜｰｸ受渡し異常
+AND< D900 K64            ; FIFO_DATA_VALUE
+MOV H0245 D0             ; エラーコード
+FIFOW D0 D900            ; エラーコード  FIFO_DATA_VALUE
+LD M110                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B0745                 ; B245_581)Bz停止
+AND B0245                ; B245_581)HiST4_ﾜｰｸ受渡し異常
+OUT B0745                ; B245_581)Bz停止
+;
+LD D9701.0
+ANB X1474                ; HiST4_部_ﾜｰｸ確認(ON=有)
+LDB D9701.0
+AND X1474                ; HiST4_部_ﾜｰｸ確認(ON=有)
+ORL
+ANB M8404                ; 【搬送】搬送→Hi_ST4搬送開始
+ANB M8408                ; 【搬送】搬送→Hi_ST4搬送完了
+ANB M8414                ; 【搬送】HiST4除材開始
+ANB M8418                ; 【搬送】HiST4除材完了
+ANB M10553               ; U18-1_S53
+ANB M10554               ; U18-1_S54
+AND M71                  ; 自動運転開始BZ
+LD CR2003                ; 常時OFF
+ANB B0746                ; B246_582)Bz停止
+ORB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B0246                ; B246_582)HiST4 ﾜｰｸ情報不一致
+ORL
+OUT B0246                ; B246_582)HiST4 ﾜｰｸ情報不一致
+LDP B0246                ; B246_582)HiST4 ﾜｰｸ情報不一致
+AND< D900 K64            ; FIFO_DATA_VALUE
+MOV H0246 D0             ; エラーコード
+FIFOW D0 D900            ; エラーコード  FIFO_DATA_VALUE
+LD M110                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B0746                 ; B246_582)Bz停止
+AND B0246                ; B246_582)HiST4 ﾜｰｸ情報不一致
+OUT B0746                ; B246_582)Bz停止
+;　　
+LD M10758                ; OriStep8_ORGﾜｰｸ除去要求
+LD CR2003                ; 常時OFF
+ANB B075E                ; B25E_606)Bz停止
+ORB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B025E                ; B25E_606)HiST4ﾜｰｸ除去要求
+ORL
+OUT B025E                ; B25E_606)HiST4ﾜｰｸ除去要求
+LD M110                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B075E                 ; B25E_606)Bz停止
+AND B025E                ; B25E_606)HiST4ﾜｰｸ除去要求
+OUT B075E                ; B25E_606)Bz停止
+;電特検査中
+LD W05.11                ; 電気特性検査ｽﾃｰｼﾞ状態#4
+AND M31                  ; 手動ﾓｰﾄﾞ
+AND M10751               ; OriStep1
+LD CR2003                ; 常時OFF
+ANB B075F                ; B25F_607)Bz停止
+ORB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B025F                ; B25F_607)HiST4ﾜｰｸ検査中
+ORL
+OUT B025F                ; B25F_607)HiST4ﾜｰｸ検査中
+LD M110                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B075F                 ; B25F_607)Bz停止
+AND B025F                ; B25F_607)HiST4ﾜｰｸ検査中
+OUT B075F                ; B25F_607)Bz停止
+;異常ﾌﾞｻﾞｰまとめ
+LDB B0240                ; B240_576)HiST4ｽﾃｰｼﾞ前後CL異常
+OR B0740                 ; B240_576)Bz停止
+LDB B0241                ; B241_577)HiST4ｸﾗﾝﾌﾟ開閉CLS異常
+OR B0741                 ; B241_577)Bz停止
+ANL
+LDB B0242                ; B242_578)HiST4_ﾃｽﾄﾍｯﾄﾞID_不一致
+OR B0742                 ; B242_578)Bz停止
+ANL
+LDB B0243                ; B243_579)HiST4_ﾊﾟﾚｯﾄID_不一致
+OR B0743                 ; B243_579)Bz停止
+ANL
+LDB B0244                ; B244_580)HiST4_ﾜｰｸ受取異常
+OR B0744                 ; B244_580)Bz停止
+ANL
+LDB B0245                ; B245_581)HiST4_ﾜｰｸ受渡し異常
+OR B0745                 ; B245_581)Bz停止
+ANL
+LDB B0246                ; B246_582)HiST4 ﾜｰｸ情報不一致
+OR B0746                 ; B246_582)Bz停止
+ANL
+LDB B0247                ; B247_583)
+OR B0747                 ; B247_583)Bz停止
+ANL
+LDB B0248                ; B248_584)
+OR B0748                 ; B248_584)Bz停止
+ANL
+LDB B0249                ; B249_585)
+OR B0749                 ; B249_585)Bz停止
+ANL
+LDB B024A                ; B24A_586)
+OR B074A                 ; B24A_586)Bz停止
+ANL
+LDB B024B                ; B24B_587)
+OR B074B                 ; B24B_587)Bz停止
+ANL
+LDB B024C                ; B24C_588)
+OR B074C                 ; B24C_588)Bz停止
+ANL
+LDB B024D                ; B24D_589)
+OR B074D                 ; B24D_589)Bz停止
+ANL
+LDB B024E                ; B24E_590)
+OR B074E                 ; B24E_590)Bz停止
+ANL
+LDB B024F                ; B24F_591)
+OR B074F                 ; B24F_591)Bz停止
+ANL
+LDB B0250                ; B250_592)
+OR B0750                 ; B250_592)Bz停止
+ANL
+LDB B0251                ; B251_593)
+OR B0751                 ; B251_593)Bz停止
+ANL
+LDB B0252                ; B252_594)
+OR B0752                 ; B252_594)Bz停止
+ANL
+LDB B0253                ; B253_595)
+OR B0753                 ; B253_595)Bz停止
+ANL
+LDB B0254                ; B254_596)
+OR B0754                 ; B254_596)Bz停止
+ANL
+LDB B0255                ; B255_597)
+OR B0755                 ; B255_597)Bz停止
+ANL
+LDB B0256                ; B256_598)
+OR B0756                 ; B256_598)Bz停止
+ANL
+LDB B0257                ; B257_599)
+OR B0757                 ; B257_599)Bz停止
+ANL
+LDB B0258                ; B258_600)
+OR B0758                 ; B258_600)Bz停止
+ANL
+LDB B0259                ; B259_601)
+OR B0759                 ; B259_601)Bz停止
+ANL
+LDB B025A                ; B25A_602)
+OR B075A                 ; B25A_602)Bz停止
+ANL
+LDB B025B                ; B25B_603)
+OR B075B                 ; B25B_603)Bz停止
+ANL
+LDB B025C                ; B25C_604)
+OR B075C                 ; B25C_604)Bz停止
+ANL
+LDB B025D                ; B25D_605)
+OR B075D                 ; B25D_605)Bz停止
+ANL
+LDB B025E                ; B25E_606)HiST4ﾜｰｸ除去要求
+OR B075E                 ; B25E_606)Bz停止
+ANL
+LDB B025F                ; B25F_607)HiST4ﾜｰｸ検査中
+OR B075F                 ; B25F_607)Bz停止
+ANL
+INV
+OUT M10989               ; ﾕﾆｯﾄ18異常BZ補助
+END
+ENDH

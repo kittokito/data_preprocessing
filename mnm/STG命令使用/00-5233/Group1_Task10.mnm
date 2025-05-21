@@ -1,0 +1,2406 @@
+DEVICE:53
+;MODULE:Group1_Task10
+;MODULE_TYPE:0
+;SCRIPT_TYPE:
+;OneSystem Main-Module
+;
+;-----------------------------------------
+;ModuleName	:	Group1_Task10
+;ModuleType	:	Main Module
+;Line		:	
+;Cell		:	
+;Function	:	MAINTENANCE Cylinder動作、RBﾃｨｰﾁﾝｸﾞ動作専用
+;-----------------------------------------
+;<h1/>※MAINTENANCE Cylinder動作及びRBﾃｨｰﾁﾝｸﾞはTASK9を介して動作させます。
+;<<Task LocalDevice>>
+;/*項目			/*割付ｴﾘｱ				/*備考
+;---------------------------------------------------------------------			
+;Emergency		@MR000～@MR015			Emergency処理時RESET禁止ｴﾘｱ
+;Free			@MR100～@MR915			ﾕｰｻﾞｰﾌﾘｰｴﾘｱ
+;HOME			@なし
+;MAINTENANCE		@MR2000～@MR2915		MAINTE動作時使用ｴﾘｱ
+;AUTO(Main1)		なし
+;	(Main2)		なし
+;SubRoutine		なし
+;----------------------------------------------------------------------
+;<h1/>Device_Init/ﾃﾞﾊﾞｲｽ初期化
+;[内容]
+;・非常停止、優先ｴﾗｰ発生時に初期化したいﾃﾞﾊﾞｲｽを指定して下さい
+;※本Taskで使用するﾛｰｶﾙﾃﾞﾊﾞｲｽなど
+;※STG～JMPにて使用しているﾃﾞﾊﾞｲｽは必須
+LDP R46104               ; _非常停止中　ﾓｰﾄﾞﾌﾗｸﾞ
+ZRES @MR100 @MR2915      ; Task10 ERROR  Mainte END
+LD= DM60000 MyTask       ; TaskNo /ERROR_DISP  自ﾀｽｸ番号
+AND R46208               ; _Group1　ｴﾗｰ発生中
+OUT @MR001               ; TASK10　ERROR
+;<h1/>Task_Monitor/ﾀｽｸﾓﾆﾀｰ
+LD CR2002                ; 常時ON
+FLIK #50 #50 @MR000
+;<h1/>RB PLS列タイプ検出
+;TYPE @DM10.U,DM50312.U
+;
+;IF DM50312<> @DM10 THEN 'RB番号変更時  PLS列RBﾌﾗｸﾞｸﾘｱ
+;	RES(R39007)
+;END IF
+;@DM10=DM50312			'RB選択番号格納
+;
+;
+;IF RB_TYPE[0,DM50312] = 6 OR RB_TYPE[0,DM50312] = 7  THEN  '選択されたRBがPLS列TYPEか確認 6 OR 7 はMC
+;		SET(R39007)                						   'PLS列TYPEの場合 ﾌﾗｸﾞON
+;END IF
+;TYPE @DM10.U,DM50312.U
+;
+;IF DM50312<> @DM10 THEN 'RB番号変更時  PLS列RBﾌﾗｸﾞｸﾘｱ
+;
+LD<> DM50312 @DM10       ; RB選択
+NCJ #2000
+;	RES(R39007)
+;
+LD CR2002                ; 常時ON
+RES R39007               ; PLS列TYPE
+;END IF
+;
+LABEL #2000
+;@DM10=DM50312			'RB選択番号格納
+;
+LD CR2002                ; 常時ON
+MOV DM50312 @DM10        ; RB選択
+;IF RB_TYPE[0,DM50312] = 6 OR RB_TYPE[0,DM50312] = 7  THEN  '選択されたRBがPLS列TYPEか確認 6 OR 7 はMC
+;
+LD CR2002                ; 常時ON
+LDA DM50312              ; RB選択
+CON
+EXT
+CON
+ADD.L +0
+CON
+STA.L Z12
+LD= W3A25:Z12 #6         ; RB1 TYPE
+OUT @VB00
+LD CR2002                ; 常時ON
+LDA DM50312              ; RB選択
+CON
+EXT
+CON
+ADD.L +0
+CON
+STA.L Z12
+LD= W3A25:Z12 #7         ; RB1 TYPE
+OR @VB00
+NCJ #2001
+;		SET(R39007)                						   'PLS列TYPEの場合 ﾌﾗｸﾞON
+;
+LD CR2002                ; 常時ON
+SET R39007               ; PLS列TYPE
+;END IF
+LABEL #2001
+;
+;<h1/>MC AXIS No.割出
+;IF RB_TYPE[2,DM50312]<> 0 THEN
+;		@DM14.T =STR(RB_TYPE[2,DM50312]) 'MC AxisNo.割出
+;		DISB(@DM14,@DM16,2) 
+;		BSWAP(@D16,2)             '桁分割
+;		Axis_No= RDASC(@DM16.T)		     'AXIS No.格納
+;		Unit_No= RDASC(@DM17.T)			 'UNIT No.格納
+;END IF
+;IF RB_TYPE[2,DM50312]<> 0 THEN
+;
+LD CR2002                ; 常時ON
+LDA DM50312              ; RB選択
+CON
+EXT
+CON
+ADD.L +64
+CON
+STA.L Z12
+LD<> W3A25:Z12 #0        ; RB1 TYPE
+NCJ #2002
+;		@DM14.T =STR(RB_TYPE[2,DM50312]) 'MC AxisNo.割出
+;
+LD CR2002                ; 常時ON
+LDA DM50312              ; RB選択
+CON
+EXT
+CON
+ADD.L +64
+CON
+STA.L Z12
+LD CR2002                ; 常時ON
+ADRSET VM2 VM0
+MOV #0 VM2
+MOV.D VM0 @VM1
+LD CR2002                ; 常時ON
+MOV CR2800 @VM0          ; ﾌﾞﾚｰｸ信号送出
+SET CR2814               ; ASCII変換ｾﾞﾛｻﾌﾟﾚｽ設定
+SET CR2815               ; ASCII変換+符号省略
+DASC W3A25:Z12 *@VM1     ; RB1 TYPE
+MOV @VM0 CR2800          ; ﾌﾞﾚｰｸ信号送出
+LD CR2002                ; 常時ON
+SMOV *@VM1 @DM14
+;		DISB(@DM14,@DM16,2) 
+;
+LD CR2002                ; 常時ON
+DISB @DM14 @DM16 #2
+;		BSWAP(@D16,2)             '桁分割
+;
+LD CR2002                ; 常時ON
+BSWAP @DM16 #2
+;		Axis_No= RDASC(@DM16.T)		     'AXIS No.格納
+;
+LD CR2002                ; 常時ON
+MOV.L +0 @VM3
+RDASC.L @DM16 @VM3
+LD CR2002                ; 常時ON
+MOV @VM3 W3A22           ; Axis No.
+;		Unit_No= RDASC(@DM17.T)			 'UNIT No.格納
+;
+LD CR2002                ; 常時ON
+MOV.L +0 @VM5
+RDASC.L @DM17 @VM5
+LD CR2002                ; 常時ON
+MOV @VM5 W3A23           ; Unit No.
+;END IF
+LABEL #2002
+;
+;<h1/>Task_Init/ﾀｽｸ初期化
+;[本STG内容]
+;・本Task起動時に必要な初期化処理を記述して下さい
+;・起動Taskの全Init処理終了後、Task_StartのSTGが起動します
+STG LR810                ; _Grp1_Task10_Init.STG
+ENDS
+;<h1/>Task_Start/ﾀｽｸ開始
+;[本STG内容]
+;・Task起動後、以下運転ﾓｰﾄﾞに従い、各STGにJMPします
+;【HOME】	→	LR5200
+;【AUTO】	→	LR5400
+;【MAINTE】	→	LR5600
+;・本STGは追記、修正不要です
+STG LR410                ; _Grp1_Task10_Start.STG
+MPS
+LD R46101                ; _原点復帰中　ﾓｰﾄﾞﾌﾗｸﾞ
+OR R46100                ; _自動運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+ANL
+JMP LR610                ; _Grp1_Task10_Fin.STG
+MPP
+AND R46102               ; _ﾒﾝﾃﾅﾝｽ運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+JMP LR5610               ; _Grp1_Task10_MAINTE.STG
+;<h1/>Task_Finish/ﾀｽｸ終了
+;[本STG内容]
+;・各Taskの終了STGになります
+;・運転ﾓｰﾄﾞに係わらず終了時は本STGを経由して終了して下さい
+;・本STGは追記、修正不要です
+STG LR610                ; _Grp1_Task10_Fin.STG
+MPS
+LDB R41210               ; TASK10 PAUSE 要求
+ANB @MR001               ; TASK10　ERROR
+ANL
+RES R42610               ; Grp1_Task10_ﾎﾟｰｽﾞ許可
+CON
+RES R41010               ; _Grp1_Task10_起動中ﾌﾗｸﾞ
+CON
+ENDS
+MPP
+AND R41210               ; TASK10 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+;<h1/>MAINTE/ﾒﾝﾃﾅﾝｽ動作
+;[本STG内容]
+;・各TaskのMAINTE動作を記述して下さい
+;・動作ﾓｰﾄﾞは「MAINTEAC*」に格納されています(1～32)
+;・動作終了時は@MR2915にJMPして下さい
+STG LR5610               ; _Grp1_Task10_MAINTE.STG
+JMP @MR2000              ; Mainte
+STG @MR2000              ; Mainte
+SET @MR2002              ; ﾒﾝﾃ中
+CON
+JMP @MR2003
+STG @MR2003
+MPS
+AND= DM4110 #25          ; _Group1　ﾒﾝﾃ動作番号
+@DW #2010 DM3008         ; _MainTP　切替ﾍﾟｰｼﾞNo
+CON
+JMP @MR2400              ; ｼﾘﾝﾀﾞｰ手動操作
+MRD
+AND= DM4110 #26          ; _Group1　ﾒﾝﾃ動作番号
+@DW #2150 DM3008         ; _MainTP　切替ﾍﾟｰｼﾞNo
+CON
+JMP @MR2100              ; RB ﾃｨｰﾁﾝｸﾞ
+MPP
+LD<> DM4110 #25          ; _Group1　ﾒﾝﾃ動作番号
+AND<> DM4110 #26         ; _Group1　ﾒﾝﾃ動作番号
+OR R47800                ; _Group1　ﾒﾝﾃ動作定停止移行中
+ANL
+JMP @MR2915              ; Mainte END
+;<h1/>ﾒﾝﾃ Cylinder動作
+STG @MR2400              ; ｼﾘﾝﾀﾞｰ手動操作
+MPS
+ANB R41210               ; TASK10 PAUSE 要求
+OUT @MR2402              ; ｼﾘﾝﾀﾞｰ 手動操作中
+CON
+AND @MR1902              ; 終了確認
+JMP @MR2914
+MRD
+LD R41210                ; TASK10 PAUSE 要求
+ANB MR20902              ; RC7 移動中
+ANB DM11152.15           ; SCRBC1 動作中
+ANB MR20802              ; ﾌｰﾌﾟ +ﾋﾟｯﾁ送り中
+ANB MR20810              ; ﾌｰﾌﾟ -ﾋﾟｯﾁ送り中
+ANB @MR1102              ; RB1 動作中
+ANB @MR1110              ; RB2 動作中
+ANL
+SET @MR1900              ; Main1 HALT許可
+MPP
+ANP MR22000              ; Cylinder動作終了
+SET @MR1902              ; 終了確認
+LD @MR2400               ; ｼﾘﾝﾀﾞｰ手動操作
+OR @MR2102               ; ﾃｨｰﾁﾝｸﾞ中
+ANB R41210               ; TASK10 PAUSE 要求
+ANB MR20902              ; RC7 移動中
+ANB DM11152.15           ; SCRBC1 動作中
+ANB MR20802              ; ﾌｰﾌﾟ +ﾋﾟｯﾁ送り中
+ANB MR20810              ; ﾌｰﾌﾟ -ﾋﾟｯﾁ送り中
+ANB @MR1102              ; RB1 動作中
+ANB @MR1110              ; RB2 動作中
+MC
+;<h1/>Cylibder switch 1
+;ﾀﾞｲｾｯﾄﾌﾟﾚｽ 上下
+;Die set press
+LDP MR22100              ; SW00-1
+RES MR7008               ; ﾌｨﾙﾀ切断 上昇
+CON
+SET MR7009               ; ﾌｨﾙﾀ切断 下降
+LDP MR22101              ; SW00-2
+SET MR7008               ; ﾌｨﾙﾀ切断 上昇
+CON
+RES MR7009               ; ﾌｨﾙﾀ切断 下降
+;ﾌｨﾙﾀ厚み検査ﾍｯﾄﾞ 上下
+;Filter thickness check head
+LDP MR22102              ; SW01-1
+RES MR7202               ; ﾌｰﾌﾟ厚み測定ﾍｯﾄﾞ下降
+CON
+SET MR7203               ; ﾌｰﾌﾟ厚み測定ﾍｯﾄﾞ上昇
+LDP MR22103              ; SW01-2
+SET MR7202               ; ﾌｰﾌﾟ厚み測定ﾍｯﾄﾞ下降
+CON
+RES MR7203               ; ﾌｰﾌﾟ厚み測定ﾍｯﾄﾞ上昇
+;集塵機 切替
+;Dust-collector
+LDP MR22104              ; SW02-1
+RES MR7104               ; ﾀﾞｲｾｯﾄ吸引 ON
+CON
+SET MR7105               ; ﾀﾞｲｾｯﾄ吸引 OFF
+LDP MR22105              ; SW02-2
+SET MR7104               ; ﾀﾞｲｾｯﾄ吸引 ON
+CON
+RES MR7105               ; ﾀﾞｲｾｯﾄ吸引 OFF
+;巻出しﾄﾙｸﾓｰﾀ
+;Sending side Torque-motor
+LDP MR22106              ; SW03-1
+RES MR2100               ; 巻出しﾄﾙｸﾓｰﾀ　CW
+CON
+RES MR2101               ; 巻出しﾄﾙｸﾓｰﾀ　CCW
+LDP MR22107              ; SW03-2
+SET MR2100               ; 巻出しﾄﾙｸﾓｰﾀ　CW
+CON
+RES MR2101               ; 巻出しﾄﾙｸﾓｰﾀ　CCW
+;巻取りﾄﾙｸﾓｰﾀ
+;Rolling-Up side Torque-motor
+LDP MR22108              ; SW04-1
+RES MR2104               ; 巻取りﾄﾙｸﾓｰﾀ　CW
+CON
+RES MR2105               ; 巻取りﾄﾙｸﾓｰﾀ　CCW
+LDP MR22109              ; SW04-2
+SET MR2104               ; 巻取りﾄﾙｸﾓｰﾀ　CW
+CON
+RES MR2105               ; 巻取りﾄﾙｸﾓｰﾀ　CCW
+;ﾌｰﾌﾟ送りﾓｰﾀ
+;Hoop senging-motor
+LDB MR7008               ; ﾌｨﾙﾀ切断 上昇
+AND R4411                ; ﾌｨﾙﾀ切断 下降端
+MPS
+ANP MR22110              ; SW05-1
+SET @MR700               ; ﾌｰﾌﾟ-1ﾋﾟｯﾁ送り終了監視
+CON
+SET MR20808              ; ﾌｰﾌﾟ -ﾋﾟｯﾁ送り
+MRD
+ANP MR22111              ; SW05-2
+SET @MR701               ; ﾌｰﾌﾟ+1ﾋﾟｯﾁ送り終了監視
+CON
+SET MR20800              ; ﾌｰﾌﾟ +ﾋﾟｯﾁ送り
+MPP
+LDB @MR700               ; ﾌｰﾌﾟ-1ﾋﾟｯﾁ送り終了監視
+ANB @MR701               ; ﾌｰﾌﾟ+1ﾋﾟｯﾁ送り終了監視
+ANL
+MPS
+AND MR22112              ; SW06-1
+OUT MR20714              ; ﾌｰﾌﾟ送りﾓｰﾀ +JOG
+MPP
+AND MR22113              ; SW06-2
+OUT MR20713              ; ﾌｰﾌﾟ送りﾓｰﾀ -JOG
+LDP MR22114              ; SW07-1
+RES MR2014               ; HOOP FEED MOTOR A.W.OFF
+LDP MR22115              ; SW07-2
+SET MR2014               ; HOOP FEED MOTOR A.W.OFF
+;<h1/>Cylibder switch 2
+;ﾌｨﾙﾑ搬送RB
+;Film transport RB
+LDB MR7300               ; ﾊﾝﾄﾞ1 下降
+AND R4501                ; ﾊﾝﾄﾞ1 上昇端
+ANB MR7302               ; ﾊﾝﾄﾞ2 下降
+AND R4503                ; ﾊﾝﾄﾞ2 上昇端
+AND R44304               ; *Group1　ｴﾘｱｾﾝｻ入力
+OUT @MR002               ; SCARA動作可能
+LDP MR22300              ; SW10-1
+AND @MR002               ; SCARA動作可能
+DW #2 DM12010            ; SCARA目標ﾎﾟｼﾞｼｮﾝ
+CON
+SET @MR800               ; SCARA 移動
+LDP MR22301              ; SW10-2
+AND @MR002               ; SCARA動作可能
+LD DM11352.0             ; ﾌｰﾌﾟ側干渉外(PLC→RC侵入許可)
+ANB MR7008               ; ﾌｨﾙﾀ切断 上昇
+AND R4411                ; ﾌｨﾙﾀ切断 下降端
+LDB R7300                ; ﾊﾝﾄﾞ1 下降
+ANB R7302                ; ﾊﾝﾄﾞ2 下降
+AND R4501                ; ﾊﾝﾄﾞ1 上昇端
+AND R4503                ; ﾊﾝﾄﾞ2 上昇端
+ORL
+ANL
+DW #11 DM12010           ; SCARA目標ﾎﾟｼﾞｼｮﾝ
+CON
+SET @MR800               ; SCARA 移動
+LDP MR22303              ; SW11-2
+AND @MR002               ; SCARA動作可能
+DW #21 DM12010           ; SCARA目標ﾎﾟｼﾞｼｮﾝ
+CON
+SET @MR800               ; SCARA 移動
+LDP MR22304              ; SW12-1
+AND @MR002               ; SCARA動作可能
+DW #31 DM12010           ; SCARA目標ﾎﾟｼﾞｼｮﾝ
+CON
+SET @MR800               ; SCARA 移動
+LDP MR22305              ; SW12-2
+AND @MR002               ; SCARA動作可能
+DW #35 DM12010           ; SCARA目標ﾎﾟｼﾞｼｮﾝ
+CON
+SET @MR800               ; SCARA 移動
+LDP MR22306              ; SW13-1
+AND @MR002               ; SCARA動作可能
+DW #33 DM12010           ; SCARA目標ﾎﾟｼﾞｼｮﾝ
+CON
+SET @MR800               ; SCARA 移動
+LDP MR22307              ; SW13-2
+AND @MR002               ; SCARA動作可能
+DW #37 DM12010           ; SCARA目標ﾎﾟｼﾞｼｮﾝ
+CON
+SET @MR800               ; SCARA 移動
+LDP MR22308              ; SW14-1
+AND @MR002               ; SCARA動作可能
+AND DM11352.1            ; ﾌﾚｰﾑ搬送側干渉外(PLC→RC侵入許可
+DW #41 DM12010           ; SCARA目標ﾎﾟｼﾞｼｮﾝ
+CON
+SET @MR800               ; SCARA 移動
+LDP MR22309              ; SW14-2
+AND @MR002               ; SCARA動作可能
+AND DM11352.1            ; ﾌﾚｰﾑ搬送側干渉外(PLC→RC侵入許可
+DW #42 DM12010           ; SCARA目標ﾎﾟｼﾞｼｮﾝ
+CON
+SET @MR800               ; SCARA 移動
+LDP MR22310              ; SW15-1
+AND @MR002               ; SCARA動作可能
+AND DM11352.1            ; ﾌﾚｰﾑ搬送側干渉外(PLC→RC侵入許可
+DW #43 DM12010           ; SCARA目標ﾎﾟｼﾞｼｮﾝ
+CON
+SET @MR800               ; SCARA 移動
+LDP MR22311              ; SW15-2
+AND @MR002               ; SCARA動作可能
+AND DM11352.1            ; ﾌﾚｰﾑ搬送側干渉外(PLC→RC侵入許可
+DW #44 DM12010           ; SCARA目標ﾎﾟｼﾞｼｮﾝ
+CON
+SET @MR800               ; SCARA 移動
+LDP MR22312              ; SW16-1
+AND @MR002               ; SCARA動作可能
+DW #6 DM12010            ; SCARA目標ﾎﾟｼﾞｼｮﾝ
+CON
+SET @MR800               ; SCARA 移動
+LDP MR22313              ; SW16-2
+AND @MR002               ; SCARA動作可能
+DW #7 DM12010            ; SCARA目標ﾎﾟｼﾞｼｮﾝ
+CON
+SET @MR800               ; SCARA 移動
+LDP MR22315              ; SW17-2
+AND @MR002               ; SCARA動作可能
+DW #3 DM12010            ; SCARA目標ﾎﾟｼﾞｼｮﾝ
+CON
+SET @MR800               ; SCARA 移動
+LDP MR23500
+AND @MR002               ; SCARA動作可能
+AND DM11352.1            ; ﾌﾚｰﾑ搬送側干渉外(PLC→RC侵入許可
+DW #45 DM12010           ; SCARA目標ﾎﾟｼﾞｼｮﾝ
+CON
+SET @MR800               ; SCARA 移動
+LDP MR23501
+AND @MR002               ; SCARA動作可能
+AND DM11352.1            ; ﾌﾚｰﾑ搬送側干渉外(PLC→RC侵入許可
+DW #46 DM12010           ; SCARA目標ﾎﾟｼﾞｼｮﾝ
+CON
+SET @MR800               ; SCARA 移動
+LDP MR23502
+AND @MR002               ; SCARA動作可能
+AND DM11352.1            ; ﾌﾚｰﾑ搬送側干渉外(PLC→RC侵入許可
+DW #47 DM12010           ; SCARA目標ﾎﾟｼﾞｼｮﾝ
+CON
+SET @MR800               ; SCARA 移動
+LDP MR23503
+AND @MR002               ; SCARA動作可能
+AND DM11352.1            ; ﾌﾚｰﾑ搬送側干渉外(PLC→RC侵入許可
+DW #48 DM12010           ; SCARA目標ﾎﾟｼﾞｼｮﾝ
+CON
+SET @MR800               ; SCARA 移動
+;RC ｻｰﾎﾞ ON/OFF
+LDP MR22412              ; SW1E-1
+SET DM11350.8            ; SCRBC1 SetMotorsOn
+CON
+RES DM11350.9            ; SCRBC1 SetMotorsOff
+LD DM11350.8             ; SCRBC1 SetMotorsOn
+TMH @14 #20
+CON
+AND @T14
+RES DM11350.8            ; SCRBC1 SetMotorsOn
+LDP MR22413              ; SW1E-2
+RES DM11350.8            ; SCRBC1 SetMotorsOn
+CON
+SET DM11350.9            ; SCRBC1 SetMotorsOff
+LD DM11350.9             ; SCRBC1 SetMotorsOff
+TMH @15 #20
+CON
+AND @T15
+RES DM11350.9            ; SCRBC1 SetMotorsOff
+;RC Program RUN/STOP
+LDP MR22414              ; SW1F-1
+RES DM11350.4            ; SCRBC1 Stop 
+CON
+ALT DM11350.0            ; SCRBC1 Start
+LDP MR22415              ; SW1F-2
+RES DM11350.0            ; SCRBC1 Start
+CON
+ALT DM11350.4            ; SCRBC1 Stop 
+;吸着ﾍｯﾄﾞ1
+;Adsorption head 1
+LDP MR22400              ; SW18-1
+RES MR7300               ; ﾊﾝﾄﾞ1 下降
+CON
+SET MR7301               ; ﾊﾝﾄﾞ1 上昇
+LDP MR22401              ; SW18-2
+SET MR7300               ; ﾊﾝﾄﾞ1 下降
+CON
+RES MR7301               ; ﾊﾝﾄﾞ1 上昇
+LDP MR22402              ; SW19-1
+RES MR7500               ; ﾊﾝﾄﾞ1 吸引
+CON
+ALT MR7501               ; ﾊﾝﾄﾞ1 大気解放
+LDP MR22403              ; SW19-2
+ALT MR7500               ; ﾊﾝﾄﾞ1 吸引
+CON
+RES MR7501               ; ﾊﾝﾄﾞ1 大気解放
+;吸着ﾍｯﾄﾞ2
+;Adsorption head 2
+LDP MR22404              ; SW1A-1
+RES MR7302               ; ﾊﾝﾄﾞ2 下降
+CON
+SET MR7303               ; ﾊﾝﾄﾞ2 上昇
+LDP MR22405              ; SW1A-2
+SET MR7302               ; ﾊﾝﾄﾞ2 下降
+CON
+RES MR7303               ; ﾊﾝﾄﾞ2 上昇
+LDP MR22406              ; SW1B-1
+RES MR7502               ; ﾊﾝﾄﾞ2 吸引
+CON
+ALT MR7503               ; ﾊﾝﾄﾞ2 大気解放
+LDP MR22407              ; SW1B-2
+ALT MR7502               ; ﾊﾝﾄﾞ2 吸引
+CON
+RES MR7503               ; ﾊﾝﾄﾞ2 大気解放
+;除電3 (仮置き台)
+;Ionizer3 (Positioner)
+LDP MR22408              ; SW1C-1
+RES MR2112               ; ｲｵﾅｲｻﾞ3 放電停止
+LDP MR22409              ; SW1C-2
+SET MR2112               ; ｲｵﾅｲｻﾞ3 放電停止
+LDP MR22410              ; SW1D-1
+RES MR7509               ; ｲｵﾅｲｻﾞ3 ｴｱﾌﾞﾛｰ (ﾌｨﾙﾀ仮置き)
+LDP MR22411              ; SW1D-2
+SET MR7509               ; ｲｵﾅｲｻﾞ3 ｴｱﾌﾞﾛｰ (ﾌｨﾙﾀ仮置き)
+;<h1/>Cylibder switch 3
+;仮置き1/2 長辺
+;Positoner 1/2 Long side
+LDP MR22500              ; SW20-1
+RES MR7106               ; 仮置き1/2 長辺位置決め 閉じ
+CON
+SET MR7107               ; 仮置き1/2 長辺位置決め 開き
+LDP MR22501              ; SW20-2
+SET MR7106               ; 仮置き1/2 長辺位置決め 閉じ
+CON
+RES MR7107               ; 仮置き1/2 長辺位置決め 開き
+;仮置き1/2 短辺
+;Positoner 1/2 Short side
+LDP MR22502              ; SW21-1
+RES MR7108               ; 仮置き1/2 短辺位置決め 閉じ
+CON
+SET MR7109               ; 仮置き1/2 短辺位置決め 開き
+LDP MR22503              ; SW21-2
+SET MR7108               ; 仮置き1/2 短辺位置決め 閉じ
+CON
+RES MR7109               ; 仮置き1/2 短辺位置決め 開き
+;仮置き1 吸引
+;Positoner 1 Adsorption
+LDP MR22504              ; SW22-1
+RES MR7510               ; ﾌｨﾙﾀ仮置き1 吸引
+LDP MR22505              ; SW22-2
+SET MR7510               ; ﾌｨﾙﾀ仮置き1 吸引
+;仮置き2 吸引
+;Positoner 2 Adsorption
+LDP MR22506              ; SW23-1
+RES MR7511               ; ﾌｨﾙﾀ仮置き2 吸引
+LDP MR22507              ; SW23-2
+SET MR7511               ; ﾌｨﾙﾀ仮置き2 吸引
+;仮置き3/4 長辺
+;Positoner 3/4 Long side
+LDP MR22508              ; SW24-1
+RES MR7110               ; 仮置き3/4 長辺位置決め 閉じ
+CON
+SET MR7111               ; 仮置き3/4 長辺位置決め 開き
+LDP MR22509              ; SW24-2
+SET MR7110               ; 仮置き3/4 長辺位置決め 閉じ
+CON
+RES MR7111               ; 仮置き3/4 長辺位置決め 開き
+;仮置き3/4 短辺
+;Positoner 3/4 Short side
+LDP MR22510              ; SW25-1
+RES MR7112               ; 仮置き3/4 短辺位置決め 閉じ
+CON
+SET MR7113               ; 仮置き3/4 短辺位置決め 開き
+LDP MR22511              ; SW25-2
+SET MR7112               ; 仮置き3/4 短辺位置決め 閉じ
+CON
+RES MR7113               ; 仮置き3/4 短辺位置決め 開き
+;仮置き3 吸引
+;Positoner 3 Adsorption
+LDP MR22512              ; SW26-1
+RES MR7512               ; ﾌｨﾙﾀ仮置き3 吸引
+LDP MR22513              ; SW26-2
+SET MR7512               ; ﾌｨﾙﾀ仮置き3 吸引
+;仮置き4 吸引
+;Positoner 4 Adsorption
+LDP MR22514              ; SW27-1
+RES MR7513               ; ﾌｨﾙﾀ仮置き4 吸引
+LDP MR22515              ; SW27-2
+SET MR7513               ; ﾌｨﾙﾀ仮置き4 吸引
+;<h1/>Cylibder switch 4
+;ﾌﾚｰﾑ搬送RB
+;Frame transporter
+LDB MR7100               ; 溶着1 下降
+AND R4101                ; 溶着1 上昇端
+ANB MR7102               ; 溶着2 下降
+AND R4103                ; 溶着2 上昇端
+AND DM11152.1            ; ﾌﾚｰﾑ搬送側干渉外(RC→PLC動作許可
+AND R44304               ; *Group1　ｴﾘｱｾﾝｻ入力
+OUT @MR003               ; RB1/2動作可能
+LDP MR22700              ; SW30-1
+AND @MR003               ; RB1/2動作可能
+DW #1 @DM70              ; RB1 目標ﾎﾟｲﾝﾄNo.
+CON
+SET @MR804               ; RB12 移動
+LDP MR22701              ; SW30-2
+AND @MR003               ; RB1/2動作可能
+DW #2 @DM70              ; RB1 目標ﾎﾟｲﾝﾄNo.
+CON
+SET @MR804               ; RB12 移動
+LDP MR22702              ; SW31-1
+AND @MR003               ; RB1/2動作可能
+DW #3 @DM70              ; RB1 目標ﾎﾟｲﾝﾄNo.
+CON
+SET @MR804               ; RB12 移動
+LDP MR22703              ; SW31-2
+AND @MR003               ; RB1/2動作可能
+DW #4 @DM70              ; RB1 目標ﾎﾟｲﾝﾄNo.
+CON
+SET @MR804               ; RB12 移動
+LDP MR22704              ; SW32-1
+AND @MR003               ; RB1/2動作可能
+DW #5 @DM70              ; RB1 目標ﾎﾟｲﾝﾄNo.
+CON
+SET @MR804               ; RB12 移動
+LDP MR22705              ; SW32-2
+AND @MR003               ; RB1/2動作可能
+DW #6 @DM70              ; RB1 目標ﾎﾟｲﾝﾄNo.
+CON
+SET @MR804               ; RB12 移動
+LDP MR22706              ; SW33-1
+AND @MR003               ; RB1/2動作可能
+DW #7 @DM70              ; RB1 目標ﾎﾟｲﾝﾄNo.
+CON
+SET @MR804               ; RB12 移動
+LDP MR22707              ; SW33-2
+AND @MR003               ; RB1/2動作可能
+DW #8 @DM70              ; RB1 目標ﾎﾟｲﾝﾄNo.
+CON
+SET @MR804               ; RB12 移動
+LDP MR22708              ; SW34-1
+AND @MR003               ; RB1/2動作可能
+DW #9 @DM70              ; RB1 目標ﾎﾟｲﾝﾄNo.
+CON
+SET @MR804               ; RB12 移動
+;除電1 (ﾌﾚｰﾑ投入口)
+;Ionizer1 (Frame Set position)
+LDP MR22714              ; SW37-1
+SET MR7506               ; ｲｵﾅｲｻﾞ1 ｴｱﾌﾞﾛｰ （ﾜｰｸ投入口）
+CON
+RES MR2108               ; ｲｵﾅｲｻﾞ1 放電停止
+LDP MR22715              ; SW37-2 
+RES MR7506               ; ｲｵﾅｲｻﾞ1 ｴｱﾌﾞﾛｰ （ﾜｰｸ投入口）
+CON
+SET MR2108               ; ｲｵﾅｲｻﾞ1 放電停止
+;ﾌﾚｰﾑｸﾗﾝﾌﾟ
+;Frame clamp
+LDP MR22800              ; SW38-1
+ANB MR7114               ; ﾌﾚｰﾑｾｯﾄ 下降
+AND R4301                ; ﾌﾚｰﾑｾｯﾄ1 上昇端(手前側)
+AND R4303                ; ﾌﾚｰﾑｾｯﾄ2 上昇端(奥側)
+RES MR7200               ; ﾌﾚｰﾑｾｯﾄ 前進(ｸﾗﾝﾌﾟ側へ)
+CON
+SET MR7201               ; ﾌﾚｰﾑｾｯﾄ 後退(逃げ側へ)
+LDP MR22801              ; SW38-2
+ANB MR7114               ; ﾌﾚｰﾑｾｯﾄ 下降
+AND R4301                ; ﾌﾚｰﾑｾｯﾄ1 上昇端(手前側)
+AND R4303                ; ﾌﾚｰﾑｾｯﾄ2 上昇端(奥側)
+SET MR7200               ; ﾌﾚｰﾑｾｯﾄ 前進(ｸﾗﾝﾌﾟ側へ)
+CON
+RES MR7201               ; ﾌﾚｰﾑｾｯﾄ 後退(逃げ側へ)
+LDP MR22802              ; SW39-1
+RES MR7114               ; ﾌﾚｰﾑｾｯﾄ 下降
+CON
+SET MR7115               ; ﾌﾚｰﾑｾｯﾄ 上昇
+LDP MR22803              ; SW39-2
+ANB MR7201               ; ﾌﾚｰﾑｾｯﾄ 後退(逃げ側へ)
+AND R4304                ; ﾌﾚｰﾑｾｯﾄ前後1 ｸﾗﾝﾌﾟ側端
+AND R4306                ; ﾌﾚｰﾑｾｯﾄ前後2 ｸﾗﾝﾌﾟ側端
+SET MR7114               ; ﾌﾚｰﾑｾｯﾄ 下降
+CON
+RES MR7115               ; ﾌﾚｰﾑｾｯﾄ 上昇
+;<h1/>Cylibder switch 5
+;<h1/>Cylibder switch 6
+;溶着ヘッド１
+;Welding head 1
+LDP MR23100              ; SW50-1
+RES MR7100               ; 溶着1 下降
+LDP MR23101              ; SW50-2
+SET MR7100               ; 溶着1 下降
+;溶着ヘッド２
+;Welding head 2
+LDP MR23102              ; SW51-1
+RES MR7102               ; 溶着2 下降
+LDP MR23103              ; SW51-2
+SET MR7102               ; 溶着2 下降
+;ダンサローラ
+;Dancer roller
+LDP MR23200              ; SW58-1
+RES MR7304               ; 段差ﾛｰﾗ 下降
+CON
+SET MR7305               ; 段差ﾛｰﾗ 上昇
+LDP MR23201              ; SW58-2
+SET MR7304               ; 段差ﾛｰﾗ 下降
+CON
+RES MR7305               ; 段差ﾛｰﾗ 上昇
+;ゼロテンション
+;Zero tension
+LDP MR23202              ; SW59-1
+RES MR7306               ; ｾﾞﾛﾃﾝｼｮﾝ 下降
+CON
+SET MR7307               ; ｾﾞﾛﾃﾝｼｮﾝ 上昇
+LDP MR23203              ; SW59-2
+SET MR7306               ; ｾﾞﾛﾃﾝｼｮﾝ 下降
+CON
+RES MR7307               ; ｾﾞﾛﾃﾝｼｮﾝ 上昇
+;ゼロテンション
+;Zero tension
+LDP MR23204              ; SW5A-1
+RES MR7308               ; ﾃｰﾌﾟ ゆるめ
+CON
+SET MR7309               ; ﾃｰﾌﾟ 締め
+LDP MR23205              ; SW5A-2
+SET MR7308               ; ﾃｰﾌﾟ ゆるめ
+CON
+RES MR7309               ; ﾃｰﾌﾟ 締め
+;ポリイミドテープ巻取りモータ
+;Tape rewind motor  (M-04)
+LDP MR23206              ; SW5B-1
+OR R4105                 ; ﾀﾞﾝｻｰﾛｰﾗ 上端検出
+RES MR2115               ; M-04 CW
+LDP MR23207              ; SW5B-2
+ANB R4105                ; ﾀﾞﾝｻｰﾛｰﾗ 上端検出
+SET MR2115               ; M-04 CW
+;<h1/>Cylibder switch 7
+;除電2 (ﾎﾟﾘｲﾐﾄﾞﾃｰﾌﾟ)
+;Ionizer2 (Tape)
+LDP MR23300              ; SW60-1
+SET MR7507               ; ｲｵﾅｲｻﾞ2 ｴｱﾌﾞﾛｰ (ﾃｰﾌﾟ)ﾕﾆｯﾄ)
+CON
+RES MR2110               ; ｲｵﾅｲｻﾞ2 放電停止
+LDP MR23301              ; SW60-2
+RES MR7507               ; ｲｵﾅｲｻﾞ2 ｴｱﾌﾞﾛｰ (ﾃｰﾌﾟ)ﾕﾆｯﾄ)
+CON
+SET MR2110               ; ｲｵﾅｲｻﾞ2 放電停止
+;ヘッド１冷却
+;Head cooling 1
+LDP MR23302              ; SW61-1
+SET MR7504               ; 溶着1 空冷ON
+LDP MR23303              ; SW61-2
+RES MR7504               ; 溶着1 空冷ON
+;ヘッド２冷却
+;Head cooling 2
+LDP MR23304              ; SW62-1
+SET MR7505               ; 溶着2 空冷ON
+LDP MR23305              ; SW62-2
+RES MR7505               ; 溶着2 空冷ON
+MCR
+;<h1/>動作中監視
+;ﾌｰﾌﾟﾋﾟｯﾁ送り完了監視
+STG @MR700               ; ﾌｰﾌﾟ-1ﾋﾟｯﾁ送り終了監視
+AND MR20809              ; ﾌｰﾌﾟ -ﾋﾟｯﾁ送り完了
+RES MR20811              ; ﾌｰﾌﾟ-ﾋﾟｯﾁ送り中止
+CON
+RES MR20809              ; ﾌｰﾌﾟ -ﾋﾟｯﾁ送り完了
+CON
+ENDS
+STG @MR701               ; ﾌｰﾌﾟ+1ﾋﾟｯﾁ送り終了監視
+AND MR20801              ; ﾌｰﾌﾟ +ﾋﾟｯﾁ送り完了
+RES MR20803              ; ﾌｰﾌﾟ送り中止
+CON
+RES MR20801              ; ﾌｰﾌﾟ +ﾋﾟｯﾁ送り完了
+CON
+ENDS
+;ﾌｨﾙﾀ搬送RB 動作監視
+STG @MR800               ; SCARA 移動
+SET MR20900              ; RC7 移動
+CON
+JMP @MR801
+STG @MR801
+AND MR20901              ; RC7 移動完了
+RES MR20901              ; RC7 移動完了
+CON
+ENDS
+LD CR2002                ; 常時ON
+ZRES B3600 B363F         ; MNU用ﾗﾝﾌﾟﾌﾗｸﾞ
+MPS
+ANB DM11152.15           ; SCRBC1 動作中
+LDA DM11153              ; SCRBC1 I/F 到達位置
+CON
+STA Z1
+CON
+SET B3600:Z1             ; MNU用ﾗﾝﾌﾟﾌﾗｸﾞ
+MPP
+AND DM11152.15           ; SCRBC1 動作中
+LDA DM12010              ; SCARA目標ﾎﾟｼﾞｼｮﾝ
+CON
+STA Z2
+CON
+MPS
+AND CR2006               ; 1sｸﾛｯｸﾊﾟﾙｽ
+SET B3600:Z2             ; MNU用ﾗﾝﾌﾟﾌﾗｸﾞ
+MPP
+ANB CR2006               ; 1sｸﾛｯｸﾊﾟﾙｽ
+RES B3600:Z2             ; MNU用ﾗﾝﾌﾟﾌﾗｸﾞ
+;ﾌﾚｰﾑ搬送RB 動作監視
+STG @MR804               ; RB12 移動
+LDA @DM70                ; RB1 目標ﾎﾟｲﾝﾄNo.
+CON
+STA EM1300               ; RB1Target Pos
+CON
+STA EM1302               ; RB2Target Pos
+CON
+SET @MR1100              ; RB1 動作
+CON
+SET @MR1108              ; RB2 動作
+CON
+JMP @MR805
+STG @MR805
+AND @MR1101              ; RB1 動作完了
+AND @MR1109              ; RB2 動作完了
+RES @MR1101              ; RB1 動作完了
+CON
+RES @MR1109              ; RB2 動作完了
+CON
+ENDS
+LD CR2002                ; 常時ON
+MPS
+LDA EM1300               ; RB1Target Pos
+CON
+STA Z1
+CON
+ZRES B3650 B365F         ; MNU用ﾗﾝﾌﾟﾌﾗｸﾞ
+MRD
+LDB DM11007.2            ; RB1 MOVE
+ANB DM11015.2            ; RB2 MOVE
+ANL
+SET B3650:Z1             ; MNU用ﾗﾝﾌﾟﾌﾗｸﾞ
+MPP
+LD DM11007.2             ; RB1 MOVE
+OR DM11015.2             ; RB2 MOVE
+ANL
+MPS
+AND CR2006               ; 1sｸﾛｯｸﾊﾟﾙｽ
+SET B3650:Z1             ; MNU用ﾗﾝﾌﾟﾌﾗｸﾞ
+MPP
+ANB CR2006               ; 1sｸﾛｯｸﾊﾟﾙｽ
+RES B3650:Z1             ; MNU用ﾗﾝﾌﾟﾌﾗｸﾞ
+LDB MR7506               ; ｲｵﾅｲｻﾞ1 ｴｱﾌﾞﾛｰ （ﾜｰｸ投入口）
+AND MR2108               ; ｲｵﾅｲｻﾞ1 放電停止
+INV
+OUB B35F0                ; ｲｵﾅｲｻﾞ3ON lamp
+;<h1/>ﾒﾝﾃ RB ﾃｨｰﾁﾝｸﾞ
+STG @MR2100              ; RB ﾃｨｰﾁﾝｸﾞ
+MPS
+LDB R39900               ; RB動作中
+ANB @MR001               ; TASK10　ERROR
+ANB @MR2110              ; RB_MOVE中
+ANB @MR2202              ; RB_HOME中
+ANL
+MPS
+ANB R41210               ; TASK10 PAUSE 要求
+OUT @MR2102              ; ﾃｨｰﾁﾝｸﾞ中
+CON
+AND @MR1902              ; 終了確認
+RES @MR1902              ; 終了確認
+CON
+JMP @MR2914
+MPP
+AND R41210               ; TASK10 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+MPP
+LDP R44915               ; Teaching End
+ORP R44914               ; Teaching End2
+ANL
+SET @MR1902              ; 終了確認
+;<h1/>デバイスネットTYPE
+;※ﾒﾝﾃ RB 指定　Z3=動作STG指定用：Z4=IAI_状態信号デバイス指定用　Z5=RB Target POS格納ﾃﾞﾊﾞｲｽ参照先
+LDB R39007               ; PLS列TYPE
+MC
+;Z1=D50312*16			'Z1:動作ﾌﾗｸﾞ修飾
+;Z2=RB_OFFSET[D50312]	'Z2:軸ﾃﾞﾊﾞｲｽｵﾌｾｯﾄ修飾
+;Z3=D50312*2				'Z3:動作Parameter格納先修飾
+LD CR2002                ; 常時ON
+NCJ #1002
+;Z1=D50312*16			'Z1:動作ﾌﾗｸﾞ修飾
+;
+LD CR2002                ; 常時ON
+LDA DM50312              ; RB選択
+CON
+EXT
+CON
+MUL.L +16
+CON
+STA.L Z1
+;Z2=RB_OFFSET[D50312]	'Z2:軸ﾃﾞﾊﾞｲｽｵﾌｾｯﾄ修飾
+;
+LD CR2002                ; 常時ON
+LDA DM50312              ; RB選択
+CON
+EXT
+CON
+STA.L Z12
+CON
+LDA W3AB0:Z12            ; RB_OFFSET
+CON
+EXT
+CON
+STA.L Z2
+;Z3=D50312*2				'Z3:動作Parameter格納先修飾
+LD CR2002                ; 常時ON
+LDA DM50312              ; RB選択
+CON
+EXT
+CON
+MUL.L +2
+CON
+STA.L Z3
+LABEL #1002
+;
+LD @MR2102               ; ﾃｨｰﾁﾝｸﾞ中
+ANB R44200               ; Grp1 ﾎﾟｰｽﾞ要求
+ANB R39900               ; RB動作中
+BAND *W3A04:Z2 #4        ; RB_IN (STATUS)
+BANB *W3A04:Z2 #3        ; RB_IN (STATUS)
+MPS
+ANP MR22007              ; HOME
+SET @MR2200              ; RB_HOME
+MRD
+LDP MR22006              ; MOVE
+BAND *W3A04:Z2 #4        ; RB_IN (STATUS)
+BANB *W3A04:Z2 #3        ; RB_IN (STATUS)
+ANL
+SET @MR2108              ; RB_MOVE
+MPP
+AND B39B5                ; JISL ON=ｲﾝﾁﾝｸﾞ T.P
+MPS
+ANP MR22005              ; JOG-
+SET MR22008              ; INC-
+CON
+SET @MR2108              ; RB_MOVE
+MPP
+ANP MR22004              ; JOG+
+SET MR22009              ; INC+
+CON
+SET @MR2108              ; RB_MOVE
+MCR
+;<h1/>MC Unit PULSE列TYPE
+LD R39007                ; PLS列TYPE
+MC
+;Z1=D50312*16									'Z1:動作ﾌﾗｸﾞ修飾
+;Z3=D50312*2										'Z3:動作Parameter格納先修飾
+;
+;@DM60=W3AE0:(Unit_No*4)*16						'選択軸UNITのRﾃﾞﾊﾞｲｽ修飾
+;ADRSET(R0:@DM60,Unit_R)							'指定UNIT先頭ﾃﾞﾊﾞｲｽ格納 R
+;Z1=D50312*16									'Z1:動作ﾌﾗｸﾞ修飾
+;
+LD CR2002                ; 常時ON
+LDA DM50312              ; RB選択
+CON
+EXT
+CON
+MUL.L +16
+CON
+STA.L Z1
+;Z3=D50312*2										'Z3:動作Parameter格納先修飾
+;
+LD CR2002                ; 常時ON
+LDA DM50312              ; RB選択
+CON
+EXT
+CON
+MUL.L +2
+CON
+STA.L Z3
+;@DM60=W3AE0:(Unit_No*4)*16						'選択軸UNITのRﾃﾞﾊﾞｲｽ修飾
+;
+LD CR2002                ; 常時ON
+LDA W3A23                ; Unit No.
+CON
+EXT
+CON
+MUL.L +4
+CON
+STA.L Z12
+CON
+LDA W3AE0:Z12            ; UNIT_0 R
+CON
+EXT
+CON
+MUL.L +16
+CON
+STA @DM60
+;ADRSET(R0:@DM60,Unit_R)							'指定UNIT先頭ﾃﾞﾊﾞｲｽ格納 R
+LD CR2002                ; 常時ON
+LDA @DM60
+CON
+EXT
+CON
+STA.L Z12
+ADRSET R000:Z12 W3B20    ; 指定UNIT　ﾃﾞﾊﾞｲｽ格納先 R
+;
+;IN FLG
+LD CR2002                ; 常時ON
+LDA W3A22                ; Axis No.
+CON
+SUB #1
+CON
+MUL #128
+CON
+ADD #708
+CON
+STA Z2
+CON
+AND *W3B20:Z2            ; 指定UNIT　ﾃﾞﾊﾞｲｽ格納先 R
+OUT Busy                 ; 動作中
+LD CR2002                ; 常時ON
+LDA W3A22                ; Axis No.
+CON
+SUB #1
+CON
+MUL #128
+CON
+ADD #733
+CON
+STA Z2
+CON
+AND *W3B20:Z2            ; 指定UNIT　ﾃﾞﾊﾞｲｽ格納先 R
+OUT Ready                ; Servo ON中
+LD CR2002                ; 常時ON
+LDA W3A22                ; Axis No.
+CON
+SUB #1
+CON
+MUL #128
+CON
+ADD #734
+CON
+STA Z2
+CON
+AND *W3B20:Z2            ; 指定UNIT　ﾃﾞﾊﾞｲｽ格納先 R
+OUT Send                 ; Servo End
+LD CR2002                ; 常時ON
+LDA W3A22                ; Axis No.
+CON
+SUB #1
+CON
+MUL #128
+CON
+ADD #757
+CON
+STA Z2
+CON
+AND *W3B20:Z2            ; 指定UNIT　ﾃﾞﾊﾞｲｽ格納先 R
+OUT DRV_AL               ; ﾄﾞﾗｲｱﾗｰﾑ
+LD CR2002                ; 常時ON
+LDA #448
+CON
+STA Z2
+CON
+AND *W3B20:Z2            ; 指定UNIT　ﾃﾞﾊﾞｲｽ格納先 R
+OUT CReady               ; 準備完了
+;出力 FLG
+LD CR2002                ; 常時ON
+LDA W3A22                ; Axis No.
+CON
+SUB #1
+CON
+MUL #8
+CON
+ADD #0
+CON
+STA Z2
+CON
+AND *W3B20:Z2            ; 指定UNIT　ﾃﾞﾊﾞｲｽ格納先 R
+OUT Cstr                 ; 位置決め開始
+LD CR2002                ; 常時ON
+LDA W3A22                ; Axis No.
+CON
+SUB #1
+CON
+MUL #128
+CON
+ADD #492
+CON
+STA Z2
+CON
+AND *W3B20:Z2            ; 指定UNIT　ﾃﾞﾊﾞｲｽ格納先 R
+OUT Home                 ; 原点復帰
+LD CR2002                ; 常時ON
+LDA W3A22                ; Axis No.
+CON
+SUB #1
+CON
+MUL #128
+CON
+ADD #693
+CON
+STA Z2
+CON
+AND *W3B20:Z2            ; 指定UNIT　ﾃﾞﾊﾞｲｽ格納先 R
+OUT DRV_ALM_RES          ; Driver ALARM Reset
+LD CR2002                ; 常時ON
+LDA W3A22                ; Axis No.
+CON
+SUB #1
+CON
+MUL #128
+CON
+ADD #669
+CON
+STA Z2
+CON
+AND *W3B20:Z2            ; 指定UNIT　ﾃﾞﾊﾞｲｽ格納先 R
+OUT Son                  ; Servo ON
+LD CR2002                ; 常時ON
+LDA W3A22                ; Axis No.
+CON
+SUB #1
+CON
+MUL #128
+CON
+ADD #656
+CON
+STA Z2
+CON
+AND *W3B20:Z2            ; 指定UNIT　ﾃﾞﾊﾞｲｽ格納先 R
+OUT Jog_plus             ; JOG+
+LD CR2002                ; 常時ON
+LDA W3A22                ; Axis No.
+CON
+SUB #1
+CON
+MUL #128
+CON
+ADD #657
+CON
+STA Z2
+CON
+AND *W3B20:Z2            ; 指定UNIT　ﾃﾞﾊﾞｲｽ格納先 R
+OUT Jog_minus            ; JOG-
+LD CR2002                ; 常時ON
+LDA W3A22                ; Axis No.
+CON
+SUB #1
+CON
+MUL #128
+CON
+ADD #658
+CON
+STA Z2
+CON
+AND *W3B20:Z2            ; 指定UNIT　ﾃﾞﾊﾞｲｽ格納先 R
+OUT Jog_hi               ; 高速JOG
+;--
+LD @MR2102               ; ﾃｨｰﾁﾝｸﾞ中
+ANB R44200               ; Grp1 ﾎﾟｰｽﾞ要求
+ANB R39900               ; RB動作中
+ANB Busy                 ; 動作中
+ANB DRV_AL               ; ﾄﾞﾗｲｱﾗｰﾑ
+AND Ready                ; Servo ON中
+MPS
+ANP MR22007              ; HOME
+SET @MR2200              ; RB_HOME
+MRD
+LDP MR22006              ; MOVE
+AND R35011:Z1            ; RB1原点復帰済
+ANL
+SET @MR2108              ; RB_MOVE
+MPP
+AND B39B5                ; JISL ON=ｲﾝﾁﾝｸﾞ T.P
+MPS
+ANP MR22005              ; JOG-
+SET MR22008              ; INC-
+CON
+SET @MR2108              ; RB_MOVE
+MPP
+ANP MR22004              ; JOG+
+SET MR22009              ; INC+
+CON
+SET @MR2108              ; RB_MOVE
+MCR
+;<h1/>ﾒﾝﾃ Teaching MOVE
+STG @MR2108              ; RB_MOVE
+SET @MR2110              ; RB_MOVE中
+CON
+JMP @MR2111
+;ｻｰﾎﾞON & ｱﾗｰﾑOFF
+STG @MR2111
+LDA DM50300              ; Position No
+CON
+STA EM1300:Z3            ; RB1Target Pos
+CON
+SET R35000:Z1            ; RB1 MOVE
+CON
+JMP @MR2112
+STG @MR2112
+AND R35001:Z1            ; RB1 MOVE END
+RES R35001:Z1            ; RB1 MOVE END
+CON
+JMP @MR2113
+STG @MR2113
+MPS
+ANB R35003:Z1            ; RB1 Alarm
+JMP @MR2115              ; END
+MPP
+AND R35003:Z1            ; RB1 Alarm
+RES R35003:Z1            ; RB1 Alarm
+CON
+SET @MR2208              ; RB_Alarm
+CON
+JMP @MR2114
+STG @MR2114
+AND @MR2209              ; RB_Alarm_END
+RES @MR2209              ; RB_Alarm_END
+CON
+JMP @MR2115              ; END
+STG @MR2115              ; END
+RES MR22008              ; INC-
+CON
+RES MR22009              ; INC+
+CON
+RES @MR2110              ; RB_MOVE中
+CON
+ENDS
+;<h1/>ﾒﾝﾃ Teaching HOME
+STG @MR2200              ; RB_HOME
+SET @MR2202              ; RB_HOME中
+CON
+JMP @MR2203
+STG @MR2203
+SET R35008:Z1            ; RB1 HOME
+CON
+JMP @MR2204
+STG @MR2204
+AND R35009:Z1            ; RB1 HOME END
+RES R35009:Z1            ; RB1 HOME END
+CON
+JMP @MR2205
+STG @MR2205
+MPS
+ANB R35003:Z1            ; RB1 Alarm
+JMP @MR2207              ; END
+MPP
+AND R35003:Z1            ; RB1 Alarm
+RES R35003:Z1            ; RB1 Alarm
+CON
+SET @MR2208              ; RB_Alarm
+CON
+JMP @MR2206
+STG @MR2206
+AND @MR2209              ; RB_Alarm_END
+RES @MR2209              ; RB_Alarm_END
+CON
+JMP @MR2207              ; END
+STG @MR2207              ; END
+RES @MR2202              ; RB_HOME中
+CON
+ENDS
+;<h1/>※現在値表示&格納
+;デバイスネットTYPE
+;TYPE D50300.L,D50312.D,@DM50.U,D50320.L,*RB_NOW_POS.L,DM11080.L
+;'/// 現在位置 表示
+;	DM50320 = *RB_NOW_POS:Z2 'Now Position 
+;
+;'DATA格納:現在位置 取込み/入力値取込み 
+;IF R34001 = 1 THEN
+;	@DM50 = ((D50300-1)*6)+(D50312*DM9422)
+;	IF R34002 = 0 THEN 
+;		EM10000.L:(@DM50) = DM50320.L	'Position
+;	ELSE
+;		EM10000.L:(@DM50) = DM50302.L	'Direct Position
+;	END IF
+;	
+;	EM10004:(@DM50) = DM50306.U	'SPEED
+;	EM10005:(@DM50) = DM50307.U	'ACC/DEC
+;	D50302.L= E10000.L:@D50
+;	D50306.U= E10004.U:@D50
+;	D50307.U= E10005.U:@D50
+;END IF
+LD>= DM3000 #2150        ; _MainTP　表示中ﾍﾟｰｼﾞNo
+AND<= DM3000 #2153       ; _MainTP　表示中ﾍﾟｰｼﾞNo
+OR= DM3000 #2220         ; _MainTP　表示中ﾍﾟｰｼﾞNo
+ANB R39007               ; PLS列TYPE
+NCJ #1000
+;TYPE D50300.L,D50312.D,@DM50.U,D50320.L,*RB_NOW_POS.L,DM11080.L
+;
+;'/// 現在位置 表示
+;
+;	DM50320 = *RB_NOW_POS:Z2 'Now Position 
+;
+LD CR2002                ; 常時ON
+MOV.L *W3A00:Z2 DM50320  ; RB NOW_Pos  現在地
+;'DATA格納:現在位置 取込み/入力値取込み 
+;
+;IF R34001 = 1 THEN
+;
+LD R34001                ; Teaching SW
+NCJ #2003
+;	@DM50 = ((D50300-1)*6)+(D50312*DM9422)
+;
+LD CR2002                ; 常時ON
+LDA DM9422               ; 1軸あたり使用ﾃﾞﾊﾞｲｽ数
+CON
+EXT
+CON
+MUL.L DM50312            ; RB選択
+CON
+STA.L @VM7
+CON
+LDA.L DM50300            ; Position No
+CON
+SUB.L +1
+CON
+MUL.L +6
+CON
+ADD.L @VM7
+CON
+STA @DM50
+;	IF R34002 = 0 THEN 
+;
+LDB R34002               ; direct Teach T.P
+NCJ #2004
+;		EM10000.L:(@DM50) = DM50320.L	'Position
+;
+LD CR2002                ; 常時ON
+LDA @DM50
+CON
+EXT
+CON
+STA.L Z11
+CON
+MOV.L DM50320 EM10000:Z11; 現在地  RB1 P1 POS(LO)
+;	ELSE
+;
+LD CR2002                ; 常時ON
+CJ #2005
+LABEL #2004
+;		EM10000.L:(@DM50) = DM50302.L	'Direct Position
+;
+LD CR2002                ; 常時ON
+LDA @DM50
+CON
+EXT
+CON
+STA.L Z11
+CON
+MOV.L DM50302 EM10000:Z11; RB Position Low  RB1 P1 POS(LO)
+;	END IF
+;
+LABEL #2005
+;	EM10004:(@DM50) = DM50306.U	'SPEED
+;
+LD CR2002                ; 常時ON
+LDA @DM50
+CON
+EXT
+CON
+STA.L Z11
+CON
+MOV DM50306 EM10004:Z11  ; RB SPEED  RB1 P1 Speed
+;	EM10005:(@DM50) = DM50307.U	'ACC/DEC
+;
+LD CR2002                ; 常時ON
+LDA @DM50
+CON
+EXT
+CON
+STA.L Z11
+CON
+MOV DM50307 EM10005:Z11  ; RB Acc/Dec  RB1 P1 G
+;	D50302.L= E10000.L:@D50
+;
+LD CR2002                ; 常時ON
+LDA @DM50
+CON
+EXT
+CON
+STA.L Z12
+CON
+MOV.L EM10000:Z12 DM50302; RB1 P1 POS(LO)  RB Position Low
+;	D50306.U= E10004.U:@D50
+;
+LD CR2002                ; 常時ON
+LDA @DM50
+CON
+EXT
+CON
+STA.L Z12
+CON
+MOV EM10004:Z12 DM50306  ; RB1 P1 Speed  RB SPEED
+;	D50307.U= E10005.U:@D50
+;
+LD CR2002                ; 常時ON
+LDA @DM50
+CON
+EXT
+CON
+STA.L Z12
+CON
+MOV EM10005:Z12 DM50307  ; RB1 P1 G  RB Acc/Dec
+;END IF
+LABEL #2003
+LABEL #1000
+;
+;MC UNIT TYPE
+;TYPE D50300.L,D50312.D,@DM50.U,D50320.L,DM11080.L
+;@DM62=W3AE2:(Unit_No*4)							'選択軸UNITのDMﾃﾞﾊﾞｲｽ修飾
+;ADRSET(DM0:@DM62,Unit_DM)						'指定UNIT先頭ﾃﾞﾊﾞｲｽ格納 DM
+;
+;'/// 現在位置 表示
+;D50320 = *Unit_DM.L:(290+((Axis_No-1)*60))	'MC Now pos
+;
+;
+;'DATA格納:現在位置 取込み/入力値取込み 
+;IF R34001 = 1 THEN
+;	@DM50 = ((D50300-1)*6)+(D50312*DM9422)
+;	IF R34002 = 0 THEN 
+;		EM10000.L:(@DM50) = DM50320.L	'Position
+;	ELSE
+;		EM10000.L:(@DM50) = DM50302.L	'Direct Position
+;	END IF
+;	
+;	EM10004:(@DM50) = DM50306.U	'SPEED
+;	EM10005:(@DM50) = DM50307.U	'ACC/DEC
+;	D50302.L= E10000.L:@D50
+;	D50306.U= E10004.U:@D50
+;	D50307.U= E10005.U:@D50
+;END IF
+LD>= DM3000 #2150        ; _MainTP　表示中ﾍﾟｰｼﾞNo
+AND<= DM3000 #2153       ; _MainTP　表示中ﾍﾟｰｼﾞNo
+OR= DM3000 #2220         ; _MainTP　表示中ﾍﾟｰｼﾞNo
+AND R39007               ; PLS列TYPE
+NCJ #1004
+;TYPE D50300.L,D50312.D,@DM50.U,D50320.L,DM11080.L
+;
+;@DM62=W3AE2:(Unit_No*4)							'選択軸UNITのDMﾃﾞﾊﾞｲｽ修飾
+;
+LD CR2002                ; 常時ON
+LDA W3A23                ; Unit No.
+CON
+EXT
+CON
+MUL.L +4
+CON
+STA.L Z12
+CON
+MOV W3AE2:Z12 @DM62      ; UNIT_0 DM
+;ADRSET(DM0:@DM62,Unit_DM)						'指定UNIT先頭ﾃﾞﾊﾞｲｽ格納 DM
+;
+LD CR2002                ; 常時ON
+LDA @DM62
+CON
+EXT
+CON
+STA.L Z12
+ADRSET DM0:Z12 W3B22     ; 指定UNITﾃﾞﾊﾞｲｽ格納先 DM
+;'/// 現在位置 表示
+;
+;D50320 = *Unit_DM.L:(290+((Axis_No-1)*60))	'MC Now pos
+;
+LD CR2002                ; 常時ON
+LDA W3A22                ; Axis No.
+CON
+EXT
+CON
+SUB.L +1
+CON
+MUL.L +60
+CON
+ADD.L +290
+CON
+STA.L Z12
+CON
+MOV.L *W3B22:Z12 DM50320 ; 指定UNITﾃﾞﾊﾞｲｽ格納先 DM  現在地
+;'DATA格納:現在位置 取込み/入力値取込み 
+;
+;IF R34001 = 1 THEN
+;
+LD R34001                ; Teaching SW
+NCJ #2006
+;	@DM50 = ((D50300-1)*6)+(D50312*DM9422)
+;
+LD CR2002                ; 常時ON
+LDA DM9422               ; 1軸あたり使用ﾃﾞﾊﾞｲｽ数
+CON
+EXT
+CON
+MUL.L DM50312            ; RB選択
+CON
+STA.L @VM9
+CON
+LDA.L DM50300            ; Position No
+CON
+SUB.L +1
+CON
+MUL.L +6
+CON
+ADD.L @VM9
+CON
+STA @DM50
+;	IF R34002 = 0 THEN 
+;
+LDB R34002               ; direct Teach T.P
+NCJ #2007
+;		EM10000.L:(@DM50) = DM50320.L	'Position
+;
+LD CR2002                ; 常時ON
+LDA @DM50
+CON
+EXT
+CON
+STA.L Z11
+CON
+MOV.L DM50320 EM10000:Z11; 現在地  RB1 P1 POS(LO)
+;	ELSE
+;
+LD CR2002                ; 常時ON
+CJ #2008
+LABEL #2007
+;		EM10000.L:(@DM50) = DM50302.L	'Direct Position
+;
+LD CR2002                ; 常時ON
+LDA @DM50
+CON
+EXT
+CON
+STA.L Z11
+CON
+MOV.L DM50302 EM10000:Z11; RB Position Low  RB1 P1 POS(LO)
+;	END IF
+;
+LABEL #2008
+;	EM10004:(@DM50) = DM50306.U	'SPEED
+;
+LD CR2002                ; 常時ON
+LDA @DM50
+CON
+EXT
+CON
+STA.L Z11
+CON
+MOV DM50306 EM10004:Z11  ; RB SPEED  RB1 P1 Speed
+;	EM10005:(@DM50) = DM50307.U	'ACC/DEC
+;
+LD CR2002                ; 常時ON
+LDA @DM50
+CON
+EXT
+CON
+STA.L Z11
+CON
+MOV DM50307 EM10005:Z11  ; RB Acc/Dec  RB1 P1 G
+;	D50302.L= E10000.L:@D50
+;
+LD CR2002                ; 常時ON
+LDA @DM50
+CON
+EXT
+CON
+STA.L Z12
+CON
+MOV.L EM10000:Z12 DM50302; RB1 P1 POS(LO)  RB Position Low
+;	D50306.U= E10004.U:@D50
+;
+LD CR2002                ; 常時ON
+LDA @DM50
+CON
+EXT
+CON
+STA.L Z12
+CON
+MOV EM10004:Z12 DM50306  ; RB1 P1 Speed  RB SPEED
+;	D50307.U= E10005.U:@D50
+;
+LD CR2002                ; 常時ON
+LDA @DM50
+CON
+EXT
+CON
+STA.L Z12
+CON
+MOV EM10005:Z12 DM50307  ; RB1 P1 G  RB Acc/Dec
+;END IF
+LABEL #2006
+LABEL #1004
+;
+;<h1/>※入力モニター
+BLD *W3A04:Z2 #0         ; RB_IN (STATUS)
+ANB R39007               ; PLS列TYPE
+LD Send                  ; Servo End
+AND R39007               ; PLS列TYPE
+ORL
+OUT B39A0                ; PEND T.P
+BLD *W3A04:Z2 #1         ; RB_IN (STATUS)
+ANB R39007               ; PLS列TYPE
+LD R35011:Z1             ; RB1原点復帰済
+AND R39007               ; PLS列TYPE
+ORL
+OUT B39A1                ; HEND T.P
+BLD *W3A04:Z2 #2         ; RB_IN (STATUS)
+ANB R39007               ; PLS列TYPE
+LD Busy                  ; 動作中
+AND R39007               ; PLS列TYPE
+ORL
+OUT B39A2                ; MOVE T.P
+BLD *W3A04:Z2 #3         ; RB_IN (STATUS)
+ANB R39007               ; PLS列TYPE
+LD DRV_AL                ; ﾄﾞﾗｲｱﾗｰﾑ
+AND R39007               ; PLS列TYPE
+ORL
+OUT B39A3                ; ALM T.P
+BLD *W3A04:Z2 #4         ; RB_IN (STATUS)
+ANB R39007               ; PLS列TYPE
+LD Ready                 ; Servo ON中
+AND R39007               ; PLS列TYPE
+ORL
+OUT B39A4                ; SV T.P
+BLD *W3A04:Z2 #5         ; RB_IN (STATUS)
+ANB R39007               ; PLS列TYPE
+OUT B39A5                ; PSFL T.P
+BLD *W3A04:Z2 #6         ; RB_IN (STATUS)
+ANB R39007               ; PLS列TYPE
+OUT B39A6                ; -
+BLD *W3A04:Z2 #7         ; RB_IN (STATUS)
+ANB R39007               ; PLS列TYPE
+OUT B39A7                ; BALM ﾊﾞｯﾃﾘｰALM T.P
+BLD *W3A04:Z2 #8         ; RB_IN (STATUS)
+ANB R39007               ; PLS列TYPE
+OUT B39A8                ; Mend 移動指令完了 T.P
+BLD *W3A04:Z2 #9         ; RB_IN (STATUS)
+ANB R39007               ; PLS列TYPE
+OUT B39A9                ; -
+BLD *W3A04:Z2 #10        ; RB_IN (STATUS)
+ANB R39007               ; PLS列TYPE
+OUT B39AA                ; -
+BLD *W3A04:Z2 #11        ; RB_IN (STATUS)
+ANB R39007               ; PLS列TYPE
+OUT B39AB                ; Pzone T.P
+BLD *W3A04:Z2 #12        ; RB_IN (STATUS)
+ANB R39007               ; PLS列TYPE
+OUT B39AC                ; ZONE1 T.P
+BLD *W3A04:Z2 #13        ; RB_IN (STATUS)
+ANB R39007               ; PLS列TYPE
+OUT B39AD                ; ZONE2 T.P
+BLD *W3A04:Z2 #14        ; RB_IN (STATUS)
+ANB R39007               ; PLS列TYPE
+LD CReady                ; 準備完了
+AND R39007               ; PLS列TYPE
+ORL
+OUT B39AE                ; CRDY ｺﾝﾄﾛｰﾗ準備完了 T.P
+BLD *W3A04:Z2 #15        ; RB_IN (STATUS)
+ANB R39007               ; PLS列TYPE
+OUT B39AF                ; EMGS T.P
+LDB R39007               ; PLS列TYPE
+LDA *W3A02:Z2            ; RB_Alarm
+CON
+EXT
+CON
+STA DM50310              ; RB ｱﾗｰﾑ表示
+LD R39007                ; PLS列TYPE
+LDA #0
+CON
+EXT
+CON
+STA DM50310              ; RB ｱﾗｰﾑ表示
+;<h1/>※出力モニター
+BLD *W3A14:Z2 #0         ; RB_OUT (STATUS)
+ANB R39007               ; PLS列TYPE
+LD Cstr                  ; 位置決め開始
+AND R39007               ; PLS列TYPE
+ORL
+OUT B39B0                ; CSTR 位置決めｽﾀｰﾄ T.P
+BLD *W3A14:Z2 #1         ; RB_OUT (STATUS)
+ANB R39007               ; PLS列TYPE
+LD Home                  ; 原点復帰
+AND R39007               ; PLS列TYPE
+ORL
+OUT B39B1                ; HOME T.P
+BLD *W3A14:Z2 #2         ; RB_OUT (STATUS)
+ANB R39007               ; PLS列TYPE
+OUT B39B2                ; STP　一時停止 T.P
+BLD *W3A14:Z2 #3         ; RB_OUT (STATUS)
+ANB R39007               ; PLS列TYPE
+LD DRV_ALM_RES           ; Driver ALARM Reset
+AND R39007               ; PLS列TYPE
+ORL
+OUT B39B3                ; RES ﾘｾｯﾄ T.P
+BLD *W3A14:Z2 #4         ; RB_OUT (STATUS)
+ANB R39007               ; PLS列TYPE
+LD Son                   ; Servo ON
+AND R39007               ; PLS列TYPE
+ORL
+OUT B39B4                ; SON T.P
+BLD *W3A14:Z2 #5         ; RB_OUT (STATUS)
+ANB R39007               ; PLS列TYPE
+LD MR22002               ; JISL ON=Inch OFF=JOG
+AND R39007               ; PLS列TYPE
+ORL
+OUT B39B5                ; JISL ON=ｲﾝﾁﾝｸﾞ T.P
+BLD *W3A14:Z2 #6         ; RB_OUT (STATUS)
+ANB R39007               ; PLS列TYPE
+LD Jog_hi                ; 高速JOG
+AND R39007               ; PLS列TYPE
+ORL
+OUT B39B6                ; JVEL JOG速度切替 Low T.P
+BLD *W3A14:Z2 #7         ; RB_OUT (STATUS)
+ANB R39007               ; PLS列TYPE
+LD Jog_minus             ; JOG-
+AND R39007               ; PLS列TYPE
+ORL
+OUT B39B7                ; JOG- T.P
+BLD *W3A14:Z2 #8         ; RB_OUT (STATUS)
+ANB R39007               ; PLS列TYPE
+LD Jog_plus              ; JOG+
+AND R39007               ; PLS列TYPE
+ORL
+OUT B39B8                ; JOG+ T.P
+BLD *W3A14:Z2 #9         ; RB_OUT (STATUS)
+ANB R39007               ; PLS列TYPE
+OUT B39B9                ; -
+BLD *W3A14:Z2 #10        ; RB_OUT (STATUS)
+ANB R39007               ; PLS列TYPE
+OUT B39BA                ; -
+BLD *W3A14:Z2 #11        ; RB_OUT (STATUS)
+ANB R39007               ; PLS列TYPE
+OUT B39BB                ; -
+BLD *W3A14:Z2 #12        ; RB_OUT (STATUS)
+ANB R39007               ; PLS列TYPE
+OUT B39BC                ; PUSH T.P
+BLD *W3A14:Z2 #13        ; RB_OUT (STATUS)
+ANB R39007               ; PLS列TYPE
+OUT B39BD                ; DIR T.P
+BLD *W3A14:Z2 #14        ; RB_OUT (STATUS)
+ANB R39007               ; PLS列TYPE
+OUT B39BE                ; INC T.P
+BLD *W3A14:Z2 #15        ; RB_OUT (STATUS)
+ANB R39007               ; PLS列TYPE
+OUT B39BF                ; BKRL T.P
+;<h1/>※出力信号
+;<h1/>IAI RB DEVICENET  出力
+LDB R44200               ; Grp1 ﾎﾟｰｽﾞ要求
+ANB R39007               ; PLS列TYPE
+AND R46102               ; _ﾒﾝﾃﾅﾝｽ運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+MC
+;Alarm RESET
+BLD DM50314 #3
+BOUT *W3A14:Z2 #3        ; RB_OUT (STATUS)
+;Servo ON
+LDB R39900               ; RB動作中
+BAND DM50314 #4
+MEP
+MPS
+BAND *W3A14:Z2 #4        ; RB_OUT (STATUS)
+OUT @R000
+CON
+BRES *W3A14:Z2 #4        ; RB_OUT (STATUS)
+MPP
+BLDB *W3A14:Z2 #4        ; RB_OUT (STATUS)
+ANB @R000
+ANL
+BSET *W3A14:Z2 #4        ; RB_OUT (STATUS)
+;JISL
+LD MR22002               ; JISL ON=Inch OFF=JOG
+BOUT *W3A14:Z2 #5        ; RB_OUT (STATUS)
+;JVEL
+LD MR22003               ; JVEL
+BOUT *W3A14:Z2 #6        ; RB_OUT (STATUS)
+;JOG
+LDB B39B5                ; JISL ON=ｲﾝﾁﾝｸﾞ T.P
+MPS
+AND MR22005              ; JOG-
+BOUT *W3A14:Z2 #7        ; RB_OUT (STATUS)
+MPP
+AND MR22004              ; JOG+
+BOUT *W3A14:Z2 #8        ; RB_OUT (STATUS)
+;Brake Release　※使用する軸のみ記述する事。
+BLD DM50314 #15
+MEP
+MPS
+BAND *W3A14:Z2 #15       ; RB_OUT (STATUS)
+OUT @R001
+CON
+BRES *W3A14:Z2 #15       ; RB_OUT (STATUS)
+MPP
+BLDB *W3A14:Z2 #15       ; RB_OUT (STATUS)
+ANB @R001
+ANL
+BSET *W3A14:Z2 #15       ; RB_OUT (STATUS)
+MCR
+;<h1/>MC UNIT PULSE列制御出力
+LDB R44200               ; Grp1 ﾎﾟｰｽﾞ要求
+AND R39007               ; PLS列TYPE
+AND R46102               ; _ﾒﾝﾃﾅﾝｽ運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+MC
+;Alarm RESET
+LD CR2002                ; 常時ON
+ANB Busy                 ; 動作中
+MPS
+LDA W3A22                ; Axis No.
+CON
+SUB #1
+CON
+MUL #128
+CON
+ADD #693
+CON
+STA Z2
+CON
+BAND DM50314 #3
+OUT *W3B20:Z2            ; 指定UNIT　ﾃﾞﾊﾞｲｽ格納先 R
+MPP
+LDA W3A22                ; Axis No.
+CON
+SUB #1
+CON
+MUL #128
+CON
+ADD #640
+CON
+STA Z2
+CON
+BAND DM50314 #3
+OUT *W3B20:Z2            ; 指定UNIT　ﾃﾞﾊﾞｲｽ格納先 R
+;Servo ON
+LDB R39900               ; RB動作中
+ANB Busy                 ; 動作中
+BAND DM50314 #4
+MEP
+MPS
+LDA W3A22                ; Axis No.
+CON
+SUB #1
+CON
+MUL #128
+CON
+ADD #669
+CON
+STA Z2
+MRD
+AND *W3B20:Z2            ; 指定UNIT　ﾃﾞﾊﾞｲｽ格納先 R
+OUT @R002
+CON
+RES *W3B20:Z2            ; 指定UNIT　ﾃﾞﾊﾞｲｽ格納先 R
+MPP
+LDB *W3B20:Z2            ; 指定UNIT　ﾃﾞﾊﾞｲｽ格納先 R
+ANB @R002
+ANL
+SET *W3B20:Z2            ; 指定UNIT　ﾃﾞﾊﾞｲｽ格納先 R
+;JVEL  ON=高速
+LD CR2002                ; 常時ON
+ANB Busy                 ; 動作中
+MPS
+LDA W3A22                ; Axis No.
+CON
+SUB #1
+CON
+MUL #128
+CON
+ADD #658
+CON
+STA Z2
+MPP
+ANB MR22003              ; JVEL
+OUT *W3B20:Z2            ; 指定UNIT　ﾃﾞﾊﾞｲｽ格納先 R
+;JOG-
+LDB B39B5                ; JISL ON=ｲﾝﾁﾝｸﾞ T.P
+ANB MR22002              ; JISL ON=Inch OFF=JOG
+MPS
+LDA W3A22                ; Axis No.
+CON
+SUB #1
+CON
+MUL #128
+CON
+ADD #657
+CON
+STA Z2
+MPP
+AND MR22005              ; JOG-
+OUT *W3B20:Z2            ; 指定UNIT　ﾃﾞﾊﾞｲｽ格納先 R
+;JOG+
+LDB B39B5                ; JISL ON=ｲﾝﾁﾝｸﾞ T.P
+ANB MR22002              ; JISL ON=Inch OFF=JOG
+MPS
+LDA W3A22                ; Axis No.
+CON
+SUB #1
+CON
+MUL #128
+CON
+ADD #656
+CON
+STA Z2
+MPP
+AND MR22004              ; JOG+
+OUT *W3B20:Z2            ; 指定UNIT　ﾃﾞﾊﾞｲｽ格納先 R
+MCR
+;安全の為Brake解除OFF
+;'///// Brake解除 OFF
+;FOR  I =0 TO DM9412
+;	*RB_OUT_STATUS:RB_OFFSET[I]=ANDA(*RB_OUT_STATUS:RB_OFFSET[I],$7FFF)
+;NEXT
+;
+LDB @MR2102              ; ﾃｨｰﾁﾝｸﾞ中
+NCJ #1001
+;'///// Brake解除 OFF
+;
+;FOR  I =0 TO DM9412
+;
+LD CR2002                ; 常時ON
+MOV.S +0 I               ; 変数i
+LABEL #2009
+LD CR2002                ; 常時ON
+LDA DM9412               ; IAI最大軸数
+CON
+EXT
+CON
+STA.L @VM11
+CON
+LDA.S I                  ; 変数i
+CON
+EXT.S
+CON
+CMP.L @VM11
+LD CR2011                ; 演算結果が正
+CJ #2010
+;	*RB_OUT_STATUS:RB_OFFSET[I]=ANDA(*RB_OUT_STATUS:RB_OFFSET[I],$7FFF)
+;
+LD CR2002                ; 常時ON
+LDA.S I                  ; 変数i
+CON
+EXT.S
+CON
+STA.L Z12
+CON
+LDA W3AB0:Z12            ; RB_OFFSET
+CON
+EXT
+CON
+STA.L Z11
+CON
+LDA.S I                  ; 変数i
+CON
+EXT.S
+CON
+STA.L Z12
+CON
+LDA W3AB0:Z12            ; RB_OFFSET
+CON
+EXT
+CON
+STA.L Z12
+CON
+LDA *W3A14:Z12           ; RB_OUT (STATUS)
+CON
+ANDA $7FFF
+CON
+STA @VM13
+CON
+MOV @VM13 *W3A14:Z11     ; RB_OUT (STATUS)
+;NEXT
+;
+LD CR2002                ; 常時ON
+INC.S I                  ; 変数i
+LDB CR2009               ; 演算結果が負
+CJ #2009
+LABEL #2010
+LABEL #1001
+;
+;<h1/>ﾒﾝﾃ RB ALARM
+STG @MR2208              ; RB_Alarm
+ANB @MR001               ; TASK10　ERROR
+ANB R39900               ; RB動作中
+MPS
+LDB R44200               ; Grp1 ﾎﾟｰｽﾞ要求
+ANB R39004               ; ｴﾗｰ中
+ANL
+MPS
+SET R39004               ; ｴﾗｰ中
+CON
+DW $100F @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #0 @DM2               ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task10 ERROR
+CON
+JMP @MR2210
+MRD
+ANB R39007               ; PLS列TYPE
+SET B3990                ; ｱﾗｰﾑ詳細表示
+CON
+LDA *W3A02:Z2            ; RB_Alarm
+CON
+STA DM50310              ; RB ｱﾗｰﾑ表示
+MPP
+LDA DM50312              ; RB選択
+CON
+ADD #1
+CON
+STA @DM1                 ; ErrorNo /ERROR_DISP
+MPP
+AND R44200               ; Grp1 ﾎﾟｰｽﾞ要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR2210
+SET @MR1900              ; Main1 HALT許可
+CON
+AND @MR101               ; TASK10 ERROR_End
+RES @MR101               ; TASK10 ERROR_End
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+AND @MR105               ; SW1
+RES B3990                ; ｱﾗｰﾑ詳細表示
+CON
+DW #0 DM50310            ; RB ｱﾗｰﾑ表示
+CON
+SET @MR2209              ; RB_Alarm_END
+CON
+ENDS
+;<h1/>MAINTENANCE終了
+STG @MR2914
+MCALL MODE_INDI #1
+MCALL HOLD_REQUEST MyGroup;自ｸﾞﾙｰﾌﾟ番号
+MPS
+MSTRT CHANGE_PAGE #1 #211 @MR2908
+MPP
+AND @MR2908
+RES @MR2908
+CON
+JMP @MR2915              ; Mainte END
+STG @MR2915              ; Mainte END
+MPS
+LDB R41210               ; TASK10 PAUSE 要求
+ANB @MR001               ; TASK10　ERROR
+ANB R39900               ; RB動作中
+ANL
+RES @MR1902              ; 終了確認
+CON
+RES @MR2002              ; ﾒﾝﾃ中
+CON
+JMP LR610                ; _Grp1_Task10_Fin.STG
+MPP
+AND R41210               ; TASK10 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+;<h1/>SubRoutines/ｻﾌﾞﾙｰﾁﾝ
+;<h1/>  RB1 ﾌﾚｰﾑ搬送Y軸 移動   @MR6200
+STG @MR1100              ; RB1 動作
+SET @MR1102              ; RB1 動作中
+CON
+JMP @MR1103
+;ｱﾗｰﾑﾘｾｯﾄ &ｻｰﾎﾞON　ｱﾗｰﾑﾘｾｯﾄできない場合は、ｻｰﾎﾞOFFしError発生
+STG @MR1103
+MPS
+SET DM11207.3            ; RB1 RES
+CON
+ANB DM11007.3            ; RB1 ALM
+SET DM11207.4            ; RB1 SON
+CON
+AND DM11007.4            ; RB1 SV
+RES DM11207.3            ; RB1 RES
+CON
+JMP @MR1104
+MPP
+TMR @11 #20
+CON
+AND @T11
+RES DM11207.3            ; RB1 RES
+CON
+RES DM11207.4            ; RB1 SON
+CON
+JMP @MR1300              ; Err 1
+STG @MR1104
+SET R35000               ; RB1 MOVE
+CON
+JMP @MR1105
+STG @MR1105
+AND R35001               ; RB1 MOVE END
+RES R35001               ; RB1 MOVE END
+CON
+JMP @MR1106
+STG @MR1106
+MPS
+ANB R35003               ; RB1 Alarm
+JMP @MR1107
+MPP
+AND R35003               ; RB1 Alarm
+RES R35003               ; RB1 Alarm
+CON
+JMP @MR1300              ; Err 1
+STG @MR1107
+SET @MR1101              ; RB1 動作完了
+CON
+RES @MR1102              ; RB1 動作中
+CON
+ENDS
+;<h1/>  RB2 ﾌﾚｰﾑ搬送X軸 移動   @MR5800
+STG @MR1108              ; RB2 動作
+SET @MR1110              ; RB2 動作中
+CON
+JMP @MR1111
+;ｱﾗｰﾑﾘｾｯﾄ &ｻｰﾎﾞON　ｱﾗｰﾑﾘｾｯﾄできない場合は、ｻｰﾎﾞOFFしError発生
+STG @MR1111
+MPS
+SET DM11215.3            ; RB2 RES
+CON
+ANB DM11015.3            ; RB2 ALM
+SET DM11215.4            ; RB2 SON
+CON
+AND DM11015.4            ; RB2 SV
+RES DM11215.3            ; RB2 RES
+CON
+JMP @MR1112
+MPP
+TMR @12 #20
+CON
+AND @T12
+RES DM11215.3            ; RB2 RES
+CON
+RES DM11215.4            ; RB2 SON
+CON
+JMP @MR1304              ; Err 2
+STG @MR1112
+SET R35100               ; RB2 MOVE
+CON
+JMP @MR1113
+STG @MR1113
+AND R35101               ; RB2 MOVE END
+RES R35101               ; RB2 MOVE END
+CON
+JMP @MR1114
+STG @MR1114
+MPS
+ANB R35103               ; RB2 Alarm
+JMP @MR1115
+MPP
+AND R35103               ; RB2 Alarm
+RES R35103               ; RB2 Alarm
+CON
+JMP @MR1304              ; Err 2
+STG @MR1115
+SET @MR1109              ; RB2 動作完了
+CON
+RES @MR1110              ; RB2 動作中
+CON
+ENDS
+;Error 1 RB1動作異常
+STG @MR1300              ; Err 1
+ANB R39900               ; RB動作中
+MPS
+LDB R41201               ; TASK1 PAUSE 要求
+ANB R39004               ; ｴﾗｰ中
+ANL
+SET R39004               ; ｴﾗｰ中
+CON
+MPS
+DW #1 @DM1               ; ErrorNo /ERROR_DISP
+CON
+DW #4001 @DM2            ; SensorNo /ERROR_DISP
+CON
+DW $1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+SET @MR100               ; Task10 ERROR
+CON
+JMP @MR1301
+MPP
+SET B3990                ; ｱﾗｰﾑ詳細表示
+CON
+LDA DM11006              ; RB1 ｱﾗｰﾑｺｰﾄﾞ
+CON
+STA DM50310              ; RB ｱﾗｰﾑ表示
+MPP
+AND R41201               ; TASK1 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR1301
+SET @MR1900              ; Main1 HALT許可
+CON
+AND @MR101               ; TASK10 ERROR_End
+RES @MR101               ; TASK10 ERROR_End
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+AND @MR105               ; SW1
+RES B3990                ; ｱﾗｰﾑ詳細表示
+CON
+DW #0 DM50310            ; RB ｱﾗｰﾑ表示
+CON
+JMP @MR1103
+;Error 2 RB2動作異常
+STG @MR1304              ; Err 2
+ANB R39900               ; RB動作中
+MPS
+LDB R41202               ; TASK2 PAUSE 要求
+ANB R39004               ; ｴﾗｰ中
+ANL
+SET R39004               ; ｴﾗｰ中
+CON
+MPS
+DW #2 @DM1               ; ErrorNo /ERROR_DISP
+CON
+DW #4002 @DM2            ; SensorNo /ERROR_DISP
+CON
+DW $1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+SET @MR100               ; Task10 ERROR
+CON
+JMP @MR1305
+MPP
+SET B3990                ; ｱﾗｰﾑ詳細表示
+CON
+LDA DM11014              ; RB2 ｱﾗｰﾑｺｰﾄﾞ
+CON
+STA DM50310              ; RB ｱﾗｰﾑ表示
+MPP
+AND R41202               ; TASK2 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR1305
+SET @MR1900              ; Main1 HALT許可
+CON
+AND @MR101               ; TASK10 ERROR_End
+RES @MR101               ; TASK10 ERROR_End
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+AND @MR105               ; SW1
+RES B3990                ; ｱﾗｰﾑ詳細表示
+CON
+DW #0 DM50310            ; RB ｱﾗｰﾑ表示
+CON
+JMP @MR1111
+;<h1/>-----------------------------------------------------------
+;<h1/>*ERROR
+;MyTask Error Process Substance/エラー処理実体
+STG @MR100               ; Task10 ERROR
+ANB R39002               ; ERROR_DISP Busy
+MPS
+ZRES @MR105 @MR108       ; SW1  SW4
+CON
+DISN @DM9 @DM3 #4        ; ReturnSW /ERROR_DISP
+MRD
+DW MyTask @DM0           ; 自ﾀｽｸ番号  TaskNo /ERROR_DISP
+CON
+BMOV @DM0 DM60000 #7     ; TaskNo /ERROR_DISP  TaskNo /ERROR_DISP
+MPP
+SET R39000               ; ERROR_DISP Start
+CON
+SET @MR102               ; TASK10 ERROR Busy
+CON
+JMP @MR103
+STG @MR103
+AND R39002               ; ERROR_DISP Busy
+AND= DM60008 @DM1        ; ReturnNo /ERROR_DISP  ErrorNo /ERROR_DISP
+MPS
+AND= DM60007 @DM6        ; ReturnSW /ERROR_DISP
+SET @MR105               ; SW1
+CON
+JMP @MR104
+MRD
+AND= DM60007 @DM5        ; ReturnSW /ERROR_DISP
+SET @MR106               ; SW2
+CON
+JMP @MR104
+MRD
+AND= DM60007 @DM4        ; ReturnSW /ERROR_DISP  1軸あたり使用ﾃﾞﾊﾞｲｽ数
+SET @MR107               ; SW3
+CON
+JMP @MR104
+MPP
+AND= DM60007 @DM3        ; ReturnSW /ERROR_DISP
+SET @MR108               ; SW4
+CON
+JMP @MR104
+STG @MR104
+ANB R39002               ; ERROR_DISP Busy
+RES @MR102               ; TASK10 ERROR Busy
+CON
+SET @MR101               ; TASK10 ERROR_End
+CON
+ENDS
+;<h1/>*Select_Y_N 
+;MyTask Select_Y_N Process Substance/SELECT_Y_N処理実体
+STG @MR300               ; TASK10 SELECT_Y_N
+ANB R39102               ; SELECT_Y_N Busy
+MPS
+ZRES @MR306 @MR307       ; TASK10 Y/N
+CON
+DW #0 @DM20              ; TaskNo /SELECT_Y_N
+CON
+BMOV @DM20 DM60020 #3    ; TaskNo /SELECT_Y_N  TaskNo /SELECT_Y_N
+MPP
+SET R39100               ; SELECT_Y_N Start
+CON
+SET @MR302               ; TASK10 Y_N Busy
+CON
+JMP @MR303
+STG @MR303
+AND R39102               ; SELECT_Y_N Busy
+MPS
+AND= DM60023 #1          ; Y_N /SELECT_Y_N
+SET @MR306               ; TASK10 Y/N
+CON
+JMP @MR304
+MPP
+AND= DM60023 #2          ; Y_N /SELECT_Y_N
+RES @MR306               ; TASK10 Y/N
+CON
+JMP @MR304
+STG @MR304
+ANB R39102               ; SELECT_Y_N Busy
+RES @MR302               ; TASK10 Y_N Busy
+CON
+SET @MR301               ; TASK10 Y/N END
+CON
+ENDS
+;<h1/>*TIMEUP ERROR
+;MyTask TIMEUP_ERROR Process Substance/TIMEUP_ERROR処理実体
+STG @MR400               ; TASK10 TIMEUP_ERR
+ANB R39302               ; TIMEUP_ERR Busy
+MPS
+DW #0 @DM40              ; TaskNo /TIMEUP_ERR
+CON
+BMOV @DM40 DM60040 #2    ; TaskNo /TIMEUP_ERR  TaskNo /TIMEUP_ERR
+MPP
+SET R39300               ; TIMEUP_ERR Start
+CON
+SET @MR402               ; TASK10 TIMEUP Busy
+CON
+JMP @MR403
+STG @MR403
+AND R39302               ; TIMEUP_ERR Busy
+JMP @MR404
+STG @MR404
+ANB R39302               ; TIMEUP_ERR Busy
+RES @MR402               ; TASK10 TIMEUP Busy
+CON
+SET @MR401               ; TASK10 TIMEUP_END
+CON
+ENDS
+;<h1/>*Select_ACT 
+;MyTask Select_ACT Process Substance/SELECT_ACT処理実体
+STG @MR200               ; TASK10 SELECT_ACT
+ANB R39202               ; SELECT_ACT Busy
+MPS
+ZRES @MR205 @MR208       ; SW1  SW4
+CON
+DW #0 @DM30              ; TaskNo /SELECT_ACT
+CON
+BMOV @DM30 DM60030 #7    ; TaskNo /SELECT_ACT  TaskNo /SELECT_ACT
+MPP
+SET R39200               ; SELECT_ACT Start
+CON
+SET @MR202               ; TASK10 SEL_ACT Busy
+CON
+JMP @MR203
+STG @MR203
+AND R39202               ; SELECT_ACT Busy
+AND<> DM60037 #0         ; SelectSW /SELECT_ACT
+MPS
+AND= DM60037 #1          ; SelectSW /SELECT_ACT
+SET @MR205               ; SW1
+CON
+JMP @MR204
+MRD
+AND= DM60037 #2          ; SelectSW /SELECT_ACT
+SET @MR206               ; SW2
+CON
+JMP @MR204
+MRD
+AND= DM60037 #3          ; SelectSW /SELECT_ACT
+SET @MR207               ; SW3
+CON
+JMP @MR204
+MPP
+AND= DM60037 #4          ; SelectSW /SELECT_ACT
+SET @MR208               ; SW4
+CON
+JMP @MR204
+STG @MR204
+ANB R39202               ; SELECT_ACT Busy
+RES @MR202               ; TASK10 SEL_ACT Busy
+CON
+SET @MR201               ; TASK10 SEL_ACT END
+CON
+ENDS
+;<h1/>HALT
+LD R41210                ; TASK10 PAUSE 要求
+AND @MR1900              ; Main1 HALT許可
+TMH @40 #5
+CON
+AND @T40
+SET R42610               ; Grp1_Task10_ﾎﾟｰｽﾞ許可
+LD R42610                ; Grp1_Task10_ﾎﾟｰｽﾞ許可
+ORB R41210               ; TASK10 PAUSE 要求
+ANB @MR001               ; TASK10　ERROR
+RES @MR1900              ; Main1 HALT許可
+CON
+RES @MR1901              ; Main2 HALT許可
+END
+ENDH

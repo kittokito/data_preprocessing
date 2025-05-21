@@ -1,0 +1,805 @@
+DEVICE:53
+;MODULE:Balancer
+;MODULE_TYPE:0
+LD R50010                ; Emergency　Stop
+OR @MR001
+ZRES @MR000 @MR2915
+CON
+ANB @T19
+OUT @MR001
+TMR @19 #5
+;Serial Communication Setting
+LD CR2002                ; 常時ON
+DW #0 DM40415            ; Port1 ﾃﾞｰﾀ格納単位設定
+CON
+DW #0 DM40416            ; Port1 ﾓｰﾄﾞ設定
+CON
+DW #0 DM40417            ; Port1 ﾀｲﾑｱｳﾄﾁｪｯｸ時間設定
+CON
+DW #0 DM40418            ; Port1 送信ﾍｯﾀﾞ設定
+CON
+DW $0D0A DM40419         ; Port1 送信ﾃﾞﾘﾐﾀ設定
+CON
+DW #0 DM40420            ; Port1 受信ﾍｯﾀﾞ設定
+CON
+DW $0D0A DM40421         ; Port1 受信ﾃﾞﾘﾐﾀ設定
+CON
+DW #0 DM40422            ; Port1 受信ﾃﾞｰﾀ長設定
+CON
+SET R37000               ; Port1 通信許可
+;<h1/>***** Display *****
+LD CR2002                ; 常時ON
+FLIK #30 #30 @MR002      ; 0.3sﾌﾘｯｶｰ
+LD CR2002                ; 常時ON
+FLIK #10 #10 @MR003      ; 0.1sﾌﾘｯｶｰ
+;Tower Lamp (Buzzer)
+LD CR2003                ; 常時OFF
+OUT MR16104              ; 天秤TowerLamp Buzzer
+;Tower Lamp (Red)
+LD @MR500                ; Flag00 HOME完了
+AND @MR503               ; Flag03 重量NG
+OUT MR16105              ; 天秤TowerLamp(R)
+;Tower Lamp (Yellow)
+LD @MR500                ; Flag00 HOME完了
+AND R50001               ; AUTO
+LD @MR505                ; Flag05 ﾜｰｸ給材要求
+ANB @MR506               ; Flag06 ﾜｰｸ除材要求
+AND @MR002               ; 0.3sﾌﾘｯｶｰ
+LDB @MR505               ; Flag05 ﾜｰｸ給材要求
+AND @MR506               ; Flag06 ﾜｰｸ除材要求
+AND @MR003               ; 0.1sﾌﾘｯｶｰ
+ORL
+OR @MR1002               ; Balancer HOME中
+LD @MR501                ; Flag01 天秤計測中
+ANB @MR505               ; Flag05 ﾜｰｸ給材要求
+ANB @MR506               ; Flag06 ﾜｰｸ除材要求
+ORL
+ANL
+OUT MR16106              ; 天秤TowerLamp(Y)
+;Tower Lamp (Green)
+LD @MR500                ; Flag00 HOME完了
+AND @MR502               ; Flag02 重量OK
+OUT MR16107              ; 天秤TowerLamp(G)
+;Start SW Lamp
+LD R50001                ; AUTO
+OR LR300
+AND @MR500               ; Flag00 HOME完了
+LDB @MR501               ; Flag01 天秤計測中
+AND @MR505               ; Flag05 ﾜｰｸ給材要求
+AND @MR002               ; 0.3sﾌﾘｯｶｰ
+OR @MR501                ; Flag01 天秤計測中
+ANL
+OUT MR16108              ; 天秤StartSW Lamp
+;<h1/>***** HOME *****
+LDP R50003               ; HOME
+ANB @MR500               ; Flag00 HOME完了
+ANB @MR1002              ; Balancer HOME中
+SET @MR1000
+STG @MR1000
+SET @MR1002              ; Balancer HOME中
+CON
+JMP @MR1004
+STG @MR1004
+MPS
+AND R36902               ; Port1 受信ﾃﾞｰﾀ読出要求
+SET R37002               ; Port1 受信ﾃﾞｰﾀ読出完了
+CON
+JMP @MR1005
+MPP
+ANB R36902               ; Port1 受信ﾃﾞｰﾀ読出要求
+TMR @10 #10
+CON
+AND @T10
+JMP @MR1006
+STG @MR1005
+MPS
+ANB R36902               ; Port1 受信ﾃﾞｰﾀ読出要求
+RES R37002               ; Port1 受信ﾃﾞｰﾀ読出完了
+CON
+JMP @MR1004
+MPP
+AND R36902               ; Port1 受信ﾃﾞｰﾀ読出要求
+TMR @11 #10
+CON
+AND @T11
+JMP @MR1004
+STG @MR1006
+SET R37005               ; Port1 ｼｰｹﾝｽｸﾘｱ要求
+CON
+JMP @MR1007
+STG @MR1007
+TMR @12 #50
+CON
+LD R36905                ; Port1 ｼｰｹﾝｽｸﾘｱ完了
+OR @T12
+ANL
+RES R37005               ; Port1 ｼｰｹﾝｽｸﾘｱ要求
+CON
+JMP @MR1008
+STG @MR1008
+JMP @MR1009
+STG @MR1009
+MPS
+AND CR2002               ; 常時ON
+SET @MR2100              ; 天秤ｾﾞﾛﾘｾｯﾄ
+CON
+JMP @MR1010
+MPP
+ANB CR2002               ; 常時ON
+JMP @MR1015
+STG @MR1010
+AND @MR2101              ; 天秤ｾﾞﾛﾘｾｯﾄ完了
+RES @MR2101              ; 天秤ｾﾞﾛﾘｾｯﾄ完了
+CON
+JMP @MR1011
+STG @MR1011
+MPS
+ANB @MR2103              ; 天秤ｾﾞﾛﾘｾｯﾄNG
+JMP @MR1015
+MPP
+AND @MR2103              ; 天秤ｾﾞﾛﾘｾｯﾄNG
+SET @MR204               ; Err145
+CON
+JMP @MR1012
+STG @MR1012
+AND @MR207               ; Err145 Release
+RES @MR2103              ; 天秤ｾﾞﾛﾘｾｯﾄNG
+CON
+RES @MR207               ; Err145 Release
+CON
+JMP @MR1004
+STG @MR1015
+SET @MR505               ; Flag05 ﾜｰｸ給材要求
+CON
+RES @MR506               ; Flag06 ﾜｰｸ除材要求
+CON
+RES @MR502               ; Flag02 重量OK
+CON
+RES @MR503               ; Flag03 重量NG
+CON
+SET @MR500               ; Flag00 HOME完了
+CON
+RES @MR1002              ; Balancer HOME中
+CON
+ENDS
+;<h1/>***** AUTO *****
+LD R50001                ; AUTO
+OR LR300
+AND @MR500               ; Flag00 HOME完了
+ANB @MR501               ; Flag01 天秤計測中
+ANP R4210                ; 天秤Start SW
+RES @MR502               ; Flag02 重量OK
+CON
+RES @MR503               ; Flag03 重量NG
+CON
+RES @MR505               ; Flag05 ﾜｰｸ給材要求
+CON
+RES @MR506               ; Flag06 ﾜｰｸ除材要求
+CON
+SET @MR1500
+STG @MR1500
+SET @MR501               ; Flag01 天秤計測中
+CON
+SET @MR504               ; Flag04 天秤Sｺﾏﾝﾄﾞ
+CON
+SET @MR2000              ; 天秤ﾃﾞｰﾀ取得開始
+CON
+JMP @MR1504
+STG @MR1504
+AND @MR2001              ; 天秤ﾃﾞｰﾀ取得完了
+RES @MR2001              ; 天秤ﾃﾞｰﾀ取得完了
+CON
+JMP @MR1505
+STG @MR1505
+MPS
+ANB @MR2003              ; 天秤ﾃﾞｰﾀ取得NG
+MOV.L DM7070 DM7080      ; 重量ﾃﾞｰﾀ(32bit)  重量ﾃﾞｰﾀ記憶(32bit)
+@INC DM5003              ; Balancer Input
+CON
+JMP @MR1506
+MPP
+AND @MR2003              ; 天秤ﾃﾞｰﾀ取得NG
+JMP @MR1514
+;<h1/>2015-03-02 キャップ変更　暫定対応　①新Cap判別
+;キャップ変更の為、7~12の機種は測定重量にオフセットをかける
+;
+;@MR008 ... 新Capフラグ
+;FM598  ... オフセット量
+LD= DM200 #1             ; Model No
+OR= DM200 #3             ; Model No
+OR= DM200 #5             ; Model No
+OR= DM200 #6             ; Model No
+OR= DM200 #7             ; Model No
+OR= DM200 #8             ; Model No
+OR= DM200 #9             ; Model No
+OR= DM200 #10            ; Model No
+OR= DM200 #11            ; Model No
+OR= DM200 #12            ; Model No
+ANB MR005                ; AP05 !暫定!　Cap判別無効
+DW #112 FM598            ; 新Cap オフセット重量
+CON
+OUT @MR008               ; !暫定! 新Cap
+;
+;<h1/>2015-03-02 キャップ変更　暫定対応　②オフセット
+STG @MR1506
+MPS
+AND @MR008               ; !暫定! 新Cap
+MPS
+MEP
+MPS
+LDA.L FM500              ; BK重量上限
+CON
+ADD.L FM598              ; 新Cap オフセット重量
+CON
+STA.L FM600              ; BK重量上限 新Cap
+MRD
+LDA.L FM502              ; BK重量下限
+CON
+ADD.L FM598              ; 新Cap オフセット重量
+CON
+STA.L FM602              ; BK重量下限 新Cap
+MRD
+LDA.L FM504              ; 3CL重量上限
+CON
+ADD.L FM598              ; 新Cap オフセット重量
+CON
+STA.L FM604              ; 3CL重量上限 新Cap
+MPP
+LDA.L FM506              ; 3CL重量下限
+CON
+ADD.L FM598              ; 新Cap オフセット重量
+CON
+STA.L FM606              ; 3CL重量下限 新Cap
+MRD
+AND= DM287 #1            ; ModelIdentficationNumber
+MPS
+LD<=.L DM7080 FM600      ; 重量ﾃﾞｰﾀ記憶(32bit)  BK重量上限 新Cap
+AND>=.L DM7080 FM602     ; 重量ﾃﾞｰﾀ記憶(32bit)  BK重量下限 新Cap
+ANL
+JMP @MR1509
+MPP
+LD>.L DM7080 FM600       ; 重量ﾃﾞｰﾀ記憶(32bit)  BK重量上限 新Cap
+OR<.L DM7080 FM602       ; 重量ﾃﾞｰﾀ記憶(32bit)  BK重量下限 新Cap
+ANL
+JMP @MR1507
+MRD
+AND= DM287 #2            ; ModelIdentficationNumber
+MPS
+LD<=.L DM7080 FM604      ; 重量ﾃﾞｰﾀ記憶(32bit)  3CL重量上限 新Cap
+AND>=.L DM7080 FM606     ; 重量ﾃﾞｰﾀ記憶(32bit)  3CL重量下限 新Cap
+ANL
+JMP @MR1509
+MPP
+LD>.L DM7080 FM604       ; 重量ﾃﾞｰﾀ記憶(32bit)  3CL重量上限 新Cap
+OR<.L DM7080 FM606       ; 重量ﾃﾞｰﾀ記憶(32bit)  3CL重量下限 新Cap
+ANL
+JMP @MR1507
+MPP
+AND= DM287 #3            ; ModelIdentficationNumber
+MPS
+LD<=.L DM7080 FM508      ; 重量ﾃﾞｰﾀ記憶(32bit)  4CL重量上限
+AND>=.L DM7080 FM510     ; 重量ﾃﾞｰﾀ記憶(32bit)  4CL重量下限
+ANL
+JMP @MR1509
+MPP
+LD>.L DM7080 FM508       ; 重量ﾃﾞｰﾀ記憶(32bit)  4CL重量上限
+OR<.L DM7080 FM510       ; 重量ﾃﾞｰﾀ記憶(32bit)  4CL重量下限
+ANL
+JMP @MR1507
+MPP
+ANB @MR008               ; !暫定! 新Cap
+MPS
+AND= DM287 #1            ; ModelIdentficationNumber
+MPS
+LD<=.L DM7080 FM500      ; 重量ﾃﾞｰﾀ記憶(32bit)  BK重量上限
+AND>=.L DM7080 FM502     ; 重量ﾃﾞｰﾀ記憶(32bit)  BK重量下限
+ANL
+JMP @MR1509
+MPP
+LD>.L DM7080 FM500       ; 重量ﾃﾞｰﾀ記憶(32bit)  BK重量上限
+OR<.L DM7080 FM502       ; 重量ﾃﾞｰﾀ記憶(32bit)  BK重量下限
+ANL
+JMP @MR1507
+MRD
+AND= DM287 #2            ; ModelIdentficationNumber
+MPS
+LD<=.L DM7080 FM504      ; 重量ﾃﾞｰﾀ記憶(32bit)  3CL重量上限
+AND>=.L DM7080 FM506     ; 重量ﾃﾞｰﾀ記憶(32bit)  3CL重量下限
+ANL
+JMP @MR1509
+MPP
+LD>.L DM7080 FM504       ; 重量ﾃﾞｰﾀ記憶(32bit)  3CL重量上限
+OR<.L DM7080 FM506       ; 重量ﾃﾞｰﾀ記憶(32bit)  3CL重量下限
+ANL
+JMP @MR1507
+MPP
+AND= DM287 #3            ; ModelIdentficationNumber
+MPS
+LD<=.L DM7080 FM508      ; 重量ﾃﾞｰﾀ記憶(32bit)  4CL重量上限
+AND>=.L DM7080 FM510     ; 重量ﾃﾞｰﾀ記憶(32bit)  4CL重量下限
+ANL
+JMP @MR1509
+MPP
+LD>.L DM7080 FM508       ; 重量ﾃﾞｰﾀ記憶(32bit)  4CL重量上限
+OR<.L DM7080 FM510       ; 重量ﾃﾞｰﾀ記憶(32bit)  4CL重量下限
+ANL
+JMP @MR1507
+STG @MR1507
+MPS
+RES @MR502               ; Flag02 重量OK
+CON
+SET @MR503               ; Flag03 重量NG
+CON
+DW #21 DM7082            ; 結果ｺｰﾄﾞ
+CON
+SET @MR100               ; Err140
+CON
+JMP @MR1508
+MPP
+ANB LR300
+SET B027                 ; DC_Quality4
+STG @MR1508
+AND @MR103               ; Err140 Release
+RES @MR103               ; Err140 Release
+CON
+JMP @MR1600
+STG @MR1509
+MPS
+DW #20 DM7082            ; 結果ｺｰﾄﾞ
+CON
+SET @MR502               ; Flag02 重量OK
+CON
+RES @MR503               ; Flag03 重量NG
+CON
+JMP @MR1600
+MPP
+ANB LR300
+SET B027                 ; DC_Quality4
+STG @MR1514
+SET @MR200               ; Err144
+CON
+JMP @MR1515
+STG @MR1515
+AND @MR203               ; Err144 Release
+RES @MR203               ; Err144 Release
+CON
+JMP @MR1615
+;天秤除材確認
+;Qｺﾏﾝﾄﾞで天秤の重量値0になるまで監視する
+STG @MR1600
+RES @MR505               ; Flag05 ﾜｰｸ給材要求
+CON
+SET @MR506               ; Flag06 ﾜｰｸ除材要求
+CON
+JMP @MR1601
+STG @MR1601
+RES @MR504               ; Flag04 天秤Sｺﾏﾝﾄﾞ
+CON
+SET @MR2000              ; 天秤ﾃﾞｰﾀ取得開始
+CON
+JMP @MR1602
+STG @MR1602
+AND @MR2001              ; 天秤ﾃﾞｰﾀ取得完了
+RES @MR2001              ; 天秤ﾃﾞｰﾀ取得完了
+CON
+JMP @MR1603
+STG @MR1603
+MPS
+ANB @MR2003              ; 天秤ﾃﾞｰﾀ取得NG
+JMP @MR1604
+MPP
+AND @MR2003              ; 天秤ﾃﾞｰﾀ取得NG
+JMP @MR1514
+STG @MR1604
+MPS
+AND<.L DM7070 +10000     ; 重量ﾃﾞｰﾀ(32bit)
+JMP @MR1615
+MPP
+AND>=.L DM7070 +10000    ; 重量ﾃﾞｰﾀ(32bit)
+TMR @4 #5
+CON
+AND @T4
+JMP @MR1600
+STG @MR1615
+RES @MR502               ; Flag02 重量OK
+CON
+RES @MR503               ; Flag03 重量NG
+CON
+SET @MR505               ; Flag05 ﾜｰｸ給材要求
+CON
+RES @MR506               ; Flag06 ﾜｰｸ除材要求
+CON
+RES @MR501               ; Flag01 天秤計測中
+CON
+ENDS
+;<h1/>***** ｻﾌﾞﾙｰﾁﾝ *****
+;**** Balancer Scale / 天秤計測 ****
+;@MR504=ON : Sｺﾏﾝﾄﾞ　安定後ﾃﾞｰﾀ出力
+;@MR504=OFF:	Qｺﾏﾝﾄﾞ	即時ﾃﾞｰﾀ出力
+STG @MR2000              ; 天秤ﾃﾞｰﾀ取得開始
+@FMOV #0 DM39901 #10     ; Port1 送信ﾃﾞｰﾀ長
+@FMOV #0 DM40158 #20     ; Port1 受信ﾃﾞｰﾀ長
+@FMOV #0 DM7000 #80      ; 重量受信ﾃﾞｰﾀ1
+RES @MR2003              ; 天秤ﾃﾞｰﾀ取得NG
+CON
+SET @MR2002              ; 天秤ﾃﾞｰﾀ取得中
+CON
+JMP @MR2200              ; 受信ﾊﾞｯﾌｧｸﾘｱ
+STG @MR2200              ; 受信ﾊﾞｯﾌｧｸﾘｱ
+MPS
+AND R36902               ; Port1 受信ﾃﾞｰﾀ読出要求
+SET R37002               ; Port1 受信ﾃﾞｰﾀ読出完了
+CON
+JMP @MR2201
+MPP
+ANB R36902               ; Port1 受信ﾃﾞｰﾀ読出要求
+JMP @MR2202
+STG @MR2201
+MPS
+ANB R36902               ; Port1 受信ﾃﾞｰﾀ読出要求
+RES R37002               ; Port1 受信ﾃﾞｰﾀ読出完了
+CON
+JMP @MR2200              ; 受信ﾊﾞｯﾌｧｸﾘｱ
+MPP
+AND R36902               ; Port1 受信ﾃﾞｰﾀ読出要求
+TMR @13 #10
+CON
+AND @T13
+RES R37002               ; Port1 受信ﾃﾞｰﾀ読出完了
+CON
+JMP @MR2200              ; 受信ﾊﾞｯﾌｧｸﾘｱ
+STG @MR2202
+SET R37005               ; Port1 ｼｰｹﾝｽｸﾘｱ要求
+CON
+JMP @MR2203
+STG @MR2203
+TMR @14 #50
+CON
+LD R36905                ; Port1 ｼｰｹﾝｽｸﾘｱ完了
+OR @T14
+ANL
+RES R37005               ; Port1 ｼｰｹﾝｽｸﾘｱ要求
+CON
+JMP @MR2004
+STG @MR2004
+MPS
+AND @MR504               ; Flag04 天秤Sｺﾏﾝﾄﾞ
+DW #1 DM39901            ; Port1 送信ﾃﾞｰﾀ長
+CON
+DW $5300 DM39902         ; Port1 送信ﾃﾞｰﾀ1
+CON
+SET R37001               ; Port1 送信要求
+CON
+JMP @MR2005
+MPP
+ANB @MR504               ; Flag04 天秤Sｺﾏﾝﾄﾞ
+DW #1 DM39901            ; Port1 送信ﾃﾞｰﾀ長
+CON
+DW $5100 DM39902         ; Port1 送信ﾃﾞｰﾀ1
+CON
+SET R37001               ; Port1 送信要求
+CON
+JMP @MR2005
+STG @MR2005
+MPS
+AND R36901               ; Port1 送信完了
+RES R37001               ; Port1 送信要求
+CON
+JMP @MR2006
+MPP
+AND R36901               ; Port1 送信完了
+TMR @1 #50
+CON
+AND @T1
+RES R37001               ; Port1 送信要求
+CON
+JMP @MR2014              ; 天秤ﾃﾞｰﾀ取得NG完了
+STG @MR2006
+MPS
+AND R36902               ; Port1 受信ﾃﾞｰﾀ読出要求
+SET R37002               ; Port1 受信ﾃﾞｰﾀ読出完了
+CON
+JMP @MR2007
+MPP
+ANB R36902               ; Port1 受信ﾃﾞｰﾀ読出要求
+TMR @2 #100
+CON
+AND @T2
+JMP @MR2014              ; 天秤ﾃﾞｰﾀ取得NG完了
+STG @MR2007
+MPS
+ANB R36902               ; Port1 受信ﾃﾞｰﾀ読出要求
+RES R37002               ; Port1 受信ﾃﾞｰﾀ読出完了
+CON
+JMP @MR2008
+MPP
+AND R36902               ; Port1 受信ﾃﾞｰﾀ読出要求
+TMR @3 #50
+CON
+AND @T3
+RES R37002               ; Port1 受信ﾃﾞｰﾀ読出完了
+CON
+JMP @MR2014              ; 天秤ﾃﾞｰﾀ取得NG完了
+STG @MR2008
+@BMOV DM40159 DM7000 #10 ; Port1 受信ﾃﾞｰﾀ1  重量受信ﾃﾞｰﾀ1
+@DISS DM7000 DM7020      ; 重量受信ﾃﾞｰﾀ1  変換ﾃﾞｰﾀ1-1
+JMP @MR2009
+STG @MR2009
+@UNIS DM7023 DM7050 #1   ; 変換ﾃﾞｰﾀ1-4  変換ﾃﾞｰﾀ2-1
+MPS
+@LDA DM7050              ; 変換ﾃﾞｰﾀ2-1
+CON
+@ORA $0030
+CON
+@STA DM7050              ; 変換ﾃﾞｰﾀ2-1
+MRD
+@UNIS DM7024 DM7051 #4   ; 変換ﾃﾞｰﾀ1-5  変換ﾃﾞｰﾀ2-2
+MRD
+@UNIS DM7029 DM7053 #3   ; 変換ﾃﾞｰﾀ1-10  変換ﾃﾞｰﾀ2-4
+MPP
+JMP @MR2010
+STG @MR2010
+@RDASC.L DM7050 DM7070   ; 変換ﾃﾞｰﾀ2-1  重量ﾃﾞｰﾀ(32bit)
+JMP @MR2011
+STG @MR2011
+JMP @MR2012
+STG @MR2012
+JMP @MR2013
+STG @MR2013
+JMP @MR2015              ; 天秤ﾃﾞｰﾀ取得OK完了
+STG @MR2014              ; 天秤ﾃﾞｰﾀ取得NG完了
+SET @MR2003              ; 天秤ﾃﾞｰﾀ取得NG
+CON
+RES @MR504               ; Flag04 天秤Sｺﾏﾝﾄﾞ
+CON
+RES @MR2002              ; 天秤ﾃﾞｰﾀ取得中
+CON
+SET @MR2001              ; 天秤ﾃﾞｰﾀ取得完了
+CON
+ENDS
+STG @MR2015              ; 天秤ﾃﾞｰﾀ取得OK完了
+RES @MR2003              ; 天秤ﾃﾞｰﾀ取得NG
+CON
+RES @MR504               ; Flag04 天秤Sｺﾏﾝﾄﾞ
+CON
+RES @MR2002              ; 天秤ﾃﾞｰﾀ取得中
+CON
+SET @MR2001              ; 天秤ﾃﾞｰﾀ取得完了
+CON
+ENDS
+;Balancer Zero Reset / 天秤ｾﾞﾛﾘｾｯﾄ
+STG @MR2100              ; 天秤ｾﾞﾛﾘｾｯﾄ
+RES @MR2103              ; 天秤ｾﾞﾛﾘｾｯﾄNG
+CON
+SET @MR2102              ; 天秤ｾﾞﾛﾘｾｯﾄ中
+CON
+JMP @MR2104
+STG @MR2104
+DW #1 DM39901            ; Port1 送信ﾃﾞｰﾀ長
+CON
+DW $5200 DM39902         ; Port1 送信ﾃﾞｰﾀ1
+CON
+SET R37001               ; Port1 送信要求
+CON
+JMP @MR2105
+STG @MR2105
+MPS
+AND R36901               ; Port1 送信完了
+RES R37001               ; Port1 送信要求
+CON
+JMP @MR2106
+MPP
+AND R36901               ; Port1 送信完了
+TMR @5 #50
+CON
+AND @T5
+RES R37001               ; Port1 送信要求
+CON
+JMP @MR2114              ; 天秤ｾﾞﾛﾘｾｯﾄ通信NG
+STG @MR2106
+TMR @6 #10
+CON
+AND @T6
+JMP @MR2107
+STG @MR2107
+DW #1 DM39901            ; Port1 送信ﾃﾞｰﾀ長
+CON
+DW $5300 DM39902         ; Port1 送信ﾃﾞｰﾀ1
+CON
+SET R37001               ; Port1 送信要求
+CON
+JMP @MR2108
+STG @MR2108
+MPS
+AND R36901               ; Port1 送信完了
+RES R37001               ; Port1 送信要求
+CON
+JMP @MR2109
+MPP
+AND R36901               ; Port1 送信完了
+TMR @7 #50
+CON
+AND @T7
+RES R37001               ; Port1 送信要求
+CON
+JMP @MR2114              ; 天秤ｾﾞﾛﾘｾｯﾄ通信NG
+STG @MR2109
+MPS
+AND R36902               ; Port1 受信ﾃﾞｰﾀ読出要求
+SET R37002               ; Port1 受信ﾃﾞｰﾀ読出完了
+CON
+JMP @MR2110
+MPP
+ANB R36902               ; Port1 受信ﾃﾞｰﾀ読出要求
+TMR @8 #100
+CON
+AND @T8
+JMP @MR2114              ; 天秤ｾﾞﾛﾘｾｯﾄ通信NG
+STG @MR2110
+MPS
+ANB R36902               ; Port1 受信ﾃﾞｰﾀ読出要求
+RES R37002               ; Port1 受信ﾃﾞｰﾀ読出完了
+CON
+JMP @MR2111
+MPP
+AND R36902               ; Port1 受信ﾃﾞｰﾀ読出要求
+TMR @9 #50
+CON
+AND @T9
+RES R37002               ; Port1 受信ﾃﾞｰﾀ読出完了
+CON
+JMP @MR2114              ; 天秤ｾﾞﾛﾘｾｯﾄ通信NG
+STG @MR2111
+@BMOV DM40159 DM7100 #10 ; Port1 受信ﾃﾞｰﾀ1  重量受信ﾃﾞｰﾀ1
+@DISS DM7100 DM7120      ; 重量受信ﾃﾞｰﾀ1  変換ﾃﾞｰﾀ1-1
+JMP @MR2112
+STG @MR2112
+@UNIS DM7123 DM7150 #1   ; 変換ﾃﾞｰﾀ1-4  変換ﾃﾞｰﾀ2-1
+MPS
+@LDA DM7150              ; 変換ﾃﾞｰﾀ2-1
+CON
+@ORA $0030
+CON
+@STA DM7150              ; 変換ﾃﾞｰﾀ2-1
+MRD
+@UNIS DM7124 DM7151 #4   ; 変換ﾃﾞｰﾀ1-5  変換ﾃﾞｰﾀ2-2
+MRD
+@UNIS DM7129 DM7153 #2   ; 変換ﾃﾞｰﾀ1-10  変換ﾃﾞｰﾀ2-4
+MRD
+@RDASC.L DM7150 DM7170   ; 変換ﾃﾞｰﾀ2-1  重量ﾃﾞｰﾀ(Zero Reset)
+MPP
+JMP @MR2113
+STG @MR2113
+MPS
+AND=.L DM7170 +0         ; 重量ﾃﾞｰﾀ(Zero Reset)
+RES @MR2103              ; 天秤ｾﾞﾛﾘｾｯﾄNG
+CON
+JMP @MR2115
+MPP
+AND<>.L DM7170 +0        ; 重量ﾃﾞｰﾀ(Zero Reset)
+SET @MR2103              ; 天秤ｾﾞﾛﾘｾｯﾄNG
+CON
+JMP @MR2115
+STG @MR2114              ; 天秤ｾﾞﾛﾘｾｯﾄ通信NG
+SET @MR2103              ; 天秤ｾﾞﾛﾘｾｯﾄNG
+CON
+JMP @MR2115
+STG @MR2115
+RES @MR2102              ; 天秤ｾﾞﾛﾘｾｯﾄ中
+CON
+SET @MR2101              ; 天秤ｾﾞﾛﾘｾｯﾄ完了
+CON
+ENDS
+;<h1/>***** ERROR *****
+;Err140 重量異常
+STG @MR100               ; Err140
+ANB R50008               ; Error
+SET R50008               ; Error
+CON
+SET R50113               ; Err ST3
+CON
+SET LR49914              ; ｴﾗｰﾘｾｯﾄｷｰ要求
+CON
+JMP @MR101
+MOV #140 DM400           ; ﾒｯｾｰｼﾞNo.
+STG @MR101
+AND R50008               ; Error
+JMP @MR102
+STG @MR102
+ANB R50008               ; Error
+SET @MR103               ; Err140 Release
+CON
+ENDS
+;Err141 重量警告
+STG @MR104               ; Err141
+ANB R50008               ; Error
+SET R50008               ; Error
+CON
+SET R50113               ; Err ST3
+CON
+SET LR49914              ; ｴﾗｰﾘｾｯﾄｷｰ要求
+CON
+JMP @MR105
+MOV #141 DM400           ; ﾒｯｾｰｼﾞNo.
+STG @MR105
+AND R50008               ; Error
+JMP @MR106
+STG @MR106
+ANB R50008               ; Error
+SET @MR107               ; Err141 Release
+CON
+ENDS
+;Err142 重量工程飛ばし警告
+STG @MR108               ; Err142
+ANB R50008               ; Error
+SET R50008               ; Error
+CON
+SET R50113               ; Err ST3
+CON
+SET LR49914              ; ｴﾗｰﾘｾｯﾄｷｰ要求
+CON
+JMP @MR109
+MOV #142 DM400           ; ﾒｯｾｰｼﾞNo.
+STG @MR109
+AND R50008               ; Error
+JMP @MR110
+STG @MR110
+ANB R50008               ; Error
+SET @MR111               ; Err142 Release
+CON
+ENDS
+;Err143 重量工程2度投入警告
+STG @MR112               ; Err143
+ANB R50008               ; Error
+SET R50008               ; Error
+CON
+SET R50113               ; Err ST3
+CON
+SET LR49914              ; ｴﾗｰﾘｾｯﾄｷｰ要求
+CON
+JMP @MR113
+MOV #143 DM400           ; ﾒｯｾｰｼﾞNo.
+STG @MR113
+AND R50008               ; Error
+JMP @MR114
+STG @MR114
+ANB R50008               ; Error
+SET @MR115               ; Err143 Release
+CON
+ENDS
+;Err144 天秤通信NG
+STG @MR200               ; Err144
+ANB R50008               ; Error
+SET R50008               ; Error
+CON
+SET R50113               ; Err ST3
+CON
+JMP @MR201
+MOV #144 DM400           ; ﾒｯｾｰｼﾞNo.
+STG @MR201
+AND R50008               ; Error
+JMP @MR202
+STG @MR202
+ANB R50008               ; Error
+SET @MR203               ; Err144 Release
+CON
+ENDS
+;Err145 天秤ｾﾞﾛﾘｾｯﾄNG
+STG @MR204               ; Err145
+ANB R50008               ; Error
+SET R50008               ; Error
+CON
+SET R50113               ; Err ST3
+CON
+JMP @MR205
+MOV #145 DM400           ; ﾒｯｾｰｼﾞNo.
+STG @MR205
+AND R50008               ; Error
+JMP @MR206
+STG @MR206
+ANB R50008               ; Error
+SET @MR207               ; Err145 Release
+CON
+ENDS
+END
+ENDH

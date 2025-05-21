@@ -1,0 +1,167 @@
+DEVICE:53
+;MODULE:P_OUTPUT_K
+;MODULE_TYPE:1
+;SCRIPT_TYPE:
+LD @CR2008
+ZRES @M0 @M15            ; 転送開始
+FMOV K0 @D0 K10          ; Axis No.
+MOV V0 @D0               ; Axis_No  Axis No.
+MOV V1 @D1               ; POSITION_No  POSITION No.
+MOV V2 @D2               ; Data_addres  先頭ﾊﾞｯﾌｧｱﾄﾞﾚｽ
+MOV V3 @D3               ; Number  ﾃﾞｰﾀ数
+SET @M0                  ; 転送開始
+;FOR @D7=1 TO @D3
+;  @D8 = @D1 + @D7 -1
+;  @D4 = (@D8-1) / 25                      'BANK No.  
+;  @D5 = @D8 - @D4 * 25                    'P-No. in BANK
+;  UWRIT(#5,#98,@d4,#1)                    'BANK CHANGE
+;  @D6 = 18016 + 512*(@D5-1)+32*(@D0-1)    'POSITION DATA ADDRESS
+;  Z1 = @D2 + ((@D7-1) * 2 )
+;  UREAD(#5,@D6,E0:Z1,#2)               'POSITION READ  
+;NEXT
+;
+;UWRIT(#5,#98,#0,#1)
+;
+;RES(@M0)
+;SET(@M1)
+;
+LD @M0                   ; 転送開始
+NCJ K1000
+;FOR @D7=1 TO @D3
+;
+LD CR2002                ; 常時ON
+MOV K1 @D7
+LABEL K2000
+LD> @D7 @D3              ; ﾃﾞｰﾀ数
+CJ K2001
+;  @D8 = @D1 + @D7 -1
+;
+LD CR2002                ; 常時ON
+LDA @D7
+CON
+EXT
+CON
+STA.L @VM0
+CON
+LDA @D1                  ; POSITION No.
+CON
+EXT
+CON
+ADD.L @VM0
+CON
+SUB.L +1
+CON
+STA @D8
+;  @D4 = (@D8-1) / 25                      'BANK No.  
+;
+LD CR2002                ; 常時ON
+LDA @D8
+CON
+EXT
+CON
+SUB.L +1
+CON
+EXT.L
+CON
+DIV.L +25
+CON
+STA @D4
+;  @D5 = @D8 - @D4 * 25                    'P-No. in BANK
+;
+LD CR2002                ; 常時ON
+LDA @D4
+CON
+EXT
+CON
+MUL.L +25
+CON
+STA.L @VM2
+CON
+LDA @D8
+CON
+EXT
+CON
+SUB.L @VM2
+CON
+STA @D5
+;  UWRIT(#5,#98,@d4,#1)                    'BANK CHANGE
+;
+LD CR2002                ; 常時ON
+UWRIT K5 K98 @D4 K1
+;  @D6 = 18016 + 512*(@D5-1)+32*(@D0-1)    'POSITION DATA ADDRESS
+;
+LD CR2002                ; 常時ON
+LDA @D0                  ; Axis No.
+CON
+EXT
+CON
+SUB.L +1
+CON
+MUL.L +32
+CON
+STA.L @VM4
+CON
+LDA @D5
+CON
+EXT
+CON
+SUB.L +1
+CON
+MUL.L +512
+CON
+ADD.L +18016
+CON
+ADD.L @VM4
+CON
+STA @D6
+;  Z1 = @D2 + ((@D7-1) * 2 )
+;
+LD CR2002                ; 常時ON
+LDA @D7
+CON
+EXT
+CON
+SUB.L +1
+CON
+MUL.L +2
+CON
+STA.L @VM6
+CON
+LDA @D2                  ; 先頭ﾊﾞｯﾌｧｱﾄﾞﾚｽ
+CON
+EXT
+CON
+ADD.L @VM6
+CON
+STA.L Z1
+;  UREAD(#5,@D6,E0:Z1,#2)               'POSITION READ  
+;
+LD CR2002                ; 常時ON
+UREAD K5 @D6 E0:Z1 K2
+;NEXT
+;
+LD CR2002                ; 常時ON
+INC @D7
+LDB CR2009               ; 演算結果が負
+CJ K2000
+LABEL K2001
+;UWRIT(#5,#98,#0,#1)
+;
+LD CR2002                ; 常時ON
+UWRIT K5 K98 K0 K1
+;RES(@M0)
+;
+LD CR2002                ; 常時ON
+RES @M0                  ; 転送開始
+;SET(@M1)
+;
+LD CR2002                ; 常時ON
+SET @M1                  ; 転送終了
+LABEL K1000
+;
+LD @M1                   ; 転送終了
+SET P0                   ; END_FLG
+CON
+RES @M1                  ; 転送終了
+END
+ENDH

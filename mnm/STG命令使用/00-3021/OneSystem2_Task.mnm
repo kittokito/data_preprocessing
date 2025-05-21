@@ -1,0 +1,1550 @@
+DEVICE:53
+;MODULE:OneSystem2_Task
+;MODULE_TYPE:0
+;SCRIPT_TYPE:
+;OneSystem Master-Module
+;
+;-----------------------------------------
+;ModuleName	:	OneSystem2_Task
+;ModuleType	:	Master Module
+;Function	:	Task Control
+;-----------------------------------------
+;
+;Copylight(C) 2011 SEIKO EPSON Corp. All rights reserved.
+LDP R46104               ; _非常停止中　ﾓｰﾄﾞﾌﾗｸﾞ
+ZRES @R000 @R315         ; 自Group登録Task起動待ち
+;<h1/>System Execute Task Making/起動ﾀｽｸ情報作成
+;'使用ﾀｽｸﾋﾞｯﾄ情報、使用ｸﾞﾙｰﾌﾟ情報生成
+;
+;FOR i = 0 TO GroupFullNum-1			'最大ｸﾞﾙｰﾌﾟ分ﾙｰﾌﾟ
+;	IF EntryTask[i] > 0 THEN	'ﾀｽｸ登録有り？
+;		SET(GroupDo_Sys[i]) 		'ｸﾞﾙｰﾌﾟ使用有り
+;	ELSE
+;		RES(GroupDo_Sys[i])			'ｸﾞﾙｰﾌﾟ使用無し
+;	END IF
+;	
+;	FOR tno = 0 TO TaskFullNum-1	'最大ﾀｽｸ分ﾙｰﾌﾟ
+;		IF (tno < EntryTask[i]) THEN	'Group1が使用するﾀｽｸ数
+;			BSET(TaskDo_Sys[i],tno)	'ｼｽﾃﾑが起動すべきﾀｽｸはBSET
+;		ELSE
+;			BRES(TaskDo_Sys[i],tno)	'未起動ﾀｽｸはBRES
+;		END IF
+;	NEXT
+;NEXT
+LD CR2008                ; 運転開始時1ｽｷｬﾝON
+NCJ #1000
+;'使用ﾀｽｸﾋﾞｯﾄ情報、使用ｸﾞﾙｰﾌﾟ情報生成
+;
+;FOR i = 0 TO GroupFullNum-1			'最大ｸﾞﾙｰﾌﾟ分ﾙｰﾌﾟ
+;
+LD CR2002                ; 常時ON
+MOV #0 i
+LABEL #2000
+LD CR2002                ; 常時ON
+LDA DM9340               ; _最大ｸﾞﾙｰﾌﾟ数
+CON
+EXT
+CON
+SUB.L +1
+CON
+STA.L @VM0
+CON
+LDA i
+CON
+EXT
+CON
+CMP.L @VM0
+LD CR2011                ; 演算結果が正
+CJ #2001
+;	IF EntryTask[i] > 0 THEN	'ﾀｽｸ登録有り？
+;
+LD CR2002                ; 常時ON
+LDA i
+CON
+EXT
+CON
+STA.L Z12
+LD> DM9200:Z12 #0        ; _Group1ﾀｽｸ登録数
+NCJ #2002
+;		SET(GroupDo_Sys[i]) 		'ｸﾞﾙｰﾌﾟ使用有り
+;
+LD CR2002                ; 常時ON
+LDA i
+CON
+EXT
+CON
+STA.L Z12
+SET R47200:Z12           ; _起動Group情報
+;	ELSE
+;
+LD CR2002                ; 常時ON
+CJ #2003
+LABEL #2002
+;		RES(GroupDo_Sys[i])			'ｸﾞﾙｰﾌﾟ使用無し
+;
+LD CR2002                ; 常時ON
+LDA i
+CON
+EXT
+CON
+STA.L Z12
+RES R47200:Z12           ; _起動Group情報
+;	END IF
+;
+LABEL #2003
+;	FOR tno = 0 TO TaskFullNum-1	'最大ﾀｽｸ分ﾙｰﾌﾟ
+;
+LD CR2002                ; 常時ON
+MOV #0 tno
+LABEL #2004
+LD CR2002                ; 常時ON
+LDA DM9341               ; _最大ﾀｽｸ数
+CON
+EXT
+CON
+SUB.L +1
+CON
+STA.L @VM2
+CON
+LDA tno
+CON
+EXT
+CON
+CMP.L @VM2
+LD CR2011                ; 演算結果が正
+CJ #2005
+;		IF (tno < EntryTask[i]) THEN	'Group1が使用するﾀｽｸ数
+;
+LD CR2002                ; 常時ON
+LDA i
+CON
+EXT
+CON
+STA.L Z12
+LD< tno DM9200:Z12       ; _Group1ﾀｽｸ登録数
+NCJ #2006
+;			BSET(TaskDo_Sys[i],tno)	'ｼｽﾃﾑが起動すべきﾀｽｸはBSET
+;
+LD CR2002                ; 常時ON
+LDA i
+CON
+EXT
+CON
+MUL.L +2
+CON
+STA.L Z12
+BSET.D DM2030:Z12 tno    ; _起動Task情報(Group1)
+;		ELSE
+;
+LD CR2002                ; 常時ON
+CJ #2007
+LABEL #2006
+;			BRES(TaskDo_Sys[i],tno)	'未起動ﾀｽｸはBRES
+;
+LD CR2002                ; 常時ON
+LDA i
+CON
+EXT
+CON
+MUL.L +2
+CON
+STA.L Z12
+BRES.D DM2030:Z12 tno    ; _起動Task情報(Group1)
+;		END IF
+;
+LABEL #2007
+;	NEXT
+;
+LD CR2002                ; 常時ON
+INC tno
+LDB CR2009               ; 演算結果が負
+CJ #2004
+LABEL #2005
+;NEXT
+LD CR2002                ; 常時ON
+INC i
+LDB CR2009               ; 演算結果が負
+CJ #2000
+LABEL #2001
+LABEL #1000
+;
+;<h1/>Entry Task All Execute Making/登録ﾀｽｸ全起動情報作成
+;使用Groupの起動すべき全Taskが起動したら出力
+LD R40100                ; _Group1起動中ﾌﾗｸﾞ
+ORB R47200:#0            ; _起動Group情報
+LD R40101                ; _Group2起動中ﾌﾗｸﾞ
+ORB R47200:#1            ; _起動Group情報
+ANL
+LD R40102                ; _Group3起動中ﾌﾗｸﾞ
+ORB R47200:#2            ; _起動Group情報
+ANL
+LD R40103                ; _Group4起動中ﾌﾗｸﾞ
+ORB R47200:#3            ; _起動Group情報
+ANL
+LD R40104                ; _Group5起動中ﾌﾗｸﾞ
+ORB R47200:#4            ; _起動Group情報
+ANL
+LD R40105                ; _Group6起動中ﾌﾗｸﾞ
+ORB R47200:#5            ; _起動Group情報
+ANL
+LD R40106                ; _Group7起動中ﾌﾗｸﾞ
+ORB R47200:#6            ; _起動Group情報
+ANL
+LD R40107                ; _Group8起動中ﾌﾗｸﾞ
+ORB R47200:#7            ; _起動Group情報
+ANL
+OUT R40003               ; _全ﾀｽｸ起動完了
+;<h1/>Group1 Task Process/ｸﾞﾙｰﾌﾟ1ﾀｽｸ処理
+;・ModeからのTask起動要求(MD_Start)待ち
+LDB R46103               ; _停止中　ﾓｰﾄﾞﾌﾗｸﾞ
+ANB R50700               ; _Group1 ｴｱｰ元圧状態
+AND R47300               ; _Group1　ﾒｲﾝﾓｼﾞｭｰﾙ起動要求
+SET @R000                ; 自Group登録Task起動待ち
+;・登録全Task起動待ち～Group起動ﾌﾗｸﾞON(GROUPDO*)
+;
+;TaskDo_Sys = ｼｽﾃﾑが起動すべきTaskのbit情報(bit0:Task0 bit31:Task31)
+;TaskState* = 現在のTask起動状態(起動中でbitON bit0:Task0 bit31:Task31)
+STG @R000                ; 自Group登録Task起動待ち
+AND=.D DM2030 R49000     ; _起動Task情報(Group1)  _Group1_Task0起動状態
+RES R47300               ; _Group1　ﾒｲﾝﾓｼﾞｭｰﾙ起動要求
+CON
+SET R40100               ; _Group1起動中ﾌﾗｸﾞ
+CON
+JMP @R001                ; 全Group登録Task起動待ち
+;・他GroupTask起動待ち
+STG @R001                ; 全Group登録Task起動待ち
+LD R46101                ; _原点復帰中　ﾓｰﾄﾞﾌﾗｸﾞ
+OR R46100                ; _自動運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+AND R40003               ; _全ﾀｽｸ起動完了
+OR R46102                ; _ﾒﾝﾃﾅﾝｽ運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+ANL
+JMP @R002                ; Task初期化終了待ち
+;・各Task起動中ﾕｰｻﾞｰ用ﾌﾗｸﾞ(TASKDO*)ON
+;・各Task初期化STG(Task_Init*)ON
+;
+;FOR i = 0 TO TaskFullNum-1			'ﾀｽｸ分ﾙｰﾌﾟ
+;	IF (TaskState1[i] = ON) THEN	'Task起動?
+;		SET(TASKDO1[i])			'ﾀｽｸ起動中ﾌﾗｸﾞ
+;		SET(Task_Init1[i])		'ﾀｽｸ初期化STG
+;	END IF
+;NEXT
+LDP @R002                ; Task初期化終了待ち
+NCJ #1016
+;FOR i = 0 TO TaskFullNum-1			'ﾀｽｸ分ﾙｰﾌﾟ
+;
+LD CR2002                ; 常時ON
+MOV #0 i
+LABEL #2008
+LD CR2002                ; 常時ON
+LDA DM9341               ; _最大ﾀｽｸ数
+CON
+EXT
+CON
+SUB.L +1
+CON
+STA.L @VM4
+CON
+LDA i
+CON
+EXT
+CON
+CMP.L @VM4
+LD CR2011                ; 演算結果が正
+CJ #2009
+;	IF (TaskState1[i] = ON) THEN	'Task起動?
+;
+LD CR2002                ; 常時ON
+LDA i
+CON
+EXT
+CON
+STA.L Z12
+LD R49000:Z12            ; _Group1_Task0起動状態
+NCJ #2010
+;		SET(TASKDO1[i])			'ﾀｽｸ起動中ﾌﾗｸﾞ
+;
+LD CR2002                ; 常時ON
+LDA i
+CON
+EXT
+CON
+STA.L Z12
+SET R41000:Z12           ; _Grp1_Task0_起動中ﾌﾗｸﾞ
+;		SET(Task_Init1[i])		'ﾀｽｸ初期化STG
+;
+LD CR2002                ; 常時ON
+LDA i
+CON
+EXT
+CON
+STA.L Z12
+SET LR800:Z12            ; _Grp1_Task0_Init.STG
+;	END IF
+;
+LABEL #2010
+;NEXT
+LD CR2002                ; 常時ON
+INC i
+LDB CR2009               ; 演算結果が負
+CJ #2008
+LABEL #2009
+LABEL #1016
+;
+;・起動した全Task初期化STG接点のOFF待ち（From UserTask)→初期化が完了した
+STG @R002                ; Task初期化終了待ち
+AND=.D LR800 #0          ; _Grp1_Task0_Init.STG
+JMP @R003                ; Task開始待ち
+;・各Task開始STG(Task_Start*)ON
+;
+;FOR i = 0 TO TaskFullNum-1			'ﾀｽｸ分ﾙｰﾌﾟ
+;	IF (TASKDO1[i] = ON) THEN		'Task起動?
+;		SET(Task_Start1[i])			'Task開始STG
+;	END IF
+;NEXT
+LDP @R003                ; Task開始待ち
+NCJ #1008
+;FOR i = 0 TO TaskFullNum-1			'ﾀｽｸ分ﾙｰﾌﾟ
+;
+LD CR2002                ; 常時ON
+MOV #0 i
+LABEL #2011
+LD CR2002                ; 常時ON
+LDA DM9341               ; _最大ﾀｽｸ数
+CON
+EXT
+CON
+SUB.L +1
+CON
+STA.L @VM6
+CON
+LDA i
+CON
+EXT
+CON
+CMP.L @VM6
+LD CR2011                ; 演算結果が正
+CJ #2012
+;	IF (TASKDO1[i] = ON) THEN		'Task起動?
+;
+LD CR2002                ; 常時ON
+LDA i
+CON
+EXT
+CON
+STA.L Z12
+LD R41000:Z12            ; _Grp1_Task0_起動中ﾌﾗｸﾞ
+NCJ #2013
+;		SET(Task_Start1[i])			'Task開始STG
+;
+LD CR2002                ; 常時ON
+LDA i
+CON
+EXT
+CON
+STA.L Z12
+SET LR400:Z12            ; _Grp1_Task0_Start.STG
+;	END IF
+;
+LABEL #2013
+;NEXT
+LD CR2002                ; 常時ON
+INC i
+LDB CR2009               ; 演算結果が負
+CJ #2011
+LABEL #2012
+LABEL #1008
+;
+;・起動した全Task開始STG接点のOFF待ち(From UserTask)→ﾕｰｻﾞｰｼｰｹﾝｽが開始された
+STG @R003                ; Task開始待ち
+AND=.D LR400 #0          ; _Grp1_Task0_Start.STG
+JMP @R004                ; Task終了待ち
+;・起動した全Task起動中ﾌﾗｸﾞのOFF待ち(From UserTask)→ﾕｰｻﾞｰｼｰｹﾝｽが終了した
+STG @R004                ; Task終了待ち
+AND=.D R41000 #0         ; _Grp1_Task0_起動中ﾌﾗｸﾞ
+SET R47308               ; _Group1　ﾒｲﾝﾓｼﾞｭｰﾙ停止要求
+CON
+JMP @R005                ; 自Group登録Task停止待ち
+;・ﾒｲﾝﾓｼﾞｭｰﾙ停止待ち
+STG @R005                ; 自Group登録Task停止待ち
+AND=.D R49000 #0         ; _Group1_Task0起動状態
+RES R47308               ; _Group1　ﾒｲﾝﾓｼﾞｭｰﾙ停止要求
+CON
+RES R40100               ; _Group1起動中ﾌﾗｸﾞ
+CON
+ENDS
+;<h1/>Group2 Task Process/ｸﾞﾙｰﾌﾟ2ﾀｽｸ処理
+LDB R46103               ; _停止中　ﾓｰﾄﾞﾌﾗｸﾞ
+ANB R50701               ; _Group2 ｴｱｰ元圧状態
+AND R47300:#1            ; _Group2　ﾒｲﾝﾓｼﾞｭｰﾙ起動要求
+SET @R008                ; 自Group登録Task起動待ち
+STG @R008                ; 自Group登録Task起動待ち
+AND=.D DM2030:#2 R49200  ; _起動Task情報(Group2)  _Group2_Task0起動状態
+RES R47300:#1            ; _Group2　ﾒｲﾝﾓｼﾞｭｰﾙ起動要求
+CON
+SET R40101               ; _Group2起動中ﾌﾗｸﾞ
+CON
+JMP @R009                ; 全Group登録Task起動待ち
+STG @R009                ; 全Group登録Task起動待ち
+LD R46101                ; _原点復帰中　ﾓｰﾄﾞﾌﾗｸﾞ
+OR R46100                ; _自動運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+AND R40003               ; _全ﾀｽｸ起動完了
+OR R46102                ; _ﾒﾝﾃﾅﾝｽ運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+ANL
+JMP @R010                ; Task初期化終了待ち
+;
+;FOR i = 0 TO TaskFullNum-1
+;	IF (TaskState2[i] = ON) THEN
+;		SET(TASKDO2[i])
+;		SET(Task_Init2[i])
+;	END IF
+;NEXT
+LDP @R010                ; Task初期化終了待ち
+NCJ #1017
+;FOR i = 0 TO TaskFullNum-1
+;
+LD CR2002                ; 常時ON
+MOV #0 i
+LABEL #2014
+LD CR2002                ; 常時ON
+LDA DM9341               ; _最大ﾀｽｸ数
+CON
+EXT
+CON
+SUB.L +1
+CON
+STA.L @VM8
+CON
+LDA i
+CON
+EXT
+CON
+CMP.L @VM8
+LD CR2011                ; 演算結果が正
+CJ #2015
+;	IF (TaskState2[i] = ON) THEN
+;
+LD CR2002                ; 常時ON
+LDA i
+CON
+EXT
+CON
+STA.L Z12
+LD R49200:Z12            ; _Group2_Task0起動状態
+NCJ #2016
+;		SET(TASKDO2[i])
+;
+LD CR2002                ; 常時ON
+LDA i
+CON
+EXT
+CON
+STA.L Z12
+SET R41200:Z12           ; _Grp2_Task0_起動中ﾌﾗｸﾞ
+;		SET(Task_Init2[i])
+;
+LD CR2002                ; 常時ON
+LDA i
+CON
+EXT
+CON
+STA.L Z12
+SET LR1400:Z12           ; _Grp2_Task0_Init.STG
+;	END IF
+;
+LABEL #2016
+;NEXT
+LD CR2002                ; 常時ON
+INC i
+LDB CR2009               ; 演算結果が負
+CJ #2014
+LABEL #2015
+LABEL #1017
+;
+STG @R010                ; Task初期化終了待ち
+AND=.D LR1400 #0         ; _Grp2_Task0_Init.STG
+JMP @R011                ; Task開始待ち
+;
+;FOR i = 0 TO TaskFullNum-1
+;	IF (TASKDO2[i] = ON) THEN
+;		SET(Task_Start2[i])
+;	END IF
+;NEXT
+LDP @R011                ; Task開始待ち
+NCJ #1009
+;FOR i = 0 TO TaskFullNum-1
+;
+LD CR2002                ; 常時ON
+MOV #0 i
+LABEL #2017
+LD CR2002                ; 常時ON
+LDA DM9341               ; _最大ﾀｽｸ数
+CON
+EXT
+CON
+SUB.L +1
+CON
+STA.L @VM10
+CON
+LDA i
+CON
+EXT
+CON
+CMP.L @VM10
+LD CR2011                ; 演算結果が正
+CJ #2018
+;	IF (TASKDO2[i] = ON) THEN
+;
+LD CR2002                ; 常時ON
+LDA i
+CON
+EXT
+CON
+STA.L Z12
+LD R41200:Z12            ; _Grp2_Task0_起動中ﾌﾗｸﾞ
+NCJ #2019
+;		SET(Task_Start2[i])
+;
+LD CR2002                ; 常時ON
+LDA i
+CON
+EXT
+CON
+STA.L Z12
+SET LR1000:Z12           ; _Grp2_Task0_Start.STG
+;	END IF
+;
+LABEL #2019
+;NEXT
+LD CR2002                ; 常時ON
+INC i
+LDB CR2009               ; 演算結果が負
+CJ #2017
+LABEL #2018
+LABEL #1009
+;
+STG @R011                ; Task開始待ち
+AND=.D LR1000 #0         ; _Grp2_Task0_Start.STG
+JMP @R012                ; Task終了待ち
+STG @R012                ; Task終了待ち
+AND=.D R41200 #0         ; _Grp2_Task0_起動中ﾌﾗｸﾞ
+SET R47308:#1            ; _Group2　ﾒｲﾝﾓｼﾞｭｰﾙ停止要求
+CON
+JMP @R013                ; 自Group登録Task停止待ち
+STG @R013                ; 自Group登録Task停止待ち
+AND=.D R49200 #0         ; _Group2_Task0起動状態
+RES R40101               ; _Group2起動中ﾌﾗｸﾞ
+CON
+ENDS
+;<h1/>Group3 Task Process/ｸﾞﾙｰﾌﾟ3ﾀｽｸ処理
+LDB R46103               ; _停止中　ﾓｰﾄﾞﾌﾗｸﾞ
+ANB R50702               ; _Group3 ｴｱｰ元圧状態
+AND R47300:#2            ; _Group3　ﾒｲﾝﾓｼﾞｭｰﾙ起動要求
+SET @R100                ; 自Group登録Task起動待ち
+STG @R100                ; 自Group登録Task起動待ち
+AND=.D DM2030:#4 R49400  ; _起動Task情報(Group3)  _Group3_Task0起動状態
+RES R47300:#2            ; _Group3　ﾒｲﾝﾓｼﾞｭｰﾙ起動要求
+CON
+SET R40102               ; _Group3起動中ﾌﾗｸﾞ
+CON
+JMP @R101                ; 全Group登録Task起動待ち
+STG @R101                ; 全Group登録Task起動待ち
+LD R46101                ; _原点復帰中　ﾓｰﾄﾞﾌﾗｸﾞ
+OR R46100                ; _自動運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+AND R40003               ; _全ﾀｽｸ起動完了
+OR R46102                ; _ﾒﾝﾃﾅﾝｽ運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+ANL
+JMP @R102                ; Task初期化終了待ち
+;
+;FOR i = 0 TO TaskFullNum-1
+;	IF (TaskState3[i] = ON) THEN
+;		SET(TASKDO3[i])
+;		SET(Task_Init3[i])
+;	END IF
+;NEXT
+LDP @R102                ; Task初期化終了待ち
+NCJ #1018
+;FOR i = 0 TO TaskFullNum-1
+;
+LD CR2002                ; 常時ON
+MOV #0 i
+LABEL #2020
+LD CR2002                ; 常時ON
+LDA DM9341               ; _最大ﾀｽｸ数
+CON
+EXT
+CON
+SUB.L +1
+CON
+STA.L @VM12
+CON
+LDA i
+CON
+EXT
+CON
+CMP.L @VM12
+LD CR2011                ; 演算結果が正
+CJ #2021
+;	IF (TaskState3[i] = ON) THEN
+;
+LD CR2002                ; 常時ON
+LDA i
+CON
+EXT
+CON
+STA.L Z12
+LD R49400:Z12            ; _Group3_Task0起動状態
+NCJ #2022
+;		SET(TASKDO3[i])
+;
+LD CR2002                ; 常時ON
+LDA i
+CON
+EXT
+CON
+STA.L Z12
+SET R41400:Z12           ; _Grp3_Task0_起動中ﾌﾗｸﾞ
+;		SET(Task_Init3[i])
+;
+LD CR2002                ; 常時ON
+LDA i
+CON
+EXT
+CON
+STA.L Z12
+SET LR2000:Z12           ; _Grp3_Task0_Init.STG
+;	END IF
+;
+LABEL #2022
+;NEXT
+LD CR2002                ; 常時ON
+INC i
+LDB CR2009               ; 演算結果が負
+CJ #2020
+LABEL #2021
+LABEL #1018
+;
+STG @R102                ; Task初期化終了待ち
+AND=.D LR2000 #0         ; _Grp3_Task0_Init.STG
+JMP @R103                ; Task開始待ち
+;
+;FOR i = 0 TO TaskFullNum-1
+;	IF (TASKDO3[i] = ON) THEN
+;		SET(Task_Start3[i])
+;	END IF
+;NEXT
+LDP @R103                ; Task開始待ち
+NCJ #1010
+;FOR i = 0 TO TaskFullNum-1
+;
+LD CR2002                ; 常時ON
+MOV #0 i
+LABEL #2023
+LD CR2002                ; 常時ON
+LDA DM9341               ; _最大ﾀｽｸ数
+CON
+EXT
+CON
+SUB.L +1
+CON
+STA.L @VM14
+CON
+LDA i
+CON
+EXT
+CON
+CMP.L @VM14
+LD CR2011                ; 演算結果が正
+CJ #2024
+;	IF (TASKDO3[i] = ON) THEN
+;
+LD CR2002                ; 常時ON
+LDA i
+CON
+EXT
+CON
+STA.L Z12
+LD R41400:Z12            ; _Grp3_Task0_起動中ﾌﾗｸﾞ
+NCJ #2025
+;		SET(Task_Start3[i])
+;
+LD CR2002                ; 常時ON
+LDA i
+CON
+EXT
+CON
+STA.L Z12
+SET LR1600:Z12           ; _Grp3_Task0_Start.STG
+;	END IF
+;
+LABEL #2025
+;NEXT
+LD CR2002                ; 常時ON
+INC i
+LDB CR2009               ; 演算結果が負
+CJ #2023
+LABEL #2024
+LABEL #1010
+;
+STG @R103                ; Task開始待ち
+AND=.D LR1600 #0         ; _Grp3_Task0_Start.STG
+JMP @R104                ; Task終了待ち
+STG @R104                ; Task終了待ち
+AND=.D R41400 #0         ; _Grp3_Task0_起動中ﾌﾗｸﾞ
+SET R47308:#2            ; _Group3　ﾒｲﾝﾓｼﾞｭｰﾙ停止要求
+CON
+JMP @R105                ; 自Group登録Task停止待ち
+STG @R105                ; 自Group登録Task停止待ち
+AND=.D R49400 #0         ; _Group3_Task0起動状態
+RES R40102               ; _Group3起動中ﾌﾗｸﾞ
+CON
+ENDS
+;<h1/>Group4 Task Process/ｸﾞﾙｰﾌﾟ4ﾀｽｸ処理
+LDB R46103               ; _停止中　ﾓｰﾄﾞﾌﾗｸﾞ
+ANB R50703               ; _Group4 ｴｱｰ元圧状態
+AND R47300:#3            ; _Group4　ﾒｲﾝﾓｼﾞｭｰﾙ起動要求
+SET @R108                ; 自Group登録Task起動待ち
+STG @R108                ; 自Group登録Task起動待ち
+AND=.D DM2030:#6 R49600  ; _起動Task情報(Group4)  _Group4_Task0起動状態
+RES R47300:#3            ; _Group4　ﾒｲﾝﾓｼﾞｭｰﾙ起動要求
+CON
+SET R40103               ; _Group4起動中ﾌﾗｸﾞ
+CON
+JMP @R109                ; 全Group登録Task起動待ち
+STG @R109                ; 全Group登録Task起動待ち
+LD R46101                ; _原点復帰中　ﾓｰﾄﾞﾌﾗｸﾞ
+OR R46100                ; _自動運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+AND R40003               ; _全ﾀｽｸ起動完了
+OR R46102                ; _ﾒﾝﾃﾅﾝｽ運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+ANL
+JMP @R110                ; Task初期化終了待ち
+;
+;FOR i = 0 TO TaskFullNum-1
+;	IF (TaskState4[i] = ON) THEN
+;		SET(TASKDO4[i])
+;		SET(Task_Init4[i])
+;	END IF
+;NEXT
+LDP @R110                ; Task初期化終了待ち
+NCJ #1019
+;FOR i = 0 TO TaskFullNum-1
+;
+LD CR2002                ; 常時ON
+MOV #0 i
+LABEL #2026
+LD CR2002                ; 常時ON
+LDA DM9341               ; _最大ﾀｽｸ数
+CON
+EXT
+CON
+SUB.L +1
+CON
+STA.L @VM16
+CON
+LDA i
+CON
+EXT
+CON
+CMP.L @VM16
+LD CR2011                ; 演算結果が正
+CJ #2027
+;	IF (TaskState4[i] = ON) THEN
+;
+LD CR2002                ; 常時ON
+LDA i
+CON
+EXT
+CON
+STA.L Z12
+LD R49600:Z12            ; _Group4_Task0起動状態
+NCJ #2028
+;		SET(TASKDO4[i])
+;
+LD CR2002                ; 常時ON
+LDA i
+CON
+EXT
+CON
+STA.L Z12
+SET R41600:Z12           ; _Grp4_Task0_起動中ﾌﾗｸﾞ
+;		SET(Task_Init4[i])
+;
+LD CR2002                ; 常時ON
+LDA i
+CON
+EXT
+CON
+STA.L Z12
+SET LR2600:Z12           ; _Grp4_Task0_Init.STG
+;	END IF
+;
+LABEL #2028
+;NEXT
+LD CR2002                ; 常時ON
+INC i
+LDB CR2009               ; 演算結果が負
+CJ #2026
+LABEL #2027
+LABEL #1019
+;
+STG @R110                ; Task初期化終了待ち
+AND=.D LR2600 #0         ; _Grp4_Task0_Init.STG
+JMP @R111                ; Task開始待ち
+;
+;FOR i = 0 TO TaskFullNum-1
+;	IF (TASKDO4[i] = ON) THEN
+;		SET(Task_Start4[i])
+;	END IF
+;NEXT
+LDP @R111                ; Task開始待ち
+NCJ #1011
+;FOR i = 0 TO TaskFullNum-1
+;
+LD CR2002                ; 常時ON
+MOV #0 i
+LABEL #2029
+LD CR2002                ; 常時ON
+LDA DM9341               ; _最大ﾀｽｸ数
+CON
+EXT
+CON
+SUB.L +1
+CON
+STA.L @VM18
+CON
+LDA i
+CON
+EXT
+CON
+CMP.L @VM18
+LD CR2011                ; 演算結果が正
+CJ #2030
+;	IF (TASKDO4[i] = ON) THEN
+;
+LD CR2002                ; 常時ON
+LDA i
+CON
+EXT
+CON
+STA.L Z12
+LD R41600:Z12            ; _Grp4_Task0_起動中ﾌﾗｸﾞ
+NCJ #2031
+;		SET(Task_Start4[i])
+;
+LD CR2002                ; 常時ON
+LDA i
+CON
+EXT
+CON
+STA.L Z12
+SET LR2200:Z12           ; _Grp4_Task0_Start.STG
+;	END IF
+;
+LABEL #2031
+;NEXT
+LD CR2002                ; 常時ON
+INC i
+LDB CR2009               ; 演算結果が負
+CJ #2029
+LABEL #2030
+LABEL #1011
+;
+STG @R111                ; Task開始待ち
+AND=.D LR2200 #0         ; _Grp4_Task0_Start.STG
+JMP @R112                ; Task終了待ち
+STG @R112                ; Task終了待ち
+AND=.D R41600 #0         ; _Grp4_Task0_起動中ﾌﾗｸﾞ
+SET R47308:#3            ; _Group4　ﾒｲﾝﾓｼﾞｭｰﾙ停止要求
+CON
+JMP @R113                ; 自Group登録Task停止待ち
+STG @R113                ; 自Group登録Task停止待ち
+AND=.D R49600 #0         ; _Group4_Task0起動状態
+RES R40103               ; _Group4起動中ﾌﾗｸﾞ
+CON
+ENDS
+;<h1/>Group5 Task Process/ｸﾞﾙｰﾌﾟ5ﾀｽｸ処理
+LDB R46103               ; _停止中　ﾓｰﾄﾞﾌﾗｸﾞ
+ANB R50704               ; _Group5 ｴｱｰ元圧状態
+AND R47300:#4            ; _Group5　ﾒｲﾝﾓｼﾞｭｰﾙ起動要求
+SET @R200                ; 自Group登録Task起動待ち
+STG @R200                ; 自Group登録Task起動待ち
+AND=.D DM2030:#8 R49800  ; _起動Task情報(Group5)  _Group5_Task0起動状態
+RES R47300:#4            ; _Group5　ﾒｲﾝﾓｼﾞｭｰﾙ起動要求
+CON
+SET R40104               ; _Group5起動中ﾌﾗｸﾞ
+CON
+JMP @R201                ; 全Group登録Task起動待ち
+STG @R201                ; 全Group登録Task起動待ち
+LD R46101                ; _原点復帰中　ﾓｰﾄﾞﾌﾗｸﾞ
+OR R46100                ; _自動運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+AND R40003               ; _全ﾀｽｸ起動完了
+OR R46102                ; _ﾒﾝﾃﾅﾝｽ運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+ANL
+JMP @R202                ; Task初期化終了待ち
+;
+;FOR i = 0 TO TaskFullNum-1
+;	IF (TaskState5[i] = ON) THEN
+;		SET(TASKDO5[i])
+;		SET(Task_Init5[i])
+;	END IF
+;NEXT
+LDP @R202                ; Task初期化終了待ち
+NCJ #1020
+;FOR i = 0 TO TaskFullNum-1
+;
+LD CR2002                ; 常時ON
+MOV #0 i
+LABEL #2032
+LD CR2002                ; 常時ON
+LDA DM9341               ; _最大ﾀｽｸ数
+CON
+EXT
+CON
+SUB.L +1
+CON
+STA.L @VM20
+CON
+LDA i
+CON
+EXT
+CON
+CMP.L @VM20
+LD CR2011                ; 演算結果が正
+CJ #2033
+;	IF (TaskState5[i] = ON) THEN
+;
+LD CR2002                ; 常時ON
+LDA i
+CON
+EXT
+CON
+STA.L Z12
+LD R49800:Z12            ; _Group5_Task0起動状態
+NCJ #2034
+;		SET(TASKDO5[i])
+;
+LD CR2002                ; 常時ON
+LDA i
+CON
+EXT
+CON
+STA.L Z12
+SET R41800:Z12           ; _Grp5_Task0_起動中ﾌﾗｸﾞ
+;		SET(Task_Init5[i])
+;
+LD CR2002                ; 常時ON
+LDA i
+CON
+EXT
+CON
+STA.L Z12
+SET LR3200:Z12           ; _Grp5_Task0_Init.STG
+;	END IF
+;
+LABEL #2034
+;NEXT
+LD CR2002                ; 常時ON
+INC i
+LDB CR2009               ; 演算結果が負
+CJ #2032
+LABEL #2033
+LABEL #1020
+;
+STG @R202                ; Task初期化終了待ち
+AND=.D LR3200 #0         ; _Grp5_Task0_Init.STG
+JMP @R203                ; Task開始待ち
+;
+;FOR i = 0 TO TaskFullNum-1			'ﾀｽｸ分ﾙｰﾌﾟ
+;	IF (TASKDO5[i] = ON) THEN		'Task使用?[i]:ﾀｽｸ番号
+;		SET(Task_Start5[i])
+;	END IF
+;NEXT
+;
+LDP @R203                ; Task開始待ち
+NCJ #1012
+;FOR i = 0 TO TaskFullNum-1			'ﾀｽｸ分ﾙｰﾌﾟ
+;
+LD CR2002                ; 常時ON
+MOV #0 i
+LABEL #2035
+LD CR2002                ; 常時ON
+LDA DM9341               ; _最大ﾀｽｸ数
+CON
+EXT
+CON
+SUB.L +1
+CON
+STA.L @VM22
+CON
+LDA i
+CON
+EXT
+CON
+CMP.L @VM22
+LD CR2011                ; 演算結果が正
+CJ #2036
+;	IF (TASKDO5[i] = ON) THEN		'Task使用?[i]:ﾀｽｸ番号
+;
+LD CR2002                ; 常時ON
+LDA i
+CON
+EXT
+CON
+STA.L Z12
+LD R41800:Z12            ; _Grp5_Task0_起動中ﾌﾗｸﾞ
+NCJ #2037
+;		SET(Task_Start5[i])
+;
+LD CR2002                ; 常時ON
+LDA i
+CON
+EXT
+CON
+STA.L Z12
+SET LR2800:Z12           ; _Grp5_Task0_Start.STG
+;	END IF
+;
+LABEL #2037
+;NEXT
+;
+LD CR2002                ; 常時ON
+INC i
+LDB CR2009               ; 演算結果が負
+CJ #2035
+LABEL #2036
+LABEL #1012
+;
+STG @R203                ; Task開始待ち
+AND=.D LR2800 #0         ; _Grp5_Task0_Start.STG
+JMP @R204                ; Task終了待ち
+STG @R204                ; Task終了待ち
+AND=.D R41800 #0         ; _Grp5_Task0_起動中ﾌﾗｸﾞ
+SET R47308:#4            ; _Group5　ﾒｲﾝﾓｼﾞｭｰﾙ停止要求
+CON
+JMP @R205                ; 自Group登録Task停止待ち
+STG @R205                ; 自Group登録Task停止待ち
+AND=.D R49800 #0         ; _Group5_Task0起動状態
+RES R40104               ; _Group5起動中ﾌﾗｸﾞ
+CON
+ENDS
+;<h1/>Group6 Task Process/ｸﾞﾙｰﾌﾟ6ﾀｽｸ処理
+LDB R46103               ; _停止中　ﾓｰﾄﾞﾌﾗｸﾞ
+ANB R50705               ; _Group6 ｴｱｰ元圧状態
+AND R47300:#5            ; _Group6　ﾒｲﾝﾓｼﾞｭｰﾙ起動要求
+SET @R208                ; 自Group登録Task起動待ち
+STG @R208                ; 自Group登録Task起動待ち
+AND=.D DM2030:#10 R50000 ; _起動Task情報(Group6)  _Group6_Task0起動状態
+RES R47300:#5            ; _Group6　ﾒｲﾝﾓｼﾞｭｰﾙ起動要求
+CON
+SET R40105               ; _Group6起動中ﾌﾗｸﾞ
+CON
+JMP @R209                ; 全Group登録Task起動待ち
+STG @R209                ; 全Group登録Task起動待ち
+LD R46101                ; _原点復帰中　ﾓｰﾄﾞﾌﾗｸﾞ
+OR R46100                ; _自動運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+AND R40003               ; _全ﾀｽｸ起動完了
+OR R46102                ; _ﾒﾝﾃﾅﾝｽ運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+ANL
+JMP @R210                ; Task初期化終了待ち
+;
+;FOR i = 0 TO TaskFullNum-1
+;	IF (TaskState6[i] = ON) THEN
+;		SET(TASKDO6[i])
+;		SET(Task_Init6[i])
+;	END IF
+;NEXT
+LDP @R210                ; Task初期化終了待ち
+NCJ #1021
+;FOR i = 0 TO TaskFullNum-1
+;
+LD CR2002                ; 常時ON
+MOV #0 i
+LABEL #2038
+LD CR2002                ; 常時ON
+LDA DM9341               ; _最大ﾀｽｸ数
+CON
+EXT
+CON
+SUB.L +1
+CON
+STA.L @VM24
+CON
+LDA i
+CON
+EXT
+CON
+CMP.L @VM24
+LD CR2011                ; 演算結果が正
+CJ #2039
+;	IF (TaskState6[i] = ON) THEN
+;
+LD CR2002                ; 常時ON
+LDA i
+CON
+EXT
+CON
+STA.L Z12
+LD R50000:Z12            ; _Group6_Task0起動状態
+NCJ #2040
+;		SET(TASKDO6[i])
+;
+LD CR2002                ; 常時ON
+LDA i
+CON
+EXT
+CON
+STA.L Z12
+SET R42000:Z12           ; _Grp6_Task0_起動中ﾌﾗｸﾞ
+;		SET(Task_Init6[i])
+;
+LD CR2002                ; 常時ON
+LDA i
+CON
+EXT
+CON
+STA.L Z12
+SET LR3800:Z12           ; _Grp6_Task0_Init.STG
+;	END IF
+;
+LABEL #2040
+;NEXT
+LD CR2002                ; 常時ON
+INC i
+LDB CR2009               ; 演算結果が負
+CJ #2038
+LABEL #2039
+LABEL #1021
+;
+STG @R210                ; Task初期化終了待ち
+AND=.D LR3800 #0         ; _Grp6_Task0_Init.STG
+JMP @R211                ; Task開始待ち
+;
+;FOR i = 0 TO TaskFullNum-1
+;	IF (TASKDO6[i] = ON) THEN
+;		SET(Task_Start6[i])
+;	END IF
+;NEXT
+;
+LDP @R211                ; Task開始待ち
+NCJ #1013
+;FOR i = 0 TO TaskFullNum-1
+;
+LD CR2002                ; 常時ON
+MOV #0 i
+LABEL #2041
+LD CR2002                ; 常時ON
+LDA DM9341               ; _最大ﾀｽｸ数
+CON
+EXT
+CON
+SUB.L +1
+CON
+STA.L @VM26
+CON
+LDA i
+CON
+EXT
+CON
+CMP.L @VM26
+LD CR2011                ; 演算結果が正
+CJ #2042
+;	IF (TASKDO6[i] = ON) THEN
+;
+LD CR2002                ; 常時ON
+LDA i
+CON
+EXT
+CON
+STA.L Z12
+LD R42000:Z12            ; _Grp6_Task0_起動中ﾌﾗｸﾞ
+NCJ #2043
+;		SET(Task_Start6[i])
+;
+LD CR2002                ; 常時ON
+LDA i
+CON
+EXT
+CON
+STA.L Z12
+SET LR3400:Z12           ; _Grp6_Task0_Start.STG
+;	END IF
+;
+LABEL #2043
+;NEXT
+;
+LD CR2002                ; 常時ON
+INC i
+LDB CR2009               ; 演算結果が負
+CJ #2041
+LABEL #2042
+LABEL #1013
+;
+STG @R211                ; Task開始待ち
+AND=.D LR3400 #0         ; _Grp6_Task0_Start.STG
+JMP @R212                ; Task終了待ち
+STG @R212                ; Task終了待ち
+AND=.D R42000 #0         ; _Grp6_Task0_起動中ﾌﾗｸﾞ
+SET R47308:#5            ; _Group6　ﾒｲﾝﾓｼﾞｭｰﾙ停止要求
+CON
+JMP @R213                ; 自Group登録Task停止待ち
+STG @R213                ; 自Group登録Task停止待ち
+AND=.D R50000 #0         ; _Group6_Task0起動状態
+RES R40105               ; _Group6起動中ﾌﾗｸﾞ
+CON
+ENDS
+;<h1/>Group7 Task Process/ｸﾞﾙｰﾌﾟ7ﾀｽｸ処理
+LDB R46103               ; _停止中　ﾓｰﾄﾞﾌﾗｸﾞ
+ANB R50706               ; _Group7 ｴｱｰ元圧状態
+AND R47300:#6            ; _Group7　ﾒｲﾝﾓｼﾞｭｰﾙ起動要求
+SET @R300                ; 自Group登録Task起動待ち
+STG @R300                ; 自Group登録Task起動待ち
+AND=.D DM2030:#12 R50200 ; _起動Task情報(Group7)  _Group7_Task0起動状態
+RES R47300:#6            ; _Group7　ﾒｲﾝﾓｼﾞｭｰﾙ起動要求
+CON
+SET R40106               ; _Group7起動中ﾌﾗｸﾞ
+CON
+JMP @R301                ; 全Group登録Task起動待ち
+STG @R301                ; 全Group登録Task起動待ち
+LD R46101                ; _原点復帰中　ﾓｰﾄﾞﾌﾗｸﾞ
+OR R46100                ; _自動運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+AND R40003               ; _全ﾀｽｸ起動完了
+OR R46102                ; _ﾒﾝﾃﾅﾝｽ運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+ANL
+JMP @R302                ; Task初期化終了待ち
+;
+;FOR i = 0 TO TaskFullNum-1
+;	IF (TaskState7[i] = ON) THEN
+;		SET(TASKDO7[i])
+;		SET(Task_Init7[i])
+;	END IF
+;NEXT
+LDP @R302                ; Task初期化終了待ち
+NCJ #1022
+;FOR i = 0 TO TaskFullNum-1
+;
+LD CR2002                ; 常時ON
+MOV #0 i
+LABEL #2044
+LD CR2002                ; 常時ON
+LDA DM9341               ; _最大ﾀｽｸ数
+CON
+EXT
+CON
+SUB.L +1
+CON
+STA.L @VM28
+CON
+LDA i
+CON
+EXT
+CON
+CMP.L @VM28
+LD CR2011                ; 演算結果が正
+CJ #2045
+;	IF (TaskState7[i] = ON) THEN
+;
+LD CR2002                ; 常時ON
+LDA i
+CON
+EXT
+CON
+STA.L Z12
+LD R50200:Z12            ; _Group7_Task0起動状態
+NCJ #2046
+;		SET(TASKDO7[i])
+;
+LD CR2002                ; 常時ON
+LDA i
+CON
+EXT
+CON
+STA.L Z12
+SET R42200:Z12           ; _Grp7_Task0_起動中ﾌﾗｸﾞ
+;		SET(Task_Init7[i])
+;
+LD CR2002                ; 常時ON
+LDA i
+CON
+EXT
+CON
+STA.L Z12
+SET LR4400:Z12           ; _Grp7_Task0_Init.STG
+;	END IF
+;
+LABEL #2046
+;NEXT
+LD CR2002                ; 常時ON
+INC i
+LDB CR2009               ; 演算結果が負
+CJ #2044
+LABEL #2045
+LABEL #1022
+;
+STG @R302                ; Task初期化終了待ち
+AND=.D LR4400 #0         ; _Grp7_Task0_Init.STG
+JMP @R303                ; Task開始待ち
+;
+;FOR i = 0 TO TaskFullNum-1			'ﾀｽｸ分ﾙｰﾌﾟ
+;	IF (TASKDO7[i] = ON) THEN		'Task使用?[i]:ﾀｽｸ番号-1
+;		SET(Task_Start7[i])
+;	END IF
+;NEXT
+;
+LDP @R303                ; Task開始待ち
+NCJ #1014
+;FOR i = 0 TO TaskFullNum-1			'ﾀｽｸ分ﾙｰﾌﾟ
+;
+LD CR2002                ; 常時ON
+MOV #0 i
+LABEL #2047
+LD CR2002                ; 常時ON
+LDA DM9341               ; _最大ﾀｽｸ数
+CON
+EXT
+CON
+SUB.L +1
+CON
+STA.L @VM30
+CON
+LDA i
+CON
+EXT
+CON
+CMP.L @VM30
+LD CR2011                ; 演算結果が正
+CJ #2048
+;	IF (TASKDO7[i] = ON) THEN		'Task使用?[i]:ﾀｽｸ番号-1
+;
+LD CR2002                ; 常時ON
+LDA i
+CON
+EXT
+CON
+STA.L Z12
+LD R42200:Z12            ; _Grp7_Task0_起動中ﾌﾗｸﾞ
+NCJ #2049
+;		SET(Task_Start7[i])
+;
+LD CR2002                ; 常時ON
+LDA i
+CON
+EXT
+CON
+STA.L Z12
+SET LR4000:Z12           ; _Grp7_Task0_Start.STG
+;	END IF
+;
+LABEL #2049
+;NEXT
+;
+LD CR2002                ; 常時ON
+INC i
+LDB CR2009               ; 演算結果が負
+CJ #2047
+LABEL #2048
+LABEL #1014
+;
+STG @R303                ; Task開始待ち
+AND=.D LR4000 #0         ; _Grp7_Task0_Start.STG
+JMP @R304                ; Task終了待ち
+STG @R304                ; Task終了待ち
+AND=.D R42200 #0         ; _Grp7_Task0_起動中ﾌﾗｸﾞ
+SET R47308:#6            ; _Group7　ﾒｲﾝﾓｼﾞｭｰﾙ停止要求
+CON
+JMP @R305                ; 自Group登録Task停止待ち
+STG @R305                ; 自Group登録Task停止待ち
+AND=.D R50200 #0         ; _Group7_Task0起動状態
+RES R40106               ; _Group7起動中ﾌﾗｸﾞ
+CON
+ENDS
+;<h1/>Group8 Task Process/ｸﾞﾙｰﾌﾟ8ﾀｽｸ処理
+LDB R46103               ; _停止中　ﾓｰﾄﾞﾌﾗｸﾞ
+ANB R50707               ; _Group8 ｴｱｰ元圧状態
+AND R47300:#7            ; _Group8　ﾒｲﾝﾓｼﾞｭｰﾙ起動要求
+SET @R308                ; 自Group登録Task起動待ち
+STG @R308                ; 自Group登録Task起動待ち
+AND=.D DM2030:#14 R50400 ; _起動Task情報(Group8)  _Group8_Task0起動状態
+RES R47300:#7            ; _Group8　ﾒｲﾝﾓｼﾞｭｰﾙ起動要求
+CON
+SET R40107               ; _Group8起動中ﾌﾗｸﾞ
+CON
+JMP @R309                ; 全Group登録Task起動待ち
+STG @R309                ; 全Group登録Task起動待ち
+LD R46101                ; _原点復帰中　ﾓｰﾄﾞﾌﾗｸﾞ
+OR R46100                ; _自動運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+AND R40003               ; _全ﾀｽｸ起動完了
+OR R46102                ; _ﾒﾝﾃﾅﾝｽ運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+ANL
+JMP @R310                ; Task初期化終了待ち
+;
+;FOR i = 0 TO TaskFullNum-1
+;	IF (TaskState8[i] = ON) THEN
+;		SET(TASKDO8[i])
+;		SET(Task_Init8[i])
+;	END IF
+;NEXT
+LDP @R310                ; Task初期化終了待ち
+NCJ #1023
+;FOR i = 0 TO TaskFullNum-1
+;
+LD CR2002                ; 常時ON
+MOV #0 i
+LABEL #2050
+LD CR2002                ; 常時ON
+LDA DM9341               ; _最大ﾀｽｸ数
+CON
+EXT
+CON
+SUB.L +1
+CON
+STA.L @VM32
+CON
+LDA i
+CON
+EXT
+CON
+CMP.L @VM32
+LD CR2011                ; 演算結果が正
+CJ #2051
+;	IF (TaskState8[i] = ON) THEN
+;
+LD CR2002                ; 常時ON
+LDA i
+CON
+EXT
+CON
+STA.L Z12
+LD R50400:Z12            ; _Group8_Task0起動状態
+NCJ #2052
+;		SET(TASKDO8[i])
+;
+LD CR2002                ; 常時ON
+LDA i
+CON
+EXT
+CON
+STA.L Z12
+SET R42400:Z12           ; _Grp8_Task0_起動中ﾌﾗｸﾞ
+;		SET(Task_Init8[i])
+;
+LD CR2002                ; 常時ON
+LDA i
+CON
+EXT
+CON
+STA.L Z12
+SET LR5000:Z12           ; _Grp8_Task0_Init.STG
+;	END IF
+;
+LABEL #2052
+;NEXT
+LD CR2002                ; 常時ON
+INC i
+LDB CR2009               ; 演算結果が負
+CJ #2050
+LABEL #2051
+LABEL #1023
+;
+STG @R310                ; Task初期化終了待ち
+AND=.D LR5000 #0         ; _Grp8_Task0_Init.STG
+JMP @R311                ; Task開始待ち
+;
+;FOR i = 0 TO TaskFullNum-1			'ﾀｽｸ分ﾙｰﾌﾟ
+;	IF (TASKDO8[i] = ON) THEN		'Task使用?[i]:ﾀｽｸ番号
+;		SET(Task_Start8[i])
+;	END IF
+;NEXT
+;
+LDP @R311                ; Task開始待ち
+NCJ #1015
+;FOR i = 0 TO TaskFullNum-1			'ﾀｽｸ分ﾙｰﾌﾟ
+;
+LD CR2002                ; 常時ON
+MOV #0 i
+LABEL #2053
+LD CR2002                ; 常時ON
+LDA DM9341               ; _最大ﾀｽｸ数
+CON
+EXT
+CON
+SUB.L +1
+CON
+STA.L @VM34
+CON
+LDA i
+CON
+EXT
+CON
+CMP.L @VM34
+LD CR2011                ; 演算結果が正
+CJ #2054
+;	IF (TASKDO8[i] = ON) THEN		'Task使用?[i]:ﾀｽｸ番号
+;
+LD CR2002                ; 常時ON
+LDA i
+CON
+EXT
+CON
+STA.L Z12
+LD R42400:Z12            ; _Grp8_Task0_起動中ﾌﾗｸﾞ
+NCJ #2055
+;		SET(Task_Start8[i])
+;
+LD CR2002                ; 常時ON
+LDA i
+CON
+EXT
+CON
+STA.L Z12
+SET LR4600:Z12           ; _Grp8_Task0_Start.STG
+;	END IF
+;
+LABEL #2055
+;NEXT
+;
+LD CR2002                ; 常時ON
+INC i
+LDB CR2009               ; 演算結果が負
+CJ #2053
+LABEL #2054
+LABEL #1015
+;
+STG @R311                ; Task開始待ち
+AND=.D LR4600 #0         ; _Grp8_Task0_Start.STG
+JMP @R312                ; Task終了待ち
+STG @R312                ; Task終了待ち
+AND=.D R42400 #0         ; _Grp8_Task0_起動中ﾌﾗｸﾞ
+SET R47308:#7            ; _Group8　ﾒｲﾝﾓｼﾞｭｰﾙ停止要求
+CON
+JMP @R313                ; 自Group登録Task停止待ち
+STG @R313                ; 自Group登録Task停止待ち
+AND=.D R50400 #0         ; _Group8_Task0起動状態
+RES R40107               ; _Group8起動中ﾌﾗｸﾞ
+CON
+ENDS
+;<h1/>QuickPause Task Checking/ｸｲｯｸﾎﾟｰｽﾞ時ﾀｽｸ停止確認
+LD R47308                ; _Group1　ﾒｲﾝﾓｼﾞｭｰﾙ停止要求
+AND=.D R49000 #0         ; _Group1_Task0起動状態
+RES R47308               ; _Group1　ﾒｲﾝﾓｼﾞｭｰﾙ停止要求
+LD R47308:#1             ; _Group2　ﾒｲﾝﾓｼﾞｭｰﾙ停止要求
+AND=.D R49200 #0         ; _Group2_Task0起動状態
+RES R47308:#1            ; _Group2　ﾒｲﾝﾓｼﾞｭｰﾙ停止要求
+LD R47308:#2             ; _Group3　ﾒｲﾝﾓｼﾞｭｰﾙ停止要求
+AND=.D R49400 #0         ; _Group3_Task0起動状態
+RES R47308:#2            ; _Group3　ﾒｲﾝﾓｼﾞｭｰﾙ停止要求
+LD R47308:#3             ; _Group4　ﾒｲﾝﾓｼﾞｭｰﾙ停止要求
+AND=.D R49600 #0         ; _Group4_Task0起動状態
+RES R47308:#3            ; _Group4　ﾒｲﾝﾓｼﾞｭｰﾙ停止要求
+LD R47308:#4             ; _Group5　ﾒｲﾝﾓｼﾞｭｰﾙ停止要求
+AND=.D R49800 #0         ; _Group5_Task0起動状態
+RES R47308:#4            ; _Group5　ﾒｲﾝﾓｼﾞｭｰﾙ停止要求
+LD R47308:#5             ; _Group6　ﾒｲﾝﾓｼﾞｭｰﾙ停止要求
+AND=.D R50000 #0         ; _Group6_Task0起動状態
+RES R47308:#5            ; _Group6　ﾒｲﾝﾓｼﾞｭｰﾙ停止要求
+LD R47308:#6             ; _Group7　ﾒｲﾝﾓｼﾞｭｰﾙ停止要求
+AND=.D R50200 #0         ; _Group7_Task0起動状態
+RES R47308:#6            ; _Group7　ﾒｲﾝﾓｼﾞｭｰﾙ停止要求
+LD R47308:#7             ; _Group8　ﾒｲﾝﾓｼﾞｭｰﾙ停止要求
+AND=.D R50400 #0         ; _Group8_Task0起動状態
+RES R47308:#7            ; _Group8　ﾒｲﾝﾓｼﾞｭｰﾙ停止要求
+END
+ENDH

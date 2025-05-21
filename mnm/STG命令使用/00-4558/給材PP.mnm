@@ -1,0 +1,686 @@
+DEVICE:53
+;MODULE:給材PP
+;MODULE_TYPE:0
+;非常停止 / Emergency stop
+LD R50000                ; 即停止
+OR R50900                ; TRAP
+OR R50010                ; 非常停止
+ZRES @MR002 @MR2915
+CON
+ZRES R53000 R53115       ; 給材PPZ軸 上昇位置
+CON
+RES R52008               ; 給材中
+CON
+OUT @MR001
+TMR @0 #5                ; Wait Timer-00
+;条件ﾌﾗｸﾞ / Flug
+LD R38008                ; 給材P&P X軸 P1 位置　表示
+AND R38108               ; 給材P&P Z軸 P1 位置　表示
+ANB R4112                ; 給材_ﾁｬｯｸ 開端
+AND R4113                ; 給材_ﾁｬｯｸ 閉端
+OUT @MR005               ; 給材PP部ｼﾘﾝﾀﾞ原位置
+LDB R50300               ; PAUSE中
+ANB R50112               ; 給材PPｴﾗｰ中
+ANB R50108               ; ｴﾗｰ発生中
+OUT @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+;確認ｾﾝｻﾃﾞｨﾚｲ / Senser Delay
+LD R4202                 ; 給材_ﾊﾝﾄﾞ 取P確認ｾﾝｻ
+TMR @1 #2                ; 給材_ﾊﾝﾄﾞ 取P確認ｾﾝｻ
+LDB R4202                ; 給材_ﾊﾝﾄﾞ 取P確認ｾﾝｻ
+TMR @2 #2                ; 給材_ﾊﾝﾄﾞ 取P確認ｾﾝｻ OFF
+;AUTO動作 / AUTO OPERATION
+LD R50011                ; AUTO MODE
+ANB MR11205              ; 給材PPｻｲｸﾙ中
+AND MR11005              ; 給材PP start
+LD LR41000               ; 自動ﾊﾟﾗﾒｰﾀ1　通常動作
+OR LR41001               ; 自動ﾊﾟﾗﾒｰﾀ2　払い出し
+OR LR41003               ; 自動ﾊﾟﾗﾒｰﾀ4
+OR LR41006               ; 自動ﾊﾟﾗﾒｰﾀ7
+ANL
+RES MR11404              ; 給材PPｻｲｸﾙ終了
+CON
+SET MR11205              ; 給材PPｻｲｸﾙ中
+CON
+RES MR11005              ; 給材PP start
+CON
+SET @MR2000              ; AUTO START
+STG @MR2000              ; AUTO START
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+RES MR12003              ; 給材動作開始
+CON
+MPS
+AND R52000               ; 給材ｺﾝﾍﾞｱ 取出し要求
+DW #0 DM15014            ; 給材PP動作時間
+CON
+SET R52008               ; 給材中
+CON
+RES R52000               ; 給材ｺﾝﾍﾞｱ 取出し要求
+CON
+JMP @MR2001
+MPP
+LDB R52000               ; 給材ｺﾝﾍﾞｱ 取出し要求
+AND MR11407              ; ｺﾝﾍﾞｱ給材ｻｲｸﾙ終了
+ANL
+JMP @MR2400
+STG @MR2001
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+AND R38008               ; 給材P&P X軸 P1 位置　表示
+AND R38108               ; 給材P&P Z軸 P1 位置　表示
+RES MR6106               ; 供給ｽﾗｲﾀﾞ 出
+CON
+SET MR6107               ; 供給ｽﾗｲﾀﾞ 戻
+CON
+AND R4111                ; 給材_ｽﾗｲﾀﾞ 戻り端
+JMP @MR2002
+STG @MR2002
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+SET MR12003              ; 給材動作開始
+CON
+SET MR6104               ; 給材ﾁｬｯｸ 開
+CON
+AND R4112                ; 給材_ﾁｬｯｸ 開端
+SET @MR2900              ; 一時停止禁止
+CON
+JMP @MR2003
+STG @MR2003
+ANB @MR2607              ; RB Z軸　CV側下降動作完了
+AND MR14203              ; 給材P&P Z軸_移動可
+ANB MR14301              ; 給材P&P Z軸_移動中
+MPS
+AND R4106                ; 供給_ﾊﾞｯｸｱｯﾌﾟ 上昇端
+SET @MR2600              ; RB Z軸　CV側下降動作
+CON
+JMP @MR2004
+MPP
+ANB R4106                ; 供給_ﾊﾞｯｸｱｯﾌﾟ 上昇端
+MPS
+AND MR11407              ; ｺﾝﾍﾞｱ給材ｻｲｸﾙ終了
+RES @MR2900              ; 一時停止禁止
+CON
+JMP @MR2011
+MPP
+AND R47006               ; 供給ｽﾄｯﾊﾟ 上昇端ﾀｲﾑｵｰﾊﾞ
+RES @MR2900              ; 一時停止禁止
+CON
+JMP @MR2012
+STG @MR2011
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+RES MR6104               ; 給材ﾁｬｯｸ 開
+CON
+AND R4113                ; 給材_ﾁｬｯｸ 閉端
+JMP @MR2000              ; AUTO START
+STG @MR2012
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+ANB R47006               ; 供給ｽﾄｯﾊﾟ 上昇端ﾀｲﾑｵｰﾊﾞ
+AND R4106                ; 供給_ﾊﾞｯｸｱｯﾌﾟ 上昇端
+SET @MR2900              ; 一時停止禁止
+CON
+JMP @MR2003
+STG @MR2004
+AND @MR2607              ; RB Z軸　CV側下降動作完了
+RES @MR2900              ; 一時停止禁止
+CON
+RES @MR2607              ; RB Z軸　CV側下降動作完了
+CON
+JMP @MR2005
+STG @MR2005
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+AND R4106                ; 供給_ﾊﾞｯｸｱｯﾌﾟ 上昇端
+RES MR6104               ; 給材ﾁｬｯｸ 開
+CON
+AND R4113                ; 給材_ﾁｬｯｸ 閉端
+TMR #405 #2
+CON
+AND T405
+SET @MR2900              ; 一時停止禁止
+CON
+JMP @MR2006
+STG @MR2006
+ANB @MR2615              ; RB Z軸　CV側上昇動作完了
+AND MR14203              ; 給材P&P Z軸_移動可
+ANB MR14301              ; 給材P&P Z軸_移動中
+SET @MR2608              ; RB Z軸　CV側上昇動作
+CON
+JMP @MR2007
+STG @MR2007
+AND @MR2615              ; RB Z軸　CV側上昇動作完了
+RES R52008               ; 給材中
+CON
+RES @MR2900              ; 一時停止禁止
+CON
+RES @MR2615              ; RB Z軸　CV側上昇動作完了
+CON
+JMP @MR2010
+STG @MR2010
+MPS
+LD T242                  ; 給材側位置決め ﾜｰｸ確認ｾﾝｻ OFF
+AND R4202                ; 給材_ﾊﾝﾄﾞ 取P確認ｾﾝｻ
+ANL
+SET R52001               ; 取出し完了
+CON
+SET R52002               ; 給材P&P　ﾊﾟﾚｯﾄ有り
+CON
+@INC DM350               ; IINPUT
+CON
+JMP @MR2100
+MRD
+AND T241                 ; 給材側位置決め ﾜｰｸ確認ｾﾝｻ
+SET @MR3000              ; 給材ﾁｬｯｸ　取りこぼし異常
+CON
+ENDS
+MPP
+LD T242                  ; 給材側位置決め ﾜｰｸ確認ｾﾝｻ OFF
+ANB R4202                ; 給材_ﾊﾝﾄﾞ 取P確認ｾﾝｻ
+ANL
+SET @MR3008              ; 取りP無し異常
+CON
+ENDS
+STG @MR2100
+LD LR41000               ; 自動ﾊﾟﾗﾒｰﾀ1　通常動作
+OR LR41001               ; 自動ﾊﾟﾗﾒｰﾀ2　払い出し
+OR LR41003               ; 自動ﾊﾟﾗﾒｰﾀ4
+OR LR41006               ; 自動ﾊﾟﾗﾒｰﾀ7
+ANL
+MPS
+LD R53100                ; Line-A（左） 給材可
+ANB MR12000              ; ﾄﾗﾝｽﾌｧ動作中
+ANB @MR2108
+ANL
+JMP @MR2101
+MRD
+LDB R53100               ; Line-A（左） 給材可
+AND R53101               ; Line-B（右） 給材可
+ANB MR12001              ; ﾄﾗﾝｽﾌｧ動作中
+ANB @MR2101
+ANL
+JMP @MR2108
+MPP
+LD R53100                ; Line-A（左） 給材可
+AND R53101               ; Line-B（右） 給材可
+ANL
+MPS
+LD= DM700 #0             ; 投入切替
+ANB MR12000              ; ﾄﾗﾝｽﾌｧ動作中
+ANB @MR2108
+ANL
+JMP @MR2101
+MPP
+LD= DM700 #1             ; 投入切替
+ANB MR12001              ; ﾄﾗﾝｽﾌｧ動作中
+ANB @MR2101
+ANL
+JMP @MR2108
+;----  左側搬送
+STG @MR2101
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+MPS
+ANB R4700                ; L_溶着部 給材位置ﾊﾟﾚｯﾄ有無
+DW #1 DM700              ; 投入切替
+CON
+RES R53100               ; Line-A（左） 給材可
+CON
+SET R53500               ; 左側搬送中
+CON
+SET @MR2900              ; 一時停止禁止
+CON
+JMP @MR2102
+MPP
+AND R4700                ; L_溶着部 給材位置ﾊﾟﾚｯﾄ有無
+RES R53100               ; Line-A（左） 給材可
+CON
+JMP @MR2100
+STG @MR2102
+ANB @MR2707              ; RB X軸　左側動作完了
+AND MR14003              ; 給材P&P X軸_移動可
+ANB MR14101              ; 給材P&P X軸_移動中
+SET @MR2700              ; RB X軸　Line-A（左)側動作
+CON
+JMP @MR2103
+STG @MR2103
+RES MR6107               ; 供給ｽﾗｲﾀﾞ 戻
+CON
+SET MR6106               ; 供給ｽﾗｲﾀﾞ 出
+CON
+AND @MR2707              ; RB X軸　左側動作完了
+RES @MR2900              ; 一時停止禁止
+CON
+RES @MR2707              ; RB X軸　左側動作完了
+CON
+JMP @MR2200
+;---- 右側搬送
+STG @MR2108
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+MPS
+ANB R4703                ; R_溶着部 給材位置ﾊﾟﾚｯﾄ有無
+DW #0 DM700              ; 投入切替
+CON
+RES R53101               ; Line-B（右） 給材可
+CON
+SET R53501               ; 右側搬送中
+CON
+SET @MR2900              ; 一時停止禁止
+CON
+JMP @MR2109
+MPP
+AND R4703                ; R_溶着部 給材位置ﾊﾟﾚｯﾄ有無
+RES R53101               ; Line-B（右） 給材可
+CON
+JMP @MR2100
+STG @MR2109
+ANB @MR2715              ; RB X軸　右側動作完了
+AND MR14003              ; 給材P&P X軸_移動可
+ANB MR14101              ; 給材P&P X軸_移動中
+SET @MR2708              ; RB X軸　Line-B（右)側動作
+CON
+JMP @MR2110
+STG @MR2110
+AND @MR2715              ; RB X軸　右側動作完了
+RES @MR2900              ; 一時停止禁止
+CON
+RES @MR2715              ; RB X軸　右側動作完了
+CON
+JMP @MR2200
+;---- 左右側搬送共通
+STG @MR2200
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+RES MR6107               ; 供給ｽﾗｲﾀﾞ 戻
+CON
+SET MR6106               ; 供給ｽﾗｲﾀﾞ 出
+CON
+AND R4110                ; 給材_ｽﾗｲﾀﾞ 出端
+JMP @MR2201
+STG @MR2201
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+MPS
+LD R38009                ; 給材P&P X軸 P2 位置　表示
+ANB R4700                ; L_溶着部 給材位置ﾊﾟﾚｯﾄ有無
+ANL
+SET MR814                ; 左給材中
+CON
+SET @MR2900              ; 一時停止禁止
+CON
+JMP @MR2202
+MPP
+LD R38010                ; 給材P&P X軸 P3 位置　表示
+ANB R4703                ; R_溶着部 給材位置ﾊﾟﾚｯﾄ有無
+ANL
+SET MR815                ; 右給材中
+CON
+SET @MR2900              ; 一時停止禁止
+CON
+JMP @MR2208
+STG @MR2202
+ANB @MR2807              ; RB Z軸　左側下降動作完了
+AND MR14203              ; 給材P&P Z軸_移動可
+ANB MR14301              ; 給材P&P Z軸_移動中
+SET @MR2800              ; RB Z軸　左側下降動作
+CON
+JMP @MR2203
+STG @MR2203
+AND @MR2807              ; RB Z軸　左側下降動作完了
+RES @MR2900              ; 一時停止禁止
+CON
+RES @MR2807              ; RB Z軸　左側下降動作完了
+CON
+JMP @MR2300
+STG @MR2208
+ANB @MR2815              ; RB Z軸　右側下降動作完了
+AND MR14203              ; 給材P&P Z軸_移動可
+ANB MR14301              ; 給材P&P Z軸_移動中
+SET @MR2808              ; RB Z軸　右側下降動作
+CON
+JMP @MR2209
+STG @MR2209
+AND @MR2815              ; RB Z軸　右側下降動作完了
+RES @MR2900              ; 一時停止禁止
+CON
+RES @MR2815              ; RB Z軸　右側下降動作完了
+CON
+JMP @MR2300
+STG @MR2300
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+SET MR6104               ; 給材ﾁｬｯｸ 開
+CON
+AND R4112                ; 給材_ﾁｬｯｸ 開端
+TMR #406 #2
+CON
+AND T406
+SET @MR2900              ; 一時停止禁止
+CON
+JMP @MR2301
+STG @MR2301
+ANB @MR2615              ; RB Z軸　CV側上昇動作完了
+AND MR14203              ; 給材P&P Z軸_移動可
+ANB MR14301              ; 給材P&P Z軸_移動中
+SET @MR2608              ; RB Z軸　CV側上昇動作
+CON
+JMP @MR2302
+STG @MR2302
+AND @MR2615              ; RB Z軸　CV側上昇動作完了
+RES @MR2900              ; 一時停止禁止
+CON
+RES @MR2615              ; RB Z軸　CV側上昇動作完了
+CON
+JMP @MR2303
+STG @MR2303
+MPS
+AND R38009               ; 給材P&P X軸 P2 位置　表示
+MPS
+LD R4700                 ; L_溶着部 給材位置ﾊﾟﾚｯﾄ有無
+ANB @MR3100              ; ﾊﾟﾚｯﾄ逆さ挿入
+ANL
+SET R53102               ; Line-A（左） 給材完了
+CON
+JMP @MR2304
+MPP
+ANB R4700                ; L_溶着部 給材位置ﾊﾟﾚｯﾄ有無
+SET @MR3100              ; ﾊﾟﾚｯﾄ逆さ挿入
+CON
+RES R52002               ; 給材P&P　ﾊﾟﾚｯﾄ有り
+CON
+ANB @MR2304
+AND CR2002               ; 常時ON
+AND CR2002               ; 常時ON
+RES R53500               ; 左側搬送中
+CON
+RES R53501               ; 右側搬送中
+CON
+ENDS
+MPP
+AND R38010               ; 給材P&P X軸 P3 位置　表示
+MPS
+LD R4703                 ; R_溶着部 給材位置ﾊﾟﾚｯﾄ有無
+ANB @MR3100              ; ﾊﾟﾚｯﾄ逆さ挿入
+ANL
+SET R53103               ; Line-B（右） 給材完了
+CON
+JMP @MR2304
+MPP
+ANB R4703                ; R_溶着部 給材位置ﾊﾟﾚｯﾄ有無
+SET @MR3100              ; ﾊﾟﾚｯﾄ逆さ挿入
+CON
+RES R52002               ; 給材P&P　ﾊﾟﾚｯﾄ有り
+CON
+ANB @MR2304
+AND CR2002               ; 常時ON
+AND CR2002               ; 常時ON
+RES R53500               ; 左側搬送中
+CON
+RES R53501               ; 右側搬送中
+CON
+ENDS
+STG @MR2304
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+MPS
+AND MR814                ; 左給材中
+RES MR6106               ; 供給ｽﾗｲﾀﾞ 出
+CON
+SET MR6107               ; 供給ｽﾗｲﾀﾞ 戻
+CON
+SET @MR2900              ; 一時停止禁止
+CON
+JMP @MR2305
+MPP
+AND MR815                ; 右給材中
+RES MR6106               ; 供給ｽﾗｲﾀﾞ 出
+CON
+SET MR6107               ; 供給ｽﾗｲﾀﾞ 戻
+CON
+AND R4111                ; 給材_ｽﾗｲﾀﾞ 戻り端
+SET @MR2900              ; 一時停止禁止
+CON
+JMP @MR2305
+STG @MR2305
+ANB @MR2507              ; RB X軸　給材位置動作完了
+AND MR14003              ; 給材P&P X軸_移動可
+ANB MR14101              ; 給材P&P X軸_移動中
+SET @MR2500              ; RB X軸　給材位置動作
+CON
+JMP @MR2306
+STG @MR2306
+AND @MR2507              ; RB X軸　給材位置動作完了
+RES MR814                ; 左給材中
+CON
+RES MR815                ; 右給材中
+CON
+RES R53500               ; 左側搬送中
+CON
+RES R53501               ; 右側搬送中
+CON
+RES @MR2900              ; 一時停止禁止
+CON
+AND R4111                ; 給材_ｽﾗｲﾀﾞ 戻り端
+RES @MR2507              ; RB X軸　給材位置動作完了
+CON
+JMP @MR2000              ; AUTO START
+;---- 終了動作
+STG @MR2400
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+RES MR11407              ; ｺﾝﾍﾞｱ給材ｻｲｸﾙ終了
+CON
+JMP @MR2401
+STG @MR2401
+AND @MR010               ; ｺﾝﾍﾞｱ 一時停止ｴﾗｰ無し
+RES MR814                ; 左給材中
+CON
+RES MR815                ; 右給材中
+CON
+RES R53500               ; 左側搬送中
+CON
+RES R53501               ; 右側搬送中
+CON
+RES R53100               ; Line-A（左） 給材可
+CON
+RES R53101               ; Line-B（右） 給材可
+CON
+RES MR11205              ; 給材PPｻｲｸﾙ中
+CON
+SET MR11404              ; 給材PPｻｲｸﾙ終了
+CON
+ENDS
+;---- PAUSE禁止処理
+LD @MR2900               ; 一時停止禁止
+OUT R51101               ; 給材PP PACK
+;---- ROBOT動作
+STG @MR2600              ; RB Z軸　CV側下降動作
+MPS
+AND MR14302              ; 給材P&P Z軸_移動完了
+JMP @MR2601
+MPP
+MCALL POINT_MOVE1 #2 #2 #2 MR14311 MR14302;給材P&P Z軸_位置決め異常  給材P&P Z軸_移動完了
+STG @MR2601
+RES MR14302              ; 給材P&P Z軸_移動完了
+CON
+ANB MR14302              ; 給材P&P Z軸_移動完了
+SET @MR2607              ; RB Z軸　CV側下降動作完了
+CON
+ENDS
+STG @MR2608              ; RB Z軸　CV側上昇動作
+MPS
+AND MR14302              ; 給材P&P Z軸_移動完了
+JMP @MR2609
+MPP
+MCALL POINT_MOVE1 #2 #2 #1 MR14311 MR14302;給材P&P Z軸_位置決め異常  給材P&P Z軸_移動完了
+STG @MR2609
+RES MR14302              ; 給材P&P Z軸_移動完了
+CON
+ANB MR14302              ; 給材P&P Z軸_移動完了
+SET @MR2615              ; RB Z軸　CV側上昇動作完了
+CON
+ENDS
+STG @MR2700              ; RB X軸　Line-A（左)側動作
+MPS
+AND MR14102              ; 給材P&P X軸_移動完了
+JMP @MR2701
+MPP
+MCALL POINT_MOVE1 #2 #1 #2 MR14111 MR14102;給材P&P X軸_位置決め異常  給材P&P X軸_移動完了
+STG @MR2701
+RES MR14102              ; 給材P&P X軸_移動完了
+CON
+ANB MR14102              ; 給材P&P X軸_移動完了
+SET @MR2707              ; RB X軸　左側動作完了
+CON
+ENDS
+STG @MR2708              ; RB X軸　Line-B（右)側動作
+MPS
+AND MR14102              ; 給材P&P X軸_移動完了
+JMP @MR2709
+MPP
+MCALL POINT_MOVE1 #2 #1 #3 MR14111 MR14102;給材P&P X軸_位置決め異常  給材P&P X軸_移動完了
+STG @MR2709
+RES MR14102              ; 給材P&P X軸_移動完了
+CON
+ANB MR14102              ; 給材P&P X軸_移動完了
+SET @MR2715              ; RB X軸　右側動作完了
+CON
+ENDS
+STG @MR2800              ; RB Z軸　左側下降動作
+MPS
+AND MR14302              ; 給材P&P Z軸_移動完了
+JMP @MR2801
+MPP
+MCALL POINT_MOVE1 #2 #2 #3 MR14311 MR14302;給材P&P Z軸_位置決め異常  給材P&P Z軸_移動完了
+STG @MR2801
+RES MR14302              ; 給材P&P Z軸_移動完了
+CON
+ANB MR14302              ; 給材P&P Z軸_移動完了
+SET @MR2807              ; RB Z軸　左側下降動作完了
+CON
+ENDS
+STG @MR2808              ; RB Z軸　右側下降動作
+MPS
+AND MR14302              ; 給材P&P Z軸_移動完了
+JMP @MR2809
+MPP
+MCALL POINT_MOVE1 #2 #2 #4 MR14311 MR14302;給材P&P Z軸_位置決め異常  給材P&P Z軸_移動完了
+STG @MR2809
+RES MR14302              ; 給材P&P Z軸_移動完了
+CON
+ANB MR14302              ; 給材P&P Z軸_移動完了
+SET @MR2815              ; RB Z軸　右側下降動作完了
+CON
+ENDS
+STG @MR2500              ; RB X軸　給材位置動作
+MPS
+AND MR14102              ; 給材P&P X軸_移動完了
+JMP @MR2501
+MPP
+MCALL POINT_MOVE1 #2 #1 #1 MR14111 MR14102;給材P&P X軸_位置決め異常  給材P&P X軸_移動完了
+STG @MR2501
+RES MR14102              ; 給材P&P X軸_移動完了
+CON
+ANB MR14102              ; 給材P&P X軸_移動完了
+SET @MR2507              ; RB X軸　給材位置動作完了
+CON
+ENDS
+;ｱﾗｰﾑ処理
+STG @MR3000              ; 給材ﾁｬｯｸ　取りこぼし異常
+SET R50008               ; 全体ｴﾗｰ発生
+CON
+SET R50112               ; 給材PPｴﾗｰ中
+CON
+SET R51002               ; 給材P&P表示
+CON
+SET R50601               ; ERR17
+CON
+JMP @MR3001
+MOV #17 DM400            ; 表示画面No.
+STG @MR3001
+AND R50008               ; 全体ｴﾗｰ発生
+JMP @MR3002
+STG @MR3002
+ANB R50008               ; 全体ｴﾗｰ発生
+JMP @MR3003
+STG @MR3003
+ANB R50008               ; 全体ｴﾗｰ発生
+MPS
+AND T242                 ; 給材側位置決め ﾜｰｸ確認ｾﾝｻ OFF
+SET R52001               ; 取出し完了
+CON
+SET @MR2000              ; AUTO START
+CON
+ENDS
+MPP
+AND T241                 ; 給材側位置決め ﾜｰｸ確認ｾﾝｻ
+TMR @4 #5
+CON
+AND @T4
+JMP @MR3000              ; 給材ﾁｬｯｸ　取りこぼし異常
+STG @MR3008              ; 取りP無し異常
+SET R50008               ; 全体ｴﾗｰ発生
+CON
+SET R50112               ; 給材PPｴﾗｰ中
+CON
+SET R51002               ; 給材P&P表示
+CON
+SET R50602               ; ERR18
+CON
+JMP @MR3009
+MOV #18 DM400            ; 表示画面No.
+STG @MR3009
+AND R50008               ; 全体ｴﾗｰ発生
+JMP @MR3010
+STG @MR3010
+ANB R50008               ; 全体ｴﾗｰ発生
+JMP @MR3011
+STG @MR3011
+ANB R50008               ; 全体ｴﾗｰ発生
+MPS
+ANB R4202                ; 給材_ﾊﾝﾄﾞ 取P確認ｾﾝｻ
+SET R52001               ; 取出し完了
+CON
+SET @MR2000              ; AUTO START
+CON
+ENDS
+MPP
+AND R4202                ; 給材_ﾊﾝﾄﾞ 取P確認ｾﾝｻ
+TMR @5 #5
+CON
+AND @T5
+JMP @MR3008              ; 取りP無し異常
+STG @MR3100              ; ﾊﾟﾚｯﾄ逆さ挿入
+SET R50008               ; 全体ｴﾗｰ発生
+CON
+SET R50112               ; 給材PPｴﾗｰ中
+CON
+SET R51002               ; 給材P&P表示
+CON
+SET R50603               ; ERR19
+CON
+JMP @MR3101
+MOV #19 DM400            ; 表示画面No.
+STG @MR3101
+AND R50008               ; 全体ｴﾗｰ発生
+JMP @MR3102
+STG @MR3102
+ANB R50008               ; 全体ｴﾗｰ発生
+JMP @MR3103
+STG @MR3103
+ANB R50008               ; 全体ｴﾗｰ発生
+MPS
+ANB R4700                ; L_溶着部 給材位置ﾊﾟﾚｯﾄ有無
+SET @MR2304
+CON
+ENDS
+MRD
+LD R38010                ; 給材P&P X軸 P3 位置　表示
+ANB R4703                ; R_溶着部 給材位置ﾊﾟﾚｯﾄ有無
+ANL
+SET R53101               ; Line-B（右） 給材可
+MRD
+LD R38009                ; 給材P&P X軸 P2 位置　表示
+ANB R4700                ; L_溶着部 給材位置ﾊﾟﾚｯﾄ有無
+ANL
+SET R53100               ; Line-A（左） 給材可
+MPP
+AND R4700                ; L_溶着部 給材位置ﾊﾟﾚｯﾄ有無
+TMR @6 #5
+CON
+AND @T6
+JMP @MR3100              ; ﾊﾟﾚｯﾄ逆さ挿入
+LD MR12003               ; 給材動作開始
+AND CR2005               ; 100msｸﾛｯｸﾊﾟﾙｽ
+AND CR2003               ; 常時OFF
+@INC DM15014             ; 給材PP動作時間
+END
+ENDH

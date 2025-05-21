@@ -1,0 +1,785 @@
+DEVICE:53
+;MODULE:BringDown_Scan
+;MODULE_TYPE:0
+;OneSystem UserOpen-Module
+;
+;-----------------------------------------
+;ModuleName	:	BringDown_Scan
+;ModuleType	:	UserOpen Module
+;Function	:	User Open Function
+;-----------------------------------------
+;
+;Copylight(C) 2011 SEIKO EPSON Corp. All rights reserved.
+;[ﾕｰｻﾞｰ解放ﾌｧﾝｸｼｮﾝ共通注意事項]
+;・ﾕｰｻﾞｰｵｰﾌﾟﾝｴﾘｱ以外は変更しないで下さい。
+;・各Functionの作成上の注意点をよく読んで使用して下さい。
+;↓Please do not delete.
+;非常停止発生時STGｸﾘｱ
+LDP R46104               ; _非常停止中　ﾓｰﾄﾞﾌﾗｸﾞ
+ZRES @R000 @R015
+CON
+ZRES @R1000 @R8915
+;↑Please do not delete.
+;<h1/>*Common/共通
+;<h1/>Data_Distribut/ﾃﾞｰﾀ変換
+;[起動するﾀｲﾐﾝｸﾞ]
+;・初期化ﾓｼﾞｭｰﾙ起動直後
+;・ﾊﾟﾗﾒｰﾀ変更後
+;・運転ﾓｰﾄﾞ開始時(HOME,AUTO,MAINTE初回)
+;[作成上の注意点]
+;・ﾕｰｻﾞｰｵｰﾌﾟﾝｴﾘｱ以外は修正しないで下さい。
+;・動作命令、待ち要素がある記述は禁止します。
+;・ﾃﾞｰﾀ処理ﾌﾟﾛｸﾞﾗﾑのみ記述して下さい。
+;・STG～JMP命令は@R001～014を使用して下さい。
+;・処理終了後は必ず@R015へJMPして下さい。
+LD CR2008                ; 運転開始時1ｽｷｬﾝON
+SET R40404               ; _ﾊﾟﾗﾒｰﾀ変更後ﾕｰｻﾞｰSTG
+LDP R40404               ; _ﾊﾟﾗﾒｰﾀ変更後ﾕｰｻﾞｰSTG
+MPS
+ANB MR17702              ; 動作ﾊﾟﾗﾒｰﾀ2 画像無効
+SET @R000
+MPP
+AND MR17702              ; 動作ﾊﾟﾗﾒｰﾀ2 画像無効
+RES R40404               ; _ﾊﾟﾗﾒｰﾀ変更後ﾕｰｻﾞｰSTG
+;//User Open Area Header
+STG @R000
+MPS
+ANB CR2002               ; 常時ON
+JMP @R001
+MPP
+AND CR2002               ; 常時ON
+TMR @13 #60
+CON
+AND @T13
+JMP @R007
+STG @R007
+RES R37101               ; 通信完了
+CON
+DW #6 EM1921             ; FJ通信ｺｰﾄﾞ番号
+CON
+SET R37100               ; FJ通信START
+CON
+JMP @R008
+STG @R008
+AND R37101               ; 通信完了
+MPS
+ANB R37103               ; FJ通信異常
+JMP @R009
+MPP
+AND R37103               ; FJ通信異常
+JMP @R301
+STG @R009
+RES R37101               ; 通信完了
+CON
+DW #7 EM1921             ; FJ通信ｺｰﾄﾞ番号
+CON
+SET R37100               ; FJ通信START
+CON
+JMP @R010
+STG @R010
+AND R37101               ; 通信完了
+MPS
+ANB R37103               ; FJ通信異常
+JMP @R011
+MPP
+AND R37103               ; FJ通信異常
+JMP @R301
+STG @R011
+RES R37101               ; 通信完了
+CON
+DW #8 EM1921             ; FJ通信ｺｰﾄﾞ番号
+CON
+SET R37100               ; FJ通信START
+CON
+JMP @R012
+STG @R012
+AND R37101               ; 通信完了
+MPS
+ANB R37103               ; FJ通信異常
+JMP @R013
+MPP
+AND R37103               ; FJ通信異常
+JMP @R301
+STG @R013
+RES R37101               ; 通信完了
+CON
+DW #9 EM1921             ; FJ通信ｺｰﾄﾞ番号
+CON
+SET R37100               ; FJ通信START
+CON
+JMP @R014
+STG @R014
+AND R37101               ; 通信完了
+MPS
+ANB R37103               ; FJ通信異常
+JMP @R015
+MPP
+AND R37103               ; FJ通信異常
+JMP @R301
+STG @R015
+RES R37101               ; 通信完了
+CON
+DW #10 EM1921            ; FJ通信ｺｰﾄﾞ番号
+CON
+SET R37100               ; FJ通信START
+CON
+JMP @R300
+STG @R300
+AND R37101               ; 通信完了
+MPS
+ANB R37103               ; FJ通信異常
+RES R37101               ; 通信完了
+CON
+@DW #1 DM13460           ; 自動_調光量切替
+CON
+JMP @R100
+MPP
+AND R37103               ; FJ通信異常
+JMP @R301
+;画像通信NG
+STG @R301
+@DW #0 DM20016           ; 画像ｴﾗｰ番号(TP表示用)
+CON
+RES R37103               ; FJ通信異常
+CON
+SET @MR001               ; 画像処理異常
+CON
+JMP @R302
+;FH異常処理
+;SW1:ｴﾗｰﾘｾｯﾄ
+STG @R302
+MPS
+AND R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+SET @MR1900              ; Main1 HALT許可
+MPP
+ANB R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+MPS
+AND @MR002               ; 画像処理異常SW1処理
+RES @MR002               ; 画像処理異常SW1処理
+CON
+MPS
+AND= EM1921 #6           ; FJ通信ｺｰﾄﾞ番号
+JMP @R007
+MRD
+AND= EM1921 #7           ; FJ通信ｺｰﾄﾞ番号
+JMP @R009
+MRD
+AND= EM1921 #8           ; FJ通信ｺｰﾄﾞ番号
+JMP @R011
+MRD
+AND= EM1921 #9           ; FJ通信ｺｰﾄﾞ番号
+JMP @R013
+MPP
+AND= EM1921 #10          ; FJ通信ｺｰﾄﾞ番号
+JMP @R015
+MPP
+AND @MR003               ; 画像処理異常SW2処理
+RES @MR003               ; 画像処理異常SW2処理
+CON
+RES R37101               ; 通信完了
+CON
+@DW #1 DM13460           ; 自動_調光量切替
+CON
+JMP @R100
+;FH通信異常/bringdown
+LD @MR001                ; 画像処理異常
+ANB R39004               ; ｴﾗｰ処理中
+ANB MR10006              ; 確認画面表示ｴﾗｰ
+SET R39004               ; ｴﾗｰ処理中
+CON
+RES @MR002               ; 画像処理異常SW1処理
+CON
+RES @MR003               ; 画像処理異常SW2処理
+CON
+RES @MR004
+CON
+RES @MR005
+CON
+DW #1900 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #121 @DM1             ; ErrorNo /ERROR_DISP
+CON
+DW #0 @DM2               ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; BD ERROR
+CON
+SET MR10005              ; 画像ｴﾗｰ内容表示
+CON
+SET @MR005
+STG @MR005
+AND @MR101               ; Task5 ERROR_End
+RES @MR101               ; Task5 ERROR_End
+CON
+RES R39004               ; ｴﾗｰ処理中
+CON
+RES @MR001               ; 画像処理異常
+CON
+ZRES R37104 R37112       ; 通信NG  データ保存NG
+CON
+RES MR10005              ; 画像ｴﾗｰ内容表示
+CON
+MPS
+AND @MR105               ; SW1
+SET @MR002               ; 画像処理異常SW1処理
+CON
+ENDS
+MPP
+AND @MR106               ; SW2
+SET @MR003               ; 画像処理異常SW2処理
+CON
+ENDS
+LDF @MR001               ; 画像処理異常
+@DW #0 DM20016           ; 画像ｴﾗｰ番号(TP表示用)
+;<h1/>MyTask Error Process Substance/エラー処理実体
+STG @MR100               ; BD ERROR
+ANB R39002               ; ERROR_DISP Busy
+MPS
+ZRES @MR105 @MR108       ; SW1
+CON
+LDA @DM9                 ; ReturnSW /ERROR_DISP
+CON
+TBCD
+CON
+STA @DM10
+CON
+DISN @DM10 @DM3 #4
+MRD
+DW #0 @DM0
+CON
+BMOV @DM0 DM60000 #7     ; TaskNo /ERROR_DISP
+MPP
+SET R39000               ; ERROR_DISP Start
+CON
+SET @MR102
+CON
+JMP @MR103
+STG @MR103
+AND R39002               ; ERROR_DISP Busy
+AND= DM60008 @DM1        ; ReturnNo /ERROR_DISP  ErrorNo /ERROR_DISP
+MPS
+AND= DM60007 @DM6        ; ReturnSW /ERROR_DISP
+SET @MR105               ; SW1
+CON
+JMP @MR104
+MRD
+AND= DM60007 @DM5        ; ReturnSW /ERROR_DISP
+SET @MR106               ; SW2
+CON
+JMP @MR104
+MRD
+AND= DM60007 @DM4        ; ReturnSW /ERROR_DISP
+SET @MR107
+CON
+JMP @MR104
+MPP
+AND= DM60007 @DM3        ; ReturnSW /ERROR_DISP
+SET @MR108
+CON
+JMP @MR104
+STG @MR104
+ANB R39002               ; ERROR_DISP Busy
+RES @MR102
+CON
+SET @MR101               ; Task5 ERROR_End
+CON
+ENDS
+;
+STG @R100
+MPS
+AND= DM13460 #1          ; 自動_調光量切替
+LDA DM4200               ; _機種別ﾃﾞｰﾀ　ﾃﾝﾎﾟﾗﾘ
+CON
+COM
+CON
+STA DM13461              ; 自動_調光量_反転値
+CON
+SET MR7208               ; 照明 ﾁｬﾝﾈﾙ選択 CHSEL0
+CON
+SET MR7209               ; 照明 ﾁｬﾝﾈﾙ選択 CHSEL1
+CON
+SET MR7210               ; 照明 ﾁｬﾝﾈﾙ選択 CHSEL2
+CON
+JMP @R101
+MRD
+AND= DM13460 #2          ; 自動_調光量切替
+LDA DM4202               ; _機種別ﾃﾞｰﾀ　ﾃﾝﾎﾟﾗﾘ
+CON
+COM
+CON
+STA DM13461              ; 自動_調光量_反転値
+CON
+RES MR7208               ; 照明 ﾁｬﾝﾈﾙ選択 CHSEL0
+CON
+SET MR7209               ; 照明 ﾁｬﾝﾈﾙ選択 CHSEL1
+CON
+SET MR7210               ; 照明 ﾁｬﾝﾈﾙ選択 CHSEL2
+CON
+JMP @R101
+MPP
+AND= DM13460 #3          ; 自動_調光量切替
+LDA DM4204               ; _機種別ﾃﾞｰﾀ　ﾃﾝﾎﾟﾗﾘ
+CON
+COM
+CON
+STA DM13461              ; 自動_調光量_反転値
+CON
+SET MR7208               ; 照明 ﾁｬﾝﾈﾙ選択 CHSEL0
+CON
+RES MR7209               ; 照明 ﾁｬﾝﾈﾙ選択 CHSEL1
+CON
+SET MR7210               ; 照明 ﾁｬﾝﾈﾙ選択 CHSEL2
+CON
+JMP @R101
+STG @R101
+PMOV DM13461 #0 MR7200 #0 #8;自動_調光量_反転値  照明 調光値入力 B0
+TMH @10 #2
+CON
+AND @T10
+SET MR7211               ; 照明 調光値書込み BRTWR
+CON
+JMP @R102
+STG @R102
+TMH @11 #2
+CON
+AND @T11
+ZRES MR7200 MR7300       ; 照明 調光値入力 B0  照明 発光ﾓｰﾄﾞ値入力 M3
+CON
+@INC DM13460             ; 自動_調光量切替
+CON
+JMP @R103
+STG @R103
+MPS
+AND<= DM13460 #3         ; 自動_調光量切替
+TMH @12 #2
+CON
+AND @T12
+JMP @R100
+MPP
+AND> DM13460 #3          ; 自動_調光量切替
+JMP @R115
+;//User Open Area Footer
+STG @R115
+DW #1 DM13460            ; 自動_調光量切替
+CON
+RES R40404               ; _ﾊﾟﾗﾒｰﾀ変更後ﾕｰｻﾞｰSTG
+CON
+ENDS
+;<h1/>Estop_Handle/非常停止発生時
+;[作成上の注意点]
+;・待ち要素、動作命令記述は禁止します。
+;・ﾕｰｻﾞｰI/O、ｸﾞﾛｰﾊﾞﾙｱﾄﾞﾚｽの初期化などを行って下さい。
+;・STG～JMP命令は@R101～114を使用して下さい。
+;・終了時は必ず@R115へJMPして下さい。
+LD R40405                ; _非常停止ﾕｰｻﾞｰSTG
+SET @R500
+;//User Open Area Header
+STG @R500
+JMP @R515
+;//User Open Area Footer
+STG @R515
+RES R40405               ; _非常停止ﾕｰｻﾞｰSTG
+CON
+ENDS
+;<h1/>Estop_Revival/非常停止復帰時
+;[作成上の注意点]
+;・待ち要素、動作命令記述は禁止します。
+;・STG～JMP命令は@R201～214を使用して下さい。
+;・終了時は必ず@R215へJMPして下さい。
+LD R40406                ; _非常停止復帰ﾕｰｻﾞｰSTG
+SET @R200
+;//User Open Area Header
+STG @R200
+JMP @R215
+;//User Open Area Footer
+STG @R215
+RES R40406               ; _非常停止復帰ﾕｰｻﾞｰSTG
+CON
+ENDS
+;<h1/>Tower_Lamp/ﾕｰｻﾞｰｶｽﾀﾑﾀﾜｰﾗﾝﾌﾟ
+;User Custom1/ﾕｰｻﾞｰｶｽﾀﾑ1
+;[作成上の注意点]
+;・ﾕｰｻﾞｰ仕様ﾀﾜｰﾗﾝﾌﾟ処理を記述して下さい。
+;・使用するｸﾞﾙｰﾌﾟ数分記述が必要です。
+;・必ずMC～MCRの範囲内に記述して下さい。
+LD= DM9210 #1            ; _ﾀﾜｰﾗﾝﾌﾟ制御選択
+MC
+MCR
+;User Custom2/ﾕｰｻﾞｰｶｽﾀﾑ2
+;[作成上の注意点]
+;・ﾕｰｻﾞｰ仕様ﾀﾜｰﾗﾝﾌﾟ処理を記述して下さい。
+;・使用するｸﾞﾙｰﾌﾟ数分記述が必要です。
+;・必ずMC～MCRの範囲内に記述して下さい。
+LD= DM9210 #2            ; _ﾀﾜｰﾗﾝﾌﾟ制御選択
+MC
+MCR
+;User Custom3/ﾕｰｻﾞｰｶｽﾀﾑ3
+;[作成上の注意点]
+;・ﾕｰｻﾞｰ仕様ﾀﾜｰﾗﾝﾌﾟ処理を記述して下さい。
+;・使用するｸﾞﾙｰﾌﾟ数分記述が必要です。
+;・必ずMC～MCRの範囲内に記述して下さい。
+LD= DM9210 #3            ; _ﾀﾜｰﾗﾝﾌﾟ制御選択
+MC
+MCR
+;User Custom4/ﾕｰｻﾞｰｶｽﾀﾑ4
+;[作成上の注意点]
+;・ﾕｰｻﾞｰ仕様ﾀﾜｰﾗﾝﾌﾟ処理を記述して下さい。
+;・使用するｸﾞﾙｰﾌﾟ数分記述が必要です。
+;・必ずMC～MCRの範囲内に記述して下さい。
+LD= DM9210 #4            ; _ﾀﾜｰﾗﾝﾌﾟ制御選択
+MC
+MCR
+;User Custom5/ﾕｰｻﾞｰｶｽﾀﾑ5
+;[作成上の注意点]
+;・ﾕｰｻﾞｰ仕様ﾀﾜｰﾗﾝﾌﾟ処理を記述して下さい。
+;・使用するｸﾞﾙｰﾌﾟ数分記述が必要です。
+;・必ずMC～MCRの範囲内に記述して下さい。
+LD= DM9210 #5            ; _ﾀﾜｰﾗﾝﾌﾟ制御選択
+MC
+MCR
+;User Custom6/ﾕｰｻﾞｰｶｽﾀﾑ6
+;[作成上の注意点]
+;・ﾕｰｻﾞｰ仕様ﾀﾜｰﾗﾝﾌﾟ処理を記述して下さい。
+;・使用するｸﾞﾙｰﾌﾟ数分記述が必要です。
+;・必ずMC～MCRの範囲内に記述して下さい。
+LD= DM9210 #6            ; _ﾀﾜｰﾗﾝﾌﾟ制御選択
+MC
+MCR
+;User Custom7/ﾕｰｻﾞｰｶｽﾀﾑ7
+;[作成上の注意点]
+;・ﾕｰｻﾞｰ仕様ﾀﾜｰﾗﾝﾌﾟ処理を記述して下さい。
+;・使用するｸﾞﾙｰﾌﾟ数分記述が必要です。
+;・必ずMC～MCRの範囲内に記述して下さい。
+LD= DM9210 #7            ; _ﾀﾜｰﾗﾝﾌﾟ制御選択
+MC
+MCR
+;User Custom8/ﾕｰｻﾞｰｶｽﾀﾑ8
+;[作成上の注意点]
+;・ﾕｰｻﾞｰ仕様ﾀﾜｰﾗﾝﾌﾟ処理を記述して下さい。
+;・使用するｸﾞﾙｰﾌﾟ数分記述が必要です。
+;・必ずMC～MCRの範囲内に記述して下さい。
+LD= DM9210 #8            ; _ﾀﾜｰﾗﾝﾌﾟ制御選択
+MC
+MCR
+;User Custom9/ﾕｰｻﾞｰｶｽﾀﾑ9
+;[作成上の注意点]
+;・ﾕｰｻﾞｰ仕様ﾀﾜｰﾗﾝﾌﾟ処理を記述して下さい。
+;・使用するｸﾞﾙｰﾌﾟ数分記述が必要です。
+;・必ずMC～MCRの範囲内に記述して下さい。
+LD= DM9210 #9            ; _ﾀﾜｰﾗﾝﾌﾟ制御選択
+MC
+MCR
+;User Custom10/ﾕｰｻﾞｰｶｽﾀﾑ10
+;[作成上の注意点]
+;・ﾕｰｻﾞｰ仕様ﾀﾜｰﾗﾝﾌﾟ処理を記述して下さい。
+;・使用するｸﾞﾙｰﾌﾟ数分記述が必要です。
+;・必ずMC～MCRの範囲内に記述して下さい。
+LD= DM9210 #10           ; _ﾀﾜｰﾗﾝﾌﾟ制御選択
+MC
+MCR
+;<h1/>*Group1/ｸﾞﾙｰﾌﾟ1
+;<h1/>SC1_Before/安全ｶﾊﾞｰ1開時
+;[作成上の注意点]
+;・ﾕｰｻﾞｰｵｰﾌﾟﾝｴﾘｱ以外は修正しないで下さい。
+;・STG～JMP命令は@R1001～1013を使用して下さい。
+;・ﾕｰｻﾞｰ処理終了後、いずれかのSTGへ必ずJMPして下さい。
+;	→安全ｶﾊﾞｰ開OKの場合：@R1014へ
+;	→安全ｶﾊﾞｰ開NGの場合：@R1015へ
+STG R40500               ; _安全ｶﾊﾞｰ1解除ﾕｰｻﾞｰSTG
+JMP @R1000
+;//User Open Area Header
+STG @R1000
+MPS
+JMP @R1014               ; ﾛｯｸ解除OK
+MPP
+AND CR2003               ; 常時OFF
+JMP @R1015               ; ﾛｯｸ解除NG
+;//User Open Area Footer
+STG @R1014               ; ﾛｯｸ解除OK
+SET R40600               ; _安全ｶﾊﾞｰ1ﾛｯｸ解除OK
+CON
+ENDS
+STG @R1015               ; ﾛｯｸ解除NG
+SET R40601               ; _安全ｶﾊﾞｰ1ﾛｯｸ解除NG
+CON
+ENDS
+;<h1/>SC1_After/安全ｶﾊﾞｰ1閉時
+;[作成上の注意点]
+;・ﾕｰｻﾞｰｵｰﾌﾟﾝｴﾘｱ以外は修正しないで下さい。
+;・STG～JMP命令は@R1101～1113を使用して下さい。
+;・ﾕｰｻﾞｰ処理終了後、いずれかのSTGへ必ずJMPして下さい。
+;	→安全ｶﾊﾞｰﾛｯｸOKの場合：@R1114
+;	→安全ｶﾊﾞｰﾛｯｸNGの場合：@R1115
+STG R40501               ; _安全ｶﾊﾞｰ1ﾛｯｸﾕｰｻﾞｰSTG
+JMP @R1100
+;//User Open Area Header
+STG @R1100
+MPS
+RES B074                 ; CELL1へPause要求
+CON
+RES B076                 ; CELL3へPause要求
+CON
+ANB B075                 ; CELL1よりPause許可
+ANB B077                 ; CELL3よりPause許可
+JMP @R1114               ; ﾛｯｸOK
+MPP
+AND CR2003               ; 常時OFF
+JMP @R1115               ; ﾛｯｸNG
+;//User Open Area Footer
+STG @R1114               ; ﾛｯｸOK
+SET R40700               ; _安全ｶﾊﾞｰ1ﾛｯｸOK
+CON
+ENDS
+STG @R1115               ; ﾛｯｸNG
+SET R40701               ; _安全ｶﾊﾞｰ1ﾛｯｸNG
+CON
+ENDS
+;<h1/>Air_Before/ｴｱｰ流量低下時
+;[作成上の注意点]
+;・待ち要素、動作命令記述は禁止します。
+;・STG～JMP命令は@R1201～1214を使用して下さい。
+;・終了時は必ず@R1215へJMPして下さい。
+LD R40800                ; _ｴｱｰ元圧低下1ﾕｰｻﾞｰSTG
+SET @R1200
+;//User Open Area Header
+STG @R1200
+JMP @R1215
+;//User Open Area Footer
+STG @R1215
+RES R40800               ; _ｴｱｰ元圧低下1ﾕｰｻﾞｰSTG
+CON
+ENDS
+;<h1/>Air_After/ｴｱｰ流量低下復帰時
+;[作成上の注意点]
+;・待ち要素、動作命令記述は禁止します。
+;・STG～JMP命令は@R1301～1314を使用して下さい。
+;・終了時は必ず@R1315へJMPして下さい。
+LD R40801                ; _ｴｱｰ元圧低下1解除ﾕｰｻﾞｰSTG
+SET @R1300
+;//User Open Area Header
+STG @R1300
+JMP @R1315
+;//User Open Area Footer
+STG @R1315
+RES R40801               ; _ｴｱｰ元圧低下1解除ﾕｰｻﾞｰSTG
+CON
+ENDS
+;<h1/>Area1_Before/ｴﾘｱｾﾝｻ遮断直後
+;[作成上の注意点]
+;・待ち要素、動作命令記述は禁止します。
+;・STG～JMP命令は@R1401～1414を使用して下さい。
+;・終了時は必ず@R1415へJMPして下さい。
+LD R40900                ; _ｴﾘｱｾﾝｻ1遮断ﾕｰｻﾞｰSTG
+SET @R1400
+;//User Open Area Header
+STG @R1400
+JMP @R1415
+;//User Open Area Footer
+STG @R1415
+RES R40900               ; _ｴﾘｱｾﾝｻ1遮断ﾕｰｻﾞｰSTG
+CON
+ENDS
+;<h1/>Area1_After/ｴﾘｱｾﾝｻ復帰直前
+;[作成上の注意点]
+;・待ち要素、動作命令記述は禁止します。
+;・STG～JMP命令は@R1501～1514を使用して下さい。
+;・終了時は必ず@R1515へJMPして下さい。
+LD R40901                ; _ｴﾘｱｾﾝｻ1復帰ﾕｰｻﾞｰSTG
+SET @R1500
+;//User Open Area Header
+STG @R1500
+JMP @R1515
+;//User Open Area Footer
+STG @R1515
+RES R40901               ; _ｴﾘｱｾﾝｻ1復帰ﾕｰｻﾞｰSTG
+CON
+ENDS
+;<h1/>TaskState1/ﾀｽｸ状態
+;[Task]
+;1行目：OneSystem2_Taskよりﾓｼﾞｭｰﾙ起動指令が来たらMDSTRT
+;2行目：OneSystem2_Taskよりﾓｼﾞｭｰﾙ停止指令が来たらMDSTOP
+;3行目：Task起動状態をOUT
+;<使用方法>
+;※不要ﾒｲﾝﾓｼﾞｭｰﾙﾌｧｲﾙを削除したい場合、未使用ﾀｽｸは行無効化を行ってください
+;ﾒｲﾝﾓｼﾞｭｰﾙﾌｧｲﾙを削除したにも係わらず行無効化を実施しないと変換異常になります
+;Group1_Task0
+LD>= DM9200 #1           ; _Group1ﾀｽｸ登録数
+MPS
+LD R47300                ; _Group1　ﾒｲﾝﾓｼﾞｭｰﾙ起動要求
+ANB _Group1_Task0
+ANL
+MDSTRT Group1_Task0
+MRD
+LD R47308                ; _Group1　ﾒｲﾝﾓｼﾞｭｰﾙ停止要求
+AND _Group1_Task0
+ANL
+MDSTOP Group1_Task0
+MPP
+AND _Group1_Task0
+TMR @0 DM9358            ; _ﾃﾞｰﾀ収集ﾘｾｯﾄﾃﾞｨﾚｲ
+CON
+AND @T0
+OUT R49000               ; _Group1_Task0起動状態
+;Group1_Task1
+LD>= DM9200 #2           ; _Group1ﾀｽｸ登録数
+MPS
+LD R47300                ; _Group1　ﾒｲﾝﾓｼﾞｭｰﾙ起動要求
+ANB _Group1_Task1
+ANL
+MDSTRT Group1_Task1
+MRD
+LD R47308                ; _Group1　ﾒｲﾝﾓｼﾞｭｰﾙ停止要求
+AND _Group1_Task1
+ANL
+MDSTOP Group1_Task1
+MPP
+AND _Group1_Task1
+TMR @1 DM9358            ; _ﾃﾞｰﾀ収集ﾘｾｯﾄﾃﾞｨﾚｲ
+CON
+AND @T1
+OUT R49000:#1            ; _Group1_Task1起動状態
+;Group1_Task2
+LD>= DM9200 #3           ; _Group1ﾀｽｸ登録数
+MPS
+LD R47300                ; _Group1　ﾒｲﾝﾓｼﾞｭｰﾙ起動要求
+ANB _Group1_Task2
+ANL
+MDSTRT Group1_Task2
+MRD
+LD R47308                ; _Group1　ﾒｲﾝﾓｼﾞｭｰﾙ停止要求
+AND _Group1_Task2
+ANL
+MDSTOP Group1_Task2
+MPP
+AND _Group1_Task2
+TMR @2 DM9358            ; _ﾃﾞｰﾀ収集ﾘｾｯﾄﾃﾞｨﾚｲ
+CON
+AND @T2
+OUT R49000:#2            ; _Group1_Task2起動状態
+;Group1_Task3
+LD>= DM9200 #4           ; _Group1ﾀｽｸ登録数
+MPS
+LD R47300                ; _Group1　ﾒｲﾝﾓｼﾞｭｰﾙ起動要求
+ANB _Group1_Task3
+ANL
+MDSTRT Group1_Task3
+MRD
+LD R47308                ; _Group1　ﾒｲﾝﾓｼﾞｭｰﾙ停止要求
+AND _Group1_Task3
+ANL
+MDSTOP Group1_Task3
+MPP
+AND _Group1_Task3
+TMR @3 DM9358            ; _ﾃﾞｰﾀ収集ﾘｾｯﾄﾃﾞｨﾚｲ
+CON
+AND @T3
+OUT R49000:#3            ; _Group1_Task3起動状態
+;Group1_Task4
+LD>= DM9200 #5           ; _Group1ﾀｽｸ登録数
+MPS
+LD R47300                ; _Group1　ﾒｲﾝﾓｼﾞｭｰﾙ起動要求
+ANB _Group1_Task4
+ANL
+MDSTRT Group1_Task4
+MRD
+LD R47308                ; _Group1　ﾒｲﾝﾓｼﾞｭｰﾙ停止要求
+AND _Group1_Task4
+ANL
+MDSTOP Group1_Task4
+MPP
+AND _Group1_Task4
+TMR @4 DM9358            ; _ﾃﾞｰﾀ収集ﾘｾｯﾄﾃﾞｨﾚｲ
+CON
+AND @T4
+OUT R49000:#4            ; _Group1_Task4起動状態
+;Group1_Task5
+LD>= DM9200 #6           ; _Group1ﾀｽｸ登録数
+MPS
+LD R47300                ; _Group1　ﾒｲﾝﾓｼﾞｭｰﾙ起動要求
+ANB _Group1_Task5
+ANL
+MDSTRT Group1_Task5
+MRD
+LD R47308                ; _Group1　ﾒｲﾝﾓｼﾞｭｰﾙ停止要求
+AND _Group1_Task5
+ANL
+MDSTOP Group1_Task5
+MPP
+AND _Group1_Task5
+TMR @5 DM9358            ; _ﾃﾞｰﾀ収集ﾘｾｯﾄﾃﾞｨﾚｲ
+CON
+AND @T5
+OUT R49000:#5            ; _Group1_Task5起動状態
+;Group1_Task6
+LD>= DM9200 #7           ; _Group1ﾀｽｸ登録数
+MPS
+LD R47300                ; _Group1　ﾒｲﾝﾓｼﾞｭｰﾙ起動要求
+ANB _Group1_Task6
+ANL
+MDSTRT Group1_Task6
+MRD
+LD R47308                ; _Group1　ﾒｲﾝﾓｼﾞｭｰﾙ停止要求
+AND _Group1_Task6
+ANL
+MDSTOP Group1_Task6
+MPP
+AND _Group1_Task6
+TMR @6 DM9358            ; _ﾃﾞｰﾀ収集ﾘｾｯﾄﾃﾞｨﾚｲ
+CON
+AND @T6
+OUT R49000:#6            ; _Group1_Task6起動状態
+;Group1_Task7
+LD>= DM9200 #8           ; _Group1ﾀｽｸ登録数
+MPS
+LD R47300                ; _Group1　ﾒｲﾝﾓｼﾞｭｰﾙ起動要求
+ANB _Group1_Task7
+ANL
+MDSTRT Group1_Task7
+MRD
+LD R47308                ; _Group1　ﾒｲﾝﾓｼﾞｭｰﾙ停止要求
+AND _Group1_Task7
+ANL
+MDSTOP Group1_Task7
+MPP
+AND _Group1_Task7
+TMR @7 DM9358            ; _ﾃﾞｰﾀ収集ﾘｾｯﾄﾃﾞｨﾚｲ
+CON
+AND @T7
+OUT R49000:#7            ; _Group1_Task7起動状態
+;Group1_Task8
+LD>= DM9200 #9           ; _Group1ﾀｽｸ登録数
+MPS
+LD R47300                ; _Group1　ﾒｲﾝﾓｼﾞｭｰﾙ起動要求
+ANB _Group1_Task8
+ANL
+MDSTRT Group1_Task8
+MRD
+LD R47308                ; _Group1　ﾒｲﾝﾓｼﾞｭｰﾙ停止要求
+AND _Group1_Task8
+ANL
+MDSTOP Group1_Task8
+MPP
+AND _Group1_Task8
+TMR @8 DM9358            ; _ﾃﾞｰﾀ収集ﾘｾｯﾄﾃﾞｨﾚｲ
+CON
+AND @T8
+OUT R49000:#8            ; _Group1_Task8起動状態
+;Group1_Task9
+LD>= DM9200 #10          ; _Group1ﾀｽｸ登録数
+MPS
+LD R47300                ; _Group1　ﾒｲﾝﾓｼﾞｭｰﾙ起動要求
+ANB _Group1_Task9
+ANL
+MDSTRT Group1_Task9
+MRD
+LD R47308                ; _Group1　ﾒｲﾝﾓｼﾞｭｰﾙ停止要求
+AND _Group1_Task9
+ANL
+MDSTOP Group1_Task9
+MPP
+AND _Group1_Task9
+TMR @9 DM9358            ; _ﾃﾞｰﾀ収集ﾘｾｯﾄﾃﾞｨﾚｲ
+CON
+AND @T9
+OUT R49000:#9            ; _Group1_Task9起動状態
+END
+ENDH

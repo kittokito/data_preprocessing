@@ -1,0 +1,165 @@
+DEVICE:51
+;MODULE:Slave
+;MODULE_TYPE:0
+;非常停止 / Emergency stop
+;
+LD R50010                ; 非常停止
+RES MR412                ; 一時停止ｽｲｯﾁON
+CON
+ZRES @MR000 @MR915
+;一時停止条件
+;１、Ｍａｉｎ　Ａｉｒ
+;２、ＰＡＵＳＥ ＳＷ
+;
+LDB R50010               ; 非常停止
+AND R1014                ; 装置　電源ON
+MPS
+TMH @0 #10
+CON
+ANP @T0
+SET @MR000
+MPP
+TMR #230 #10             ; 電源ON後ｳｪｲﾄ
+CON
+TMR @10 #10
+LD @MR000
+ANB R1915                ; 元圧空確認
+AND @T10
+SET MR400                ; ﾒｲﾝｴｱｰOFF
+STG @MR000
+MPS
+ANB R1915                ; 元圧空確認
+JMP @MR001
+MPP
+LD R1004                 ; SW.操作BOX    一時停止
+AND R50003               ; 原点復帰
+ANL
+SET MR412                ; 一時停止ｽｲｯﾁON
+CON
+JMP @MR001
+LDB R50001               ; 自動運転中
+AND R50300               ; 一時停止中
+LDA #544
+CON
+STA DM100                ; ﾒｯｾｰｼﾞ表示
+LDB R50001               ; 自動運転中
+ANF R50300               ; 一時停止中
+LDA #0
+CON
+STA DM100                ; ﾒｯｾｰｼﾞ表示
+;一時停止処理
+STG @MR001
+ANB R50100               ; PACK 搬送RB
+ANB R50101               ; PACK 位置決め
+ANB R50102               ; PACK 平打ち
+ANB R50103               ; PACK 厚み検査
+ANB R50104               ; PACK 排出ST
+JMP @MR002
+STG @MR002
+ANB R50209               ; 動作開始
+MDSTOP 搬送RB
+RES MR412                ; 一時停止ｽｲｯﾁON
+CON
+SET R50300               ; 一時停止中
+CON
+SET R50208               ; 一時停止表示
+CON
+JMP @MR003
+STG @MR003
+ANB MR1210               ; 平打ち動作中
+ANB MR1110               ; 厚み検査動作中
+ANB _搬送RB
+RES MR2506               ; RB  STP  一時停止
+CON
+JMP @MR004
+;ＳＴＡＲＴ ｓｗ　ＯＮ
+;
+STG @MR004
+AND R50007               ; 原点復帰　完了
+AND R1115                ; ｴﾘｱｾﾝｻ遮光SIG
+AND R1915                ; 元圧空確認
+ANB R1004                ; SW.操作BOX    一時停止
+MPS
+AND R1002                ; SW.操作BOX    運転開始
+RES MR410                ; 一時停止解除待ち表示
+CON
+SET MR411                ; 一時停止解除中
+CON
+RES R50208               ; 一時停止表示
+CON
+JMP @MR005
+MPP
+ANB R1002                ; SW.操作BOX    運転開始
+SET MR410                ; 一時停止解除待ち表示
+STG @MR005
+TMH @1 #50
+CON
+AND @T1
+JMP @MR006
+STG @MR006
+MPS
+LDB R1915                ; 元圧空確認
+OR R1004                 ; SW.操作BOX    一時停止
+ANL
+JMP @MR007
+MPP
+LD R1915                 ; 元圧空確認
+ANB R1004                ; SW.操作BOX    一時停止
+ANL
+RES R50301               ; 一時停止　CV停止要求
+CON
+JMP @MR008
+STG @MR007
+JMP @MR004
+STG @MR008
+LD R50007                ; 原点復帰　完了
+OR R50003                ; 原点復帰
+ANL
+JMP @MR009
+LDP @MR009
+MDSTRT 搬送RB
+STG @MR009
+MPS
+ANB R50001               ; 自動運転中
+SET MR2506               ; RB  STP  一時停止
+CON
+JMP @MR011
+MPP
+AND R50001               ; 自動運転中
+SET MR2506               ; RB  STP  一時停止
+CON
+SET @MR100
+CON
+JMP @MR010
+STG @MR010
+AND @MR107
+RES @MR107
+CON
+JMP @MR011
+STG @MR011
+RES MR411                ; 一時停止解除中
+CON
+RES R50300               ; 一時停止中
+CON
+JMP @MR000
+;Err31　　平打ちﾌﾟﾚｽ機　電源ON確認
+STG @MR100
+ANB R50008               ; 全体ERROR
+SET R50008               ; 全体ERROR
+CON
+SET R51002               ; 平打ちﾌﾟﾚｽ部
+CON
+SET R50615               ; ERR31
+CON
+JMP @MR102
+MOV #31 DM400            ; ﾒｯｾｰｼﾞNo.
+STG @MR102
+AND R50008               ; 全体ERROR
+JMP @MR103
+STG @MR103
+ANB R50008               ; 全体ERROR
+SET @MR107
+CON
+ENDS
+END
+ENDH

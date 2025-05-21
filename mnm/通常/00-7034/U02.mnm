@@ -1,0 +1,1624 @@
+DEVICE:128
+;MODULE:U02
+;MODULE_TYPE:0
+;SCRIPT_TYPE:
+;  ▽_入力受け
+LDB X102                 ; 搬送ﾁｬｯｸ 開き端
+MPS
+LDB X101                 ; 搬送ﾁｬｯｸ 閉じ端(ﾜｰｸ無）
+AND X100                 ; 搬送ﾁｬｯｸ閉じ端（ﾜｰｸ有）
+ANL
+TMH K201 K30             ; ｹｰｽﾁｬｯｸOK
+MPP
+AND X101                 ; 搬送ﾁｬｯｸ 閉じ端(ﾜｰｸ無）
+TMR K202 K20             ; ｹｰｽﾁｬｯｸNG
+;<h1/>□_装置状態・動作条件
+;  搬送P&P
+LDB W1007.2              ; RBC1 MOVE
+ANB W1007.3              ; RBC1 ALM
+AND W1007.4              ; RBC1 SV
+ANB W1007.15             ; RBC1 EMGS
+ANB W100F.2              ; RBC2 MOVE
+ANB W100F.3              ; RBC2 ALM
+AND W100F.4              ; RBC2 SV
+ANB W100F.15             ; RBC2 EMGS
+ANB M2771                ; 搬送P&P 移動完了
+TMH K210 K3              ; 動作許可遅延
+CON
+AND T210                 ; 動作許可遅延
+OUT M2779                ; 搬送P&P 動作可能
+;
+LDB M2501                ; U2→U1 取出し正常
+ANB M2502                ; U2→U1 取出し異常
+INV
+OUT M2500                ; U2→U1 取出し完了
+LDB M2522                ; U2→U4 ｹｰｽ給材正常
+ANB M2523                ; U2→U4 ｹｰｽ給材異常
+INV
+OUT M2521                ; U2→U4 ｹｰｽ給材完了
+;
+LD M2171                 ; U2C1_S171
+OR M2581                 ; 取出し中ﾁｬｯｸNG
+AND M74                  ; 自動運転中
+ANB M2182                ; U2C1_S182
+OUT M2581                ; 取出し中ﾁｬｯｸNG
+LD M2172                 ; U2C1_S172
+OR M2582                 ; 排出中ﾁｬｯｸNG
+AND M74                  ; 自動運転中
+ANB M2182                ; U2C1_S182
+OUT M2582                ; 排出中ﾁｬｯｸNG
+;  ▽_原点
+LD M2800                 ; Cycle1原点
+LD M2820                 ; Cycle2原点
+OR CR2002                ; 常時ON
+ANL
+OUT M2980                ; ﾕﾆｯﾄ2原点
+;  ▽_即停止異常
+LDB M2801                ; Cycle1即停止異常
+ANB M2821                ; Cycle2即停止異常
+INV
+OUT M2981                ; ﾕﾆｯﾄ2即停止異常
+;  ▽_ﾕﾆｯﾄ起動条件
+LD CR2003                ; 常時OFF
+OUT M2982                ; ﾕﾆｯﾄ2起動条件
+;  ▽_原点復帰OFF
+LDB M50                  ; 運転準備
+LDB M51                  ; 即停止異常(緊急停止)
+ANB M52                  ; ｻｲｸﾙ停止異常(ｻｲｸﾙ停止)
+ANB M60                  ; ｴﾗｰ発生
+INV
+ORL
+OR T15                   ; 強制停止ONﾀｲﾏ
+OUT M2983                ; ﾕﾆｯﾄ2_原点復帰起動OFF
+;  ▽_原点復帰中
+LD M82                   ; 原点復帰開始
+ANB M2984                ; ﾕﾆｯﾄ2原点復帰中
+OR M2984                 ; ﾕﾆｯﾄ2原点復帰中
+ANB M2983                ; ﾕﾆｯﾄ2_原点復帰起動OFF
+ANB M2969                ; Org_StepEnd
+OUT M2984                ; ﾕﾆｯﾄ2原点復帰中
+;  ▽_サイクル起動中
+LDB M2804                ; Cycle1起動中
+ANB M2824                ; Cycle2起動中
+OUB M2985                ; ﾕﾆｯﾄ2起動中
+;  ▽_サイクル停止異常
+LDB M2805                ; Cycle1ｻｲｸﾙ停止異常
+ANB M2825                ; Cycle2ｻｲｸﾙ停止異常
+OUB M2986                ; ﾕﾆｯﾄ2ｻｲｸﾙ停止異常
+;  ▽_払い出し後に停止する異常
+LDB CR2003               ; 常時OFF
+OUB M2987                ; ﾕﾆｯﾄ2払出後停止異常
+;  ▽_警報ﾌﾞｻﾞｰ
+LDB B048                 ; 072)RBC1 Manualﾓｰﾄﾞ
+ANB B049                 ; 073)RBC2 Manualﾓｰﾄﾞ
+OUB M2988                ; ﾕﾆｯﾄ2警報補助
+;  ▽_機器準備完了
+LDB M50                  ; 運転準備
+DW K0 W1007              ; RBC1 状態信号
+CON
+DW K0 W100F              ; RBC2 状態信号
+LD W1007.14              ; RBC1 PWR
+AND W100F.14             ; RBC2 PWR
+OUT M2990                ; ﾕﾆｯﾄ2機器準備完了
+;  ▽_一時停止異常
+LDB M2806                ; Cycle1ｴﾗｰ発生(一時停止処理)
+ANB M2826                ; Cycle2ｴﾗｰ発生(一時停止処理)
+OUB M2991                ; ﾕﾆｯﾄ2ｴﾗｰ発生
+;  ▽_ﾕﾆｯﾄ停止中ﾌﾗｸﾞ
+LD M2809                 ; Cycle1動作無し完了
+LD M2827                 ; Cycle2動作無し
+OR CR2002                ; 常時ON
+ANL
+OUT M2992                ; ﾕﾆｯﾄ2動作無し確認
+;  ▽_ﾕﾆｯﾄ1ﾜｰｸ無確認
+LDB X100                 ; 搬送ﾁｬｯｸ閉じ端（ﾜｰｸ有）
+ANB X101                 ; 搬送ﾁｬｯｸ 閉じ端(ﾜｰｸ無）
+AND X102                 ; 搬送ﾁｬｯｸ 開き端
+LDB Y301                 ; 移載ﾁｬｯｸ 開き
+ANB X100                 ; 搬送ﾁｬｯｸ閉じ端（ﾜｰｸ有）
+AND X101                 ; 搬送ﾁｬｯｸ 閉じ端(ﾜｰｸ無）
+ANB X102                 ; 搬送ﾁｬｯｸ 開き端
+ORL
+OUT M2993                ; ﾕﾆｯﾄ2ﾜｰｸ無し
+;<h1/>□_自動回路
+;<h1/>▽_Cycle1
+LDB Y300                 ; 移載ﾁｬｯｸ 閉じ
+ANB X100                 ; 搬送ﾁｬｯｸ閉じ端（ﾜｰｸ有）
+ANB X101                 ; 搬送ﾁｬｯｸ 閉じ端(ﾜｰｸ無）
+AND X102                 ; 搬送ﾁｬｯｸ 開き端
+AND W1007.0              ; RBC1 PEND
+AND W1007.1              ; RBC1 HEND
+ANB W1007.2              ; RBC1 MOVE
+AND W1007.4              ; RBC1 SV
+AND W100F.0              ; RBC2 PEND
+AND W100F.1              ; RBC2 HEND
+ANB W100F.2              ; RBC2 MOVE
+AND W100F.4              ; RBC2 SV
+AND= D2051 K1            ; RBC1-2 移動完了No.
+OUT M2800                ; Cycle1原点
+LDB B040                 ; 064)ﾁｬｯｸ閉じ端CLｾﾝｻ異常
+ANB B041                 ; 065)ﾁｬｯｸ開き端CLｾﾝｻ異常
+ANB B042                 ; 066)RBC1ｺﾝﾄﾛｰﾗ異常
+ANB B043                 ; 067)RBC2ｺﾝﾄﾛｰﾗ異常
+ANB B044                 ; 068)RBC1位置決め異常
+ANB B045                 ; 069)RBC2位置決め異常
+INV
+OUT M2801                ; Cycle1即停止異常
+LD M50                   ; 運転準備
+ANB M2803                ; Cycle1起動OFF
+ANB M2804                ; Cycle1起動中
+ANB M130                 ; 一時停止
+ANB M56                  ; 自動起動停止指令(ｻｲｸﾙ停止)
+ANB M2808                ; U2_Cycle1払出完了
+OUT M2802                ; Cycle1起動条件
+LDB M50                  ; 運転準備
+OR M2986                 ; ﾕﾆｯﾄ2ｻｲｸﾙ停止異常
+OR M51                   ; 即停止異常(緊急停止)
+OR T15                   ; 強制停止ONﾀｲﾏ
+OUT M2803                ; Cycle1起動OFF
+LD M73                   ; 各工程起動指令
+AND M2802                ; Cycle1起動条件
+OR M2804                 ; Cycle1起動中
+ANB M2803                ; Cycle1起動OFF
+ANB M2199                ; U2C1_S199__動作終了
+OUT M2804                ; Cycle1起動中
+LDB CR2003               ; 常時OFF
+INV
+OUT M2805                ; Cycle1ｻｲｸﾙ停止異常
+LDB B046                 ; 070)ﾜｰｸﾁｬｯｸ異常(除材)
+ANB B047                 ; 071)搬送P&Pｹｰｽ残
+INV
+OUT M2806                ; Cycle1ｴﾗｰ発生(一時停止処理)
+LDB CR2003               ; 常時OFF
+INV
+OUT M2813                ; Cycle1ｴﾗｰ発生(動作継続、RBPrgはｽ
+LDB Y301                 ; 移載ﾁｬｯｸ 開き
+LD X100                  ; 搬送ﾁｬｯｸ閉じ端（ﾜｰｸ有）
+OR X101                  ; 搬送ﾁｬｯｸ 閉じ端(ﾜｰｸ無）
+ANL
+ANB X102                 ; 搬送ﾁｬｯｸ 開き端
+LDB Y300                 ; 移載ﾁｬｯｸ 閉じ
+ANB X100                 ; 搬送ﾁｬｯｸ閉じ端（ﾜｰｸ有）
+ANB X101                 ; 搬送ﾁｬｯｸ 閉じ端(ﾜｰｸ無）
+AND X102                 ; 搬送ﾁｬｯｸ 開き端
+ORL
+OUT M2895                ; UT2 ｼﾘﾝﾀﾞ動作中無し
+LDB M2000                ; U2C1_S000
+ANB M2007                ; U2C1_S007
+ANB M2060                ; U2C1_S060
+ANB M2064                ; U2C1_S064
+ANB M2104                ; U2C1_S104
+ANB M2055                ; U2C1_S055
+ANB M2112                ; U2C1_S112
+ANB M2130                ; U2C1_S130
+ANB M2176                ; U2C1_S176
+ANB M2190                ; U2C1_S190
+INV
+AND M130                 ; 一時停止
+OUT M2807                ; Cycle1動作無し
+LD M2807                 ; Cycle1動作無し
+AND M2895                ; UT2 ｼﾘﾝﾀﾞ動作中無し
+ANB CR2003               ; 常時OFF
+ORB M2804                ; Cycle1起動中
+OR M2808                 ; U2_Cycle1払出完了
+AND M130                 ; 一時停止
+OUT M2809                ; Cycle1動作無し完了
+;ｻｲｸﾙﾀｲﾑ計測
+LD M2804                 ; Cycle1起動中
+LD>= D2000 K1            ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+AND<= D2000 K71          ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+LD>= D2000 K100          ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+AND<= D2000 K141         ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+ORL
+ANL
+AND CR2004               ; 10msｸﾛｯｸﾊﾟﾙｽ
+@INC D2900               ; ｻｲｸﾙﾀｲﾑ
+LDF M2804                ; Cycle1起動中
+BMOV D2900 D2901 K10     ; ｻｲｸﾙﾀｲﾑ  ｻｲｸﾙﾀｲﾑ Log1
+DW K0 D2900              ; ｻｲｸﾙﾀｲﾑ
+;  ▽_Cycle1ｽﾃｯﾌﾟ回路
+LD CR2002                ; 常時ON
+ZRES M2000 M2199         ; U2C1_S000  U2C1_S199__動作終了
+LDB M2804                ; Cycle1起動中
+MOV K0 D2000             ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+LD M2804                 ; Cycle1起動中
+MOV D2000 Z1             ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+SET M2000:Z1             ; U2C1_S000
+;<h1/>▽_Cycle1動作回路
+LD M2000                 ; U2C1_S000
+ANB M130                 ; 一時停止
+MPS
+LDB M52                  ; ｻｲｸﾙ停止異常(ｻｲｸﾙ停止)
+LDB M36                  ; 払出ﾓｰﾄﾞ
+ORB M1808                ; U1_Cycle1払出完了
+ANL
+AND M1500                ; U1→U2 取出し要求
+AND X10A                 ; 投入CV 移載位置ﾜｰｸ到達確認
+ANL
+INC D2000                ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+MPP
+LD M52                   ; ｻｲｸﾙ停止異常(ｻｲｸﾙ停止)
+LD M36                   ; 払出ﾓｰﾄﾞ
+AND M1808                ; U1_Cycle1払出完了
+ORL
+ANL
+MOV K190 D2000           ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+;<h1/>  ▽_S001 ｹｰｽ取出し
+;Transfer P&P move to P2
+LD M2001                 ; U2C1_S001
+AND M2779                ; 搬送P&P 動作可能
+DW K2 D2050              ; RBC1-2 移動No.
+CON
+INC D2000                ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+LD M2002                 ; U2C1_S002
+MPS
+AND M2771                ; 搬送P&P 移動完了
+INC D2000                ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+MPP
+OUT M2742                ; 搬送P&P 移動
+;ﾁｬｯｸ閉じ / Chuck Close
+LD M2003                 ; U2C1_S003
+MPS
+AND T201                 ; ｹｰｽﾁｬｯｸOK
+INC D2000                ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+MRD
+AND T202                 ; ｹｰｽﾁｬｯｸNG
+MOV K170 D2000           ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+MPP
+OUT M2640                ; 移載ﾁｬｯｸ 閉じ
+;Transfer P&P move to P3
+LD M2004                 ; U2C1_S004
+AND M2779                ; 搬送P&P 動作可能
+DW K3 D2050              ; RBC1-2 移動No.
+CON
+INC D2000                ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+LD M2005                 ; U2C1_S005
+MPS
+AND M2771                ; 搬送P&P 移動完了
+INC D2000                ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+MPP
+OUT M2744                ; 搬送P&P 移動
+;ｹｰｽﾁｬｯｸﾁｪｯｸ / Case chuck check
+LD M2006                 ; U2C1_S006
+MPS
+AND T201                 ; ｹｰｽﾁｬｯｸOK
+INC D2000                ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+MPP
+ANB T201                 ; ｹｰｽﾁｬｯｸOK
+TMR K220 K20             ; Error delay
+CON
+AND T220                 ; Error delay
+MOV K171 D2000           ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+LD M2007                 ; U2C1_S007
+MPS
+LDB M130                 ; 一時停止
+ANB M1500                ; U1→U2 取出し要求
+ANL
+MOV K50 D2000            ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+MPP
+OUT M2501                ; U2→U1 取出し正常
+;<h1/>  ▽_S050 異物除去 / Case Cleaning blow
+;Transfer P&P move to P4
+LD M2050                 ; U2C1_S050
+AND M2779                ; 搬送P&P 動作可能
+DW K4 D2050              ; RBC1-2 移動No.
+CON
+INC D2000                ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+LD M2051                 ; U2C1_S051
+MPS
+AND M2771                ; 搬送P&P 移動完了
+INC D2000                ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+MPP
+OUT M2745                ; 搬送P&P 移動
+;ｹｰｽﾁｬｯｸﾁｪｯｸ / Case chuck check
+LD M2052                 ; U2C1_S052
+MPS
+AND T201                 ; ｹｰｽﾁｬｯｸOK
+INC D2000                ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+MPP
+ANB T201                 ; ｹｰｽﾁｬｯｸOK
+TMR K221 K20             ; Error delay
+CON
+AND T221                 ; Error delay
+MOV K173 D2000           ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+;Transfer P&P move to P5
+LD M2053                 ; U2C1_S053
+AND M2779                ; 搬送P&P 動作可能
+DW K5 D2050              ; RBC1-2 移動No.
+CON
+INC D2000                ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+LD M2054                 ; U2C1_S054
+MPS
+AND M2771                ; 搬送P&P 移動完了
+INC D2000                ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+MPP
+OUT M2747                ; 搬送P&P 移動
+;ｹｰｽﾁｬｯｸﾁｪｯｸ / Case chuck check
+LD M2055                 ; U2C1_S055
+ANB M130                 ; 一時停止
+MPS
+AND T201                 ; ｹｰｽﾁｬｯｸOK
+MOV K60 D2000            ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+MPP
+ANB T201                 ; ｹｰｽﾁｬｯｸOK
+TMR K222 K20             ; Error delay
+CON
+AND T222                 ; Error delay
+MOV K173 D2000           ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+;ﾌﾞﾛｰ要求 / Blow request 
+LD M2060                 ; U2C1_S060
+MPS
+LDB M130                 ; 一時停止
+AND M3510                ; U3→U2 ﾌﾞﾛｰ完了
+ANL
+INC D2000                ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+MPP
+OUT M2510                ; U2→U3 ﾌﾞﾛｰ要求
+LD M2061                 ; U2C1_S061
+ANB M3510                ; U3→U2 ﾌﾞﾛｰ完了
+INC D2000                ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+;Transfer P&P move to P4
+LD M2062                 ; U2C1_S062
+AND M2779                ; 搬送P&P 動作可能
+DW K4 D2050              ; RBC1-2 移動No.
+CON
+INC D2000                ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+LD M2063                 ; U2C1_S063
+MPS
+AND M2771                ; 搬送P&P 移動完了
+INC D2000                ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+MPP
+OUT M2748                ; 搬送P&P 移動
+;ｹｰｽﾁｬｯｸﾁｪｯｸ / Case chuck check
+LD M2064                 ; U2C1_S064
+ANB M130                 ; 一時停止
+MPS
+AND T201                 ; ｹｰｽﾁｬｯｸOK
+MOV K100 D2000           ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+MPP
+ANB T201                 ; ｹｰｽﾁｬｯｸOK
+TMR K223 K20             ; Error delay
+CON
+AND T223                 ; Error delay
+MOV K173 D2000           ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+;<h1/>  ▽_S100 ｹｰｽ排出 / Case Eject to Eject-CV
+LD M2100                 ; U2C1_S100
+MPS
+LD M4521                 ; U4→U2 ｹｰｽ給材要求
+ANB X10C                 ; 排出CV 受取位置ﾜｰｸ到達確認
+ANL
+MOV K110 D2000           ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+MPP
+ANB M4521                ; U4→U2 ｹｰｽ給材要求
+INC D2000                ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+;Transfer P&P move to P8
+LD M2101                 ; U2C1_S101
+AND M2779                ; 搬送P&P 動作可能
+DW K8 D2050              ; RBC1-2 移動No.
+CON
+INC D2000                ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+LD M2102                 ; U2C1_S102
+MPS
+AND M2771                ; 搬送P&P 移動完了
+INC D2000                ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+MPP
+OUT M2749                ; 搬送P&P 移動
+;ｹｰｽﾁｬｯｸﾁｪｯｸ / Case chuck check
+LD M2103                 ; U2C1_S103
+MPS
+AND T201                 ; ｹｰｽﾁｬｯｸOK
+INC D2000                ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+MPP
+ANB T201                 ; ｹｰｽﾁｬｯｸOK
+TMR K224 K20             ; Error delay
+CON
+AND T224                 ; Error delay
+MOV K173 D2000           ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+;ｹｰｽ給材要求待ち/ Waiting for Case supply request
+LD M2104                 ; U2C1_S104
+MPS
+LDB M130                 ; 一時停止
+AND M4521                ; U4→U2 ｹｰｽ給材要求
+ANB X10C                 ; 排出CV 受取位置ﾜｰｸ到達確認
+ANL
+MOV K110 D2000           ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+MPP
+OUT M2524                ; U2→U4 ｹｰｽ給材要求待ち中
+;Transfer P&P move to P6
+LD M2110                 ; U2C1_S110
+AND M2779                ; 搬送P&P 動作可能
+DW K6 D2050              ; RBC1-2 移動No.
+CON
+INC D2000                ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+LD M2111                 ; U2C1_S111
+MPS
+AND M2771                ; 搬送P&P 移動完了
+INC D2000                ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+MPP
+OUT M2750                ; 搬送P&P 移動
+;ｹｰｽﾁｬｯｸﾁｪｯｸ / Case chuck check
+LD M2112                 ; U2C1_S112
+ANB M130                 ; 一時停止
+MPS
+AND T201                 ; ｹｰｽﾁｬｯｸOK
+INC D2000                ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+MPP
+ANB T201                 ; ｹｰｽﾁｬｯｸOK
+TMR K225 K20             ; Error delay
+CON
+AND T225                 ; Error delay
+MOV K172 D2000           ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+;Transfer P&P move to P7
+LD M2113                 ; U2C1_S113
+AND M2779                ; 搬送P&P 動作可能
+DW K7 D2050              ; RBC1-2 移動No.
+CON
+INC D2000                ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+LD M2114                 ; U2C1_S104
+MPS
+AND M2771                ; 搬送P&P 移動完了
+INC D2000                ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+MPP
+OUT M2751                ; 搬送P&P 移動
+;ﾁｬｯｸ開き / Chuck open
+LD M2115                 ; U2C1_S115
+MPS
+LDB X101                 ; 搬送ﾁｬｯｸ 閉じ端(ﾜｰｸ無）
+AND X102                 ; 搬送ﾁｬｯｸ 開き端
+ANL
+INC D2000                ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+MPP
+OUT M2653                ; 移載ﾁｬｯｸ 開き
+;Transfer P&P move to P6
+LD M2116                 ; U2C1_S116
+AND M2779                ; 搬送P&P 動作可能
+DW K6 D2050              ; RBC1-2 移動No.
+CON
+INC D2000                ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+LD M2117                 ; U2C1_S117
+MPS
+AND M2771                ; 搬送P&P 移動完了
+INC D2000                ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+MPP
+OUT M2752                ; 搬送P&P 移動
+;ｹｰｽ残ﾁｪｯｸ / Case remain check
+LD M2118                 ; U2C1_S118
+MPS
+ANB X100                 ; 搬送ﾁｬｯｸ閉じ端（ﾜｰｸ有）
+MOV K130 D2000           ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+MPP
+AND X100                 ; 搬送ﾁｬｯｸ閉じ端（ﾜｰｸ有）
+TMR K226 K20             ; Error delay
+CON
+AND T226                 ; Error delay
+INC D2000                ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+;◇搬送P&Pｹｰｽ残 / Case remain at Transfer P&P
+LD M2119                 ; U2C1_S119
+AND B047                 ; 071)搬送P&Pｹｰｽ残
+INC D2000                ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+LD M2120                 ; U2C1_S120
+ANB M130                 ; 一時停止
+ANB B047                 ; 071)搬送P&Pｹｰｽ残
+MOV K118 D2000           ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+;U4 H/S
+LD M2130                 ; U2C1_S130
+MPS
+LDB M130                 ; 一時停止
+ANB M4521                ; U4→U2 ｹｰｽ給材要求
+ANL
+INC D20005               ; Output
+CON
+INC D2000                ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+MPP
+OUT M2522                ; U2→U4 ｹｰｽ給材正常
+;Transfer P&P move to P1
+LD M2131                 ; U2C1_S131
+AND M2779                ; 搬送P&P 動作可能
+DW K1 D2050              ; RBC1-2 移動No.
+CON
+INC D2000                ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+LD M2132                 ; U2C1_S132
+MPS
+AND M2771                ; 搬送P&P 移動完了
+MOV K190 D2000           ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+MPP
+OUT M2753                ; 搬送P&P 移動
+;<h1/>  ▼_S170 ﾁｬｯｸNG / Chuck NG
+;◆ﾁｬｯｸ開き / Chuck open
+LD M2170                 ; U2C1_S170
+MPS
+LDB X101                 ; 搬送ﾁｬｯｸ 閉じ端(ﾜｰｸ無）
+AND X102                 ; 搬送ﾁｬｯｸ 開き端
+ANL
+INC D2000                ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+MPP
+OUT M2651                ; 移載ﾁｬｯｸ 開き
+;◆取出し中NGﾌﾗｸﾞｾｯﾄ / NG in pick up flag set
+LD M2171                 ; U2C1_S171
+AND M2581                ; 取出し中ﾁｬｯｸNG
+MOV K173 D2000           ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+;◆排出中NGﾌﾗｸﾞｾｯﾄ / NG in eject flag set
+LD M2172                 ; U2C1_S172
+AND M2582                ; 排出中ﾁｬｯｸNG
+INC D2000                ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+;◆Transfer P&P move to P12
+LD M2173                 ; U2C1_S173
+AND M2779                ; 搬送P&P 動作可能
+DW K12 D2050             ; RBC1-2 移動No.
+CON
+INC D2000                ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+LD M2174                 ; U2C1_S174
+MPS
+AND M2771                ; 搬送P&P 移動完了
+INC D2000                ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+MPP
+OUT M2743                ; 搬送P&P 移動
+;◇ｹｰｽﾁｬｯｸNG / Case chuck error
+LD M2175                 ; U2C1_S175
+AND B046                 ; 070)ﾜｰｸﾁｬｯｸ異常(除材)
+INC D2000                ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+LD M2176                 ; U2C1_S176
+ANB M130                 ; 一時停止
+ANB B046                 ; 070)ﾜｰｸﾁｬｯｸ異常(除材)
+INC D2000                ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+;◆ｹｰｽﾁｪｯｸ / Case ﾁｪｯｸ
+LD M2177                 ; U2C1_S177
+MPS
+AND X100                 ; 搬送ﾁｬｯｸ閉じ端（ﾜｰｸ有）
+MOV K175 D2000           ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+MPP
+ANB X100                 ; 搬送ﾁｬｯｸ閉じ端（ﾜｰｸ有）
+INC D2000                ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+;◆ﾁｬｯｸ開き / Chuck open
+LD M2178                 ; U2C1_S178
+MPS
+LDB X101                 ; 搬送ﾁｬｯｸ 閉じ端(ﾜｰｸ無）
+AND X102                 ; 搬送ﾁｬｯｸ 開き端
+ANL
+INC D2000                ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+MPP
+OUT M2652                ; 移載ﾁｬｯｸ 開き
+;H/S
+LD M2179                 ; U2C1_S179
+MPS
+AND M2581                ; 取出し中ﾁｬｯｸNG
+INC D2000                ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+MRD
+AND M2582                ; 排出中ﾁｬｯｸNG
+MOV K181 D2000           ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+MPP
+LDB M2581                ; 取出し中ﾁｬｯｸNG
+ANB M2582                ; 排出中ﾁｬｯｸNG
+ANL
+MOV K183 D2000           ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+LD M2180                 ; U2C1_S180
+MPS
+ANB M1500                ; U1→U2 取出し要求
+MOV K182 D2000           ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+MPP
+OUT M2502                ; U2→U1 取出し異常
+LD M2181                 ; U2C1_S181
+MPS
+ANB M4521                ; U4→U2 ｹｰｽ給材要求
+INC D2000                ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+MPP
+OUT M2523                ; U2→U4 ｹｰｽ給材異常
+LD M2182                 ; U2C1_S182
+ANB M2581                ; 取出し中ﾁｬｯｸNG
+ANB M2582                ; 排出中ﾁｬｯｸNG
+INC D2000                ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+;◆Transfer P&P move to P1
+LD M2183                 ; U2C1_S183
+AND M2779                ; 搬送P&P 動作可能
+DW K1 D2050              ; RBC1-2 移動No.
+CON
+INC D2000                ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+LD M2184                 ; U2C1_S184
+MPS
+AND M2771                ; 搬送P&P 移動完了
+MOV K190 D2000           ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+MPP
+OUT M2746                ; 搬送P&P 移動
+;<h1/>  ▽_ｻｲｸﾙ停止
+LD M2190                 ; U2C1_S190
+AND M1808                ; U1_Cycle1払出完了
+OR M2808                 ; U2_Cycle1払出完了
+AND M36                  ; 払出ﾓｰﾄﾞ
+OUT M2808                ; U2_Cycle1払出完了
+LD M2190                 ; U2C1_S190
+ANB M130                 ; 一時停止
+MOV K199 D2000           ; Cycle1ｽﾃｯﾌﾟｶｳﾝﾀ
+;<h1/>□_原点復帰回路
+LD CR2002                ; 常時ON
+ZRES M2900 M2969         ; Org_S00  Org_StepEnd
+LDB M2984                ; ﾕﾆｯﾄ2原点復帰中
+MOV K0 D2010             ; 原点復帰ｽﾃｯﾌﾟ
+LD M2984                 ; ﾕﾆｯﾄ2原点復帰中
+MOV D2010 Z1             ; 原点復帰ｽﾃｯﾌﾟ
+SET M2900:Z1             ; Org_S00
+;  ▽_原点復帰開始
+;退避高さ移動 / Move to Escape Height 
+LD M2900                 ; Org_S00
+AND M2779                ; 搬送P&P 動作可能
+DW K12 D2050             ; RBC1-2 移動No.
+CON
+INC D2010                ; 原点復帰ｽﾃｯﾌﾟ
+LD M2901                 ; Org_S01
+MPS
+AND M2771                ; 搬送P&P 移動完了
+INC D2010                ; 原点復帰ｽﾃｯﾌﾟ
+MPP
+OUT M2740                ; 搬送P&P 移動
+;各CVへ動作許可 / Move permit for CV
+LD M2902                 ; Org_S02
+MPS
+LD M1520                 ; U1→U2 Origin許可受領
+AND M3520                ; U3→U2 Origin許可受領
+AND M4520                ; U4→U2 Origin許可受領
+ANL
+INC D2010                ; 原点復帰ｽﾃｯﾌﾟ
+MPP
+OUT M2520                ; U2→U1-4 Origin動作許可
+LD M2903                 ; Org_S03
+ANB M1520                ; U1→U2 Origin許可受領
+ANB M3520                ; U3→U2 Origin許可受領
+ANB M4520                ; U4→U2 Origin許可受領
+INC D2010                ; 原点復帰ｽﾃｯﾌﾟ
+;ｹｰｽ残確認 / Case remain check
+LD M2904                 ; Org_S04
+MPS
+ANB X100                 ; 搬送ﾁｬｯｸ閉じ端（ﾜｰｸ有）
+MPS
+LDB X101                 ; 搬送ﾁｬｯｸ 閉じ端(ﾜｰｸ無）
+AND X102                 ; 搬送ﾁｬｯｸ 開き端
+OR M2580                 ; 搬送P&Pｹｰｽ残確認
+OR M2584                 ; 搬送P&P除材動作確認
+ANL
+MOV K10 D2010            ; 原点復帰ｽﾃｯﾌﾟ
+MPP
+LD X101                  ; 搬送ﾁｬｯｸ 閉じ端(ﾜｰｸ無）
+ORB X102                 ; 搬送ﾁｬｯｸ 開き端
+ANB M2580                ; 搬送P&Pｹｰｽ残確認
+ANB M2584                ; 搬送P&P除材動作確認
+ANL
+INC D2010                ; 原点復帰ｽﾃｯﾌﾟ
+MPP
+AND X100                 ; 搬送ﾁｬｯｸ閉じ端（ﾜｰｸ有）
+MOV K6 D2010             ; 原点復帰ｽﾃｯﾌﾟ
+;ｹｰｽ有るかもﾌﾗｸﾞ
+LD M2905                 ; Org_S05
+OR M2580                 ; 搬送P&Pｹｰｽ残確認
+ANB X102                 ; 搬送ﾁｬｯｸ 開き端
+OUT M2580                ; 搬送P&Pｹｰｽ残確認
+LD M2905                 ; Org_S05
+AND M2580                ; 搬送P&Pｹｰｽ残確認
+INC D2010                ; 原点復帰ｽﾃｯﾌﾟ
+;◇搬送P&Pｹｰｽ残 / Case remain at Transfer P&P
+LD M2906                 ; Org_S06
+OR M2583                 ; 搬送P&Pｹｰｽ残確認
+AND M50                  ; 運転準備
+ANB M74                  ; 自動運転中
+MPS
+OUT M2583                ; 搬送P&Pｹｰｽ残確認
+MPP
+AND X102                 ; 搬送ﾁｬｯｸ 開き端
+OUT M2584                ; 搬送P&P除材動作確認
+LD M2906                 ; Org_S06
+MOV K60 D2010            ; 原点復帰ｽﾃｯﾌﾟ
+;
+LD M2910                 ; Org_S10
+INC D2010                ; 原点復帰ｽﾃｯﾌﾟ
+LD M2911                 ; Org_S11
+INC D2010                ; 原点復帰ｽﾃｯﾌﾟ
+;ﾁｬｯｸ開き / Chuck Open
+LD M2912                 ; Org_S12
+MPS
+LDB X100                 ; 搬送ﾁｬｯｸ閉じ端（ﾜｰｸ有）
+ANB X101                 ; 搬送ﾁｬｯｸ 閉じ端(ﾜｰｸ無）
+AND X102                 ; 搬送ﾁｬｯｸ 開き端
+ANL
+INC D2010                ; 原点復帰ｽﾃｯﾌﾟ
+MPP
+OUT M2650                ; 移載ﾁｬｯｸ 開き
+;待機位置移動 / Move to Waiting posoton 
+LD M2913                 ; Org_S13
+AND M2779                ; 搬送P&P 動作可能
+DW K1 D2050              ; RBC1-2 移動No.
+CON
+INC D2010                ; 原点復帰ｽﾃｯﾌﾟ
+LD M2914                 ; Org_S14
+MPS
+AND M2771                ; 搬送P&P 移動完了
+MOV K31 D2010            ; 原点復帰ｽﾃｯﾌﾟ
+MPP
+OUT M2741                ; 搬送P&P 移動
+;終了
+LD M2931                 ; Org_S31
+AND M2980                ; ﾕﾆｯﾄ2原点
+ANB M82                  ; 原点復帰開始
+MOV K69 D2010            ; 原点復帰ｽﾃｯﾌﾟ
+;<h1/>□_手動回路
+LD M31                   ; 手動ﾓｰﾄﾞ
+AND Y51                  ; 安全ﾄﾞｱﾛｯｸ
+AND M123                 ; 安全扉正常
+AND M32                  ; ﾒｲﾝ手動操作可能条件
+ANB M2984                ; ﾕﾆｯﾄ2原点復帰中
+ANB M2985                ; ﾕﾆｯﾄ2起動中
+ANB M2986                ; ﾕﾆｯﾄ2ｻｲｸﾙ停止異常
+ANB M2805                ; Cycle1ｻｲｸﾙ停止異常
+ANB M2813                ; Cycle1ｴﾗｰ発生(動作継続、RBPrgはｽ
+MC
+;<h1/>    Valve
+;ﾁｬｯｸ / Case chuck
+LD CR2002                ; 常時ON
+OUT M2680                ; ﾜｰｸｸﾗﾝﾌﾟ条件
+LDP B10A0                ; UNIT2-1-1 TP-PB
+ANB B10A1                ; UNIT2-1-2 TP-PB
+AND M2680                ; ﾜｰｸｸﾗﾝﾌﾟ条件
+LD M2681                 ; MUN_ﾜｰｸｸﾗﾝﾌﾟ指令
+ANB M2683                ; MUN_ﾜｰｸ解放指令
+ORL
+OUT M2681                ; MUN_ﾜｰｸｸﾗﾝﾌﾟ指令
+LD CR2002                ; 常時ON
+OUT M2682                ; ﾜｰｸ解放条件
+LDP B10A1                ; UNIT2-1-2 TP-PB
+ANB B10A0                ; UNIT2-1-1 TP-PB
+AND M2682                ; ﾜｰｸ解放条件
+LD M2683                 ; MUN_ﾜｰｸ解放指令
+ANB M2681                ; MUN_ﾜｰｸｸﾗﾝﾌﾟ指令
+ORL
+OUT M2683                ; MUN_ﾜｰｸ解放指令
+;<h1/>    RB
+LD M2779                 ; 搬送P&P 動作可能
+ANB M2702                ; MUN_移動要求
+ANB M2719                ; 搬送PP1Z軸移動要求
+ANB M2770                ; 搬送P&P   Move
+AND W1007.0              ; RBC1 PEND
+AND W100F.0              ; RBC2 PEND
+OUT M2700                ; 搬送PP動作可
+;Transfer
+LDP B10B0                ; UNIT2-2-1 TP-PB
+AND M2700                ; 搬送PP動作可
+LD<> D2051 K0            ; RBC1-2 移動完了No.
+AND<> D2051 K5           ; RBC1-2 移動完了No.
+AND<> D2051 K7           ; RBC1-2 移動完了No.
+OR W100F.12              ; RBC2 ZONE1  CV干渉外
+ANL
+OR M2704                 ; 搬送PP1移動要求
+ANB M2703                ; 移動完了
+OUT M2704                ; 搬送PP1移動要求
+MOV K1 D2050             ; RBC1-2 移動No.
+LDP B10B1                ; UNIT2-2-2 TP-PB
+AND M2700                ; 搬送PP動作可
+LD= D2051 K1             ; RBC1-2 移動完了No.
+OR= D2051 K3             ; RBC1-2 移動完了No.
+ANL
+AND X102                 ; 搬送ﾁｬｯｸ 開き端
+OR M2705                 ; 搬送PP1移動要求
+ANB M2703                ; 移動完了
+OUT M2705                ; 搬送PP1移動要求
+MOV K2 D2050             ; RBC1-2 移動No.
+LDP B10B2                ; UNIT2-2-3 TP-PB
+AND M2700                ; 搬送PP動作可
+LD= D2051 K1             ; RBC1-2 移動完了No.
+OR= D2051 K2             ; RBC1-2 移動完了No.
+OR W100F.12              ; RBC2 ZONE1  CV干渉外
+ANL
+OR M2706                 ; 搬送PP1移動要求
+ANB M2703                ; 移動完了
+OUT M2706                ; 搬送PP1移動要求
+MOV K3 D2050             ; RBC1-2 移動No.
+LDP B10B3                ; UNIT2-2-4 TP-PB
+AND M2700                ; 搬送PP動作可
+LD<> D2051 K0            ; RBC1-2 移動完了No.
+AND<> D2051 K2           ; RBC1-2 移動完了No.
+AND<> D2051 K7           ; RBC1-2 移動完了No.
+OR W100F.12              ; RBC2 ZONE1  CV干渉外
+ANL
+OR M2707                 ; 搬送PP1移動要求
+ANB M2703                ; 移動完了
+OUT M2707                ; 搬送PP1移動要求
+MOV K4 D2050             ; RBC1-2 移動No.
+LDP B10B4                ; UNIT2-2-5 TP-PB
+AND M2700                ; 搬送PP動作可
+AND= D2051 K4            ; RBC1-2 移動完了No.
+OR M2708                 ; 搬送PP1移動要求
+ANB M2703                ; 移動完了
+OUT M2708                ; 搬送PP1移動要求
+MOV K5 D2050             ; RBC1-2 移動No.
+LDP B10B5                ; UNIT2-2-6 TP-PB
+AND M2700                ; 搬送PP動作可
+LD<> D2051 K0            ; RBC1-2 移動完了No.
+AND<> D2051 K2           ; RBC1-2 移動完了No.
+AND<> D2051 K5           ; RBC1-2 移動完了No.
+OR W100F.12              ; RBC2 ZONE1  CV干渉外
+ANL
+OR M2709                 ; 搬送PP1移動要求
+ANB M2703                ; 移動完了
+OUT M2709                ; 搬送PP1移動要求
+MOV K6 D2050             ; RBC1-2 移動No.
+LDP B10B6                ; UNIT2-2-7 TP-PB
+AND M2700                ; 搬送PP動作可
+AND= D2051 K6            ; RBC1-2 移動完了No.
+OR M2710                 ; 搬送PP1移動要求
+ANB M2703                ; 移動完了
+OUT M2710                ; 搬送PP1移動要求
+MOV K7 D2050             ; RBC1-2 移動No.
+LDP B10B7                ; UNIT2-2-8 TP-PB
+AND M2700                ; 搬送PP動作可
+AND<> D2051 K0           ; RBC1-2 移動完了No.
+AND<> D2051 K2           ; RBC1-2 移動完了No.
+AND<> D2051 K5           ; RBC1-2 移動完了No.
+AND<> D2051 K7           ; RBC1-2 移動完了No.
+OR M2711                 ; 搬送PP1移動要求
+ANB M2703                ; 移動完了
+OUT M2711                ; 搬送PP1移動要求
+MOV K8 D2050             ; RBC1-2 移動No.
+;
+LDB M2704                ; 搬送PP1移動要求
+ANB M2705                ; 搬送PP1移動要求
+ANB M2706                ; 搬送PP1移動要求
+ANB M2707                ; 搬送PP1移動要求
+ANB M2708                ; 搬送PP1移動要求
+ANB M2709                ; 搬送PP1移動要求
+ANB M2710                ; 搬送PP1移動要求
+ANB M2711                ; 搬送PP1移動要求
+INV
+OUT M2701                ; 移動要求まとめ
+LD M2701                 ; 移動要求まとめ
+OR M2702                 ; MUN_移動要求
+ANB M2703                ; 移動完了
+OUT M2702                ; MUN_移動要求
+LD M2771                 ; 搬送P&P 移動完了
+OR M2703                 ; 移動完了
+AND M2702                ; MUN_移動要求
+OUT M2703                ; 移動完了
+;
+LDP B10BF                ; UNIT2-2-16 TP-PB
+AND M2700                ; 搬送PP動作可
+OR M2719                 ; 搬送PP1Z軸移動要求
+ANB M2771                ; 搬送P&P 移動完了
+OUT M2719                ; 搬送PP1Z軸移動要求
+MOV K12 D2050            ; RBC1-2 移動No.
+;
+LD B1217                 ; RBC1_jog-
+OUT W2007.7              ; RBC1 JOG-
+LD B1216                 ; RBC1_jog+
+OUT W2007.8              ; RBC1 JOG+
+LD B1219                 ; RBC2_jog-
+OUT W200F.7              ; RBC2 JOG-
+LD B1218                 ; RBC2_jog+
+OUT W200F.8              ; RBC2 JOG+
+LDB B1217                ; RBC1_jog-
+ANB B1216                ; RBC1_jog+
+ANB B1219                ; RBC2_jog-
+ANB B1218                ; RBC2_jog+
+INV
+DW K0 D2050              ; RBC1-2 移動No.
+DW K0 D2051              ; RBC1-2 移動完了No.
+MCR
+;<h1/>○  Subﾙｰﾁﾝ  ○
+;<h1/>  ｽﾗｲﾀﾞ上ﾜｰｸ残確認 / Work remain check
+LD CR2002                ; 常時ON
+ZRES M2300 M2319         ; U2Sb1_S00  U2Sb1_S19 完了
+LDB M2402                ; ﾜｰｸ残ﾁｪｯｸ動作
+ANB M2403                ; ﾜｰｸ残ﾁｪｯｸ動作
+INV
+OUT M2400                ; ﾜｰｸ残ﾁｪｯｸ中
+LDB M2400                ; ﾜｰｸ残ﾁｪｯｸ中
+MOV K0 D2005             ; sub1ｽﾃｯﾌﾟｶｳﾝﾀ
+LD M2400                 ; ﾜｰｸ残ﾁｪｯｸ中
+MOV D2005 Z3             ; sub1ｽﾃｯﾌﾟｶｳﾝﾀ
+MPS
+SET M2300:Z3             ; U2Sb1_S00
+MPP
+AND M2319                ; U2Sb1_S19 完了
+OUT M2401                ; ﾜｰｸ残ﾁｪｯｸ完了
+;
+LD M2300                 ; U2Sb1_S00
+INC D2005                ; sub1ｽﾃｯﾌﾟｶｳﾝﾀ
+;End
+LD M2310                 ; U2Sb1_S10
+MOV K19 D2005            ; sub1ｽﾃｯﾌﾟｶｳﾝﾀ
+;<h1/>□_出力回路
+;
+LD M50                   ; 運転準備
+AND M123                 ; 安全扉正常
+ANB M51                  ; 即停止異常(緊急停止)
+MC
+;
+;<h1/>____▼_SOL
+;Chuck
+LDB M2640                ; 移載ﾁｬｯｸ 閉じ
+ANB M2641                ; 移載ﾁｬｯｸ 閉じ
+ANB M2642                ; 移載ﾁｬｯｸ 閉じ
+ANB M2643                ; 移載ﾁｬｯｸ 閉じ
+ANB M2644                ; 移載ﾁｬｯｸ 閉じ
+ANB M2645                ; 移載ﾁｬｯｸ 閉じ
+ANB M2646                ; 移載ﾁｬｯｸ 閉じ
+ANB M2647                ; 移載ﾁｬｯｸ 閉じ
+INV
+LDB M2681                ; MUN_ﾜｰｸｸﾗﾝﾌﾟ指令
+INV
+ORL
+LD Y300                  ; 移載ﾁｬｯｸ 閉じ
+ANB Y301                 ; 移載ﾁｬｯｸ 開き
+ORL
+OUT Y300                 ; 移載ﾁｬｯｸ 閉じ
+LDB M2650                ; 移載ﾁｬｯｸ 開き
+ANB M2651                ; 移載ﾁｬｯｸ 開き
+ANB M2652                ; 移載ﾁｬｯｸ 開き
+ANB M2653                ; 移載ﾁｬｯｸ 開き
+ANB M2654                ; 移載ﾁｬｯｸ 開き
+ANB M2655                ; 移載ﾁｬｯｸ 開き
+ANB M2656                ; 移載ﾁｬｯｸ 開き
+ANB M2657                ; 移載ﾁｬｯｸ 開き
+INV
+LDB M2683                ; MUN_ﾜｰｸ解放指令
+INV
+ORL
+LD Y301                  ; 移載ﾁｬｯｸ 開き
+ANB Y300                 ; 移載ﾁｬｯｸ 閉じ
+ORL
+OUT Y301                 ; 移載ﾁｬｯｸ 開き
+;搬送P&P 移動指令まとめ
+LDB M2740                ; 搬送P&P 移動
+ANB M2741                ; 搬送P&P 移動
+ANB M2742                ; 搬送P&P 移動
+ANB M2743                ; 搬送P&P 移動
+ANB M2744                ; 搬送P&P 移動
+ANB M2745                ; 搬送P&P 移動
+ANB M2746                ; 搬送P&P 移動
+ANB M2747                ; 搬送P&P 移動
+INV
+LDB M2748                ; 搬送P&P 移動
+ANB M2749                ; 搬送P&P 移動
+ANB M2750                ; 搬送P&P 移動
+ANB M2751                ; 搬送P&P 移動
+ANB M2752                ; 搬送P&P 移動
+ANB M2753                ; 搬送P&P 移動
+ANB M2754                ; 搬送P&P 移動
+ANB M2755                ; 搬送P&P 移動
+INV
+ORL
+LDB M2756                ; 搬送P&P 移動
+ANB M2757                ; 搬送P&P 移動
+ANB M2758                ; 搬送P&P 移動
+ANB M2759                ; 搬送P&P 移動
+ANB M2702                ; MUN_移動要求
+INV
+ORL
+OUT M2770                ; 搬送P&P   Move
+LDB M2760                ; 搬送P&P Z軸のみ移動
+ANB M2761                ; 搬送P&P Z軸のみ移動
+ANB M2762                ; 搬送P&P Z軸のみ移動
+ANB M2719                ; 搬送PP1Z軸移動要求
+INV
+OUT M2782                ; RBC2のみ    Move
+LD M2776                 ; RBC1 移動完了
+OR M2782                 ; RBC2のみ    Move
+LD M2781                 ; 検査ﾍｯﾄﾞ2 移動完了
+OR M2772                 ; RBC1のみ    Move
+ANL
+OUT M2771                ; 搬送P&P 移動完了
+MOV D2050 D2051          ; RBC1-2 移動No.  RBC1-2 移動完了No.
+;<h1/>____▼_RBC1 (Trasfer X axis)
+LDB M2770                ; 搬送P&P   Move
+ANB M2772                ; RBC1のみ    Move
+INV
+OUT M2777                ; RBC1起動
+;Z1 = (D2050-1) * 4					'ﾃﾞｰﾀ先頭ｲﾝﾃﾞｯｸｽ 1Point 4Data
+;Z2 = Z1 + 2							'速度は2ﾜｰﾄﾞ後
+;D2052.L = D20600.L:Z1				'目標位置ﾃﾞｰﾀｾｯﾄ
+;D2054.D = #3						'位置決め完了幅0.03mm固定
+;D2056.U = (D20600.L:Z2)*D141/100	'速度ﾃﾞｰﾀｾｯﾄ
+;D2057.U = 40						'加減速ﾃﾞｰﾀｾｯﾄ 0.4G
+;SET(M2774)							'ﾃﾞｰﾀｾｯﾄ完了ﾌﾗｸﾞ
+LDP M2777                ; RBC1起動
+NCJ K1000
+;Z1 = (D2050-1) * 4					'ﾃﾞｰﾀ先頭ｲﾝﾃﾞｯｸｽ 1Point 4Data
+;
+LD CR2002                ; 常時ON
+LDA D2050                ; RBC1-2 移動No.
+CON
+EXT
+CON
+SUB.L +1
+CON
+MUL.L +4
+CON
+STA.L Z1
+;Z2 = Z1 + 2							'速度は2ﾜｰﾄﾞ後
+;
+LD CR2002                ; 常時ON
+LDA.L Z1
+CON
+ADD.L +2
+CON
+STA.L Z2
+;D2052.L = D20600.L:Z1				'目標位置ﾃﾞｰﾀｾｯﾄ
+;
+LD CR2002                ; 常時ON
+MOV.L D20600:Z1 D2052    ; RBC1 目標位置
+;D2054.D = #3						'位置決め完了幅0.03mm固定
+;
+LD CR2002                ; 常時ON
+MOV.D K3 D2054           ; RBC1 位置決め幅
+;D2056.U = (D20600.L:Z2)*D141/100	'速度ﾃﾞｰﾀｾｯﾄ
+;
+LD CR2002                ; 常時ON
+LDA D141                 ; IAI Speed  Override
+CON
+EXT
+CON
+MUL.L D20600:Z2
+CON
+DIV.L +100
+CON
+STA D2056                ; RBC1 位置決め速度
+;D2057.U = 40						'加減速ﾃﾞｰﾀｾｯﾄ 0.4G
+;
+LD CR2002                ; 常時ON
+MOV K40 D2057            ; RBC1 加減速度
+;SET(M2774)							'ﾃﾞｰﾀｾｯﾄ完了ﾌﾗｸﾞ
+LD CR2002                ; 常時ON
+SET M2774                ; RBC1ﾃﾞｰﾀｾｯﾄ完了
+LABEL K1000
+;
+LD M2774                 ; RBC1ﾃﾞｰﾀｾｯﾄ完了
+MSTRT IAI_CON_MOVE_1 D2052 D2054 D2056 W1000 W2000 M2775 D2058 M2777 K50 D2057;RBC1 目標位置  RBC1 位置決め幅  RBC1 位置決め速度  RBC1 現在位置  RBC1 目標位置  RBC1 Move end  RBC1 C-CODE  RBC1起動  RBC1 加減速度
+RES M2774                ; RBC1ﾃﾞｰﾀｾｯﾄ完了
+LD M2775                 ; RBC1 Move end
+ANB _IAI_CON_MOVE_1
+OR M2776                 ; RBC1 移動完了
+LD M2770                 ; 搬送P&P   Move
+OR M2772                 ; RBC1のみ    Move
+ANL
+RES M2775                ; RBC1 Move end
+CON
+OUT M2776                ; RBC1 移動完了
+LDB M2770                ; 搬送P&P   Move
+ANB M2772                ; RBC1のみ    Move
+RES M2775                ; RBC1 Move end
+;制御出力
+LD B1230                 ; RBC1 REMOTE
+OUT W2007.14             ; RBC1 RMOD
+LD B1210                 ; IAI_INCHING
+OUT W2007.5              ; RBC1 JISL
+LDB B1210                ; IAI_INCHING
+AND B1211                ; IAI_High speed
+LD B1210                 ; IAI_INCHING
+ANB B1211                ; IAI_High speed
+ORL
+OUT W2007.6              ; RBC1 JVEL
+;<h1/>____▼_RBC2 (Transfer Z axis)
+LDB M2770                ; 搬送P&P   Move
+ANB M2782                ; RBC2のみ    Move
+INV
+OUT M2787                ; RBC2起動
+;Z1 = (D2050-1) * 4					'ﾃﾞｰﾀ先頭ｲﾝﾃﾞｯｸｽ 1Point 4Data
+;Z2 = Z1 + 2							'速度は2ﾜｰﾄﾞ後
+;D2062.L = D20650.L:Z1				'目標位置ﾃﾞｰﾀｾｯﾄ
+;D2064.D = #3						'位置決め完了幅0.03mm固定
+;D2066.U = (D20650.L:Z2)*D141/100	'速度ﾃﾞｰﾀｾｯﾄ
+;D2067.U = 40						'加減速ﾃﾞｰﾀｾｯﾄ 0.4G
+;SET(M2784)							'ﾃﾞｰﾀｾｯﾄ完了ﾌﾗｸﾞ
+LDP M2787                ; RBC2起動
+NCJ K1001
+;Z1 = (D2050-1) * 4					'ﾃﾞｰﾀ先頭ｲﾝﾃﾞｯｸｽ 1Point 4Data
+;
+LD CR2002                ; 常時ON
+LDA D2050                ; RBC1-2 移動No.
+CON
+EXT
+CON
+SUB.L +1
+CON
+MUL.L +4
+CON
+STA.L Z1
+;Z2 = Z1 + 2							'速度は2ﾜｰﾄﾞ後
+;
+LD CR2002                ; 常時ON
+LDA.L Z1
+CON
+ADD.L +2
+CON
+STA.L Z2
+;D2062.L = D20650.L:Z1				'目標位置ﾃﾞｰﾀｾｯﾄ
+;
+LD CR2002                ; 常時ON
+MOV.L D20650:Z1 D2062    ; RBC2 目標位置
+;D2064.D = #3						'位置決め完了幅0.03mm固定
+;
+LD CR2002                ; 常時ON
+MOV.D K3 D2064           ; RBC2 位置決め幅
+;D2066.U = (D20650.L:Z2)*D141/100	'速度ﾃﾞｰﾀｾｯﾄ
+;
+LD CR2002                ; 常時ON
+LDA D141                 ; IAI Speed  Override
+CON
+EXT
+CON
+MUL.L D20650:Z2
+CON
+DIV.L +100
+CON
+STA D2066                ; RBC2 位置決め速度
+;D2067.U = 40						'加減速ﾃﾞｰﾀｾｯﾄ 0.4G
+;
+LD CR2002                ; 常時ON
+MOV K40 D2067            ; RBC2 加減速度
+;SET(M2784)							'ﾃﾞｰﾀｾｯﾄ完了ﾌﾗｸﾞ
+LD CR2002                ; 常時ON
+SET M2784                ; RBC2ﾃﾞｰﾀｾｯﾄ完了
+LABEL K1001
+;
+LD M2784                 ; RBC2ﾃﾞｰﾀｾｯﾄ完了
+MSTRT IAI_CON_MOVE_2 D2062 D2064 D2066 W1008 W2008 M2785 D2068 M2787 K50 D2067;RBC2 目標位置  RBC2 位置決め幅  RBC2 位置決め速度  RBC2 現在位置  RBC2 目標位置  RBC2 Move end  RBC2 C-CODE  RBC2起動  RBC2 加減速度
+RES M2784                ; RBC2ﾃﾞｰﾀｾｯﾄ完了
+LD M2785                 ; RBC2 Move end
+ANB _IAI_CON_MOVE_2
+OR M2781                 ; 検査ﾍｯﾄﾞ2 移動完了
+LD M2770                 ; 搬送P&P   Move
+OR M2782                 ; RBC2のみ    Move
+ANL
+RES M2785                ; RBC2 Move end
+CON
+OUT M2781                ; 検査ﾍｯﾄﾞ2 移動完了
+LDB M2770                ; 搬送P&P   Move
+ANB M2782                ; RBC2のみ    Move
+RES M2785                ; RBC2 Move end
+;制御出力
+LD B1230                 ; RBC1 REMOTE
+OUT W200F.14             ; RBC2 RMOD
+LD B1210                 ; IAI_INCHING
+OUT W200F.5              ; RBC2 JISL
+LDB B1210                ; IAI_INCHING
+AND B1211                ; IAI_High speed
+LD B1210                 ; IAI_INCHING
+ANB B1211                ; IAI_High speed
+ORL
+OUT W200F.6              ; RBC2 JVEL
+MCR
+;RBCｻｰﾎﾞON信号
+LD M50                   ; 運転準備
+AND M121                 ; 非常停止正常
+LD M123                  ; 安全扉正常
+OR W1007.2               ; RBC1 MOVE
+OR M130                  ; 一時停止
+ANL
+AND W1007.14             ; RBC1 PWR
+MPS
+AND W1007.3              ; RBC1 ALM
+OUT W2007.3              ; RBC1 RES
+MPP
+LDB W1007.3              ; RBC1 ALM
+ANB W1007.15             ; RBC1 EMGS
+ANL
+TMH K215 K5              ; ｻｰﾎﾞONﾃﾞｨﾚｲ
+CON
+AND T215                 ; ｻｰﾎﾞONﾃﾞｨﾚｲ
+OUT W2007.4              ; RBC1 SON
+LD M50                   ; 運転準備
+AND M121                 ; 非常停止正常
+LD M123                  ; 安全扉正常
+OR W100F.2               ; RBC2 MOVE
+OR M130                  ; 一時停止
+ANL
+AND W100F.14             ; RBC2 PWR
+MPS
+AND W100F.3              ; RBC2 ALM
+OUT W200F.3              ; RBC2 RES
+MPP
+LDB W100F.3              ; RBC2 ALM
+ANB W100F.15             ; RBC2 EMGS
+ANL
+TMH K216 K25             ; ｻｰﾎﾞONﾃﾞｨﾚｲ
+CON
+AND T216                 ; ｻｰﾎﾞONﾃﾞｨﾚｲ
+OUT W200F.4              ; RBC2 SON
+;<h1/>____▼_Tp出力
+LD CR2002                ; 常時ON
+FLIK K50 K50 M2699       ; 0.5sｸﾛｯｸﾊﾟﾙｽ
+LD M2681                 ; MUN_ﾜｰｸｸﾗﾝﾌﾟ指令
+AND CR2006               ; 1sｸﾛｯｸﾊﾟﾙｽ
+OR X100                  ; 搬送ﾁｬｯｸ閉じ端（ﾜｰｸ有）
+OR X101                  ; 搬送ﾁｬｯｸ 閉じ端(ﾜｰｸ無）
+OUT B15A0                ; UNIT2-1-1 TP-PL
+LD M2683                 ; MUN_ﾜｰｸ解放指令
+AND CR2006               ; 1sｸﾛｯｸﾊﾟﾙｽ
+OR X102                  ; 搬送ﾁｬｯｸ 開き端
+OUT B15A1                ; UNIT2-1-2 TP-PL
+;
+LDB M2770                ; 搬送P&P   Move
+LD M2770                 ; 搬送P&P   Move
+AND CR2006               ; 1sｸﾛｯｸﾊﾟﾙｽ
+ORL
+MPS
+AND= D2050 K1            ; RBC1-2 移動No.
+OUT B15B0                ; UNIT2-2-1 TP-PL
+MRD
+AND= D2050 K2            ; RBC1-2 移動No.
+OUT B15B1                ; UNIT2-2-2 TP-PL
+MRD
+AND= D2050 K3            ; RBC1-2 移動No.
+OUT B15B2                ; UNIT2-2-3 TP-PL
+MRD
+AND= D2050 K4            ; RBC1-2 移動No.
+OUT B15B3                ; UNIT2-2-4 TP-PL
+MRD
+AND= D2050 K5            ; RBC1-2 移動No.
+OUT B15B4                ; UNIT2-2-5 TP-PL
+MRD
+AND= D2050 K6            ; RBC1-2 移動No.
+OUT B15B5                ; UNIT2-2-6 TP-PL
+MRD
+AND= D2050 K7            ; RBC1-2 移動No.
+OUT B15B6                ; UNIT2-2-7 TP-PL
+MRD
+AND= D2050 K8            ; RBC1-2 移動No.
+OUT B15B7                ; UNIT2-2-8 TP-PL
+MPP
+AND= D2050 K12           ; RBC1-2 移動No.
+OUT B15BF                ; UNIT2-2-16 TP-PL
+;<h1/>□_異常回路
+LD Y300                  ; 移載ﾁｬｯｸ 閉じ
+LDB X100                 ; 搬送ﾁｬｯｸ閉じ端（ﾜｰｸ有）
+ANB X101                 ; 搬送ﾁｬｯｸ 閉じ端(ﾜｰｸ無）
+LD X100                  ; 搬送ﾁｬｯｸ閉じ端（ﾜｰｸ有）
+OR X101                  ; 搬送ﾁｬｯｸ 閉じ端(ﾜｰｸ無）
+AND X102                 ; 搬送ﾁｬｯｸ 開き端
+ORL
+ANL
+LD B040                  ; 064)ﾁｬｯｸ閉じ端CLｾﾝｻ異常
+ANB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+ORL
+MPS
+TMR K290 K40             ; CLS監視ﾀｲﾏ
+MPP
+AND T290                 ; CLS監視ﾀｲﾏ
+OUT B040                 ; 064)ﾁｬｯｸ閉じ端CLｾﾝｻ異常
+LDP B040                 ; 064)ﾁｬｯｸ閉じ端CLｾﾝｻ異常
+AND< D13510 K64          ; 発生ｴﾗｰｺｰﾄﾞ格納先
+MOV H0040 D13500         ; ｴﾗｰｺｰﾄﾞ
+FIFOW D13500 D13510      ; ｴﾗｰｺｰﾄﾞ  発生ｴﾗｰｺｰﾄﾞ格納先
+;
+LD Y301                  ; 移載ﾁｬｯｸ 開き
+LDB X102                 ; 搬送ﾁｬｯｸ 開き端
+LD X100                  ; 搬送ﾁｬｯｸ閉じ端（ﾜｰｸ有）
+OR X101                  ; 搬送ﾁｬｯｸ 閉じ端(ﾜｰｸ無）
+AND X102                 ; 搬送ﾁｬｯｸ 開き端
+ORL
+ANL
+LD B041                  ; 065)ﾁｬｯｸ開き端CLｾﾝｻ異常
+ANB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+ORL
+MPS
+TMR K291 K20             ; CLS監視ﾀｲﾏ
+MPP
+AND T291                 ; CLS監視ﾀｲﾏ
+OUT B041                 ; 065)ﾁｬｯｸ開き端CLｾﾝｻ異常
+LDP B041                 ; 065)ﾁｬｯｸ開き端CLｾﾝｻ異常
+AND< D13510 K64          ; 発生ｴﾗｰｺｰﾄﾞ格納先
+MOV H0041 D13500         ; ｴﾗｰｺｰﾄﾞ
+FIFOW D13500 D13510      ; ｴﾗｰｺｰﾄﾞ  発生ｴﾗｰｺｰﾄﾞ格納先
+;
+LD W1007.3               ; RBC1 ALM
+AND M360                 ; RBC 監視中
+LD B042                  ; 066)RBC1ｺﾝﾄﾛｰﾗ異常
+ANB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+ORL
+OUT B042                 ; 066)RBC1ｺﾝﾄﾛｰﾗ異常
+LDP B042                 ; 066)RBC1ｺﾝﾄﾛｰﾗ異常
+AND< D13510 K64          ; 発生ｴﾗｰｺｰﾄﾞ格納先
+MOV H0042 D13500         ; ｴﾗｰｺｰﾄﾞ
+FIFOW D13500 D13510      ; ｴﾗｰｺｰﾄﾞ  発生ｴﾗｰｺｰﾄﾞ格納先
+;
+LD W100F.3               ; RBC2 ALM
+AND M360                 ; RBC 監視中
+LD B043                  ; 067)RBC2ｺﾝﾄﾛｰﾗ異常
+ANB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+ORL
+OUT B043                 ; 067)RBC2ｺﾝﾄﾛｰﾗ異常
+LDP B043                 ; 067)RBC2ｺﾝﾄﾛｰﾗ異常
+AND< D13510 K64          ; 発生ｴﾗｰｺｰﾄﾞ格納先
+MOV H0043 D13500         ; ｴﾗｰｺｰﾄﾞ
+FIFOW D13500 D13510      ; ｴﾗｰｺｰﾄﾞ  発生ｴﾗｰｺｰﾄﾞ格納先
+;
+LD M2776                 ; RBC1 移動完了
+AND<> D2058 K20          ; RBC1 C-CODE
+LD B044                  ; 068)RBC1位置決め異常
+ANB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+ORL
+OUT B044                 ; 068)RBC1位置決め異常
+LDP B044                 ; 068)RBC1位置決め異常
+AND< D13510 K64          ; 発生ｴﾗｰｺｰﾄﾞ格納先
+MOV H0044 D13500         ; ｴﾗｰｺｰﾄﾞ
+FIFOW D13500 D13510      ; ｴﾗｰｺｰﾄﾞ  発生ｴﾗｰｺｰﾄﾞ格納先
+;
+LD M2781                 ; 検査ﾍｯﾄﾞ2 移動完了
+AND<> D2068 K20          ; RBC2 C-CODE
+LD B045                  ; 069)RBC2位置決め異常
+ANB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+ORL
+OUT B045                 ; 069)RBC2位置決め異常
+LDP B045                 ; 069)RBC2位置決め異常
+AND< D13510 K64          ; 発生ｴﾗｰｺｰﾄﾞ格納先
+MOV H0045 D13500         ; ｴﾗｰｺｰﾄﾞ
+FIFOW D13500 D13510      ; ｴﾗｰｺｰﾄﾞ  発生ｴﾗｰｺｰﾄﾞ格納先
+;
+LD M2175                 ; U2C1_S175
+LD B046                  ; 070)ﾜｰｸﾁｬｯｸ異常(除材)
+ANB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+ORL
+OUT B046                 ; 070)ﾜｰｸﾁｬｯｸ異常(除材)
+LDP B046                 ; 070)ﾜｰｸﾁｬｯｸ異常(除材)
+AND< D13510 K64          ; 発生ｴﾗｰｺｰﾄﾞ格納先
+MOV H0046 D13500         ; ｴﾗｰｺｰﾄﾞ
+FIFOW D13500 D13510      ; ｴﾗｰｺｰﾄﾞ  発生ｴﾗｰｺｰﾄﾞ格納先
+;
+LD M1961                 ; U1org_S061
+AND M2960                ; Org_S60
+OR M2119                 ; U2C1_S119
+LD B047                  ; 071)搬送P&Pｹｰｽ残
+ANB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+ORL
+OUT B047                 ; 071)搬送P&Pｹｰｽ残
+LDP B047                 ; 071)搬送P&Pｹｰｽ残
+AND< D13510 K64          ; 発生ｴﾗｰｺｰﾄﾞ格納先
+MOV H0047 D13500         ; ｴﾗｰｺｰﾄﾞ
+FIFOW D13500 D13510      ; ｴﾗｰｺｰﾄﾞ  発生ｴﾗｰｺｰﾄﾞ格納先
+;
+LD M50                   ; 運転準備
+AND W1007.8              ; RBC1 RMDS
+LD B048                  ; 072)RBC1 Manualﾓｰﾄﾞ
+ANB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+ORL
+OUT B048                 ; 072)RBC1 Manualﾓｰﾄﾞ
+LDP B048                 ; 072)RBC1 Manualﾓｰﾄﾞ
+AND< D13510 K64          ; 発生ｴﾗｰｺｰﾄﾞ格納先
+MOV H0048 D13500         ; ｴﾗｰｺｰﾄﾞ
+FIFOW D13500 D13510      ; ｴﾗｰｺｰﾄﾞ  発生ｴﾗｰｺｰﾄﾞ格納先
+;
+LD M50                   ; 運転準備
+AND W100F.8              ; RBC2 RMDS
+LD B049                  ; 073)RBC2 Manualﾓｰﾄﾞ
+ANB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+ORL
+OUT B049                 ; 073)RBC2 Manualﾓｰﾄﾞ
+LDP B049                 ; 073)RBC2 Manualﾓｰﾄﾞ
+AND< D13510 K64          ; 発生ｴﾗｰｺｰﾄﾞ格納先
+MOV H0049 D13500         ; ｴﾗｰｺｰﾄﾞ
+FIFOW D13500 D13510      ; ｴﾗｰｺｰﾄﾞ  発生ｴﾗｰｺｰﾄﾞ格納先
+;
+LD CR2003                ; 常時OFF
+LD B04A                  ; 074)
+ANB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+ORL
+OUT B04A                 ; 074)
+LDP B04A                 ; 074)
+AND< D13510 K64          ; 発生ｴﾗｰｺｰﾄﾞ格納先
+MOV H004A D13500         ; ｴﾗｰｺｰﾄﾞ
+FIFOW D13500 D13510      ; ｴﾗｰｺｰﾄﾞ  発生ｴﾗｰｺｰﾄﾞ格納先
+;
+LD CR2003                ; 常時OFF
+LD B04B                  ; 075)
+ANB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+ORL
+OUT B04B                 ; 075)
+LDP B04B                 ; 075)
+AND< D13510 K64          ; 発生ｴﾗｰｺｰﾄﾞ格納先
+MOV H004B D13500         ; ｴﾗｰｺｰﾄﾞ
+FIFOW D13500 D13510      ; ｴﾗｰｺｰﾄﾞ  発生ｴﾗｰｺｰﾄﾞ格納先
+;
+LD CR2003                ; 常時OFF
+LD B04C                  ; 076)
+ANB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+ORL
+OUT B04C                 ; 076)
+LDP B04C                 ; 076)
+AND< D13510 K64          ; 発生ｴﾗｰｺｰﾄﾞ格納先
+MOV H004C D13500         ; ｴﾗｰｺｰﾄﾞ
+FIFOW D13500 D13510      ; ｴﾗｰｺｰﾄﾞ  発生ｴﾗｰｺｰﾄﾞ格納先
+;
+LD CR2003                ; 常時OFF
+LD B04D                  ; 077)
+ANB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+ORL
+OUT B04D                 ; 077)
+LDP B04D                 ; 077)
+AND< D13510 K64          ; 発生ｴﾗｰｺｰﾄﾞ格納先
+MOV H004D D13500         ; ｴﾗｰｺｰﾄﾞ
+FIFOW D13500 D13510      ; ｴﾗｰｺｰﾄﾞ  発生ｴﾗｰｺｰﾄﾞ格納先
+;
+LD CR2003                ; 常時OFF
+LD B04E                  ; 078)
+ANB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+ORL
+OUT B04E                 ; 078)
+LDP B04E                 ; 078)
+AND< D13510 K64          ; 発生ｴﾗｰｺｰﾄﾞ格納先
+MOV H004E D13500         ; ｴﾗｰｺｰﾄﾞ
+FIFOW D13500 D13510      ; ｴﾗｰｺｰﾄﾞ  発生ｴﾗｰｺｰﾄﾞ格納先
+;
+LD CR2003                ; 常時OFF
+LD B04F                  ; 079)
+ANB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+ORL
+OUT B04F                 ; 079)
+LDP B04F                 ; 079)
+AND< D13510 K64          ; 発生ｴﾗｰｺｰﾄﾞ格納先
+MOV H004F D13500         ; ｴﾗｰｺｰﾄﾞ
+FIFOW D13500 D13510      ; ｴﾗｰｺｰﾄﾞ  発生ｴﾗｰｺｰﾄﾞ格納先
+;
+LD CR2003                ; 常時OFF
+LD B050                  ; 080)
+ANB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+ORL
+OUT B050                 ; 080)
+LDP B050                 ; 080)
+AND< D13510 K64          ; 発生ｴﾗｰｺｰﾄﾞ格納先
+MOV H0050 D13500         ; ｴﾗｰｺｰﾄﾞ
+FIFOW D13500 D13510      ; ｴﾗｰｺｰﾄﾞ  発生ｴﾗｰｺｰﾄﾞ格納先
+;
+LD CR2003                ; 常時OFF
+LD B051                  ; 081)
+ANB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+ORL
+OUT B051                 ; 081)
+LDP B051                 ; 081)
+AND< D13510 K64          ; 発生ｴﾗｰｺｰﾄﾞ格納先
+MOV H0051 D13500         ; ｴﾗｰｺｰﾄﾞ
+FIFOW D13500 D13510      ; ｴﾗｰｺｰﾄﾞ  発生ｴﾗｰｺｰﾄﾞ格納先
+;
+LD CR2003                ; 常時OFF
+LD B052                  ; 082)
+ANB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+ORL
+OUT B052                 ; 082)
+LDP B052                 ; 082)
+AND< D13510 K64          ; 発生ｴﾗｰｺｰﾄﾞ格納先
+MOV H0052 D13500         ; ｴﾗｰｺｰﾄﾞ
+FIFOW D13500 D13510      ; ｴﾗｰｺｰﾄﾞ  発生ｴﾗｰｺｰﾄﾞ格納先
+;
+LD CR2003                ; 常時OFF
+LD B053                  ; 083)
+ANB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+ORL
+OUT B053                 ; 083)
+LDP B053                 ; 083)
+AND< D13510 K64          ; 発生ｴﾗｰｺｰﾄﾞ格納先
+MOV H0053 D13500         ; ｴﾗｰｺｰﾄﾞ
+FIFOW D13500 D13510      ; ｴﾗｰｺｰﾄﾞ  発生ｴﾗｰｺｰﾄﾞ格納先
+;
+LD CR2003                ; 常時OFF
+LD B054                  ; 084)
+ANB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+ORL
+OUT B054                 ; 084)
+LDP B054                 ; 084)
+AND< D13510 K64          ; 発生ｴﾗｰｺｰﾄﾞ格納先
+MOV H0054 D13500         ; ｴﾗｰｺｰﾄﾞ
+FIFOW D13500 D13510      ; ｴﾗｰｺｰﾄﾞ  発生ｴﾗｰｺｰﾄﾞ格納先
+;
+LD CR2003                ; 常時OFF
+LD B055                  ; 085)
+ANB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+ORL
+OUT B055                 ; 085)
+LDP B055                 ; 085)
+AND< D13510 K64          ; 発生ｴﾗｰｺｰﾄﾞ格納先
+MOV H0055 D13500         ; ｴﾗｰｺｰﾄﾞ
+FIFOW D13500 D13510      ; ｴﾗｰｺｰﾄﾞ  発生ｴﾗｰｺｰﾄﾞ格納先
+;
+LD CR2003                ; 常時OFF
+LD B056                  ; 086)
+ANB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+ORL
+OUT B056                 ; 086)
+LDP B056                 ; 086)
+AND< D13510 K64          ; 発生ｴﾗｰｺｰﾄﾞ格納先
+MOV H0056 D13500         ; ｴﾗｰｺｰﾄﾞ
+FIFOW D13500 D13510      ; ｴﾗｰｺｰﾄﾞ  発生ｴﾗｰｺｰﾄﾞ格納先
+;
+LD CR2003                ; 常時OFF
+LD B057                  ; 087)
+ANB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+ORL
+OUT B057                 ; 087)
+LDP B057                 ; 087)
+AND< D13510 K64          ; 発生ｴﾗｰｺｰﾄﾞ格納先
+MOV H0057 D13500         ; ｴﾗｰｺｰﾄﾞ
+FIFOW D13500 D13510      ; ｴﾗｰｺｰﾄﾞ  発生ｴﾗｰｺｰﾄﾞ格納先
+;
+LD CR2003                ; 常時OFF
+LD B058                  ; 088)
+ANB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+ORL
+OUT B058                 ; 088)
+LDP B058                 ; 088)
+AND< D13510 K64          ; 発生ｴﾗｰｺｰﾄﾞ格納先
+MOV H0058 D13500         ; ｴﾗｰｺｰﾄﾞ
+FIFOW D13500 D13510      ; ｴﾗｰｺｰﾄﾞ  発生ｴﾗｰｺｰﾄﾞ格納先
+;
+LD CR2003                ; 常時OFF
+LD B059                  ; 089)
+ANB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+ORL
+OUT B059                 ; 089)
+LDP B059                 ; 089)
+AND< D13510 K64          ; 発生ｴﾗｰｺｰﾄﾞ格納先
+MOV H0059 D13500         ; ｴﾗｰｺｰﾄﾞ
+FIFOW D13500 D13510      ; ｴﾗｰｺｰﾄﾞ  発生ｴﾗｰｺｰﾄﾞ格納先
+;
+LD CR2003                ; 常時OFF
+LD B05A                  ; 090)
+ANB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+ORL
+OUT B05A                 ; 090)
+LDP B05A                 ; 090)
+AND< D13510 K64          ; 発生ｴﾗｰｺｰﾄﾞ格納先
+MOV H005A D13500         ; ｴﾗｰｺｰﾄﾞ
+FIFOW D13500 D13510      ; ｴﾗｰｺｰﾄﾞ  発生ｴﾗｰｺｰﾄﾞ格納先
+;
+LD CR2003                ; 常時OFF
+LD B05B                  ; 091)
+ANB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+ORL
+OUT B05B                 ; 091)
+LDP B05B                 ; 091)
+AND< D13510 K64          ; 発生ｴﾗｰｺｰﾄﾞ格納先
+MOV H005B D13500         ; ｴﾗｰｺｰﾄﾞ
+FIFOW D13500 D13510      ; ｴﾗｰｺｰﾄﾞ  発生ｴﾗｰｺｰﾄﾞ格納先
+;
+LD CR2003                ; 常時OFF
+LD B05C                  ; 092)
+ANB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+ORL
+OUT B05C                 ; 092)
+LDP B05C                 ; 092)
+AND< D13510 K64          ; 発生ｴﾗｰｺｰﾄﾞ格納先
+MOV H005C D13500         ; ｴﾗｰｺｰﾄﾞ
+FIFOW D13500 D13510      ; ｴﾗｰｺｰﾄﾞ  発生ｴﾗｰｺｰﾄﾞ格納先
+;
+LD CR2003                ; 常時OFF
+LD B05D                  ; 093)
+ANB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+ORL
+OUT B05D                 ; 093)
+LDP B05D                 ; 093)
+AND< D13510 K64          ; 発生ｴﾗｰｺｰﾄﾞ格納先
+MOV H005D D13500         ; ｴﾗｰｺｰﾄﾞ
+FIFOW D13500 D13510      ; ｴﾗｰｺｰﾄﾞ  発生ｴﾗｰｺｰﾄﾞ格納先
+;
+LD CR2003                ; 常時OFF
+LD B05E                  ; 094)
+ANB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+ORL
+OUT B05E                 ; 094)
+LDP B05E                 ; 094)
+AND< D13510 K64          ; 発生ｴﾗｰｺｰﾄﾞ格納先
+MOV H005E D13500         ; ｴﾗｰｺｰﾄﾞ
+FIFOW D13500 D13510      ; ｴﾗｰｺｰﾄﾞ  発生ｴﾗｰｺｰﾄﾞ格納先
+;
+LD CR2003                ; 常時OFF
+LD B05F                  ; 095)
+ANB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+ORL
+OUT B05F                 ; 095)
+LDP B05F                 ; 095)
+AND< D13510 K64          ; 発生ｴﾗｰｺｰﾄﾞ格納先
+MOV H005F D13500         ; ｴﾗｰｺｰﾄﾞ
+FIFOW D13500 D13510      ; ｴﾗｰｺｰﾄﾞ  発生ｴﾗｰｺｰﾄﾞ格納先
+;ﾌﾞｻﾞｰ発生回路
+LD<>.D B040 D2012        ; 064)ﾁｬｯｸ閉じ端CLｾﾝｻ異常  ﾌﾞｻﾞｰSTOP監視ｴﾘｱ
+AND<>.D B040 K0          ; 064)ﾁｬｯｸ閉じ端CLｾﾝｻ異常
+OUT M2989                ; ﾕﾆｯﾄ2異常BZ補助
+LD M110                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR M111                  ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+MOV.D B040 D2012         ; 064)ﾁｬｯｸ閉じ端CLｾﾝｻ異常  ﾌﾞｻﾞｰSTOP監視ｴﾘｱ
+LD=.D B040 K0            ; 064)ﾁｬｯｸ閉じ端CLｾﾝｻ異常
+@MOV.D K0 D2012          ; ﾌﾞｻﾞｰSTOP監視ｴﾘｱ
+END
+ENDH

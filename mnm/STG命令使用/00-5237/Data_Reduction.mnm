@@ -1,0 +1,194 @@
+DEVICE:52
+;MODULE:Data_Reduction
+;MODULE_TYPE:0
+;SCRIPT_TYPE:
+;for @DM0 = 0 to 5
+;	@DM1 = @DM0 * 6
+;	@DM2 = @DM0 * 2
+;	if EM30050:@DM2 = 0 then
+;		EM10:@DM1 = 0	'検査未実施
+;	else if EM30050:@DM2 = 2 then
+;		EM10:@DM1 = 3	'初期圧NG
+;	else if EM30051:@DM2 = 2 then
+;		EM10:@DM1 = 4	'リークNG
+;	else if EM30050:@DM2 = 1 and EM30051:@DM2 = 1 then
+;		EM10:@DM1 = 2	'検査OK
+;	else
+;		EM10:@DM1 = 0	'検査未実施
+;	end if
+;next
+;set(@MR000)
+LDP MR113                ; ﾃﾞｰﾀ整理中
+BMOV CM700 EM1 #6        ; ｶﾚﾝﾀﾞﾀｲﾏ（年）  日付〔year〕
+MOV DM145 EM8            ; 詳細ｴﾗｰｺｰﾄﾞ  ｴﾗｰ詳細
+MOV DM146 EM7            ; ｴﾗｰｺｰﾄﾞ  ｴﾗｰNo.
+MOV EM30014 EM9          ; (TP)判定タイミング  判定方法
+NCJ #1000
+;for @DM0 = 0 to 5
+;
+LD CR2002                ; 常時ON
+MOV #0 @DM0
+LABEL #2000
+LD> @DM0 #5
+CJ #2001
+;	@DM1 = @DM0 * 6
+;
+;;Warning[1103]: "=": (符号付き32ビット整数型->符号無し16ビット整数型) 代入によりデータが欠落する可能性があります。
+LD CR2002                ; 常時ON
+LDA @DM0
+CON
+EXT
+CON
+MUL.L +6
+CON
+STA @DM1
+;	@DM2 = @DM0 * 2
+;
+;;Warning[1103]: "=": (符号付き32ビット整数型->符号無し16ビット整数型) 代入によりデータが欠落する可能性があります。
+LD CR2002                ; 常時ON
+LDA @DM0
+CON
+EXT
+CON
+MUL.L +2
+CON
+STA @DM2
+;	if EM30050:@DM2 = 0 then
+;
+LD CR2002                ; 常時ON
+LDA @DM2
+CON
+EXT
+CON
+STA.L Z12
+LD= EM30050:Z12 #0       ; (TP)Step1 初期圧判定
+NCJ #2002
+;		EM10:@DM1 = 0	'検査未実施
+;
+LD CR2002                ; 常時ON
+LDA @DM1
+CON
+EXT
+CON
+STA.L Z11
+CON
+MOV #0 EM10:Z11          ; Step1 結果
+LD CR2002                ; 常時ON
+CJ #2003
+LABEL #2002
+;	else if EM30050:@DM2 = 2 then
+;
+LD CR2002                ; 常時ON
+LDA @DM2
+CON
+EXT
+CON
+STA.L Z12
+LD= EM30050:Z12 #2       ; (TP)Step1 初期圧判定
+NCJ #2004
+;		EM10:@DM1 = 3	'初期圧NG
+;
+LD CR2002                ; 常時ON
+LDA @DM1
+CON
+EXT
+CON
+STA.L Z11
+CON
+MOV #3 EM10:Z11          ; Step1 結果
+LD CR2002                ; 常時ON
+CJ #2005
+LABEL #2004
+;	else if EM30051:@DM2 = 2 then
+;
+LD CR2002                ; 常時ON
+LDA @DM2
+CON
+EXT
+CON
+STA.L Z12
+LD= EM30051:Z12 #2       ; (TP)Step1 リーク量判定
+NCJ #2006
+;		EM10:@DM1 = 4	'リークNG
+;
+LD CR2002                ; 常時ON
+LDA @DM1
+CON
+EXT
+CON
+STA.L Z11
+CON
+MOV #4 EM10:Z11          ; Step1 結果
+LD CR2002                ; 常時ON
+CJ #2007
+LABEL #2006
+;	else if EM30050:@DM2 = 1 and EM30051:@DM2 = 1 then
+;
+LD CR2002                ; 常時ON
+LDA @DM2
+CON
+EXT
+CON
+STA.L Z12
+LD= EM30050:Z12 #1       ; (TP)Step1 初期圧判定
+OUT @VB00
+LD CR2002                ; 常時ON
+LDA @DM2
+CON
+EXT
+CON
+STA.L Z12
+LD= EM30051:Z12 #1       ; (TP)Step1 リーク量判定
+AND @VB00
+NCJ #2008
+;		EM10:@DM1 = 2	'検査OK
+;
+LD CR2002                ; 常時ON
+LDA @DM1
+CON
+EXT
+CON
+STA.L Z11
+CON
+MOV #2 EM10:Z11          ; Step1 結果
+;	else
+;
+LD CR2002                ; 常時ON
+CJ #2009
+LABEL #2008
+;		EM10:@DM1 = 0	'検査未実施
+;
+LD CR2002                ; 常時ON
+LDA @DM1
+CON
+EXT
+CON
+STA.L Z11
+CON
+MOV #0 EM10:Z11          ; Step1 結果
+;	end if
+;
+LABEL #2009
+LABEL #2007
+LABEL #2005
+LABEL #2003
+;next
+;
+LD CR2002                ; 常時ON
+INC @DM0
+LDB CR2009               ; 演算結果が負
+CJ #2000
+LABEL #2001
+;set(@MR000)
+LD CR2002                ; 常時ON
+SET @MR000
+LABEL #1000
+;
+STG @MR000
+JMP @MR100
+STG @MR100
+RES MR113                ; ﾃﾞｰﾀ整理中
+CON
+ENDS
+END
+ENDH

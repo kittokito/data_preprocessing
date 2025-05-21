@@ -1,0 +1,188 @@
+DEVICE:53
+;MODULE:AlwaysMonitor
+;MODULE_TYPE:0
+;OneSystem Sub-Module
+;
+;---------------------------------------
+;ModuleName	:	AlwaysMonitor
+;ModuleType	:	Sub Module
+;Function	:	常時監視
+;---------------------------------------
+;<使用方法>
+;常時監視が必要な物は本ﾓｼﾞｭｰﾙ内に記述して下さい
+;・ﾋｰﾀｰ過昇温検知による非常停止
+;・ﾁｬﾝﾊﾞｰ排気量低下によるｴﾗｰ出力
+;など
+;<h1/>CELL間 PAUSE 許可
+LD R44200                ; Grp1 ﾎﾟｰｽﾞ要求
+OUT R41200               ; TASK0 PAUSE 要求
+LD R44200                ; Grp1 ﾎﾟｰｽﾞ要求
+OUT R41201               ; TASK1 PAUSE 要求
+LD R44200                ; Grp1 ﾎﾟｰｽﾞ要求
+OUT R41202               ; TASK2 PAUSE 要求
+LD R44200                ; Grp1 ﾎﾟｰｽﾞ要求
+OUT R41203               ; TASK3 PAUSE 要求
+LD R44200                ; Grp1 ﾎﾟｰｽﾞ要求
+OUT R41204               ; TASK4 PAUSE 要求
+LD R44200                ; Grp1 ﾎﾟｰｽﾞ要求
+OUT R41205               ; TASK5 PAUSE 要求
+LD R44200                ; Grp1 ﾎﾟｰｽﾞ要求
+OUT R41206               ; TASK6 PAUSE 要求
+LD R44200                ; Grp1 ﾎﾟｰｽﾞ要求
+OUT R41207               ; TASK7 PAUSE 要求
+LD R44200                ; Grp1 ﾎﾟｰｽﾞ要求
+OUT R41208               ; TASK8 PAUSE 要求
+LD R44200                ; Grp1 ﾎﾟｰｽﾞ要求
+OUT R41209               ; TASK9 PAUSE 要求
+LD R44200                ; Grp1 ﾎﾟｰｽﾞ要求
+OUT R41210               ; TASK10 PAUSE 要求
+;<h1/>※隣接ｾﾙへのPAUSE許可
+;隣接ｾﾙへのPAUSE許可記述例：下流ｾﾙよりﾎﾟｰｽﾞ要求　停止必要TaskがTASK2とした場合は以下のように記述してください。
+;　　　　　　　　　　　　 ：例ではﾛｰｶﾙﾗﾍﾞﾙを使用していますが実際はラベルを使用せず記述してください。
+LD R42602                ; Grp1_Task2_ﾎﾟｰｽﾞ許可
+ORB R41002               ; Grp1_Task2_起動中ﾌﾗｸﾞ
+OR DM2000.1
+AND PAUSE_RQ1            ; CELL_1_PAUSE要求
+OUT PAUSE_1_OK           ; CELL_1_PAUSE許可
+LD R42602                ; Grp1_Task2_ﾎﾟｰｽﾞ許可
+ANB R41202               ; TASK2 PAUSE 要求
+RES R42602               ; Grp1_Task2_ﾎﾟｰｽﾞ許可
+;<h1/>サイクルタイム
+;全体 Cycleを取り込みたいﾀｲﾐﾝｸﾞでMR000 OUTを実行してください。
+LDB MR000                ; Cycleﾀｲﾑｶｳﾝﾄ
+AND R46100               ; _自動運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+AND MR10106              ; ｻｲｸﾙ計測
+OUT R46115               ; _装置ｻｲｸﾙﾀｲﾑ計測中
+LDF R46115               ; _装置ｻｲｸﾙﾀｲﾑ計測中
+MPS
+RES MR000                ; Cycleﾀｲﾑｶｳﾝﾄ
+MPP
+AND MR915                ; ﾀﾞﾐｰ_NAT
+SET R46001               ; _装置C/T取得
+;<h1/>払い出しフラグ：TASKにより停止する順番ある場合使用。
+LD R46106                ; _定停止移行中
+OR R47800                ; _Group1　ﾒﾝﾃ動作定停止移行中
+ANB R46103               ; _停止中　ﾓｰﾄﾞﾌﾗｸﾞ
+SET R57301               ; Task1 停止要求
+CON
+ANB R41001               ; _Grp1_Task1_起動中ﾌﾗｸﾞ
+MPS
+SET R57300               ; Task0 停止要求
+CON
+SET R57302               ; Task2 停止要求
+MRD
+SET R57303               ; Task3 停止要求
+CON
+SET R57304               ; Task4 停止要求
+CON
+SET R57305               ; Task5 停止要求
+MPP
+SET R57306               ; Task6 停止要求
+CON
+SET R57307               ; Task7 停止要求
+CON
+SET R57308               ; Task8 停止要求
+CON
+SET R57309               ; Task9 停止要求
+LDB R40100               ; _Group1起動中ﾌﾗｸﾞ
+ZRES R57300 R57315       ; Task0 停止要求  受入れTask 受入れ停止要求
+;<h1/>※ Message BBS 必要に応じてPAUSE要求修正してください。
+LD R58500                ; DEVICEﾈｯﾄ登録ﾉｰﾄﾞ一致
+MC
+LD R46114                ; _装置原点復帰待ち
+MEP
+SMOV "原点復帰要求" DM3600     ; _BBS1行目表示文字列
+LD R46100                ; _自動運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+AND R57315               ; 受入れTask 受入れ停止要求
+MEP
+SMOV "停止処理中" DM3600      ; _BBS1行目表示文字列
+LD R46103                ; _停止中　ﾓｰﾄﾞﾌﾗｸﾞ
+ANB R46114               ; _装置原点復帰待ち
+MEP
+SMOV "定停止中" DM3600       ; _BBS1行目表示文字列
+LDB R46114               ; _装置原点復帰待ち
+MEP
+LDB R46103               ; _停止中　ﾓｰﾄﾞﾌﾗｸﾞ
+ANB R46114               ; _装置原点復帰待ち
+MEP
+ORL
+FMOV #0 DM3600 #20       ; _BBS1行目表示文字列
+;Message3表示
+LDB R46100               ; _自動運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+MEP
+FMOV #0 DM3642 #20       ; _BBS3行目表示文字列
+MCR
+;自動動作選択異常
+STG R54402               ; ﾊﾟﾗﾒｰﾀNG
+ANB R39004               ; ｴﾗｰ中
+SET R39004               ; ｴﾗｰ中
+CON
+DW #0 @DM0               ; TaskNo /ERROR_DISP
+CON
+DW #50 @DM1              ; ErrorNo /ERROR_DISP
+CON
+DW #0 @DM2               ; SensorNo /ERROR_DISP
+CON
+DW $9000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+SET @MR100               ; ERROR
+CON
+JMP @R200
+STG @R200
+AND @MR101               ;  ｴﾗｰ完了
+AND @MR105               ; SW1
+RES @MR101               ;  ｴﾗｰ完了
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+SET R54403               ; ﾊﾟﾗﾒｰﾀ設定ｴﾗｰ解除
+CON
+ENDS
+;<h1/>ERROR
+;MyTask Error Process Substance/エラー処理実体
+STG @MR100               ; ERROR
+ANB R39002               ; ERROR_DISP Busy
+MPS
+ZRES @MR105 @MR108       ; SW1  SW4
+CON
+DISN @DM9 @DM3 #4        ; ReturnSW /ERROR_DISP
+MRD
+BMOV @DM0 DM60000 #7     ; TaskNo /ERROR_DISP  TaskNo /ERROR_DISP
+MPP
+SET R39000               ; ERROR_DISP Start
+CON
+SET @MR102               ; Task0 ERROR Busy
+CON
+JMP @MR103
+STG @MR103
+AND R39002               ; ERROR_DISP Busy
+AND= DM60008 @DM1        ; ReturnNo /ERROR_DISP  ErrorNo /ERROR_DISP
+MPS
+AND= DM60007 @DM6        ; ReturnSW /ERROR_DISP
+SET @MR105               ; SW1
+CON
+JMP @MR104
+MRD
+AND= DM60007 @DM5        ; ReturnSW /ERROR_DISP
+SET @MR106               ; SW2
+CON
+JMP @MR104
+MRD
+AND= DM60007 @DM4        ; ReturnSW /ERROR_DISP
+SET @MR107               ; SW3
+CON
+JMP @MR104
+MPP
+AND= DM60007 @DM3        ; ReturnSW /ERROR_DISP
+SET @MR108               ; SW4
+CON
+JMP @MR104
+STG @MR104
+ANB R39002               ; ERROR_DISP Busy
+RES @MR102               ; Task0 ERROR Busy
+CON
+SET @MR101               ;  ｴﾗｰ完了
+CON
+ENDS
+END
+ENDH

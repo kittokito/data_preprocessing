@@ -1,0 +1,117 @@
+DEVICE:53
+;MODULE:DA_conversion
+;MODULE_TYPE:0
+;■電空ﾚｷﾞｭﾚｰﾀｰ/Electro-pneumatic regulator
+LD R2002                 ; 元圧空検出_L 
+TMR @0 #5
+CON
+AND @T0
+OUT R506                 ; 電空ﾚｷﾞｭﾚｰﾀｰL ON
+;電空ﾚｷﾞｭﾚｰﾀｰ設定値
+;Min：0000h = 0%
+;Max：0FFFh = 100%
+;Electro-regulator setting value
+;Min: 0000h = 0%
+;Max: 0FFFh = 100%
+;例）ITV2030（0.5MPa仕様）で、設定圧力を0.3MPaにする場合：
+;(0.3MPa/0.5MPa)×4095＝2457（DEC）＝999(HEX)
+;データ"999"をマスタPLCより本電空レギュレータに送信することで、0.3MPa
+;の圧力が設定されます。
+;Example) To set the set pressure to 0.3 MPa with ITV 2030 (0.5 MPa specification):
+;(0.3 MPa / 0.5 MPa) × 4095 = 2457 (DEC) = 999 (HEX)
+;By transmitting the data "999" from the master PLC to this electro-pneumatic regulator, 0.3 MPa
+;Pressure is set.
+LD MR014                 ; 誤配管検査中
+LDA DM842                ; 現設定_誤配管検査_検査圧力
+CON
+STA @DM0                 ; ｱﾅﾛｸﾞ出力値_仮格納
+LDB LR1915               ; New MC leak
+AND MR103                ; ﾘｰｸ検査中
+LDA EM510                ; 現在ﾘｰｸ検査部位数(1-6)
+CON
+SUB #1
+CON
+STA Z1
+CON
+MPS
+LDB MR106                ; ﾒﾝﾃ_装置ﾘｰｸ検査中
+OR CR2002                ; 常時ON
+ANL
+LDA DM874:Z1             ; 現設定_ﾘｰｸ検査1検査圧力設定値
+CON
+STA @DM0                 ; ｱﾅﾛｸﾞ出力値_仮格納
+MPP
+LD MR106                 ; ﾒﾝﾃ_装置ﾘｰｸ検査中
+AND CR2003               ; 常時OFF
+ANL
+LDA EM1162:Z1            ; MCﾘｰｸ検査1 検査圧
+CON
+STA @DM0                 ; ｱﾅﾛｸﾞ出力値_仮格納
+LD LR1915                ; New MC leak
+AND MR103                ; ﾘｰｸ検査中
+OR MR204                 ; ﾒﾝﾃ_ﾘｰｸﾃｽﾀ公正中
+LDA DM874                ; 現設定_ﾘｰｸ検査1検査圧力設定値
+CON
+STA @DM0                 ; ｱﾅﾛｸﾞ出力値_仮格納
+LD MR104                 ; 逆止弁検査中
+LDA DM21                 ; 現在逆止弁検査部位(1-6)
+CON
+SUB #1
+CON
+STA Z1
+CON
+LDA DM928:Z1             ; 現設定_逆止弁検査1_検査圧
+CON
+STA @DM0                 ; ｱﾅﾛｸﾞ出力値_仮格納
+LD MR012                 ; 閉塞検査中
+LDA EM513                ; 閉塞検査回数(1～7)
+CON
+SUB #1
+CON
+STA Z1
+CON
+LDA DM979:Z1             ; 現設定_閉塞検査1_検査圧力
+CON
+STA @DM0                 ; ｱﾅﾛｸﾞ出力値_仮格納
+LD= EM30000 #801         ; TP)現在表示中画面No.
+LDA DM6                  ; 手動時圧力
+CON
+STA @DM0                 ; ｱﾅﾛｸﾞ出力値_仮格納
+;ﾘｰｸﾃｽﾀ制限/使用圧10～99.9kPa
+;Leak tester restriction / working pressure 10 to 99.9 kPa
+LD MR8104                ; L上流側流路切替ﾊﾞﾙﾌﾞ 23(ON=開)
+AND> @DM0 #99            ; ｱﾅﾛｸﾞ出力値_仮格納
+DW #99 @DM0              ; ｱﾅﾛｸﾞ出力値_仮格納
+LD MR305                 ; 原点復帰完了
+ANB MR900                ; 重度異常：電源再投入必要
+MPS
+LDB MR402                ; 大気開放中
+AND>= @DM0 #5            ; ｱﾅﾛｸﾞ出力値_仮格納
+AND<= @DM0 #500          ; ｱﾅﾛｸﾞ出力値_仮格納
+ANL
+LDA @DM0                 ; ｱﾅﾛｸﾞ出力値_仮格納
+CON
+MUL #8
+CON
+ADD #10
+CON
+STA DM10800              ; 電空ﾚｷﾞｭﾚｰﾀｰ設定値
+MPP
+AND MR402                ; 大気開放中
+DW #0 @DM0               ; ｱﾅﾛｸﾞ出力値_仮格納
+CON
+DW #0 DM10800            ; 電空ﾚｷﾞｭﾚｰﾀｰ設定値
+;設定値ｸﾘｱ/Clear set value
+LD CR2002                ; 常時ON
+LD< @DM0 #5              ; ｱﾅﾛｸﾞ出力値_仮格納
+OR> @DM0 #500            ; ｱﾅﾛｸﾞ出力値_仮格納
+ORB MR305                ; 原点復帰完了
+ANL
+DW #0 DM10800            ; 電空ﾚｷﾞｭﾚｰﾀｰ設定値
+;電空ﾚｷﾞｭﾚｰﾀｰ現在値表示/Display of electropneumatic regulator current value
+LD CR2002                ; 常時ON
+LDA @DM0                 ; ｱﾅﾛｸﾞ出力値_仮格納
+CON
+STA DM46                 ; 電空ﾚｷﾞｭﾚｰﾀｰ現在設定値
+END
+ENDH

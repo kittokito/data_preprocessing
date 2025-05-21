@@ -1,0 +1,482 @@
+DEVICE:53
+;MODULE:BARCODE_FW
+;MODULE_TYPE:0
+LD R5010                 ; 注入SW-BOX CELL選択
+DIFU MR1500              ; 注入SW_CELL選択PLS
+LD R5011                 ; 注入SW-BOX TANK選択
+DIFU MR1501              ; 注入SW_TANK選択PLS
+LDB R5010                ; 注入SW-BOX CELL選択
+ANB R5011                ; 注入SW-BOX TANK選択
+OUT MR1502               ; ｾﾚｸﾄ中間位置
+TMR @0 #3
+OUT DM20201              ; Scan complete
+;ﾃﾞﾊﾞｯｸﾞ用BCR読み込み / BCR Read forDebug
+LD R50315                ; BCR入力SW
+AND R59803               ; OfflineMode
+@RES R32101              ; Port3 送信要求
+CON
+SET @MR000               ; 次ｽﾃｯﾌﾟへ
+LD<> DM4000 #610         ; TP 現在表示中画面
+ZRES @MR000 @MR003       ; 次ｽﾃｯﾌﾟへ
+STG @MR000               ; 次ｽﾃｯﾌﾟへ
+AND R32101               ; Port3 送信要求
+JMP @MR001               ; 次ｽﾃｯﾌﾟへ
+STG @MR001               ; 次ｽﾃｯﾌﾟへ
+MPS
+LDB R32001               ; Port3 送信完了
+ANB R32002               ; Port3 読出要求
+ANL
+JMP @MR002               ; 次ｽﾃｯﾌﾟへ
+MPP
+LD R32001                ; Port3 送信完了
+OR R32002                ; Port3 読出要求
+ANL
+SET @MR110               ; 受信ｴﾗｰ
+CON
+ENDS
+STG @MR002               ; 次ｽﾃｯﾌﾟへ
+SFIND DM32002 DM1240 DM1241 #0;Port3 送信ﾃﾞｰﾀ先頭  検索用SP  SP位置
+SMID DM32002 DM3034 #0 DM1241;Port3 送信ﾃﾞｰﾀ先頭  ｲﾝｸｺｰﾄﾞ1(Model Master)  SP位置
+MOV DM3034 DM1200        ; ｲﾝｸｺｰﾄﾞ1(Model Master)  QRｺｰﾄﾞﾊﾞｯﾌｧ
+MOV DM3035 DM1201        ; ｲﾝｸｺｰﾄﾞ2(Model Master)
+MOV DM3036 DM1202        ; ｲﾝｸｺｰﾄﾞ3(Model Master)
+MOV DM3037 DM1203        ; ｲﾝｸｺｰﾄﾞ4(Model Master)
+MOV DM3038 DM1204        ; ｲﾝｸｺｰﾄﾞ5(Model Master)
+MOV #0 DM3039            ; ｲﾝｸｺｰﾄﾞ6(Model Master)
+SET R51202               ; Model No 比較要求
+CON
+TMR @2 #2
+CON
+AND @T2
+JMP @MR003
+STG @MR003
+RES R51202               ; Model No 比較要求
+CON
+RES R32101               ; Port3 送信要求
+CON
+ENDS
+;<h1/>BCR照合 / BARCODE Forwarding
+;
+STG MR100                ; Sub:BCR照合
+RES MR105                ; 照合ｺｰﾄﾞﾃﾞｰﾀ異常
+CON
+RES MR106                ; 照合ｺｰﾄﾞﾃﾞｰﾀOK
+CON
+ZRES @MR100 @MR515       ; CELL選択中
+CON
+SET MR102                ; Sub：BCR照合実行中
+CON
+JMP @MR200
+LD MR102                 ; Sub：BCR照合実行中
+OUT DM20203
+STG @MR200
+JMP @MR201               ; 次ｽﾃｯﾌﾟへ
+FMOV #0 DM1250 #7        ; ﾀﾝｸBCR入力ﾃﾞｰﾀﾊﾞｯﾌｧ
+FMOV #0 DM1260 #7        ; ｾﾙBCR入力ﾃﾞｰﾀﾊﾞｯﾌｧ
+@FMOV #0 DM20205 #12     ; Cell 0 lot tracking
+STG @MR201               ; 次ｽﾃｯﾌﾟへ
+MPS
+AND MR1500               ; 注入SW_CELL選択PLS
+RES @MR104               ; ｻﾃﾗｲﾄA読み込み完了記憶
+CON
+RES @MR105               ; ｻﾃﾗｲﾄB読み込み完了記憶
+CON
+RES @MR102               ; CELL読み込み完了記憶
+CON
+SET @MR100               ; CELL選択中
+CON
+SET @MR300               ; BCR読み込み
+CON
+JMP @MR202               ; 注入ｾﾙ選択へ
+MPP
+AND MR1501               ; 注入SW_TANK選択PLS
+RES @MR103               ; TANK読み込み完了記憶
+CON
+SET @MR101               ; TANK選択中
+CON
+SET @MR300               ; BCR読み込み
+CON
+JMP @MR204               ; ﾀﾝｸ選択へ
+STG @MR202               ; 注入ｾﾙ選択へ
+MPS
+AND @MR301               ; BCR読み込み完了
+JMP @MR203               ; 次ｽﾃｯﾌﾟへ
+MPP
+LDB @MR301               ; BCR読み込み完了
+AND MR1502               ; ｾﾚｸﾄ中間位置
+ANL
+ZRES @MR300 @MR415       ; BCR読み込み  BCR入力ﾐｽ
+CON
+RES @MR100               ; CELL選択中
+CON
+JMP @MR201               ; 次ｽﾃｯﾌﾟへ
+STG @MR203               ; 次ｽﾃｯﾌﾟへ
+RES @MR301               ; BCR読み込み完了
+CON
+RES @MR100               ; CELL選択中
+CON
+SET @MR102               ; CELL読み込み完了記憶
+CON
+JMP @MR206               ; 次ｽﾃｯﾌﾟへ
+STG @MR204               ; ﾀﾝｸ選択へ
+MPS
+AND @MR301               ; BCR読み込み完了
+JMP @MR205               ; 次ｽﾃｯﾌﾟへ
+MPP
+LDB @MR301               ; BCR読み込み完了
+AND MR1502               ; ｾﾚｸﾄ中間位置
+ANL
+ZRES @MR300 @MR415       ; BCR読み込み  BCR入力ﾐｽ
+CON
+RES @MR101               ; TANK選択中
+CON
+JMP @MR201               ; 次ｽﾃｯﾌﾟへ
+STG @MR205               ; 次ｽﾃｯﾌﾟへ
+RES @MR301               ; BCR読み込み完了
+CON
+RES @MR101               ; TANK選択中
+CON
+SET @MR103               ; TANK読み込み完了記憶
+CON
+JMP @MR206               ; 次ｽﾃｯﾌﾟへ
+STG @MR206               ; 次ｽﾃｯﾌﾟへ
+MPS
+LD @MR102                ; CELL読み込み完了記憶
+AND @MR103               ; TANK読み込み完了記憶
+ANL
+JMP @MR207               ; 次ｽﾃｯﾌﾟへ
+MRD
+LD @MR102                ; CELL読み込み完了記憶
+ANB @MR103               ; TANK読み込み完了記憶
+ANL
+JMP @MR201               ; 次ｽﾃｯﾌﾟへ
+MPP
+LDB @MR102               ; CELL読み込み完了記憶
+AND @MR103               ; TANK読み込み完了記憶
+ANL
+JMP @MR201               ; 次ｽﾃｯﾌﾟへ
+STG @MR207               ; 次ｽﾃｯﾌﾟへ
+AND @T0
+MPS
+SCMP DM3034 DM1250       ; ｲﾝｸｺｰﾄﾞ1(Model Master)  ﾀﾝｸBCR入力ﾃﾞｰﾀﾊﾞｯﾌｧ
+CON
+AND CR2010               ; ＝
+SCMP DM3034 DM1260       ; ｲﾝｸｺｰﾄﾞ1(Model Master)  ｾﾙBCR入力ﾃﾞｰﾀﾊﾞｯﾌｧ
+CON
+AND CR2010               ; ＝
+MPS
+ANB MR12114              ; KDﾄﾞﾗﾑ交換検出FLG
+SET MR106                ; 照合ｺｰﾄﾞﾃﾞｰﾀOK
+CON
+JMP @MR208
+MPP
+AND MR12114              ; KDﾄﾞﾗﾑ交換検出FLG
+JMP @MR209
+MRD
+SCMP DM3034 DM1250       ; ｲﾝｸｺｰﾄﾞ1(Model Master)  ﾀﾝｸBCR入力ﾃﾞｰﾀﾊﾞｯﾌｧ
+CON
+ANB CR2010               ; ＝
+SET MR105                ; 照合ｺｰﾄﾞﾃﾞｰﾀ異常
+CON
+JMP @MR208
+MPP
+SCMP DM3034 DM1260       ; ｲﾝｸｺｰﾄﾞ1(Model Master)  ｾﾙBCR入力ﾃﾞｰﾀﾊﾞｯﾌｧ
+CON
+ANB CR2010               ; ＝
+SET MR105                ; 照合ｺｰﾄﾞﾃﾞｰﾀ異常
+CON
+JMP @MR208
+STG @MR209
+MPS
+ANB MR12100              ; 交換時照合2回目
+SCMP DM1300 DM1320       ; 読込 TANK Code 先頭  前回 TANK Code 先頭
+CON
+MPS
+ANB CR2010               ; ＝
+SET MR106                ; 照合ｺｰﾄﾞﾃﾞｰﾀOK
+CON
+JMP @MR208
+MPP
+AND CR2010               ; ＝
+SET MR105                ; 照合ｺｰﾄﾞﾃﾞｰﾀ異常
+CON
+JMP @MR208
+MPP
+AND MR12100              ; 交換時照合2回目
+SCMP DM1300 DM1320       ; 読込 TANK Code 先頭  前回 TANK Code 先頭
+CON
+MPS
+AND CR2010               ; ＝
+SET MR106                ; 照合ｺｰﾄﾞﾃﾞｰﾀOK
+CON
+JMP @MR208
+MPP
+ANB CR2010               ; ＝
+SET MR105                ; 照合ｺｰﾄﾞﾃﾞｰﾀ異常
+CON
+JMP @MR208
+STG @MR208
+SET MR101                ; Sub:BCR照合完了
+CON
+RES MR102                ; Sub：BCR照合実行中
+CON
+ENDS
+LDP MR106                ; 照合ｺｰﾄﾞﾃﾞｰﾀOK
+BMOV DM1300 DM1320 DM1340; 読込 TANK Code 先頭  前回 TANK Code 先頭  TANK Code 桁数
+LD CR2002                ; 常時ON
+AND MR106                ; 照合ｺｰﾄﾞﾃﾞｰﾀOK
+BMOV DM1270 DM20205 #2   ; ｾﾙBCR Satelite No  Cell 0 lot tracking
+BMOV DM1320 DM20207 #10  ; 前回 TANK Code 先頭
+@SET @MR500              ; 次ｽﾃｯﾌﾟへ
+CON
+OUT DM20202
+;<h1/>BCR読み込み / BCR Read
+STG @MR300               ; BCR読み込み
+AND R32101               ; Port3 送信要求
+SET @MR302               ; BCR読み込み中
+CON
+JMP @MR304               ; 次ｽﾃｯﾌﾟへ
+STG @MR304               ; 次ｽﾃｯﾌﾟへ
+RES R32101               ; Port3 送信要求
+CON
+MPS
+LDB R32001               ; Port3 送信完了
+ANB R32002               ; Port3 読出要求
+ANL
+JMP @MR305               ; 次ｽﾃｯﾌﾟへ
+MPP
+LD R32001                ; Port3 送信完了
+OR R32002                ; Port3 読出要求
+ANL
+SET @MR111               ; 受信ｴﾗｰ
+CON
+ENDS
+STG @MR305               ; 次ｽﾃｯﾌﾟへ
+MPS
+AND @MR100               ; CELL選択中
+LDA DM32001              ; Port3 送信ﾃﾞｰﾀ数
+CON
+MPS
+CMP #12
+CON
+AND CR2010               ; ＝
+JMP @MR306               ; 次ｽﾃｯﾌﾟへ
+MPP
+CMP #12
+CON
+ANB CR2010               ; ＝
+JMP @MR414               ; BCR入力ﾐｽ表示へ
+MPP
+AND @MR101               ; TANK選択中
+LDA DM32001              ; Port3 送信ﾃﾞｰﾀ数
+CON
+MPS
+CMP #18
+CON
+AND CR2010               ; ＝
+JMP @MR400               ; 次ｽﾃｯﾌﾟへ
+MPP
+CMP #18
+CON
+ANB CR2010               ; ＝
+JMP @MR414               ; BCR入力ﾐｽ表示へ
+;CELL
+STG @MR306               ; 次ｽﾃｯﾌﾟへ
+SFIND DM32002 DM1240 DM1241 #0;Port3 送信ﾃﾞｰﾀ先頭  検索用SP  SP位置
+SMID DM32002 DM1260 #0 DM1241;Port3 送信ﾃﾞｰﾀ先頭  ｾﾙBCR入力ﾃﾞｰﾀﾊﾞｯﾌｧ  SP位置
+SRGHT DM32002 DM1290 #2  ; Port3 送信ﾃﾞｰﾀ先頭  ｻﾃﾗｲﾄ取付位置ﾃﾞｰﾀ
+MPS
+LD R5009                 ; 注入SW-BOX ｻﾃﾗｲﾄA選択
+AND= DM1290 $4120        ; ｻﾃﾗｲﾄ取付位置ﾃﾞｰﾀ
+ANL
+SET @MR104               ; ｻﾃﾗｲﾄA読み込み完了記憶
+CON
+SET @MR010               ; ｻﾃﾗｲﾄ位置OK
+MRD
+LD R5008                 ; 注入SW-BOX ｻﾃﾗｲﾄB選択
+AND= DM1290 $4220        ; ｻﾃﾗｲﾄ取付位置ﾃﾞｰﾀ
+ANL
+SET @MR105               ; ｻﾃﾗｲﾄB読み込み完了記憶
+CON
+SET @MR010               ; ｻﾃﾗｲﾄ位置OK
+MRD
+ANB R59803               ; OfflineMode
+@LDA DM1241              ; SP位置
+CON
+@ADD #1
+CON
+@STA DM1244              ; SateliteNo先頭位置
+MRD
+ANB R59803               ; OfflineMode
+SMID DM32002 DM1270 DM1244 #2;Port3 送信ﾃﾞｰﾀ先頭  ｾﾙBCR Satelite No  SateliteNo先頭位置
+MRD
+ANB R59803               ; OfflineMode
+@RDASC DM1270 DM1275     ; ｾﾙBCR Satelite No  ｻﾃﾗｲﾄNo
+MRD
+AND @MR010               ; ｻﾃﾗｲﾄ位置OK
+JMP @MR307
+MPP
+ANB @MR010               ; ｻﾃﾗｲﾄ位置OK
+JMP @MR414               ; BCR入力ﾐｽ表示へ
+STG @MR307
+RES @MR010               ; ｻﾃﾗｲﾄ位置OK
+CON
+MPS
+LD @MR104                ; ｻﾃﾗｲﾄA読み込み完了記憶
+AND @MR105               ; ｻﾃﾗｲﾄB読み込み完了記憶
+ANL
+JMP @MR308
+MPP
+LDB @MR104               ; ｻﾃﾗｲﾄA読み込み完了記憶
+ORB @MR105               ; ｻﾃﾗｲﾄB読み込み完了記憶
+ANL
+JMP @MR300               ; BCR読み込み
+STG @MR308
+SET @MR301               ; BCR読み込み完了
+CON
+RES @MR302               ; BCR読み込み中
+CON
+ENDS
+;Tank
+STG @MR400               ; 次ｽﾃｯﾌﾟへ
+JMP @MR401               ; 次ｽﾃｯﾌﾟへ
+SFIND DM32002 DM1240 DM1241 #0;Port3 送信ﾃﾞｰﾀ先頭  検索用SP  SP位置
+SMID DM32002 DM1250 #0 DM1241;Port3 送信ﾃﾞｰﾀ先頭  ﾀﾝｸBCR入力ﾃﾞｰﾀﾊﾞｯﾌｧ  SP位置
+MOV DM32001 DM1340       ; Port3 送信ﾃﾞｰﾀ数  TANK Code 桁数
+BMOV DM32002 DM1300 DM1340;Port3 送信ﾃﾞｰﾀ先頭  読込 TANK Code 先頭  TANK Code 桁数
+BMOV DM32002 DM3185 DM1340;Port3 送信ﾃﾞｰﾀ先頭  読込TANK code 先頭  TANK Code 桁数
+STG @MR401               ; 次ｽﾃｯﾌﾟへ
+SET @MR301               ; BCR読み込み完了
+CON
+RES @MR302               ; BCR読み込み中
+CON
+ENDS
+;Err
+STG @MR414               ; BCR入力ﾐｽ表示へ
+RES @MR010               ; ｻﾃﾗｲﾄ位置OK
+CON
+OUT MR110                ; BCR入力ﾐｽ出力時間
+MPS
+TMR #100 #9999           ; 入力ﾐｽ出力時間
+MPP
+AND T100                 ; 入力ﾐｽ出力時間
+RES R32101               ; Port3 送信要求
+CON
+JMP @MR415               ; BCR入力ﾐｽ
+STG @MR415               ; BCR入力ﾐｽ
+SET @MR300               ; BCR読み込み
+CON
+ENDS
+;***** MODEL NO 比較  / MODEL NO comparision  ******
+LD CR2008                ; 運転開始時1ｽｷｬﾝON
+OR R51202                ; Model No 比較要求
+ANB CR2003               ; 常時OFF
+SET LR39910              ; 電源投入FLG
+SET LR39911              ; ｲﾝｸｺｰﾄﾞ照合要求
+RES LR39915              ; MODELNO 変更FLG
+LD CR2008                ; 運転開始時1ｽｷｬﾝON
+ORP R50003               ; HOME
+ORF LR39910              ; 電源投入FLG
+ORF LR39915              ; MODELNO 変更FLG
+MOV DM3000 DM1480        ; 機種番号  Host MODEL NO STR
+LD<> DM3000 #0           ; 機種番号
+MOV DM3000 DM1481        ; 機種番号
+LDB R50004               ; TASKDO
+AND R50007               ; 原点復帰　完了
+ANB LR39915              ; MODELNO 変更FLG
+ANB MR2212               ; ST bubbling flag Rear Sw
+AND<> DM3000 DM1480      ; 機種番号  Host MODEL NO STR
+TMR @31 #10
+CON
+AND @T31
+SET LR39915              ; MODELNO 変更FLG
+SET LR39911              ; ｲﾝｸｺｰﾄﾞ照合要求
+SET MR011                ; Bypass cleaning request
+MPS
+SET MR009                ; Auto Interlock
+MPP
+AND MR12211              ; ｻﾃﾗｲﾄ無し
+SET MR25915
+;***** ﾊﾞﾌﾞﾘﾝｸﾞ未完了中 急停止時 照合要求化  / STOP SW ink code collation set  ******
+;
+LD LR39910               ; 電源投入FLG
+OR LR39915               ; MODELNO 変更FLG
+ANB LR39911              ; ｲﾝｸｺｰﾄﾞ照合要求
+AND R50010               ; Emergency　Stop
+SET LR39911              ; ｲﾝｸｺｰﾄﾞ照合要求
+;***** ｻﾃﾗｲﾄ各種設定ﾒﾆｭｰ 選択画面表示  / Satellite setting menu selection  ******
+;
+LD R41005                ; 各種設定ﾒﾆｭｰ起動SW
+TMR @5 #30
+CON
+AND @T5
+ANB R41008               ; 各種設定ﾒﾆｭｰ画面表示
+SET R41008               ; 各種設定ﾒﾆｭｰ画面表示
+LDF R41013               ; 各種設定ﾒﾆｭｰ画面表示閉
+RES R41008               ; 各種設定ﾒﾆｭｰ画面表示
+;***** Front/Rear パネル有効画面表示  / Front/Rear PANEL menu selection  ******
+;
+LD CR2008                ; 運転開始時1ｽｷｬﾝON
+AND CR2003               ; 常時OFF
+RES R41010               ; Front パネル側 無効表示
+CON
+SET R41009               ; Rear パネル側 無効表示
+;<h1/>User ink lot track
+LD CR2002                ; 常時ON
+MPS
+LD= DM1320 DM1350        ; 前回 TANK Code 先頭
+AND= DM1321 DM1351
+AND= DM1322 DM1352
+AND= DM1323 DM1353
+AND= DM1324 DM1354
+ANL
+OUT DM1600               ; Total Cycle
+MPP
+LD= DM1325 $5346
+OR= DM1325 $4D49
+OR= DM1325 $4E4E
+OR= DM1325 $4350
+OR= DM1325 $524D
+OR= DM1325 $5453
+OR= DM1325 $5253
+OR= DM1325 $4B58
+OR= DM1325 $4C43
+OR= DM1325 $4B4E
+OR= DM1325 $484E
+ANL
+OUT DM1601               ; ｽｷｬﾝﾘｽﾄ:有効･無効
+STG @MR500               ; 次ｽﾃｯﾌﾟへ
+MPS
+LD DM1600                ; Total Cycle
+AND DM1601               ; ｽｷｬﾝﾘｽﾄ:有効･無効
+ANL
+TMR @6 #100
+CON
+AND @T6
+JMP @MR501
+MRD
+ANB DM1601               ; ｽｷｬﾝﾘｽﾄ:有効･無効
+TMH @7 #10
+CON
+AND @T7
+JMP @MR502
+MPP
+LDB DM1600               ; Total Cycle
+AND DM1601               ; ｽｷｬﾝﾘｽﾄ:有効･無効
+ANL
+TMR @8 #10
+CON
+AND @T8
+JMP @MR503
+STG @MR501
+BMOV DM1355 DM1325 #4
+BMOV DM1270 DM20205 #2   ; ｾﾙBCR Satelite No  Cell 0 lot tracking
+BMOV DM1320 DM20207 #10  ; 前回 TANK Code 先頭
+JMP @MR503
+STG @MR502
+BMOV DM1320 DM1350 #10   ; 前回 TANK Code 先頭
+JMP @MR503
+STG @MR503
+ENDS
+END
+ENDH

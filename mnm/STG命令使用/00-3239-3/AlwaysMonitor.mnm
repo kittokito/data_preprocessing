@@ -1,0 +1,129 @@
+DEVICE:53
+;MODULE:AlwaysMonitor
+;MODULE_TYPE:0
+;OneSystem Sub-Module
+;
+;---------------------------------------
+;ModuleName	:	AlwaysMonitor
+;ModuleType	:	Sub Module
+;Function	:	常時監視
+;---------------------------------------
+;<使用方法>
+;常時監視が必要な物は本ﾓｼﾞｭｰﾙ内に記述して下さい
+;・ﾋｰﾀｰ過昇温検知による非常停止
+;・ﾁｬﾝﾊﾞｰ排気量低下によるｴﾗｰ出力
+;など
+;<h1/>Pause処理　
+;TASK0　　　　　
+LD R44200                ; _Grp1 ﾎﾟｰｽﾞ要求
+LD CR2003                ; 常時OFF
+AND B2019                ; LDﾄﾚﾁｪﾝよりPAUSE要求
+ORL
+OUT R41200               ; CELL間 TASK0 PAUSE要求
+;TASK1
+LD R44200                ; _Grp1 ﾎﾟｰｽﾞ要求
+LD CR2003                ; 常時OFF
+AND B2029                ; 2CelよりPAUSE要求             
+ORL
+OUT R41201               ; CELL間 TASK1 PAUSE要求
+;TASK2
+LD R44200                ; _Grp1 ﾎﾟｰｽﾞ要求
+OUT R41202               ; CELL間 TASK2 PAUSE要求
+;TASK3
+LD R44200                ; _Grp1 ﾎﾟｰｽﾞ要求
+OUT R41203               ; CELL間 TASK3 PAUSE要求
+;TASK4
+LD R44200                ; _Grp1 ﾎﾟｰｽﾞ要求
+OUT R41204               ; CELL間 TASK4 PAUSE要求
+;TASK5
+LD R44200                ; _Grp1 ﾎﾟｰｽﾞ要求
+OUT R41205               ; CELL間 TASK5 PAUSE要求
+;TASK6
+LD R44200                ; _Grp1 ﾎﾟｰｽﾞ要求
+OUT R41206               ; CELL間 TASK6 PAUSE要求
+;TASK7
+LD R44200                ; _Grp1 ﾎﾟｰｽﾞ要求
+OUT R41207               ; CELL間 TASK7 PAUSE要求
+;TASK8
+LD R44200                ; _Grp1 ﾎﾟｰｽﾞ要求
+OUT R41208               ; CELL間 TASK8 PAUSE要求
+;TASK9
+LD R44200                ; _Grp1 ﾎﾟｰｽﾞ要求
+OUT R41209               ; CELL間 TASK9 PAUSE要求
+;<h1/>CELL間 PAUSE 許可　　例:上流Pause時は安全の為TASK0&TASK1(RB1はTASK0でRB2はTASK1で制御しているとする）
+;						停止した事を確認する
+;						下流Pause時は安全の為TASK3(RB1はTASK3で制御しているとする）
+;						停止した事を確認する
+;CELL1へ
+LD R42600                ; _Grp1_Task0_ﾎﾟｰｽﾞ許可
+ORB R41000               ; _Grp1_Task0_起動中ﾌﾗｸﾞ
+LD R42601                ; _Grp1_Task1_ﾎﾟｰｽﾞ許可
+ORB R42601               ; _Grp1_Task1_ﾎﾟｰｽﾞ許可
+ANL
+ANB R35002               ; During RB1 MOVE 
+ANB R35008               ; RB1 HOME
+ANB R35102               ; During RB2 MOVE
+ANB R35108               ; RB2 INIT
+AND B044                 ; CELL1よりPause要求
+OUT B045                 ; CELL1へPause許可
+;CELL3へ
+LD R42603                ; _Grp1_Task3_ﾎﾟｰｽﾞ許可
+ORB R41003               ; _Grp1_Task3_起動中ﾌﾗｸﾞ
+ANB R35200               ; RB3 MOVE
+ANB R35208               ; RB3 HOME
+AND B0A4                 ; CELL3よりPause要求
+OUT B0A5                 ; CELL3へPause許可
+LDB R006                 ; ｴｱｰ元圧空
+OR MR15000               ; 元圧空断検知
+OUT MR15000              ; 元圧空断検知
+;非常停止扱い処理
+LD MR15000               ; 元圧空断検知
+MSTRT F_ERROR_DISP #1
+LD CR2007                ; 運転開始時1ｽｷｬﾝOFF
+TMR #200 #50             ; 異常監視ﾃﾞｨﾚｰﾀｲﾏｰ
+LD T200                  ; 異常監視ﾃﾞｨﾚｰﾀｲﾏｰ
+ANB B2081                ; 洗浄機より非常停止
+MSTRT F_ERROR_DISP #2
+LD DM10501.12            ; RB2 Ctr_ERROR
+OR DM10501.13            ; RB2 Ctr_SERROR
+MSTRT F_ERROR_DISP #3
+;原点復帰中2ｾﾙｲﾝﾀｰﾛｯｸON待ちﾒｯｾｰｼﾞ
+LDB B2022                ; 2SELLより1ﾗｲﾝｲﾝﾀｰﾛｯｸ
+ORB B202F                ; 2SELLより2ﾗｲﾝｲﾝﾀｰﾛｯｸ
+AND R46101               ; _原点復帰中　ﾓｰﾄﾞﾌﾗｸﾞ
+AND MR11000              ; ﾃﾞﾊﾞｲｽﾈｯﾄ通信正常
+MSTRT MSG_DISP #1 #1 #0 #1
+LD B2022                 ; 2SELLより1ﾗｲﾝｲﾝﾀｰﾛｯｸ
+AND B202F                ; 2SELLより2ﾗｲﾝｲﾝﾀｰﾛｯｸ
+MSTRT MSG_DEL #1 #1
+;ｽｶﾗｰRB起動待ちﾒｯｾｰｼﾞ
+LD R46101                ; _原点復帰中　ﾓｰﾄﾞﾌﾗｸﾞ
+ANB MR11000              ; ﾃﾞﾊﾞｲｽﾈｯﾄ通信正常
+MSTRT MSG_DISP #1 #2 #0 #1
+LD MR11000               ; ﾃﾞﾊﾞｲｽﾈｯﾄ通信正常
+MSTRT MSG_DEL #1 #2
+;ﾎﾟｰｽﾞ要求2ｾﾙ取出し待ちﾒｯｾｰｼﾞ
+LDB MR8210               ; 2cellﾍ除材1ﾗｲﾝ動作開始許可
+ANB MR8212               ; 2cellﾍ除材2ﾗｲﾝ動作開始許可
+INV
+AND R46700               ; _安全ｶﾊﾞｰ1開処理中
+ANB R46200               ; _安全ｶﾊﾞｰ1開中
+MSTRT MSG_DISP #1 #3 #0 #1
+LDB R46700               ; _安全ｶﾊﾞｰ1開処理中
+MSTRT MSG_DEL #1 #3
+;停止移行中　2ｾﾙ取出し待ち
+LDB B2034                ; ★下流ｾﾙへ  1ﾗｲﾝ側動作開始許可
+ANB B2037                ; ★下流ｾﾙへ  2ﾗｲﾝ側動作開始許可
+INV
+AND R46106               ; _定停止移行中
+ANB B202C                ; ★下流ｾﾙより吸着ｴﾗｰ扉開許可
+MSTRT MSG_DISP #1 #4 #0 #1
+LDB R46106               ; _定停止移行中
+MSTRT MSG_DEL #1 #4
+;2ｾﾙ　吸着ｴﾗｰ中
+LD B202C                 ; ★下流ｾﾙより吸着ｴﾗｰ扉開許可
+MSTRT MSG_DISP #1 #5 #0 #1
+LDB B202C                ; ★下流ｾﾙより吸着ｴﾗｰ扉開許可
+MSTRT MSG_DEL #1 #5
+END
+ENDH

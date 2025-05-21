@@ -1,0 +1,828 @@
+DEVICE:53
+;MODULE:BARCODE_FW
+;MODULE_TYPE:0
+LD R40013                ; 非常停止
+OR @MR001                ; 次ｽﾃｯﾌﾟへ
+ZRES @MR000 @MR1115      ; 次ｽﾃｯﾌﾟへ
+CON
+ANB @T0
+OUT @MR001               ; 次ｽﾃｯﾌﾟへ
+TMR @0 #5
+;ﾃﾞﾊﾞｯｸﾞ用BCR読み込み / BCR Read forDebug
+STG @MR000               ; 次ｽﾃｯﾌﾟへ
+DW #0 DM3550             ; OFFﾗｲﾝ用ﾃﾞｰﾀ読込回数
+CON
+JMP @MR002               ; 次ｽﾃｯﾌﾟへ
+STG @MR002               ; 次ｽﾃｯﾌﾟへ
+AND R30101               ; Port1 受信完了
+@INC DM3550              ; OFFﾗｲﾝ用ﾃﾞｰﾀ読込回数
+CON
+JMP @MR003               ; 次ｽﾃｯﾌﾟへ
+STG @MR003               ; 次ｽﾃｯﾌﾟへ
+SFIND DM30002 DM2600 DM2601 #0;Port1 受信ﾃﾞｰﾀ1  検索用SP  SP位置
+MPS
+AND= DM3550 #1           ; OFFﾗｲﾝ用ﾃﾞｰﾀ読込回数
+SMID DM30002 FM257 #0 DM2601;Port1 受信ﾃﾞｰﾀ1  Y InkCode1  SP位置
+MRD
+AND= DM3550 #2           ; OFFﾗｲﾝ用ﾃﾞｰﾀ読込回数
+SMID DM30002 FM241 #0 DM2601;Port1 受信ﾃﾞｰﾀ1  M InkCode1  SP位置
+MRD
+AND= DM3550 #3           ; OFFﾗｲﾝ用ﾃﾞｰﾀ読込回数
+SMID DM30002 FM225 #0 DM2601;Port1 受信ﾃﾞｰﾀ1  C InkCode1  SP位置
+MRD
+AND= DM3550 #4           ; OFFﾗｲﾝ用ﾃﾞｰﾀ読込回数
+SMID DM30002 FM273 #0 DM2601;Port1 受信ﾃﾞｰﾀ1  BK InkCode1  SP位置
+MPP
+JMP @MR004
+STG @MR004
+RES R30101               ; Port1 受信完了
+CON
+MPS
+AND< DM3550 #4           ; OFFﾗｲﾝ用ﾃﾞｰﾀ読込回数
+JMP @MR002               ; 次ｽﾃｯﾌﾟへ
+MPP
+AND>= DM3550 #4          ; OFFﾗｲﾝ用ﾃﾞｰﾀ読込回数
+JMP @MR005               ; 次ｽﾃｯﾌﾟへ
+STG @MR005               ; 次ｽﾃｯﾌﾟへ
+SET R51202               ; Model No 比較要求
+CON
+TMR @2 #2                ; Wait Time
+CON
+AND @T2                  ; Wait Time
+JMP @MR006               ; 次ｽﾃｯﾌﾟへ
+STG @MR006               ; 次ｽﾃｯﾌﾟへ
+RES R51202               ; Model No 比較要求
+CON
+ENDS
+;<h1/>照合要求確認
+LDB MR1205               ; Y 照合中  
+ANB MR1405               ; M 照合中  
+ANB MR1605               ; C 照合中  
+ANB MR1805               ; B 照合中  
+INV
+OUT MR1102               ; BCR照合中
+OUT R19104               ; 照合要求画面表示
+LD CR2008                ; 運転開始時1ｽｷｬﾝON
+ORF @MR001               ; 次ｽﾃｯﾌﾟへ
+SET @MR400               ; 照合要求待ち Yellow
+STG @MR400               ; 照合要求待ち Yellow
+ANB MR1102               ; BCR照合中
+MPS
+LD MR1200                ; Y 照合要求(HOME)
+OR MR1201                ; Y 照合要求(KD交換1)
+OR MR1202                ; Y 照合要求(KD交換2)
+ANL
+ZRES MR1306 MR1307       ; (Y)ｻﾌﾞﾀﾝｸ照合完了  (Y)KDﾄﾞﾗﾑ照合完了
+CON
+ZRES @MR100 @MR215       ; BCR読み込み
+CON
+SET MR1205               ; Y 照合中  
+CON
+ZRES MR1206 MR1207       ; Y 照合異常  Y 照合OK  
+CON
+JMP @MR500               ; 照合 YELLOW
+MPP
+LDB MR1200               ; Y 照合要求(HOME)
+ANB MR1201               ; Y 照合要求(KD交換1)
+ANB MR1202               ; Y 照合要求(KD交換2)
+ANL
+JMP @MR401               ; 照合要求待ち Magenta
+STG @MR401               ; 照合要求待ち Magenta
+ANB MR1102               ; BCR照合中
+MPS
+LD MR1400                ; M 照合要求(HOME)
+OR MR1401                ; M 照合要求(KD交換1)
+OR MR1402                ; M 照合要求(KD交換2)
+ANL
+ZRES MR1506 MR1507       ; (M)ｻﾌﾞﾀﾝｸ照合完了  (M)KDﾄﾞﾗﾑ照合完了
+CON
+ZRES @MR100 @MR215       ; BCR読み込み
+CON
+SET MR1405               ; M 照合中  
+CON
+ZRES MR1406 MR1407       ; M 照合異常  M 照合OK  
+CON
+JMP @MR700               ; 照合 MAGENTA
+MPP
+LDB MR1400               ; M 照合要求(HOME)
+ANB MR1401               ; M 照合要求(KD交換1)
+ANB MR1402               ; M 照合要求(KD交換2)
+ANL
+JMP @MR402               ; 照合要求待ち Cyan
+STG @MR402               ; 照合要求待ち Cyan
+ANB MR1102               ; BCR照合中
+MPS
+LD MR1600                ; C 照合要求(HOME)
+OR MR1601                ; C 照合要求(KD交換1)
+OR MR1602                ; C 照合要求(KD交換2)
+ANL
+ZRES MR1706 MR1707       ; (C)ｻﾌﾞﾀﾝｸ照合完了  (C)KDﾄﾞﾗﾑ照合完了
+CON
+ZRES @MR100 @MR215       ; BCR読み込み
+CON
+SET MR1605               ; C 照合中  
+CON
+ZRES MR1606 MR1607       ; C 照合異常  C 照合OK  
+CON
+JMP @MR900               ; 照合 CYAN
+MPP
+LDB MR1600               ; C 照合要求(HOME)
+ANB MR1601               ; C 照合要求(KD交換1)
+ANB MR1602               ; C 照合要求(KD交換2)
+ANL
+JMP @MR403               ; 照合要求待ち Black
+STG @MR403               ; 照合要求待ち Black
+ANB MR1102               ; BCR照合中
+MPS
+LD MR1800                ; B 照合要求(HOME)
+OR MR1801                ; B 照合要求(KD交換1)
+OR MR1802                ; B 照合要求(KD交換2)
+ANL
+ZRES MR1906 MR1907       ; (B)ｻﾌﾞﾀﾝｸ照合完了  (B)KDﾄﾞﾗﾑ照合完了
+CON
+ZRES @MR100 @MR215       ; BCR読み込み
+CON
+SET MR1805               ; B 照合中  
+CON
+ZRES MR1806 MR1807       ; B 照合異常  B 照合OK  
+CON
+JMP @MR1100              ; 照合 BLACK
+MPP
+LDB MR1800               ; B 照合要求(HOME)
+ANB MR1801               ; B 照合要求(KD交換1)
+ANB MR1802               ; B 照合要求(KD交換2)
+ANL
+JMP @MR400               ; 照合要求待ち Yellow
+;<h1/> 1)YELLOW
+;BCR照合 / BARCODE Forwarding
+STG @MR500               ; 照合 YELLOW
+MPS
+SET MR2011               ; ﾚｲﾝﾎﾞｰﾗﾝﾌﾟ 赤
+CON
+SET MR2012               ; ﾚｲﾝﾎﾞｰﾗﾝﾌﾟ 緑
+CON
+JMP @MR501               ; 次ｽﾃｯﾌﾟへ
+MPP
+FMOV #0 DM2610 #7        ; ﾀﾝｸBCR入力ﾃﾞｰﾀﾊﾞｯﾌｧ
+STG @MR501               ; 次ｽﾃｯﾌﾟへ
+SET @MR100               ; BCR読み込み
+CON
+JMP @MR502               ; 次ｽﾃｯﾌﾟへ
+STG @MR502               ; 次ｽﾃｯﾌﾟへ
+MPS
+AND @MR101               ; BCR読み込み完了
+MPS
+RES @MR101               ; BCR読み込み完了
+CON
+JMP @MR503               ; 次ｽﾃｯﾌﾟへ
+MPP
+BMOV DM2622 DM2640 DM2620; 読込 Code 先頭  読込 YELLOW Code 先頭  読取Code 桁数
+MPP
+AND @MR103               ; BCR読み込み異常
+RES @MR103               ; BCR読み込み異常
+CON
+JMP @MR500               ; 照合 YELLOW
+;照合判定 / Judge
+STG @MR503               ; 次ｽﾃｯﾌﾟへ
+MPS
+SCMP FM257 DM2610        ; Y InkCode1  ﾀﾝｸBCR入力ﾃﾞｰﾀﾊﾞｯﾌｧ
+CON
+AND CR2010               ; 演算結果がｾﾞﾛ
+MPS
+AND MR1200               ; Y 照合要求(HOME)
+MPS
+AND MR1105               ; ｻﾌﾞﾀﾝｸ読み込み
+SET MR1306               ; (Y)ｻﾌﾞﾀﾝｸ照合完了
+CON
+JMP @MR504               ; 照合箇所ﾁｪｯｸ
+MPP
+AND MR1106               ; KDﾄﾞﾗﾑ読み込み
+MPS
+SET MR1307               ; (Y)KDﾄﾞﾗﾑ照合完了
+CON
+JMP @MR504               ; 照合箇所ﾁｪｯｸ
+MPP
+BMOV DM2640 DM2660 DM2620; 読込 YELLOW Code 先頭  前回 YELLOW Code 先頭  読取Code 桁数
+MRD
+AND MR1201               ; Y 照合要求(KD交換1)
+MPS
+ANB MR1105               ; ｻﾌﾞﾀﾝｸ読み込み
+JMP @MR508               ; 交換1 ｺｰﾄﾞ非同一確認
+MPP
+AND MR1105               ; ｻﾌﾞﾀﾝｸ読み込み
+JMP @MR513               ; 照合NG
+MPP
+AND MR1202               ; Y 照合要求(KD交換2)
+MPS
+ANB MR1105               ; ｻﾌﾞﾀﾝｸ読み込み
+JMP @MR509               ; 交換2 ｺｰﾄﾞ一致確認
+MPP
+AND MR1105               ; ｻﾌﾞﾀﾝｸ読み込み
+JMP @MR513               ; 照合NG
+MPP
+SCMP DM2610 FM257        ; ﾀﾝｸBCR入力ﾃﾞｰﾀﾊﾞｯﾌｧ  Y InkCode1
+CON
+ANB CR2010               ; 演算結果がｾﾞﾛ
+JMP @MR513               ; 照合NG
+;初回照合時　ｻﾌﾞﾀﾝｸ・KDﾄﾞﾗﾑ照合完了ﾁｪｯｸ
+STG @MR504               ; 照合箇所ﾁｪｯｸ
+MPS
+LD MR1306                ; (Y)ｻﾌﾞﾀﾝｸ照合完了
+AND MR1307               ; (Y)KDﾄﾞﾗﾑ照合完了
+ANL
+SET MR1207               ; Y 照合OK  
+CON
+JMP @MR514               ; 照合終了処理
+MPP
+LDB MR1306               ; (Y)ｻﾌﾞﾀﾝｸ照合完了
+ORB MR1307               ; (Y)KDﾄﾞﾗﾑ照合完了
+ANL
+JMP @MR500               ; 照合 YELLOW
+;交換開始時　前回と不一致確認
+STG @MR508               ; 交換1 ｺｰﾄﾞ非同一確認
+SCMP DM2640 DM2660       ; 読込 YELLOW Code 先頭  前回 YELLOW Code 先頭
+CON
+MPS
+ANB CR2010               ; 演算結果がｾﾞﾛ
+JMP @MR512               ; 照合OK
+MPP
+AND CR2010               ; 演算結果がｾﾞﾛ
+JMP @MR513               ; 照合NG
+;交換終了時　交換開始時と一致確認
+STG @MR509               ; 交換2 ｺｰﾄﾞ一致確認
+SCMP DM2640 DM2660       ; 読込 YELLOW Code 先頭  前回 YELLOW Code 先頭
+CON
+MPS
+AND CR2010               ; 演算結果がｾﾞﾛ
+JMP @MR512               ; 照合OK
+MPP
+ANB CR2010               ; 演算結果がｾﾞﾛ
+JMP @MR513               ; 照合NG
+;照合OK処理
+STG @MR512               ; 照合OK
+MPS
+SET MR1207               ; Y 照合OK  
+CON
+JMP @MR514               ; 照合終了処理
+MPP
+BMOV DM2640 DM2660 DM2620; 読込 YELLOW Code 先頭  前回 YELLOW Code 先頭  読取Code 桁数
+;照合異常処理
+STG @MR513               ; 照合NG
+SET MR1206               ; Y 照合異常
+CON
+JMP @MR514               ; 照合終了処理
+;終了処理
+STG @MR514               ; 照合終了処理
+RES MR2011               ; ﾚｲﾝﾎﾞｰﾗﾝﾌﾟ 赤
+CON
+RES MR2012               ; ﾚｲﾝﾎﾞｰﾗﾝﾌﾟ 緑
+CON
+SET MR1204               ; Y 照合完了
+CON
+RES MR1205               ; Y 照合中  
+CON
+JMP @MR515
+STG @MR515
+ANB MR1200               ; Y 照合要求(HOME)
+ANB MR1201               ; Y 照合要求(KD交換1)
+ANB MR1202               ; Y 照合要求(KD交換2)
+JMP @MR400               ; 照合要求待ち Yellow
+;<h1/> 2)MAGENTA
+;BCR照合 / BARCODE Forwarding
+STG @MR700               ; 照合 MAGENTA
+MPS
+SET MR2011               ; ﾚｲﾝﾎﾞｰﾗﾝﾌﾟ 赤
+CON
+JMP @MR701               ; 次ｽﾃｯﾌﾟへ
+MPP
+FMOV #0 DM2610 #7        ; ﾀﾝｸBCR入力ﾃﾞｰﾀﾊﾞｯﾌｧ
+STG @MR701               ; 次ｽﾃｯﾌﾟへ
+SET @MR100               ; BCR読み込み
+CON
+JMP @MR702               ; 次ｽﾃｯﾌﾟへ
+STG @MR702               ; 次ｽﾃｯﾌﾟへ
+MPS
+AND @MR101               ; BCR読み込み完了
+MPS
+RES @MR101               ; BCR読み込み完了
+CON
+JMP @MR703               ; 次ｽﾃｯﾌﾟへ
+MPP
+BMOV DM2622 DM2680 DM2620; 読込 Code 先頭  読込 MAGENTA Code 先頭  読取Code 桁数
+MPP
+AND @MR103               ; BCR読み込み異常
+RES @MR103               ; BCR読み込み異常
+CON
+JMP @MR700               ; 照合 MAGENTA
+;照合判定 / Judge
+STG @MR703               ; 次ｽﾃｯﾌﾟへ
+MPS
+SCMP FM241 DM2610        ; M InkCode1  ﾀﾝｸBCR入力ﾃﾞｰﾀﾊﾞｯﾌｧ
+CON
+AND CR2010               ; 演算結果がｾﾞﾛ
+MPS
+AND MR1400               ; M 照合要求(HOME)
+MPS
+AND MR1105               ; ｻﾌﾞﾀﾝｸ読み込み
+SET MR1506               ; (M)ｻﾌﾞﾀﾝｸ照合完了
+CON
+JMP @MR704               ; 照合箇所ﾁｪｯｸ
+MPP
+AND MR1106               ; KDﾄﾞﾗﾑ読み込み
+MPS
+SET MR1507               ; (M)KDﾄﾞﾗﾑ照合完了
+CON
+JMP @MR704               ; 照合箇所ﾁｪｯｸ
+MPP
+BMOV DM2680 DM2700 DM2620; 読込 MAGENTA Code 先頭  前回 MAGENTA Code 先頭  読取Code 桁数
+MRD
+AND MR1401               ; M 照合要求(KD交換1)
+MPS
+ANB MR1105               ; ｻﾌﾞﾀﾝｸ読み込み
+JMP @MR708               ; 交換1 ｺｰﾄﾞ非同一確認
+MPP
+AND MR1105               ; ｻﾌﾞﾀﾝｸ読み込み
+JMP @MR713               ; 照合NG
+MPP
+AND MR1402               ; M 照合要求(KD交換2)
+MPS
+ANB MR1105               ; ｻﾌﾞﾀﾝｸ読み込み
+JMP @MR709               ; 交換2 ｺｰﾄﾞ一致確認
+MPP
+AND MR1105               ; ｻﾌﾞﾀﾝｸ読み込み
+JMP @MR713               ; 照合NG
+MPP
+SCMP FM241 DM2610        ; M InkCode1  ﾀﾝｸBCR入力ﾃﾞｰﾀﾊﾞｯﾌｧ
+CON
+ANB CR2010               ; 演算結果がｾﾞﾛ
+JMP @MR713               ; 照合NG
+;初回照合時　ｻﾌﾞﾀﾝｸ・KDﾄﾞﾗﾑ照合完了ﾁｪｯｸ
+STG @MR704               ; 照合箇所ﾁｪｯｸ
+MPS
+LD MR1506                ; (M)ｻﾌﾞﾀﾝｸ照合完了
+AND MR1507               ; (M)KDﾄﾞﾗﾑ照合完了
+ANL
+SET MR1407               ; M 照合OK  
+CON
+JMP @MR714               ; 照合終了処理
+MPP
+LDB MR1506               ; (M)ｻﾌﾞﾀﾝｸ照合完了
+ORB MR1507               ; (M)KDﾄﾞﾗﾑ照合完了
+ANL
+JMP @MR700               ; 照合 MAGENTA
+;交換開始時　前回と不一致確認
+STG @MR708               ; 交換1 ｺｰﾄﾞ非同一確認
+SCMP DM2680 DM2700       ; 読込 MAGENTA Code 先頭  前回 MAGENTA Code 先頭
+CON
+MPS
+ANB CR2010               ; 演算結果がｾﾞﾛ
+JMP @MR712               ; 照合OK
+MPP
+AND CR2010               ; 演算結果がｾﾞﾛ
+JMP @MR713               ; 照合NG
+;交換終了時　交換開始時と一致確認
+STG @MR709               ; 交換2 ｺｰﾄﾞ一致確認
+SCMP DM2680 DM2700       ; 読込 MAGENTA Code 先頭  前回 MAGENTA Code 先頭
+CON
+MPS
+AND CR2010               ; 演算結果がｾﾞﾛ
+JMP @MR712               ; 照合OK
+MPP
+ANB CR2010               ; 演算結果がｾﾞﾛ
+JMP @MR713               ; 照合NG
+;照合OK処理
+STG @MR712               ; 照合OK
+MPS
+SET MR1407               ; M 照合OK  
+CON
+JMP @MR714               ; 照合終了処理
+MPP
+BMOV DM2680 DM2700 DM2620; 読込 MAGENTA Code 先頭  前回 MAGENTA Code 先頭  読取Code 桁数
+;照合異常処理
+STG @MR713               ; 照合NG
+SET MR1406               ; M 照合異常
+CON
+JMP @MR714               ; 照合終了処理
+;終了処理
+STG @MR714               ; 照合終了処理
+RES MR2011               ; ﾚｲﾝﾎﾞｰﾗﾝﾌﾟ 赤
+CON
+SET MR1404               ; M 照合完了
+CON
+RES MR1405               ; M 照合中  
+CON
+JMP @MR715
+STG @MR715
+ANB MR1400               ; M 照合要求(HOME)
+ANB MR1401               ; M 照合要求(KD交換1)
+ANB MR1402               ; M 照合要求(KD交換2)
+JMP @MR400               ; 照合要求待ち Yellow
+;<h1/> 3)CYAN
+;BCR照合 / BARCODE Forwarding
+STG @MR900               ; 照合 CYAN
+MPS
+SET MR2013               ; ﾚｲﾝﾎﾞｰﾗﾝﾌﾟ 青
+CON
+JMP @MR901               ; 次ｽﾃｯﾌﾟへ
+MPP
+FMOV #0 DM2610 #7        ; ﾀﾝｸBCR入力ﾃﾞｰﾀﾊﾞｯﾌｧ
+STG @MR901               ; 次ｽﾃｯﾌﾟへ
+SET @MR100               ; BCR読み込み
+CON
+JMP @MR902               ; 次ｽﾃｯﾌﾟへ
+STG @MR902               ; 次ｽﾃｯﾌﾟへ
+MPS
+AND @MR101               ; BCR読み込み完了
+MPS
+RES @MR101               ; BCR読み込み完了
+CON
+JMP @MR903               ; 次ｽﾃｯﾌﾟへ
+MPP
+BMOV DM2622 DM2720 DM2620; 読込 Code 先頭  読込 CYAN Code 先頭  読取Code 桁数
+MPP
+AND @MR103               ; BCR読み込み異常
+RES @MR103               ; BCR読み込み異常
+CON
+JMP @MR900               ; 照合 CYAN
+;照合判定 / Judge
+STG @MR903               ; 次ｽﾃｯﾌﾟへ
+MPS
+SCMP FM225 DM2610        ; C InkCode1  ﾀﾝｸBCR入力ﾃﾞｰﾀﾊﾞｯﾌｧ
+CON
+AND CR2010               ; 演算結果がｾﾞﾛ
+MPS
+AND MR1600               ; C 照合要求(HOME)
+MPS
+AND MR1105               ; ｻﾌﾞﾀﾝｸ読み込み
+SET MR1706               ; (C)ｻﾌﾞﾀﾝｸ照合完了
+CON
+JMP @MR904               ; 照合箇所ﾁｪｯｸ
+MPP
+AND MR1106               ; KDﾄﾞﾗﾑ読み込み
+MPS
+SET MR1707               ; (C)KDﾄﾞﾗﾑ照合完了
+CON
+JMP @MR904               ; 照合箇所ﾁｪｯｸ
+MPP
+BMOV DM2720 DM2740 DM2620; 読込 CYAN Code 先頭  前回 CYAN Code 先頭  読取Code 桁数
+MRD
+AND MR1601               ; C 照合要求(KD交換1)
+MPS
+ANB MR1105               ; ｻﾌﾞﾀﾝｸ読み込み
+JMP @MR908               ; 交換1 ｺｰﾄﾞ非同一確認
+MPP
+AND MR1105               ; ｻﾌﾞﾀﾝｸ読み込み
+JMP @MR913               ; 照合NG
+MPP
+AND MR1602               ; C 照合要求(KD交換2)
+MPS
+ANB MR1105               ; ｻﾌﾞﾀﾝｸ読み込み
+JMP @MR909               ; 交換2 ｺｰﾄﾞ一致確認
+MPP
+AND MR1105               ; ｻﾌﾞﾀﾝｸ読み込み
+JMP @MR913               ; 照合NG
+MPP
+SCMP FM225 DM2610        ; C InkCode1  ﾀﾝｸBCR入力ﾃﾞｰﾀﾊﾞｯﾌｧ
+CON
+ANB CR2010               ; 演算結果がｾﾞﾛ
+JMP @MR913               ; 照合NG
+;初回照合時　ｻﾌﾞﾀﾝｸ・KDﾄﾞﾗﾑ照合完了ﾁｪｯｸ
+STG @MR904               ; 照合箇所ﾁｪｯｸ
+MPS
+LD MR1706                ; (C)ｻﾌﾞﾀﾝｸ照合完了
+AND MR1707               ; (C)KDﾄﾞﾗﾑ照合完了
+ANL
+SET MR1607               ; C 照合OK  
+CON
+JMP @MR914               ; 照合終了処理
+MPP
+LDB MR1706               ; (C)ｻﾌﾞﾀﾝｸ照合完了
+ORB MR1707               ; (C)KDﾄﾞﾗﾑ照合完了
+ANL
+JMP @MR900               ; 照合 CYAN
+;交換開始時　前回と不一致確認
+STG @MR908               ; 交換1 ｺｰﾄﾞ非同一確認
+SCMP DM2720 DM2740       ; 読込 CYAN Code 先頭  前回 CYAN Code 先頭
+CON
+MPS
+ANB CR2010               ; 演算結果がｾﾞﾛ
+JMP @MR912               ; 照合OK
+MPP
+AND CR2010               ; 演算結果がｾﾞﾛ
+JMP @MR913               ; 照合NG
+;交換終了時　交換開始時と一致確認
+STG @MR909               ; 交換2 ｺｰﾄﾞ一致確認
+SCMP DM2720 DM2740       ; 読込 CYAN Code 先頭  前回 CYAN Code 先頭
+CON
+MPS
+AND CR2010               ; 演算結果がｾﾞﾛ
+JMP @MR912               ; 照合OK
+MPP
+ANB CR2010               ; 演算結果がｾﾞﾛ
+JMP @MR913               ; 照合NG
+;照合OK処理
+STG @MR912               ; 照合OK
+MPS
+SET MR1607               ; C 照合OK  
+CON
+JMP @MR914               ; 照合終了処理
+MPP
+BMOV DM2720 DM2740 DM2620; 読込 CYAN Code 先頭  前回 CYAN Code 先頭  読取Code 桁数
+;照合異常処理
+STG @MR913               ; 照合NG
+SET MR1606               ; C 照合異常
+CON
+JMP @MR914               ; 照合終了処理
+;終了処理
+STG @MR914               ; 照合終了処理
+RES MR2013               ; ﾚｲﾝﾎﾞｰﾗﾝﾌﾟ 青
+CON
+SET MR1604               ; C 照合完了
+CON
+RES MR1605               ; C 照合中  
+CON
+JMP @MR915
+STG @MR915
+ANB MR1600               ; C 照合要求(HOME)
+ANB MR1601               ; C 照合要求(KD交換1)
+ANB MR1602               ; C 照合要求(KD交換2)
+JMP @MR400               ; 照合要求待ち Yellow
+;<h1/> 4)BLACK
+;BCR照合 / BARCODE Forwarding
+STG @MR1100              ; 照合 BLACK
+MPS
+SET MR2011               ; ﾚｲﾝﾎﾞｰﾗﾝﾌﾟ 赤
+CON
+SET MR2012               ; ﾚｲﾝﾎﾞｰﾗﾝﾌﾟ 緑
+CON
+SET MR2013               ; ﾚｲﾝﾎﾞｰﾗﾝﾌﾟ 青
+CON
+JMP @MR1101              ; 次ｽﾃｯﾌﾟへ
+MPP
+FMOV #0 DM2610 #7        ; ﾀﾝｸBCR入力ﾃﾞｰﾀﾊﾞｯﾌｧ
+STG @MR1101              ; 次ｽﾃｯﾌﾟへ
+SET @MR100               ; BCR読み込み
+CON
+JMP @MR1102              ; 次ｽﾃｯﾌﾟへ
+STG @MR1102              ; 次ｽﾃｯﾌﾟへ
+MPS
+AND @MR101               ; BCR読み込み完了
+MPS
+RES @MR101               ; BCR読み込み完了
+CON
+JMP @MR1103              ; 次ｽﾃｯﾌﾟへ
+MPP
+BMOV DM2622 DM2760 DM2620; 読込 Code 先頭  読込 BLACK Code 先頭  読取Code 桁数
+MPP
+AND @MR103               ; BCR読み込み異常
+RES @MR103               ; BCR読み込み異常
+CON
+JMP @MR1100              ; 照合 BLACK
+;照合判定 / Judge
+STG @MR1103              ; 次ｽﾃｯﾌﾟへ
+MPS
+SCMP FM273 DM2610        ; BK InkCode1  ﾀﾝｸBCR入力ﾃﾞｰﾀﾊﾞｯﾌｧ
+CON
+AND CR2010               ; 演算結果がｾﾞﾛ
+MPS
+AND MR1800               ; B 照合要求(HOME)
+MPS
+AND MR1105               ; ｻﾌﾞﾀﾝｸ読み込み
+SET MR1906               ; (B)ｻﾌﾞﾀﾝｸ照合完了
+CON
+JMP @MR1104              ; 照合箇所ﾁｪｯｸ
+MPP
+AND MR1106               ; KDﾄﾞﾗﾑ読み込み
+MPS
+SET MR1907               ; (B)KDﾄﾞﾗﾑ照合完了
+CON
+JMP @MR1104              ; 照合箇所ﾁｪｯｸ
+MPP
+BMOV DM2760 DM2780 DM2620; 読込 BLACK Code 先頭  前回 BLACK Code 先頭  読取Code 桁数
+MRD
+AND MR1801               ; B 照合要求(KD交換1)
+MPS
+ANB MR1105               ; ｻﾌﾞﾀﾝｸ読み込み
+JMP @MR1108              ; 交換1 ｺｰﾄﾞ非同一確認
+MPP
+AND MR1105               ; ｻﾌﾞﾀﾝｸ読み込み
+JMP @MR1113              ; 照合NG
+MPP
+AND MR1802               ; B 照合要求(KD交換2)
+MPS
+ANB MR1105               ; ｻﾌﾞﾀﾝｸ読み込み
+JMP @MR1109              ; 交換2 ｺｰﾄﾞ一致確認
+MPP
+AND MR1105               ; ｻﾌﾞﾀﾝｸ読み込み
+JMP @MR1113              ; 照合NG
+MPP
+SCMP FM273 DM2610        ; BK InkCode1  ﾀﾝｸBCR入力ﾃﾞｰﾀﾊﾞｯﾌｧ
+CON
+ANB CR2010               ; 演算結果がｾﾞﾛ
+JMP @MR1113              ; 照合NG
+;初回照合時　ｻﾌﾞﾀﾝｸ・KDﾄﾞﾗﾑ照合完了ﾁｪｯｸ
+STG @MR1104              ; 照合箇所ﾁｪｯｸ
+MPS
+LD MR1906                ; (B)ｻﾌﾞﾀﾝｸ照合完了
+AND MR1907               ; (B)KDﾄﾞﾗﾑ照合完了
+ANL
+SET MR1807               ; B 照合OK  
+CON
+JMP @MR1114              ; 照合終了処理
+MPP
+LDB MR1906               ; (B)ｻﾌﾞﾀﾝｸ照合完了
+ORB MR1907               ; (B)KDﾄﾞﾗﾑ照合完了
+ANL
+JMP @MR1100              ; 照合 BLACK
+;交換開始時　前回と不一致確認
+STG @MR1108              ; 交換1 ｺｰﾄﾞ非同一確認
+SCMP DM2760 DM2780       ; 読込 BLACK Code 先頭  前回 BLACK Code 先頭
+CON
+MPS
+ANB CR2010               ; 演算結果がｾﾞﾛ
+JMP @MR1112              ; 照合OK
+MPP
+AND CR2010               ; 演算結果がｾﾞﾛ
+JMP @MR1113              ; 照合NG
+;交換終了時　交換開始時と一致確認
+STG @MR1109              ; 交換2 ｺｰﾄﾞ一致確認
+SCMP DM2760 DM2780       ; 読込 BLACK Code 先頭  前回 BLACK Code 先頭
+CON
+MPS
+AND CR2010               ; 演算結果がｾﾞﾛ
+JMP @MR1112              ; 照合OK
+MPP
+ANB CR2010               ; 演算結果がｾﾞﾛ
+JMP @MR1113              ; 照合NG
+;照合OK処理
+STG @MR1112              ; 照合OK
+MPS
+SET MR1807               ; B 照合OK  
+CON
+JMP @MR1114              ; 照合終了処理
+MPP
+BMOV DM2760 DM2780 DM2620; 読込 BLACK Code 先頭  前回 BLACK Code 先頭  読取Code 桁数
+;照合異常処理
+STG @MR1113              ; 照合NG
+SET MR1806               ; B 照合異常
+CON
+JMP @MR1114              ; 照合終了処理
+;終了処理
+STG @MR1114              ; 照合終了処理
+RES MR2011               ; ﾚｲﾝﾎﾞｰﾗﾝﾌﾟ 赤
+CON
+RES MR2012               ; ﾚｲﾝﾎﾞｰﾗﾝﾌﾟ 緑
+CON
+RES MR2013               ; ﾚｲﾝﾎﾞｰﾗﾝﾌﾟ 青
+CON
+SET MR1804               ; B 照合完了  
+CON
+RES MR1805               ; B 照合中  
+CON
+JMP @MR1115
+STG @MR1115
+ANB MR1800               ; B 照合要求(HOME)
+ANB MR1801               ; B 照合要求(KD交換1)
+ANB MR1802               ; B 照合要求(KD交換2)
+JMP @MR400               ; 照合要求待ち Yellow
+;<h1/>BCR読み込み / BCR Read
+STG @MR100               ; BCR読み込み
+RES R30101               ; Port1 受信完了
+CON
+ANB R30101               ; Port1 受信完了
+JMP @MR104               ; 次ｽﾃｯﾌﾟへ
+STG @MR104               ; 次ｽﾃｯﾌﾟへ
+AND R30101               ; Port1 受信完了
+RES R30101               ; Port1 受信完了
+CON
+SET @MR102               ; BCR読み込み中
+CON
+JMP @MR105               ; 次ｽﾃｯﾌﾟへ
+STG @MR105               ; 次ｽﾃｯﾌﾟへ
+LDA DM30001              ; Port1 受信ﾃﾞｰﾀ長
+CON
+MPS
+CMP #18
+CON
+AND CR2010               ; 演算結果がｾﾞﾛ
+RES MR1105               ; ｻﾌﾞﾀﾝｸ読み込み
+CON
+SET MR1106               ; KDﾄﾞﾗﾑ読み込み
+CON
+JMP @MR107               ; 次ｽﾃｯﾌﾟへ
+MPP
+CMP #18
+CON
+ANB CR2010               ; 演算結果がｾﾞﾛ
+JMP @MR106               ; 次ｽﾃｯﾌﾟへ
+STG @MR106               ; 次ｽﾃｯﾌﾟへ
+LDA DM30001              ; Port1 受信ﾃﾞｰﾀ長
+CON
+MPS
+CMP #10
+CON
+AND CR2010               ; 演算結果がｾﾞﾛ
+RES MR1106               ; KDﾄﾞﾗﾑ読み込み
+CON
+SET MR1105               ; ｻﾌﾞﾀﾝｸ読み込み
+CON
+JMP @MR107               ; 次ｽﾃｯﾌﾟへ
+MPP
+CMP #10
+CON
+ANB CR2010               ; 演算結果がｾﾞﾛ
+RES MR1105               ; ｻﾌﾞﾀﾝｸ読み込み
+CON
+RES MR1106               ; KDﾄﾞﾗﾑ読み込み
+CON
+JMP @MR200               ; BCR入力ﾐｽ表示へ
+STG @MR107               ; 次ｽﾃｯﾌﾟへ
+JMP @MR108               ; 次ｽﾃｯﾌﾟへ
+SFIND DM30002 DM2600 DM2601 #0;Port1 受信ﾃﾞｰﾀ1  検索用SP  SP位置
+SMID DM30002 DM2610 #0 DM2601;Port1 受信ﾃﾞｰﾀ1  ﾀﾝｸBCR入力ﾃﾞｰﾀﾊﾞｯﾌｧ  SP位置
+MOV DM30001 DM2620       ; Port1 受信ﾃﾞｰﾀ長  読取Code 桁数
+BMOV DM30002 DM2622 DM2620;Port1 受信ﾃﾞｰﾀ1  読込 Code 先頭  読取Code 桁数
+STG @MR108               ; 次ｽﾃｯﾌﾟへ
+SET @MR101               ; BCR読み込み完了
+CON
+RES @MR102               ; BCR読み込み中
+CON
+ENDS
+STG @MR200               ; BCR入力ﾐｽ表示へ
+OUT MR1100               ; BCR入力ﾐｽ出力時間
+MPS
+TMR #56 #9999            ; BCR入力ﾐｽ出力時間
+MPP
+AND T56                  ; BCR入力ﾐｽ出力時間
+RES R30101               ; Port1 受信完了
+CON
+JMP @MR201               ; BCR入力ﾐｽ
+STG @MR201               ; BCR入力ﾐｽ
+SET @MR103               ; BCR読み込み異常
+CON
+RES @MR102               ; BCR読み込み中
+CON
+ENDS
+;***** MODEL NO 比較  / MODEL NO comparision  ******
+LD MR1101                ; 機種変更
+MPS
+AND R42500               ; Black 選択
+RES MR1209               ; (Y) 照合要求FLG
+CON
+RES MR1409               ; (M) 照合要求FLG
+CON
+RES MR1609               ; (C) 照合要求FLG
+CON
+SET MR1809               ; (B) 照合要求FLG
+MPP
+AND R42501               ; 3CL 選択
+SET MR1209               ; (Y) 照合要求FLG
+CON
+SET MR1409               ; (M) 照合要求FLG
+CON
+SET MR1609               ; (C) 照合要求FLG
+CON
+RES MR1809               ; (B) 照合要求FLG
+LD CR2008                ; 運転開始時1ｽｷｬﾝON
+ORP R50003               ; HOME
+LD R42500                ; Black 選択
+ANF MR1809               ; (B) 照合要求FLG
+ORL
+LD R42501                ; 3CL 選択
+ANB MR1209               ; (Y) 照合要求FLG
+ANB MR1409               ; (M) 照合要求FLG
+ANB MR1609               ; (C) 照合要求FLG
+MEP
+ORL
+ORF MR1101               ; 機種変更
+MOV FM200 DM1480         ; Model No  Host MODEL NO STR
+MOV FM287 DM1482         ; ModelIdentficationNumber  ModelIdentficationNumber STR
+LDB MR1211               ; (Y) KDﾄﾞﾗﾑ攪拌中
+ANB MR1212               ; (Y) ｻﾌﾞﾀﾝｸ攪拌中
+ANB MR1411               ; (M) KDﾄﾞﾗﾑ攪拌中
+ANB MR1412               ; (M) ｻﾌﾞﾀﾝｸ攪拌中
+ANB MR1611               ; (C) KDﾄﾞﾗﾑ攪拌中
+ANB MR1612               ; (C) ｻﾌﾞﾀﾝｸ攪拌中
+ANB MR1811               ; (B) KDﾄﾞﾗﾑ攪拌中
+ANB MR1812               ; (B) ｻﾌﾞﾀﾝｸ攪拌中
+ANB R40004               ; TASKDO
+AND R40009               ; 原点復帰完了
+LD<> FM200 DM1480        ; Model No  Host MODEL NO STR
+OR<> FM287 DM1482        ; ModelIdentficationNumber  ModelIdentficationNumber STR
+ANL
+TMR @31 #10              ; ﾀｲﾐﾝｸﾞ
+CON
+AND @T31                 ; ﾀｲﾐﾝｸﾞ
+DIFU MR1101              ; 機種変更
+;***** ｻﾃﾗｲﾄ各種設定ﾒﾆｭｰ 選択画面表示  / Satellite setting menu selection  ******
+;
+LD R14005                ; 各種設定ﾒﾆｭｰ起動SW
+TMR @5 #30               ; ﾀﾝｸ入力ｴﾗｰ出力
+CON
+AND @T5                  ; ﾀﾝｸ入力ｴﾗｰ出力
+ANB R14008               ; 各種設定ﾒﾆｭｰ画面表示
+SET R14008               ; 各種設定ﾒﾆｭｰ画面表示
+LDF R14013               ; 各種設定ﾒﾆｭｰ画面表示閉
+RES R14008               ; 各種設定ﾒﾆｭｰ画面表示
+END
+ENDH

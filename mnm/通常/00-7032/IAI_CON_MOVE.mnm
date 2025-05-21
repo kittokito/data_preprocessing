@@ -1,0 +1,185 @@
+DEVICE:128
+;MODULE:IAI_CON_MOVE
+;MODULE_TYPE:1
+;SCRIPT_TYPE:
+;SupportMacro
+;
+;-----------------------------------------
+;Macro Name 	: 	IAI_CON_MOVE
+;Macro Type	:	Self Holding
+;Function	:	IAI CON系直値移動ﾏｸﾛ
+;-----------------------------------------
+;引数：
+;	P0  =	移動ﾎﾟｼﾞｼｮﾝ格納DM先頭		DM番号で指定	P0 = Leading Address of Point data storage
+;	P1	=	位置決め完了幅格納DM先頭	DM番号で指定	P1 = Leading Address of COIN data storage
+;	P2  =   移動速度格納DM先頭			DM番号で指定	P2 = Leading Address of Velocity data storage
+;	P3	=	RB入力先頭番地				DM番号で指定	P3 = Input Leading Address for RB
+;	P4  =	RB出力先頭番地				DM番号で指定	P4 = Output Leading Address for RB
+;	P5  =   完了フラグ
+;	P6  =   完了コード									P5 = Macro Complete Code
+;			#20 	= 正常終了								#20 = No Error
+;			#21 	= RB応答なし							#21 = Non Responce
+;			#22 	= ｽﾃｰﾀｽ異常								#22 = Status Abnormal
+;			#1-16	= RBｱﾗｰﾑ(取説PIOｱﾗｰﾑｺｰﾄﾞ参照)			#1-16 = RB Alarm(Refer the Controller Manual)
+;	P7  =   非常停止ﾌﾗｸﾞ                            	P7 = Emergency Stop Flag
+;	P8	=	加減速度格納DM先頭			DM番号で指定	P8 = Leading Address of Acceleration data storage
+;	V1  =   ﾀｲﾑｱｳﾄ設定                              	V1 = Time out Value
+;機能：
+;	ACON/PCON/SCON用ﾊｰﾌ直値移動指令ﾏｸﾛ/ Robot Move Macro for Half Numerical Move Mode
+;初期化　/ Initialize
+LD @CR2008
+DW K0 P6                 ; C_CODE
+CON
+ZRES @M2 @M15            ; 速度設定
+CON
+SET @M0
+;RBｽﾃｰﾀｽﾓﾆﾀｰ / Status Monitoring
+BLD P3:#7 K3             ; RB_IN
+OUT @M14                 ; ｱﾗｰﾑ発生
+BLD P3:#7 K1             ; RB_IN
+BAND P3:#7 K4            ; RB_IN
+BANB P3:#7 K8            ; RB_IN
+BAND P3:#7 K14           ; RB_IN
+BANB P3:#7 K15           ; RB_IN
+OUT @M1                  ; RB移動許可
+;ｱﾗｰﾑ発生
+LDP @M14                 ; ｱﾗｰﾑ発生
+MOV P3:#6 P6             ; RB_IN  C_CODE
+ZRES @M0 @M15
+CON
+SET P5                   ; END_FLAG
+;RB状態ﾁｪｯｸ /　Robot Status Check
+STG @M0
+MPS
+LD @M1                   ; RB移動許可
+BANB P3:#7 K2            ; RB_IN
+ANL
+JMP @M2                  ; 速度設定
+MPP
+ANB @M1                  ; RB移動許可
+TMR @0 V1                ; TimeOut
+CON
+AND @T0
+ANB CR2003               ; 常時OFF
+DW K22 P6                ; C_CODE
+CON
+JMP @M15
+;P4.L   = P0.L   '目標位置ﾃﾞｰﾀ
+;P4.D:2 = P1.D   '位置決め完了幅
+;P4.U:4 = P2.U   '速度ﾃﾞｰﾀ
+;P4.U:5 = P8.U	'加減速度ﾃﾞｰﾀ
+;BRES(P4:7,#12)  '押付け指定解除
+;SET(@MR003)     '計算完了ﾌﾗｸﾞ
+LD @M2                   ; 速度設定
+NCJ K1000
+;P4.L   = P0.L   '目標位置ﾃﾞｰﾀ
+;
+LD CR2002                ; 常時ON
+MOV.L P0 P4              ; POS_DATA  RB_OUT
+;P4.D:2 = P1.D   '位置決め完了幅
+;
+LD CR2002                ; 常時ON
+MOV.D P1 P4:#2           ; COIN_DATA  RB_OUT
+;P4.U:4 = P2.U   '速度ﾃﾞｰﾀ
+;
+LD CR2002                ; 常時ON
+MOV P2 P4:#4             ; VEL_DATA  RB_OUT
+;P4.U:5 = P8.U	'加減速度ﾃﾞｰﾀ
+;
+LD CR2002                ; 常時ON
+MOV P8 P4:#5             ; ACC_DATA  RB_OUT
+;BRES(P4:7,#12)  '押付け指定解除
+;
+LD CR2002                ; 常時ON
+BRES P4:#7 K12           ; RB_OUT
+;SET(@MR003)     '計算完了ﾌﾗｸﾞ
+LD CR2002                ; 常時ON
+SET @M3                  ; ﾃﾞｰﾀ格納 完了
+LABEL K1000
+;
+STG @M2                  ; 速度設定
+AND @M3                  ; ﾃﾞｰﾀ格納 完了
+TMS @1 K5
+CON
+AND @T1
+BSET P4:#7 K0            ; RB_OUT
+CON
+RES @M3                  ; ﾃﾞｰﾀ格納 完了
+CON
+MPS
+BAND P3:#7 K0            ; RB_IN
+JMP @M4                  ; 移動開始1
+MPP
+BANB P3:#7 K0            ; RB_IN
+JMP @M5                  ; 移動開始2
+STG @M4                  ; 移動開始1
+MPS
+BANB P3:#7 K0            ; RB_IN
+BRES P4:#7 K0            ; RB_OUT
+CON
+JMP @M6
+MPP
+BAND P3:#7 K0            ; RB_IN
+TMR @2 V1                ; TimeOut
+CON
+AND @T2
+ANB CR2003               ; 常時OFF
+BRES P4:#7 K0            ; RB_OUT
+CON
+DW K21 P6                ; C_CODE
+CON
+JMP @M15
+STG @M5                  ; 移動開始2
+MPS
+BAND P3:#7 K2            ; RB_IN
+BRES P4:#7 K0            ; RB_OUT
+CON
+JMP @M6
+MPP
+BAND P3:#7 K0            ; RB_IN
+TMR @5 V1                ; TimeOut
+CON
+AND @T5
+ANB CR2003               ; 常時OFF
+BRES P4:#7 K0            ; RB_OUT
+CON
+DW K21 P6                ; C_CODE
+CON
+JMP @M15
+STG @M6
+MPS
+BLDB P3:#7 K2            ; RB_IN
+BAND P3:#7 K0            ; RB_IN
+ANL
+TMH @4 K10
+CON
+AND @T4
+JMP @M7
+MPP
+BANB P3:#7 K0            ; RB_IN
+TMR @3 V1                ; TimeOut
+CON
+AND @T3
+ANB CR2003               ; 常時OFF
+BRES P4:#7 K0            ; RB_OUT
+CON
+DW K21 P6                ; C_CODE
+CON
+JMP @M15
+STG @M7
+DW K20 P6                ; C_CODE
+CON
+JMP @M15
+STG @M15
+SET P5                   ; END_FLAG
+CON
+ENDS
+;終了処理
+LDB P7                   ; EMG_FLAG
+ZRES @M0 @M15
+BRES P4:#7 K0            ; RB_OUT
+LD P5                    ; END_FLAG
+ORB P7                   ; EMG_FLAG
+MEND
+END
+ENDH

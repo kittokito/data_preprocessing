@@ -1,0 +1,709 @@
+DEVICE:53
+;MODULE:NR_WorkCheck
+;MODULE_TYPE:0
+;<h1/>Device_Init/ﾃﾞﾊﾞｲｽ初期化
+;[内容]
+;・非常停止、優先ｴﾗｰ発生時に初期化したいﾃﾞﾊﾞｲｽを指定して下さい
+;※本Taskで使用するﾛｰｶﾙﾃﾞﾊﾞｲｽなど
+;※STG～JMPにて使用しているﾃﾞﾊﾞｲｽは必須
+LDP TRAPDO               ; _非常停止中　ﾓｰﾄﾞﾌﾗｸﾞ
+ORP MR9910
+ZRES R18000 R18915       ; 画像　給材部ﾜｰｸ検査要求
+CON
+ZRES R18700 R18803       ; ﾜｰｸ1　有り  ﾜｰｸ10　無し
+CON
+ZRES R18200 R18303       ; ﾜｰｸ1　有り  ﾜｰｸ10　無し
+;<h1/>給材部　画像検査要求
+;DM16000：　給材ｶﾒﾗ状態信号
+;
+;bit0:FLG　　ｺﾏﾝﾄﾞ実行完了時ON
+;bit1:BUSY　 制御ｺﾏﾝﾄﾞ実行中ON
+;bit2:READY　ONでｺﾏﾝﾄﾞ実行可能
+;bit3:OR　　 判定結果NGでON
+;bit4:RUN　　ｶﾒﾗ運転ﾓｰﾄﾞ中にON
+;bit15:ERR　 異常時ON
+;
+;DM16040：　給材ｶﾒﾗ制御信号
+;
+;bit0:EXE　　制御ｺﾏﾝﾄﾞ実行
+;bit1:TRG　　計測実行
+;bit15:ERCLR ｴﾗｰｸﾘｱ
+;画像　給材部ﾜｰｸ検査開始
+STG R18000               ; 画像　給材部ﾜｰｸ検査要求
+ANB R18002               ; 画像　給材部ﾜｰｸ検査中
+ZRES R18200 R18303       ; ﾜｰｸ1　有り  ﾜｰｸ10　無し
+CON
+SET R18002               ; 画像　給材部ﾜｰｸ検査中
+CON
+JMP R18005
+;制御信号初期化
+STG R18005
+MOV #0 DM16040
+MOV #0 DM16041
+MOV #0 DM16042
+MOV #0 DM16043
+JMP R18006
+;シーン切り替え ｺﾏﾝﾄﾞｺｰﾄﾞ：00301000
+;下位4桁 DM16042→1000＝0001,0000,0000,0000（10進数：#4096）
+;上位4桁 DM16043→0030＝0000,0000,0011,0000 (10進数：＃48）
+;シーン番号（#0～9）
+;下位4桁 DM16044＝#0～9
+;上位4桁 DM16045＝0000,0000,0000,0000(10進数：＃0)
+STG R18006
+MOV #4096 DM16042
+MOV #48 DM16043
+MPS
+LD= VtoK_MDL_TpSelCode #1; _TP選択中機種ｺｰﾄﾞ
+OR CR2002                ; 常時ON
+ANL
+MOV #0 DM16044
+MRD
+LD= VtoK_MDL_TpSelCode #2; _TP選択中機種ｺｰﾄﾞ
+ANB CR2002               ; 常時ON
+ANL
+MOV #1 DM16044
+MRD
+LD= VtoK_MDL_TpSelCode #3; _TP選択中機種ｺｰﾄﾞ
+ANB CR2002               ; 常時ON
+ANL
+MOV #2 DM16044
+MRD
+LD= VtoK_MDL_TpSelCode #4; _TP選択中機種ｺｰﾄﾞ
+ANB CR2002               ; 常時ON
+ANL
+MOV #3 DM16044
+MRD
+LD= VtoK_MDL_TpSelCode #5; _TP選択中機種ｺｰﾄﾞ
+ANB CR2002               ; 常時ON
+ANL
+MOV #4 DM16044
+MRD
+LD= VtoK_MDL_TpSelCode #6; _TP選択中機種ｺｰﾄﾞ
+ANB CR2002               ; 常時ON
+ANL
+MOV #5 DM16044
+MRD
+LD= VtoK_MDL_TpSelCode #7; _TP選択中機種ｺｰﾄﾞ
+ANB CR2002               ; 常時ON
+ANL
+MOV #6 DM16044
+MRD
+LD= VtoK_MDL_TpSelCode #8; _TP選択中機種ｺｰﾄﾞ
+ANB CR2002               ; 常時ON
+ANL
+MOV #7 DM16044
+MRD
+LD= VtoK_MDL_TpSelCode #9; _TP選択中機種ｺｰﾄﾞ
+ANB CR2002               ; 常時ON
+ANL
+MOV #8 DM16044
+MRD
+LD= VtoK_MDL_TpSelCode #10;_TP選択中機種ｺｰﾄﾞ
+ANB CR2002               ; 常時ON
+ANL
+MOV #9 DM16044
+MRD
+MOV #0 DM16045
+MPP
+JMP R18007
+;給材ｶﾒﾗ制御ｺﾏﾝﾄﾞ実行
+STG R18007
+BSET DM16040 #0
+CON
+BRES DM16040 #1
+CON
+BAND DM16000 #1
+JMP R18008
+STG R18008
+BAND DM16000 #0
+BRES DM16040 #0
+CON
+JMP R18009
+;給材ｶﾒﾗ計測実行
+STG R18009
+BRES DM16040 #0
+CON
+BSET DM16040 #1
+CON
+BAND DM16000 #1
+JMP R18010
+STG R18010
+BRES DM16040 #1
+CON
+BAND DM16000 #2
+JMP R18011
+;連続計測開始 ｺﾏﾝﾄﾞｺｰﾄﾞ：00101020
+;下位4桁 DM16042→1020＝0001,0000,0010,0000（10進数：#4128）
+;上位4桁 DM16043→0010＝0000,0000,0001,0000 (10進数：＃16）
+STG R18011
+MOV #4128 DM16042
+MOV #16 DM16043
+JMP R18012
+;給材ｶﾒﾗ制御ｺﾏﾝﾄﾞ実行
+STG R18012
+BSET DM16040 #0
+CON
+BRES DM16040 #1
+CON
+BAND DM16000 #1
+JMP R18013
+STG R18013
+BAND DM16000 #0
+BRES DM16040 #0
+CON
+JMP R18014
+;給材ｶﾒﾗ計測実行
+STG R18014
+BRES DM16040 #0
+CON
+BSET DM16040 #1
+CON
+BAND DM16000 #1
+JMP R18015
+STG R18015
+BRES DM16040 #1
+CON
+JMP R18100
+;連続計測終了 ｺﾏﾝﾄﾞｺｰﾄﾞ：00101030
+;下位4桁 DM16042→1030＝0001,0000,0011,0000（10進数：#4144）
+;上位4桁 DM16043→0010＝0000,0000,0001,0000 (10進数：＃16）
+STG R18100
+TMR #1080 #5             ; 連続計測時間
+CON
+AND T1080                ; 連続計測時間
+MOV #4144 DM16042
+MOV #16 DM16043
+JMP R18101
+;給材ｶﾒﾗ計測終了
+STG R18101
+BSET DM16040 #0
+CON
+BRES DM16040 #1
+CON
+BAND DM16000 #1
+JMP R18102
+STG R18102
+BAND DM16000 #0
+BRES DM16040 #0
+CON
+JMP R18103
+STG R18103
+BRES DM16040 #0
+CON
+BSET DM16040 #1
+CON
+BAND DM16000 #0
+JMP R18104
+;ﾜｰｸ判定 '0'の時ﾜｰｸ有り
+;DM16008,9：ﾜｰｸ1状態　DM16010,11：ﾜｰｸ2状態　DM16012,13：ﾜｰｸ3状態　DM16014,15：ﾜｰｸ4状態　DM16016,17：ﾜｰｸ5状態
+;DM160018,19：ﾜｰｸ6状態　DM16020,21：ﾜｰｸ7状態　DM16022,23：ﾜｰｸ8状態　DM16024,25：ﾜｰｸ9状態　DM16026,27：ﾜｰｸ10状態
+STG R18104
+MPS
+AND=.L DM16008 +0
+RES R18201               ; ﾜｰｸ1　無し
+CON
+SET R18200               ; ﾜｰｸ1　有り
+MRD
+AND=.L DM16008 -1000
+RES R18200               ; ﾜｰｸ1　有り
+CON
+SET R18201               ; ﾜｰｸ1　無し
+MRD
+AND=.L DM16010 +0
+RES R18203               ; ﾜｰｸ2　無し
+CON
+SET R18202               ; ﾜｰｸ2　有り
+MRD
+AND=.L DM16010 -1000
+RES R18202               ; ﾜｰｸ2　有り
+CON
+SET R18203               ; ﾜｰｸ2　無し
+MRD
+AND=.L DM16012 +0
+RES R18205               ; ﾜｰｸ3　無し
+CON
+SET R18204               ; ﾜｰｸ3　有り
+MRD
+AND=.L DM16012 -1000
+RES R18204               ; ﾜｰｸ3　有り
+CON
+SET R18205               ; ﾜｰｸ3　無し
+MRD
+AND=.L DM16014 +0
+RES R18207               ; ﾜｰｸ4　無し
+CON
+SET R18206               ; ﾜｰｸ4　有り
+MRD
+AND=.L DM16014 -1000
+RES R18206               ; ﾜｰｸ4　有り
+CON
+SET R18207               ; ﾜｰｸ4　無し
+MRD
+AND=.L DM16016 +0
+RES R18209               ; ﾜｰｸ5　無し
+CON
+SET R18208               ; ﾜｰｸ5　有り
+MRD
+AND=.L DM16016 -1000
+RES R18208               ; ﾜｰｸ5　有り
+CON
+SET R18209               ; ﾜｰｸ5　無し
+MRD
+AND=.L DM16018 +0
+RES R18211               ; ﾜｰｸ6　無し
+CON
+SET R18210               ; ﾜｰｸ6　有り
+MRD
+AND=.L DM16018 -1000
+RES R18210               ; ﾜｰｸ6　有り
+CON
+SET R18211               ; ﾜｰｸ6　無し
+MRD
+AND=.L DM16020 +0
+RES R18213               ; ﾜｰｸ7　無し
+CON
+SET R18212               ; ﾜｰｸ7　有り
+MRD
+AND=.L DM16020 -1000
+RES R18212               ; ﾜｰｸ7　有り
+CON
+SET R18213               ; ﾜｰｸ7　無し
+MRD
+AND=.L DM16022 +0
+RES R18215               ; ﾜｰｸ8　無し
+CON
+SET R18214               ; ﾜｰｸ8　有り
+MRD
+AND=.L DM16022 -1000
+RES R18214               ; ﾜｰｸ8　有り
+CON
+SET R18215               ; ﾜｰｸ8　無し
+MRD
+AND=.L DM16024 +0
+RES R18301               ; ﾜｰｸ9　無し
+CON
+SET R18300               ; ﾜｰｸ9　有り
+MRD
+AND=.L DM16024 -1000
+RES R18300               ; ﾜｰｸ9　有り
+CON
+SET R18301               ; ﾜｰｸ9　無し
+MRD
+AND=.L DM16026 +0
+RES R18303               ; ﾜｰｸ10　無し
+CON
+SET R18302               ; ﾜｰｸ10　有り
+MRD
+AND=.L DM16026 -1000
+RES R18302               ; ﾜｰｸ10　有り
+CON
+SET R18303               ; ﾜｰｸ10　無し
+MPP
+TMR #1081 #2
+CON
+AND T1081
+JMP R18105
+STG R18105
+LD R18200                ; ﾜｰｸ1　有り
+OR R18201                ; ﾜｰｸ1　無し
+ANL
+LD R18202                ; ﾜｰｸ2　有り
+OR R18203                ; ﾜｰｸ2　無し
+ANL
+LD R18204                ; ﾜｰｸ3　有り
+OR R18205                ; ﾜｰｸ3　無し
+ANL
+LD R18206                ; ﾜｰｸ4　有り
+OR R18207                ; ﾜｰｸ4　無し
+ANL
+LD R18208                ; ﾜｰｸ5　有り
+OR R18209                ; ﾜｰｸ5　無し
+ANL
+LD R18210                ; ﾜｰｸ6　有り
+OR R18211                ; ﾜｰｸ6　無し
+ANL
+LD R18212                ; ﾜｰｸ7　有り
+OR R18213                ; ﾜｰｸ7　無し
+ANL
+LD R18214                ; ﾜｰｸ8　有り
+OR R18215                ; ﾜｰｸ8　無し
+ANL
+LD R18300                ; ﾜｰｸ9　有り
+OR R18301                ; ﾜｰｸ9　無し
+ANL
+LD R18302                ; ﾜｰｸ10　有り
+OR R18303                ; ﾜｰｸ10　無し
+ANL
+RES R18002               ; 画像　給材部ﾜｰｸ検査中
+CON
+SET R18001               ; 画像　給材部ﾜｰｸ検査完了
+CON
+ENDS
+;<h1/>除材部　画像検査要求
+;DM16050：　給材ｶﾒﾗ状態信号
+;
+;bit0:FLG　　ｺﾏﾝﾄﾞ実行完了時ON
+;bit1:BUSY　 制御ｺﾏﾝﾄﾞ実行中ON
+;bit2:READY　ONでｺﾏﾝﾄﾞ実行可能
+;bit3:OR　　 判定結果NGでON
+;bit4:RUN　　ｶﾒﾗ運転ﾓｰﾄﾞ中にON
+;bit15:ERR　 異常時ON
+;
+;DM16090：　除材ｶﾒﾗ制御信号
+;
+;bit0:EXE　　制御ｺﾏﾝﾄﾞ実行
+;bit1:TRG　　計測実行
+;bit15:ERCLR ｴﾗｰｸﾘｱ
+;画像　給材部ﾜｰｸ検査開始
+STG R18500               ; 画像　除材部ﾜｰｸ検査要求
+ANB R18502               ; 画像　除材部ﾜｰｸ検査中
+ZRES R18700 R18803       ; ﾜｰｸ1　有り  ﾜｰｸ10　無し
+CON
+SET R18502               ; 画像　除材部ﾜｰｸ検査中
+CON
+JMP R18505
+;制御信号初期化
+STG R18505
+MOV #0 DM16090
+MOV #0 DM16091
+MOV #0 DM16092
+MOV #0 DM16093
+JMP R18506
+;シーン切り替え ｺﾏﾝﾄﾞｺｰﾄﾞ：00301000
+;下位4桁 DM16092→1000＝0001,0000,0000,0000（10進数：#4096）
+;上位4桁 DM16093→0030＝0000,0000,0011,0000 (10進数：＃48）
+;シーン番号（#0～9）
+;下位4桁 DM16094＝#0～9
+;上位4桁 DM16095＝0000,0000,0000,0000(10進数：＃0)
+STG R18506
+MOV #4096 DM16092
+MOV #48 DM16093
+MPS
+LD= VtoK_MDL_TpSelCode #1; _TP選択中機種ｺｰﾄﾞ
+OR CR2002                ; 常時ON
+ANL
+MOV #0 DM16094
+MRD
+LD= VtoK_MDL_TpSelCode #2; _TP選択中機種ｺｰﾄﾞ
+ANB CR2002               ; 常時ON
+ANL
+MOV #1 DM16094
+MRD
+LD= VtoK_MDL_TpSelCode #3; _TP選択中機種ｺｰﾄﾞ
+ANB CR2002               ; 常時ON
+ANL
+MOV #2 DM16094
+MRD
+LD= VtoK_MDL_TpSelCode #4; _TP選択中機種ｺｰﾄﾞ
+ANB CR2002               ; 常時ON
+ANL
+MOV #3 DM16094
+MRD
+LD= VtoK_MDL_TpSelCode #5; _TP選択中機種ｺｰﾄﾞ
+ANB CR2002               ; 常時ON
+ANL
+MOV #4 DM16094
+MRD
+LD= VtoK_MDL_TpSelCode #6; _TP選択中機種ｺｰﾄﾞ
+ANB CR2002               ; 常時ON
+ANL
+MOV #5 DM16094
+MRD
+LD= VtoK_MDL_TpSelCode #7; _TP選択中機種ｺｰﾄﾞ
+ANB CR2002               ; 常時ON
+ANL
+MOV #6 DM16094
+MRD
+LD= VtoK_MDL_TpSelCode #8; _TP選択中機種ｺｰﾄﾞ
+ANB CR2002               ; 常時ON
+ANL
+MOV #7 DM16094
+MRD
+LD= VtoK_MDL_TpSelCode #9; _TP選択中機種ｺｰﾄﾞ
+ANB CR2002               ; 常時ON
+ANL
+MOV #8 DM16094
+MRD
+LD= VtoK_MDL_TpSelCode #10;_TP選択中機種ｺｰﾄﾞ
+ANB CR2002               ; 常時ON
+ANL
+MOV #9 DM16094
+MRD
+MOV #0 DM16095
+MPP
+JMP R18507
+;除材ｶﾒﾗ制御ｺﾏﾝﾄﾞ実行
+STG R18507
+BSET DM16090 #0
+CON
+BRES DM16090 #1
+CON
+BAND DM16050 #1
+JMP R18508
+STG R18508
+BAND DM16050 #0
+BRES DM16090 #0
+CON
+JMP R18509
+;除材ｶﾒﾗ計測実行
+STG R18509
+BRES DM16090 #0
+CON
+BSET DM16090 #1
+CON
+BAND DM16050 #1
+JMP R18510
+STG R18510
+BRES DM16090 #1
+CON
+BAND DM16050 #2
+JMP R18511
+;連続計測開始 ｺﾏﾝﾄﾞｺｰﾄﾞ：00101020
+;下位4桁 DM16092→1020＝0001,0000,0010,0000（10進数：#4128）
+;上位4桁 DM16093→0010＝0000,0000,0001,0000 (10進数：＃16）
+STG R18511
+MOV #4128 DM16092
+MOV #16 DM16093
+JMP R18512
+;除材ｶﾒﾗ制御ｺﾏﾝﾄﾞ実行
+STG R18512
+BSET DM16090 #0
+CON
+BRES DM16090 #1
+CON
+BAND DM16050 #1
+JMP R18513
+STG R18513
+BAND DM16050 #0
+BRES DM16090 #0
+CON
+JMP R18514
+;除材ｶﾒﾗ計測実行
+STG R18514
+BRES DM16090 #0
+CON
+BSET DM16090 #1
+CON
+BAND DM16050 #1
+JMP R18515
+STG R18515
+BRES DM16090 #1
+CON
+JMP R18600
+;連続計測終了 ｺﾏﾝﾄﾞｺｰﾄﾞ：00101030
+;下位4桁 DM16092→1030＝0001,0000,0011,0000（10進数：#4144）
+;上位4桁 DM16093→0010＝0000,0000,0001,0000 (10進数：＃16）
+STG R18600
+TMR #1085 #5             ; 連続計測時間
+CON
+AND T1085                ; 連続計測時間
+MOV #4144 DM16092
+MOV #16 DM16093
+JMP R18601
+;除材ｶﾒﾗ計測終了
+STG R18601
+BSET DM16090 #0
+CON
+BRES DM16090 #1
+CON
+BAND DM16050 #1
+JMP R18602
+STG R18602
+BAND DM16050 #0
+BRES DM16090 #0
+CON
+JMP R18603
+STG R18603
+BRES DM16090 #0
+CON
+BSET DM16090 #1
+CON
+BAND DM16050 #0
+JMP R18604
+;ﾜｰｸ判定 '0'の時ﾜｰｸ有り
+;DM16058,9：ﾜｰｸ1状態　DM16060,61：ﾜｰｸ2状態　DM16062,63：ﾜｰｸ3状態　DM16064,65：ﾜｰｸ4状態　DM16066,67：ﾜｰｸ5状態
+;DM160068,69：ﾜｰｸ6状態　DM16070,71：ﾜｰｸ7状態　DM16072,73：ﾜｰｸ8状態　DM16074,75：ﾜｰｸ9状態　DM16076,77：ﾜｰｸ10状態
+STG R18604
+MPS
+LD= DM16058 #0
+AND= DM16059 #0
+ANL
+RES R18701               ; ﾜｰｸ1　無し
+CON
+SET R18700               ; ﾜｰｸ1　有り
+MRD
+LD<> DM16058 #0
+AND<> DM16059 #0
+ANL
+RES R18700               ; ﾜｰｸ1　有り
+CON
+SET R18701               ; ﾜｰｸ1　無し
+MRD
+LD= DM16060 #0
+AND= DM16061 #0
+ANL
+RES R18703               ; ﾜｰｸ2　無し
+CON
+SET R18702               ; ﾜｰｸ2　有り
+MRD
+LD<> DM16060 #0
+AND<> DM16061 #0
+ANL
+RES R18702               ; ﾜｰｸ2　有り
+CON
+SET R18703               ; ﾜｰｸ2　無し
+MRD
+LD= DM16062 #0
+AND= DM16063 #0
+ANL
+RES R18705               ; ﾜｰｸ3　無し
+CON
+SET R18704               ; ﾜｰｸ3　有り
+MRD
+LD<> DM16062 #0
+AND<> DM16063 #0
+ANL
+RES R18704               ; ﾜｰｸ3　有り
+CON
+SET R18705               ; ﾜｰｸ3　無し
+MRD
+LD= DM16064 #0
+AND= DM16065 #0
+ANL
+RES R18707               ; ﾜｰｸ4　無し
+CON
+SET R18706               ; ﾜｰｸ4　有り
+MRD
+LD<> DM16064 #0
+AND<> DM16065 #0
+ANL
+RES R18706               ; ﾜｰｸ4　有り
+CON
+SET R18707               ; ﾜｰｸ4　無し
+MRD
+LD= DM16066 #0
+AND= DM16067 #0
+ANL
+RES R18709               ; ﾜｰｸ5　無し
+CON
+SET R18708               ; ﾜｰｸ5　有り
+MRD
+LD<> DM16066 #0
+AND<> DM16067 #0
+ANL
+RES R18708               ; ﾜｰｸ5　有り
+CON
+SET R18709               ; ﾜｰｸ5　無し
+MRD
+LD= DM16068 #0
+AND= DM16069 #0
+ANL
+RES R18711               ; ﾜｰｸ6　無し
+CON
+SET R18710               ; ﾜｰｸ6　有り
+MRD
+LD<> DM16068 #0
+AND<> DM16069 #0
+ANL
+RES R18710               ; ﾜｰｸ6　有り
+CON
+SET R18711               ; ﾜｰｸ6　無し
+MRD
+LD= DM16070 #0
+AND= DM16071 #0
+ANL
+RES R18713               ; ﾜｰｸ7　無し
+CON
+SET R18712               ; ﾜｰｸ7　有り
+MRD
+LD<> DM16070 #0
+AND<> DM16071 #0
+ANL
+RES R18712               ; ﾜｰｸ7　有り
+CON
+SET R18713               ; ﾜｰｸ7　無し
+MRD
+LD= DM16072 #0
+AND= DM16073 #0
+ANL
+RES R18715               ; ﾜｰｸ8　無し
+CON
+SET R18714               ; ﾜｰｸ8　有り
+MRD
+LD<> DM16072 #0
+AND<> DM16073 #0
+ANL
+RES R18714               ; ﾜｰｸ8　有り
+CON
+SET R18715               ; ﾜｰｸ8　無し
+MRD
+LD= DM16074 #0
+AND= DM16075 #0
+ANL
+RES R18801               ; ﾜｰｸ9　無し
+CON
+SET R18800               ; ﾜｰｸ9　有り
+MRD
+LD<> DM16074 #0
+AND<> DM16075 #0
+ANL
+RES R18800               ; ﾜｰｸ9　有り
+CON
+SET R18801               ; ﾜｰｸ9　無し
+MRD
+LD= DM16076 #0
+AND= DM16077 #0
+ANL
+RES R18803               ; ﾜｰｸ10　無し
+CON
+SET R18802               ; ﾜｰｸ10　有り
+MRD
+LD<> DM16076 #0
+AND<> DM16077 #0
+ANL
+RES R18802               ; ﾜｰｸ10　有り
+CON
+SET R18803               ; ﾜｰｸ10　無し
+MPP
+TMR #1086 #2
+CON
+AND T1086
+JMP R18605
+STG R18605
+LD R18700                ; ﾜｰｸ1　有り
+OR R18701                ; ﾜｰｸ1　無し
+ANL
+LD R18702                ; ﾜｰｸ2　有り
+OR R18703                ; ﾜｰｸ2　無し
+ANL
+LD R18704                ; ﾜｰｸ3　有り
+OR R18705                ; ﾜｰｸ3　無し
+ANL
+LD R18706                ; ﾜｰｸ4　有り
+OR R18707                ; ﾜｰｸ4　無し
+ANL
+LD R18708                ; ﾜｰｸ5　有り
+OR R18709                ; ﾜｰｸ5　無し
+ANL
+LD R18710                ; ﾜｰｸ6　有り
+OR R18711                ; ﾜｰｸ6　無し
+ANL
+LD R18712                ; ﾜｰｸ7　有り
+OR R18713                ; ﾜｰｸ7　無し
+ANL
+LD R18714                ; ﾜｰｸ8　有り
+OR R18715                ; ﾜｰｸ8　無し
+ANL
+LD R18800                ; ﾜｰｸ9　有り
+OR R18801                ; ﾜｰｸ9　無し
+ANL
+LD R18802                ; ﾜｰｸ10　有り
+OR R18803                ; ﾜｰｸ10　無し
+ANL
+RES R18502               ; 画像　除材部ﾜｰｸ検査中
+CON
+SET R18501               ; 画像　除材部ﾜｰｸ検査完了
+CON
+ENDS
+END
+ENDH

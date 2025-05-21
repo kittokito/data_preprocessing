@@ -1,0 +1,186 @@
+DEVICE:52
+;MODULE:Panel_Moni
+;MODULE_TYPE:0
+;SCRIPT_TYPE:
+LD CR2008                ; 運転開始時1ｽｷｬﾝON
+ORP T120                 ; 動作中遅延
+LDB R51100               ; 原点復帰完了
+ANB R50003               ; 原点復帰中
+ANB R50007               ; 手動制御中
+LDF R50006               ; 異常発生中
+ORF R50901               ; ｼﾘﾝﾀﾞｴﾗｰ
+ANL
+ORL
+MOV #100 DM3001          ; VTﾍﾟｰｼﾞ　　変更ｱﾄﾞﾚｽ
+LD R40004                ; 原点復帰完了解除
+RES R51100               ; 原点復帰完了
+LDB R50004               ; 動作中
+ANB R40006               ; 停止中表示
+SET R50005               ; 停止中
+LD R50004                ; 動作中
+RES R50005               ; 停止中
+LD R50000                ; 即停止
+OR R50900                ; TRAP
+ANB R50004               ; 動作中
+OUT R40006               ; 停止中表示
+LD R50001                ; 自動中
+OUT R40007               ; ﾊﾟﾈﾙ用自動動作中表示
+;即停止:非常停止画面表示
+LD R50000                ; 即停止
+MOV #105 DM3001          ; VTﾍﾟｰｼﾞ　　変更ｱﾄﾞﾚｽ
+;原点復帰完了:メイン画面
+;自動中:メイン画面_ＳＴＡＴＵＳ/自動中表示
+;異常
+LD R55000                ; 即停止/TRAP無
+LD T120                  ; 動作中遅延
+OR R49915                ; 表示用　　 TRAP
+ANL
+LD R50006                ; 異常発生中
+OR R50901                ; ｼﾘﾝﾀﾞｴﾗｰ
+OR R49915                ; 表示用　　 TRAP
+ANL
+ANB R50014               ; 異常発生ｱﾗｰﾑﾘｾｯﾄ_SW_ON
+MOV #110 DM3001          ; VTﾍﾟｰｼﾞ　　変更ｱﾄﾞﾚｽ
+LDP R50003               ; 原点復帰中
+LD R50003                ; 原点復帰中
+LDF R50006               ; 異常発生中
+ORF R49110               ; ｾﾝｻｴﾗｰ
+ANL
+ORL
+@MOV #100 DM3001         ; VTﾍﾟｰｼﾞ　　変更ｱﾄﾞﾚｽ
+LD R55000                ; 即停止/TRAP無
+AND T120                 ; 動作中遅延
+ANB R50006               ; 異常発生中
+ANB R50901               ; ｼﾘﾝﾀﾞｴﾗｰ
+ANB R49915               ; 表示用　　 TRAP
+ANB R51101               ; 原点復帰中
+MPS
+LDB R50007               ; 手動制御中
+AND R51100               ; 原点復帰完了
+ANL
+@MOV #102 DM3001         ; VTﾍﾟｰｼﾞ　　変更ｱﾄﾞﾚｽ
+MPP
+AND R50007               ; 手動制御中
+@MOV DM1080 DM3001       ; 手動制御ﾍﾟｰｼﾞNo.  VTﾍﾟｰｼﾞ　　変更ｱﾄﾞﾚｽ
+LD R50901                ; ｼﾘﾝﾀﾞｴﾗｰ
+OUT R50200               ; ｼﾘﾝﾀﾞｴﾗｰ_ｳｨﾝﾄﾞｳ表示
+;ｱﾗｰﾑﾀｲﾄﾙ表示
+;DM510 = (DM500-300)/16
+;DM511 =  DM500-(DM510*16)-300
+;Z5 = DM510
+;BSET (DM2500:Z5,DM511)
+LD R50006                ; 異常発生中
+OR R49110                ; ｾﾝｻｴﾗｰ
+NCJ #1000
+;DM510 = (DM500-300)/16
+;
+LD CR2002                ; 常時ON
+LDA DM500                ; ｴﾗｰ内容表示
+CON
+EXT
+CON
+SUB.L +300
+CON
+EXT.L
+CON
+DIV.L +16
+CON
+STA DM510                ; ｴﾗｰNo.表示用(ﾌﾗｸﾞｱﾄﾞﾚｽﾄ)
+;DM511 =  DM500-(DM510*16)-300
+;
+LD CR2002                ; 常時ON
+LDA DM510                ; ｴﾗｰNo.表示用(ﾌﾗｸﾞｱﾄﾞﾚｽﾄ)
+CON
+EXT
+CON
+MUL.L +16
+CON
+STA.L @VM0
+CON
+LDA DM500                ; ｴﾗｰ内容表示
+CON
+EXT
+CON
+SUB.L @VM0
+CON
+SUB.L +300
+CON
+STA DM511                ; ｴﾗｰNo.表示用(ﾌﾗｸﾞﾋﾟｯﾄ)
+;Z5 = DM510
+;
+LD CR2002                ; 常時ON
+LDA DM510                ; ｴﾗｰNo.表示用(ﾌﾗｸﾞｱﾄﾞﾚｽﾄ)
+CON
+EXT
+CON
+STA.L Z5
+;BSET (DM2500:Z5,DM511)
+LD CR2002                ; 常時ON
+BSET DM2500:Z5 DM511     ; ERR 1-16  ｴﾗｰNo.表示用(ﾌﾗｸﾞﾋﾟｯﾄ)
+LABEL #1000
+;
+LDB R50006               ; 異常発生中
+ANB R49110               ; ｾﾝｻｴﾗｰ
+ZRES DM2500 DM2531       ; ERR 1-16
+;ﾊﾟﾗﾒｰﾀ選択画面
+LD R40000                ; SET UP SW
+AND R40005               ; SET UP 　　表示許可
+@MOV #103 DM3001         ; VTﾍﾟｰｼﾞ　　変更ｱﾄﾞﾚｽ
+LD R50005                ; 停止中
+OUT R40005               ; SET UP 　　表示許可
+LD R50007                ; 手動制御中
+@RES R51100              ; 原点復帰完了
+LD R40002                ; SET UP戻SW
+MPS
+AND R51100               ; 原点復帰完了
+@MOV #102 DM3001         ; VTﾍﾟｰｼﾞ　　変更ｱﾄﾞﾚｽ
+MPP
+ANB R51100               ; 原点復帰完了
+MOV #100 DM3001          ; VTﾍﾟｰｼﾞ　　変更ｱﾄﾞﾚｽ
+;STEP動作選択画面
+LDF R50102               ; 手動ﾓｰﾄﾞ_SW
+AND R50005               ; 停止中
+AND R51100               ; 原点復帰完了
+@MOV #124 DM3001         ; VTﾍﾟｰｼﾞ　　変更ｱﾄﾞﾚｽ
+;ﾊﾟﾈﾙ表示言語選択
+LD CR2002                ; 常時ON
+MOV $0002 LR300
+;ｱﾗｰﾑ
+LD R50901                ; ｼﾘﾝﾀﾞｴﾗｰ
+OUT R55100               ; ERROR
+;*****　軸ﾊﾟﾗﾒｰﾀ変更許可　*****
+LD R42400                ; RBﾊﾟﾗﾒｰﾀ1点押sw1
+OR R42401                ; RBﾊﾟﾗﾒｰﾀ1点押sw2
+TMR #110 #20             ; 軸ﾊﾟﾗﾒｰﾀ変更許可
+LD T110                  ; 軸ﾊﾟﾗﾒｰﾀ変更許可
+OR R42403                ; 軸ﾊﾟﾗﾒｰﾀ変更許可
+AND R42404               ; 軸ﾊﾟﾗﾒｰﾀ変更中
+OUT R42403               ; 軸ﾊﾟﾗﾒｰﾀ変更許可
+;*****　転写処理Window表示　*****
+LD MR20001               ; WFｽﾃｰｼﾞ_後退確認
+AND R50005               ; 停止中
+MPS
+AND R50310               ; 自動Pause処理必要_Flg
+SET R51004               ; 起動ﾗﾝﾌﾟ点滅
+CON
+AND R51004               ; 起動ﾗﾝﾌﾟ点滅
+OUT R50312               ; 転写未処理表示
+MPP
+AND R50311               ; 転写中Pause処理_Flg
+SET R51004               ; 起動ﾗﾝﾌﾟ点滅
+CON
+AND R51004               ; 起動ﾗﾝﾌﾟ点滅
+OUT R50313               ; 転写中停止表示
+LD R50312                ; 転写未処理表示
+OR R50313                ; 転写中停止表示
+LD R40001                ; TP_ｱﾗｰﾑﾘｾｯﾄ_SW
+OR R51001                ; 起動ｽﾀｰﾄ_SW_ON_Pls
+OR R51003                ; ｽﾀｰﾄ_SW_ON_Pls
+ANL
+RES R50310               ; 自動Pause処理必要_Flg
+CON
+RES R50311               ; 転写中Pause処理_Flg
+CON
+RES R51004               ; 起動ﾗﾝﾌﾟ点滅
+END
+ENDH

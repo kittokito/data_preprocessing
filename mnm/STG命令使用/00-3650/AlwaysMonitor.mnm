@@ -1,0 +1,379 @@
+DEVICE:53
+;MODULE:AlwaysMonitor
+;MODULE_TYPE:0
+;OneSystem Sub-Module
+;
+;---------------------------------------
+;ModuleName	:	AlwaysMonitor
+;ModuleType	:	Sub Module
+;Function	:	常時監視
+;---------------------------------------
+;<使用方法>
+;常時監視が必要な物は本ﾓｼﾞｭｰﾙ内に記述して下さい
+;・ﾋｰﾀｰ過昇温検知による非常停止
+;・ﾁｬﾝﾊﾞｰ排気量低下によるｴﾗｰ出力
+;など
+;<h1/>上流 H/S I/L ERROR
+LDB DM2000.14            ; 上流H/S 無効(ON=無効)
+ANB B2012                ; 上流ｾﾙよりインターロック信号
+AND B2003                ; 上流ｾﾙへ動作開始通知
+MPS
+AND CR2002               ; 常時ON
+MSTRT F_ERROR_DISP #0
+MPP
+@INC EM1180
+;<h1/>下流 H/S I/L ERROR
+LDB DM2000.15            ; 下流H/S 無効(ON=無効)
+ANB B2022                ; 下流ｾﾙよりインターロック信号
+AND B2033                ; 下流ｾﾙへ動作開始通知
+MPS
+AND CR2002               ; 常時ON
+MSTRT F_ERROR_DISP #1
+MPP
+@INC EM1182
+;<h1/>常時監視異常
+;　　真空圧低下異常
+;　　照明エラー
+;<h1/>エアークリーンUT異常
+LD CR2002                ; 常時ON
+TMR @10 #100
+CON
+AND @T10
+OUT MR100                ; エラー監視条件_ON監視
+LD R3805                 ; ｵﾝﾗｲﾝ状態
+AND MR100                ; エラー監視条件_ON監視
+MC
+LDB R4010                ; ｴｱｸﾘｰﾝﾕﾆｯﾄ(ﾜｲﾋﾟﾝｸﾞ)ALM1
+ANB R39004               ; ｴﾗｰ中
+SET R39004               ; ｴﾗｰ中
+CON
+DW #1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #3 @DM1               ; ErrorNo /ERROR_DISP
+CON
+DW #4010 @DM2            ; SensorNo /ERROR_DISP
+CON
+SET @MR100
+CON
+SET @MR500
+LDB R4011                ; ｴｱｸﾘｰﾝﾕﾆｯﾄ(ﾜｲﾋﾟﾝｸﾞ)ALM2
+ANB R39004               ; ｴﾗｰ中
+SET R39004               ; ｴﾗｰ中
+CON
+DW #1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #3 @DM1               ; ErrorNo /ERROR_DISP
+CON
+DW #4011 @DM2            ; SensorNo /ERROR_DISP
+CON
+SET @MR100
+CON
+SET @MR500
+MCR
+STG @MR500
+AND @MR101
+RES @MR101
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+ENDS
+;<h1/>▽_異常処理
+STG @MR100
+ANB R39002               ; ERROR_DISP Busy
+MPS
+ZRES @MR105 @MR108
+CON
+LDA @DM9                 ; ReturnSW /ERROR_DISP
+CON
+TBCD
+CON
+STA @DM10
+CON
+DISN @DM10 @DM3 #4
+MRD
+DW #6 @DM0
+CON
+BMOV @DM0 DM60000 #7     ; TaskNo /ERROR_DISP
+MPP
+SET R39000               ; ERROR_DISP Start
+CON
+SET @MR102
+CON
+JMP @MR103
+STG @MR103
+AND R39002               ; ERROR_DISP Busy
+AND= DM60008 @DM1        ; ReturnNo /ERROR_DISP  ErrorNo /ERROR_DISP
+MPS
+AND= DM60007 @DM6        ; ReturnSW /ERROR_DISP
+SET @MR105
+CON
+JMP @MR104
+MRD
+AND= DM60007 @DM5        ; ReturnSW /ERROR_DISP
+SET @MR106
+CON
+JMP @MR104
+MRD
+AND= DM60007 @DM4        ; ReturnSW /ERROR_DISP
+SET @MR107
+CON
+JMP @MR104
+MPP
+AND= DM60007 @DM3        ; ReturnSW /ERROR_DISP
+SET @MR108
+CON
+JMP @MR104
+STG @MR104
+ANB R39002               ; ERROR_DISP Busy
+RES @MR102
+CON
+SET @MR101
+CON
+ENDS
+;<h1/>Warning表示
+LD MR200                 ; 上流 I/L信号 待ち
+ANB CR2002               ; 常時ON
+MSTRT MSG_DISP #1 #0 #1 #0
+LDF MR200                ; 上流 I/L信号 待ち
+MSTRT MSG_DEL #1 #0
+LD MR201                 ; 下流 I/L信号 待ち
+ANB CR2002               ; 常時ON
+MSTRT MSG_DISP #1 #1 #1 #0
+LDF MR201                ; 下流 I/L信号 待ち
+MSTRT MSG_DEL #1 #1
+;<h1/>RB3 簡易ｱﾌﾞｿﾊﾞｯﾃﾘｰ異常
+LD DM10523.3             ; RB3 ALM
+LD= DM10522 $00EE        ; RB3 Alarm CODE
+OR= DM10522 $00EF        ; RB3 Alarm CODE
+ANL
+MPS
+ANB CR2002               ; 常時ON
+MSTRT MSG_DISP #1 #3 #1 #1
+MPP
+AND CR2002               ; 常時ON
+MSTRT WARNING_DISP #1 #3 #1 #1
+LDF DM10523.3            ; RB3 ALM
+MPS
+ANB CR2002               ; 常時ON
+MSTRT MSG_DEL #1 #3
+MPP
+AND CR2002               ; 常時ON
+MSTRT WARNING_DEL #1 #3
+;<h1/>RB4 簡易ｱﾌﾞｿﾊﾞｯﾃﾘｰ異常
+LD DM10531.3             ; RB4 ALM
+LD= DM10530 $00EE        ; RB4 Alarm CODE
+OR= DM10530 $00EF        ; RB4 Alarm CODE
+ANL
+MPS
+ANB CR2002               ; 常時ON
+MSTRT MSG_DISP #1 #4 #1 #1
+MPP
+AND CR2002               ; 常時ON
+MSTRT WARNING_DISP #1 #4 #1 #1
+LDF DM10531.3            ; RB4 ALM
+MPS
+ANB CR2002               ; 常時ON
+MSTRT MSG_DEL #1 #4
+MPP
+AND CR2002               ; 常時ON
+MSTRT WARNING_DEL #1 #4
+;<h1/>RB5 簡易ｱﾌﾞｿﾊﾞｯﾃﾘｰ異常
+LD DM10539.3             ; RB5 ALM
+LD= DM10538 $00EE        ; RB5 Alarm CODE
+OR= DM10538 $00EF        ; RB5 Alarm CODE
+ANL
+MPS
+ANB CR2002               ; 常時ON
+MSTRT MSG_DISP #1 #5 #1 #1
+MPP
+AND CR2002               ; 常時ON
+MSTRT WARNING_DISP #1 #5 #1 #1
+LDF DM10539.3            ; RB5 ALM
+MPS
+ANB CR2002               ; 常時ON
+MSTRT MSG_DEL #1 #5
+MPP
+AND CR2002               ; 常時ON
+MSTRT WARNING_DEL #1 #5
+;<h1/>RB6 簡易ｱﾌﾞｿﾊﾞｯﾃﾘｰ異常
+LD DM10547.3             ; RB6 ALM
+LD= DM10546 $00EE        ; RB6 Alarm CODE
+OR= DM10546 $00EF        ; RB6 Alarm CODE
+ANL
+MPS
+ANB CR2002               ; 常時ON
+MSTRT MSG_DISP #1 #6 #1 #1
+MPP
+AND CR2002               ; 常時ON
+MSTRT WARNING_DISP #1 #6 #1 #1
+LDF DM10547.3            ; RB6 ALM
+MPS
+ANB CR2002               ; 常時ON
+MSTRT MSG_DEL #1 #6
+MPP
+AND CR2002               ; 常時ON
+MSTRT WARNING_DEL #1 #6
+;<h1/>RB7 簡易ｱﾌﾞｿﾊﾞｯﾃﾘｰ異常
+LD DM10555.3             ; RB7 ALM
+LD= DM10554 $00EE        ; RB7 Alarm CODE
+OR= DM10554 $00EF        ; RB7 Alarm CODE
+ANL
+MPS
+ANB CR2002               ; 常時ON
+MSTRT MSG_DISP #1 #7 #1 #1
+MPP
+AND CR2002               ; 常時ON
+MSTRT WARNING_DISP #1 #7 #1 #1
+LDF DM10555.3            ; RB7 ALM
+MPS
+ANB CR2002               ; 常時ON
+MSTRT MSG_DEL #1 #7
+MPP
+AND CR2002               ; 常時ON
+MSTRT WARNING_DEL #1 #7
+;<h1/>RB8 簡易ｱﾌﾞｿﾊﾞｯﾃﾘｰ異常
+LD DM10563.3             ; RB8 ALM
+LD= DM10562 $00EE        ; RB8 Alarm CODE
+OR= DM10562 $00EF        ; RB8 Alarm CODE
+ANL
+MPS
+ANB CR2002               ; 常時ON
+MSTRT MSG_DISP #1 #8 #1 #1
+MPP
+AND CR2002               ; 常時ON
+MSTRT WARNING_DISP #1 #8 #1 #1
+LDF DM10563.3            ; RB8 ALM
+MPS
+ANB CR2002               ; 常時ON
+MSTRT MSG_DEL #1 #8
+MPP
+AND CR2002               ; 常時ON
+MSTRT WARNING_DEL #1 #8
+;<h1/>RB9 簡易ｱﾌﾞｿﾊﾞｯﾃﾘｰ異常
+LD DM10571.3             ; RB9 ALM
+LD= DM10570 $00EE        ; RB9 Alarm CODE
+OR= DM10570 $00EF        ; RB9 Alarm CODE
+ANL
+MPS
+ANB CR2002               ; 常時ON
+MSTRT MSG_DISP #1 #9 #1 #1
+MPP
+AND CR2002               ; 常時ON
+MSTRT WARNING_DISP #1 #9 #1 #1
+LDF DM10571.3            ; RB9 ALM
+MPS
+ANB CR2002               ; 常時ON
+MSTRT MSG_DEL #1 #9
+MPP
+AND CR2002               ; 常時ON
+MSTRT WARNING_DEL #1 #9
+;<h1/>RB10 簡易ｱﾌﾞｿﾊﾞｯﾃﾘｰ異常
+LD DM10579.3             ; RB10 ALM
+LD= DM10578 $00EE        ; RB10 Alarm CODE
+OR= DM10578 $00EF        ; RB10 Alarm CODE
+ANL
+MPS
+ANB CR2002               ; 常時ON
+MSTRT MSG_DISP #1 #10 #1 #1
+MPP
+AND CR2002               ; 常時ON
+MSTRT WARNING_DISP #1 #10 #1 #1
+LDF DM10579.3            ; RB10 ALM
+MPS
+ANB CR2002               ; 常時ON
+MSTRT MSG_DEL #1 #10
+MPP
+AND CR2002               ; 常時ON
+MSTRT WARNING_DEL #1 #10
+;<h1/>RB11 簡易ｱﾌﾞｿﾊﾞｯﾃﾘｰ異常
+LD DM10587.3             ; RB11 ALM
+LD= DM10586 $00EE        ; RB11 Alarm CODE
+OR= DM10586 $00EF        ; RB11 Alarm CODE
+ANL
+MPS
+ANB CR2002               ; 常時ON
+MSTRT MSG_DISP #1 #11 #1 #1
+MPP
+AND CR2002               ; 常時ON
+MSTRT WARNING_DISP #1 #11 #1 #1
+LDF DM10587.3            ; RB11 ALM
+MPS
+ANB CR2002               ; 常時ON
+MSTRT MSG_DEL #1 #11
+MPP
+AND CR2002               ; 常時ON
+MSTRT WARNING_DEL #1 #11
+;<h1/>RB12 簡易ｱﾌﾞｿﾊﾞｯﾃﾘｰ異常
+LD DM10595.3             ; RB12 ALM
+LD= DM10594 $00EE        ; RB12 Alarm CODE
+OR= DM10594 $00EF        ; RB12 Alarm CODE
+ANL
+MPS
+ANB CR2002               ; 常時ON
+MSTRT MSG_DISP #1 #12 #1 #1
+MPP
+AND CR2002               ; 常時ON
+MSTRT WARNING_DISP #1 #12 #1 #1
+LDF DM10595.3            ; RB12 ALM
+MPS
+ANB CR2002               ; 常時ON
+MSTRT MSG_DEL #1 #12
+MPP
+AND CR2002               ; 常時ON
+MSTRT WARNING_DEL #1 #12
+;<h1/>RB13 簡易ｱﾌﾞｿﾊﾞｯﾃﾘｰ異常
+LD DM10603.3             ; RB13 ALM
+LD= DM10602 $00EE        ; RB13 Alarm CODE
+OR= DM10602 $00EF        ; RB13 Alarm CODE
+ANL
+MPS
+ANB CR2002               ; 常時ON
+MSTRT MSG_DISP #1 #13 #1 #1
+MPP
+AND CR2002               ; 常時ON
+MSTRT WARNING_DISP #1 #13 #1 #1
+LDF DM10603.3            ; RB13 ALM
+MPS
+ANB CR2002               ; 常時ON
+MSTRT MSG_DEL #1 #13
+MPP
+AND CR2002               ; 常時ON
+MSTRT WARNING_DEL #1 #13
+;<h1/>RB14 簡易ｱﾌﾞｿﾊﾞｯﾃﾘｰ異常
+LD DM10611.3             ; RB14 ALM
+LD= DM10610 $00EE        ; RB14 Alarm CODE
+OR= DM10610 $00EF        ; RB14 Alarm CODE
+ANL
+MPS
+ANB CR2002               ; 常時ON
+MSTRT MSG_DISP #1 #14 #1 #1
+MPP
+AND CR2002               ; 常時ON
+MSTRT WARNING_DISP #1 #14 #1 #1
+LDF DM10611.3            ; RB14 ALM
+MPS
+ANB CR2002               ; 常時ON
+MSTRT MSG_DEL #1 #14
+MPP
+AND CR2002               ; 常時ON
+MSTRT WARNING_DEL #1 #14
+;<h1/>平坦度測定NG履歴処理
+LDB MR12708              ; NG満杯処理中
+AND MR10101              ; NG排出     ｶﾊﾞｰ開
+MPS
+ANB R4702                ; 不良排出 ﾜｰｸ有無確認1
+@FMOV #0 DM36500 #100    ; NG排出 測定 ﾜｰｸ1 総合判定
+MRD
+ANB R4703                ; 不良排出 ﾜｰｸ有無確認2
+@FMOV #0 DM36600 #100    ; NG排出 測定 ﾜｰｸ2 総合判定
+MRD
+ANB R4704                ; 不良排出 ﾜｰｸ有無確認3
+@FMOV #0 DM36700 #100    ; 除材ﾁｬｯｸ 測定 ﾜｰｸ3 総合判定
+MPP
+ANB R4705                ; 不良排出 ﾜｰｸ有無確認4
+@FMOV #0 DM36800 #100    ; 除材ﾁｬｯｸ 測定 ﾜｰｸ4 総合判定
+LD MR12715               ; NG排出満杯後処理FLG
+AND B0603                ; RB2ﾊﾝﾄﾞ要求応答 (T-REQ)
+@FMOV #0 DM36500 #400    ; NG排出 測定 ﾜｰｸ1 総合判定
+END
+ENDH

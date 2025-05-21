@@ -1,0 +1,1182 @@
+DEVICE:53
+;MODULE:MemoryCard_AccessMC
+;MODULE_TYPE:0
+;SCRIPT_TYPE:
+;MemoryCard_AccessMC
+;＊＊＊
+;装置ﾘｰｸ検査のﾃﾞｰﾀ書き込み用
+;For data writing of device leak test
+;***** <<  ﾒﾓﾘｰｶｰﾄﾞｱｸｾｽﾓｼﾞｭｰﾙが起動された時の処理  >> *****
+;***** << Processing when memory card access module is activated >> *****
+LDF @CR2008
+DW #0 @DM0               ; ｴﾗｰ情報
+CON
+ZRES @MR000 @MR815       ; ﾏｸﾛｴﾗｰ
+CON
+SET @MR001
+STG @MR001
+SET MR111                ; ﾒﾓﾘｶｰﾄﾞ書込中
+CON
+JMP @MR015
+;***** <<  ﾒﾓﾘｰｶｰﾄﾞの選択情報を確認する  >> *****
+;
+; DM410 Bit0 = OFF : 結果ﾃﾞｰﾀの書込みを実施  ON : 書込まない
+;***** << Check the memory card selection information >> *****
+;
+;  DM 410 Bit 0 = OFF: Write of result data ON: Not written
+STG @MR015
+MPS
+AND DM504.0              ; ﾒﾓﾘｰｶｰﾄﾞ書込_結果ﾃﾞｰﾀ無効(=ON
+JMP @MR500               ; 装置ﾘｰｸ検査検査ﾃﾞｰﾀ書込み
+MPP
+ANB DM504.0              ; ﾒﾓﾘｰｶｰﾄﾞ書込_結果ﾃﾞｰﾀ無効(=ON
+MPS
+LDB MR106                ; ﾒﾝﾃ_装置ﾘｰｸ検査中
+ORB LR1915               ; New MC leak
+ANL
+JMP @MR500               ; 装置ﾘｰｸ検査検査ﾃﾞｰﾀ書込み
+MPP
+LD MR106                 ; ﾒﾝﾃ_装置ﾘｰｸ検査中
+AND LR1915               ; New MC leak
+ANL
+MPS
+AND MR703                ; MC2write_result
+JMP @MR100               ; 装置ﾘｰｸ検査結果全ﾃﾞｰﾀ書込み
+MPP
+ANB MR703                ; MC2write_result
+JMP @MR500               ; 装置ﾘｰｸ検査検査ﾃﾞｰﾀ書込み
+;<h1/>■装置ﾘｰｸ検査結果全ﾃﾞｰﾀ書込み/Device leak test result All data write
+;***** <<  ﾒﾓﾘｰｶｰﾄﾞに書込む為のパラメータ設定  >> *****
+;
+;フォルダー名	：Data\NoModel\Result or Data\***\Result
+;ファイル名		：Log_Res_年月日
+;書込みモード	：(0)追加書込み
+;書込みデータ数	:指定DM
+;
+;***** << Parameter setting for writing to the memory card >> *****
+;
+;Folder name: Data \ NoModel \ Result or Data \ *** \ Result
+;File name: Log_Res_ date
+;Write mode: (0) Additional write
+;Number of data to be written: specified DM
+LDP @MR100               ; 装置ﾘｰｸ検査結果全ﾃﾞｰﾀ書込み
+MPS
+ANB LR1915               ; New MC leak
+DW #64 @DM11             ; 書込みﾃﾞｰﾀ数
+MPP
+AND LR1915               ; New MC leak
+DW #151 @DM11            ; 書込みﾃﾞｰﾀ数
+;
+;'ﾌｫﾙﾀﾞｰ名/Folder name
+;@EM100.T = "Data\MC_Check\"+EM30200.T:EM30080+"\"+EM30400.T:EM30090+"\Result"
+;
+;'書込みﾃﾞｰﾀを設定する
+;'Set write data
+;BMOV( CM700,EM40001,#6 )	'年月日時分秒/Year, month, day, hour, minute, second
+;
+;'ﾌｧｲﾙ名作成(年月日部分) 文字列生成
+;'File name creation (year, month, day part) String generation
+;@DM20 = ASC(TBCD(CM700))	'年/Year
+;@DM21 = ASC(TBCD(CM701))	'月/month
+;@DM22 = ASC(TBCD(CM702))	'日/day
+;@DM23 = $0000				'文字列 Nullｺｰﾄﾞ/String Null code
+;
+;'ﾌｧｲﾙ名を作成
+;'Create file name
+;@DM20.T = "Log_Res_" + @DM20.T
+;
+;'保存形式を設定   6:16bit符号付きﾊﾞｲﾅﾘｰﾃﾞｰﾀ
+;'Set storage format 6: 16 bit signed binary data
+;@DM1 = 6
+;'書込みﾓｰﾄﾞを設定 0:追加書込
+;'Set write mode 0: Additional write
+;@DM2 = 0
+;'行末処理を設定   1:CRLF改行
+;'Set end of line processing 1: CRLF
+;@DM3 = 1
+;
+;'処理開始/Start processing
+;if @DM11.U <> #0 then		'書込みﾃﾞｰﾀ数が0の場合は実行しない
+;'Do not execute if the number of write data is 0
+;	set( @MR400.B )
+;end if
+;
+LDP @MR100               ; 装置ﾘｰｸ検査結果全ﾃﾞｰﾀ書込み
+NCJ #1000
+;'ﾌｫﾙﾀﾞｰ名/Folder name
+;
+;@EM100.T = "Data\MC_Check\"+EM30200.T:EM30080+"\"+EM30400.T:EM30090+"\Result"
+;
+LD CR2002                ; 常時ON
+LDA EM30090              ; 部品選択時設定ﾃﾞｰﾀｵﾌｾｯﾄ指定用
+CON
+EXT
+CON
+STA.L Z12
+CON
+ADRSET EM30400:Z12 @VM0  ; 部品1_部品名
+LD CR2002                ; 常時ON
+LDA EM30080              ; 機種選択時設定ﾃﾞｰﾀｵﾌｾｯﾄ指定用
+CON
+EXT
+CON
+STA.L Z12
+LD CR2002                ; 常時ON
+ADRSET VM2 VM0
+MOV #0 VM2
+MOV.D VM0 @VM2
+SMOV "Data\MC_Check\" *@VM2
+LD CR2002                ; 常時ON
+SADD *@VM2 EM30200:Z12 *@VM2;機種1_機種名
+SADD *@VM2 "\" *@VM2
+SADD *@VM2 *@VM0 *@VM2
+SADD *@VM2 "\Result" *@VM2
+SMOV *@VM2 @EM100        ; MCﾘｰｸﾃﾞｰﾀ保存ﾌｫﾙﾀﾞ名
+;'書込みﾃﾞｰﾀを設定する
+;
+;'Set write data
+;
+;BMOV( CM700,EM40001,#6 )	'年月日時分秒/Year, month, day, hour, minute, second
+;
+LD CR2002                ; 常時ON
+BMOV CM700 EM40001 #6    ; ｶﾚﾝﾀﾞﾀｲﾏ（年）  検査ﾃﾞｰﾀ書込:年
+;'ﾌｧｲﾙ名作成(年月日部分) 文字列生成
+;
+;'File name creation (year, month, day part) String generation
+;
+;@DM20 = ASC(TBCD(CM700))	'年/Year
+;
+LD CR2002                ; 常時ON
+LDA CM700                ; ｶﾚﾝﾀﾞﾀｲﾏ（年）
+CON
+TBCD
+CON
+ASC
+CON
+STA @DM20                ; 結果書込みﾌｧｲﾙ名
+;@DM21 = ASC(TBCD(CM701))	'月/month
+;
+LD CR2002                ; 常時ON
+LDA CM701                ; ｶﾚﾝﾀﾞﾀｲﾏ（月）
+CON
+TBCD
+CON
+ASC
+CON
+STA @DM21                ; [結果書込みﾌｧｲﾙ名]
+;@DM22 = ASC(TBCD(CM702))	'日/day
+;
+LD CR2002                ; 常時ON
+LDA CM702                ; ｶﾚﾝﾀﾞﾀｲﾏ（日）
+CON
+TBCD
+CON
+ASC
+CON
+STA @DM22                ; [結果書込みﾌｧｲﾙ名]
+;@DM23 = $0000				'文字列 Nullｺｰﾄﾞ/String Null code
+;
+LD CR2002                ; 常時ON
+MOV $0000 @DM23          ; [結果書込みﾌｧｲﾙ名]
+;'ﾌｧｲﾙ名を作成
+;
+;'Create file name
+;
+;@DM20.T = "Log_Res_" + @DM20.T
+;
+LD CR2002                ; 常時ON
+ADRSET VM2 VM0
+MOV #0 VM2
+MOV.D VM0 @VM4
+SMOV "Log_Res_" *@VM4
+LD CR2002                ; 常時ON
+SADD *@VM4 @DM20 *@VM4   ; 結果書込みﾌｧｲﾙ名
+SMOV *@VM4 @DM20         ; 結果書込みﾌｧｲﾙ名
+;'保存形式を設定   6:16bit符号付きﾊﾞｲﾅﾘｰﾃﾞｰﾀ
+;
+;'Set storage format 6: 16 bit signed binary data
+;
+;@DM1 = 6
+;
+LD CR2002                ; 常時ON
+MOV #6 @DM1              ; 結果書込み保存形式
+;'書込みﾓｰﾄﾞを設定 0:追加書込
+;
+;'Set write mode 0: Additional write
+;
+;@DM2 = 0
+;
+LD CR2002                ; 常時ON
+MOV #0 @DM2              ; 結果書込み書込みﾓｰﾄﾞ
+;'行末処理を設定   1:CRLF改行
+;
+;'Set end of line processing 1: CRLF
+;
+;@DM3 = 1
+;
+LD CR2002                ; 常時ON
+MOV #1 @DM3              ; 結果書込み行末処理
+;'処理開始/Start processing
+;
+;if @DM11.U <> #0 then		'書込みﾃﾞｰﾀ数が0の場合は実行しない
+;
+LD<> @DM11 #0            ; 書込みﾃﾞｰﾀ数
+NCJ #2000
+;'Do not execute if the number of write data is 0
+;
+;	set( @MR400.B )
+;
+LD CR2002                ; 常時ON
+SET @MR400               ; 書込みﾊﾟﾗﾒｰﾀｰ設定完了
+;end if
+;
+LABEL #2000
+LABEL #1000
+;
+;***** <<  ﾒﾓﾘｰｶｰﾄﾞ書込み用のﾊﾟﾗﾒｰﾀを設定する  >> *****
+;***** << Setting Parameters for Memory Card Writing >> *****
+;
+STG @MR100               ; 装置ﾘｰｸ検査結果全ﾃﾞｰﾀ書込み
+AND @MR400               ; 書込みﾊﾟﾗﾒｰﾀｰ設定完了
+RES @MR400               ; 書込みﾊﾟﾗﾒｰﾀｰ設定完了
+CON
+JMP @MR101
+;***** <<  ﾒﾓﾘｰｶｰﾄﾞの空き容量を確認する  >> *****
+;***** << Check the free space of the memory card >> *****
+STG @MR101
+MPS
+MEP
+MSTRT MEM_FREE_5 DM500 DM502 @MR000 @DM0;ﾒﾓﾘｰｶｰﾄﾞ指定空き容量(下位)  ﾒﾓﾘｰｶｰﾄﾞ空き容量(下位)  ﾏｸﾛｴﾗｰ  ｴﾗｰ情報
+MPP
+ANF _MEM_FREE_5
+MPS
+ANB @MR000               ; ﾏｸﾛｴﾗｰ
+JMP @MR200
+MPP
+AND @MR000               ; ﾏｸﾛｴﾗｰ
+JMP @MR900               ; ﾒﾓﾘｰｶｰﾄﾞ異常終了
+;***** <<　ﾒﾓﾘｰｶｰﾄﾞに指定ﾌｫﾙﾀﾞを作成する　>> *****
+;
+;***** << Create specified folder on memory card >> *****
+;***** <<　書込みデータを作成する　>> *****
+;　EM0～EM2:年月日
+;　EM3～EM5:時分秒
+;  EM6～   :検査データ
+;  
+;***** << Create write data >> *****
+;EM 0 to EM 2: Date
+;EM3 to EM5: hour and minute second
+;   EM 6 ~: Inspection data
+;***** <<  ﾒﾓﾘｰｶｰﾄﾞにﾃﾞｰﾀ名を書込む為のパラメータ設定  >> *****
+;
+;フォルダー名	：Data\NoModel\Result or Data\***\***\Result
+;ファイル名		：Log_Res_年月日
+;書込みモード	：(0)追加書込み
+;書込みデータ	:ﾃﾞｰﾀ名(EM30100～10文字)
+;書込みデータ数	:10文字max
+;
+;***** << Parameter setting for writing data name to memory card >> *****
+;
+;Folder name: Data \ NoModel \ Result or Data \ *** \ *** \ Result
+;File name: Log_Res_ date
+;Write mode: (0) Additional write
+;Write data: Data name (EM 30100 ~ 10 characters)
+;Number of write data: 10 characters max
+;'ﾌｧｲﾙ名を一時保存する
+;'Save file name temporarily
+;@EM150.t = @EM100.t + "\" + @DM20.t
+;
+;set( @MR405.b )		'ﾃﾞｰﾀ名の書込みを実施する
+;'Write the data name
+;
+;'処理開始/Start processing
+;set( @MR401.B )
+;
+LD @MR200
+NCJ #1007
+;'ﾌｧｲﾙ名を一時保存する
+;
+;'Save file name temporarily
+;
+;@EM150.t = @EM100.t + "\" + @DM20.t
+;
+LD CR2002                ; 常時ON
+ADRSET VM2 VM0
+MOV #0 VM2
+MOV.D VM0 @VM6
+SMOV @EM100 *@VM6        ; MCﾘｰｸﾃﾞｰﾀ保存ﾌｫﾙﾀﾞ名
+LD CR2002                ; 常時ON
+SADD *@VM6 "\" *@VM6
+SADD *@VM6 @DM20 *@VM6   ; 結果書込みﾌｧｲﾙ名
+SMOV *@VM6 @EM150        ; 検査ﾃﾞｰﾀﾌｧｲﾙ名一時保存先
+;set( @MR405.b )		'ﾃﾞｰﾀ名の書込みを実施する
+;
+LD CR2002                ; 常時ON
+SET @MR405               ; ﾃﾞｰﾀ名書込み実施（=ON)
+;'Write the data name
+;
+;'処理開始/Start processing
+;
+;set( @MR401.B )
+;
+LD CR2002                ; 常時ON
+SET @MR401               ; 保存準備完了
+LABEL #1007
+;
+STG @MR200
+AND @MR401               ; 保存準備完了
+RES @MR401               ; 保存準備完了
+CON
+MPS
+AND @MR405               ; ﾃﾞｰﾀ名書込み実施（=ON)
+JMP @MR202
+MPP
+ANB @MR405               ; ﾃﾞｰﾀ名書込み実施（=ON)
+JMP @MR213
+;<<ﾌｧｲﾙ名ﾊﾞｯｸｱｯﾌﾟ>>
+;<< File Name Backup >>
+;'ﾃﾞｰﾀ名の書込みを実施しない
+;'Do not write data names
+;res( @MR405.b )
+;
+;'処理終了
+;'Processing Exit
+;set( @MR401.B )
+;
+LD @MR202
+NCJ #1008
+;'ﾃﾞｰﾀ名の書込みを実施しない
+;
+;'Do not write data names
+;
+;res( @MR405.b )
+;
+LD CR2002                ; 常時ON
+RES @MR405               ; ﾃﾞｰﾀ名書込み実施（=ON)
+;'処理終了
+;
+;'Processing Exit
+;
+;set( @MR401.B )
+;
+LD CR2002                ; 常時ON
+SET @MR401               ; 保存準備完了
+LABEL #1008
+;
+STG @MR202
+AND @MR401               ; 保存準備完了
+RES @MR401               ; 保存準備完了
+CON
+JMP @MR208
+;<h1/>-CSVﾌｧｲﾙにﾀｲﾄﾙ書込み/Write title in CSV file 
+;'ﾀｲﾄﾙﾃﾞｰﾀが格納されている場所を設定（ﾌｧｲﾙ名含む）
+;'Set the location where title data is stored (including file name)
+;@EM50.T = "Data\Header\MC1\General Purpose Assy MCLeak1.csv"
+LDP @MR208
+AND MR106                ; ﾒﾝﾃ_装置ﾘｰｸ検査中
+ANB LR1915               ; New MC leak
+NCJ #1010
+;'ﾀｲﾄﾙﾃﾞｰﾀが格納されている場所を設定（ﾌｧｲﾙ名含む）
+;
+;'Set the location where title data is stored (including file name)
+;
+;@EM50.T = "Data\Header\MC1\General Purpose Assy MCLeak1.csv"
+LD CR2002                ; 常時ON
+SMOV "Data\Header\MC1\General Purpose" @EM50;ﾀｲﾄﾙﾃﾞｰﾀ格納場所
+SADD @EM65 " Assy MCLeak1.csv" @EM65
+LABEL #1010
+;
+;'ﾀｲﾄﾙﾃﾞｰﾀが格納されている場所を設定（ﾌｧｲﾙ名含む）
+;'Set the location where title data is stored (including file name)
+;@EM50.T = "Data\Header\MC2\General Purpose Assy MCLeak2.csv"
+LDP @MR208
+AND MR106                ; ﾒﾝﾃ_装置ﾘｰｸ検査中
+AND LR1915               ; New MC leak
+NCJ #1009
+;'ﾀｲﾄﾙﾃﾞｰﾀが格納されている場所を設定（ﾌｧｲﾙ名含む）
+;
+;'Set the location where title data is stored (including file name)
+;
+;@EM50.T = "Data\Header\MC2\General Purpose Assy MCLeak2.csv"
+LD CR2002                ; 常時ON
+SMOV "Data\Header\MC2\General Purpose" @EM50;ﾀｲﾄﾙﾃﾞｰﾀ格納場所
+SADD @EM65 " Assy MCLeak2.csv" @EM65
+LABEL #1009
+;
+STG @MR208
+MPS
+MEP
+MSTRT MEM_HEADER_3 @EM50 @EM150 @EM100 @MR000 @DM0;ﾀｲﾄﾙﾃﾞｰﾀ格納場所  検査ﾃﾞｰﾀﾌｧｲﾙ名一時保存先  MCﾘｰｸﾃﾞｰﾀ保存ﾌｫﾙﾀﾞ名  ﾏｸﾛｴﾗｰ  ｴﾗｰ情報
+MPP
+ANF _MEM_HEADER_3
+JMP @MR209
+STG @MR209
+ANB _MEM_HEADER_3
+MPS
+ANB @MR000               ; ﾏｸﾛｴﾗｰ
+JMP @MR210
+MPP
+AND @MR000               ; ﾏｸﾛｴﾗｰ
+JMP @MR900               ; ﾒﾓﾘｰｶｰﾄﾞ異常終了
+;***** <<  ﾒﾓﾘｰｶｰﾄﾞに検査データを書き込む  >> *****
+;***** << Writing inspection data on memory card >> *****
+STG @MR210
+MPS
+MEP
+MSTRT MEM_WRITE_3 @EM100 @DM20 @DM1 @DM2 @DM3 EM2000 @DM11 @MR000 @DM0;MCﾘｰｸﾃﾞｰﾀ保存ﾌｫﾙﾀﾞ名  結果書込みﾌｧｲﾙ名  結果書込み保存形式  結果書込み書込みﾓｰﾄﾞ  結果書込み行末処理  結果書込1  書込みﾃﾞｰﾀ数  ﾏｸﾛｴﾗｰ  ｴﾗｰ情報
+MPP
+ANF _MEM_WRITE_3
+MPS
+ANB @MR000               ; ﾏｸﾛｴﾗｰ
+JMP @MR500               ; 装置ﾘｰｸ検査検査ﾃﾞｰﾀ書込み
+MPP
+AND @MR000               ; ﾏｸﾛｴﾗｰ
+JMP @MR900               ; ﾒﾓﾘｰｶｰﾄﾞ異常終了
+;<h1/>■装置ﾘｰｸ検査検査ﾃﾞｰﾀ書込み/Device leak inspection inspection data writing
+;***** <<  ﾒﾓﾘｰｶｰﾄﾞの選択情報を確認する  >> *****
+;
+; DM410 Bit1 = OFF : 測定ﾃﾞｰﾀの書込みを実施  ON : 書込まない
+;***** << Check the memory card selection information >> *****
+;
+;  DM 410 Bit 1 = OFF: Write measurement data ON: Not write
+STG @MR500               ; 装置ﾘｰｸ検査検査ﾃﾞｰﾀ書込み
+MPS
+ANB DM504.1              ; ﾒﾓﾘｰｶｰﾄﾞ書込_測定ﾃﾞｰﾀ無効(=ON
+JMP @MR501
+MPP
+AND DM504.1              ; ﾒﾓﾘｰｶｰﾄﾞ書込_測定ﾃﾞｰﾀ無効(=ON
+JMP @MR800               ; ﾒﾓﾘｰｶｰﾄﾞ書込み正常終了
+;***** <<  ﾒﾓﾘｰｶｰﾄﾞ書込み  検査の生データ  >> *****
+;***** << raw data of memory card writing inspection >> *****
+;***** <<  ﾒﾓﾘｰｶｰﾄﾞに書込む為のパラメータ設定  >> *****
+;
+;フォルダー名	：Data\NoModel\MesDat or Data\***\***\MesDat
+;ファイル名		：Log_Mdt_年月日
+;書込みモード	：(0)追加書込み
+;書込みデータ数	:指定DM
+;
+;***** << Parameter setting for writing to the memory card >> *****
+;
+;Folder name: Data \ NoModel \ MesDat or Data \ *** \ *** \ MesDat
+;File name: Log_Mdt_ date
+;Write mode: (0) Additional write
+;Number of data to be written: specified DM
+;'ﾌｫﾙﾀﾞｰ名/Folder name
+;@EM100.T = "Data\MC_Check\" + EM30200.T:EM30080+"\"+EM30400.T:EM30090 +"\MesData"
+;
+;'ﾌｧｲﾙ名作成(年月日部分) 文字列生成
+;'File name creation (year, month, day part) String generation
+;@DM40 = ASC(TBCD(CM700))	'年/year
+;@DM41 = ASC(TBCD(CM701))	'月/month
+;@DM42 = ASC(TBCD(CM702))	'日/day
+;@DM43 = $0000				'文字列 Nullｺｰﾄﾞ/String Null code
+;
+;'ﾌｧｲﾙ名を作成/Create file name
+;@DM40.T = "Log_Mdt_" + @DM40.T
+;
+;'保存形式を設定   6:16bit符号付きﾊﾞｲﾅﾘｰﾃﾞｰﾀ
+;'Set storage format 6: 16 bit signed binary data
+;@DM1 = 6
+;'書込みﾓｰﾄﾞを設定 0:追加書込
+;'Set write mode 0: Additional write
+;@DM2 = 0
+;'行末処理を設定   1:CRLF改行
+;'Set end of line processing 1: CRLF
+;@DM3 = 1
+;
+;'書込みﾃﾞｰﾀ数を設定
+;'Set the number of write data
+;@DM11.U = #1009			'ﾄｰﾀﾙ数/Total number
+;
+;
+;'書込みﾃﾞｰﾀ格納先ｱﾄﾞﾚｽを設定
+;'Set write data storage destination address
+;'adrset( ZF20000,@EM0.D )	'ﾃﾞｰﾀ格納ｴﾘｱのｱﾄﾞﾚｽ/Address of data storage area
+;
+;'処理開始/Start processing
+;if @DM11.U <> #0 then		'書込みﾃﾞｰﾀ数が0の場合は実行しない
+;'Do not execute if the number of write data is 0
+;	set( @MR400.B )
+;end if
+;
+LDP @MR501
+NCJ #1002
+;'ﾌｫﾙﾀﾞｰ名/Folder name
+;
+;@EM100.T = "Data\MC_Check\" + EM30200.T:EM30080+"\"+EM30400.T:EM30090 +"\MesData"
+;
+LD CR2002                ; 常時ON
+LDA EM30090              ; 部品選択時設定ﾃﾞｰﾀｵﾌｾｯﾄ指定用
+CON
+EXT
+CON
+STA.L Z12
+CON
+ADRSET EM30400:Z12 @VM8  ; 部品1_部品名
+LD CR2002                ; 常時ON
+LDA EM30080              ; 機種選択時設定ﾃﾞｰﾀｵﾌｾｯﾄ指定用
+CON
+EXT
+CON
+STA.L Z12
+LD CR2002                ; 常時ON
+ADRSET VM2 VM0
+MOV #0 VM2
+MOV.D VM0 @VM10
+SMOV "Data\MC_Check\" *@VM10
+LD CR2002                ; 常時ON
+SADD *@VM10 EM30200:Z12 *@VM10;機種1_機種名
+SADD *@VM10 "\" *@VM10
+SADD *@VM10 *@VM8 *@VM10
+SADD *@VM10 "\MesData" *@VM10
+SMOV *@VM10 @EM100       ; MCﾘｰｸﾃﾞｰﾀ保存ﾌｫﾙﾀﾞ名
+;'ﾌｧｲﾙ名作成(年月日部分) 文字列生成
+;
+;'File name creation (year, month, day part) String generation
+;
+;@DM40 = ASC(TBCD(CM700))	'年/year
+;
+LD CR2002                ; 常時ON
+LDA CM700                ; ｶﾚﾝﾀﾞﾀｲﾏ（年）
+CON
+TBCD
+CON
+ASC
+CON
+STA @DM40                ; 測定値書込みﾌｧｲﾙ名
+;@DM41 = ASC(TBCD(CM701))	'月/month
+;
+LD CR2002                ; 常時ON
+LDA CM701                ; ｶﾚﾝﾀﾞﾀｲﾏ（月）
+CON
+TBCD
+CON
+ASC
+CON
+STA @DM41                ; [測定値書込みﾌｧｲﾙ名]
+;@DM42 = ASC(TBCD(CM702))	'日/day
+;
+LD CR2002                ; 常時ON
+LDA CM702                ; ｶﾚﾝﾀﾞﾀｲﾏ（日）
+CON
+TBCD
+CON
+ASC
+CON
+STA @DM42                ; [測定値書込みﾌｧｲﾙ名]
+;@DM43 = $0000				'文字列 Nullｺｰﾄﾞ/String Null code
+;
+LD CR2002                ; 常時ON
+MOV $0000 @DM43          ; [測定値書込みﾌｧｲﾙ名]
+;'ﾌｧｲﾙ名を作成/Create file name
+;
+;@DM40.T = "Log_Mdt_" + @DM40.T
+;
+LD CR2002                ; 常時ON
+ADRSET VM2 VM0
+MOV #0 VM2
+MOV.D VM0 @VM12
+SMOV "Log_Mdt_" *@VM12
+LD CR2002                ; 常時ON
+SADD *@VM12 @DM40 *@VM12 ; 測定値書込みﾌｧｲﾙ名
+SMOV *@VM12 @DM40        ; 測定値書込みﾌｧｲﾙ名
+;'保存形式を設定   6:16bit符号付きﾊﾞｲﾅﾘｰﾃﾞｰﾀ
+;
+;'Set storage format 6: 16 bit signed binary data
+;
+;@DM1 = 6
+;
+LD CR2002                ; 常時ON
+MOV #6 @DM1              ; 結果書込み保存形式
+;'書込みﾓｰﾄﾞを設定 0:追加書込
+;
+;'Set write mode 0: Additional write
+;
+;@DM2 = 0
+;
+LD CR2002                ; 常時ON
+MOV #0 @DM2              ; 結果書込み書込みﾓｰﾄﾞ
+;'行末処理を設定   1:CRLF改行
+;
+;'Set end of line processing 1: CRLF
+;
+;@DM3 = 1
+;
+LD CR2002                ; 常時ON
+MOV #1 @DM3              ; 結果書込み行末処理
+;'書込みﾃﾞｰﾀ数を設定
+;
+;'Set the number of write data
+;
+;@DM11.U = #1009			'ﾄｰﾀﾙ数/Total number
+;
+LD CR2002                ; 常時ON
+MOV #1009 @DM11          ; 書込みﾃﾞｰﾀ数
+;'書込みﾃﾞｰﾀ格納先ｱﾄﾞﾚｽを設定
+;
+;'Set write data storage destination address
+;
+;'adrset( ZF20000,@EM0.D )	'ﾃﾞｰﾀ格納ｴﾘｱのｱﾄﾞﾚｽ/Address of data storage area
+;
+;'処理開始/Start processing
+;
+;if @DM11.U <> #0 then		'書込みﾃﾞｰﾀ数が0の場合は実行しない
+;
+LD<> @DM11 #0            ; 書込みﾃﾞｰﾀ数
+NCJ #2001
+;'Do not execute if the number of write data is 0
+;
+;	set( @MR400.B )
+;
+LD CR2002                ; 常時ON
+SET @MR400               ; 書込みﾊﾟﾗﾒｰﾀｰ設定完了
+;end if
+;
+LABEL #2001
+LABEL #1002
+;
+STG @MR501
+ANP @MR400               ; 書込みﾊﾟﾗﾒｰﾀｰ設定完了
+DW #1 @DM16              ; 検査No値(1-6)
+CON
+RES @MR400               ; 書込みﾊﾟﾗﾒｰﾀｰ設定完了
+CON
+JMP @MR502
+;***** <<  ﾒﾓﾘｰｶｰﾄﾞの空き容量を確認する  >> *****
+;***** << Check the free space of the memory card >> *****
+STG @MR502
+MPS
+MEP
+MSTRT MEM_FREE_7 DM500 DM502 @MR000 @DM0;ﾒﾓﾘｰｶｰﾄﾞ指定空き容量(下位)  ﾒﾓﾘｰｶｰﾄﾞ空き容量(下位)  ﾏｸﾛｴﾗｰ  ｴﾗｰ情報
+MPP
+ANF _MEM_FREE_7
+MPS
+ANB @MR000               ; ﾏｸﾛｴﾗｰ
+JMP @MR600
+MPP
+AND @MR000               ; ﾏｸﾛｴﾗｰ
+JMP @MR900               ; ﾒﾓﾘｰｶｰﾄﾞ異常終了
+;***** <<  ﾒﾓﾘｰｶｰﾄﾞに指定ﾌｫﾙﾀﾞを作成する  >> *****
+;***** << Create specified folder on memory card >> *****
+;***** <<　書込みデータを作成する　>> *****
+;　EM0～EM2:年月日
+;　EM3～EM5:時分秒
+;  EM6～   :検査データ
+;  
+;***** << Create write data >> *****
+;EM 0 to EM 2: Date
+;EM3 to EM5: hour and minute second
+;   EM 6 ~: Inspection data
+STG @MR600
+JMP @MR601
+;'ﾌｧｲﾙ名を一時保存する
+;'Save file name temporarily
+;@EM150.t = @EM100.t + "\" + @DM40.t
+;
+;'ﾌｧｲﾙ名がﾊﾞｯｸｱｯﾌﾟしたものと違う or 
+;'ﾃﾞｰﾀ名がﾊﾞｯｸｱｯﾌﾟしたものと違う場合は、ﾃﾞｰﾀ名を書込む
+;'File name is different from what was backed up
+;'If the data name is different from the one backed up, write the data name
+;
+;if EM30160.t <> @EM150.t or EM30100.t <> EM30120.t then
+;
+;	'ﾃﾞｰﾀ名の保存形式を設定
+;	'保存形式を設定   8:ASCII文字列ﾃﾞｰﾀ
+;	'Set the data name save format
+;    'Saving format set 8: ASCII character string data
+;	
+;	@DM60 = 8
+;	'書込みﾓｰﾄﾞを設定 0:追加書込
+;	'Set write mode 0: Additional write
+;	@DM61 = 0
+;	'行末処理を設定   1:CRLF
+;	'Set end of line processing 1: CRLF
+;	@DM62 = 1
+;	'書込みﾃﾞｰﾀ数(文字数)を設定
+;	'Set the number of written data (number of characters)
+;	@DM63.U = #10
+;	'ﾃﾞｰﾀ格納ｴﾘｱのｱﾄﾞﾚｽ
+;	'Address of data storage area
+;	adrset( EM30100,@EM10.D )
+;
+;''	EM30160.t = @EM150.t	'ﾌｧｲﾙ名をﾊﾞｯｸｱｯﾌﾟ
+;''	EM30120.t = EM30100.t	'ﾃﾞｰﾀ名をﾊﾞｯｸｱｯﾌﾟ
+;'' EM30160.t = @ EM 150.t 'Back up file name
+;'' EM30120.t = EM30100.t 'Back up data name
+;
+;	set( @MR405.b )		'ﾃﾞｰﾀ名の書込みを実施する
+;	'Write the data name
+;else
+;	res( @MR405.b )		'ﾃﾞｰﾀ名の書込みを実施しない
+;	'Do not write data names
+;end if
+;
+;'処理開始/Start processing
+;set( @MR401.B )
+;
+LD @MR601
+NCJ #1003
+;'ﾌｧｲﾙ名を一時保存する
+;
+;'Save file name temporarily
+;
+;@EM150.t = @EM100.t + "\" + @DM40.t
+;
+LD CR2002                ; 常時ON
+ADRSET VM2 VM0
+MOV #0 VM2
+MOV.D VM0 @VM14
+SMOV @EM100 *@VM14       ; MCﾘｰｸﾃﾞｰﾀ保存ﾌｫﾙﾀﾞ名
+LD CR2002                ; 常時ON
+SADD *@VM14 "\" *@VM14
+SADD *@VM14 @DM40 *@VM14 ; 測定値書込みﾌｧｲﾙ名
+SMOV *@VM14 @EM150       ; 検査ﾃﾞｰﾀﾌｧｲﾙ名一時保存先
+;'ﾌｧｲﾙ名がﾊﾞｯｸｱｯﾌﾟしたものと違う or 
+;
+;'ﾃﾞｰﾀ名がﾊﾞｯｸｱｯﾌﾟしたものと違う場合は、ﾃﾞｰﾀ名を書込む
+;
+;'File name is different from what was backed up
+;
+;'If the data name is different from the one backed up, write the data name
+;
+;if EM30160.t <> @EM150.t or EM30100.t <> EM30120.t then
+;
+LD CR2002                ; 常時ON
+SCMP EM30160 @EM150      ; 生ﾌｧｲﾙ名先頭(ﾊﾞｯｸｱｯﾌﾟ)  検査ﾃﾞｰﾀﾌｧｲﾙ名一時保存先
+LDB CR2010               ; 演算結果がｾﾞﾛ
+OUT @VB00
+LD CR2002                ; 常時ON
+SCMP EM30100 EM30120     ; ﾃﾞｰﾀ名先頭  ﾃﾞｰﾀ名先頭(ﾊﾞｯｸｱｯﾌﾟ)
+LDB CR2010               ; 演算結果がｾﾞﾛ
+OR @VB00
+NCJ #2002
+;	'ﾃﾞｰﾀ名の保存形式を設定
+;
+;	'保存形式を設定   8:ASCII文字列ﾃﾞｰﾀ
+;
+;	'Set the data name save format
+;
+;    'Saving format set 8: ASCII character string data
+;
+;	@DM60 = 8
+;
+LD CR2002                ; 常時ON
+MOV #8 @DM60             ; 測定値書込み保存形式
+;	'書込みﾓｰﾄﾞを設定 0:追加書込
+;
+;	'Set write mode 0: Additional write
+;
+;	@DM61 = 0
+;
+LD CR2002                ; 常時ON
+MOV #0 @DM61             ; 測定値書込み書込みﾓｰﾄﾞ
+;	'行末処理を設定   1:CRLF
+;
+;	'Set end of line processing 1: CRLF
+;
+;	@DM62 = 1
+;
+LD CR2002                ; 常時ON
+MOV #1 @DM62             ; 測定値書込み行末処理
+;	'書込みﾃﾞｰﾀ数(文字数)を設定
+;
+;	'Set the number of written data (number of characters)
+;
+;	@DM63.U = #10
+;
+LD CR2002                ; 常時ON
+MOV #10 @DM63            ; 測定値書込み書込みﾃﾞｰﾀ数
+;	'ﾃﾞｰﾀ格納ｴﾘｱのｱﾄﾞﾚｽ
+;
+;	'Address of data storage area
+;
+;	adrset( EM30100,@EM10.D )
+;
+LD CR2002                ; 常時ON
+ADRSET EM30100 @EM10     ; ﾃﾞｰﾀ名先頭
+;''	EM30160.t = @EM150.t	'ﾌｧｲﾙ名をﾊﾞｯｸｱｯﾌﾟ
+;
+;''	EM30120.t = EM30100.t	'ﾃﾞｰﾀ名をﾊﾞｯｸｱｯﾌﾟ
+;
+;'' EM30160.t = @ EM 150.t 'Back up file name
+;
+;'' EM30120.t = EM30100.t 'Back up data name
+;
+;	set( @MR405.b )		'ﾃﾞｰﾀ名の書込みを実施する
+;
+LD CR2002                ; 常時ON
+SET @MR405               ; ﾃﾞｰﾀ名書込み実施（=ON)
+;	'Write the data name
+;
+;else
+;
+LD CR2002                ; 常時ON
+CJ #2003
+LABEL #2002
+;	res( @MR405.b )		'ﾃﾞｰﾀ名の書込みを実施しない
+;
+LD CR2002                ; 常時ON
+RES @MR405               ; ﾃﾞｰﾀ名書込み実施（=ON)
+;	'Do not write data names
+;
+;end if
+;
+LABEL #2003
+;'処理開始/Start processing
+;
+;set( @MR401.B )
+;
+LD CR2002                ; 常時ON
+SET @MR401               ; 保存準備完了
+LABEL #1003
+;
+STG @MR601
+AND @MR401               ; 保存準備完了
+RES @MR401               ; 保存準備完了
+CON
+MPS
+AND @MR405               ; ﾃﾞｰﾀ名書込み実施（=ON)
+JMP @MR602
+MPP
+ANB @MR405               ; ﾃﾞｰﾀ名書込み実施（=ON)
+JMP @MR700
+;<h1/>-CSVﾌｧｲﾙにﾀｲﾄﾙ書込み/Write title in CSV file 
+;'ﾀｲﾄﾙﾃﾞｰﾀが格納されている場所を設定（ﾌｧｲﾙ名含む）
+;'Set the location where title data is stored (including file name)
+;@EM50.T = "Data\Header\MC1\General Purpose Assy Leak mes.csv"
+LDP @MR602
+ANB LR1915               ; New MC leak
+NCJ #1005
+;'ﾀｲﾄﾙﾃﾞｰﾀが格納されている場所を設定（ﾌｧｲﾙ名含む）
+;
+;'Set the location where title data is stored (including file name)
+;
+;@EM50.T = "Data\Header\MC1\General Purpose Assy Leak mes.csv"
+LD CR2002                ; 常時ON
+SMOV "Data\Header\MC1\General Purpose" @EM50;ﾀｲﾄﾙﾃﾞｰﾀ格納場所
+SADD @EM65 " Assy Leak mes.csv" @EM65
+LABEL #1005
+;
+;'ﾀｲﾄﾙﾃﾞｰﾀが格納されている場所を設定（ﾌｧｲﾙ名含む）
+;'Set the location where title data is stored (including file name)
+;@EM50.T = "Data\Header\MC2\General Purpose Assy MCLeak2 mes.csv"
+LDP @MR602
+AND LR1915               ; New MC leak
+NCJ #1006
+;'ﾀｲﾄﾙﾃﾞｰﾀが格納されている場所を設定（ﾌｧｲﾙ名含む）
+;
+;'Set the location where title data is stored (including file name)
+;
+;@EM50.T = "Data\Header\MC2\General Purpose Assy MCLeak2 mes.csv"
+LD CR2002                ; 常時ON
+SMOV "Data\Header\MC2\General Purpose" @EM50;ﾀｲﾄﾙﾃﾞｰﾀ格納場所
+SADD @EM65 " Assy MCLeak2 mes.csv" @EM65
+LABEL #1006
+;
+STG @MR602
+MPS
+MEP
+MSTRT MEM_HEADER_4 @EM50 @EM150 @EM100 @MR000 @DM0;ﾀｲﾄﾙﾃﾞｰﾀ格納場所  検査ﾃﾞｰﾀﾌｧｲﾙ名一時保存先  MCﾘｰｸﾃﾞｰﾀ保存ﾌｫﾙﾀﾞ名  ﾏｸﾛｴﾗｰ  ｴﾗｰ情報
+MPP
+ANF _MEM_HEADER_4
+JMP @MR603
+STG @MR603
+ANB _MEM_HEADER_4
+MPS
+ANB @MR000               ; ﾏｸﾛｴﾗｰ
+JMP @MR605
+MPP
+AND @MR000               ; ﾏｸﾛｴﾗｰ
+JMP @MR900               ; ﾒﾓﾘｰｶｰﾄﾞ異常終了
+;↓NOUSE
+;ﾃﾞｰﾀ書き込み/Write data
+STG @MR604
+MPS
+MEP
+MSTRT MEM_WRITE_11 @EM100 @DM40 @DM60 @DM61 @DM62 *@EM10 @DM63 @MR000 @DM0;MCﾘｰｸﾃﾞｰﾀ保存ﾌｫﾙﾀﾞ名  測定値書込みﾌｧｲﾙ名  測定値書込み保存形式  測定値書込み書込みﾓｰﾄﾞ  測定値書込み行末処理  測定値書込み書込みﾃﾞｰﾀ数  ﾏｸﾛｴﾗｰ  ｴﾗｰ情報
+MPP
+ANF _MEM_WRITE_11
+MPS
+ANB @MR000               ; ﾏｸﾛｴﾗｰ
+JMP @MR605
+MPP
+AND @MR000               ; ﾏｸﾛｴﾗｰ
+JMP @MR900               ; ﾒﾓﾘｰｶｰﾄﾞ異常終了
+;↑NOUSE
+;'ﾌｧｲﾙ名をﾊﾞｯｸｱｯﾌﾟ
+;EM30160.t = @EM150.t
+;'ﾃﾞｰﾀ名をﾊﾞｯｸｱｯﾌﾟ
+;EM30120.t = EM30100.t
+;
+;'ﾃﾞｰﾀ名の書込みを実施しない
+;res( @MR405.b )
+;
+;'処理終了
+;set( @MR401.B )
+;
+LD @MR605
+NCJ #1004
+;'ﾌｧｲﾙ名をﾊﾞｯｸｱｯﾌﾟ
+;
+;EM30160.t = @EM150.t
+;
+LD CR2002                ; 常時ON
+SMOV @EM150 EM30160      ; 検査ﾃﾞｰﾀﾌｧｲﾙ名一時保存先  生ﾌｧｲﾙ名先頭(ﾊﾞｯｸｱｯﾌﾟ)
+;'ﾃﾞｰﾀ名をﾊﾞｯｸｱｯﾌﾟ
+;
+;EM30120.t = EM30100.t
+;
+LD CR2002                ; 常時ON
+SMOV EM30100 EM30120     ; ﾃﾞｰﾀ名先頭  ﾃﾞｰﾀ名先頭(ﾊﾞｯｸｱｯﾌﾟ)
+;'ﾃﾞｰﾀ名の書込みを実施しない
+;
+;res( @MR405.b )
+;
+LD CR2002                ; 常時ON
+RES @MR405               ; ﾃﾞｰﾀ名書込み実施（=ON)
+;'処理終了
+;
+;set( @MR401.B )
+;
+LD CR2002                ; 常時ON
+SET @MR401               ; 保存準備完了
+LABEL #1004
+;
+STG @MR605
+AND @MR401               ; 保存準備完了
+RES @MR401               ; 保存準備完了
+CON
+JMP @MR700
+;***** <<  ﾒﾓﾘｰｶｰﾄﾞに検査データを書き込む  >> *****
+;***** << Writing inspection data on memory card >> *****
+STG @MR700
+MPS
+ANB LR1915               ; New MC leak
+LDA @DM16                ; 検査No値(1-6)
+CON
+SUB #1
+CON
+STA Z1
+CON
+MPS
+AND<> EM1000:Z1 #1       ; MCﾘｰｸ1結果(0未1-2中3良4不
+JMP @MR701
+MPP
+AND= EM1000:Z1 #1        ; MCﾘｰｸ1結果(0未1-2中3良4不
+JMP @MR710
+MPP
+AND LR1915               ; New MC leak
+JMP @MR701
+STG @MR701
+MPS
+ANB LR1915               ; New MC leak
+MOV #0 EM40000           ; 検査ﾃﾞｰﾀ書込:①
+MRD
+BMOV CM700 EM40001 #6    ; ｶﾚﾝﾀﾞﾀｲﾏ（年）  検査ﾃﾞｰﾀ書込:年
+MRD
+LDB MR106                ; ﾒﾝﾃ_装置ﾘｰｸ検査中
+ORB LR1915               ; New MC leak
+ANL
+DW #0 EM40007            ; 検査ﾃﾞｰﾀ書込:経路No
+MOV @DM16 EM40008        ; 検査No値(1-6)  検査ﾃﾞｰﾀ書込:検査No
+MPS
+LDA @DM16                ; 検査No値(1-6)
+CON
+SUB #1
+CON
+STA Z1
+CON
+LDA ZF19994:Z1           ; ﾘｰｸ検査1ﾃﾞｰﾀ取得数
+CON
+STA EM40009              ; 検査ﾃﾞｰﾀ書込:取得ﾃﾞｰﾀ予想数
+CON
+STA EM40010              ; 検査ﾃﾞｰﾀ書込:取得ﾃﾞｰﾀ数
+MPP
+LDA @DM16                ; 検査No値(1-6)
+CON
+SUB #1
+CON
+MUL #1000
+CON
+STA Z1
+CON
+BMOV ZF20000:Z1 EM40011 #1000;ﾘｰｸ検査1測定中差圧1  検査ﾃﾞｰﾀ書込:ﾃﾞｰﾀ1
+MRD
+LD MR106                 ; ﾒﾝﾃ_装置ﾘｰｸ検査中
+AND LR1915               ; New MC leak
+ANL
+MPS
+LDA DM13                 ; 現在MCﾘｰｸ番号(1～16)
+CON
+STA EM40007              ; 検査ﾃﾞｰﾀ書込:経路No
+MRD
+MOV #0 EM40008           ; 検査ﾃﾞｰﾀ書込:検査No
+MRD
+LDA ZF19994              ; ﾘｰｸ検査1ﾃﾞｰﾀ取得数
+CON
+STA EM40009              ; 検査ﾃﾞｰﾀ書込:取得ﾃﾞｰﾀ予想数
+CON
+STA EM40010              ; 検査ﾃﾞｰﾀ書込:取得ﾃﾞｰﾀ数
+MPP
+BMOV ZF20000 EM40011 #1000;ﾘｰｸ検査1測定中差圧1  検査ﾃﾞｰﾀ書込:ﾃﾞｰﾀ1
+MPP
+JMP @MR702
+STG @MR702
+MPS
+MEP
+MSTRT MEM_WRITE_5 @EM100 @DM40 @DM1 @DM2 @DM3 EM40000 @DM11 @MR000 @DM0;MCﾘｰｸﾃﾞｰﾀ保存ﾌｫﾙﾀﾞ名  測定値書込みﾌｧｲﾙ名  結果書込み保存形式  結果書込み書込みﾓｰﾄﾞ  結果書込み行末処理  検査ﾃﾞｰﾀ書込:①  書込みﾃﾞｰﾀ数  ﾏｸﾛｴﾗｰ  ｴﾗｰ情報
+MPP
+ANF _MEM_WRITE_5
+MPS
+ANB @MR000               ; ﾏｸﾛｴﾗｰ
+JMP @MR710
+MPP
+AND @MR000               ; ﾏｸﾛｴﾗｰ
+JMP @MR900               ; ﾒﾓﾘｰｶｰﾄﾞ異常終了
+;ﾃﾞｰﾀ数ﾁｪｯｸ/Number of data check
+STG @MR710
+MPS
+LDB MR106                ; ﾒﾝﾃ_装置ﾘｰｸ検査中
+ORB LR1915               ; New MC leak
+ANL
+MPS
+AND<= @DM16 #5           ; 検査No値(1-6)
+JMP @MR711
+MPP
+AND> @DM16 #5            ; 検査No値(1-6)
+JMP @MR800               ; ﾒﾓﾘｰｶｰﾄﾞ書込み正常終了
+MPP
+LD MR106                 ; ﾒﾝﾃ_装置ﾘｰｸ検査中
+AND LR1915               ; New MC leak
+ANL
+JMP @MR800               ; ﾒﾓﾘｰｶｰﾄﾞ書込み正常終了
+STG @MR711
+INC @DM16                ; 検査No値(1-6)
+CON
+JMP @MR502
+;<h1/>■ﾒﾓﾘｰｶｰﾄﾞ書込み正常終了/Memory card write successful completion
+STG @MR800               ; ﾒﾓﾘｰｶｰﾄﾞ書込み正常終了
+TMH @0 #3
+CON
+AND @T0
+JMP @MR1000              ; 終了
+;<h1/>■ﾒﾓﾘｰｶｰﾄﾞ異常終了/Memory card error termination
+STG @MR900               ; ﾒﾓﾘｰｶｰﾄﾞ異常終了
+ANB MR902                ; ｴﾗｰ
+JMP @MR901
+;SELECT CASE @DM0
+;CASE 1
+;	SET(MR32100.B)		'ｶｰﾄﾞ未挿入
+;CASE 6
+;	SET(MR32101.B)		'ﾌｧｲﾙ書込ｴﾗｰ
+;CASE 8
+;	SET(MR32102.B)		'容量不足
+;CASE 10
+;	SET(MR23103.B)		'空き容量不足
+;CASE ELSE
+;	SET(MR32104.B)		'その他
+;END SELECT
+;
+;'No card inserted
+;'File write error
+;'Insufficient capacity
+;'Insufficient free space
+;'other
+;
+;SET(@MR915)
+LD @MR901
+NCJ #1001
+;SELECT CASE @DM0
+;
+LD CR2002                ; 常時ON
+MOV @DM0 @VM16           ; ｴﾗｰ情報
+;CASE 1
+;
+LD= @VM16 #1
+NCJ #2004
+;	SET(MR32100.B)		'ｶｰﾄﾞ未挿入
+;
+LD CR2002                ; 常時ON
+SET MR32100              ; ﾒﾓﾘｰｶｰﾄﾞ未挿入
+LD CR2002                ; 常時ON
+CJ #2005
+LABEL #2004
+;CASE 6
+;
+LD= @VM16 #6
+NCJ #2006
+;	SET(MR32101.B)		'ﾌｧｲﾙ書込ｴﾗｰ
+;
+LD CR2002                ; 常時ON
+SET MR32101              ; ﾌｧｲﾙ書込みｴﾗｰ
+LD CR2002                ; 常時ON
+CJ #2007
+LABEL #2006
+;CASE 8
+;
+LD= @VM16 #8
+NCJ #2008
+;	SET(MR32102.B)		'容量不足
+;
+LD CR2002                ; 常時ON
+SET MR32102              ; ﾒﾓﾘｰｶｰﾄﾞ容量不足
+LD CR2002                ; 常時ON
+CJ #2009
+LABEL #2008
+;CASE 10
+;
+LD= @VM16 #10
+NCJ #2010
+;	SET(MR23103.B)		'空き容量不足
+;
+LD CR2002                ; 常時ON
+SET MR23103
+LD CR2002                ; 常時ON
+CJ #2011
+LABEL #2010
+;CASE ELSE
+;
+;	SET(MR32104.B)		'その他
+;
+LD CR2002                ; 常時ON
+SET MR32104
+;END SELECT
+;
+LABEL #2011
+LABEL #2009
+LABEL #2007
+LABEL #2005
+;'No card inserted
+;
+;'File write error
+;
+;'Insufficient capacity
+;
+;'Insufficient free space
+;
+;'other
+;
+;SET(@MR915)
+LD CR2002                ; 常時ON
+SET @MR915
+LABEL #1001
+;
+STG @MR901
+MPS
+DW #4 DM149              ; ｴﾗｰ画面詳細ﾒｯｾｰｼﾞ
+CON
+MOV @DM0 DM148           ; ｴﾗｰ情報  ｴﾗｰ詳細
+MPP
+SET MR112                ; ﾒﾓﾘｶｰﾄﾞｴﾗｰ
+CON
+JMP @MR902
+STG @MR902
+ANB MR112                ; ﾒﾓﾘｶｰﾄﾞｴﾗｰ
+JMP @MR1000              ; 終了
+;<h1/>■終了/end
+STG @MR1000              ; 終了
+RES MR111                ; ﾒﾓﾘｶｰﾄﾞ書込中
+CON
+ENDS
+END
+ENDH

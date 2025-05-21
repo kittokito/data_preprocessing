@@ -1,0 +1,162 @@
+DEVICE:53
+;MODULE:AlwaysMonitor
+;MODULE_TYPE:0
+;OneSystem Sub-Module
+;
+;---------------------------------------
+;ModuleName	:	AlwaysMonitor
+;ModuleType	:	Sub Module
+;Function	:	常時監視
+;---------------------------------------
+;<使用方法>
+;常時監視が必要な物は本ﾓｼﾞｭｰﾙ内に記述して下さい
+;・ﾋｰﾀｰ過昇温検知による非常停止
+;・ﾁｬﾝﾊﾞｰ排気量低下によるｴﾗｰ出力
+;など
+;<h1/>先頭
+LD R46100                ; _自動運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+OR R46101                ; _原点復帰中　ﾓｰﾄﾞﾌﾗｸﾞ
+OR R46102                ; _ﾒﾝﾃﾅﾝｽ運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+ANB R006                 ; C 元圧検出
+MSTRT F_ERROR_DISP #51
+;ﾄﾚｲ飛出異常
+LD R46100                ; _自動運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+ANB R39004               ; ｴﾗｰ処理中
+ANB MR13702              ; T1_ﾄﾚｲ渡しSub_Busy
+AND MR13301              ; T0_ﾄﾚｲ搬送_Pos#2
+MPS
+LD MR12000               ; COM_機種_大ﾄﾚｲ(1.3.5)_Flg
+AND R4007                ; BC_扉閉確認
+ANL
+MPS
+ANB R4001                ; B_ﾄﾚｲ右_飛出検出(ONで正常)
+TMR @4 #10
+CON
+AND @T4
+DW #4001 @DM2            ; SensorNo /ERROR_DISP
+CON
+@SET @MR200
+MPP
+ANB R4002                ; B_ﾄﾚｲ左_飛出検出(ONで正常)
+TMR @5 #10
+CON
+AND @T5
+DW #4002 @DM2            ; SensorNo /ERROR_DISP
+CON
+@SET @MR200
+MPP
+LD MR12001               ; COM_機種_小ﾄﾚｲ(2.4)_Flg
+AND R5007                ; SC_扉閉確認
+ANL
+MPS
+AND R5312                ; S_ﾄﾚｲ右_飛出検出(OFFで正常)
+TMR @6 #10
+CON
+AND @T6
+DW #5312 @DM2            ; SensorNo /ERROR_DISP
+CON
+@SET @MR200
+MPP
+AND R5313                ; S_ﾄﾚｲ左_飛出検出(OFFで正常)
+TMR @7 #10
+CON
+AND @T7
+DW #5313 @DM2            ; SensorNo /ERROR_DISP
+CON
+@SET @MR200
+STG @MR200
+ANB @MR100               ; ERROR
+ANB @MR101               ; ｴﾗｰ完了
+ANB R39004               ; ｴﾗｰ処理中
+SET MR18000              ; ﾄﾚｲ飛出異常中
+CON
+DW #0 @DM0               ; TaskNo /ERROR_DISP
+CON
+DW #4000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #201 @DM1             ; ErrorNo /ERROR_DISP
+CON
+JMP @MR214
+;異常表示
+STG @MR214
+ANB R39004               ; ｴﾗｰ処理中
+SET R39004               ; ｴﾗｰ処理中
+CON
+SET @MR100               ; ERROR
+CON
+JMP @MR215
+STG @MR215
+AND @MR101               ; ｴﾗｰ完了
+RES @MR101               ; ｴﾗｰ完了
+CON
+RES R39004               ; ｴﾗｰ処理中
+CON
+AND @MR105               ; SW1
+RES MR18000              ; ﾄﾚｲ飛出異常中
+CON
+RES @MR1900              ; Main1 HALT許可
+CON
+ENDS
+;<h1/>ｲﾝﾀｰﾛｯｸ強化　2014.07.15
+BLD DM10515 #2           ; RB1 状態信号
+LDB R4007                ; BC_扉閉確認
+ORB R44303               ; *Group1　安全ｶﾊﾞｰ入力
+ANL
+BLD DM10523 #2           ; RB2 状態信号
+ANB R44303               ; *Group1　安全ｶﾊﾞｰ入力
+ORL
+MSTRT F_ERROR_DISP #63
+;<h1/>ERROR
+;MyTask Error Process Substance/エラー処理実体
+STG @MR100               ; ERROR
+ANB R39002               ; ERROR_DISP Busy
+MPS
+ZRES @MR105 @MR108       ; SW1  SW4
+CON
+LDA @DM9                 ; ReturnSW /ERROR_DISP
+CON
+TBCD
+CON
+STA @DM10
+CON
+DISN @DM10 @DM3 #4
+MRD
+BMOV @DM0 DM60000 #7     ; TaskNo /ERROR_DISP  TaskNo /ERROR_DISP
+MPP
+SET R39000               ; ERROR_DISP Start
+CON
+SET @MR102               ; Task0 ERROR Busy
+CON
+JMP @MR103
+STG @MR103
+AND R39002               ; ERROR_DISP Busy
+AND= DM60008 @DM1        ; ReturnNo /ERROR_DISP  ErrorNo /ERROR_DISP
+MPS
+AND= DM60007 @DM6        ; ReturnSW /ERROR_DISP
+SET @MR105               ; SW1
+CON
+JMP @MR104
+MRD
+AND= DM60007 @DM5        ; ReturnSW /ERROR_DISP
+SET @MR106               ; SW2
+CON
+JMP @MR104
+MRD
+AND= DM60007 @DM4        ; ReturnSW /ERROR_DISP
+SET @MR107               ; SW3
+CON
+JMP @MR104
+MPP
+AND= DM60007 @DM3        ; ReturnSW /ERROR_DISP
+SET @MR108               ; SW4
+CON
+JMP @MR104
+STG @MR104
+ANB R39002               ; ERROR_DISP Busy
+RES @MR102               ; Task0 ERROR Busy
+CON
+SET @MR101               ; ｴﾗｰ完了
+CON
+ENDS
+END
+ENDH

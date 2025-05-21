@@ -1,0 +1,70 @@
+DEVICE:53
+;MODULE:WARNING_DEL
+;MODULE_TYPE:1
+;OneSystem SupportMacro
+;広丘
+;-----------------------------------------
+;Macro Name 	: 	WARNING_DEL
+;Macro Type	:	Self Holding
+;Function	:	警告画面消去
+;-----------------------------------------
+;
+;Copylight(C) 2011 SEIKO EPSON Corp. All rights reserved.
+;引数：
+;	V0	=	表示ｸﾞﾙｰﾌﾟ番号		#1～8		
+;	V1	=	警告ｴﾗｰ番号			#0～31
+;
+;機能：
+;	指定ｸﾞﾙｰﾌﾟTPの指定警告番号警告画面を消去する
+LD R59915                ; _運転ﾓｰﾄﾞ指定
+BRES.D DM9000 V1         ; _WARNING1表示状態  Warning_No
+CON
+MEND
+;<h1/>Argumant Range Check/引数範囲ﾁｪｯｸ
+LD< V0 #1                ; Group_No
+OR> V0 #8                ; Group_No
+OR< V1 #0                ; Warning_No
+OR> V1 #31               ; Warning_No
+SET R40008               ; _ｻﾎﾟｰﾄﾏｸﾛ引数異常発生
+CON
+SET @R015
+;<h1/>Exclusive/排他占有
+;<ﾒｯｾｰｼﾞ表示確認>
+;・指定ﾒｯｾｰｼﾞ番号が表示されていれば消去処理へ
+;・指定ﾒｯｾｰｼﾞ番号が表示されていなければそのまま終了
+LDB R59915               ; _運転ﾓｰﾄﾞ指定
+ANB R46104               ; _非常停止中　ﾓｰﾄﾞﾌﾗｸﾞ
+MPS
+BLD.D DM9000 V1          ; _WARNING1表示状態  Warning_No
+ANB R48200               ; _Group1　WARN排他
+ANL
+SET R48200               ; _Group1　WARN排他
+CON
+SET @R001
+MPP
+BANB.D DM9000 V1         ; _WARNING1表示状態  Warning_No
+MEND
+;<h1/>Warning Display Clear/警告画面消去
+STG @R001
+MOV #0 DM8148            ; _WARNﾒｯｾｰｼﾞ番号
+MPS
+RES R53600               ; _WARN画面表示
+CON
+RES R53608               ; _WARN画面消去
+MRD
+MOV #0 DM2010            ; _Group1　ﾌﾞｻﾞｰ状態
+MRD
+RES R48208               ; _Group1　ｼｽﾃﾑﾌﾞｻﾞｰ要求1
+CON
+RES R48408               ; _Group1　ﾗﾝﾌﾟ赤点滅要求1
+MPP
+JMP @R002
+;<h1/>Status Device Reset/Warning_Chkﾘｾｯﾄ
+;表示状態ﾃﾞﾊﾞｲｽ（Warning_Chk）ﾘｾｯﾄ
+STG @R002
+BRES.D DM9000 V1         ; _WARNING1表示状態  Warning_No
+RES R48200               ; _Group1　WARN排他
+MEND
+ENDS
+END
+ENDH

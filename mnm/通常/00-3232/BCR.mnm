@@ -1,0 +1,492 @@
+DEVICE:53
+;MODULE:BCR
+;MODULE_TYPE:0
+;SCRIPT_TYPE:
+;MC protocol settings
+;	PLC IP address			：192.168.0.10
+;	MC protocol port		：5000（0x1388）
+;
+;Code-Reader 1
+;	Code-Reader IP address	：192.168.1.103
+;	Control block			：M10100～M10131
+;	Status block			：M10200～M10231
+;	PLC output				：D35100～D35131
+;Code-Reader 2
+;	Code-Reader IP address	：192.168.1.105
+;	Control block			：M10400～M10431
+;	Status block			：M10500～M10431
+;	PLC output				：D36100～D36131
+;Code-Reader 3
+;	Code-Reader IP address	：192.168.1.104
+;	Control block			：M10700～M10731
+;	Status block			：M10800～M10831
+;	PLC output				：D37100～D37131
+LDB M2980                ; BCR1　　　読み取り
+ANB M3980                ; BCR3　　　読み取り
+OUT M9999                ; BCR読み取り可能
+;<h1/>Code-Reader 1
+;
+;コードリーダ通信確認
+;	コードリーダ通信確認として、トリガ有効（M100）ビットをONし、一定時間内にトリガ有効BUSY（M200）ビットがONするか確認する。
+;	
+;	通信ＯＫ時：トリガ有効キャンセル入力を入れるまでトリガ有効を出力し続ける。
+;	通信ＮＧ時：通信エラー処理を行う。
+;
+LD<> K0 D35104           ; 検査結果文字列長
+AND M28                  ; 仮 NAT
+@BMOV D35100 W0900 K100
+LD CR2008                ; 運転開始時1ｽｷｬﾝON
+ORP M10007               ; ｺｰﾄﾞﾘｰﾀﾞ通信確認入力
+OR M10001                ; ｺｰﾄﾞﾘｰﾀﾞ通信確認
+ANB M10003               ; ｺｰﾄﾞﾘｰﾀﾞ通信OK PLS
+ANB M10004               ; ｺｰﾄﾞﾘｰﾀﾞ通信NG PLS
+OUT M10001               ; ｺｰﾄﾞﾘｰﾀﾞ通信確認
+ONDL K100 M10002         ; ｺｰﾄﾞﾘｰﾀﾞ通信確認ON_D
+LD M10001                ; ｺｰﾄﾞﾘｰﾀﾞ通信確認
+ANB M10002               ; ｺｰﾄﾞﾘｰﾀﾞ通信確認ON_D
+AND M10200               ; ﾄﾘｶﾞ有効BUSY
+DIFU M10003              ; ｺｰﾄﾞﾘｰﾀﾞ通信OK PLS
+LD M10001                ; ｺｰﾄﾞﾘｰﾀﾞ通信確認
+AND M10002               ; ｺｰﾄﾞﾘｰﾀﾞ通信確認ON_D
+ANB M10200               ; ﾄﾘｶﾞ有効BUSY
+DIFU M10004              ; ｺｰﾄﾞﾘｰﾀﾞ通信NG PLS
+LD M10003                ; ｺｰﾄﾞﾘｰﾀﾞ通信OK PLS
+OR M10005                ; ｺｰﾄﾞﾘｰﾀﾞﾄﾘｶﾞ有効ON
+ANB M10006               ; ｺｰﾄﾞﾘｰﾀﾞﾄﾘｶﾞ有効OFF
+OUT M10005               ; ｺｰﾄﾞﾘｰﾀﾞﾄﾘｶﾞ有効ON
+;
+;トリガ
+;	トリガ条件ONでトリガON（M101）ビットをONする。
+;	
+;	トリガON BUSY（M201）ビットがONの場合、トリガON（M101）ビットをOFF、データ処理へ移行する。
+;	
+;	トリガ受信ミス（M203）ビットがONの場合、トリガON（M101)ビットをOFF、トリガエラー処理へ移行する。
+;
+LDB M2980                ; BCR1　　　読み取り
+ANB M2636                ; BCR1 read
+INV
+OUT M10010               ; BCR1      ﾄﾘｶﾞON入力
+LDP M10010               ; BCR1      ﾄﾘｶﾞON入力
+ANB M10014               ; ｺｰﾄﾞ読取りBUSY
+ANB M10211               ; 結果有効
+OR M10011                ; ﾄﾘｶﾞON
+ANB M10012               ; ﾄﾘｶﾞON受信
+ANB M10013               ; ﾄﾘｶﾞ受信Err
+ANB T170                 ; BCR1ﾀｲﾑｱｳﾄ
+ZRES D900 D909           ; BCR1読み取りﾃﾞｰﾀ
+CON
+OUT M10011               ; ﾄﾘｶﾞON
+LD M10011                ; ﾄﾘｶﾞON
+MPS
+AND M10201               ; ﾄﾘｶﾞON BUSY
+DIFU M10012              ; ﾄﾘｶﾞON受信
+MRD
+AND M10203               ; ﾄﾘｶﾞ受信ﾐｽ
+DIFU M10013              ; ﾄﾘｶﾞ受信Err
+MPP
+LDB M10201               ; ﾄﾘｶﾞON BUSY
+ANB M10203               ; ﾄﾘｶﾞ受信ﾐｽ
+ANL
+TMH K170 K600            ; BCR1ﾀｲﾑｱｳﾄ
+LD M10012                ; ﾄﾘｶﾞON受信
+OR M10014                ; ｺｰﾄﾞ読取りBUSY
+ANB M10022               ; ｺｰﾄﾞ読取りOK END PLS
+ANB M10033               ; BCR1     読取りｴﾗｰ
+ANB M10035               ; ﾗﾍﾞﾙ発行PC応答無し
+ANB M10036               ; BCR1     読取ﾃﾞｰﾀｴﾗｰ
+OUT M10014               ; ｺｰﾄﾞ読取りBUSY
+ONDL K2000 M10015        ; ｺｰﾄﾞ読取りON_D
+;
+;データ処理
+;	結果有効（M211）ビットON時
+;	検査結果コード（D103）の0ビットがON（1）の時、コード読取りＯＫ。
+;	検査結果文字列長（D104）が指定コード長の場合、データ長ＯＫ。
+;	
+;	コード読取りＯＫ時読み取ったコードの下１４桁を抽出し格納する。
+;
+LD M10014                ; ｺｰﾄﾞ読取りBUSY
+MPS
+AND M10211               ; 結果有効
+TMR K585 K10             ; BCR1結果NG判定ﾃﾞｨﾚｲ
+TMH K586 K2              ; BCR1結果OK判定ﾃﾞｨﾚｲ
+MPS
+BLD D35103 K0            ; 画像検査結果ｺｰﾄﾞ
+AND T586                 ; BCR1結果OK判定ﾃﾞｨﾚｲ
+ANL
+OUT M10020               ; ｺｰﾄﾞ読取りOK
+MRD
+LD= D35104 K49           ; 検査結果文字列長
+AND T586                 ; BCR1結果OK判定ﾃﾞｨﾚｲ
+ANL
+OUT M10021               ; ﾃﾞｰﾀ長OK
+MPP
+AND T585                 ; BCR1結果NG判定ﾃﾞｨﾚｲ
+MPS
+BANB D35103 K0           ; 画像検査結果ｺｰﾄﾞ
+DIFU M10031              ; ｺｰﾄﾞ読取りNG
+MPP
+AND<> D35104 K49         ; 検査結果文字列長
+DIFU M10032              ; ﾃﾞｰﾀ長NG
+MPP
+LDB M10211               ; 結果有効
+AND M10015               ; ｺｰﾄﾞ読取りON_D
+ANL
+DIFU M10030              ; 結果無効
+LD M10020                ; ｺｰﾄﾞ読取りOK
+AND M10021               ; ﾃﾞｰﾀ長OK
+DIFU M10022              ; ｺｰﾄﾞ読取りOK END PLS
+;BYLMOV(D35122,1,D900,0,14)
+;BSWAP(D900,#7)
+;BMOV(D900,D5200,7)
+;SET(M10023)
+LD M10022                ; ｺｰﾄﾞ読取りOK END PLS
+NCJ K1000
+;BYLMOV(D35122,1,D900,0,14)
+;
+LD CR2002                ; 常時ON
+BYLMOV D35122 K1 D900 K0 K14;ｺｰﾄﾞ読取結果18  BCR1読み取りﾃﾞｰﾀ
+;BSWAP(D900,#7)
+;
+LD CR2002                ; 常時ON
+BSWAP D900 K7            ; BCR1読み取りﾃﾞｰﾀ
+;BMOV(D900,D5200,7)
+;
+LD CR2002                ; 常時ON
+BMOV D900 D5200 K7       ; BCR1読み取りﾃﾞｰﾀ  Case1 照合用ﾃﾞｰﾀ
+;SET(M10023)
+LD CR2002                ; 常時ON
+SET M10023               ; BCR1     読取り完了
+LABEL K1000
+;
+LD M10023                ; BCR1     読取り完了
+ANB M10010               ; BCR1      ﾄﾘｶﾞON入力
+RES M10023               ; BCR1     読取り完了
+;
+;読取りエラー処理
+;　一定時間内に結果有効（M211）ビットがＯＮしない。
+;　検査結果コード（D103）の0ビットがＯＮしない。
+;　検査結果文字列長が規定の文字列長と異なっている。
+;　
+LD M10030                ; 結果無効
+OR M10033                ; BCR1     読取りｴﾗｰ
+ANB M10034               ; 読取りｴﾗｰｸﾘｱ
+ANB T593                 ; 手動ﾓｰﾄﾞ時読み取りｴﾗｰ自動OFF時間
+MPS
+OUT M10033               ; BCR1     読取りｴﾗｰ
+MPP
+AND M33                  ; 手動ﾓｰﾄﾞ
+TMR K593 K30             ; 手動ﾓｰﾄﾞ時読み取りｴﾗｰ自動OFF時間
+LD M10031                ; ｺｰﾄﾞ読取りNG
+OR M10032                ; ﾃﾞｰﾀ長NG
+OR M10036                ; BCR1     読取ﾃﾞｰﾀｴﾗｰ
+ANB M10034               ; 読取りｴﾗｰｸﾘｱ
+ANB T592                 ; 手動ﾓｰﾄﾞ時読み取りｴﾗｰ自動OFF時間
+MPS
+OUT M10036               ; BCR1     読取ﾃﾞｰﾀｴﾗｰ
+MPP
+AND M33                  ; 手動ﾓｰﾄﾞ
+TMR K592 K30             ; 手動ﾓｰﾄﾞ時読み取りｴﾗｰ自動OFF時間
+LD T170                  ; BCR1ﾀｲﾑｱｳﾄ
+OR M10035                ; ﾗﾍﾞﾙ発行PC応答無し
+ANB M10034               ; 読取りｴﾗｰｸﾘｱ
+ANB T598                 ; 手動ﾓｰﾄﾞ時読み取りｴﾗｰ自動OFF時間
+MPS
+OUT M10035               ; ﾗﾍﾞﾙ発行PC応答無し
+MPP
+AND M33                  ; 手動ﾓｰﾄﾞ
+TMR K598 K30             ; 手動ﾓｰﾄﾞ時読み取りｴﾗｰ自動OFF時間
+LD M10033                ; BCR1     読取りｴﾗｰ
+OR M10035                ; ﾗﾍﾞﾙ発行PC応答無し
+OR M10036                ; BCR1     読取ﾃﾞｰﾀｴﾗｰ
+ANF M10010               ; BCR1      ﾄﾘｶﾞON入力
+OUT M10034               ; 読取りｴﾗｰｸﾘｱ
+;
+;データクリア
+;	運転開始時または任意のタイミングでＰＬＣ出力データをクリア（ゼロを書込み）
+;
+LD CR2008                ; 運転開始時1ｽｷｬﾝON
+OR M10000                ; ﾃﾞｰﾀｸﾘｱ
+OR M10033                ; BCR1     読取りｴﾗｰ
+OR M10035                ; ﾗﾍﾞﾙ発行PC応答無し
+OR M10036                ; BCR1     読取ﾃﾞｰﾀｴﾗｰ
+FMOV K0 D35101 K31       ; ﾄﾘｶﾞID
+;
+;出力
+;
+LD M10001                ; ｺｰﾄﾞﾘｰﾀﾞ通信確認
+OR M10005                ; ｺｰﾄﾞﾘｰﾀﾞﾄﾘｶﾞ有効ON
+OUT M10100               ; ﾄﾘｶﾞ有効
+LD M10011                ; ﾄﾘｶﾞON
+OUT M10101               ; ﾄﾘｶﾞON
+LD M10020                ; ｺｰﾄﾞ読取りOK
+AND M10021               ; ﾃﾞｰﾀ長OK
+OR M2923                 ; Err343:BCR1読み取り異常
+OR M10103                ; 結果有効ﾋﾞｯﾄｸﾘｱ
+AND M10211               ; 結果有効
+OUT M10103               ; 結果有効ﾋﾞｯﾄｸﾘｱ
+;<h1/>Code-Reader 2
+;　　KEYENCE
+LD Y2089                 ; BCR2 POWER ON
+OUT R7002                ; BCR2 ｼｰｹﾝｽ処理ﾃﾞｰﾀ書込み許可
+;
+;トリガ
+;	トリガ条件ONでトリガON（M101）ビットをONする。
+;	
+;	トリガON BUSY（M201）ビットがONの場合、トリガON（M101）ビットをOFF、データ処理へ移行する。
+;	
+;	トリガ受信ミス（M203）ビットがONの場合、トリガON（M101)ビットをOFF、トリガエラー処理へ移行する。
+;
+LDB M5980                ; BCR2　　　読み取り
+ANB M5620                ; BCR2 read
+INV
+OUT M10310               ; ﾄﾘｶﾞON入力
+LDP M10310               ; ﾄﾘｶﾞON入力
+ANB M10314               ; ｺｰﾄﾞ読取りBUSY
+OR M10311                ; ﾄﾘｶﾞON
+ANB M10320               ; ｺｰﾄﾞ読取りOK
+ANB M10333               ; BCR2     読取りｴﾗｰ
+@ZRES D29704 D29753      ; BCR2 Reading Data  BCR2 Reading Data
+CON
+OUT M10311               ; ﾄﾘｶﾞON
+LD M10311                ; ﾄﾘｶﾞON
+MPS
+AND R7100                ; BCR2 PLCﾀｲﾐﾝｸﾞ入力応答
+DIFU M10312              ; ﾄﾘｶﾞON受信
+MPP
+ANB R7100                ; BCR2 PLCﾀｲﾐﾝｸﾞ入力応答
+TMR K910 K10             ; BCR2 ﾄﾘｶﾞ受信Error
+CON
+AND T910                 ; BCR2 ﾄﾘｶﾞ受信Error
+DIFU M10313              ; ﾄﾘｶﾞ受信Err
+LD M10312                ; ﾄﾘｶﾞON受信
+OR M10314                ; ｺｰﾄﾞ読取りBUSY
+ANB M10322               ; ｺｰﾄﾞ読取りOK END PLS
+ANB M10333               ; BCR2     読取りｴﾗｰ
+OUT M10314               ; ｺｰﾄﾞ読取りBUSY
+ONDL K350 M10315         ; ｺｰﾄﾞ読取りON_D
+;
+;データ処理
+;	結果有効（M211）ビットON時
+;	検査結果コード（D103）の0ビットがON（1）の時、コード読取りＯＫ。
+;	検査結果文字列長（D104）が指定コード長の場合、データ長ＯＫ。
+;	
+;	コード読取りＯＫ時読み取ったコードの下１４桁を抽出し格納する。
+;
+LD M10310                ; ﾄﾘｶﾞON入力
+MPS
+LD M10314                ; ｺｰﾄﾞ読取りBUSY
+AND R7104                ; BCR2 ﾃﾞｰﾀ書込み中
+OR M10316
+ANB M10331               ; ｺｰﾄﾞ読取りNG
+ANL
+OUT M10316
+MPP
+LD M10314                ; ｺｰﾄﾞ読取りBUSY
+ANB R7104                ; BCR2 ﾃﾞｰﾀ書込み中
+OR M10331                ; ｺｰﾄﾞ読取りNG
+ANB M10316
+ANL
+TMR K909 K50
+CON
+AND T909
+OUT M10331               ; ｺｰﾄﾞ読取りNG
+LD M10316
+ANB R7104                ; BCR2 ﾃﾞｰﾀ書込み中
+OUT M10320               ; ｺｰﾄﾞ読取りOK
+MPS
+AND= D29702 K14          ; BCR2 出力ﾃﾞｰﾀ桁数
+OUT M10321               ; ﾃﾞｰﾀ長OK
+MPP
+AND<> D29702 K14         ; BCR2 出力ﾃﾞｰﾀ桁数
+DIFU M10332              ; ﾃﾞｰﾀ長NG
+LD M10320                ; ｺｰﾄﾞ読取りOK
+AND M10321               ; ﾃﾞｰﾀ長OK
+DIFU M10322              ; ｺｰﾄﾞ読取りOK END PLS
+;DM910.T = Sleft(d29704.T,14)
+;SET(M10323)
+LD M10322                ; ｺｰﾄﾞ読取りOK END PLS
+NCJ K1003
+;DM910.T = Sleft(d29704.T,14)
+;
+LD CR2002                ; 常時ON
+ADRSET VM2 VM0
+MOV K0 VM2
+MOV.D VM0 @VM0
+LD CR2002                ; 常時ON
+SLEFT D29704 *@VM0 K14   ; BCR2 Reading Data
+LD CR2002                ; 常時ON
+SMOV *@VM0 D910          ; BCR2読み取りﾃﾞｰﾀ
+;SET(M10323)
+LD CR2002                ; 常時ON
+SET M10323               ; BCR2     読取り完了
+LABEL K1003
+;
+LD M10323                ; BCR2     読取り完了
+ANB R7100                ; BCR2 PLCﾀｲﾐﾝｸﾞ入力応答
+RES M10323               ; BCR2     読取り完了
+OUT M10340               ; 読取り完了ｸﾘｱ
+;
+;読取りエラー処理
+;　一定時間内に結果有効（M211）ビットがＯＮしない。
+;　検査結果コード（D103）の0ビットがＯＮしない。
+;　検査結果文字列長が規定の文字列長と異なっている。
+;　
+LD M10313                ; ﾄﾘｶﾞ受信Err
+OR M10331                ; ｺｰﾄﾞ読取りNG
+OR M10332                ; ﾃﾞｰﾀ長NG
+OR M10333                ; BCR2     読取りｴﾗｰ
+AND M10310               ; ﾄﾘｶﾞON入力
+OUT M10333               ; BCR2     読取りｴﾗｰ
+;
+;データクリア
+;	運転開始時または任意のタイミングでＰＬＣ出力データをクリア（ゼロを書込み）
+;
+LD CR2008                ; 運転開始時1ｽｷｬﾝON
+OR M10300                ; ﾃﾞｰﾀｸﾘｱ
+OR M10322                ; ｺｰﾄﾞ読取りOK END PLS
+OR M10333                ; BCR2     読取りｴﾗｰ
+FMOV K0 D36101 K31       ; ﾄﾘｶﾞID
+;
+;出力
+;
+LD M10311                ; ﾄﾘｶﾞON
+OUT R7000                ; BCR2 PLCﾀｲﾐﾝｸﾞｴﾘｱ
+;<h1/>Code-Reader 3
+LD Y208A                 ; BCR3 POWER ON
+OUT R7202                ; BCR3 ｼｰｹﾝｽ処理ﾃﾞｰﾀ書込み許可
+;
+;トリガ
+;	トリガ条件ONでトリガON（M101）ビットをONする。
+;	
+;	トリガON BUSY（M201）ビットがONの場合、トリガON（M101）ビットをOFF、データ処理へ移行する。
+;	
+;	トリガ受信ミス（M203）ビットがONの場合、トリガON（M101)ビットをOFF、トリガエラー処理へ移行する。
+;
+LDB M3980                ; BCR3　　　読み取り
+ANB M3630                ; BCR3 read
+INV
+OUT M10610               ; BCR3      ﾄﾘｶﾞON入力
+LDP M10610               ; BCR3      ﾄﾘｶﾞON入力
+ANB M10614               ; ｺｰﾄﾞ読取りBUSY
+OR M10611                ; ﾄﾘｶﾞON
+ANB M10620               ; ｺｰﾄﾞ読取りOK
+ANB M10633               ; BCR3     読取りｴﾗｰ
+@ZRES D29804 D29853      ; BCR3 Reading Data  BCR3 Reading Data
+CON
+OUT M10611               ; ﾄﾘｶﾞON
+LD M10611                ; ﾄﾘｶﾞON
+MPS
+AND R7300                ; BCR3 PLCﾀｲﾐﾝｸﾞ入力応答
+DIFU M10612              ; ﾄﾘｶﾞON受信
+MPP
+ANB R7300                ; BCR3 PLCﾀｲﾐﾝｸﾞ入力応答
+TMR K907 K10             ; BCR3 ﾄﾘｶﾞ受信Error
+CON
+AND T907                 ; BCR3 ﾄﾘｶﾞ受信Error
+DIFU M10613              ; ﾄﾘｶﾞ受信Err
+LD M10612                ; ﾄﾘｶﾞON受信
+OR M10614                ; ｺｰﾄﾞ読取りBUSY
+ANB M10622               ; ｺｰﾄﾞ読取りOK END PLS
+ANB M10633               ; BCR3     読取りｴﾗｰ
+OUT M10614               ; ｺｰﾄﾞ読取りBUSY
+ONDL K550 M10615         ; ｺｰﾄﾞ読取りON_D
+;
+;データ処理
+;	結果有効（M211）ビットON時
+;	検査結果コード（D103）の0ビットがON（1）の時、コード読取りＯＫ。
+;	検査結果文字列長（D104）が指定コード長の場合、データ長ＯＫ。
+;	
+;	コード読取りＯＫ時読み取ったコードの下１４桁を抽出し格納する。
+;
+LD M10610                ; BCR3      ﾄﾘｶﾞON入力
+MPS
+LD M10614                ; ｺｰﾄﾞ読取りBUSY
+AND R7304                ; BCR3 ﾃﾞｰﾀ書込み中
+OR M10616
+ANB M10631               ; ｺｰﾄﾞ読取りNG
+ANL
+OUT M10616
+MPP
+LD M10614                ; ｺｰﾄﾞ読取りBUSY
+ANB R7304                ; BCR3 ﾃﾞｰﾀ書込み中
+OR M10631                ; ｺｰﾄﾞ読取りNG
+ANB M10616
+ANL
+TMR K906 K100
+CON
+AND T906
+OUT M10631               ; ｺｰﾄﾞ読取りNG
+LD M10616
+ANB R7304                ; BCR3 ﾃﾞｰﾀ書込み中
+OUT M10620               ; ｺｰﾄﾞ読取りOK
+MPS
+AND= D29802 K49          ; BCR3 出力ﾃﾞｰﾀ桁数
+OUT M10621               ; ﾃﾞｰﾀ長OK
+MPP
+AND<> D29802 K49         ; BCR3 出力ﾃﾞｰﾀ桁数
+DIFU M10632              ; ﾃﾞｰﾀ長NG
+LD M10620                ; ｺｰﾄﾞ読取りOK
+AND M10621               ; ﾃﾞｰﾀ長OK
+DIFU M10622              ; ｺｰﾄﾞ読取りOK END PLS
+;BYBMOV(D29821,1,D920,0,14)
+;'BSWAP(D920,#7)
+;BMOV(D920,D5210,7)
+;SET(M10623)
+LD M10622                ; ｺｰﾄﾞ読取りOK END PLS
+NCJ K1001
+;BYBMOV(D29821,1,D920,0,14)
+;
+LD CR2002                ; 常時ON
+BYBMOV D29821 K1 D920 K0 K14;BCR3 Reading Data  BCR3読み取りﾃﾞｰﾀ
+;'BSWAP(D920,#7)
+;
+;BMOV(D920,D5210,7)
+;
+LD CR2002                ; 常時ON
+BMOV D920 D5210 K7       ; BCR3読み取りﾃﾞｰﾀ  Case2 照合用ﾃﾞｰﾀ
+;SET(M10623)
+LD CR2002                ; 常時ON
+SET M10623               ; BCR3     読取り完了
+LABEL K1001
+;
+LD M10623                ; BCR3     読取り完了
+ANB R7300                ; BCR3 PLCﾀｲﾐﾝｸﾞ入力応答
+RES M10623               ; BCR3     読取り完了
+;
+;読取りエラー処理
+;　一定時間内に結果有効（M211）ビットがＯＮしない。
+;　検査結果コード（D103）の0ビットがＯＮしない。
+;　検査結果文字列長が規定の文字列長と異なっている。
+;　
+LD M10613                ; ﾄﾘｶﾞ受信Err
+OR M10631                ; ｺｰﾄﾞ読取りNG
+OR M10632                ; ﾃﾞｰﾀ長NG
+OR M10633                ; BCR3     読取りｴﾗｰ
+AND M10610               ; BCR3      ﾄﾘｶﾞON入力
+ANB T591                 ; 手動ﾓｰﾄﾞ時読み取りｴﾗｰ自動OFF時間
+MPS
+OUT M10633               ; BCR3     読取りｴﾗｰ
+MPP
+AND M33                  ; 手動ﾓｰﾄﾞ
+TMR K591 K30             ; 手動ﾓｰﾄﾞ時読み取りｴﾗｰ自動OFF時間
+LD M10633                ; BCR3     読取りｴﾗｰ
+OR M10635                ; ﾗﾍﾞﾙ発行PC応答無し
+ANF M10610               ; BCR3      ﾄﾘｶﾞON入力
+AND CR2003               ; 常時OFF
+OUT M10634               ; 読取りｴﾗｰｸﾘｱ
+;
+;データクリア
+;	運転開始時または任意のタイミングでＰＬＣ出力データをクリア（ゼロを書込み）
+;
+LD CR2008                ; 運転開始時1ｽｷｬﾝON
+OR M10600                ; ﾃﾞｰﾀｸﾘｱ
+OR M10633                ; BCR3     読取りｴﾗｰ
+OR M10635                ; ﾗﾍﾞﾙ発行PC応答無し
+FMOV K0 D37101 K31       ; ﾄﾘｶﾞID
+;
+;出力
+;
+LD M10611                ; ﾄﾘｶﾞON
+OUT R7200                ; BCR3 PLCﾀｲﾐﾝｸﾞｴﾘｱ
+END
+ENDH

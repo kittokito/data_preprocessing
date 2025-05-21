@@ -1,0 +1,4492 @@
+DEVICE:53
+;MODULE:OneSystem3_Console
+;MODULE_TYPE:0
+;SCRIPT_TYPE:
+;OneSystem Master-Module
+;
+;-----------------------------------------
+;ModuleName	:	OneSystem3_Console
+;ModuleType	:	Master Module
+;Function	:	TP Control
+;-----------------------------------------
+;
+;Copylight(C) 2011 SEIKO EPSON Corp. All rights reserved.
+;<OneSystem TP System Memory Area>
+;MainTP 	DM3000～DM3019
+;SubTP1	DM3020～DM3039
+;SubTP2	DM3040～DM3059
+;・・・
+;SubTP8	DM3160～DM3179
+;<h1/>Main Page Change/ﾒｲﾝ画面切替
+;・初期画面ならば3秒ﾃﾞｨﾚｲ後にMain画面[#0]へ切替
+;・動作開始時に別画面ならばMain画面[#0]へ切替
+;・ｻﾌﾞTPﾒﾝﾃ動作選択中[#210～#215]にﾒｲﾝTPでHOME、AUTO押されたらMain画面へ切替(ﾓﾆﾀ時は切り替えない)
+;MainTP
+LD CR2008                ; 運転開始時1ｽｷｬﾝON
+MOV #0 DM3008            ; _MainTP　切替ﾍﾟｰｼﾞNo
+LD= DM3000 #0            ; _MainTP　表示中ﾍﾟｰｼﾞNo
+TMR @0 #30
+CON
+AND @T0
+@MOV #10 DM3008          ; _MainTP　切替ﾍﾟｰｼﾞNo
+LDP HOMEDO               ; _原点復帰中　ﾓｰﾄﾞﾌﾗｸﾞ
+ORP AUTODO               ; _自動運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+ORP MAINTE_IN1           ; _Group1　ﾒﾝﾃ動作中
+AND<> DM3000 #10         ; _MainTP　表示中ﾍﾟｰｼﾞNo
+MOV #10 DM3008           ; _MainTP　切替ﾍﾟｰｼﾞNo
+;SubTP1
+LD EntrySubTP            ; _ｻﾌﾞTP1使用有無
+MPS
+AND CR2008               ; 運転開始時1ｽｷｬﾝON
+MOV #0 DM3028            ; _SubTP1_1　切替ﾍﾟｰｼﾞNo
+MRD
+AND= DM3020 #0           ; _SubTP1_1　表示中ﾍﾟｰｼﾞNo
+TMR @1 #30
+CON
+AND @T1
+@MOV #10 DM3028          ; _SubTP1_1　切替ﾍﾟｰｼﾞNo
+MRD
+LDP HOMEDO               ; _原点復帰中　ﾓｰﾄﾞﾌﾗｸﾞ
+ORP AUTODO               ; _自動運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+ORP MAINTE_IN2           ; _Group2　ﾒﾝﾃ動作中
+AND<> DM3020 #10         ; _SubTP1_1　表示中ﾍﾟｰｼﾞNo
+ANL
+MOV #10 DM3028           ; _SubTP1_1　切替ﾍﾟｰｼﾞNo
+MPP
+LDP MODE_AUTO            ; _AUTOﾓｰﾄﾞ選択中
+ORP MODE_HOME            ; _HOMEﾓｰﾄﾞ選択中
+ORF MODE_MAINTE          ; _MAINTEﾓｰﾄﾞ選択中
+AND>= DM3020 #210        ; _SubTP1_1　表示中ﾍﾟｰｼﾞNo
+AND<= DM3020 #215        ; _SubTP1_1　表示中ﾍﾟｰｼﾞNo
+ANL
+MOV #10 DM3028           ; _SubTP1_1　切替ﾍﾟｰｼﾞNo
+;SubTP2
+LD EntrySubTP:#1         ; _ｻﾌﾞTP2使用有無
+MPS
+AND CR2008               ; 運転開始時1ｽｷｬﾝON
+MOV #0 DM3048            ; _SubTP1_2　切替ﾍﾟｰｼﾞNo
+MRD
+AND= DM3040 #0           ; _SubTP1_2　表示中ﾍﾟｰｼﾞNo
+TMR @2 #30
+CON
+AND @T2
+@MOV #10 DM3048          ; _SubTP1_2　切替ﾍﾟｰｼﾞNo
+MRD
+LDP HOMEDO               ; _原点復帰中　ﾓｰﾄﾞﾌﾗｸﾞ
+ORP AUTODO               ; _自動運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+ORP MAINTE_IN3           ; _Group3　ﾒﾝﾃ動作中
+AND<> DM3040 #10         ; _SubTP1_2　表示中ﾍﾟｰｼﾞNo
+ANL
+MOV #10 DM3048           ; _SubTP1_2　切替ﾍﾟｰｼﾞNo
+MPP
+LDP MODE_AUTO            ; _AUTOﾓｰﾄﾞ選択中
+ORP MODE_HOME            ; _HOMEﾓｰﾄﾞ選択中
+ORF MODE_MAINTE          ; _MAINTEﾓｰﾄﾞ選択中
+AND>= DM3040 #210        ; _SubTP1_2　表示中ﾍﾟｰｼﾞNo
+AND<= DM3040 #215        ; _SubTP1_2　表示中ﾍﾟｰｼﾞNo
+ANL
+MOV #10 DM3048           ; _SubTP1_2　切替ﾍﾟｰｼﾞNo
+;<h1/>M/C Status/装置状態表示
+;・MainTP/SubTP　【定停止中】[#0]
+;・MainTP/SubTP	【動作中】[#1]
+;・MainTP/SubTP	【定停止移行中】[#2]
+;・MainTP		【しばらくお待ち下さい】[#3]
+;・SubTP			【ｴﾗｰ中】[#3]
+;BringDownのいずれかSTG実行中ならば表示は【しばらくお待ち下さい】を優先とする為の条件まとめ
+LD<>.D Power_On $00000000; _運転開始ﾕｰｻﾞｰSTG
+OR<>.D SC1_OpenOK $00000000;_安全ｶﾊﾞｰ1ﾛｯｸ解除OK
+OR<>.D Air_Before $00000000;_ｴｱｰ元圧低下1ﾕｰｻﾞｰSTG
+OUT BringDownExe         ; BringDown実行有り
+;定停止中
+LD STOPDO                ; _停止中　ﾓｰﾄﾞﾌﾗｸﾞ
+MPS
+LDB PARADO               ; _ﾊﾟﾗﾒｰﾀ編集中　ﾓｰﾄﾞﾌﾗｸﾞ
+ANB BringDownExe         ; BringDown実行有り
+ANL
+FMOV #0 KtoV_MainTP_McStat #8;_ﾒｲﾝTP装置ｽﾃｰﾀｽ表示
+MPP
+LD PARADO                ; _ﾊﾟﾗﾒｰﾀ編集中　ﾓｰﾄﾞﾌﾗｸﾞ
+OR BringDownExe          ; BringDown実行有り
+ANL
+MOV #3 KtoV_MainTP_McStat; _ﾒｲﾝTP装置ｽﾃｰﾀｽ表示
+;HOME、AUTO
+LD AUTODO                ; _自動運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+OR HOMEDO                ; _原点復帰中　ﾓｰﾄﾞﾌﾗｸﾞ
+MPS
+ANB BringDownExe         ; BringDown実行有り
+MPS
+ANB HOLD                 ; _定停止移行中
+FMOV #1 KtoV_MainTP_McStat #8;_ﾒｲﾝTP装置ｽﾃｰﾀｽ表示
+MPP
+AND HOLD                 ; _定停止移行中
+FMOV #2 KtoV_MainTP_McStat #8;_ﾒｲﾝTP装置ｽﾃｰﾀｽ表示
+MPP
+AND BringDownExe         ; BringDown実行有り
+MOV #3 KtoV_MainTP_McStat; _ﾒｲﾝTP装置ｽﾃｰﾀｽ表示
+;MAINTE
+LD MAINTEDO              ; _ﾒﾝﾃﾅﾝｽ運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+MPS
+ANB MAINTE_IN1           ; _Group1　ﾒﾝﾃ動作中
+MOV #0 KtoV_MainTP_McStat; _ﾒｲﾝTP装置ｽﾃｰﾀｽ表示
+MPP
+AND MAINTE_IN1           ; _Group1　ﾒﾝﾃ動作中
+MPS
+ANB BringDownExe         ; BringDown実行有り
+MPS
+ANB HOLDm1               ; _Group1　ﾒﾝﾃ動作定停止移行中
+MOV #1 KtoV_MainTP_McStat; _ﾒｲﾝTP装置ｽﾃｰﾀｽ表示
+MPP
+AND HOLDm1               ; _Group1　ﾒﾝﾃ動作定停止移行中
+MOV #2 KtoV_MainTP_McStat; _ﾒｲﾝTP装置ｽﾃｰﾀｽ表示
+MPP
+AND BringDownExe         ; BringDown実行有り
+MOV #3 KtoV_MainTP_McStat; _ﾒｲﾝTP装置ｽﾃｰﾀｽ表示
+;<h1/>Mode Select/運転ﾓｰﾄﾞ選択
+;TP側ﾓｰﾄﾞ選択(ﾓﾒﾝﾀﾘ)をPLC側でﾗｯﾁ
+;【定停止中】：選択ﾓｰﾄﾞを反映、再度同じﾎﾞﾀﾝを押されたら未選択に
+LD MODE_AUTO             ; _AUTOﾓｰﾄﾞ選択中
+ANB MODE_HOME            ; _HOMEﾓｰﾄﾞ選択中
+ANB MODE_MAINTE          ; _MAINTEﾓｰﾄﾞ選択中
+OUT AUTO_Select          ; AUTO選択中
+LDB MODE_AUTO            ; _AUTOﾓｰﾄﾞ選択中
+AND MODE_HOME            ; _HOMEﾓｰﾄﾞ選択中
+ANB MODE_MAINTE          ; _MAINTEﾓｰﾄﾞ選択中
+OUT HOME_Select          ; HOME選択中
+LDB MODE_AUTO            ; _AUTOﾓｰﾄﾞ選択中
+ANB MODE_HOME            ; _HOMEﾓｰﾄﾞ選択中
+AND MODE_MAINTE          ; _MAINTEﾓｰﾄﾞ選択中
+OUT MAINTE_Select        ; MAINTE選択中
+LD CR2002                ; 常時ON
+TMR #2000 #100
+LD T2000
+AND STOPDO               ; _停止中　ﾓｰﾄﾞﾌﾗｸﾞ
+MPS
+ANP VtoK_MODE_AUTO       ; _AUTOﾓｰﾄﾞ押下
+MPS
+ANB AUTO_Select          ; AUTO選択中
+SET MODE_AUTO            ; _AUTOﾓｰﾄﾞ選択中
+CON
+RES MODE_HOME            ; _HOMEﾓｰﾄﾞ選択中
+CON
+RES MODE_MAINTE          ; _MAINTEﾓｰﾄﾞ選択中
+MPP
+AND AUTO_Select          ; AUTO選択中
+RES MODE_AUTO            ; _AUTOﾓｰﾄﾞ選択中
+CON
+RES MODE_HOME            ; _HOMEﾓｰﾄﾞ選択中
+CON
+RES MODE_MAINTE          ; _MAINTEﾓｰﾄﾞ選択中
+MRD
+ANP VtoK_MODE_HOME       ; _HOMEﾓｰﾄﾞ押下
+MPS
+ANB HOME_Select          ; HOME選択中
+RES MODE_AUTO            ; _AUTOﾓｰﾄﾞ選択中
+CON
+SET MODE_HOME            ; _HOMEﾓｰﾄﾞ選択中
+CON
+RES MODE_MAINTE          ; _MAINTEﾓｰﾄﾞ選択中
+MPP
+AND HOME_Select          ; HOME選択中
+RES MODE_AUTO            ; _AUTOﾓｰﾄﾞ選択中
+CON
+RES MODE_HOME            ; _HOMEﾓｰﾄﾞ選択中
+CON
+RES MODE_MAINTE          ; _MAINTEﾓｰﾄﾞ選択中
+MPP
+ANP VtoK_MODE_MAINTE     ; _MAINTEﾓｰﾄﾞ押下
+MPS
+ANB MAINTE_Select        ; MAINTE選択中
+RES MODE_AUTO            ; _AUTOﾓｰﾄﾞ選択中
+CON
+RES MODE_HOME            ; _HOMEﾓｰﾄﾞ選択中
+CON
+SET MODE_MAINTE          ; _MAINTEﾓｰﾄﾞ選択中
+MPP
+AND MAINTE_Select        ; MAINTE選択中
+RES MODE_AUTO            ; _AUTOﾓｰﾄﾞ選択中
+CON
+RES MODE_HOME            ; _HOMEﾓｰﾄﾞ選択中
+CON
+RES MODE_MAINTE          ; _MAINTEﾓｰﾄﾞ選択中
+;【ﾓｰﾄﾞOUT時】：ﾓｰﾄﾞ未選択状態に
+LDF HOMEDO               ; _原点復帰中　ﾓｰﾄﾞﾌﾗｸﾞ
+ORF AUTODO               ; _自動運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+ORP TRAPDO               ; _非常停止中　ﾓｰﾄﾞﾌﾗｸﾞ
+RES MODE_AUTO            ; _AUTOﾓｰﾄﾞ選択中
+CON
+RES MODE_HOME            ; _HOMEﾓｰﾄﾞ選択中
+CON
+RES MODE_MAINTE          ; _MAINTEﾓｰﾄﾞ選択中
+;【ﾒﾝﾃOUT時】：ﾒﾝﾃ選択状態に
+LDF MAINTEDO             ; _ﾒﾝﾃﾅﾝｽ運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+RES MODE_AUTO            ; _AUTOﾓｰﾄﾞ選択中
+CON
+RES MODE_HOME            ; _HOMEﾓｰﾄﾞ選択中
+CON
+SET MODE_MAINTE          ; _MAINTEﾓｰﾄﾞ選択中
+;<h1/>Action Select/動作ﾓｰﾄﾞ選択
+;●動作選択画面表示
+;・AUTOﾓｰﾄﾞが選択されていれば【AUTO】動作選択[#220]へ
+;・MAINTEﾓｰﾄﾞが選択されていれば【MAINTE】動作選択[#221]へ
+LD MODE_AUTO             ; _AUTOﾓｰﾄﾞ選択中
+AND VtoK_MODE_ACT        ; VtoK_MODE_ACT
+@MOV #210 DM3008         ; _MainTP　切替ﾍﾟｰｼﾞNo
+LD MODE_MAINTE           ; _MAINTEﾓｰﾄﾞ選択中
+AND VtoK_MODE_ACT        ; VtoK_MODE_ACT
+@MOV #211 DM3008         ; _MainTP　切替ﾍﾟｰｼﾞNo
+;●動作選択ﾎﾞﾀﾝ表示
+;・HOME選択中、動作中は非表示[#1]
+;・AUTO／MAINTE選択中は表示[#0]
+LDB STOPDO               ; _停止中　ﾓｰﾄﾞﾌﾗｸﾞ
+ANB MAINTEDO             ; _ﾒﾝﾃﾅﾝｽ運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+LD MAINTEDO              ; _ﾒﾝﾃﾅﾝｽ運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+AND MAINTE_IN1           ; _Group1　ﾒﾝﾃ動作中
+ORL
+MOV #1 KtoV_MainTP_ActSw ; _動作選択ﾎﾞﾀﾝ表示有無
+LD STOPDO                ; _停止中　ﾓｰﾄﾞﾌﾗｸﾞ
+MPS
+LDB MODE_HOME            ; _HOMEﾓｰﾄﾞ選択中
+OR MODE_HOME             ; _HOMEﾓｰﾄﾞ選択中
+ANB MODE_AUTO            ; _AUTOﾓｰﾄﾞ選択中
+ANB MODE_MAINTE          ; _MAINTEﾓｰﾄﾞ選択中
+ANL
+MOV #1 KtoV_MainTP_ActSw ; _動作選択ﾎﾞﾀﾝ表示有無
+MPP
+LD MODE_AUTO             ; _AUTOﾓｰﾄﾞ選択中
+OR MODE_MAINTE           ; _MAINTEﾓｰﾄﾞ選択中
+ANL
+MOV #0 KtoV_MainTP_ActSw ; _動作選択ﾎﾞﾀﾝ表示有無
+LD MAINTEDO              ; _ﾒﾝﾃﾅﾝｽ運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+ANB MAINTE_IN1           ; _Group1　ﾒﾝﾃ動作中
+MOV #0 KtoV_MainTP_ActSw ; _動作選択ﾎﾞﾀﾝ表示有無
+;●動作名称表示
+;・現在選択中ﾓｰﾄﾞに合わせてMAIN画面の現在選択中動作ﾓｰﾄﾞ名称を変更する
+;AUTO動作名称番号 = AUTOAC + #1999
+LD MODE_AUTO             ; _AUTOﾓｰﾄﾞ選択中
+MPS
+AND= AUTOAC #0           ; _AUTO動作番号
+FMOV #0 KtoV_MainTP_ActName #8;_ﾒｲﾝTP動作名称表示
+MPP
+AND<> AUTOAC #0          ; _AUTO動作番号
+LDA AUTOAC               ; _AUTO動作番号
+CON
+ADD #1999
+CON
+STA Z10
+CON
+FMOV Z10 KtoV_MainTP_ActName #8;_ﾒｲﾝTP動作名称表示
+;MAINTE動作名称番号 = MAINTEAC* + #2099 
+LD MODE_MAINTE           ; _MAINTEﾓｰﾄﾞ選択中
+MPS
+AND= MAINTEAC1 #0        ; _Group1　ﾒﾝﾃ動作番号
+MOV #0 KtoV_MainTP_ActName;_ﾒｲﾝTP動作名称表示
+MPP
+AND<> MAINTEAC1 #0       ; _Group1　ﾒﾝﾃ動作番号
+LDA MAINTEAC1            ; _Group1　ﾒﾝﾃ動作番号
+CON
+ADD #2099
+CON
+STA Z10
+CON
+MOV Z10 KtoV_MainTP_ActName;_ﾒｲﾝTP動作名称表示
+;HOME動作名称番号 = #2500
+LD MODE_HOME             ; _HOMEﾓｰﾄﾞ選択中
+FMOV #2500 KtoV_MainTP_ActName #8;_ﾒｲﾝTP動作名称表示
+;・ﾓｰﾄﾞ未選択中は非表示[#0]
+LDB MODE_HOME            ; _HOMEﾓｰﾄﾞ選択中
+ANB MODE_AUTO            ; _AUTOﾓｰﾄﾞ選択中
+ANB MODE_MAINTE          ; _MAINTEﾓｰﾄﾞ選択中
+MOV #0 KtoV_MainTP_ActName;_ﾒｲﾝTP動作名称表示
+MOV #0 KtoV_SubTP1_ActName;_ｻﾌﾞTP1動作名称表示
+MOV #0 KtoV_SubTP2_ActName;_ｻﾌﾞTP2動作名称表示
+MOV #0 KtoV_SubTP3_ActName;_ｻﾌﾞTP3動作名称表示
+MOV #0 KtoV_SubTP4_ActName;_ｻﾌﾞTP4動作名称表示
+MOV #0 KtoV_SubTP4_ActName;_ｻﾌﾞTP4動作名称表示
+MOV #0 KtoV_SubTP5_ActName;_ｻﾌﾞTP5動作名称表示
+MOV #0 KtoV_SubTP6_ActName;_ｻﾌﾞTP6動作名称表示
+MOV #0 KtoV_SubTP7_ActName;_ｻﾌﾞTP7動作名称表示
+;<h1/>Action Parameter/動作ﾊﾟﾗﾒｰﾀ
+;動作ﾊﾟﾗﾒｰﾀON/OFF状態により表示名称ﾒｯｾｰｼﾞ番号を変更
+;'動作ﾊﾟﾗﾒｰﾀON/OFF状態により指定名称番号(ﾒｯｾｰｼﾞ番号)を変更
+;'ACPARA_Name[i]に表示ﾒｯｾｰｼﾞNoを格納
+;
+;'動作ﾊﾟﾗﾒｰﾀbit0～15		OFF時名称表示ﾒｯｾｰｼﾞNo	5600～5615
+;'						ON時名称表示ﾒｯｾｰｼﾞNo	5616～5631
+;
+;FOR i = 0 TO 15		'動作ﾊﾟﾗﾒｰﾀ個数分ﾙｰﾌﾟ
+;	IF BLD(ACPARA,i) = OFF THEN		'指定bitOFF?
+;		ACPARA_Name[i] = 5600 + i			'OFF表示ﾒｯｾｰｼﾞNo=(5600+bitNo)
+;	ELSE IF BLD(ACPARA,i) = ON THEN	'指定bitON?	
+;		ACPARA_Name[i] = 5616 + i			'ON表示ﾒｯｾｰｼﾞNo=(5616+bitNo)
+;	END IF
+;NEXT
+;
+;'動作ﾊﾟﾗﾒｰﾀbit16～31	OFF時名称表示ﾒｯｾｰｼﾞNo	5632～5647
+;'						ON時名称表示ﾒｯｾｰｼﾞNo	5648～5663
+;
+;FOR i = 16 TO 31
+;	IF BLD(ACPARA,i) = OFF THEN
+;		ACPARA_Name[i] = 5616 + i
+;	ELSE IF BLD(ACPARA,i) = ON THEN
+;		ACPARA_Name[i] = 5632 + i
+;	END IF
+;NEXT 
+;	
+LD CR2002                ; 常時ON
+NCJ #1024
+;'動作ﾊﾟﾗﾒｰﾀON/OFF状態により指定名称番号(ﾒｯｾｰｼﾞ番号)を変更
+;
+;'ACPARA_Name[i]に表示ﾒｯｾｰｼﾞNoを格納
+;
+;'動作ﾊﾟﾗﾒｰﾀbit0～15		OFF時名称表示ﾒｯｾｰｼﾞNo	5600～5615
+;
+;'						ON時名称表示ﾒｯｾｰｼﾞNo	5616～5631
+;
+;FOR i = 0 TO 15		'動作ﾊﾟﾗﾒｰﾀ個数分ﾙｰﾌﾟ
+;
+LD CR2002                ; 常時ON
+MOV #0 i
+LABEL #2000
+LD> i #15
+CJ #2001
+;	IF BLD(ACPARA,i) = OFF THEN		'指定bitOFF?
+;
+BLD.D ACPARA i           ; _動作ﾊﾟﾗﾒｰﾀ
+OUT @VB00
+LDB @VB00
+NCJ #2002
+;		ACPARA_Name[i] = 5600 + i			'OFF表示ﾒｯｾｰｼﾞNo=(5600+bitNo)
+;
+LD CR2002                ; 常時ON
+LDA i
+CON
+EXT
+CON
+STA.L Z11
+CON
+LDA i
+CON
+EXT
+CON
+ADD.L +5600
+CON
+STA ACPARA_Name:Z11      ; _動作ﾊﾟﾗﾒｰﾀ1名称番号
+LD CR2002                ; 常時ON
+CJ #2003
+LABEL #2002
+;	ELSE IF BLD(ACPARA,i) = ON THEN	'指定bitON?	
+;
+BLD.D ACPARA i           ; _動作ﾊﾟﾗﾒｰﾀ
+NCJ #2004
+;		ACPARA_Name[i] = 5616 + i			'ON表示ﾒｯｾｰｼﾞNo=(5616+bitNo)
+;
+LD CR2002                ; 常時ON
+LDA i
+CON
+EXT
+CON
+STA.L Z11
+CON
+LDA i
+CON
+EXT
+CON
+ADD.L +5616
+CON
+STA ACPARA_Name:Z11      ; _動作ﾊﾟﾗﾒｰﾀ1名称番号
+;	END IF
+;
+LABEL #2004
+LABEL #2003
+;NEXT
+;
+LD CR2002                ; 常時ON
+INC i
+LDB CR2009               ; 演算結果が負
+CJ #2000
+LABEL #2001
+;'動作ﾊﾟﾗﾒｰﾀbit16～31	OFF時名称表示ﾒｯｾｰｼﾞNo	5632～5647
+;
+;'						ON時名称表示ﾒｯｾｰｼﾞNo	5648～5663
+;
+;FOR i = 16 TO 31
+;
+LD CR2002                ; 常時ON
+MOV #16 i
+LABEL #2005
+LD> i #31
+CJ #2006
+;	IF BLD(ACPARA,i) = OFF THEN
+;
+BLD.D ACPARA i           ; _動作ﾊﾟﾗﾒｰﾀ
+OUT @VB01
+LDB @VB01
+NCJ #2007
+;		ACPARA_Name[i] = 5616 + i
+;
+LD CR2002                ; 常時ON
+LDA i
+CON
+EXT
+CON
+STA.L Z11
+CON
+LDA i
+CON
+EXT
+CON
+ADD.L +5616
+CON
+STA ACPARA_Name:Z11      ; _動作ﾊﾟﾗﾒｰﾀ1名称番号
+LD CR2002                ; 常時ON
+CJ #2008
+LABEL #2007
+;	ELSE IF BLD(ACPARA,i) = ON THEN
+;
+BLD.D ACPARA i           ; _動作ﾊﾟﾗﾒｰﾀ
+NCJ #2009
+;		ACPARA_Name[i] = 5632 + i
+;
+LD CR2002                ; 常時ON
+LDA i
+CON
+EXT
+CON
+STA.L Z11
+CON
+LDA i
+CON
+EXT
+CON
+ADD.L +5632
+CON
+STA ACPARA_Name:Z11      ; _動作ﾊﾟﾗﾒｰﾀ1名称番号
+;	END IF
+;
+LABEL #2009
+LABEL #2008
+;NEXT 
+;
+LD CR2002                ; 常時ON
+INC i
+LDB CR2009               ; 演算結果が負
+CJ #2005
+LABEL #2006
+LABEL #1024
+;
+;<h1/>Parameter Editing/ﾊﾟﾗﾒｰﾀ編集中
+;・ﾒｲﾝTPﾒｲﾝ画面から【設定】ﾎﾞﾀﾝ押下にてﾊﾟﾗﾒｰﾀ編集中ﾌﾗｸﾞ(PARADO) ON
+;・ﾊﾟﾗﾒｰﾀ編集画面(#200)からﾒｲﾝ画面(#10)に戻ったらData_Distribut起動
+;・Data_Distribut終了後、ﾌﾗｸﾞOFF
+LDB PARADO               ; _ﾊﾟﾗﾒｰﾀ編集中　ﾓｰﾄﾞﾌﾗｸﾞ
+AND= DM3000 #10          ; _MainTP　表示中ﾍﾟｰｼﾞNo
+SET @R000
+LD @R000
+AND= DM3000 #200         ; _MainTP　表示中ﾍﾟｰｼﾞNo
+RES @R000
+CON
+SET PARADO               ; _ﾊﾟﾗﾒｰﾀ編集中　ﾓｰﾄﾞﾌﾗｸﾞ
+LD PARADO                ; _ﾊﾟﾗﾒｰﾀ編集中　ﾓｰﾄﾞﾌﾗｸﾞ
+AND= DM3000 #10          ; _MainTP　表示中ﾍﾟｰｼﾞNo
+@SET @R001
+STG @R001
+SET Data_Distribut       ; _ﾊﾟﾗﾒｰﾀ変更後ﾕｰｻﾞｰSTG
+CON
+JMP @R002
+STG @R002
+ANB Data_Distribut       ; _ﾊﾟﾗﾒｰﾀ変更後ﾕｰｻﾞｰSTG
+RES PARADO               ; _ﾊﾟﾗﾒｰﾀ編集中　ﾓｰﾄﾞﾌﾗｸﾞ
+CON
+ENDS
+;<h1/>Parameter Setting Button/設定ﾎﾞﾀﾝ
+;●ﾒｲﾝTP【設定】ﾎﾞﾀﾝ有効／無効
+;・定停止になったら有効[#0]
+;・動作中になったら無効[#1]
+LDP STOPDO               ; _停止中　ﾓｰﾄﾞﾌﾗｸﾞ
+MOV #0 KtoV_MainTP_SetSw ; _ﾒｲﾝTP設定SW表示有無
+LDF STOPDO               ; _停止中　ﾓｰﾄﾞﾌﾗｸﾞ
+MOV #1 KtoV_MainTP_SetSw ; _ﾒｲﾝTP設定SW表示有無
+;<h1/>Mainte Button/ﾒﾝﾃﾎﾞﾀﾝ
+;●ｻﾌﾞTP【ﾒﾝﾃ】ﾎﾞﾀﾝ有効／無効
+;・ﾒﾝﾃﾓｰﾄﾞ選択にて有効[#0]
+;・ﾒﾝﾃﾓｰﾄﾞ未選択、動作中にて無効[#1]
+LD MODE_MAINTE           ; _MAINTEﾓｰﾄﾞ選択中
+ANB MAINTE_IN2           ; _Group2　ﾒﾝﾃ動作中
+MOV #0 KtoV_SubTP1_MainteSw;_ｻﾌﾞTP1ﾒﾝﾃSW表示有無
+LDB MODE_MAINTE          ; _MAINTEﾓｰﾄﾞ選択中
+MOV #1 KtoV_SubTP1_MainteSw;_ｻﾌﾞTP1ﾒﾝﾃSW表示有無
+MOV #1 KtoV_SubTP2_MainteSw;_ｻﾌﾞTP2ﾒﾝﾃSW表示有無
+;<h1/>Operator Level Control/ｵﾍﾟﾚｰﾀﾚﾍﾞﾙ制御
+;●現在ｵﾍﾟﾚｰﾀﾚﾍﾞﾙに応じて【設定】画面の選択SW可／不可切替
+;/////Ver1.0.2/////
+;・ﾒｲﾝTP画面Noが200番(設定項目画面)に変更されたらﾎﾞﾀﾝ有効/無効を更新
+;FOR i = 0 TO 15
+;	'現在のｵﾍﾟﾚｰﾀﾚﾍﾞﾙがﾚﾍﾞﾙ3なら全て許可
+;	IF OpeLevel = 2 THEN
+;		RES(KtoV_MainTP_SelectSw[i])	'ﾎﾞﾀﾝ有効
+;	END IF
+;	
+;	'現在のｵﾍﾟﾚｰﾀﾚﾍﾞﾙがﾚﾍﾞﾙ2ならﾚﾍﾞﾙ2以下を許可
+;	IF OpeLevel = 1 AND Button_OpeLevel[i] <= 2 THEN
+;		RES(KtoV_MainTP_SelectSw[i])	'ﾎﾞﾀﾝ有効
+;	ELSE IF OpeLevel = 1 AND Button_OpeLevel[i] > 2 THEN
+;		SET(KtoV_MainTP_SelectSw[i])	'ﾎﾞﾀﾝ無効
+;	END IF
+;	
+;	'現在のｵﾍﾟﾚｰﾀﾚﾍﾞﾙがﾚﾍﾞﾙ1ならばﾚﾍﾞﾙ1のみを許可
+;	IF OpeLevel = 0 AND Button_OpeLevel[i] = 1 THEN
+;		RES(KtoV_MainTP_SelectSw[i])	'ﾎﾞﾀﾝ有効
+;	ELSE IF OpeLevel = 0 AND Button_OpeLevel[i] <> 1 THEN
+;		SET(KtoV_MainTP_SelectSw[i])	'ﾎﾞﾀﾝ無効
+;	END IF
+;NEXT 
+LD= DM3000 #200          ; _MainTP　表示中ﾍﾟｰｼﾞNo
+MEP
+ORP STOPDO               ; _停止中　ﾓｰﾄﾞﾌﾗｸﾞ
+NCJ #1000
+;FOR i = 0 TO 15
+;
+LD CR2002                ; 常時ON
+MOV #0 i
+LABEL #2010
+LD> i #15
+CJ #2011
+;	'現在のｵﾍﾟﾚｰﾀﾚﾍﾞﾙがﾚﾍﾞﾙ3なら全て許可
+;
+;	IF OpeLevel = 2 THEN
+;
+LD= OpeLevel #2          ; _現在ｵﾍﾟﾚｰﾀﾚﾍﾞﾙ番号
+NCJ #2012
+;		RES(KtoV_MainTP_SelectSw[i])	'ﾎﾞﾀﾝ有効
+;
+LD CR2002                ; 常時ON
+LDA i
+CON
+EXT
+CON
+STA.L Z12
+RES KtoV_MainTP_SelectSw:Z12;KtoV_MainTP_SelectSw
+;	END IF
+;
+LABEL #2012
+;	'現在のｵﾍﾟﾚｰﾀﾚﾍﾞﾙがﾚﾍﾞﾙ2ならﾚﾍﾞﾙ2以下を許可
+;
+;	IF OpeLevel = 1 AND Button_OpeLevel[i] <= 2 THEN
+;
+LD= OpeLevel #1          ; _現在ｵﾍﾟﾚｰﾀﾚﾍﾞﾙ番号
+OUT @VB02
+LD CR2002                ; 常時ON
+LDA i
+CON
+EXT
+CON
+STA.L Z12
+LD<= Button_OpeLevel:Z12 #2;_設定SWｵﾍﾟﾚｰﾀﾚﾍﾞﾙ
+AND @VB02
+NCJ #2013
+;		RES(KtoV_MainTP_SelectSw[i])	'ﾎﾞﾀﾝ有効
+;
+LD CR2002                ; 常時ON
+LDA i
+CON
+EXT
+CON
+STA.L Z12
+RES KtoV_MainTP_SelectSw:Z12;KtoV_MainTP_SelectSw
+LD CR2002                ; 常時ON
+CJ #2014
+LABEL #2013
+;	ELSE IF OpeLevel = 1 AND Button_OpeLevel[i] > 2 THEN
+;
+LD= OpeLevel #1          ; _現在ｵﾍﾟﾚｰﾀﾚﾍﾞﾙ番号
+OUT @VB03
+LD CR2002                ; 常時ON
+LDA i
+CON
+EXT
+CON
+STA.L Z12
+LD> Button_OpeLevel:Z12 #2;_設定SWｵﾍﾟﾚｰﾀﾚﾍﾞﾙ
+AND @VB03
+NCJ #2015
+;		SET(KtoV_MainTP_SelectSw[i])	'ﾎﾞﾀﾝ無効
+;
+LD CR2002                ; 常時ON
+LDA i
+CON
+EXT
+CON
+STA.L Z12
+SET KtoV_MainTP_SelectSw:Z12;KtoV_MainTP_SelectSw
+;	END IF
+;
+LABEL #2015
+LABEL #2014
+;	'現在のｵﾍﾟﾚｰﾀﾚﾍﾞﾙがﾚﾍﾞﾙ1ならばﾚﾍﾞﾙ1のみを許可
+;
+;	IF OpeLevel = 0 AND Button_OpeLevel[i] = 1 THEN
+;
+LD= OpeLevel #0          ; _現在ｵﾍﾟﾚｰﾀﾚﾍﾞﾙ番号
+OUT @VB04
+LD CR2002                ; 常時ON
+LDA i
+CON
+EXT
+CON
+STA.L Z12
+LD= Button_OpeLevel:Z12 #1;_設定SWｵﾍﾟﾚｰﾀﾚﾍﾞﾙ
+AND @VB04
+NCJ #2016
+;		RES(KtoV_MainTP_SelectSw[i])	'ﾎﾞﾀﾝ有効
+;
+LD CR2002                ; 常時ON
+LDA i
+CON
+EXT
+CON
+STA.L Z12
+RES KtoV_MainTP_SelectSw:Z12;KtoV_MainTP_SelectSw
+LD CR2002                ; 常時ON
+CJ #2017
+LABEL #2016
+;	ELSE IF OpeLevel = 0 AND Button_OpeLevel[i] <> 1 THEN
+;
+LD= OpeLevel #0          ; _現在ｵﾍﾟﾚｰﾀﾚﾍﾞﾙ番号
+OUT @VB05
+LD CR2002                ; 常時ON
+LDA i
+CON
+EXT
+CON
+STA.L Z12
+LD<> Button_OpeLevel:Z12 #1;_設定SWｵﾍﾟﾚｰﾀﾚﾍﾞﾙ
+AND @VB05
+NCJ #2018
+;		SET(KtoV_MainTP_SelectSw[i])	'ﾎﾞﾀﾝ無効
+;
+LD CR2002                ; 常時ON
+LDA i
+CON
+EXT
+CON
+STA.L Z12
+SET KtoV_MainTP_SelectSw:Z12;KtoV_MainTP_SelectSw
+;	END IF
+;
+LABEL #2018
+LABEL #2017
+;NEXT 
+LD CR2002                ; 常時ON
+INC i
+LDB CR2009               ; 演算結果が負
+CJ #2010
+LABEL #2011
+LABEL #1000
+;
+;<h1/>Operator Level Change/ｵﾍﾟﾚｰﾀﾚﾍﾞﾙ変更
+;●ﾊﾟｽﾜｰﾄﾞ入力画面表示処理
+;・現在ｵﾍﾟﾚｰﾀﾚﾍﾞﾙ1の場合、ﾚﾍﾞﾙ2/ﾚﾍﾞﾙ3共にﾊﾟｽﾜｰﾄﾞ入力必要
+LD= OpeLevel #0          ; _現在ｵﾍﾟﾚｰﾀﾚﾍﾞﾙ番号
+AND VtoK_PASS_CHANGE     ; _ｵﾍﾟﾚﾍﾞ変更確認
+MPS
+AND VtoK_OPL_LV2         ; _ｵﾍﾟﾚｰﾀﾚﾍﾞﾙ2切替
+MOV #1 @EM34
+@SET KtoV_PASS_OPN       ; _ﾊﾟｽﾜｰﾄﾞ入力画面表示
+MPP
+AND VtoK_OPL_LV3         ; _ｵﾍﾟﾚｰﾀﾚﾍﾞﾙ3切替
+MOV #2 @EM34
+@SET KtoV_PASS_OPN       ; _ﾊﾟｽﾜｰﾄﾞ入力画面表示
+;・現在ｵﾍﾟﾚｰﾀﾚﾍﾞﾙ2の場合、ﾚﾍﾞﾙ3のみﾊﾟｽﾜｰﾄﾞ入力必要
+LD= OpeLevel #1          ; _現在ｵﾍﾟﾚｰﾀﾚﾍﾞﾙ番号
+AND VtoK_PASS_CHANGE     ; _ｵﾍﾟﾚﾍﾞ変更確認
+MPS
+AND VtoK_OPL_LV1         ; _ｵﾍﾟﾚｰﾀﾚﾍﾞﾙ1切替
+MOV #0 OpeLevel          ; _現在ｵﾍﾟﾚｰﾀﾚﾍﾞﾙ番号
+MPP
+AND VtoK_OPL_LV3         ; _ｵﾍﾟﾚｰﾀﾚﾍﾞﾙ3切替
+MOV #2 @EM34
+@SET KtoV_PASS_OPN       ; _ﾊﾟｽﾜｰﾄﾞ入力画面表示
+;・現在ｵﾍﾟﾚｰﾀﾚﾍﾞﾙ3の場合、入力不要
+LD= OpeLevel #2          ; _現在ｵﾍﾟﾚｰﾀﾚﾍﾞﾙ番号
+AND VtoK_PASS_CHANGE     ; _ｵﾍﾟﾚﾍﾞ変更確認
+MPS
+AND VtoK_OPL_LV1         ; _ｵﾍﾟﾚｰﾀﾚﾍﾞﾙ1切替
+MOV #0 OpeLevel          ; _現在ｵﾍﾟﾚｰﾀﾚﾍﾞﾙ番号
+MPP
+AND VtoK_OPL_LV2         ; _ｵﾍﾟﾚｰﾀﾚﾍﾞﾙ2切替
+MOV #1 OpeLevel          ; _現在ｵﾍﾟﾚｰﾀﾚﾍﾞﾙ番号
+;●入力ﾊﾟｽﾜｰﾄﾞと現在ﾊﾟｽﾜｰﾄﾞ比較
+;・OKならばｵﾍﾟﾚｰﾀﾚﾍﾞﾙ変更
+;・NGならば変更不可
+;・生産技術C用ﾊﾟｽﾜｰﾄﾞ入力の場合、ﾚﾍﾞﾙ3まで開放
+LD VtoK_PASS_CLS         ; _ﾊﾟｽﾜｰﾄﾞ入力完了
+MPS
+AND= @EM34 #1
+MPS
+SCMP VtoK_PASS_InStr VtoK_PASS_Lv2Str;_入力ﾊﾟｽﾜｰﾄﾞ  _ﾚﾍﾞﾙ2ﾊﾟｽﾜｰﾄﾞ文字列
+CON
+AND CR2010               ; 演算結果がｾﾞﾛ
+MOV #1 OpeLevel          ; _現在ｵﾍﾟﾚｰﾀﾚﾍﾞﾙ番号
+MPP
+SCMP VtoK_PASS_InStr PEC_Passward;_入力ﾊﾟｽﾜｰﾄﾞ  _生技C専用ﾊﾟｽﾜｰﾄﾞ
+CON
+AND CR2010               ; 演算結果がｾﾞﾛ
+MOV #2 OpeLevel          ; _現在ｵﾍﾟﾚｰﾀﾚﾍﾞﾙ番号
+MPP
+AND= @EM34 #2
+MPS
+SCMP VtoK_PASS_InStr VtoK_PASS_Lv3Str;_入力ﾊﾟｽﾜｰﾄﾞ  _ﾚﾍﾞﾙ3ﾊﾟｽﾜｰﾄﾞ文字列
+CON
+AND CR2010               ; 演算結果がｾﾞﾛ
+MOV #2 OpeLevel          ; _現在ｵﾍﾟﾚｰﾀﾚﾍﾞﾙ番号
+MPP
+SCMP VtoK_PASS_InStr PEC_Passward;_入力ﾊﾟｽﾜｰﾄﾞ  _生技C専用ﾊﾟｽﾜｰﾄﾞ
+CON
+AND CR2010               ; 演算結果がｾﾞﾛ
+MOV #2 OpeLevel          ; _現在ｵﾍﾟﾚｰﾀﾚﾍﾞﾙ番号
+LDP VtoK_OPL_LV1         ; _ｵﾍﾟﾚｰﾀﾚﾍﾞﾙ1切替
+ORP VtoK_OPL_LV2         ; _ｵﾍﾟﾚｰﾀﾚﾍﾞﾙ2切替
+ORP VtoK_OPL_LV3         ; _ｵﾍﾟﾚｰﾀﾚﾍﾞﾙ3切替
+SMOV "" VtoK_PASS_InStr  ; _入力ﾊﾟｽﾜｰﾄﾞ
+;<h1/>Passward Change/ﾊﾟｽﾜｰﾄﾞ変更
+;●ﾊﾟｽﾜｰﾄﾞ変更画面表示時処理
+;・ﾊﾞｯﾌｧﾃﾞﾊﾞｲｽｸﾘｱ
+;・ﾚﾍﾞﾙ選択初期値
+LD= DM3000 #251          ; _MainTP　表示中ﾍﾟｰｼﾞNo
+@SMOV "" VtoK_PASS_InStr ; _入力ﾊﾟｽﾜｰﾄﾞ
+@SMOV "" VtoK_PASS_OldStr; _旧ﾊﾟｽﾜｰﾄﾞ入力文字列
+@SMOV "" VtoK_PASS_NewStr; _新ﾊﾟｽﾜｰﾄﾞ入力文字列
+@SMOV "" VtoK_PASS_ChkStr; _新ﾊﾟｽﾜｰﾄﾞ確認入力文字列
+@MOV #1 VtoK_PASS_Level  ; _変更ﾊﾟｽﾜｰﾄﾞﾚﾍﾞﾙ番号
+;●ﾊﾟｽﾜｰﾄﾞ文字列長確認
+LD= DM3000 #251          ; _MainTP　表示中ﾍﾟｰｼﾞNo
+LEN VtoK_PASS_OldStr @EM35;_旧ﾊﾟｽﾜｰﾄﾞ入力文字列
+LEN VtoK_PASS_NewStr @EM36;_新ﾊﾟｽﾜｰﾄﾞ入力文字列
+LEN VtoK_PASS_ChkStr @EM37;_新ﾊﾟｽﾜｰﾄﾞ確認入力文字列
+;●ｵﾍﾟﾚｰﾀﾚﾍﾞﾙ2ﾊﾟｽﾜｰﾄﾞ変更
+;・ﾊﾟｽﾜｰﾄﾞ文字列長ﾁｪｯｸ(通常は4桁だが、未使用CPUの場合は0桁あり)
+;・現在ﾊﾟｽﾜｰﾄﾞと旧ﾊﾟｽﾜｰﾄﾞ文字列比較
+;・新ﾊﾟｽﾜｰﾄﾞと新ﾊﾟｽﾜｰﾄﾞ確認文字列比較
+LD= VtoK_PASS_Level #1   ; _変更ﾊﾟｽﾜｰﾄﾞﾚﾍﾞﾙ番号
+ANP VtoK_PASS_EDIT       ; _ﾊﾟｽﾜｰﾄﾞ変更要求
+MPS
+LD= @EM35 #4
+OR= @EM35 #0
+AND= @EM36 #4
+AND= @EM37 #4
+ANL
+SCMP VtoK_PASS_Lv2Str VtoK_PASS_OldStr;_ﾚﾍﾞﾙ2ﾊﾟｽﾜｰﾄﾞ文字列  _旧ﾊﾟｽﾜｰﾄﾞ入力文字列
+CON
+MPS
+LD CR2010                ; 演算結果がｾﾞﾛ
+OR CR2011                ; 演算結果が正
+ANL
+SET @R100
+MPP
+AND CR2009               ; 演算結果が負
+SET KtoV_PASS_NG         ; _ﾊﾟｽﾜｰﾄﾞ変更不可能
+CON
+SET @R107
+MPP
+LD<> @EM35 #0
+AND<> @EM35 #4
+OR<> @EM36 #4
+OR<> @EM37 #4
+ANL
+SET KtoV_PASS_NG         ; _ﾊﾟｽﾜｰﾄﾞ変更不可能
+CON
+SET @R107
+STG @R100
+SCMP VtoK_PASS_NewStr VtoK_PASS_ChkStr;_新ﾊﾟｽﾜｰﾄﾞ入力文字列  _新ﾊﾟｽﾜｰﾄﾞ確認入力文字列
+CON
+MPS
+LD CR2010                ; 演算結果がｾﾞﾛ
+OR CR2011                ; 演算結果が正
+ANL
+SMOV VtoK_PASS_NewStr VtoK_PASS_Lv2Str;_新ﾊﾟｽﾜｰﾄﾞ入力文字列  _ﾚﾍﾞﾙ2ﾊﾟｽﾜｰﾄﾞ文字列
+SET KtoV_PASS_OK         ; _ﾊﾟｽﾜｰﾄﾞ変更可能
+CON
+JMP @R107
+MPP
+AND CR2009               ; 演算結果が負
+SET KtoV_PASS_NG         ; _ﾊﾟｽﾜｰﾄﾞ変更不可能
+CON
+JMP @R107
+;●ｵﾍﾟﾚｰﾀﾚﾍﾞﾙ3ﾊﾟｽﾜｰﾄﾞ変更
+;・ﾊﾟｽﾜｰﾄﾞ文字列長ﾁｪｯｸ(通常は4桁だが、未使用CPUの場合は0桁あり)
+;・現在ﾊﾟｽﾜｰﾄﾞと旧ﾊﾟｽﾜｰﾄﾞ文字列比較
+;・新ﾊﾟｽﾜｰﾄﾞと新ﾊﾟｽﾜｰﾄﾞ確認文字列比較
+LD= VtoK_PASS_Level #2   ; _変更ﾊﾟｽﾜｰﾄﾞﾚﾍﾞﾙ番号
+ANP VtoK_PASS_EDIT       ; _ﾊﾟｽﾜｰﾄﾞ変更要求
+MPS
+LD= @EM35 #4
+OR= @EM35 #0
+AND= @EM36 #4
+AND= @EM37 #4
+ANL
+SCMP VtoK_PASS_Lv3Str VtoK_PASS_OldStr;_ﾚﾍﾞﾙ3ﾊﾟｽﾜｰﾄﾞ文字列  _旧ﾊﾟｽﾜｰﾄﾞ入力文字列
+CON
+MPS
+LD CR2010                ; 演算結果がｾﾞﾛ
+OR CR2011                ; 演算結果が正
+ANL
+SET @R101
+MPP
+AND CR2009               ; 演算結果が負
+SET KtoV_PASS_NG         ; _ﾊﾟｽﾜｰﾄﾞ変更不可能
+CON
+SET @R107
+MPP
+LD<> @EM35 #0
+AND<> @EM35 #4
+OR<> @EM36 #4
+OR<> @EM37 #4
+ANL
+SET KtoV_PASS_NG         ; _ﾊﾟｽﾜｰﾄﾞ変更不可能
+CON
+SET @R107
+STG @R101
+SCMP VtoK_PASS_NewStr VtoK_PASS_ChkStr;_新ﾊﾟｽﾜｰﾄﾞ入力文字列  _新ﾊﾟｽﾜｰﾄﾞ確認入力文字列
+CON
+MPS
+LD CR2010                ; 演算結果がｾﾞﾛ
+OR CR2011                ; 演算結果が正
+ANL
+SMOV VtoK_PASS_NewStr VtoK_PASS_Lv3Str;_新ﾊﾟｽﾜｰﾄﾞ入力文字列  _ﾚﾍﾞﾙ3ﾊﾟｽﾜｰﾄﾞ文字列
+SET KtoV_PASS_OK         ; _ﾊﾟｽﾜｰﾄﾞ変更可能
+CON
+JMP @R107
+MPP
+AND CR2009               ; 演算結果が負
+SET KtoV_PASS_NG         ; _ﾊﾟｽﾜｰﾄﾞ変更不可能
+CON
+JMP @R107
+STG @R107
+SMOV "" VtoK_PASS_InStr  ; _入力ﾊﾟｽﾜｰﾄﾞ
+SMOV "" VtoK_PASS_OldStr ; _旧ﾊﾟｽﾜｰﾄﾞ入力文字列
+SMOV "" VtoK_PASS_NewStr ; _新ﾊﾟｽﾜｰﾄﾞ入力文字列
+SMOV "" VtoK_PASS_ChkStr ; _新ﾊﾟｽﾜｰﾄﾞ確認入力文字列
+ENDS
+;<h1/>-----Data
+LDP TOWER_Y3             ; ﾚｼﾋﾟﾃﾞｰﾀ読み込み完了
+BMOV model_data data_tmp #200;_機種分類1　機種別ﾃﾞｰﾀ1  _機種別ﾃﾞｰﾀ　ﾃﾝﾎﾟﾗﾘ
+LD= DM3000 #221          ; _MainTP　表示中ﾍﾟｰｼﾞNo
+@LDA MODEL1_Code         ; 選択中ｺｰﾄﾞ
+CON
+@STA VtoK_MDL_TpSelCode  ; _TP選択中機種ｺｰﾄﾞ
+;<h1/>RECIPE MODEL DATA WRITE
+;2013/4 機種ﾃﾞｰﾀ　9ﾜｰﾄﾞ→8ﾜｰﾄﾞに伴い、30*8=240　機種番号と機種名で10ﾜｰﾄﾞ確保するので　270→250に変更
+;
+;EM2000から使用している為EM10000へｺﾋﾟｰする必要あり　（ｾﾙ2のみ）
+LDP VtoK_DT_Mdl1SetEnd   ; Data Setting End
+ANB KtoV_DT_CopyEnd      ; _ﾃﾞｰﾀｺﾋﾟｰ終了
+ANB KtoV_DT_MemCard      ; _ﾒﾓﾘｰｶｰﾄﾞｱｸｾｽ禁止
+MPS
+AND VtoK_DT_DataStat     ; _TPﾃﾞｰﾀ編集/参照
+BMOV data_tmp ZF400 #200 ; _機種別ﾃﾞｰﾀ　ﾃﾝﾎﾟﾗﾘ
+BMOV data_tmp model_data #200;_機種別ﾃﾞｰﾀ　ﾃﾝﾎﾟﾗﾘ  _機種分類1　機種別ﾃﾞｰﾀ1
+BMOV DM50500 ZF0 #250    ; 機種項目1
+BMOV DM50500 common_data #250;機種項目1  _機種共通ﾃﾞｰﾀ1
+BMOV EM2000 EM10000 #8000; RB5 P1 目標位置（下位bit）
+BMOV EM10000 ZF800 #19200
+RES VtoK_DT_DataStat     ; _TPﾃﾞｰﾀ編集/参照
+CON
+SET KtoV_DT_CopyEnd      ; _ﾃﾞｰﾀｺﾋﾟｰ終了
+MPP
+ANB VtoK_DT_DataStat     ; _TPﾃﾞｰﾀ編集/参照
+SET KtoV_DT_MemCard      ; _ﾒﾓﾘｰｶｰﾄﾞｱｸｾｽ禁止
+;<h1/>M/C Basic Data/装置基礎ﾃﾞｰﾀ
+;装置基礎ﾃﾞｰﾀSW表示(ｵﾍﾟﾚｰﾀﾚﾍﾞﾙがﾚﾍﾞﾙ3の場合のみ)
+LD mc_use                ; _装置基礎ﾃﾞｰﾀ使用有無
+AND= OpeLevel #2         ; _現在ｵﾍﾟﾚｰﾀﾚﾍﾞﾙ番号
+OUT KtoV_DT_McEditOK     ; _装置基礎ﾃﾞｰﾀ編集許可
+;<h1/>Model Control/機種管理
+;●TP選択中機種管理番号転送
+LD CR2002                ; 常時ON
+MPS
+AND<> VtoK_MDL_TpSelCode #0;_TP選択中機種ｺｰﾄﾞ
+LDA VtoK_MDL_TpSelCode   ; _TP選択中機種ｺｰﾄﾞ
+CON
+STA KtoV_MDL_NowCode     ; _選択中機種ｺｰﾄﾞ
+MPP
+AND= VtoK_MDL_TpSelCode #0;_TP選択中機種ｺｰﾄﾞ
+MOV #0 KtoV_MDL_NowCode  ; _選択中機種ｺｰﾄﾞ
+;●機種変更要求
+;機種変更方法によってAck分岐(MdlChgSelect=0:TPからの機種切替 <>0=ﾏｸﾛ機種切替)
+;・機種処理時に現在機種が変更されてしまう為、TP用作業ﾌｫﾙﾀﾞはﾃﾝﾎﾟﾗﾘとする
+;・機種別ﾃﾞｰﾀを一度ﾃﾝﾎﾟﾗﾘに受けてPLCが機種別ﾃﾞｰﾀを変更する
+LD= MdlChgSelect #0      ; _機種変更種類
+ANP VtoK_MDL_TpRQ        ; _機種切替要求(From TP)
+LD<> MdlChgSelect #0     ; _機種変更種類
+AND VtoK_MDL_ChangeOK    ; _機種切替成功
+ORL
+SET KtoV_MDL_NameTrans   ; _名称転送要求
+;2013/4 機種ﾃﾞｰﾀ　9ﾜｰﾄﾞ→8ﾜｰﾄﾞに伴い、30*8=240　機種番号と機種名で10ﾜｰﾄﾞ確保するので　270→250に変更
+;
+;EM2000から使用している為EM10000からｺﾋﾟｰする必要あり　（ｾﾙ2のみ）
+LDP R55209               ; 機種切替完了
+ORP R57504               ; 機種ﾃﾞｰﾀ読込完了(VT→PLC)
+MPS
+AND DM2000.12            ; ON-LINE/OFF-LINE
+BMOV ZF0 common_data #250; _機種共通ﾃﾞｰﾀ1
+MRD
+BMOV ZF400 model_data #200;_機種分類1　機種別ﾃﾞｰﾀ1
+MRD
+BMOV ZF800 EM10000 #19200
+MRD
+BMOV EM10000 EM2000 #8000; RB5 P1 目標位置（下位bit）
+MRD
+BMOV common_data DM50500 #250;_機種共通ﾃﾞｰﾀ1  機種項目1
+MPP
+BMOV model_data data_tmp #200;_機種分類1　機種別ﾃﾞｰﾀ1  _機種別ﾃﾞｰﾀ　ﾃﾝﾎﾟﾗﾘ
+LD R55209                ; 機種切替完了
+TMR @10 #2
+CON
+AND @T10
+RES R55209               ; 機種切替完了
+;<h1/>Model Name change
+;●現在選択されている機種の機種名変更と削除は禁止とする(To TP)
+;IF DM8644<>0 THEN
+;	BMOV(D800:((DM8644-1)*8),D888,8)'変更機種データ名
+;END IF
+;
+;IF DM888.D = 0 THEN 
+;	SET(R54805)
+;ELSE
+;	RES(R54805)
+;END IF	
+;
+;IF DM5260<> 0 THEN
+;	BMOV(D800:((DM5260-1)*8),D880,8)'現在機種データ名
+;END IF
+;
+;IF DM3000 = #233 THEN 'Copy
+;	BMOV(D800:((DM5261-1)*8),D896,8)
+;	
+;END IF
+;
+LD<= DM3000 #239         ; _MainTP　表示中ﾍﾟｰｼﾞNo
+AND>= DM3000 #221        ; _MainTP　表示中ﾍﾟｰｼﾞNo
+LD<= DM3000 #399         ; _MainTP　表示中ﾍﾟｰｼﾞNo
+AND>= DM3000 #300        ; _MainTP　表示中ﾍﾟｰｼﾞNo
+ORL
+NCJ #1025
+;IF DM8644<>0 THEN
+;
+LD<> KtoV_MDL_NowCode #0 ; _選択中機種ｺｰﾄﾞ
+NCJ #2019
+;	BMOV(D800:((DM8644-1)*8),D888,8)'変更機種データ名
+;
+LD CR2002                ; 常時ON
+LDA KtoV_MDL_NowCode     ; _選択中機種ｺｰﾄﾞ
+CON
+EXT
+CON
+SUB.L +1
+CON
+MUL.L +8
+CON
+STA.L Z12
+BMOV DM800:Z12 DM888 #8  ; 機種1  選択機種名
+;END IF
+;
+LABEL #2019
+;IF DM888.D = 0 THEN 
+;
+LD=.D DM888 #0           ; 選択機種名
+NCJ #2020
+;	SET(R54805)
+;
+LD CR2002                ; 常時ON
+SET VtoK_MDL_R_Sw        ; 機種切替不可
+;ELSE
+;
+LD CR2002                ; 常時ON
+CJ #2021
+LABEL #2020
+;	RES(R54805)
+;
+LD CR2002                ; 常時ON
+RES VtoK_MDL_R_Sw        ; 機種切替不可
+;END IF	
+;
+LABEL #2021
+;IF DM5260<> 0 THEN
+;
+LD<> MODEL1_Code #0      ; 選択中ｺｰﾄﾞ
+NCJ #2022
+;	BMOV(D800:((DM5260-1)*8),D880,8)'現在機種データ名
+;
+LD CR2002                ; 常時ON
+LDA MODEL1_Code          ; 選択中ｺｰﾄﾞ
+CON
+EXT
+CON
+SUB.L +1
+CON
+MUL.L +8
+CON
+STA.L Z12
+BMOV DM800:Z12 DM880 #8  ; 機種1  現在機種名
+;END IF
+;
+LABEL #2022
+;IF DM3000 = #233 THEN 'Copy
+;
+LD= DM3000 #233          ; _MainTP　表示中ﾍﾟｰｼﾞNo
+NCJ #2023
+;	BMOV(D800:((DM5261-1)*8),D896,8)
+;
+LD CR2002                ; 常時ON
+LDA MODEL2_Code          ; コピー先機種№
+CON
+EXT
+CON
+SUB.L +1
+CON
+MUL.L +8
+CON
+STA.L Z12
+BMOV DM800:Z12 DM896 #8  ; 機種1  _機種分類2　機種別ﾃﾞｰﾀ121
+;END IF
+;
+LABEL #2023
+LABEL #1025
+;
+LD<> DM896 #0            ; _機種分類2　機種別ﾃﾞｰﾀ121
+AND<> MODEL2_Code KtoV_MDL_NowCode;コピー先機種№  _選択中機種ｺｰﾄﾞ
+AND<= DM3000 #239        ; _MainTP　表示中ﾍﾟｰｼﾞNo
+AND>= DM3000 #221        ; _MainTP　表示中ﾍﾟｰｼﾞNo
+OUT @R003                ; Copy 可能
+LD<> DM3000 #230         ; _MainTP　表示中ﾍﾟｰｼﾞNo
+AND<> DM3000 #231        ; _MainTP　表示中ﾍﾟｰｼﾞNo
+RES KtoV_MDL_R_Edge      ; 名称登録可能
+LD= VtoK_MDL_TpActMdlNo #1;_TP機種切替実行分類番号
+LD= MODEL1_Code KtoV_MDL_NowCode;選択中ｺｰﾄﾞ  _選択中機種ｺｰﾄﾞ
+OR= KtoV_MDL_NowCode #0  ; _選択中機種ｺｰﾄﾞ
+ANL
+OR VtoK_MDL_R_Sw         ; 機種切替不可
+OUT KtoV_MDL_Selecting   ; _使用中機種をTPで選択中
+LD VtoK_MDL_R_Sw         ; 機種切替不可
+OR @R003                 ; Copy 可能
+OUT VtoK_MDL_L_Sw        ; 新規作成許可
+;FOR @DM3 = 0 TO 9
+;RES(R54804)
+; IF DM8698.T = D800.T:(@D3*8) THEN
+;	ZRES(DM8698,DM8705) 
+;	RES(R54804)
+; END IF
+;NEXT
+;IF DM8698<> 0 THEN
+;	SET(R54804)
+;END IF
+;RES(R54803)
+LDP KtoV_MDL_L_Edge      ; 機種名変更
+NCJ #1026
+;FOR @DM3 = 0 TO 9
+;
+LD CR2002                ; 常時ON
+MOV #0 @DM3
+LABEL #2024
+LD> @DM3 #9
+CJ #2025
+;RES(R54804)
+;
+LD CR2002                ; 常時ON
+RES KtoV_MDL_R_Edge      ; 名称登録可能
+; IF DM8698.T = D800.T:(@D3*8) THEN
+;
+LD CR2002                ; 常時ON
+LDA @DM3
+CON
+EXT
+CON
+MUL.L +8
+CON
+STA.L Z12
+CON
+SCMP VtoK_MDL_MakeNm DM800:Z12;_新規作成機種作成名称  機種1
+LD CR2010                ; 演算結果がｾﾞﾛ
+NCJ #2026
+;	ZRES(DM8698,DM8705) 
+;
+LD CR2002                ; 常時ON
+ZRES VtoK_MDL_MakeNm DM8705;_新規作成機種作成名称
+;	RES(R54804)
+;
+LD CR2002                ; 常時ON
+RES KtoV_MDL_R_Edge      ; 名称登録可能
+; END IF
+;
+LABEL #2026
+;NEXT
+;
+LD CR2002                ; 常時ON
+INC @DM3
+LDB CR2009               ; 演算結果が負
+CJ #2024
+LABEL #2025
+;IF DM8698<> 0 THEN
+;
+LD<> VtoK_MDL_MakeNm #0  ; _新規作成機種作成名称
+NCJ #2027
+;	SET(R54804)
+;
+LD CR2002                ; 常時ON
+SET KtoV_MDL_R_Edge      ; 名称登録可能
+;END IF
+;
+LABEL #2027
+;RES(R54803)
+LD CR2002                ; 常時ON
+RES KtoV_MDL_L_Edge      ; 機種名変更
+LABEL #1026
+;
+;@DM0=(DM8644-1)*8
+;IF DM8698<> 0 THEN
+;	BMOV(DM8698,D800:@DM0,8)
+;ELSE
+;	SET(R54803)
+;END IF
+LDP R54802               ; 機種名変更要求
+NCJ #1031
+;@DM0=(DM8644-1)*8
+;
+LD CR2002                ; 常時ON
+LDA KtoV_MDL_NowCode     ; _選択中機種ｺｰﾄﾞ
+CON
+EXT
+CON
+SUB.L +1
+CON
+MUL.L +8
+CON
+STA @DM0
+;IF DM8698<> 0 THEN
+;
+LD<> VtoK_MDL_MakeNm #0  ; _新規作成機種作成名称
+NCJ #2028
+;	BMOV(DM8698,D800:@DM0,8)
+;
+LD CR2002                ; 常時ON
+LDA @DM0
+CON
+EXT
+CON
+STA.L Z12
+BMOV VtoK_MDL_MakeNm DM800:Z12 #8;_新規作成機種作成名称  機種1
+;ELSE
+;
+LD CR2002                ; 常時ON
+CJ #2029
+LABEL #2028
+;	SET(R54803)
+;
+LD CR2002                ; 常時ON
+SET KtoV_MDL_L_Edge      ; 機種名変更
+;END IF
+LABEL #2029
+LABEL #1031
+;
+;機種データ編集
+LD= DM3000 #310          ; _MainTP　表示中ﾍﾟｰｼﾞNo
+OR= DM3000 #370          ; _MainTP　表示中ﾍﾟｰｼﾞNo
+@DW #0 DM50430           ; 機種DATA Offset
+LD= DM3000 #311          ; _MainTP　表示中ﾍﾟｰｼﾞNo
+@DW #50 DM50430          ; 機種DATA Offset
+;MODEL DATA NAME
+;2013/4　機種名　9ﾜｰﾄﾞ→8ﾜｰﾄﾞに変更
+;DM50420 = DM50430*8
+;DM50400 = D50430+1 
+;DM50410= #3000+DM50430
+LD= DM3000 #370          ; _MainTP　表示中ﾍﾟｰｼﾞNo
+NCJ #1032
+;DM50420 = DM50430*8
+;
+LD CR2002                ; 常時ON
+LDA DM50430              ; 機種DATA Offset
+CON
+EXT
+CON
+MUL.L +8
+CON
+STA DM50420
+;DM50400 = D50430+1 
+;
+LD CR2002                ; 常時ON
+LDA DM50430              ; 機種DATA Offset
+CON
+EXT
+CON
+ADD.L +1
+CON
+STA DM50400
+;DM50410= #3000+DM50430
+LD CR2002                ; 常時ON
+LDA DM50430              ; 機種DATA Offset
+CON
+EXT
+CON
+ADD.L +3000
+CON
+STA DM50410
+LABEL #1032
+;
+;RECIPE DATA NAME
+;DM50420 = DM50430*2
+;DM50400 = D50430+1 
+;DM50410 = #3300+DM50430'データ名称
+;DM50411 = #3400+DM50430'単位
+LD= DM3000 #310          ; _MainTP　表示中ﾍﾟｰｼﾞNo
+OR= DM3000 #311          ; _MainTP　表示中ﾍﾟｰｼﾞNo
+NCJ #1033
+;DM50420 = DM50430*2
+;
+LD CR2002                ; 常時ON
+LDA DM50430              ; 機種DATA Offset
+CON
+EXT
+CON
+MUL.L +2
+CON
+STA DM50420
+;DM50400 = D50430+1 
+;
+LD CR2002                ; 常時ON
+LDA DM50430              ; 機種DATA Offset
+CON
+EXT
+CON
+ADD.L +1
+CON
+STA DM50400
+;DM50410 = #3300+DM50430'データ名称
+;
+LD CR2002                ; 常時ON
+LDA DM50430              ; 機種DATA Offset
+CON
+EXT
+CON
+ADD.L +3300
+CON
+STA DM50410
+;DM50411 = #3400+DM50430'単位
+LD CR2002                ; 常時ON
+LDA DM50430              ; 機種DATA Offset
+CON
+EXT
+CON
+ADD.L +3400
+CON
+STA DM50411
+LABEL #1033
+;
+;MACHINE DATA NAME
+;DM50420 = DM50430*2
+;DM50400 = D50430+1 
+;DM50410 = #6000+DM50430'データ名称
+;DM50411 = #6100+DM50430'単位
+LD= DM3000 #380          ; _MainTP　表示中ﾍﾟｰｼﾞNo
+OR= DM3000 #381          ; _MainTP　表示中ﾍﾟｰｼﾞNo
+NCJ #1034
+;DM50420 = DM50430*2
+;
+LD CR2002                ; 常時ON
+LDA DM50430              ; 機種DATA Offset
+CON
+EXT
+CON
+MUL.L +2
+CON
+STA DM50420
+;DM50400 = D50430+1 
+;
+LD CR2002                ; 常時ON
+LDA DM50430              ; 機種DATA Offset
+CON
+EXT
+CON
+ADD.L +1
+CON
+STA DM50400
+;DM50410 = #6000+DM50430'データ名称
+;
+LD CR2002                ; 常時ON
+LDA DM50430              ; 機種DATA Offset
+CON
+EXT
+CON
+ADD.L +6000
+CON
+STA DM50410
+;DM50411 = #6100+DM50430'単位
+LD CR2002                ; 常時ON
+LDA DM50430              ; 機種DATA Offset
+CON
+EXT
+CON
+ADD.L +6100
+CON
+STA DM50411
+LABEL #1034
+;
+;●TP機種切替完了待ち
+;機種切替方法により分岐
+;・TP機種変更の場合→ﾃﾝﾎﾟﾗﾘﾃﾞﾊﾞｲｽから名称と管理番号を取得
+;・名称ﾏｸﾛからの場合→引数を名称に指定、管理番号は取得不可
+;・番号ﾏｸﾛからの場合→引数を番号に指定、TP指定機種名を名称に指定
+LD= MdlChgSelect #0      ; _機種変更種類
+ANP VtoK_MDL_TransFin    ; _名称転送完了
+LD<> MdlChgSelect #0     ; _機種変更種類
+AND VtoK_MDL_ChangeOK    ; _機種切替成功
+ORL
+AND= VtoK_MDL_TpActMdlNo #1;_TP機種切替実行分類番号
+AND= MdlChgSelect #0     ; _機種変更種類
+SMOV mdlname_tmp MODEL1  ; _機種名称　ﾃﾝﾎﾟﾗﾘ  機種名称
+MOV KtoV_MDL_NowCode MODEL1_Code;_選択中機種ｺｰﾄﾞ  選択中ｺｰﾄﾞ
+;●機種新規作成、機種名変更
+;I/F用ﾃﾞﾊﾞｲｽｸﾘｱ
+;・新規作成画面(#231)
+;・機種名変更画面(#230)
+LD= DM3000 #231          ; _MainTP　表示中ﾍﾟｰｼﾞNo
+OR= DM3000 #230          ; _MainTP　表示中ﾍﾟｰｼﾞNo
+@SMOV "" VtoK_MDL_SearchNm;_新規作成検索指定名称
+@SMOV "" VtoK_MDL_MakeNm ; _新規作成機種作成名称
+@MOV #0 KtoV_MDL_MakeNo  ; _新規作成可能機種番号
+;新機種作成確認要求待ち(From TP)
+;・最大機種数からﾙｰﾌﾟ開始、ﾃﾞｸﾘﾒﾝﾄ
+LD VtoK_MDL_NewMdlRQ     ; _新機種作成要求
+MOV #0 KtoV_MDL_SearchNo ; _新規作成機種ｻｰﾁ番号
+MOV ModelFullNum @EM40   ; _最大機種数  検索機種番号DEC用
+MPS
+AND= DM3000 #231         ; _MainTP　表示中ﾍﾟｰｼﾞNo
+RES VtoK_MDL_NewMdlRQ    ; _新機種作成要求
+CON
+SET @R300                ; 作成機種番号ｻｰﾁ
+MPP
+AND= DM3000 #230         ; _MainTP　表示中ﾍﾟｰｼﾞNo
+SET @R305                ; 機種名変更ﾌﾗｸﾞ
+CON
+RES VtoK_MDL_NewMdlRQ    ; _新機種作成要求
+CON
+SET @R300                ; 作成機種番号ｻｰﾁ
+;●全機種ｻｰﾁ
+;・全機種の空き番号検索と同一機種名称検索
+;	新機種作成の場合→空き番号が存在し、同一名称が無い事
+;	名称変更の場合→同一名称が無い事
+;
+;(内部処理)
+;・全機種検索未終了→検索番号転送でﾒﾓﾘｶｰﾄﾞｱｸｾｽ開始(機種名称取得)
+;・全機種検索終了
+;		→機種数に空き有り(番号検索できた)ならば可能SET
+;		→機種数に空きが無ければ(検索できなかった)不可SET
+STG @R300                ; 作成機種番号ｻｰﾁ
+MPS
+AND<> @EM40 #0           ; 検索機種番号DEC用
+MOV @EM40 KtoV_MDL_SearchNo;検索機種番号DEC用  _新規作成機種ｻｰﾁ番号
+JMP @R301                ; ﾒﾓﾘｶｰﾄﾞｱｸｾｽ開始待ち
+MPP
+AND= @EM40 #0            ; 検索機種番号DEC用
+MPS
+AND @R305                ; 機種名変更ﾌﾗｸﾞ
+RES @R305                ; 機種名変更ﾌﾗｸﾞ
+CON
+SET KtoV_MDL_NewMdlOK    ; _新機種作成可能
+CON
+ENDS
+MPP
+ANB @R305                ; 機種名変更ﾌﾗｸﾞ
+MPS
+AND<> KtoV_MDL_MakeNo #0 ; _新規作成可能機種番号
+SET KtoV_MDL_NewMdlOK    ; _新機種作成可能
+CON
+ENDS
+MPP
+AND= KtoV_MDL_MakeNo #0  ; _新規作成可能機種番号
+SET KtoV_MDL_NumFull     ; _機種数Full
+CON
+SET KtoV_MDL_NewMdlNG    ; _新機種作成不可
+CON
+ENDS
+;●機種名称取得
+;・ﾒﾓﾘｶｰﾄﾞｱｸｾｽ開始～完了待ち
+STG @R301                ; ﾒﾓﾘｶｰﾄﾞｱｸｾｽ開始待ち
+BAND DM3006 #5           ; _MainTP　ｽﾃｰﾀｽ
+JMP @R302                ; ﾒﾓﾘｶｰﾄﾞｱｸｾｽ終了待ち
+STG @R302                ; ﾒﾓﾘｶｰﾄﾞｱｸｾｽ終了待ち
+BANB DM3006 #5           ; _MainTP　ｽﾃｰﾀｽ
+TMH @16 #2               ; ﾒﾓﾘｶｰﾄﾞｱｸｾｽ終了ﾃﾞｨﾚｲ
+CON
+AND @T16                 ; ﾒﾓﾘｶｰﾄﾞｱｸｾｽ終了ﾃﾞｨﾚｲ
+JMP @R303                ; 同一機種名称ﾁｪｯｸ
+;●作成機種名称と検索機種名称が一致したらその機種名では作成不可
+STG @R303                ; 同一機種名称ﾁｪｯｸ
+SCMP VtoK_MDL_SearchNm VtoK_MDL_MakeNm;_新規作成検索指定名称  _新規作成機種作成名称
+CON
+MPS
+AND CR2010               ; 演算結果がｾﾞﾛ
+RES @R305                ; 機種名変更ﾌﾗｸﾞ
+CON
+SET KtoV_MDL_SameName    ; _同機種名称有り
+CON
+SET KtoV_MDL_NewMdlNG    ; _新機種作成不可
+CON
+ENDS
+MPP
+ANB CR2010               ; 演算結果がｾﾞﾛ
+MPS
+ANB @R305                ; 機種名変更ﾌﾗｸﾞ
+JMP @R304                ; 空白機種番号ﾁｪｯｸ
+MPP
+AND @R305                ; 機種名変更ﾌﾗｸﾞ
+DEC @EM40                ; 検索機種番号DEC用
+CON
+JMP @R300                ; 作成機種番号ｻｰﾁ
+;●検索機種名称が空白(機種が存在しない)ならば作成機種管理番号候補とする
+;(最大からのﾃﾞｸﾘﾒﾝﾄなので一番若い番号が最後に残る)
+STG @R304                ; 空白機種番号ﾁｪｯｸ
+SCMP VtoK_MDL_SearchNm ""; _新規作成検索指定名称
+CON
+MPS
+AND CR2010               ; 演算結果がｾﾞﾛ
+MOV KtoV_MDL_SearchNo KtoV_MDL_MakeNo;_新規作成機種ｻｰﾁ番号  _新規作成可能機種番号
+MPP
+DEC @EM40                ; 検索機種番号DEC用
+CON
+JMP @R300                ; 作成機種番号ｻｰﾁ
+;<h1/>ここまで↑
+;<h1/>Consumer Infomation/消耗品情報
+;消耗品情報1
+;消耗品情報未使用もしくは最大値未入力
+;→ｲﾝｼﾞｹﾞｰﾀ青、100%に固定
+LDB EntryConsume         ; EntryConsume1
+LD EntryConsume          ; EntryConsume1
+AND=.D VtoK_CSM_Max #0   ; _消耗品1最大値
+ORL
+MOV #100 KtoV_CSM_Per    ; _消耗品1現在消費%
+MOV.D #0 KtoV_CSM_Val    ; _消耗品1現在値
+MOV #0 KtoV_CSM_Color    ; _消耗品1ｲﾝｼﾞｹﾞｰﾀ切替色
+;消耗品値計算
+;・最大値 - ﾕｰｻﾞｰｶｳﾝﾄ値から残量を求め、割合演算
+;(消耗品情報は100%から開始のﾀﾞｳﾝ方式)
+;'消耗品割合(%) = (現在値 / 最大値) * 100
+;
+;KtoV_CSM_Per[0] = (FLOAT(KtoV_CSM_Val[0])/FLOAT(VtoK_CSM_Max[0])) * 100
+LD EntryConsume          ; EntryConsume1
+AND<>.D VtoK_CSM_Max #0  ; _消耗品1最大値
+MPS
+AND>.D VtoK_CSM_Max Consume_Count1;_消耗品1最大値  _消耗品1ｶｳﾝﾀ
+LDA.D VtoK_CSM_Max       ; _消耗品1最大値
+CON
+SUB.D Consume_Count1     ; _消耗品1ｶｳﾝﾀ
+CON
+STA.D KtoV_CSM_Val       ; _消耗品1現在値
+MRD
+AND<.D VtoK_CSM_Max Consume_Count1;_消耗品1最大値  _消耗品1ｶｳﾝﾀ
+MOV #0 KtoV_CSM_Per      ; _消耗品1現在消費%
+MOV.D #0 KtoV_CSM_Val    ; _消耗品1現在値
+MPP
+AND>=.D KtoV_CSM_Val #0  ; _消耗品1現在値
+NCJ #1005
+;'消耗品割合(%) = (現在値 / 最大値) * 100
+;
+;KtoV_CSM_Per[0] = (FLOAT(KtoV_CSM_Val[0])/FLOAT(VtoK_CSM_Max[0])) * 100
+LD CR2002                ; 常時ON
+LDA.D VtoK_CSM_Max       ; _消耗品1最大値
+CON
+FLOAT.D
+CON
+STA.F @VM0
+CON
+LDA.D KtoV_CSM_Val       ; _消耗品1現在値
+CON
+FLOAT.D
+CON
+DIV.F @VM0
+CON
+MUL.F +100
+CON
+INTG
+CON
+STA KtoV_CSM_Per         ; _消耗品1現在消費%
+LABEL #1005
+;
+;消耗品ｲﾝｼﾞｹﾞｰﾀ制御
+;・現在%がｲﾝｼﾞｹﾞｰﾀ黄色以上%→ｲﾝｼﾞｹﾞｰﾀ青
+;・現在%がｲﾝｼﾞｹﾞｰﾀ黄色%以下、赤色%未満→ｲﾝｼﾞｹﾞｰﾀ黄
+;・現在%がｲﾝｼﾞｹﾞｰﾀ赤色%以下→ｲﾝｼﾞｹﾞｰﾀ赤
+LD EntryConsume          ; EntryConsume1
+AND<>.D VtoK_CSM_Max #0  ; _消耗品1最大値
+MPS
+AND> KtoV_CSM_Per VtoK_CSM_Y;_消耗品1現在消費%  _消耗品1ｲﾝｼﾞｹﾞｰﾀ黄色開始%
+MOV #0 KtoV_CSM_Color    ; _消耗品1ｲﾝｼﾞｹﾞｰﾀ切替色
+MRD
+LD<= KtoV_CSM_Per VtoK_CSM_Y;_消耗品1現在消費%  _消耗品1ｲﾝｼﾞｹﾞｰﾀ黄色開始%
+AND> KtoV_CSM_Per VtoK_CSM_R;_消耗品1現在消費%  _消耗品1ｲﾝｼﾞｹﾞｰﾀ赤色開始%
+ANL
+MOV #1 KtoV_CSM_Color    ; _消耗品1ｲﾝｼﾞｹﾞｰﾀ切替色
+MPP
+AND<= KtoV_CSM_Per VtoK_CSM_R;_消耗品1現在消費%  _消耗品1ｲﾝｼﾞｹﾞｰﾀ赤色開始%
+MOV #2 KtoV_CSM_Color    ; _消耗品1ｲﾝｼﾞｹﾞｰﾀ切替色
+;消耗品情報2
+LDB EntryConsume:#1      ; EntryConsume2
+LD EntryConsume:#1       ; EntryConsume2
+AND=.D VtoK_CSM_Max:#2 #0; _消耗品2最大値
+ORL
+MOV #100 KtoV_CSM_Per:#1 ; _消耗品2現在消費%
+MOV.D #0 KtoV_CSM_Val:#2 ; _消耗品2現在値
+MOV #0 KtoV_CSM_Color:#1 ; _消耗品2ｲﾝｼﾞｹﾞｰﾀ切替色
+;'消耗品割合(%) = (現在値 / 最大値) * 100
+;
+;KtoV_CSM_Per[1] = (FLOAT(KtoV_CSM_Val[1])/FLOAT(VtoK_CSM_Max[1])) * 100
+LD EntryConsume:#1       ; EntryConsume2
+AND<>.D VtoK_CSM_Max:#2 #0;_消耗品2最大値
+MPS
+AND>.D VtoK_CSM_Max:#2 Consume_Count2;_消耗品2最大値  _消耗品2ｶｳﾝﾀ
+LDA.D VtoK_CSM_Max:#2    ; _消耗品2最大値
+CON
+SUB.D Consume_Count2     ; _消耗品2ｶｳﾝﾀ
+CON
+STA.D KtoV_CSM_Val:#2    ; _消耗品2現在値
+MRD
+AND<.D VtoK_CSM_Max:#2 Consume_Count2;_消耗品2最大値  _消耗品2ｶｳﾝﾀ
+MOV #0 KtoV_CSM_Per:#1   ; _消耗品2現在消費%
+MOV.D #0 KtoV_CSM_Val:#2 ; _消耗品2現在値
+MPP
+AND>=.D KtoV_CSM_Val:#2 #0;_消耗品2現在値
+NCJ #1012
+;'消耗品割合(%) = (現在値 / 最大値) * 100
+;
+;KtoV_CSM_Per[1] = (FLOAT(KtoV_CSM_Val[1])/FLOAT(VtoK_CSM_Max[1])) * 100
+LD CR2002                ; 常時ON
+LDA.D VtoK_CSM_Max:#2    ; _消耗品2最大値
+CON
+FLOAT.D
+CON
+STA.F @VM2
+CON
+LDA.D KtoV_CSM_Val:#2    ; _消耗品2現在値
+CON
+FLOAT.D
+CON
+DIV.F @VM2
+CON
+MUL.F +100
+CON
+INTG
+CON
+STA KtoV_CSM_Per:#1      ; _消耗品2現在消費%
+LABEL #1012
+;
+LD EntryConsume:#1       ; EntryConsume2
+AND<>.D VtoK_CSM_Max:#2 #0;_消耗品2最大値
+MPS
+AND> KtoV_CSM_Per:#1 VtoK_CSM_Y:#1;_消耗品2現在消費%  _消耗品2ｲﾝｼﾞｹﾞｰﾀ黄色開始%
+MOV #0 KtoV_CSM_Color:#1 ; _消耗品2ｲﾝｼﾞｹﾞｰﾀ切替色
+MRD
+LD<= KtoV_CSM_Per:#1 VtoK_CSM_Y:#1;_消耗品2現在消費%  _消耗品2ｲﾝｼﾞｹﾞｰﾀ黄色開始%
+AND> KtoV_CSM_Per:#1 VtoK_CSM_R:#1;_消耗品2現在消費%  _消耗品2ｲﾝｼﾞｹﾞｰﾀ赤色開始%
+ANL
+MOV #1 KtoV_CSM_Color:#1 ; _消耗品2ｲﾝｼﾞｹﾞｰﾀ切替色
+MPP
+AND<= KtoV_CSM_Per:#1 VtoK_CSM_R:#1;_消耗品2現在消費%  _消耗品2ｲﾝｼﾞｹﾞｰﾀ赤色開始%
+MOV #2 KtoV_CSM_Color:#1 ; _消耗品2ｲﾝｼﾞｹﾞｰﾀ切替色
+;消耗品情報3
+LDB EntryConsume:#2      ; EntryConsume3
+LD EntryConsume:#2       ; EntryConsume3
+AND=.D VtoK_CSM_Max:#4 #0; _消耗品3最大値
+ORL
+MOV #100 KtoV_CSM_Per:#2 ; _消耗品3現在消費%
+MOV.D #0 KtoV_CSM_Val:#4 ; _消耗品3現在値
+MOV #0 KtoV_CSM_Color:#2 ; _消耗品3ｲﾝｼﾞｹﾞｰﾀ切替色
+;'消耗品割合(%) = (現在値 / 最大値) * 100
+;
+;KtoV_CSM_Per[2] = (FLOAT(KtoV_CSM_Val[2])/FLOAT(VtoK_CSM_Max[2])) * 100
+LD EntryConsume:#2       ; EntryConsume3
+AND<>.D VtoK_CSM_Max:#4 #0;_消耗品3最大値
+MPS
+AND>.D VtoK_CSM_Max:#4 Consume_Count3;_消耗品3最大値  _消耗品3ｶｳﾝﾀ
+LDA.D VtoK_CSM_Max:#4    ; _消耗品3最大値
+CON
+SUB.D Consume_Count3     ; _消耗品3ｶｳﾝﾀ
+CON
+STA.D KtoV_CSM_Val:#4    ; _消耗品3現在値
+MRD
+AND< VtoK_CSM_Max:#4 Consume_Count3;_消耗品3最大値  _消耗品3ｶｳﾝﾀ
+MOV #0 KtoV_CSM_Per:#2   ; _消耗品3現在消費%
+MOV.D #0 KtoV_CSM_Val:#4 ; _消耗品3現在値
+MPP
+AND>=.D KtoV_CSM_Val:#4 #0;_消耗品3現在値
+NCJ #1013
+;'消耗品割合(%) = (現在値 / 最大値) * 100
+;
+;KtoV_CSM_Per[2] = (FLOAT(KtoV_CSM_Val[2])/FLOAT(VtoK_CSM_Max[2])) * 100
+LD CR2002                ; 常時ON
+LDA.D VtoK_CSM_Max:#4    ; _消耗品3最大値
+CON
+FLOAT.D
+CON
+STA.F @VM4
+CON
+LDA.D KtoV_CSM_Val:#4    ; _消耗品3現在値
+CON
+FLOAT.D
+CON
+DIV.F @VM4
+CON
+MUL.F +100
+CON
+INTG
+CON
+STA KtoV_CSM_Per:#2      ; _消耗品3現在消費%
+LABEL #1013
+;
+LD EntryConsume:#2       ; EntryConsume3
+AND<>.D VtoK_CSM_Max:#4 #0;_消耗品3最大値
+MPS
+AND> KtoV_CSM_Per:#2 VtoK_CSM_Y:#2;_消耗品3現在消費%  _消耗品3ｲﾝｼﾞｹﾞｰﾀ黄色開始%
+MOV #0 KtoV_CSM_Color:#2 ; _消耗品3ｲﾝｼﾞｹﾞｰﾀ切替色
+MRD
+LD<= KtoV_CSM_Per:#2 VtoK_CSM_Y:#2;_消耗品3現在消費%  _消耗品3ｲﾝｼﾞｹﾞｰﾀ黄色開始%
+AND> KtoV_CSM_Per:#2 VtoK_CSM_R:#2;_消耗品3現在消費%  _消耗品3ｲﾝｼﾞｹﾞｰﾀ赤色開始%
+ANL
+MOV #1 KtoV_CSM_Color:#2 ; _消耗品3ｲﾝｼﾞｹﾞｰﾀ切替色
+MPP
+AND<= KtoV_CSM_Per:#2 VtoK_CSM_R:#2;_消耗品3現在消費%  _消耗品3ｲﾝｼﾞｹﾞｰﾀ赤色開始%
+MOV #2 KtoV_CSM_Color:#2 ; _消耗品3ｲﾝｼﾞｹﾞｰﾀ切替色
+;消耗品情報4
+LDB EntryConsume:#3      ; EntryConsume4
+LD EntryConsume:#3       ; EntryConsume4
+AND=.D VtoK_CSM_Max:#6 #0; _消耗品4最大値
+ORL
+MOV #100 KtoV_CSM_Per:#3 ; _消耗品4現在消費%
+MOV.D #0 KtoV_CSM_Val:#6 ; _消耗品4現在値
+MOV #0 KtoV_CSM_Color:#3 ; _消耗品4ｲﾝｼﾞｹﾞｰﾀ切替色
+;'消耗品割合(%) = (現在値 / 最大値) * 100
+;
+;KtoV_CSM_Per[3] = (FLOAT(KtoV_CSM_Val[3])/FLOAT(VtoK_CSM_Max[3])) * 100
+LD EntryConsume:#3       ; EntryConsume4
+AND<>.D VtoK_CSM_Max:#6 #0;_消耗品4最大値
+MPS
+AND>.D VtoK_CSM_Max:#6 Consume_Count4;_消耗品4最大値  _消耗品4ｶｳﾝﾀ
+LDA.D VtoK_CSM_Max:#6    ; _消耗品4最大値
+CON
+SUB.D Consume_Count4     ; _消耗品4ｶｳﾝﾀ
+CON
+STA.D KtoV_CSM_Val:#6    ; _消耗品4現在値
+MRD
+AND<.D VtoK_CSM_Max:#6 Consume_Count4;_消耗品4最大値  _消耗品4ｶｳﾝﾀ
+MOV #0 KtoV_CSM_Per:#3   ; _消耗品4現在消費%
+MOV.D #0 KtoV_CSM_Val:#6 ; _消耗品4現在値
+MPP
+AND>=.D KtoV_CSM_Val:#6 #0;_消耗品4現在値
+NCJ #1014
+;'消耗品割合(%) = (現在値 / 最大値) * 100
+;
+;KtoV_CSM_Per[3] = (FLOAT(KtoV_CSM_Val[3])/FLOAT(VtoK_CSM_Max[3])) * 100
+LD CR2002                ; 常時ON
+LDA.D VtoK_CSM_Max:#6    ; _消耗品4最大値
+CON
+FLOAT.D
+CON
+STA.F @VM6
+CON
+LDA.D KtoV_CSM_Val:#6    ; _消耗品4現在値
+CON
+FLOAT.D
+CON
+DIV.F @VM6
+CON
+MUL.F +100
+CON
+INTG
+CON
+STA KtoV_CSM_Per:#3      ; _消耗品4現在消費%
+LABEL #1014
+;
+LD EntryConsume:#3       ; EntryConsume4
+AND<>.D VtoK_CSM_Max:#6 #0;_消耗品4最大値
+MPS
+AND> KtoV_CSM_Per:#3 VtoK_CSM_Y:#3;_消耗品4現在消費%  _消耗品4ｲﾝｼﾞｹﾞｰﾀ黄色開始%
+MOV #0 KtoV_CSM_Color:#3 ; _消耗品4ｲﾝｼﾞｹﾞｰﾀ切替色
+MRD
+LD<= KtoV_CSM_Per:#3 VtoK_CSM_Y:#2;_消耗品4現在消費%  _消耗品3ｲﾝｼﾞｹﾞｰﾀ黄色開始%
+AND> KtoV_CSM_Per:#3 VtoK_CSM_R:#2;_消耗品4現在消費%  _消耗品3ｲﾝｼﾞｹﾞｰﾀ赤色開始%
+ANL
+MOV #1 KtoV_CSM_Color:#3 ; _消耗品4ｲﾝｼﾞｹﾞｰﾀ切替色
+MPP
+AND<= KtoV_CSM_Per:#3 VtoK_CSM_R:#3;_消耗品4現在消費%  _消耗品4ｲﾝｼﾞｹﾞｰﾀ赤色開始%
+MOV #2 KtoV_CSM_Color:#3 ; _消耗品4ｲﾝｼﾞｹﾞｰﾀ切替色
+;消耗品情報5
+LDB EntryConsume:#4      ; EntryConsume5
+LD EntryConsume:#4       ; EntryConsume5
+AND=.D VtoK_CSM_Max:#8 #0; _消耗品5最大値
+ORL
+MOV #100 KtoV_CSM_Per:#4 ; _消耗品5現在消費%
+MOV.D #0 KtoV_CSM_Val:#8 ; _消耗品5現在値
+MOV #0 KtoV_CSM_Color:#4 ; _消耗品5ｲﾝｼﾞｹﾞｰﾀ切替色
+;'消耗品割合(%) = (現在値 / 最大値) * 100
+;
+;KtoV_CSM_Per[4] = (FLOAT(KtoV_CSM_Val[4])/FLOAT(VtoK_CSM_Max[4])) * 100
+LD EntryConsume:#4       ; EntryConsume5
+AND<>.D VtoK_CSM_Max:#8 #0;_消耗品5最大値
+MPS
+AND>.D VtoK_CSM_Max:#8 Consume_Count5;_消耗品5最大値  _消耗品5ｶｳﾝﾀ
+LDA.D VtoK_CSM_Max:#8    ; _消耗品5最大値
+CON
+SUB.D Consume_Count5     ; _消耗品5ｶｳﾝﾀ
+CON
+STA.D KtoV_CSM_Val:#8    ; _消耗品5現在値
+MRD
+AND<.D VtoK_CSM_Max:#8 Consume_Count5;_消耗品5最大値  _消耗品5ｶｳﾝﾀ
+MOV #0 KtoV_CSM_Per:#4   ; _消耗品5現在消費%
+MOV.D #0 KtoV_CSM_Val:#8 ; _消耗品5現在値
+MPP
+AND>=.D KtoV_CSM_Val:#8 #0;_消耗品5現在値
+NCJ #1015
+;'消耗品割合(%) = (現在値 / 最大値) * 100
+;
+;KtoV_CSM_Per[4] = (FLOAT(KtoV_CSM_Val[4])/FLOAT(VtoK_CSM_Max[4])) * 100
+LD CR2002                ; 常時ON
+LDA.D VtoK_CSM_Max:#8    ; _消耗品5最大値
+CON
+FLOAT.D
+CON
+STA.F @VM8
+CON
+LDA.D KtoV_CSM_Val:#8    ; _消耗品5現在値
+CON
+FLOAT.D
+CON
+DIV.F @VM8
+CON
+MUL.F +100
+CON
+INTG
+CON
+STA KtoV_CSM_Per:#4      ; _消耗品5現在消費%
+LABEL #1015
+;
+LD EntryConsume:#4       ; EntryConsume5
+AND<>.D VtoK_CSM_Max:#8 #0;_消耗品5最大値
+MPS
+AND> KtoV_CSM_Per:#4 VtoK_CSM_Y:#4;_消耗品5現在消費%  _消耗品5ｲﾝｼﾞｹﾞｰﾀ黄色開始%
+MOV #0 KtoV_CSM_Color:#4 ; _消耗品5ｲﾝｼﾞｹﾞｰﾀ切替色
+MRD
+LD<= KtoV_CSM_Per:#4 VtoK_CSM_Y:#4;_消耗品5現在消費%  _消耗品5ｲﾝｼﾞｹﾞｰﾀ黄色開始%
+AND> KtoV_CSM_Per:#4 VtoK_CSM_R:#4;_消耗品5現在消費%  _消耗品5ｲﾝｼﾞｹﾞｰﾀ赤色開始%
+ANL
+MOV #1 KtoV_CSM_Color:#4 ; _消耗品5ｲﾝｼﾞｹﾞｰﾀ切替色
+MPP
+AND<= KtoV_CSM_Per:#4 VtoK_CSM_R:#4;_消耗品5現在消費%  _消耗品5ｲﾝｼﾞｹﾞｰﾀ赤色開始%
+MOV #2 KtoV_CSM_Color:#4 ; _消耗品5ｲﾝｼﾞｹﾞｰﾀ切替色
+;演算結果ﾕｰｻﾞｰﾃﾞﾊﾞｲｽ格納
+LD CR2002                ; 常時ON
+MOV.D KtoV_CSM_Val Consume_Remain1;_消耗品1現在値  _消耗品1残量
+MOV.D KtoV_CSM_Per Consume_Per1;_消耗品1現在消費%  _消耗品1残量割合
+MOV KtoV_CSM_Color Consume_Color1;_消耗品1ｲﾝｼﾞｹﾞｰﾀ切替色  _消耗品1現在ｲﾝｼﾞｹﾞｰﾀ
+MOV.D KtoV_CSM_Val:#2 Consume_Remain2;_消耗品2現在値  _消耗品2残量
+MOV.D KtoV_CSM_Per:#1 Consume_Per2;_消耗品2現在消費%  _消耗品2残量割合
+MOV.D KtoV_CSM_Color:#1 Consume_Color2;_消耗品2ｲﾝｼﾞｹﾞｰﾀ切替色  _消耗品2現在ｲﾝｼﾞｹﾞｰﾀ
+MOV.D KtoV_CSM_Val:#4 Consume_Remain3;_消耗品3現在値  _消耗品3残量
+MOV.D KtoV_CSM_Per:#2 Consume_Per3;_消耗品3現在消費%  _消耗品3残量割合
+MOV.D KtoV_CSM_Color:#2 Consume_Color3;_消耗品3ｲﾝｼﾞｹﾞｰﾀ切替色  _消耗品3現在ｲﾝｼﾞｹﾞｰﾀ
+MOV.D KtoV_CSM_Val:#6 Consume_Remain4;_消耗品4現在値  _消耗品4残量
+MOV.D KtoV_CSM_Per:#3 Consume_Per4;_消耗品4現在消費%  _消耗品4残量割合
+MOV.D KtoV_CSM_Color:#3 Consume_Color3;_消耗品4ｲﾝｼﾞｹﾞｰﾀ切替色  _消耗品3現在ｲﾝｼﾞｹﾞｰﾀ
+MOV.D KtoV_CSM_Val:#8 Consume_Remain5;_消耗品5現在値  _消耗品5残量
+MOV.D KtoV_CSM_Per:#4 Consume_Per5;_消耗品5現在消費%  _消耗品5残量割合
+MOV.D KtoV_CSM_Color:#4 Consume_Color5;_消耗品5ｲﾝｼﾞｹﾞｰﾀ切替色  _消耗品5現在ｲﾝｼﾞｹﾞｰﾀ
+;<h1/>Elapsed Time Infomation/経過情報
+;経過情報1
+;経過時間ﾘｾｯﾄ
+;・記録開始した現在秒を記憶(秒形式、YY/MM/DD/HH/MM/SS形式を1ﾜｰﾄﾞずつ分散)
+;・経過時間監視開始
+LD EntryElapsed          ; EntryElapsed1
+LDP Elapsed_Reset1       ; Elapsed_Reset1
+ORP VtoK_ELP1_RST        ; VtoK_ELP1_RST
+ANL
+SEC CM700 Elapsed_Rec1   ; ｶﾚﾝﾀﾞﾀｲﾏ（年）  _経過情報1記録開始秒
+RSEC Elapsed_Rec1 KtoV_ELP_Year1;_経過情報1記録開始秒  _経過情報1記録年
+MOV.D #0 KtoV_ELP_Val    ; _経過情報1現在経過
+MOV #0 KtoV_ELP_Per      ; _経過情報1現在経過%
+MOV #0 KtoV_ELP_Color    ; _経過情報1ｲﾝｼﾞｹﾞｰﾀ切替色
+MOV.D #0 Elapsed_Year1   ; _経過情報1経過年数
+MOV.D #0 Elapsed_Day1    ; _経過情報1経過日数
+MOV.D #0 Elapsed_Hour1   ; _経過情報1経過時間
+SET Elapsed_RUN          ; _経過情報1計測中
+;経過時間演算
+;@EM60.D = SEC(CM700)				'現在秒数取得
+;@EM70.D = Elapsed_Rec1 + 3156000	'INCｻｲｸﾙ取得
+;@EM80.D = @EM70.D + ((Elapsed_Year1 + 1) * 3156000)		'+1年後の秒数取得
+;
+;IF @EM60.D >= @EM80.D THEN		'+1年経過
+;	Elapsed_Year1 = Elapsed_Year1 + 1	'演算用年数をINC
+;END IF 
+LD= Elapsed_Unit #0      ; _経過情報1単位
+AND Elapsed_RUN          ; _経過情報1計測中
+NCJ #1003
+;@EM60.D = SEC(CM700)				'現在秒数取得
+;
+LD CR2002                ; 常時ON
+MOV.D #0 @VM10
+SEC CM700 @VM10          ; ｶﾚﾝﾀﾞﾀｲﾏ（年）
+MOV.D @VM10 @EM60
+;@EM70.D = Elapsed_Rec1 + 3156000	'INCｻｲｸﾙ取得
+;
+LD CR2002                ; 常時ON
+LDA.L Elapsed_Rec1       ; _経過情報1記録開始秒
+CON
+ADD.L +3156000
+CON
+STA.D @EM70
+;@EM80.D = @EM70.D + ((Elapsed_Year1 + 1) * 3156000)		'+1年後の秒数取得
+;
+LD CR2002                ; 常時ON
+LDA.L Elapsed_Year1      ; _経過情報1経過年数
+CON
+ADD.L +1
+CON
+MUL.L +3156000
+CON
+ADD.L @EM70
+CON
+STA.D @EM80
+;IF @EM60.D >= @EM80.D THEN		'+1年経過
+;
+LD>=.D @EM60 @EM80
+NCJ #2030
+;	Elapsed_Year1 = Elapsed_Year1 + 1	'演算用年数をINC
+;
+LD CR2002                ; 常時ON
+LDA.L Elapsed_Year1      ; _経過情報1経過年数
+CON
+ADD.L +1
+CON
+STA.D Elapsed_Year1      ; _経過情報1経過年数
+;END IF 
+LABEL #2030
+LABEL #1003
+;
+;@EM60.D = SEC(CM700)				'現在秒数取得
+;@EM70.D = Elapsed_Rec1 + 84000		'INCｻｲｸﾙ取得
+;@EM80.D = @EM70.D + ((Elapsed_Day1 + 1) * 84000)		'+1日後の秒数取得
+;
+;IF @EM60.D >= @EM80.D THEN			'+1日経過
+;	Elapsed_Day1 = Elapsed_Day1 + 1		'演算用日付をINC
+;END IF
+LD= Elapsed_Unit #1      ; _経過情報1単位
+AND Elapsed_RUN          ; _経過情報1計測中
+NCJ #1006
+;@EM60.D = SEC(CM700)				'現在秒数取得
+;
+LD CR2002                ; 常時ON
+MOV.D #0 @VM12
+SEC CM700 @VM12          ; ｶﾚﾝﾀﾞﾀｲﾏ（年）
+MOV.D @VM12 @EM60
+;@EM70.D = Elapsed_Rec1 + 84000		'INCｻｲｸﾙ取得
+;
+LD CR2002                ; 常時ON
+LDA.L Elapsed_Rec1       ; _経過情報1記録開始秒
+CON
+ADD.L +84000
+CON
+STA.D @EM70
+;@EM80.D = @EM70.D + ((Elapsed_Day1 + 1) * 84000)		'+1日後の秒数取得
+;
+LD CR2002                ; 常時ON
+LDA.L Elapsed_Day1       ; _経過情報1経過日数
+CON
+ADD.L +1
+CON
+MUL.L +84000
+CON
+ADD.L @EM70
+CON
+STA.D @EM80
+;IF @EM60.D >= @EM80.D THEN			'+1日経過
+;
+LD>=.D @EM60 @EM80
+NCJ #2031
+;	Elapsed_Day1 = Elapsed_Day1 + 1		'演算用日付をINC
+;
+LD CR2002                ; 常時ON
+LDA.L Elapsed_Day1       ; _経過情報1経過日数
+CON
+ADD.L +1
+CON
+STA.D Elapsed_Day1       ; _経過情報1経過日数
+;END IF
+LABEL #2031
+LABEL #1006
+;
+;@EM60.D = SEC(CM700)				'現在秒数取得
+;@EM70.D = Elapsed_Rec1 + 3600		'INCｻｲｸﾙ取得
+;@EM80.D = @EM70.D + ((Elapsed_Hour1 + 1) * 3600)		'+1時間後の秒数取得
+;
+;IF @EM60.D >= @EM80.D THEN		'+1時間経過
+;	Elapsed_Hour1 = Elapsed_Hour1 + 1	'演算用時間をINC
+;END IF
+LD= Elapsed_Unit #2      ; _経過情報1単位
+AND Elapsed_RUN          ; _経過情報1計測中
+NCJ #1004
+;@EM60.D = SEC(CM700)				'現在秒数取得
+;
+LD CR2002                ; 常時ON
+MOV.D #0 @VM14
+SEC CM700 @VM14          ; ｶﾚﾝﾀﾞﾀｲﾏ（年）
+MOV.D @VM14 @EM60
+;@EM70.D = Elapsed_Rec1 + 3600		'INCｻｲｸﾙ取得
+;
+LD CR2002                ; 常時ON
+LDA.L Elapsed_Rec1       ; _経過情報1記録開始秒
+CON
+ADD.L +3600
+CON
+STA.D @EM70
+;@EM80.D = @EM70.D + ((Elapsed_Hour1 + 1) * 3600)		'+1時間後の秒数取得
+;
+LD CR2002                ; 常時ON
+LDA.L Elapsed_Hour1      ; _経過情報1経過時間
+CON
+ADD.L +1
+CON
+MUL.L +3600
+CON
+ADD.L @EM70
+CON
+STA.D @EM80
+;IF @EM60.D >= @EM80.D THEN		'+1時間経過
+;
+LD>=.D @EM60 @EM80
+NCJ #2032
+;	Elapsed_Hour1 = Elapsed_Hour1 + 1	'演算用時間をINC
+;
+LD CR2002                ; 常時ON
+LDA.L Elapsed_Hour1      ; _経過情報1経過時間
+CON
+ADD.L +1
+CON
+STA.D Elapsed_Hour1      ; _経過情報1経過時間
+;END IF
+LABEL #2032
+LABEL #1004
+;
+;'経過割合(%) = (現在値 / 最大値) * 100
+;
+;KtoV_ELP_Per[0] = (FLOAT(KtoV_ELP_Val[0])/FLOAT(VtoK_ELP_Max[0])) * 100
+LD Elapsed_RUN           ; _経過情報1計測中
+MPS
+AND= Elapsed_Unit #0     ; _経過情報1単位
+MOV.D Elapsed_Year1 KtoV_ELP_Val;_経過情報1経過年数  _経過情報1現在経過
+MRD
+AND= Elapsed_Unit #1     ; _経過情報1単位
+MOV.D Elapsed_Day1 KtoV_ELP_Val;_経過情報1経過日数  _経過情報1現在経過
+MRD
+AND= Elapsed_Unit #2     ; _経過情報1単位
+MOV.D Elapsed_Hour1 KtoV_ELP_Val;_経過情報1経過時間  _経過情報1現在経過
+MRD
+MOV.D KtoV_ELP_Val Elapsed_Time1;_経過情報1現在経過  _経過情報1経過時間
+MPP
+NCJ #1008
+;'経過割合(%) = (現在値 / 最大値) * 100
+;
+;KtoV_ELP_Per[0] = (FLOAT(KtoV_ELP_Val[0])/FLOAT(VtoK_ELP_Max[0])) * 100
+LD CR2002                ; 常時ON
+LDA.D VtoK_ELP_Max       ; _経過情報1最大値
+CON
+FLOAT.D
+CON
+STA.F @VM16
+CON
+LDA.D KtoV_ELP_Val       ; _経過情報1現在経過
+CON
+FLOAT.D
+CON
+DIV.F @VM16
+CON
+MUL.F +100
+CON
+INTG
+CON
+STA KtoV_ELP_Per         ; _経過情報1現在経過%
+LABEL #1008
+;
+;経過情報ｲﾝｼﾞｹﾞｰﾀ
+;・現在%がｲﾝｼﾞｹﾞｰﾀ黄色%以下→ｲﾝｼﾞｹﾞｰﾀ青
+;・現在%がｲﾝｼﾞｹﾞｰﾀ黄色%以上、赤色%未満→ｲﾝｼﾞｹﾞｰﾀ黄
+;・現在%がｲﾝｼﾞｹﾞｰﾀ赤色%以上→ｲﾝｼﾞｹﾞｰﾀ赤
+LDB EntryElapsed         ; EntryElapsed1
+MOV #0 KtoV_ELP_Color    ; _経過情報1ｲﾝｼﾞｹﾞｰﾀ切替色
+LD EntryElapsed          ; EntryElapsed1
+MPS
+AND=.D VtoK_ELP_Max #0   ; _経過情報1最大値
+MOV #0 KtoV_ELP_Color    ; _経過情報1ｲﾝｼﾞｹﾞｰﾀ切替色
+MPP
+AND<>.D VtoK_ELP_Max #0  ; _経過情報1最大値
+MPS
+AND<.D KtoV_ELP_Val VtoK_ELP_Y;_経過情報1現在経過  _経過情報1ｲﾝｼﾞｹﾞｰﾀ黄色開始
+MOV #0 KtoV_ELP_Color    ; _経過情報1ｲﾝｼﾞｹﾞｰﾀ切替色
+MRD
+LD>=.D KtoV_ELP_Val VtoK_ELP_Y;_経過情報1現在経過  _経過情報1ｲﾝｼﾞｹﾞｰﾀ黄色開始
+AND<.D KtoV_ELP_Val VtoK_ELP_R;_経過情報1現在経過  _経過情報1ｲﾝｼﾞｹﾞｰﾀ赤色開始
+ANL
+MOV #1 KtoV_ELP_Color    ; _経過情報1ｲﾝｼﾞｹﾞｰﾀ切替色
+MPP
+AND>=.D KtoV_ELP_Val VtoK_ELP_R;_経過情報1現在経過  _経過情報1ｲﾝｼﾞｹﾞｰﾀ赤色開始
+MOV #2 KtoV_ELP_Color    ; _経過情報1ｲﾝｼﾞｹﾞｰﾀ切替色
+;経過情報2
+LD EntryElapsed:#1       ; EntryElapsed2
+LDP Elapsed_Reset2       ; Elapsed_Reset2
+ORP VtoK_ELP2_RST        ; VtoK_ELP2_RST
+ANL
+SEC CM700 Elapsed_Rec2   ; ｶﾚﾝﾀﾞﾀｲﾏ（年）  _経過情報2記録開始秒
+RSEC Elapsed_Rec2 KtoV_ELP_Year2;_経過情報2記録開始秒  _経過情報2記録年
+MOV.D #0 KtoV_ELP_Val:#2 ; _経過情報2現在経過
+MOV #0 KtoV_ELP_Per:#1   ; _経過情報2現在経過%
+MOV #0 KtoV_ELP_Color:#1 ; _経過情報2ｲﾝｼﾞｹﾞｰﾀ切替色
+MOV.D #0 Elapsed_Year2   ; _経過情報2経過年数
+MOV.D #0 Elapsed_Day2    ; _経過情報2経過日数
+MOV.D #0 Elapsed_Hour2   ; _経過情報2経過時間
+SET Elapsed_RUN:#1       ; _経過情報2計測中
+;@EM62.D = SEC(CM700)
+;@EM72.D = Elapsed_Rec2 + 3156000	'年→秒換算
+;
+;@EM82.D = @EM72.D + ((Elapsed_Year2 + 1) * 3156000)
+;'記録年月より+1年経過
+;IF @EM62.D >= @EM82.D THEN
+;	Elapsed_Year2 = Elapsed_Year2 + 1	'演算用年数をINC
+;END IF 
+LD= Elapsed_Unit:#1 #0   ; _経過情報2単位
+AND Elapsed_RUN:#1       ; _経過情報2計測中
+NCJ #1028
+;@EM62.D = SEC(CM700)
+;
+LD CR2002                ; 常時ON
+MOV.D #0 @VM18
+SEC CM700 @VM18          ; ｶﾚﾝﾀﾞﾀｲﾏ（年）
+MOV.D @VM18 @EM62
+;@EM72.D = Elapsed_Rec2 + 3156000	'年→秒換算
+;
+LD CR2002                ; 常時ON
+LDA.L Elapsed_Rec2       ; _経過情報2記録開始秒
+CON
+ADD.L +3156000
+CON
+STA.D @EM72
+;@EM82.D = @EM72.D + ((Elapsed_Year2 + 1) * 3156000)
+;
+LD CR2002                ; 常時ON
+LDA.L Elapsed_Year2      ; _経過情報2経過年数
+CON
+ADD.L +1
+CON
+MUL.L +3156000
+CON
+ADD.L @EM72
+CON
+STA.D @EM82
+;'記録年月より+1年経過
+;
+;IF @EM62.D >= @EM82.D THEN
+;
+LD>=.D @EM62 @EM82
+NCJ #2033
+;	Elapsed_Year2 = Elapsed_Year2 + 1	'演算用年数をINC
+;
+LD CR2002                ; 常時ON
+LDA.L Elapsed_Year2      ; _経過情報2経過年数
+CON
+ADD.L +1
+CON
+STA.D Elapsed_Year2      ; _経過情報2経過年数
+;END IF 
+LABEL #2033
+LABEL #1028
+;
+;@EM62.D = SEC(CM700)
+;@EM72.D = Elapsed_Rec2 + 84000		'日→秒換算
+; 
+;@EM82.D = @EM72.D + ((Elapsed_Day2 + 1) * 84000)
+;'記録年月より+1日経過
+;IF @EM62.D >= @EM82.D THEN
+;	Elapsed_Day2 = Elapsed_Day2 + 1		'演算用日付をINC
+;END IF
+LD= Elapsed_Unit:#1 #1   ; _経過情報2単位
+AND Elapsed_RUN:#1       ; _経過情報2計測中
+NCJ #1029
+;@EM62.D = SEC(CM700)
+;
+LD CR2002                ; 常時ON
+MOV.D #0 @VM20
+SEC CM700 @VM20          ; ｶﾚﾝﾀﾞﾀｲﾏ（年）
+MOV.D @VM20 @EM62
+;@EM72.D = Elapsed_Rec2 + 84000		'日→秒換算
+;
+LD CR2002                ; 常時ON
+LDA.L Elapsed_Rec2       ; _経過情報2記録開始秒
+CON
+ADD.L +84000
+CON
+STA.D @EM72
+;@EM82.D = @EM72.D + ((Elapsed_Day2 + 1) * 84000)
+;
+LD CR2002                ; 常時ON
+LDA.L Elapsed_Day2       ; _経過情報2経過日数
+CON
+ADD.L +1
+CON
+MUL.L +84000
+CON
+ADD.L @EM72
+CON
+STA.D @EM82
+;'記録年月より+1日経過
+;
+;IF @EM62.D >= @EM82.D THEN
+;
+LD>=.D @EM62 @EM82
+NCJ #2034
+;	Elapsed_Day2 = Elapsed_Day2 + 1		'演算用日付をINC
+;
+LD CR2002                ; 常時ON
+LDA.L Elapsed_Day2       ; _経過情報2経過日数
+CON
+ADD.L +1
+CON
+STA.D Elapsed_Day2       ; _経過情報2経過日数
+;END IF
+LABEL #2034
+LABEL #1029
+;
+;@EM62.D = SEC(CM700)
+;@EM72.D = Elapsed_Rec2 + 3600		'時→秒換算
+; 
+;@EM82.D = @EM72.D + ((Elapsed_Hour2 + 1) * 3600)
+;'記録年月より+1時間経過
+;IF @EM62.D >= @EM82.D THEN
+;	Elapsed_Hour2 = Elapsed_Hour2 + 1	'演算用時間をINC
+;END IF
+LD= Elapsed_Unit:#1 #2   ; _経過情報2単位
+AND Elapsed_RUN:#1       ; _経過情報2計測中
+NCJ #1030
+;@EM62.D = SEC(CM700)
+;
+LD CR2002                ; 常時ON
+MOV.D #0 @VM22
+SEC CM700 @VM22          ; ｶﾚﾝﾀﾞﾀｲﾏ（年）
+MOV.D @VM22 @EM62
+;@EM72.D = Elapsed_Rec2 + 3600		'時→秒換算
+;
+LD CR2002                ; 常時ON
+LDA.L Elapsed_Rec2       ; _経過情報2記録開始秒
+CON
+ADD.L +3600
+CON
+STA.D @EM72
+;@EM82.D = @EM72.D + ((Elapsed_Hour2 + 1) * 3600)
+;
+LD CR2002                ; 常時ON
+LDA.L Elapsed_Hour2      ; _経過情報2経過時間
+CON
+ADD.L +1
+CON
+MUL.L +3600
+CON
+ADD.L @EM72
+CON
+STA.D @EM82
+;'記録年月より+1時間経過
+;
+;IF @EM62.D >= @EM82.D THEN
+;
+LD>=.D @EM62 @EM82
+NCJ #2035
+;	Elapsed_Hour2 = Elapsed_Hour2 + 1	'演算用時間をINC
+;
+LD CR2002                ; 常時ON
+LDA.L Elapsed_Hour2      ; _経過情報2経過時間
+CON
+ADD.L +1
+CON
+STA.D Elapsed_Hour2      ; _経過情報2経過時間
+;END IF
+LABEL #2035
+LABEL #1030
+;
+;'経過割合(%) = (現在値 / 最大値) * 100
+;
+;KtoV_ELP_Per[1] = (FLOAT(KtoV_ELP_Val[1])/FLOAT(VtoK_ELP_Max[1])) * 100
+LD Elapsed_RUN:#1        ; _経過情報2計測中
+MPS
+AND= Elapsed_Unit:#1 #0  ; _経過情報2単位
+MOV.D Elapsed_Year2 KtoV_ELP_Val:#2;_経過情報2経過年数  _経過情報2現在経過
+MRD
+AND= Elapsed_Unit:#1 #1  ; _経過情報2単位
+MOV.D Elapsed_Day2 KtoV_ELP_Val:#2;_経過情報2経過日数  _経過情報2現在経過
+MRD
+AND= Elapsed_Unit:#1 #2  ; _経過情報2単位
+MOV.D Elapsed_Hour2 KtoV_ELP_Val:#2;_経過情報2経過時間  _経過情報2現在経過
+MRD
+MOV.D KtoV_ELP_Val:#2 Elapsed_Time2;_経過情報2現在経過  _経過情報2経過時間
+MPP
+NCJ #1011
+;'経過割合(%) = (現在値 / 最大値) * 100
+;
+;KtoV_ELP_Per[1] = (FLOAT(KtoV_ELP_Val[1])/FLOAT(VtoK_ELP_Max[1])) * 100
+LD CR2002                ; 常時ON
+LDA.D VtoK_ELP_Max:#2    ; _経過情報2最大値
+CON
+FLOAT.D
+CON
+STA.F @VM24
+CON
+LDA.D KtoV_ELP_Val:#2    ; _経過情報2現在経過
+CON
+FLOAT.D
+CON
+DIV.F @VM24
+CON
+MUL.F +100
+CON
+INTG
+CON
+STA KtoV_ELP_Per:#1      ; _経過情報2現在経過%
+LABEL #1011
+;
+LDB EntryElapsed:#1      ; EntryElapsed2
+MOV #0 KtoV_ELP_Color:#1 ; _経過情報2ｲﾝｼﾞｹﾞｰﾀ切替色
+LD EntryElapsed:#1       ; EntryElapsed2
+MPS
+AND=.D VtoK_ELP_Max:#2 #0; _経過情報2最大値
+MOV #0 KtoV_ELP_Color:#1 ; _経過情報2ｲﾝｼﾞｹﾞｰﾀ切替色
+MPP
+AND<>.D VtoK_ELP_Max:#2 #0;_経過情報2最大値
+MPS
+AND<.D KtoV_ELP_Val:#2 VtoK_ELP_Y:#2;_経過情報2現在経過  _経過情報2ｲﾝｼﾞｹﾞｰﾀ黄色開始
+MOV #0 KtoV_ELP_Color:#1 ; _経過情報2ｲﾝｼﾞｹﾞｰﾀ切替色
+MRD
+LD>=.D KtoV_ELP_Val:#2 VtoK_ELP_Y:#2;_経過情報2現在経過  _経過情報2ｲﾝｼﾞｹﾞｰﾀ黄色開始
+AND<.D KtoV_ELP_Val:#2 VtoK_ELP_R:#2;_経過情報2現在経過  _経過情報2ｲﾝｼﾞｹﾞｰﾀ赤色開始
+ANL
+MOV #1 KtoV_ELP_Color:#1 ; _経過情報2ｲﾝｼﾞｹﾞｰﾀ切替色
+MPP
+AND>=.D KtoV_ELP_Val:#2 VtoK_ELP_R:#2;_経過情報2現在経過  _経過情報2ｲﾝｼﾞｹﾞｰﾀ赤色開始
+MOV #2 KtoV_ELP_Color:#1 ; _経過情報2ｲﾝｼﾞｹﾞｰﾀ切替色
+;経過情報3
+LD EntryElapsed:#2       ; EntryElapsed3
+LDP Elapsed_Reset3       ; Elapsed_Reset3
+ORP VtoK_ELP3_RST        ; VtoK_ELP3_RST
+ANL
+SEC CM700 Elapsed_Rec3   ; ｶﾚﾝﾀﾞﾀｲﾏ（年）  _経過情報3記録開始秒
+RSEC Elapsed_Rec3 KtoV_ELP_Year3;_経過情報3記録開始秒  _経過情報3記録年
+MOV.D #0 KtoV_ELP_Val:#4 ; _経過情報3現在経過
+MOV #0 KtoV_ELP_Per:#2   ; _経過情報3現在経過%
+MOV #0 KtoV_ELP_Color:#2 ; _経過情報3ｲﾝｼﾞｹﾞｰﾀ切替色
+MOV.D #0 Elapsed_Year3   ; _経過情報3経過年数
+MOV.D #0 Elapsed_Day3    ; _経過情報3経過日数
+MOV.D #0 Elapsed_Hour3   ; _経過情報3経過時間
+SET Elapsed_RUN:#2       ; _経過情報3計測中
+;@EM64.D = SEC(CM700)
+;@EM74.D = Elapsed_Rec3 + 3156000	'年→秒換算
+;
+;@EM84.D = @EM74.D + ((Elapsed_Year3 + 1) * 3156000)
+;'記録年月より+1年経過
+;IF @EM64.D >= @EM84.D THEN
+;	Elapsed_Year3 = Elapsed_Year3 + 1	'演算用年数をINC
+;END IF 
+LD= Elapsed_Unit:#2 #0   ; _経過情報3単位
+AND Elapsed_RUN:#2       ; _経過情報3計測中
+NCJ #1007
+;@EM64.D = SEC(CM700)
+;
+LD CR2002                ; 常時ON
+MOV.D #0 @VM26
+SEC CM700 @VM26          ; ｶﾚﾝﾀﾞﾀｲﾏ（年）
+MOV.D @VM26 @EM64
+;@EM74.D = Elapsed_Rec3 + 3156000	'年→秒換算
+;
+LD CR2002                ; 常時ON
+LDA.L Elapsed_Rec3       ; _経過情報3記録開始秒
+CON
+ADD.L +3156000
+CON
+STA.D @EM74
+;@EM84.D = @EM74.D + ((Elapsed_Year3 + 1) * 3156000)
+;
+LD CR2002                ; 常時ON
+LDA.L Elapsed_Year3      ; _経過情報3経過年数
+CON
+ADD.L +1
+CON
+MUL.L +3156000
+CON
+ADD.L @EM74
+CON
+STA.D @EM84
+;'記録年月より+1年経過
+;
+;IF @EM64.D >= @EM84.D THEN
+;
+LD>=.D @EM64 @EM84
+NCJ #2036
+;	Elapsed_Year3 = Elapsed_Year3 + 1	'演算用年数をINC
+;
+LD CR2002                ; 常時ON
+LDA.L Elapsed_Year3      ; _経過情報3経過年数
+CON
+ADD.L +1
+CON
+STA.D Elapsed_Year3      ; _経過情報3経過年数
+;END IF 
+LABEL #2036
+LABEL #1007
+;
+;@EM64.D = SEC(CM700)
+;@EM74.D = Elapsed_Rec3 + 84000		'日→秒換算
+; 
+;@EM84.D = @EM74.D + ((Elapsed_Day3 + 1) * 84000)
+;'記録年月より+1日経過
+;IF @EM64.D >= @EM84.D THEN
+;	Elapsed_Day3 = Elapsed_Day3 + 1		'演算用日付をINC
+;END IF
+LD= Elapsed_Unit:#2 #1   ; _経過情報3単位
+AND Elapsed_RUN:#2       ; _経過情報3計測中
+NCJ #1009
+;@EM64.D = SEC(CM700)
+;
+LD CR2002                ; 常時ON
+MOV.D #0 @VM28
+SEC CM700 @VM28          ; ｶﾚﾝﾀﾞﾀｲﾏ（年）
+MOV.D @VM28 @EM64
+;@EM74.D = Elapsed_Rec3 + 84000		'日→秒換算
+;
+LD CR2002                ; 常時ON
+LDA.L Elapsed_Rec3       ; _経過情報3記録開始秒
+CON
+ADD.L +84000
+CON
+STA.D @EM74
+;@EM84.D = @EM74.D + ((Elapsed_Day3 + 1) * 84000)
+;
+LD CR2002                ; 常時ON
+LDA.L Elapsed_Day3       ; _経過情報3経過日数
+CON
+ADD.L +1
+CON
+MUL.L +84000
+CON
+ADD.L @EM74
+CON
+STA.D @EM84
+;'記録年月より+1日経過
+;
+;IF @EM64.D >= @EM84.D THEN
+;
+LD>=.D @EM64 @EM84
+NCJ #2037
+;	Elapsed_Day3 = Elapsed_Day3 + 1		'演算用日付をINC
+;
+LD CR2002                ; 常時ON
+LDA.L Elapsed_Day3       ; _経過情報3経過日数
+CON
+ADD.L +1
+CON
+STA.D Elapsed_Day3       ; _経過情報3経過日数
+;END IF
+LABEL #2037
+LABEL #1009
+;
+;@EM64.D = SEC(CM700)
+;@EM74.D = Elapsed_Rec3 + 3600		'時→秒換算
+; 
+;@EM84.D = @EM74.D + ((Elapsed_Hour3 + 1) * 3600)
+;'記録年月より+1時間経過
+;IF @EM64.D >= @EM84.D THEN
+;	Elapsed_Hour3 = Elapsed_Hour3 + 1	'演算用時間をINC
+;END IF
+LD= Elapsed_Unit:#2 #2   ; _経過情報3単位
+AND Elapsed_RUN:#2       ; _経過情報3計測中
+NCJ #1010
+;@EM64.D = SEC(CM700)
+;
+LD CR2002                ; 常時ON
+MOV.D #0 @VM30
+SEC CM700 @VM30          ; ｶﾚﾝﾀﾞﾀｲﾏ（年）
+MOV.D @VM30 @EM64
+;@EM74.D = Elapsed_Rec3 + 3600		'時→秒換算
+;
+LD CR2002                ; 常時ON
+LDA.L Elapsed_Rec3       ; _経過情報3記録開始秒
+CON
+ADD.L +3600
+CON
+STA.D @EM74
+;@EM84.D = @EM74.D + ((Elapsed_Hour3 + 1) * 3600)
+;
+LD CR2002                ; 常時ON
+LDA.L Elapsed_Hour3      ; _経過情報3経過時間
+CON
+ADD.L +1
+CON
+MUL.L +3600
+CON
+ADD.L @EM74
+CON
+STA.D @EM84
+;'記録年月より+1時間経過
+;
+;IF @EM64.D >= @EM84.D THEN
+;
+LD>=.D @EM64 @EM84
+NCJ #2038
+;	Elapsed_Hour3 = Elapsed_Hour3 + 1	'演算用時間をINC
+;
+LD CR2002                ; 常時ON
+LDA.L Elapsed_Hour3      ; _経過情報3経過時間
+CON
+ADD.L +1
+CON
+STA.D Elapsed_Hour3      ; _経過情報3経過時間
+;END IF
+LABEL #2038
+LABEL #1010
+;
+;'経過割合(%) = (現在値 / 最大値) * 100
+;
+;KtoV_ELP_Per[2] = (FLOAT(KtoV_ELP_Val[2])/FLOAT(VtoK_ELP_Max[2])) * 100
+LD Elapsed_RUN:#2        ; _経過情報3計測中
+MPS
+AND= Elapsed_Unit:#2 #0  ; _経過情報3単位
+MOV.D Elapsed_Year3 KtoV_ELP_Val:#4;_経過情報3経過年数  _経過情報3現在経過
+MRD
+AND= Elapsed_Unit:#2 #1  ; _経過情報3単位
+MOV.D Elapsed_Day3 KtoV_ELP_Val:#4;_経過情報3経過日数  _経過情報3現在経過
+MRD
+AND= Elapsed_Unit:#2 #2  ; _経過情報3単位
+MOV.D Elapsed_Hour3 KtoV_ELP_Val:#4;_経過情報3経過時間  _経過情報3現在経過
+MRD
+MOV.D KtoV_ELP_Val:#4 Elapsed_Time3;_経過情報3現在経過  _経過情報3経過時間
+MPP
+NCJ #1019
+;'経過割合(%) = (現在値 / 最大値) * 100
+;
+;KtoV_ELP_Per[2] = (FLOAT(KtoV_ELP_Val[2])/FLOAT(VtoK_ELP_Max[2])) * 100
+LD CR2002                ; 常時ON
+LDA.D VtoK_ELP_Max:#4    ; _経過情報3最大値
+CON
+FLOAT.D
+CON
+STA.F @VM32
+CON
+LDA.D KtoV_ELP_Val:#4    ; _経過情報3現在経過
+CON
+FLOAT.D
+CON
+DIV.F @VM32
+CON
+MUL.F +100
+CON
+INTG
+CON
+STA KtoV_ELP_Per:#2      ; _経過情報3現在経過%
+LABEL #1019
+;
+LDB EntryElapsed:#2      ; EntryElapsed3
+MOV #0 KtoV_ELP_Color:#2 ; _経過情報3ｲﾝｼﾞｹﾞｰﾀ切替色
+LD EntryElapsed:#2       ; EntryElapsed3
+MPS
+AND=.D VtoK_ELP_Max:#4 #0; _経過情報3最大値
+MOV #0 KtoV_ELP_Color:#2 ; _経過情報3ｲﾝｼﾞｹﾞｰﾀ切替色
+MPP
+AND<>.D VtoK_ELP_Max:#4 #0;_経過情報3最大値
+MPS
+AND<.D KtoV_ELP_Val:#4 VtoK_ELP_Y:#4;_経過情報3現在経過  _経過情報3ｲﾝｼﾞｹﾞｰﾀ黄色開始
+MOV #0 KtoV_ELP_Color:#2 ; _経過情報3ｲﾝｼﾞｹﾞｰﾀ切替色
+MRD
+LD>=.D KtoV_ELP_Val:#4 VtoK_ELP_Y:#4;_経過情報3現在経過  _経過情報3ｲﾝｼﾞｹﾞｰﾀ黄色開始
+AND<.D KtoV_ELP_Val:#4 VtoK_ELP_R:#4;_経過情報3現在経過  _経過情報3ｲﾝｼﾞｹﾞｰﾀ赤色開始
+ANL
+MOV #1 KtoV_ELP_Color:#2 ; _経過情報3ｲﾝｼﾞｹﾞｰﾀ切替色
+MPP
+AND>=.D KtoV_ELP_Val:#4 VtoK_ELP_R:#4;_経過情報3現在経過  _経過情報3ｲﾝｼﾞｹﾞｰﾀ赤色開始
+MOV #2 KtoV_ELP_Color:#2 ; _経過情報3ｲﾝｼﾞｹﾞｰﾀ切替色
+;経過情報4
+LD EntryElapsed:#3       ; EntryElapsed4
+LDP Elapsed_Reset4       ; Elapsed_Reset4
+ORP VtoK_ELP4_RST        ; VtoK_ELP4_RST
+ANL
+SEC CM700 Elapsed_Rec4   ; ｶﾚﾝﾀﾞﾀｲﾏ（年）  _経過情報4記録開始秒
+RSEC Elapsed_Rec4 KtoV_ELP_Year4;_経過情報4記録開始秒  _経過情報4記録年
+MOV.D #0 KtoV_ELP_Val:#6 ; _経過情報4現在経過
+MOV #0 KtoV_ELP_Per:#3   ; _経過情報4現在経過%
+MOV #0 KtoV_ELP_Color:#3 ; _経過情報4ｲﾝｼﾞｹﾞｰﾀ切替色
+MOV.D #0 Elapsed_Year4   ; _経過情報4経過年数
+MOV.D #0 Elapsed_Day4    ; _経過情報4経過日数
+MOV.D #0 Elapsed_Hour4   ; _経過情報4経過時間
+SET Elapsed_RUN:#3       ; _経過情報4計測中
+;@EM66.D = SEC(CM700)
+;@EM76.D = Elapsed_Rec4 + 3156000	'年→秒換算
+;
+;@EM86.D = @EM76.D + ((Elapsed_Year4 + 1) * 3156000)
+;'記録年月より+1年経過
+;IF @EM66.D >= @EM86.D THEN
+;	Elapsed_Year4 = Elapsed_Year4 + 1	'演算用年数をINC
+;END IF 
+LD= Elapsed_Unit:#3 #0   ; _経過情報4単位
+AND Elapsed_RUN:#3       ; _経過情報4計測中
+NCJ #1016
+;@EM66.D = SEC(CM700)
+;
+LD CR2002                ; 常時ON
+MOV.D #0 @VM34
+SEC CM700 @VM34          ; ｶﾚﾝﾀﾞﾀｲﾏ（年）
+MOV.D @VM34 @EM66
+;@EM76.D = Elapsed_Rec4 + 3156000	'年→秒換算
+;
+LD CR2002                ; 常時ON
+LDA.L Elapsed_Rec4       ; _経過情報4記録開始秒
+CON
+ADD.L +3156000
+CON
+STA.D @EM76
+;@EM86.D = @EM76.D + ((Elapsed_Year4 + 1) * 3156000)
+;
+LD CR2002                ; 常時ON
+LDA.L Elapsed_Year4      ; _経過情報4経過年数
+CON
+ADD.L +1
+CON
+MUL.L +3156000
+CON
+ADD.L @EM76
+CON
+STA.D @EM86
+;'記録年月より+1年経過
+;
+;IF @EM66.D >= @EM86.D THEN
+;
+LD>=.D @EM66 @EM86
+NCJ #2039
+;	Elapsed_Year4 = Elapsed_Year4 + 1	'演算用年数をINC
+;
+LD CR2002                ; 常時ON
+LDA.L Elapsed_Year4      ; _経過情報4経過年数
+CON
+ADD.L +1
+CON
+STA.D Elapsed_Year4      ; _経過情報4経過年数
+;END IF 
+LABEL #2039
+LABEL #1016
+;
+;@EM66.D = SEC(CM700)
+;@EM76.D = Elapsed_Rec4 + 84000		'日→秒換算
+; 
+;@EM86.D = @EM76.D + ((Elapsed_Day4 + 1) * 84000)
+;'記録年月より+1日経過
+;IF @EM66.D >= @EM86.D THEN
+;	Elapsed_Day4 = Elapsed_Day4 + 1		'演算用日付をINC
+;END IF
+LD= Elapsed_Unit:#3 #1   ; _経過情報4単位
+AND Elapsed_RUN:#3       ; _経過情報4計測中
+NCJ #1017
+;@EM66.D = SEC(CM700)
+;
+LD CR2002                ; 常時ON
+MOV.D #0 @VM36
+SEC CM700 @VM36          ; ｶﾚﾝﾀﾞﾀｲﾏ（年）
+MOV.D @VM36 @EM66
+;@EM76.D = Elapsed_Rec4 + 84000		'日→秒換算
+;
+LD CR2002                ; 常時ON
+LDA.L Elapsed_Rec4       ; _経過情報4記録開始秒
+CON
+ADD.L +84000
+CON
+STA.D @EM76
+;@EM86.D = @EM76.D + ((Elapsed_Day4 + 1) * 84000)
+;
+LD CR2002                ; 常時ON
+LDA.L Elapsed_Day4       ; _経過情報4経過日数
+CON
+ADD.L +1
+CON
+MUL.L +84000
+CON
+ADD.L @EM76
+CON
+STA.D @EM86
+;'記録年月より+1日経過
+;
+;IF @EM66.D >= @EM86.D THEN
+;
+LD>=.D @EM66 @EM86
+NCJ #2040
+;	Elapsed_Day4 = Elapsed_Day4 + 1		'演算用日付をINC
+;
+LD CR2002                ; 常時ON
+LDA.L Elapsed_Day4       ; _経過情報4経過日数
+CON
+ADD.L +1
+CON
+STA.D Elapsed_Day4       ; _経過情報4経過日数
+;END IF
+LABEL #2040
+LABEL #1017
+;
+;@EM66.D = SEC(CM700)
+;@EM76.D = Elapsed_Rec4 + 3600		'時→秒換算
+; 
+;@EM86.D = @EM76.D + ((Elapsed_Hour4 + 1) * 3600)
+;'記録年月より+1時間経過
+;IF @EM66.D >= @EM86.D THEN
+;	Elapsed_Hour4 = Elapsed_Hour4 + 1	'演算用時間をINC
+;END IF
+LD= Elapsed_Unit:#3 #2   ; _経過情報4単位
+AND Elapsed_RUN:#3       ; _経過情報4計測中
+NCJ #1018
+;@EM66.D = SEC(CM700)
+;
+LD CR2002                ; 常時ON
+MOV.D #0 @VM38
+SEC CM700 @VM38          ; ｶﾚﾝﾀﾞﾀｲﾏ（年）
+MOV.D @VM38 @EM66
+;@EM76.D = Elapsed_Rec4 + 3600		'時→秒換算
+;
+LD CR2002                ; 常時ON
+LDA.L Elapsed_Rec4       ; _経過情報4記録開始秒
+CON
+ADD.L +3600
+CON
+STA.D @EM76
+;@EM86.D = @EM76.D + ((Elapsed_Hour4 + 1) * 3600)
+;
+LD CR2002                ; 常時ON
+LDA.L Elapsed_Hour4      ; _経過情報4経過時間
+CON
+ADD.L +1
+CON
+MUL.L +3600
+CON
+ADD.L @EM76
+CON
+STA.D @EM86
+;'記録年月より+1時間経過
+;
+;IF @EM66.D >= @EM86.D THEN
+;
+LD>=.D @EM66 @EM86
+NCJ #2041
+;	Elapsed_Hour4 = Elapsed_Hour4 + 1	'演算用時間をINC
+;
+LD CR2002                ; 常時ON
+LDA.L Elapsed_Hour4      ; _経過情報4経過時間
+CON
+ADD.L +1
+CON
+STA.D Elapsed_Hour4      ; _経過情報4経過時間
+;END IF
+LABEL #2041
+LABEL #1018
+;
+;'経過割合(%) = (現在値 / 最大値) * 100
+;
+;KtoV_ELP_Per[3] = (FLOAT(KtoV_ELP_Val[3])/FLOAT(VtoK_ELP_Max[3])) * 100
+LD Elapsed_RUN:#3        ; _経過情報4計測中
+MPS
+AND= Elapsed_Unit:#3 #0  ; _経過情報4単位
+MOV.D Elapsed_Year4 KtoV_ELP_Val:#6;_経過情報4経過年数  _経過情報4現在経過
+MRD
+AND= Elapsed_Unit:#3 #1  ; _経過情報4単位
+MOV.D Elapsed_Day4 KtoV_ELP_Val:#6;_経過情報4経過日数  _経過情報4現在経過
+MRD
+AND= Elapsed_Unit:#3 #2  ; _経過情報4単位
+MOV.D Elapsed_Hour4 KtoV_ELP_Val:#6;_経過情報4経過時間  _経過情報4現在経過
+MRD
+MOV.D KtoV_ELP_Val:#6 Elapsed_Time4;_経過情報4現在経過  _経過情報4経過時間
+MPP
+NCJ #1023
+;'経過割合(%) = (現在値 / 最大値) * 100
+;
+;KtoV_ELP_Per[3] = (FLOAT(KtoV_ELP_Val[3])/FLOAT(VtoK_ELP_Max[3])) * 100
+LD CR2002                ; 常時ON
+LDA.D VtoK_ELP_Max:#6    ; _経過情報4最大値
+CON
+FLOAT.D
+CON
+STA.F @VM40
+CON
+LDA.D KtoV_ELP_Val:#6    ; _経過情報4現在経過
+CON
+FLOAT.D
+CON
+DIV.F @VM40
+CON
+MUL.F +100
+CON
+INTG
+CON
+STA KtoV_ELP_Per:#3      ; _経過情報4現在経過%
+LABEL #1023
+;
+LDB EntryElapsed:#3      ; EntryElapsed4
+MOV #0 KtoV_ELP_Color:#3 ; _経過情報4ｲﾝｼﾞｹﾞｰﾀ切替色
+LD EntryElapsed:#3       ; EntryElapsed4
+MPS
+AND=.D VtoK_ELP_Max:#6 #0; _経過情報4最大値
+MOV #0 KtoV_ELP_Color:#3 ; _経過情報4ｲﾝｼﾞｹﾞｰﾀ切替色
+MPP
+AND<>.D VtoK_ELP_Max:#6 #0;_経過情報4最大値
+MPS
+AND<.D KtoV_ELP_Val:#6 VtoK_ELP_Y:#6;_経過情報4現在経過  _経過情報4ｲﾝｼﾞｹﾞｰﾀ黄色開始
+MOV #0 KtoV_ELP_Color:#3 ; _経過情報4ｲﾝｼﾞｹﾞｰﾀ切替色
+MRD
+LD>=.D KtoV_ELP_Val:#6 VtoK_ELP_Y:#6;_経過情報4現在経過  _経過情報4ｲﾝｼﾞｹﾞｰﾀ黄色開始
+AND<.D KtoV_ELP_Val:#6 VtoK_ELP_R:#6;_経過情報4現在経過  _経過情報4ｲﾝｼﾞｹﾞｰﾀ赤色開始
+ANL
+MOV #1 KtoV_ELP_Color:#3 ; _経過情報4ｲﾝｼﾞｹﾞｰﾀ切替色
+MPP
+AND>=.D KtoV_ELP_Val:#6 VtoK_ELP_R:#6;_経過情報4現在経過  _経過情報4ｲﾝｼﾞｹﾞｰﾀ赤色開始
+MOV #2 KtoV_ELP_Color:#3 ; _経過情報4ｲﾝｼﾞｹﾞｰﾀ切替色
+;経過情報5
+LD EntryElapsed:#4       ; EntryElapsed5
+LDP Elapsed_Reset5       ; Elapsed_Reset5
+ORP VtoK_ELP5_RST        ; VtoK_ELP5_RST
+ANL
+SEC CM700 Elapsed_Rec5   ; ｶﾚﾝﾀﾞﾀｲﾏ（年）  _経過情報5記録開始秒
+RSEC Elapsed_Rec5 KtoV_ELP_Year5;_経過情報5記録開始秒  _経過情報5記録年
+MOV.D #0 KtoV_ELP_Val:#8 ; _経過情報5現在経過
+MOV #0 KtoV_ELP_Per:#4   ; _経過情報5現在経過%
+MOV #0 KtoV_ELP_Color:#4 ; _経過情報5ｲﾝｼﾞｹﾞｰﾀ切替色
+MOV.D #0 Elapsed_Year5   ; _経過情報5経過年数
+MOV.D #0 Elapsed_Day5    ; _経過情報5経過日数
+MOV.D #0 Elapsed_Hour5   ; _経過情報5経過時間
+SET Elapsed_RUN:#4       ; _経過情報5計測中
+;@EM68.D = SEC(CM700)
+;@EM78.D = Elapsed_Rec5 + 3156000	'年→秒換算
+;
+;@EM88.D = @EM78.D + ((Elapsed_Year5 + 1) * 3156000)
+;'記録年月より+1年経過
+;IF @EM68.D >= @EM88.D THEN
+;	Elapsed_Year5 = Elapsed_Year5 + 1	'演算用年数をINC
+;END IF 
+LD= Elapsed_Unit:#4 #0   ; _経過情報5単位
+AND Elapsed_RUN:#4       ; _経過情報5計測中
+NCJ #1020
+;@EM68.D = SEC(CM700)
+;
+LD CR2002                ; 常時ON
+MOV.D #0 @VM42
+SEC CM700 @VM42          ; ｶﾚﾝﾀﾞﾀｲﾏ（年）
+MOV.D @VM42 @EM68
+;@EM78.D = Elapsed_Rec5 + 3156000	'年→秒換算
+;
+LD CR2002                ; 常時ON
+LDA.L Elapsed_Rec5       ; _経過情報5記録開始秒
+CON
+ADD.L +3156000
+CON
+STA.D @EM78
+;@EM88.D = @EM78.D + ((Elapsed_Year5 + 1) * 3156000)
+;
+LD CR2002                ; 常時ON
+LDA.L Elapsed_Year5      ; _経過情報5経過年数
+CON
+ADD.L +1
+CON
+MUL.L +3156000
+CON
+ADD.L @EM78
+CON
+STA.D @EM88
+;'記録年月より+1年経過
+;
+;IF @EM68.D >= @EM88.D THEN
+;
+LD>=.D @EM68 @EM88
+NCJ #2042
+;	Elapsed_Year5 = Elapsed_Year5 + 1	'演算用年数をINC
+;
+LD CR2002                ; 常時ON
+LDA.L Elapsed_Year5      ; _経過情報5経過年数
+CON
+ADD.L +1
+CON
+STA.D Elapsed_Year5      ; _経過情報5経過年数
+;END IF 
+LABEL #2042
+LABEL #1020
+;
+;@EM68.D = SEC(CM700)
+;@EM78.D = Elapsed_Rec5 + 84000		'日→秒換算
+; 
+;@EM88.D = @EM78.D + ((Elapsed_Day5 + 1) * 84000)
+;'記録年月より+1日経過
+;IF @EM68.D >= @EM88.D THEN
+;	Elapsed_Day5 = Elapsed_Day5 + 1		'演算用日付をINC
+;END IF
+LD= Elapsed_Unit:#4 #1   ; _経過情報5単位
+AND Elapsed_RUN:#4       ; _経過情報5計測中
+NCJ #1021
+;@EM68.D = SEC(CM700)
+;
+LD CR2002                ; 常時ON
+MOV.D #0 @VM44
+SEC CM700 @VM44          ; ｶﾚﾝﾀﾞﾀｲﾏ（年）
+MOV.D @VM44 @EM68
+;@EM78.D = Elapsed_Rec5 + 84000		'日→秒換算
+;
+LD CR2002                ; 常時ON
+LDA.L Elapsed_Rec5       ; _経過情報5記録開始秒
+CON
+ADD.L +84000
+CON
+STA.D @EM78
+;@EM88.D = @EM78.D + ((Elapsed_Day5 + 1) * 84000)
+;
+LD CR2002                ; 常時ON
+LDA.L Elapsed_Day5       ; _経過情報5経過日数
+CON
+ADD.L +1
+CON
+MUL.L +84000
+CON
+ADD.L @EM78
+CON
+STA.D @EM88
+;'記録年月より+1日経過
+;
+;IF @EM68.D >= @EM88.D THEN
+;
+LD>=.D @EM68 @EM88
+NCJ #2043
+;	Elapsed_Day5 = Elapsed_Day5 + 1		'演算用日付をINC
+;
+LD CR2002                ; 常時ON
+LDA.L Elapsed_Day5       ; _経過情報5経過日数
+CON
+ADD.L +1
+CON
+STA.D Elapsed_Day5       ; _経過情報5経過日数
+;END IF
+LABEL #2043
+LABEL #1021
+;
+;@EM68.D = SEC(CM700)
+;@EM78.D = Elapsed_Rec5 + 3600		'時→秒換算
+; 
+;@EM88.D = @EM78.D + ((Elapsed_Hour5 + 1) * 3600)
+;'記録年月より+1時間経過
+;IF @EM68.D >= @EM88.D THEN
+;	Elapsed_Hour5 = Elapsed_Hour5 + 1	'演算用時間をINC
+;END IF
+LD= Elapsed_Unit:#4 #2   ; _経過情報5単位
+AND Elapsed_RUN:#4       ; _経過情報5計測中
+NCJ #1022
+;@EM68.D = SEC(CM700)
+;
+LD CR2002                ; 常時ON
+MOV.D #0 @VM46
+SEC CM700 @VM46          ; ｶﾚﾝﾀﾞﾀｲﾏ（年）
+MOV.D @VM46 @EM68
+;@EM78.D = Elapsed_Rec5 + 3600		'時→秒換算
+;
+LD CR2002                ; 常時ON
+LDA.L Elapsed_Rec5       ; _経過情報5記録開始秒
+CON
+ADD.L +3600
+CON
+STA.D @EM78
+;@EM88.D = @EM78.D + ((Elapsed_Hour5 + 1) * 3600)
+;
+LD CR2002                ; 常時ON
+LDA.L Elapsed_Hour5      ; _経過情報5経過時間
+CON
+ADD.L +1
+CON
+MUL.L +3600
+CON
+ADD.L @EM78
+CON
+STA.D @EM88
+;'記録年月より+1時間経過
+;
+;IF @EM68.D >= @EM88.D THEN
+;
+LD>=.D @EM68 @EM88
+NCJ #2044
+;	Elapsed_Hour5 = Elapsed_Hour5 + 1	'演算用時間をINC
+;
+LD CR2002                ; 常時ON
+LDA.L Elapsed_Hour5      ; _経過情報5経過時間
+CON
+ADD.L +1
+CON
+STA.D Elapsed_Hour5      ; _経過情報5経過時間
+;END IF
+LABEL #2044
+LABEL #1022
+;
+;'経過割合(%) = (現在値 / 最大値) * 100
+;
+;KtoV_ELP_Per[4] = (FLOAT(KtoV_ELP_Val[4])/FLOAT(VtoK_ELP_Max[4])) * 100
+LD Elapsed_RUN:#4        ; _経過情報5計測中
+MPS
+AND= Elapsed_Unit:#4 #0  ; _経過情報5単位
+MOV.D Elapsed_Year5 KtoV_ELP_Val:#8;_経過情報5経過年数  _経過情報5現在経過
+MRD
+AND= Elapsed_Unit:#4 #1  ; _経過情報5単位
+MOV.D Elapsed_Day5 KtoV_ELP_Val:#8;_経過情報5経過日数  _経過情報5現在経過
+MRD
+AND= Elapsed_Unit:#4 #2  ; _経過情報5単位
+MOV.D Elapsed_Hour5 KtoV_ELP_Val:#8;_経過情報5経過時間  _経過情報5現在経過
+MRD
+MOV.D KtoV_ELP_Val:#8 Elapsed_Time5;_経過情報5現在経過  _経過情報5経過時間
+MPP
+NCJ #1027
+;'経過割合(%) = (現在値 / 最大値) * 100
+;
+;KtoV_ELP_Per[4] = (FLOAT(KtoV_ELP_Val[4])/FLOAT(VtoK_ELP_Max[4])) * 100
+LD CR2002                ; 常時ON
+LDA.D VtoK_ELP_Max:#8    ; _経過情報5最大値
+CON
+FLOAT.D
+CON
+STA.F @VM48
+CON
+LDA.D KtoV_ELP_Val:#8    ; _経過情報5現在経過
+CON
+FLOAT.D
+CON
+DIV.F @VM48
+CON
+MUL.F +100
+CON
+INTG
+CON
+STA KtoV_ELP_Per:#4      ; _経過情報5現在経過%
+LABEL #1027
+;
+LDB EntryElapsed:#4      ; EntryElapsed5
+MOV #0 KtoV_ELP_Color:#4 ; _経過情報5ｲﾝｼﾞｹﾞｰﾀ切替色
+LD EntryElapsed:#4       ; EntryElapsed5
+MPS
+AND=.D VtoK_ELP_Max:#8 #0; _経過情報5最大値
+MOV #0 KtoV_ELP_Color:#4 ; _経過情報5ｲﾝｼﾞｹﾞｰﾀ切替色
+MPP
+AND<>.D VtoK_ELP_Max:#8 #0;_経過情報5最大値
+MPS
+AND<.D KtoV_ELP_Val:#8 VtoK_ELP_Y:#8;_経過情報5現在経過  _経過情報5ｲﾝｼﾞｹﾞｰﾀ黄色開始
+MOV #0 KtoV_ELP_Color:#4 ; _経過情報5ｲﾝｼﾞｹﾞｰﾀ切替色
+MRD
+LD>=.D KtoV_ELP_Val:#8 VtoK_ELP_Y:#8;_経過情報5現在経過  _経過情報5ｲﾝｼﾞｹﾞｰﾀ黄色開始
+AND<.D KtoV_ELP_Val:#8 VtoK_ELP_R:#8;_経過情報5現在経過  _経過情報5ｲﾝｼﾞｹﾞｰﾀ赤色開始
+ANL
+MOV #1 KtoV_ELP_Color:#4 ; _経過情報5ｲﾝｼﾞｹﾞｰﾀ切替色
+MPP
+AND>=.D KtoV_ELP_Val:#8 VtoK_ELP_R:#8;_経過情報5現在経過  _経過情報5ｲﾝｼﾞｹﾞｰﾀ赤色開始
+MOV #2 KtoV_ELP_Color:#4 ; _経過情報5ｲﾝｼﾞｹﾞｰﾀ切替色
+;<h1/>Cycle Time Record/装置ｻｲｸﾙﾀｲﾑ計測
+;処理時間はmsec単位（DC仕様）
+LD CYCLEDO               ; _装置ｻｲｸﾙﾀｲﾑ計測中
+ANB Cycle_Rec            ; _装置C/T取得
+ANB T100                 ; ｻｲｸﾙﾀｲﾑ計測ﾀｲﾏ
+TMS #100 #4294967295     ; ｻｲｸﾙﾀｲﾑ計測ﾀｲﾏ
+LDA.D #4294967295
+CON
+SUB.D T100               ; ｻｲｸﾙﾀｲﾑ計測ﾀｲﾏ
+CON
+STA.D @EM0
+LDP Cycle_Rec            ; _装置C/T取得
+MOV.D @EM0 Cycle_Time    ; _装置ｻｲｸﾙﾀｲﾑ
+RES Cycle_Rec            ; _装置C/T取得
+SET DC_CycleRec          ; _ﾃﾞｰﾀ収集　ｻｲｸﾙﾀｲﾑ要求
+;<h1/>Process Time Record/処理時間計測
+;処理時間はmsec単位（DC仕様）
+;処理計測番号1
+LD ProcTim1_Rec          ; _処理時間1計測開始
+ANB T101                 ; 処理時間1計測ﾀｲﾏ
+TMS #101 #4294967295     ; 処理時間1計測ﾀｲﾏ
+LDA.D #4294967295
+CON
+SUB.D T101               ; 処理時間1計測ﾀｲﾏ
+CON
+STA.D @EM2
+LDP ProcTim1_Get         ; _処理時間1取得
+MOV.D @EM2 Proc_Time1    ; _処理計測時間1
+RES ProcTim1_Get         ; _処理時間1取得
+;処理計測番号2
+LD ProcTim2_Rec          ; _処理時間2計測開始
+ANB T102                 ; 処理時間2計測ﾀｲﾏ
+TMS #102 #4294967295     ; 処理時間2計測ﾀｲﾏ
+LDA.D #4294967295
+CON
+SUB.D T102               ; 処理時間2計測ﾀｲﾏ
+CON
+STA.D @EM4
+LDP ProcTim2_Get         ; _処理時間2取得
+MOV.D @EM4 Proc_Time2    ; _処理計測時間2
+RES ProcTim2_Get         ; _処理時間2取得
+;処理計測番号3
+LD ProcTim3_Rec          ; _処理時間3計測開始
+ANB T103                 ; 処理時間3計測ﾀｲﾏ
+TMS #103 #4294967295     ; 処理時間3計測ﾀｲﾏ
+LDA.D #4294967295
+CON
+SUB.D T103               ; 処理時間3計測ﾀｲﾏ
+CON
+STA.D @EM6
+LDP ProcTim3_Get         ; _処理時間3取得
+MOV.D @EM6 Proc_Time3    ; _処理計測時間3
+RES ProcTim3_Get         ; _処理時間3取得
+;処理計測番号4
+LD ProcTim4_Rec          ; _処理時間4計測開始
+ANB T104                 ; 処理時間4計測ﾀｲﾏ
+TMS #104 #4294967295     ; 処理時間4計測ﾀｲﾏ
+LDA.D #4294967295
+CON
+SUB.D T104               ; 処理時間4計測ﾀｲﾏ
+CON
+STA.D @EM8
+LDP ProcTim4_Get         ; _処理時間4取得
+MOV.D @EM8 Proc_Time4    ; _処理計測時間4
+RES ProcTim4_Get         ; _処理時間4取得
+;処理計測番号5
+LD ProcTim5_Rec          ; _処理時間5計測開始
+ANB T105                 ; 処理時間5計測ﾀｲﾏ
+TMS #105 #4294967295     ; 処理時間5計測ﾀｲﾏ
+LDA.D #4294967295
+CON
+SUB.D T105               ; 処理時間5計測ﾀｲﾏ
+CON
+STA.D @EM10
+LDP ProcTim5_Get         ; _処理時間5取得
+MOV.D @EM10 Proc_Time5   ; _処理計測時間5
+RES ProcTim5_Get         ; _処理時間5取得
+;処理計測番号6
+LD ProcTim6_Rec          ; _処理時間6計測開始
+ANB T106                 ; 処理時間6計測ﾀｲﾏ
+TMS #106 #4294967295     ; 処理時間6計測ﾀｲﾏ
+LDA.D #4294967295
+CON
+SUB.D T106               ; 処理時間6計測ﾀｲﾏ
+CON
+STA.D @EM12
+LDP ProcTim6_Get         ; _処理時間6取得
+MOV.D @EM12 Proc_Time6   ; _処理計測時間6
+RES ProcTim6_Get         ; _処理時間6取得
+;処理計測番号7
+LD ProcTim7_Rec          ; _処理時間7計測開始
+ANB T107                 ; 処理時間7計測ﾀｲﾏ
+TMS #107 #4294967295     ; 処理時間7計測ﾀｲﾏ
+LDA.D #4294967295
+CON
+SUB.D T107               ; 処理時間7計測ﾀｲﾏ
+CON
+STA.D @EM14
+LDP ProcTim7_Get         ; _処理時間7取得
+MOV.D @EM14 Proc_Time7   ; _処理計測時間7
+RES ProcTim7_Get         ; _処理時間7取得
+;処理計測番号8
+LD ProcTim8_Rec          ; _処理時間8計測開始
+ANB T108                 ; 処理時間8計測ﾀｲﾏ
+TMS #108 #4294967295     ; 処理時間8計測ﾀｲﾏ
+LDA.D #4294967295
+CON
+SUB.D T108               ; 処理時間8計測ﾀｲﾏ
+CON
+STA.D @EM16
+LDP ProcTim8_Get         ; _処理時間8取得
+MOV.D @EM16 Proc_Time8   ; _処理計測時間8
+RES ProcTim8_Get         ; _処理時間8取得
+;処理計測番号9
+LD ProcTim9_Rec          ; _処理時間9計測開始
+ANB T109                 ; 処理時間9計測ﾀｲﾏ
+TMS #109 #4294967295     ; 処理時間9計測ﾀｲﾏ
+LDA.D #4294967295
+CON
+SUB.D T109               ; 処理時間9計測ﾀｲﾏ
+CON
+STA.D @EM18
+LDP ProcTim9_Get         ; _処理時間9取得
+MOV.D @EM18 Proc_Time9   ; _処理計測時間9
+RES ProcTim9_Get         ; _処理時間9取得
+;処理計測番号10
+LD ProcTim10_Rec         ; _処理時間10計測開始
+ANB T110                 ; 処理時間10計測ﾀｲﾏ
+TMS #110 #4294967295     ; 処理時間10計測ﾀｲﾏ
+LDA.D #4294967295
+CON
+SUB.D T110               ; 処理時間10計測ﾀｲﾏ
+CON
+STA.D @EM20
+LDP ProcTim10_Get        ; _処理時間10取得
+MOV.D @EM20 Proc_Time10  ; _処理計測時間10
+RES ProcTim10_Get        ; _処理時間10取得
+;処理計測番号11
+LD ProcTim11_Rec         ; _処理時間11計測開始
+ANB T111                 ; 処理時間11計測ﾀｲﾏ
+TMS #111 #4294967295     ; 処理時間11計測ﾀｲﾏ
+LDA.D #4294967295
+CON
+SUB.D T111               ; 処理時間11計測ﾀｲﾏ
+CON
+STA.D @EM22
+LDP ProcTim11_Get        ; _処理時間11取得
+MOV.D @EM22 Proc_Time11  ; _処理計測時間11
+RES ProcTim11_Get        ; _処理時間11取得
+;処理計測番号12
+LD ProcTim12_Rec         ; _処理時間12計測開始
+ANB T112                 ; 処理時間12計測ﾀｲﾏ
+TMS #112 #4294967295     ; 処理時間12計測ﾀｲﾏ
+LDA.D #4294967295
+CON
+SUB.D T112               ; 処理時間12計測ﾀｲﾏ
+CON
+STA.D @EM24
+LDP ProcTim12_Get        ; _処理時間12取得
+MOV.D @EM24 Proc_Time12  ; _処理計測時間12
+RES ProcTim12_Get        ; _処理時間12取得
+;処理計測番号13
+LD ProcTim13_Rec         ; _処理時間13計測開始
+ANB T113                 ; 処理時間13計測ﾀｲﾏ
+TMS #113 #4294967295     ; 処理時間13計測ﾀｲﾏ
+LDA.D #4294967295
+CON
+SUB.D T113               ; 処理時間13計測ﾀｲﾏ
+CON
+STA.D @EM26
+LDP ProcTim13_Get        ; _処理時間13取得
+MOV.D @EM26 Proc_Time13  ; _処理計測時間13
+RES ProcTim13_Get        ; _処理時間13取得
+;処理計測番号14
+LD ProcTim14_Rec         ; _処理時間14計測開始
+ANB T114                 ; 処理時間14計測ﾀｲﾏ
+TMS #114 #4294967295     ; 処理時間14計測ﾀｲﾏ
+LDA.D #4294967295
+CON
+SUB.D T114               ; 処理時間14計測ﾀｲﾏ
+CON
+STA.D @EM28
+LDP ProcTim14_Get        ; _処理時間14取得
+MOV.D @EM28 Proc_Time14  ; _処理計測時間14
+RES ProcTim14_Get        ; _処理時間14取得
+;処理計測番号15
+LD ProcTim15_Rec         ; _処理時間15計測開始
+ANB T115                 ; 処理時間15計測ﾀｲﾏ
+TMS #115 #4294967295     ; 処理時間15計測ﾀｲﾏ
+LDA.D #4294967295
+CON
+SUB.D T115               ; 処理時間15計測ﾀｲﾏ
+CON
+STA.D @EM30
+LDP ProcTim15_Get        ; _処理時間15取得
+MOV.D @EM30 Proc_Time15  ; _処理計測時間15
+RES ProcTim15_Get        ; _処理時間15取得
+;処理計測番号16
+LD ProcTim16_Rec         ; _処理時間16計測開始
+ANB T116                 ; 処理時間16計測ﾀｲﾏ
+TMS #116 #4294967295     ; 処理時間16計測ﾀｲﾏ
+LDA.D #4294967295
+CON
+SUB.D T116               ; 処理時間16計測ﾀｲﾏ
+CON
+STA.D @EM32
+LDP ProcTim16_Get        ; _処理時間16取得
+MOV.D @EM32 Proc_Time16  ; _処理計測時間16
+RES ProcTim16_Get        ; _処理時間16取得
+;<h1/>Product Count/生産ｶｳﾝﾀ
+;ｶｳﾝﾀ値範囲外(0～99999999)ならば強制0へ
+LD<.D Product_Count1 #0  ; _生産ｶｳﾝﾀ1
+OR>.D Product_Count1 #99999999;_生産ｶｳﾝﾀ1
+MOV.D #0 Product_Count1  ; _生産ｶｳﾝﾀ1
+LD<.D Product_Count2 #0  ; _生産ｶｳﾝﾀ2
+OR>.D Product_Count2 #99999999;_生産ｶｳﾝﾀ2
+MOV.D #0 Product_Count2  ; _生産ｶｳﾝﾀ2
+LD<.D Product_Count3 #0  ; _生産ｶｳﾝﾀ3
+OR>.D Product_Count3 #99999999;_生産ｶｳﾝﾀ3
+MOV.D #0 Product_Count3  ; _生産ｶｳﾝﾀ3
+LD<.D Product_Count4 #0  ; _生産ｶｳﾝﾀ4
+OR>.D Product_Count4 #99999999;_生産ｶｳﾝﾀ4
+MOV.D #0 Product_Count4  ; _生産ｶｳﾝﾀ4
+LD<.D Product_Count5 #0  ; _生産ｶｳﾝﾀ5
+OR>.D Product_Count5 #99999999;_生産ｶｳﾝﾀ5
+MOV.D #0 Product_Count5  ; _生産ｶｳﾝﾀ5
+LD<.D Product_Count6 #0  ; _生産ｶｳﾝﾀ6
+OR>.D Product_Count6 #99999999;_生産ｶｳﾝﾀ6
+MOV.D #0 Product_Count6  ; _生産ｶｳﾝﾀ6
+LD<.D Product_Count7 #0  ; _生産ｶｳﾝﾀ7
+OR>.D Product_Count7 #99999999;_生産ｶｳﾝﾀ7
+MOV.D #0 Product_Count7  ; _生産ｶｳﾝﾀ7
+LD<.D Product_Count8 #0  ; _生産ｶｳﾝﾀ8
+OR>.D Product_Count8 #99999999;_生産ｶｳﾝﾀ8
+MOV.D #0 Product_Count8  ; _生産ｶｳﾝﾀ8
+LD<.D Product_Count9 #0  ; _生産ｶｳﾝﾀ9
+OR>.D Product_Count9 #99999999;_生産ｶｳﾝﾀ9
+MOV.D #0 Product_Count9  ; _生産ｶｳﾝﾀ9
+LD<.D Product_Count10 #0 ; _生産ｶｳﾝﾀ10
+OR>.D Product_Count10 #99999999;_生産ｶｳﾝﾀ10
+MOV.D #0 Product_Count10 ; _生産ｶｳﾝﾀ10
+;<h1/>Modify_SW/割り込みSW制御
+;割り込みSW動作無効
+;・定停止移行中は割り込みSW無効
+LD AUTODO                ; _自動運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+OUB KtoV_MDF_INV         ; KtoV_MDF_INV
+;割り込みSW ON/OFF状態確認
+;・TPﾎﾞﾀﾝ押下をPLC側で保持
+;割り込みSW1
+LDP VtoK_MDF1_STAT       ; VtoK_MDF1_STAT
+SET Modify_SW1           ; _割り込みSW1　ON/OFF状態
+LDF VtoK_MDF1_STAT       ; VtoK_MDF1_STAT
+RES VtoK_MDF1_STAT       ; VtoK_MDF1_STAT
+CON
+RES Modify_SW1           ; _割り込みSW1　ON/OFF状態
+;割り込みSW2
+LDP VtoK_MDF2_STAT       ; VtoK_MDF2_STAT
+SET Modify_SW2           ; _割り込みSW2　ON/OFF状態
+LDF VtoK_MDF2_STAT       ; VtoK_MDF2_STAT
+RES VtoK_MDF2_STAT       ; VtoK_MDF2_STAT
+CON
+RES Modify_SW2           ; _割り込みSW2　ON/OFF状態
+;割り込みSW3
+LDP VtoK_MDF3_STAT       ; VtoK_MDF3_STAT
+SET Modify_SW3           ; _割り込みSW3　ON/OFF状態
+LDF VtoK_MDF3_STAT       ; VtoK_MDF3_STAT
+RES VtoK_MDF3_STAT       ; VtoK_MDF3_STAT
+CON
+RES Modify_SW3           ; _割り込みSW3　ON/OFF状態
+;割り込みSW4
+LDP VtoK_MDF4_STAT       ; VtoK_MDF4_STAT
+SET Modify_SW4           ; _割り込みSW4　ON/OFF状態
+LDF VtoK_MDF4_STAT       ; VtoK_MDF4_STAT
+RES VtoK_MDF4_STAT       ; VtoK_MDF4_STAT
+CON
+RES Modify_SW4           ; _割り込みSW4　ON/OFF状態
+;割り込みSW5
+LDP Vtok_MDF5_STAT       ; Vtok_MDF5_STAT
+SET Modify_SW5           ; _割り込みSW5　ON/OFF状態
+LDF Vtok_MDF5_STAT       ; Vtok_MDF5_STAT
+RES Vtok_MDF5_STAT       ; Vtok_MDF5_STAT
+CON
+RES Modify_SW5           ; _割り込みSW5　ON/OFF状態
+;割り込みSW表示／非表示
+;・API設定で未使用ならば非表示[#0]
+;割り込みSWｵﾝ／ｵﾌ時名称変更
+;・名称番号を転送
+;	ON時名称番号[#5300+SW番号-1]
+;	OFF時名称番号[#5305+SW番号-1]
+;割り込みSW1
+LD EntryModifySW:#0      ; EntryModifySW1
+MOV #0 KtoV_MainTP_MdfSw1; _割り込みSW1表示有無
+MPS
+AND Modify_SW1           ; _割り込みSW1　ON/OFF状態
+MOV #5300 KtoV_MainTP_MdfName1;_割り込みSW1ON/OFF名称番号
+MPP
+ANB Modify_SW1           ; _割り込みSW1　ON/OFF状態
+MOV #5305 KtoV_MainTP_MdfName1;_割り込みSW1ON/OFF名称番号
+LDB EntryModifySW:#0     ; EntryModifySW1
+MOV #1 KtoV_MainTP_MdfSw1; _割り込みSW1表示有無
+MOV #0 KtoV_MainTP_MdfName1;_割り込みSW1ON/OFF名称番号
+;割り込みSW2
+LD EntryModifySW:#1      ; EntryModifySW2
+MOV #0 KtoV_MainTP_MdfSw2; _割り込みSW2表示有無
+MPS
+AND Modify_SW2           ; _割り込みSW2　ON/OFF状態
+MOV #5301 KtoV_MainTP_MdfName2;_割り込みSW2ON/OFF名称番号
+MPP
+ANB Modify_SW2           ; _割り込みSW2　ON/OFF状態
+MOV #5306 KtoV_MainTP_MdfName2;_割り込みSW2ON/OFF名称番号
+LDB EntryModifySW:#1     ; EntryModifySW2
+MOV #1 KtoV_MainTP_MdfSw2; _割り込みSW2表示有無
+MOV #0 KtoV_MainTP_MdfName2;_割り込みSW2ON/OFF名称番号
+;割り込みSW3
+LD EntryModifySW:#2      ; EntryModifySW3
+MOV #0 KtoV_MainTP_MdfSw3; _割り込みSW3表示有無
+MPS
+AND Modify_SW3           ; _割り込みSW3　ON/OFF状態
+MOV #5302 KtoV_MainTP_MdfName3;_割り込みSW3ON/OFF名称番号
+MPP
+ANB Modify_SW3           ; _割り込みSW3　ON/OFF状態
+MOV #5307 KtoV_MainTP_MdfName3;_割り込みSW3ON/OFF名称番号
+LDB EntryModifySW:#2     ; EntryModifySW3
+MOV #1 KtoV_MainTP_MdfSw3; _割り込みSW3表示有無
+MOV #0 KtoV_MainTP_MdfName3;_割り込みSW3ON/OFF名称番号
+;割り込みSW4
+LD EntryModifySW:#3      ; EntryModifySW4
+MOV #0 KtoV_MainTP_MdfSw4; _割り込みSW4表示有無
+MPS
+AND Modify_SW4           ; _割り込みSW4　ON/OFF状態
+MOV #5303 KtoV_MainTP_MdfName4;_割り込みSW4ON/OFF名称番号
+MPP
+ANB Modify_SW4           ; _割り込みSW4　ON/OFF状態
+MOV #5308 KtoV_MainTP_MdfName4;_割り込みSW4ON/OFF名称番号
+LDB EntryModifySW:#3     ; EntryModifySW4
+MOV #1 KtoV_MainTP_MdfSw4; _割り込みSW4表示有無
+MOV #0 KtoV_MainTP_MdfName4;_割り込みSW4ON/OFF名称番号
+;割り込みSW5
+LD EntryModifySW:#4      ; EntryModifySW5
+MOV #0 KtoV_MainTP_MdfSw5; _割り込みSW5表示有無
+MPS
+AND Modify_SW5           ; _割り込みSW5　ON/OFF状態
+MOV #5304 KtoV_MainTP_MdfName5;_割り込みSW5ON/OFF名称番号
+MPP
+ANB Modify_SW5           ; _割り込みSW5　ON/OFF状態
+MOV #5309 KtoV_MainTP_MdfName5;_割り込みSW5ON/OFF名称番号
+LDB EntryModifySW:#4     ; EntryModifySW5
+MOV #1 KtoV_MainTP_MdfSw5; _割り込みSW5表示有無
+MOV #0 KtoV_MainTP_MdfName5;_割り込みSW5ON/OFF名称番号
+;<h1/>Support Macro Control/ｻﾎﾟｰﾄﾏｸﾛ管理
+;WARNING_DISP
+;TP側で[OK]ﾎﾞﾀﾝが押されたら画面消去&ﾃﾞﾊﾞｲｽ初期化
+LD KtoV_WRN1_OPN         ; _WARN画面表示
+ANP VtoK_WRN1_CLS        ; _WARN画面消去
+MPS
+RES SYS_Bz1_RQ1          ; _Group1　ｼｽﾃﾑﾌﾞｻﾞｰ要求1
+CON
+RES SYS_RLMP1_RQ1        ; _Group1　ﾗﾝﾌﾟ赤点滅要求1
+CON
+RES KtoV_WRN1_OPN        ; _WARN画面表示
+MRD
+MOV #0 KtoV_WRN1_MSG     ; _WARNﾒｯｾｰｼﾞ番号
+MRD
+MOV.D #0 Warning_Chk1    ; _WARNING1表示状態
+MPP
+MOV #0 Bz_STAT1          ; _Group1　ﾌﾞｻﾞｰ状態
+LD KtoV_WRN2_OPN         ; _WARN画面表示
+ANP VtoK_WRN2_CLS        ; _WARN画面消去
+MPS
+RES SYS_Bz2_RQ1          ; _Group2　ｼｽﾃﾑﾌﾞｻﾞｰ要求1
+CON
+RES SYS_RLMP2_RQ1        ; _Group2　ﾗﾝﾌﾟ赤点滅要求1
+CON
+RES KtoV_WRN2_OPN        ; _WARN画面表示
+MRD
+MOV #0 KtoV_WRN2_MSG     ; _WARNﾒｯｾｰｼﾞ番号
+MRD
+MOV.D #0 Warning_Chk2    ; _WARNING2表示状態
+MPP
+MOV #0 Bz_STAT2          ; _Group2　ﾌﾞｻﾞｰ状態
+LD KtoV_WRN3_OPN         ; _WARN画面表示
+ANP VtoK_WRN3_CLS        ; _WARN画面消去
+MPS
+RES SYS_Bz3_RQ1          ; _Group3　ｼｽﾃﾑﾌﾞｻﾞｰ要求1
+CON
+RES SYS_RLMP3_RQ1        ; _Group3　ﾗﾝﾌﾟ赤点滅要求1
+CON
+RES KtoV_WRN3_OPN        ; _WARN画面表示
+MRD
+MOV #0 KtoV_WRN3_MSG     ; _WARNﾒｯｾｰｼﾞ番号
+MRD
+MOV.D #0 Warning_Chk3    ; _WARNING3表示状態
+MPP
+MOV #0 Bz_STAT3          ; _Group3　ﾌﾞｻﾞｰ状態
+LD KtoV_WRN4_OPN         ; _WARN画面表示
+ANP VtoK_WRN4_CLS        ; _WARN画面消去
+MPS
+RES SYS_Bz4_RQ1          ; _Group4　ｼｽﾃﾑﾌﾞｻﾞｰ要求1
+CON
+RES SYS_RLMP4_RQ1        ; _Group4　ﾗﾝﾌﾟ赤点滅要求1
+CON
+RES KtoV_WRN4_OPN        ; _WARN画面表示
+MRD
+MOV #0 KtoV_WRN4_MSG     ; _WARNﾒｯｾｰｼﾞ番号
+MRD
+MOV.D #0 Warning_Chk4    ; _WARNING4表示状態
+MPP
+MOV #0 Bz_STAT4          ; _Group4　ﾌﾞｻﾞｰ状態
+LD KtoV_WRN5_OPN         ; _WARN画面表示
+ANP VtoK_WRN5_CLS        ; _WARN画面消去
+MPS
+RES SYS_Bz5_RQ1          ; _Group5　ｼｽﾃﾑﾌﾞｻﾞｰ要求1
+CON
+RES SYS_RLMP5_RQ1        ; _Group5　ﾗﾝﾌﾟ赤点滅要求1
+CON
+RES KtoV_WRN5_OPN        ; _WARN画面表示
+MRD
+MOV #0 KtoV_WRN5_MSG     ; _WARNﾒｯｾｰｼﾞ番号
+MRD
+MOV.D #0 Warning_Chk5    ; _WARNING5表示状態
+MPP
+MOV #0 Bz_STAT5          ; _Group5　ﾌﾞｻﾞｰ状態
+LD KtoV_WRN6_OPN         ; _WARN画面表示
+ANP VtoK_WRN6_CLS        ; _WARN画面消去
+MPS
+RES SYS_Bz6_RQ1          ; _Group6　ｼｽﾃﾑﾌﾞｻﾞｰ要求1
+CON
+RES SYS_RLMP6_RQ1        ; _Group6　ﾗﾝﾌﾟ赤点滅要求1
+CON
+RES KtoV_WRN6_OPN        ; _WARN画面表示
+MRD
+MOV #0 KtoV_WRN6_MSG     ; _WARNﾒｯｾｰｼﾞ番号
+MRD
+MOV.D #0 Warning_Chk6    ; _WARNING6表示状態
+MPP
+MOV #0 Bz_STAT6          ; _Group6　ﾌﾞｻﾞｰ状態
+LD KtoV_WRN7_OPN         ; _WARN画面表示
+ANP VtoK_WRN7_CLS        ; _WARN画面消去
+MPS
+RES SYS_Bz7_RQ1          ; _Group7　ｼｽﾃﾑﾌﾞｻﾞｰ要求1
+CON
+RES SYS_RLMP7_RQ1        ; _Group7　ﾗﾝﾌﾟ赤点滅要求1
+CON
+RES KtoV_WRN7_OPN        ; _WARN画面表示
+MRD
+MOV #0 KtoV_WRN7_MSG     ; _WARNﾒｯｾｰｼﾞ番号
+MRD
+MOV.D #0 Warning_Chk7    ; _WARNING7表示状態
+MPP
+MOV #0 Bz_STAT7          ; _Group7　ﾌﾞｻﾞｰ状態
+LD KtoV_WRN8_OPN         ; _WARN画面表示
+ANP VtoK_WRN8_CLS        ; _WARN画面消去
+MPS
+RES SYS_Bz8_RQ1          ; _Group8　ｼｽﾃﾑﾌﾞｻﾞｰ要求1
+CON
+RES SYS_RLMP8_RQ1        ; _Group8　ﾗﾝﾌﾟ赤点滅要求1
+CON
+RES KtoV_WRN8_OPN        ; _WARN画面表示
+MRD
+MOV #0 KtoV_WRN8_MSG     ; _WARNﾒｯｾｰｼﾞ番号
+MRD
+MOV.D #0 Warning_Chk8    ; _WARNING8表示状態
+MPP
+MOV #0 Bz_STAT8          ; _Group8　ﾌﾞｻﾞｰ状態
+;MSG_DISP
+;TP側で[OK]ﾎﾞﾀﾝが押されたら画面消去&ﾃﾞﾊﾞｲｽ初期化
+LD KtoV_MSG1_OPN         ; _MSG画面表示
+ANP VtoK_MSG1_CLS        ; _MSG画面消去
+MPS
+RES SYS_Bz1_RQ2          ; _Group1　ｼｽﾃﾑﾌﾞｻﾞｰ要求2
+CON
+RES SYS_RLMP1_RQ2        ; _Group1　ﾗﾝﾌﾟ赤点滅要求2
+CON
+RES KtoV_MSG1_OPN        ; _MSG画面表示
+MRD
+MOV #0 KtoV_MSG1_MSG     ; _MSGﾒｯｾｰｼﾞ番号
+MPP
+MOV.D #0 Msg_Chk1        ; _MSG_DISP1表示状態
+LD KtoV_MSG2_OPN         ; _MSG画面表示
+ANP VtoK_MSG2_CLS        ; _MSG画面消去
+MPS
+RES SYS_Bz2_RQ2          ; _Group2　ｼｽﾃﾑﾌﾞｻﾞｰ要求2
+CON
+RES SYS_RLMP2_RQ2        ; _Group2　ﾗﾝﾌﾟ赤点滅要求2
+CON
+RES KtoV_MSG2_OPN        ; _MSG画面表示
+MRD
+MOV #0 KtoV_MSG2_MSG     ; _MSGﾒｯｾｰｼﾞ番号
+MPP
+MOV.D #0 Msg_Chk2        ; _MSG_DISP2表示状態
+LD KtoV_MSG3_OPN         ; _MSG画面表示
+ANP VtoK_MSG3_CLS        ; _MSG画面消去
+MPS
+RES SYS_Bz3_RQ2          ; _Group3　ｼｽﾃﾑﾌﾞｻﾞｰ要求2
+CON
+RES SYS_RLMP3_RQ2        ; _Group3　ﾗﾝﾌﾟ赤点滅要求2
+CON
+RES KtoV_MSG3_OPN        ; _MSG画面表示
+MRD
+MOV #0 KtoV_MSG3_MSG     ; _MSGﾒｯｾｰｼﾞ番号
+MPP
+MOV.D #0 Msg_Chk3        ; _MSG_DISP3表示状態
+LD KtoV_MSG4_OPN         ; _MSG画面表示
+ANP VtoK_MSG4_CLS        ; _MSG画面消去
+MPS
+RES SYS_Bz4_RQ2          ; _Group4　ｼｽﾃﾑﾌﾞｻﾞｰ要求2
+CON
+RES SYS_RLMP4_RQ2        ; _Group4　ﾗﾝﾌﾟ赤点滅要求2
+CON
+RES KtoV_MSG4_OPN        ; _MSG画面表示
+MRD
+MOV #0 KtoV_MSG4_MSG     ; _MSGﾒｯｾｰｼﾞ番号
+MPP
+MOV.D #0 Msg_Chk4        ; _MSG_DISP4表示状態
+LD KtoV_MSG5_OPN         ; _MSG画面表示
+ANP VtoK_MSG5_CLS        ; _MSG画面消去
+MPS
+RES SYS_Bz5_RQ2          ; _Group5　ｼｽﾃﾑﾌﾞｻﾞｰ要求2
+CON
+RES SYS_RLMP5_RQ2        ; _Group5　ﾗﾝﾌﾟ赤点滅要求2
+CON
+RES KtoV_MSG5_OPN        ; _MSG画面表示
+MRD
+MOV #0 KtoV_MSG5_MSG     ; _MSGﾒｯｾｰｼﾞ番号
+MPP
+MOV.D #0 Msg_Chk5        ; _MSG_DISP5表示状態
+LD KtoV_MSG6_OPN         ; _MSG画面表示
+ANP VtoK_MSG6_CLS        ; _MSG画面消去
+MPS
+RES SYS_Bz6_RQ2          ; _Group6　ｼｽﾃﾑﾌﾞｻﾞｰ要求2
+CON
+RES SYS_RLMP6_RQ2        ; _Group6　ﾗﾝﾌﾟ赤点滅要求2
+CON
+RES KtoV_MSG6_OPN        ; _MSG画面表示
+MRD
+MOV #0 KtoV_MSG6_MSG     ; _MSGﾒｯｾｰｼﾞ番号
+MPP
+MOV.D #0 Msg_Chk6        ; _MSG_DISP6表示状態
+LD KtoV_MSG7_OPN         ; _MSG画面表示
+ANP VtoK_MSG7_CLS        ; _MSG画面消去
+MPS
+RES SYS_Bz7_RQ2          ; _Group7　ｼｽﾃﾑﾌﾞｻﾞｰ要求2
+CON
+RES SYS_RLMP7_RQ2        ; _Group7　ﾗﾝﾌﾟ赤点滅要求2
+CON
+RES KtoV_MSG7_OPN        ; _MSG画面表示
+MRD
+MOV #0 KtoV_MSG7_MSG     ; _MSGﾒｯｾｰｼﾞ番号
+MPP
+MOV.D #0 Msg_Chk7        ; _MSG_DISP7表示状態
+LD KtoV_MSG8_OPN         ; _MSG画面表示
+ANP VtoK_MSG8_CLS        ; _MSG画面消去
+MPS
+RES SYS_Bz8_RQ2          ; _Group8　ｼｽﾃﾑﾌﾞｻﾞｰ要求2
+CON
+RES SYS_RLMP8_RQ2        ; _Group8　ﾗﾝﾌﾟ赤点滅要求2
+CON
+RES KtoV_MSG8_OPN        ; _MSG画面表示
+MRD
+MOV #0 KtoV_MSG8_MSG     ; _MSGﾒｯｾｰｼﾞ番号
+MPP
+MOV.D #0 Msg_Chk8        ; _MSG_DISP8表示状態
+;Mainte_NG
+;ﾒﾝﾃﾅﾝｽ動作中のみ有効
+LDB MAINTEDO             ; _ﾒﾝﾃﾅﾝｽ運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+MPS
+AND Mainte_NG1           ; _Group1　ﾒﾝﾃ開始禁止宣言
+RES Mainte_NG1           ; _Group1　ﾒﾝﾃ開始禁止宣言
+MRD
+AND Mainte_NG2           ; _Group2　ﾒﾝﾃ開始禁止宣言
+RES Mainte_NG2           ; _Group2　ﾒﾝﾃ開始禁止宣言
+MRD
+AND Mainte_NG3           ; _Group3　ﾒﾝﾃ開始禁止宣言
+RES Mainte_NG3           ; _Group3　ﾒﾝﾃ開始禁止宣言
+MRD
+AND Mainte_NG4           ; _Group4　ﾒﾝﾃ開始禁止宣言
+RES Mainte_NG4           ; _Group4　ﾒﾝﾃ開始禁止宣言
+MRD
+AND Mainte_NG5           ; _Group5　ﾒﾝﾃ開始禁止宣言
+RES Mainte_NG5           ; _Group5　ﾒﾝﾃ開始禁止宣言
+MRD
+AND Mainte_NG6           ; _Group6　ﾒﾝﾃ開始禁止宣言
+RES Mainte_NG6           ; _Group6　ﾒﾝﾃ開始禁止宣言
+MRD
+AND Mainte_NG7           ; _Group7　ﾒﾝﾃ開始禁止宣言
+RES Mainte_NG7           ; _Group7　ﾒﾝﾃ開始禁止宣言
+MPP
+AND Mainte_NG8           ; _Group8　ﾒﾝﾃ開始禁止宣言
+RES Mainte_NG8           ; _Group8　ﾒﾝﾃ開始禁止宣言
+;MODE_INDI
+;運転開始時処理
+;・【起動時】設定とする[#9]
+LD CR2008                ; 運転開始時1ｽｷｬﾝON
+MOV #9 ModeIndi_No       ; _MODE_INDI指定番号
+SET ModeIndi_RQ          ; _MODE_INDI変更要求
+;定停止中開始時に運転ﾓｰﾄﾞ番号変更処理
+;・起動中にﾕｰｻﾞｰ指定[#1～#8]があれば【ﾕｰｻﾞｰ指定番号】設定
+;・起動中状態のまま定停止になれば[#11]【通常時】[#10]設定
+;・非常停止復帰後は【起動時】設定[#9]
+LDP TRAPDO               ; _非常停止中　ﾓｰﾄﾞﾌﾗｸﾞ
+MOV #9 ModeIndi_No       ; _MODE_INDI指定番号
+SET ModeIndi_RQ          ; _MODE_INDI変更要求
+LD STOPDO                ; _停止中　ﾓｰﾄﾞﾌﾗｸﾞ
+MPS
+AND= ModeIndi_No #11     ; _MODE_INDI指定番号
+MOV #10 ModeIndi_No      ; _MODE_INDI指定番号
+SET ModeIndi_RQ          ; _MODE_INDI変更要求
+MPP
+AND<= ModeIndi_No #8     ; _MODE_INDI指定番号
+SET ModeIndi_RQ          ; _MODE_INDI変更要求
+;ﾓｰﾄﾞIN時処理
+;・HOME、AUTO、MAINTE全て選択不可設定[#11]
+LDP AUTODO               ; _自動運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+ORP HOMEDO               ; _原点復帰中　ﾓｰﾄﾞﾌﾗｸﾞ
+ORP MAINTEDO             ; _ﾒﾝﾃﾅﾝｽ運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+MOV #11 ModeIndi_No      ; _MODE_INDI指定番号
+BRES ModeIndi_HOME #10   ; _MODE_INDIﾕｰｻﾞｰ指定HOME
+CON
+BRES ModeIndi_AUTO #10   ; _MODE_INDIﾕｰｻﾞｰ指定AUTO
+CON
+BRES ModeIndi_MAINTE #10 ; _MODE_INDIﾕｰｻﾞｰ指定MAINTE
+CON
+SET ModeIndi_RQ          ; _MODE_INDI変更要求
+;MODE_INDIﾒｯｾｰｼﾞ表示
+;・ﾕｰｻﾞｰ指定#1～#8のみ表示
+;・ｼｽﾃﾑ指定#9～はﾒｯｾｰｼﾞ消去
+LD ModeIndi_RQ           ; _MODE_INDI変更要求
+MPS
+LD>= ModeIndi_No #1      ; _MODE_INDI指定番号
+AND<= ModeIndi_No #8     ; _MODE_INDI指定番号
+ANL
+MOV ModeIndi_No KtoV_INDI_MSG;_MODE_INDI指定番号  _INDI　ﾒｯｾｰｼﾞ番号
+SET KtoV_INDI_OPN        ; KtoV_INDI_OPN
+MPP
+AND>= ModeIndi_No #9     ; _MODE_INDI指定番号
+MOV #0 KtoV_INDI_MSG     ; _INDI　ﾒｯｾｰｼﾞ番号
+RES KtoV_INDI_OPN        ; KtoV_INDI_OPN
+;選択可能運転ﾓｰﾄﾞ変更処理
+;・HOMEﾎﾞﾀﾝ表示／非表示
+;・AUTOﾎﾞﾀﾝ表示／非表示
+;・MAINTEﾎﾞﾀﾝ表示／非表示
+;
+;FOR i = 1 TO 16	'ﾓｰﾄﾞ番号分ﾙｰﾌﾟ
+;	IF i = ModeIndi_No THEN		'指定番号？
+;		IF BLD(ModeIndi_HOME,i-1) = ON THEN		'ﾕｰｻﾞｰ設定
+;			KtoV_INDI_HOME = 0	'HOMEﾎﾞﾀﾝ表示
+;		ELSE
+;			KtoV_INDI_HOME = 1	'HOMEﾎﾞﾀﾝ非表示
+;		END IF
+;		IF BLD(ModeIndi_AUTO,i-1) = ON THEN
+;			KtoV_INDI_AUTO = 0	'AUTOﾎﾞﾀﾝ表示
+;		ELSE
+;			KtoV_INDI_AUTO = 1	'AUTOﾎﾞﾀﾝ非表示
+;		END IF
+;		IF BLD(ModeIndi_MAINTE,i-1) = ON THEN
+;			KtoV_INDI_MAINTE = 0	'MAINTEﾎﾞﾀﾝ表示
+;		ELSE
+;			KtoV_INDI_MAINTE = 1	'MAINTEﾎﾞﾀﾝ非表示
+;			IF i <= 8 THEN
+;				MODE_MAINTE = 0			'MAINTEﾎﾞﾀﾝ非表示状態に
+;			END IF
+;		END IF
+;		BREAK
+;	END IF
+;NEXT
+;
+;RES(ModeIndi_RQ)	'処理完了
+LD> ModeIndi_No #0       ; _MODE_INDI指定番号
+AND ModeIndi_RQ          ; _MODE_INDI変更要求
+NCJ #1001
+;FOR i = 1 TO 16	'ﾓｰﾄﾞ番号分ﾙｰﾌﾟ
+;
+LD CR2002                ; 常時ON
+MOV #1 i
+LABEL #2045
+LD> i #16
+CJ #2046
+;	IF i = ModeIndi_No THEN		'指定番号？
+;
+LD= i ModeIndi_No        ; _MODE_INDI指定番号
+NCJ #2047
+;		IF BLD(ModeIndi_HOME,i-1) = ON THEN		'ﾕｰｻﾞｰ設定
+;
+LD CR2002                ; 常時ON
+LDA i
+CON
+EXT
+CON
+SUB.L +1
+CON
+STA.L @VM50
+BLD ModeIndi_HOME @VM50  ; _MODE_INDIﾕｰｻﾞｰ指定HOME
+NCJ #2048
+;			KtoV_INDI_HOME = 0	'HOMEﾎﾞﾀﾝ表示
+;
+LD CR2002                ; 常時ON
+MOV #0 KtoV_INDI_HOME    ; _INDI　HOME有効／無効
+;		ELSE
+;
+LD CR2002                ; 常時ON
+CJ #2049
+LABEL #2048
+;			KtoV_INDI_HOME = 1	'HOMEﾎﾞﾀﾝ非表示
+;
+LD CR2002                ; 常時ON
+MOV #1 KtoV_INDI_HOME    ; _INDI　HOME有効／無効
+;		END IF
+;
+LABEL #2049
+;		IF BLD(ModeIndi_AUTO,i-1) = ON THEN
+;
+LD CR2002                ; 常時ON
+LDA i
+CON
+EXT
+CON
+SUB.L +1
+CON
+STA.L @VM52
+BLD ModeIndi_AUTO @VM52  ; _MODE_INDIﾕｰｻﾞｰ指定AUTO
+NCJ #2050
+;			KtoV_INDI_AUTO = 0	'AUTOﾎﾞﾀﾝ表示
+;
+LD CR2002                ; 常時ON
+MOV #0 KtoV_INDI_AUTO    ; _INDI　AUTO有効／無効
+;		ELSE
+;
+LD CR2002                ; 常時ON
+CJ #2051
+LABEL #2050
+;			KtoV_INDI_AUTO = 1	'AUTOﾎﾞﾀﾝ非表示
+;
+LD CR2002                ; 常時ON
+MOV #1 KtoV_INDI_AUTO    ; _INDI　AUTO有効／無効
+;		END IF
+;
+LABEL #2051
+;		IF BLD(ModeIndi_MAINTE,i-1) = ON THEN
+;
+LD CR2002                ; 常時ON
+LDA i
+CON
+EXT
+CON
+SUB.L +1
+CON
+STA.L @VM54
+BLD ModeIndi_MAINTE @VM54; _MODE_INDIﾕｰｻﾞｰ指定MAINTE
+NCJ #2052
+;			KtoV_INDI_MAINTE = 0	'MAINTEﾎﾞﾀﾝ表示
+;
+LD CR2002                ; 常時ON
+MOV #0 KtoV_INDI_MAINTE  ; _INDI　MAINTE有効／無効
+;		ELSE
+;
+LD CR2002                ; 常時ON
+CJ #2053
+LABEL #2052
+;			KtoV_INDI_MAINTE = 1	'MAINTEﾎﾞﾀﾝ非表示
+;
+LD CR2002                ; 常時ON
+MOV #1 KtoV_INDI_MAINTE  ; _INDI　MAINTE有効／無効
+;			IF i <= 8 THEN
+;
+LD<= i #8
+NCJ #2054
+;				MODE_MAINTE = 0			'MAINTEﾎﾞﾀﾝ非表示状態に
+;
+LD CR2003                ; 常時OFF
+OUT MODE_MAINTE          ; _MAINTEﾓｰﾄﾞ選択中
+;			END IF
+;
+LABEL #2054
+;		END IF
+;
+LABEL #2053
+;		BREAK
+;
+LD CR2002                ; 常時ON
+CJ #2055
+;	END IF
+;
+LABEL #2047
+;NEXT
+;
+LD CR2002                ; 常時ON
+INC i
+LDB CR2009               ; 演算結果が負
+CJ #2045
+LABEL #2055
+LABEL #2046
+;RES(ModeIndi_RQ)	'処理完了
+LD CR2002                ; 常時ON
+RES ModeIndi_RQ          ; _MODE_INDI変更要求
+LABEL #1001
+;
+;<h1/>↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓
+;
+;2013/3 追加
+;ラインPLCからの機種切替に伴う追加
+LD CR2008                ; 運転開始時1ｽｷｬﾝON
+ZRES @MR000 @MR915
+;<h1/>2013/3
+;画面No310、311、380、381
+;選択Noにおける下限、上限値表示
+;ZF30990 = DM50430*4		'選択されている項目ﾍﾟｰｼﾞ
+;ZF30996 = 0				'OFFSET
+;
+;FOR ZF30994 = 1 TO 10	'10項目分
+;	ZF30900.L:ZF30996 = ZF30000.L:(ZF30990+ZF30996)	'下限値
+;	ZF30902.L:ZF30996 = ZF30002.L:(ZF30990+ZF30996)	'上限値
+;	ZF30950.L:ZF30996 = ZF30000.L:(ZF30990+ZF30996)	'下限値
+;	ZF30952.L:ZF30996 = ZF30002.L:(ZF30990+ZF30996)	'上限値
+;	ZF30996 = ZF30996 + 4	'2ﾜｰﾄﾞ+2ﾜｰﾄﾞ=4ﾜｰﾄﾞ分
+;NEXT	
+LD= DM3000 #310          ; _MainTP　表示中ﾍﾟｰｼﾞNo
+OR= DM3000 #311          ; _MainTP　表示中ﾍﾟｰｼﾞNo
+NCJ #1002
+;ZF30990 = DM50430*4		'選択されている項目ﾍﾟｰｼﾞ
+;
+LD CR2002                ; 常時ON
+LDA DM50430              ; 機種DATA Offset
+CON
+EXT
+CON
+MUL.L +4
+CON
+STA ZF30990
+;ZF30996 = 0				'OFFSET
+;
+LD CR2002                ; 常時ON
+MOV #0 ZF30996
+;FOR ZF30994 = 1 TO 10	'10項目分
+;
+LD CR2002                ; 常時ON
+MOV #1 ZF30994
+LABEL #2056
+LD> ZF30994 #10
+CJ #2057
+;	ZF30900.L:ZF30996 = ZF30000.L:(ZF30990+ZF30996)	'下限値
+;
+LD CR2002                ; 常時ON
+LDA ZF30996
+CON
+EXT
+CON
+STA.L Z11
+CON
+LDA ZF30996
+CON
+EXT
+CON
+STA.L @VM56
+CON
+LDA ZF30990
+CON
+EXT
+CON
+ADD.L @VM56
+CON
+STA.L Z12
+CON
+MOV.L ZF30000:Z12 ZF30900:Z11
+;	ZF30902.L:ZF30996 = ZF30002.L:(ZF30990+ZF30996)	'上限値
+;
+LD CR2002                ; 常時ON
+LDA ZF30996
+CON
+EXT
+CON
+STA.L Z11
+CON
+LDA ZF30996
+CON
+EXT
+CON
+STA.L @VM58
+CON
+LDA ZF30990
+CON
+EXT
+CON
+ADD.L @VM58
+CON
+STA.L Z12
+CON
+MOV.L ZF30002:Z12 ZF30902:Z11
+;	ZF30950.L:ZF30996 = ZF30000.L:(ZF30990+ZF30996)	'下限値
+;
+LD CR2002                ; 常時ON
+LDA ZF30996
+CON
+EXT
+CON
+STA.L Z11
+CON
+LDA ZF30996
+CON
+EXT
+CON
+STA.L @VM60
+CON
+LDA ZF30990
+CON
+EXT
+CON
+ADD.L @VM60
+CON
+STA.L Z12
+CON
+MOV.L ZF30000:Z12 ZF30950:Z11
+;	ZF30952.L:ZF30996 = ZF30002.L:(ZF30990+ZF30996)	'上限値
+;
+LD CR2002                ; 常時ON
+LDA ZF30996
+CON
+EXT
+CON
+STA.L Z11
+CON
+LDA ZF30996
+CON
+EXT
+CON
+STA.L @VM62
+CON
+LDA ZF30990
+CON
+EXT
+CON
+ADD.L @VM62
+CON
+STA.L Z12
+CON
+MOV.L ZF30002:Z12 ZF30952:Z11
+;	ZF30996 = ZF30996 + 4	'2ﾜｰﾄﾞ+2ﾜｰﾄﾞ=4ﾜｰﾄﾞ分
+;
+LD CR2002                ; 常時ON
+LDA ZF30996
+CON
+EXT
+CON
+ADD.L +4
+CON
+STA ZF30996
+;NEXT	
+LD CR2002                ; 常時ON
+INC ZF30994
+LDB CR2009               ; 演算結果が負
+CJ #2056
+LABEL #2057
+LABEL #1002
+;
+;ZF31990 = DM50430*4		'選択されている項目ﾍﾟｰｼﾞ
+;ZF31996 = 0				'OFFSET
+;
+;FOR ZF31994 = 1 TO 10	'10項目分
+;	ZF31900.L:ZF31996 = ZF31000.L:(ZF31990+ZF31996)	'下限値
+;	ZF31902.L:ZF31996 = ZF31002.L:(ZF31990+ZF31996)	'上限値
+;	ZF31950.L:ZF31996 = ZF31000.L:(ZF31990+ZF31996)	'下限値
+;	ZF31952.L:ZF31996 = ZF31002.L:(ZF31990+ZF31996)	'上限値
+;	ZF31996 = ZF31996 + 4	'2ﾜｰﾄﾞ+2ﾜｰﾄﾞ=4ﾜｰﾄﾞ分
+;NEXT	
+LD= DM3000 #380          ; _MainTP　表示中ﾍﾟｰｼﾞNo
+OR= DM3000 #381          ; _MainTP　表示中ﾍﾟｰｼﾞNo
+NCJ #1035
+;ZF31990 = DM50430*4		'選択されている項目ﾍﾟｰｼﾞ
+;
+LD CR2002                ; 常時ON
+LDA DM50430              ; 機種DATA Offset
+CON
+EXT
+CON
+MUL.L +4
+CON
+STA ZF31990
+;ZF31996 = 0				'OFFSET
+;
+LD CR2002                ; 常時ON
+MOV #0 ZF31996
+;FOR ZF31994 = 1 TO 10	'10項目分
+;
+LD CR2002                ; 常時ON
+MOV #1 ZF31994
+LABEL #2058
+LD> ZF31994 #10
+CJ #2059
+;	ZF31900.L:ZF31996 = ZF31000.L:(ZF31990+ZF31996)	'下限値
+;
+LD CR2002                ; 常時ON
+LDA ZF31996
+CON
+EXT
+CON
+STA.L Z11
+CON
+LDA ZF31996
+CON
+EXT
+CON
+STA.L @VM64
+CON
+LDA ZF31990
+CON
+EXT
+CON
+ADD.L @VM64
+CON
+STA.L Z12
+CON
+MOV.L ZF31000:Z12 ZF31900:Z11
+;	ZF31902.L:ZF31996 = ZF31002.L:(ZF31990+ZF31996)	'上限値
+;
+LD CR2002                ; 常時ON
+LDA ZF31996
+CON
+EXT
+CON
+STA.L Z11
+CON
+LDA ZF31996
+CON
+EXT
+CON
+STA.L @VM66
+CON
+LDA ZF31990
+CON
+EXT
+CON
+ADD.L @VM66
+CON
+STA.L Z12
+CON
+MOV.L ZF31002:Z12 ZF31902:Z11
+;	ZF31950.L:ZF31996 = ZF31000.L:(ZF31990+ZF31996)	'下限値
+;
+LD CR2002                ; 常時ON
+LDA ZF31996
+CON
+EXT
+CON
+STA.L Z11
+CON
+LDA ZF31996
+CON
+EXT
+CON
+STA.L @VM68
+CON
+LDA ZF31990
+CON
+EXT
+CON
+ADD.L @VM68
+CON
+STA.L Z12
+CON
+MOV.L ZF31000:Z12 ZF31950:Z11
+;	ZF31952.L:ZF31996 = ZF31002.L:(ZF31990+ZF31996)	'上限値
+;
+LD CR2002                ; 常時ON
+LDA ZF31996
+CON
+EXT
+CON
+STA.L Z11
+CON
+LDA ZF31996
+CON
+EXT
+CON
+STA.L @VM70
+CON
+LDA ZF31990
+CON
+EXT
+CON
+ADD.L @VM70
+CON
+STA.L Z12
+CON
+MOV.L ZF31002:Z12 ZF31952:Z11
+;	ZF31996 = ZF31996 + 4	'2ﾜｰﾄﾞ+2ﾜｰﾄﾞ=4ﾜｰﾄﾞ分
+;
+LD CR2002                ; 常時ON
+LDA ZF31996
+CON
+EXT
+CON
+ADD.L +4
+CON
+STA ZF31996
+;NEXT	
+LD CR2002                ; 常時ON
+INC ZF31994
+LDB CR2009               ; 演算結果が負
+CJ #2058
+LABEL #2059
+LABEL #1035
+;
+;<h1/>2013/3
+;機種切換（ONLINE）
+;
+;※ｾﾙによってB04Fが異なるので変更する事
+;IF (CELL_No > 0) THEN 
+;	CELL_OFFSET = (CELL_No - 1)*48
+;ELSE
+;	CELL_OFFSET = 0
+;END IF
+;CELL_ONLINE = B04F:CELL_OFFSET
+LD CR2002                ; 常時ON
+NCJ #1036
+;IF (CELL_No > 0) THEN 
+;
+LD> CELL_No #0
+NCJ #2060
+;	CELL_OFFSET = (CELL_No - 1)*48
+;
+LD CR2002                ; 常時ON
+LDA CELL_No
+CON
+EXT
+CON
+SUB.L +1
+CON
+MUL.L +48
+CON
+STA CELL_OFFSET
+;ELSE
+;
+LD CR2002                ; 常時ON
+CJ #2061
+LABEL #2060
+;	CELL_OFFSET = 0
+;
+LD CR2002                ; 常時ON
+MOV #0 CELL_OFFSET
+;END IF
+;
+LABEL #2061
+;CELL_ONLINE = B04F:CELL_OFFSET
+LD CR2002                ; 常時ON
+LDA CELL_OFFSET
+CON
+EXT
+CON
+STA.L Z12
+LD B04F:Z12              ; ONLINE
+OUT CELL_ONLINE
+LABEL #1036
+;
+LDB AUTODO               ; _自動運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+ANB HOMEDO               ; _原点復帰中　ﾓｰﾄﾞﾌﾗｸﾞ
+ANB MAINTEDO             ; _ﾒﾝﾃﾅﾝｽ運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+AND STOPDO               ; _停止中　ﾓｰﾄﾞﾌﾗｸﾞ
+ANB TRAPDO               ; _非常停止中　ﾓｰﾄﾞﾌﾗｸﾞ
+ANB PARADO               ; _ﾊﾟﾗﾒｰﾀ編集中　ﾓｰﾄﾞﾌﾗｸﾞ
+ANB HOLD                 ; _定停止移行中
+ANB HOLDRQ               ; _定停止要求
+AND CELL_ONLINE
+ANP B02F                 ; ﾗｲﾝPLCからの切換要求
+ZRES @MR100 @MR415
+CON
+SET @MR100
+STG @MR100
+ANB @MR101
+ZRES @MR900 @MR915       ; ﾗｲﾝPLCからの読込開始
+CON
+SET @MR101
+CON
+JMP @MR102
+;ラインPLCから機種変更後の機種データ（DM100～　250ﾜｰﾄﾞ分）を読み出す
+STG @MR102
+DW #225 DM3008           ; _MainTP　切替ﾍﾟｰｼﾞNo
+CON
+LDA CELL_OFFSET
+CON
+STA Z6
+CON
+SET B05F:Z6
+CON
+SET MR415                ; 除材P&P DATA NG破棄
+CON
+SET @MR900               ; ﾗｲﾝPLCからの読込開始
+CON
+JMP @MR103
+STG @MR103
+AND @MR901               ; PLCからの読込完了
+RES @MR901               ; PLCからの読込完了
+CON
+MPS
+ANB @MR909               ; NG
+BMOV ZF0 common_data #250; _機種共通ﾃﾞｰﾀ1
+JMP @MR105
+MPP
+AND @MR909               ; NG
+MPS
+LDA $2400
+CON
+STA DM3014               ; _MainTP　ｺﾝﾄﾛｰﾙ
+CON
+RES @MR909               ; NG
+CON
+ENDS
+MPP
+LDA CELL_OFFSET
+CON
+STA Z6
+CON
+RES B05F:Z6
+;ラインPLCからの機種データより変更後の機種Noを取得
+;機種Noより対応したデータ（ZF0～ZF19999)をCFカードより読み出す
+;
+;EM2000から使用している為EM10000からｺﾋﾟｰする必要あり　（ｾﾙ2のみ）
+STG @MR105
+ANB LR20000              ; 機種切替ﾃﾞﾊﾞｯｸ
+ANB DM3006.5
+ANB DM3007.2
+MOV DM340 DM99           ; 機種番号  ﾚｺｰﾄﾞNo
+SET R57503               ; 機種ﾃﾞｰﾀ読込要求(VT→PLC)
+CON
+JMP @MR106
+STG @MR106
+AND R57504               ; 機種ﾃﾞｰﾀ読込完了(VT→PLC)
+RES R57503               ; 機種ﾃﾞｰﾀ読込要求(VT→PLC)
+CON
+MPS
+ANB R57505               ; 機種ﾃﾞｰﾀ読込ｴﾗｰ(VT→PLC)
+ZRES R57503 R57505       ; 機種ﾃﾞｰﾀ読込要求(VT→PLC)  機種ﾃﾞｰﾀ読込ｴﾗｰ(VT→PLC)
+CON
+JMP @MR110
+MPP
+AND R57505               ; 機種ﾃﾞｰﾀ読込ｴﾗｰ(VT→PLC)
+MPS
+LDA $2400
+CON
+STA DM3014               ; _MainTP　ｺﾝﾄﾛｰﾙ
+CON
+ZRES R57503 R57505       ; 機種ﾃﾞｰﾀ読込要求(VT→PLC)  機種ﾃﾞｰﾀ読込ｴﾗｰ(VT→PLC)
+CON
+ENDS
+MPP
+LDA CELL_OFFSET
+CON
+STA Z6
+CON
+RES B05F:Z6
+STG @MR110
+BMOV ZF400 model_data #200;_機種分類1　機種別ﾃﾞｰﾀ1
+MPS
+ANB CR2002               ; 常時ON
+BMOV ZF600 mc_data #200  ; 装置基礎ﾃﾞｰﾀ1
+MRD
+BMOV ZF800 EM10000 #19200
+MRD
+BMOV EM10000 EM2000 #8000; RB5 P1 目標位置（下位bit）
+MRD
+LDA DM340                ; 機種番号
+CON
+STA MODEL1_Code          ; 選択中ｺｰﾄﾞ
+CON
+STA VtoK_MDL_TpSelCode   ; _TP選択中機種ｺｰﾄﾞ
+CON
+STA KtoV_MDL_NowCode     ; _選択中機種ｺｰﾄﾞ
+MRD
+LDA MODEL1_Code          ; 選択中ｺｰﾄﾞ
+CON
+SUB #1
+CON
+MUL #8
+CON
+STA Z6
+CON
+BMOV DM341 DM800:Z6 #8   ; 機種名  機種1
+MRD
+BMOV DM341 DM880 #8      ; 機種名  現在機種名
+MPP
+LDA CELL_OFFSET
+CON
+STA Z6
+CON
+RES B05F:Z6
+CON
+RES MR415                ; 除材P&P DATA NG破棄
+CON
+JMP @MR111
+STG @MR111
+ANB B02F                 ; ﾗｲﾝPLCからの切換要求
+DW #10 DM3008            ; _MainTP　切替ﾍﾟｰｼﾞNo
+CON
+RES @MR101
+CON
+ENDS
+;<h1/>機種No、機種番号、部品IDが各ｾﾙ間で一致しているかどうかCRC値の算出
+;DM100～DM249までのCRC値
+;
+;ON:  CRC-ITU-T(CRC-CCITT)
+;ON:  上位8bit→下位8bitの順に演算します
+;OFF: CRC初期値を0x0000固定とします
+;OFF: ビット位置は反転しません
+;
+;W05D：ｾﾙ1_CRC値　※ｾﾙ毎で異なりますので、変更して下さい
+LD CR2002                ; 常時ON
+MPS
+LDA CELL_OFFSET
+CON
+STA Z6
+MRD
+SET @MR010
+CON
+SET @MR011
+CON
+RES @MR012
+CON
+RES @MR013
+MRD
+CRC @MR010 common_data #250;_機種共通ﾃﾞｰﾀ1
+MPP
+STA W05D:Z6              ; ｾﾙ1_CRC値
+;<h1/>ラインPLCからの読み出し
+;
+;ﾗｲﾝPLCの DM100～　250ﾜｰﾄﾞ分を読み出し、自ｾﾙPLCのZF000～ へ反映させる
+;
+;
+;DM5260、DM8640、DM8644：機種No
+;DM880～：機種名
+;
+STG @MR900               ; ﾗｲﾝPLCからの読込開始
+ANB @MR901               ; PLCからの読込完了
+RES @MR901               ; PLCからの読込完了
+CON
+JMP @MR902
+;@DM70=192   'IP
+;@DM71=168   'IP
+;@DM72=0     'IP
+;@DM73=10    'IP
+;
+;@DM74=$4B	'サービス	(連続DATA読み出し）
+;@DM75=$65	'クラス	(PLC)
+;@DM76=$00	'インスタンス	(00H固定）
+;@DM77=$00	'アトリビュート	(省略可能）
+;
+;@DM79=#8	'ﾃﾞｰﾀｻｲｽﾞ（byte単位）
+;@DM80=$0106	'DMを選択、1ﾜｰﾄﾞ
+;@DM81=$00C8	'ﾃﾞｰﾀ数(200個）
+;@DM82=$0064	'DM100～
+;@DM83=$0000
+;
+;@DM89=#8	'ﾃﾞｰﾀｻｲｽﾞ（byte単位）
+;@DM90=$0106	'DMを選択、1ﾜｰﾄﾞ
+;@DM91=$0032	'ﾃﾞｰﾀ数(50個）
+;@DM92=$012C	'DM300～
+;@DM93=$0000
+LD @MR902
+ANB R30700               ; ﾒｯｾｰｼﾞ通信実行要求
+NCJ #1037
+;@DM70=192   'IP
+;
+LD CR2002                ; 常時ON
+MOV #192 @DM70
+;@DM71=168   'IP
+;
+LD CR2002                ; 常時ON
+MOV #168 @DM71
+;@DM72=0     'IP
+;
+LD CR2002                ; 常時ON
+MOV #0 @DM72
+;@DM73=10    'IP
+;
+LD CR2002                ; 常時ON
+MOV #10 @DM73
+;@DM74=$4B	'サービス	(連続DATA読み出し）
+;
+LD CR2002                ; 常時ON
+MOV $004B @DM74
+;@DM75=$65	'クラス	(PLC)
+;
+LD CR2002                ; 常時ON
+MOV $0065 @DM75
+;@DM76=$00	'インスタンス	(00H固定）
+;
+LD CR2002                ; 常時ON
+MOV $0000 @DM76
+;@DM77=$00	'アトリビュート	(省略可能）
+;
+LD CR2002                ; 常時ON
+MOV $0000 @DM77
+;@DM79=#8	'ﾃﾞｰﾀｻｲｽﾞ（byte単位）
+;
+LD CR2002                ; 常時ON
+MOV #8 @DM79
+;@DM80=$0106	'DMを選択、1ﾜｰﾄﾞ
+;
+LD CR2002                ; 常時ON
+MOV $0106 @DM80
+;@DM81=$00C8	'ﾃﾞｰﾀ数(200個）
+;
+LD CR2002                ; 常時ON
+MOV $00C8 @DM81
+;@DM82=$0064	'DM100～
+;
+LD CR2002                ; 常時ON
+MOV $0064 @DM82
+;@DM83=$0000
+;
+LD CR2002                ; 常時ON
+MOV $0000 @DM83
+;@DM89=#8	'ﾃﾞｰﾀｻｲｽﾞ（byte単位）
+;
+LD CR2002                ; 常時ON
+MOV #8 @DM89
+;@DM90=$0106	'DMを選択、1ﾜｰﾄﾞ
+;
+LD CR2002                ; 常時ON
+MOV $0106 @DM90
+;@DM91=$0032	'ﾃﾞｰﾀ数(50個）
+;
+LD CR2002                ; 常時ON
+MOV $0032 @DM91
+;@DM92=$012C	'DM300～
+;
+LD CR2002                ; 常時ON
+MOV $012C @DM92
+;@DM93=$0000
+LD CR2002                ; 常時ON
+MOV $0000 @DM93
+LABEL #1037
+;
+LD @MR902
+ANB R30700               ; ﾒｯｾｰｼﾞ通信実行要求
+U_MSGTO #0 @DM70
+STG @MR902
+ANB R30700               ; ﾒｯｾｰｼﾞ通信実行要求
+JMP @MR903
+STG @MR903
+ANB R31700               ; ﾒｯｾｰｼﾞ通信完了
+JMP @MR905
+STG @MR905
+U_MSGSND #0 @DM79
+SET R30700               ; ﾒｯｾｰｼﾞ通信実行要求
+CON
+AND R31700               ; ﾒｯｾｰｼﾞ通信完了
+JMP @MR907
+STG @MR907
+MPS
+ANB R31701               ; ﾒｯｾｰｼﾞ通信失敗
+U_MSGRCV #0 ZF40000
+JMP @MR908
+MPP
+AND R31701               ; ﾒｯｾｰｼﾞ通信失敗
+SET @MR909               ; NG
+CON
+JMP @MR908
+STG @MR908
+RES R30700               ; ﾒｯｾｰｼﾞ通信実行要求
+CON
+ANB R31700               ; ﾒｯｾｰｼﾞ通信完了
+ANB R31701               ; ﾒｯｾｰｼﾞ通信失敗
+MPS
+ANB @MR909               ; NG
+JMP @MR910
+MPP
+AND @MR909               ; NG
+JMP @MR915
+STG @MR910
+U_MSGSND #0 @DM89
+SET R30700               ; ﾒｯｾｰｼﾞ通信実行要求
+CON
+AND R31700               ; ﾒｯｾｰｼﾞ通信完了
+JMP @MR911
+STG @MR911
+MPS
+ANB R31701               ; ﾒｯｾｰｼﾞ通信失敗
+U_MSGRCV #0 ZF40300
+JMP @MR912
+MPP
+AND R31701               ; ﾒｯｾｰｼﾞ通信失敗
+SET @MR909               ; NG
+CON
+JMP @MR912
+STG @MR912
+RES R30700               ; ﾒｯｾｰｼﾞ通信実行要求
+CON
+ANB R31700               ; ﾒｯｾｰｼﾞ通信完了
+ANB R31701               ; ﾒｯｾｰｼﾞ通信失敗
+MPS
+ANB @MR909               ; NG
+JMP @MR913
+MPP
+AND @MR909               ; NG
+JMP @MR915
+STG @MR913
+BMOV ZF40001 ZF0 #200
+BMOV ZF40301 ZF200 #50
+JMP @MR915
+STG @MR915
+SET @MR901               ; PLCからの読込完了
+CON
+ENDS
+END
+ENDH

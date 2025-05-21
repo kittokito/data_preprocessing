@@ -1,0 +1,2151 @@
+DEVICE:53
+;MODULE:Group1_Task0
+;MODULE_TYPE:0
+;SCRIPT_TYPE:
+;OneSystem Main-Module
+;
+;-----------------------------------------
+;ModuleName	:	Group1_Task0
+;ModuleType	:	Main Module
+;Line		:	
+;Cell		:	
+;Function	:	
+;-----------------------------------------
+;<<Task LocalDevice>>
+;/*項目			/*割付ｴﾘｱ				/*備考
+;---------------------------------------------------------------------			
+;Emergency		@MR000～@MR015			Emergency処理時RESET禁止ｴﾘｱ
+;Free			@MR100～@MR915			ﾕｰｻﾞｰﾌﾘｰｴﾘｱ
+;HOME			@MR1000～@MR1515		HOME動作時使用ｴﾘｱ
+;MAINTENANCE		@MR2000～@MR2915		MAINTE動作時使用ｴﾘｱ
+;AUTO(Main1)		@MR3000～@MR3915		AUTO(Main1)動作時使用ｴﾘｱ
+;	(Main2)		@MR4000～@MR4415		AUTO(Main2)動作時使用ｴﾘｱ
+;SubRoutine		@MR4500～@MR6415		ｻﾌﾞﾙｰﾁﾝ共通動作使用ｴﾘｱ
+;----------------------------------------------------------------------
+;<h1/>Device_Init/ﾃﾞﾊﾞｲｽ初期化
+;[内容]
+;・非常停止、優先ｴﾗｰ発生時に初期化したいﾃﾞﾊﾞｲｽを指定して下さい
+;※本Taskで使用するﾛｰｶﾙﾃﾞﾊﾞｲｽなど
+;※STG～JMPにて使用しているﾃﾞﾊﾞｲｽは必須
+LDP R46104               ; _非常停止中　ﾓｰﾄﾞﾌﾗｸﾞ
+ZRES MR20000 MR23915     ; 初回1回目のみ実行
+CON
+RES MR21111              ; ﾄﾚｲ交換中
+CON
+ZRES @MR100 @MR6415      ; Task0 ERROR
+;<h1/>Task_Monitor/ﾀｽｸﾓﾆﾀｰ
+LD CR2002                ; 常時ON
+FLIK #50 #50 @MR000      ; 0.5秒ﾌﾘｯｶ
+;ON STG Main1
+;TYPE EM600.U,EM601.U,@MR000.U,@MR3000.U
+;
+;FOR EM600 = EM600 TO 160 STEP 16
+;	IF @MR3000:EM600 <> 0 THEN
+;		BREAK
+;	END IF	
+;NEXT
+;	
+;IF EM600 < 160 THEN
+;	EM601 = (EM600 / 16) * 100 + DMX(@MR3000:EM600) + #3000
+;END IF		
+;		
+;EM600 = EM600 + 16		
+;IF EM600 > 160 THEN		
+;	EM600 = 0	
+;END IF
+LDP @MR000               ; 0.5秒ﾌﾘｯｶ
+NCJ #1000
+;TYPE EM600.U,EM601.U,@MR000.U,@MR3000.U
+;
+;FOR EM600 = EM600 TO 160 STEP 16
+;
+LD CR2002                ; 常時ON
+MOV EM600 EM600          ; Task0 Main1@MR  Task0 Main1@MR
+LABEL #2000
+LD> EM600 #160           ; Task0 Main1@MR
+CJ #2001
+;	IF @MR3000:EM600 <> 0 THEN
+;
+LD CR2002                ; 常時ON
+LDA EM600                ; Task0 Main1@MR
+CON
+EXT
+CON
+STA.L Z12
+LD<> @MR3000:Z12 #0      ; AUTO Main1
+NCJ #2002
+;		BREAK
+;
+LD CR2002                ; 常時ON
+CJ #2003
+;	END IF	
+;
+LABEL #2002
+;NEXT
+;
+LD CR2002                ; 常時ON
+LDA EM600                ; Task0 Main1@MR
+CON
+ADD #16
+CON
+STA EM600                ; Task0 Main1@MR
+LDB CR2009               ; 演算結果が負
+CJ #2000
+LABEL #2003
+LABEL #2001
+;IF EM600 < 160 THEN
+;
+LD< EM600 #160           ; Task0 Main1@MR
+NCJ #2004
+;	EM601 = (EM600 / 16) * 100 + DMX(@MR3000:EM600) + #3000
+;
+LD CR2002                ; 常時ON
+LDA EM600                ; Task0 Main1@MR
+CON
+EXT
+CON
+STA.L Z12
+CON
+LDA @MR3000:Z12          ; AUTO Main1
+CON
+DMX
+CON
+STA @VM0
+CON
+LDA EM600                ; Task0 Main1@MR
+CON
+EXT
+CON
+EXT.L
+CON
+DIV.L +16
+CON
+MUL.L +100
+CON
+STA.L @VM1
+CON
+LDA @VM0
+CON
+EXT
+CON
+ADD.L @VM1
+CON
+ADD.L +3000
+CON
+STA EM601                ; Task0 Main1@MR
+;END IF		
+;
+LABEL #2004
+;EM600 = EM600 + 16		
+;
+LD CR2002                ; 常時ON
+LDA EM600                ; Task0 Main1@MR
+CON
+EXT
+CON
+ADD.L +16
+CON
+STA EM600                ; Task0 Main1@MR
+;IF EM600 > 160 THEN		
+;
+LD> EM600 #160           ; Task0 Main1@MR
+NCJ #2005
+;	EM600 = 0	
+;
+LD CR2002                ; 常時ON
+MOV #0 EM600             ; Task0 Main1@MR
+;END IF
+LABEL #2005
+LABEL #1000
+;
+;ON STG Main2
+;TYPE EM602.U,EM603.U,@MR4000.U
+;
+;FOR EM602 = EM602 TO 80 STEP 16
+;	IF @MR4000:EM602 <> 0 THEN
+;		BREAK
+;	END IF	
+;NEXT	
+;
+;IF EM602 < 80 THEN
+;	EM603 = (EM602 / 16) * 100 + DMX(@MR4000:EM602) + #4000
+;END IF
+;
+;EM602 = EM602 + 16		
+;
+;IF EM602 > 80 THEN
+;	EM602 = 0	
+;END IF
+LDP @MR000               ; 0.5秒ﾌﾘｯｶ
+NCJ #1001
+;TYPE EM602.U,EM603.U,@MR4000.U
+;
+;FOR EM602 = EM602 TO 80 STEP 16
+;
+LD CR2002                ; 常時ON
+MOV EM602 EM602          ; Task0 Main2@MR  Task0 Main2@MR
+LABEL #2006
+LD> EM602 #80            ; Task0 Main2@MR
+CJ #2007
+;	IF @MR4000:EM602 <> 0 THEN
+;
+LD CR2002                ; 常時ON
+LDA EM602                ; Task0 Main2@MR
+CON
+EXT
+CON
+STA.L Z12
+LD<> @MR4000:Z12 #0      ; AUTO Main2
+NCJ #2008
+;		BREAK
+;
+LD CR2002                ; 常時ON
+CJ #2009
+;	END IF	
+;
+LABEL #2008
+;NEXT	
+;
+LD CR2002                ; 常時ON
+LDA EM602                ; Task0 Main2@MR
+CON
+ADD #16
+CON
+STA EM602                ; Task0 Main2@MR
+LDB CR2009               ; 演算結果が負
+CJ #2006
+LABEL #2009
+LABEL #2007
+;IF EM602 < 80 THEN
+;
+LD< EM602 #80            ; Task0 Main2@MR
+NCJ #2010
+;	EM603 = (EM602 / 16) * 100 + DMX(@MR4000:EM602) + #4000
+;
+LD CR2002                ; 常時ON
+LDA EM602                ; Task0 Main2@MR
+CON
+EXT
+CON
+STA.L Z12
+CON
+LDA @MR4000:Z12          ; AUTO Main2
+CON
+DMX
+CON
+STA @VM3
+CON
+LDA EM602                ; Task0 Main2@MR
+CON
+EXT
+CON
+EXT.L
+CON
+DIV.L +16
+CON
+MUL.L +100
+CON
+STA.L @VM4
+CON
+LDA @VM3
+CON
+EXT
+CON
+ADD.L @VM4
+CON
+ADD.L +4000
+CON
+STA EM603                ; Task0 Main2@MR
+;END IF
+;
+LABEL #2010
+;EM602 = EM602 + 16		
+;
+LD CR2002                ; 常時ON
+LDA EM602                ; Task0 Main2@MR
+CON
+EXT
+CON
+ADD.L +16
+CON
+STA EM602                ; Task0 Main2@MR
+;IF EM602 > 80 THEN
+;
+LD> EM602 #80            ; Task0 Main2@MR
+NCJ #2011
+;	EM602 = 0	
+;
+LD CR2002                ; 常時ON
+MOV #0 EM602             ; Task0 Main2@MR
+;END IF
+LABEL #2011
+LABEL #1001
+;
+;ON STG SubRoutine
+;TYPE EM604.U,EM605.U,@MR4500.U
+;	
+;FOR EM604 = EM604 TO 320 STEP 16
+;	IF @MR4500:EM604 <> 0 THEN
+;		BREAK
+;	END IF	
+;NEXT
+;		
+;IF EM604 < 320 THEN
+;	EM605 = (EM604 / 16) * 100 + DMX(@MR4500:EM604) + #4500
+;END IF
+;		
+;EM604 = EM604 + 16	
+;
+;IF EM604 > 320 THEN
+;   EM604 = 0
+;END IF
+LDP @MR000               ; 0.5秒ﾌﾘｯｶ
+NCJ #1002
+;TYPE EM604.U,EM605.U,@MR4500.U
+;
+;FOR EM604 = EM604 TO 320 STEP 16
+;
+LD CR2002                ; 常時ON
+MOV EM604 EM604          ; Task0 Sub@MR  Task0 Sub@MR
+LABEL #2012
+LD> EM604 #320           ; Task0 Sub@MR
+CJ #2013
+;	IF @MR4500:EM604 <> 0 THEN
+;
+LD CR2002                ; 常時ON
+LDA EM604                ; Task0 Sub@MR
+CON
+EXT
+CON
+STA.L Z12
+LD<> @MR4500:Z12 #0      ; ﾜｰｸ取出し
+NCJ #2014
+;		BREAK
+;
+LD CR2002                ; 常時ON
+CJ #2015
+;	END IF	
+;
+LABEL #2014
+;NEXT
+;
+LD CR2002                ; 常時ON
+LDA EM604                ; Task0 Sub@MR
+CON
+ADD #16
+CON
+STA EM604                ; Task0 Sub@MR
+LDB CR2009               ; 演算結果が負
+CJ #2012
+LABEL #2015
+LABEL #2013
+;IF EM604 < 320 THEN
+;
+LD< EM604 #320           ; Task0 Sub@MR
+NCJ #2016
+;	EM605 = (EM604 / 16) * 100 + DMX(@MR4500:EM604) + #4500
+;
+LD CR2002                ; 常時ON
+LDA EM604                ; Task0 Sub@MR
+CON
+EXT
+CON
+STA.L Z12
+CON
+LDA @MR4500:Z12          ; ﾜｰｸ取出し
+CON
+DMX
+CON
+STA @VM6
+CON
+LDA EM604                ; Task0 Sub@MR
+CON
+EXT
+CON
+EXT.L
+CON
+DIV.L +16
+CON
+MUL.L +100
+CON
+STA.L @VM7
+CON
+LDA @VM6
+CON
+EXT
+CON
+ADD.L @VM7
+CON
+ADD.L +4500
+CON
+STA EM605                ; Task0 Sub@MR
+;END IF
+;
+LABEL #2016
+;EM604 = EM604 + 16	
+;
+LD CR2002                ; 常時ON
+LDA EM604                ; Task0 Sub@MR
+CON
+EXT
+CON
+ADD.L +16
+CON
+STA EM604                ; Task0 Sub@MR
+;IF EM604 > 320 THEN
+;
+LD> EM604 #320           ; Task0 Sub@MR
+NCJ #2017
+;   EM604 = 0
+;
+LD CR2002                ; 常時ON
+MOV #0 EM604             ; Task0 Sub@MR
+;END IF
+LABEL #2017
+LABEL #1002
+;
+;<h1/>TASK0　ｴﾗｰ中
+LD= DM60000 #0           ; TaskNo /ERROR_DISP
+AND R46208               ; _Group1　ｴﾗｰ発生中
+OUT @MR001               ; TASK0 ERROR
+;<h1/>Task_Init/ﾀｽｸ初期化
+;[本STG内容]
+;・本Task起動時に必要な初期化処理を記述して下さい
+;・起動Taskの全Init処理終了後、Task_StartのSTGが起動します
+STG LR800                ; _Grp1_Task0_Init.STG
+ENDS
+;<h1/>Task_Start/ﾀｽｸ開始
+;[本STG内容]
+;・Task起動後、以下運転ﾓｰﾄﾞに従い、各STGにJMPします
+;【HOME】	→	LR5200
+;【AUTO】	→	LR5400
+;【MAINTE】	→	LR5600
+;・本STGは追記、修正不要です
+STG LR400                ; _Grp1_Task0_Start.STG
+MPS
+AND R46101               ; _原点復帰中　ﾓｰﾄﾞﾌﾗｸﾞ
+@SET B2012               ; ﾒｲﾝへｲﾝﾀｰﾛｯｸ信号
+CON
+JMP LR5200               ; _Grp1_Task0_HOME.STG
+MRD
+AND R46100               ; _自動運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+@SET B2012               ; ﾒｲﾝへｲﾝﾀｰﾛｯｸ信号
+CON
+JMP LR5400               ; _Grp1_Task0_AUTO.STG
+MPP
+AND R46102               ; _ﾒﾝﾃﾅﾝｽ運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+@SET B2012               ; ﾒｲﾝへｲﾝﾀｰﾛｯｸ信号
+CON
+JMP LR5600               ; _Grp1_Task0_MAINTE.STG
+;Cylinder ERROR 監視
+LDP MR005
+ZRES MR4000 MR4900
+CON
+RES R42600               ; _Grp1_Task0_ﾎﾟｰｽﾞ許可
+CON
+RES R41200               ; CELL間 TASK0 PAUSE要求
+;<h1/>Task_Finish/ﾀｽｸ終了
+;[本STG内容]
+;・各Taskの終了STGになります
+;・運転ﾓｰﾄﾞに係わらず終了時は本STGを経由して終了して下さい
+;・本STGは追記、修正不要です
+STG LR600                ; _Grp1_Task0_Fin.STG
+RES R41000               ; _Grp1_Task0_起動中ﾌﾗｸﾞ
+CON
+ENDS
+;<h1/>HOME/原点復帰
+;[本STG内容]
+;・STG @MR1000の続きから各Taskの原点復帰動作を記述する
+;・動作終了時は@MR1515にJMPする事
+STG LR5200               ; _Grp1_Task0_HOME.STG
+JMP @MR1000              ; HOME
+STG @MR1000              ; HOME
+ANB @MR1002              ; HOME中
+TMR #940 #10             ; ｳｪｲﾄﾀｲﾏ
+CON
+AND T940                 ; ｳｪｲﾄﾀｲﾏ
+SET MR18205              ; 原点復帰中
+CON
+SET @MR1002              ; HOME中
+CON
+JMP @MR1100
+STG @MR1100
+MPS
+LD MR16605               ; 原点復帰完了
+AND MR16615              ; 原点復帰完了
+AND MR16715              ; 原点復帰完了
+ANL
+JMP @MR1101
+MPP
+LDB MR16605              ; 原点復帰完了
+ORB MR16615              ; 原点復帰完了
+ORB MR16715              ; 原点復帰完了
+LD R42601                ; _Grp1_Task1_ﾎﾟｰｽﾞ許可
+ORB _Group1_Task1
+ANL
+LD R42602                ; _Grp1_Task2_ﾎﾟｰｽﾞ許可
+ORB _Group1_Task2
+ANL
+LD R42604                ; _Grp1_Task4_ﾎﾟｰｽﾞ許可
+ORB _Group1_Task4
+ANL
+ANL
+SET @MR1900              ; Main1 HALT許可
+STG @MR1101
+TMR #905 #2              ; ｳｪｲﾄﾀｲﾏ
+CON
+AND T905                 ; ｳｪｲﾄﾀｲﾏ
+SET B2012                ; ﾒｲﾝへｲﾝﾀｰﾛｯｸ信号
+CON
+JMP @MR1515              ; HOME END
+STG @MR1515              ; HOME END
+ANB @MR001               ; TASK0 ERROR
+MPS
+AND R41200               ; CELL間 TASK0 PAUSE要求
+SET @MR1900              ; Main1 HALT許可
+MPP
+ANB R41200               ; CELL間 TASK0 PAUSE要求
+RES MR18205              ; 原点復帰中
+CON
+RES @MR1002              ; HOME中
+CON
+JMP LR600                ; _Grp1_Task0_Fin.STG
+;<h1/>AUTO/自動動作
+STG LR5400               ; _Grp1_Task0_AUTO.STG
+JMP @MR3010
+;<h1/>Auto-Main1/Autoﾒｲﾝﾙｰﾁﾝ1
+;[本STG内容]
+;・各TaskのAUTO動作を記述して下さい
+;・動作ﾓｰﾄﾞは「AUTOAC」に格納されています(1～32)
+;・@MR3000:AUTO_Main1開始、@MR3001:AUTO_Main1完了、@MR3002:AUTO_Main1動作中
+STG @MR3010
+MPS
+AND R4508                ; 引出し 閉確認
+JMP @MR3000              ; AUTO Main1
+MPP
+ANB R4508                ; 引出し 閉確認
+JMP @MR3006
+STG @MR3006
+SET @MR1900              ; Main1 HALT許可
+CON
+ANB R39004               ; ｴﾗｰ中
+SET R39004               ; ｴﾗｰ中
+CON
+DW #6000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #14 @DM1              ; ErrorNo /ERROR_DISP
+CON
+DW #0 @DM2               ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task0 ERROR
+CON
+JMP @MR3007
+STG @MR3007
+AND @MR101               ; Task0 ｴﾗｰ完了
+RES @MR1900              ; Main1 HALT許可
+CON
+RES @MR101               ; Task0 ｴﾗｰ完了
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+JMP @MR3010
+STG @MR3000              ; AUTO Main1
+AND R4508                ; 引出し 閉確認
+SET MR7108               ; 引出し位置決め上下 上昇
+CON
+MPS
+LDB MR4504               ; 引出し位置決め上下 上昇端ERROR
+ANB R4505                ; 引出し位置決め上下 下降端
+AND R4504                ; 引出し位置決め上下 上昇端
+ANL
+SET @MR3002              ; AUTO Main1 Busy
+CON
+JMP @MR3003
+MPP
+LD MR4504                ; 引出し位置決め上下 上昇端ERROR
+AND R41200               ; CELL間 TASK0 PAUSE要求
+ANL
+SET @MR1900              ; Main1 HALT許可
+STG @MR3003
+MPS
+AND R41200               ; CELL間 TASK0 PAUSE要求
+SET @MR1900              ; Main1 HALT許可
+MPP
+ANB R41200               ; CELL間 TASK0 PAUSE要求
+JMP @MR4400
+STG @MR4400
+MPS
+ANB DM2000.12            ; 上流 機種照合 有効/無効
+JMP @MR4402
+MPP
+AND DM2000.12            ; 上流 機種照合 有効/無効
+JMP @MR3005
+STG @MR4402
+MPS
+AND= DM8640 W00          ; _TP選択中機種ｺｰﾄﾞ  ﾒｲﾝより機種ｺｰﾄﾞ
+JMP @MR3005
+MPP
+AND<> DM8640 W00         ; _TP選択中機種ｺｰﾄﾞ  ﾒｲﾝより機種ｺｰﾄﾞ
+JMP @MR4404
+STG @MR4404
+SET @MR1900              ; Main1 HALT許可
+CON
+ANB R39004               ; ｴﾗｰ中
+SET R39004               ; ｴﾗｰ中
+CON
+DW #9000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #1 @DM1               ; ErrorNo /ERROR_DISP
+CON
+DW #0 @DM2               ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task0 ERROR
+CON
+JMP @MR4405
+STG @MR4405
+AND @MR101               ; Task0 ｴﾗｰ完了
+RES @MR1900              ; Main1 HALT許可
+CON
+RES @MR101               ; Task0 ｴﾗｰ完了
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+JMP @MR4406
+STG @MR4406
+AND @MR105               ; SW1
+SET MR21103              ; 異常による定停止要求
+CON
+TMR #909 #5              ; ｳｪｲﾄﾀｲﾏ
+CON
+AND T909                 ; ｳｪｲﾄﾀｲﾏ
+SET R46106               ; _定停止移行中
+CON
+JMP @MR3915              ; AUTO END
+STG @MR3005
+MPS
+AND= DM2000 #0           ; _動作ﾊﾟﾗﾒｰﾀ
+JMP @MR3012
+MPP
+AND<> DM2000 #0          ; _動作ﾊﾟﾗﾒｰﾀ
+JMP @MR3008
+STG @MR3008
+ANB R39104               ; SELECT_Y_N Interlock
+SET @MR1900              ; Main1 HALT許可
+CON
+SET R39104               ; SELECT_Y_N Interlock
+CON
+DW #6 @DM21              ; ScreenNo /SELECT_Y_N
+CON
+DW #1 @DM22              ; Bz_Use /SELECT_Y_N
+CON
+SET @MR300               ; Task0 SELECT_Y_N
+CON
+JMP @MR3009
+STG @MR3009
+AND @MR301               ; Task0 Y/N END
+RES @MR301               ; Task0 Y/N END
+CON
+RES R39104               ; SELECT_Y_N Interlock
+CON
+MPS
+AND @MR306               ; Task0 Y/N
+RES @MR1900              ; Main1 HALT許可
+CON
+RES R39104               ; SELECT_Y_N Interlock
+CON
+JMP @MR3012
+MPP
+ANB @MR306               ; Task0 Y/N
+RES @MR1900              ; Main1 HALT許可
+CON
+RES R39104               ; SELECT_Y_N Interlock
+CON
+JMP @MR3101
+STG @MR3101
+SET MR21103              ; 異常による定停止要求
+CON
+TMR #911 #5              ; ｳｪｲﾄﾀｲﾏ
+CON
+AND T911                 ; ｳｪｲﾄﾀｲﾏ
+SET R46106               ; _定停止移行中
+CON
+SET MR21100              ; AUTO終了動作開始
+CON
+SET MR23100              ; AUTO終了動作開始
+CON
+JMP @MR3915              ; AUTO END
+STG @MR3012
+ANB @MR001               ; TASK0 ERROR
+SET MR15400              ; ﾄﾚｲｻｰﾁ要求
+CON
+JMP @MR3013
+STG @MR3013
+MPS
+AND R4114                ; 分離ﾂﾒ ﾄﾚｲ有無
+TMR #745 #20
+CON
+AND T745
+MPS
+AND MR15505              ; 上段ﾄﾚｲ有り
+JMP @MR3700
+MPP
+ANB MR15505              ; 上段ﾄﾚｲ有り
+JMP @MR3014
+MPP
+ANB R4114                ; 分離ﾂﾒ ﾄﾚｲ有無
+JMP @MR3100
+STG @MR3014
+SET @MR1900              ; Main1 HALT許可
+CON
+ANB R39004               ; ｴﾗｰ中
+SET R39004               ; ｴﾗｰ中
+CON
+DW #6000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #27 @DM1              ; ErrorNo /ERROR_DISP
+CON
+DW #0 @DM2               ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task0 ERROR
+CON
+JMP @MR3015
+STG @MR3015
+AND @MR101               ; Task0 ｴﾗｰ完了
+RES @MR1900              ; Main1 HALT許可
+CON
+RES @MR101               ; Task0 ｴﾗｰ完了
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+AND @MR105               ; SW1
+JMP @MR3013
+STG @MR3700
+ANB @MR001               ; TASK0 ERROR
+RES MR7200               ; ﾄﾚｲ分離UT 分離ﾂﾒ前後 前進
+CON
+SET MR7201               ; ﾄﾚｲ分離UT 分離ﾂﾒ前後 後退
+CON
+MPS
+LDB MR4201               ; ﾄﾚｲ分離UT 分離ﾂﾒ前後L 後退端ERRO
+ANB MR4203               ; ﾄﾚｲ分離UT 分離ﾂﾒ前後R 後退端ERRO
+ANB R4200                ; ﾄﾚｲ分離UT 分離ﾂﾒ前後L 前進端
+AND R4201                ; ﾄﾚｲ分離UT 分離ﾂﾒ前後L 後退端
+ANB R4202                ; ﾄﾚｲ分離UT 分離ﾂﾒ前後R 前進端
+AND R4203                ; ﾄﾚｲ分離UT 分離ﾂﾒ前後R 後退端
+ANL
+JMP @MR3701
+MPP
+LD MR4201                ; ﾄﾚｲ分離UT 分離ﾂﾒ前後L 後退端ERRO
+OR MR4203                ; ﾄﾚｲ分離UT 分離ﾂﾒ前後R 後退端ERRO
+AND R41200               ; CELL間 TASK0 PAUSE要求
+ANL
+SET @MR1900              ; Main1 HALT許可
+STG @MR3701
+@SET MR15008             ; 上段ﾄﾚｲ搬送要求
+CON
+JMP @MR3702
+STG @MR3702
+MPS
+AND MR15009              ; 上段ﾄﾚｲ搬送動作完了
+RES MR15009              ; 上段ﾄﾚｲ搬送動作完了
+CON
+JMP @MR3013
+MPP
+LDB MR15009              ; 上段ﾄﾚｲ搬送動作完了
+AND R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+ANL
+SET @MR1900              ; Main1 HALT許可
+STG @MR3100
+MPS
+AND MR15401              ; ﾄﾚｲｻｰﾁ動作完了
+JMP @MR3102
+MPP
+LDB MR15401              ; ﾄﾚｲｻｰﾁ動作完了
+LD R41200                ; CELL間 TASK0 PAUSE要求
+LDB R41200               ; CELL間 TASK0 PAUSE要求
+LD R42601                ; _Grp1_Task1_ﾎﾟｰｽﾞ許可
+ORB _Group1_Task1
+ANL
+LD R42602                ; _Grp1_Task2_ﾎﾟｰｽﾞ許可
+ORB _Group1_Task2
+ANL
+LD R42604                ; _Grp1_Task4_ﾎﾟｰｽﾞ許可
+ORB _Group1_Task4
+ANL
+ORL
+ANL
+ANL
+SET @MR1900              ; Main1 HALT許可
+STG @MR3102
+ANB @MR001               ; TASK0 ERROR
+MPS
+AND R4211                ; ﾄﾚｲ分離UT ﾄﾚｲ有無確認
+JMP @MR3204
+MPP
+ANB R4211                ; ﾄﾚｲ分離UT ﾄﾚｲ有無確認
+TMR #903 #10             ; ｳｪｲﾄﾀｲﾏ
+CON
+AND T903                 ; ｳｪｲﾄﾀｲﾏ
+JMP @MR3300
+STG @MR3204
+ANB @MR001               ; TASK0 ERROR
+MPS
+LD R4212                 ; ﾄﾚｲ分離UT ﾄﾚｲ浮き確認-1
+AND R4213                ; ﾄﾚｲ分離UT ﾄﾚｲ浮き確認-2
+ANL
+JMP @MR3210
+MPP
+LDB R4212                ; ﾄﾚｲ分離UT ﾄﾚｲ浮き確認-1
+ORB R4213                ; ﾄﾚｲ分離UT ﾄﾚｲ浮き確認-2
+ANL
+JMP @MR3205
+STG @MR3205
+SET @MR1900              ; Main1 HALT許可
+CON
+ANB R39004               ; ｴﾗｰ中
+SET R39004               ; ｴﾗｰ中
+CON
+DW #6000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #10 @DM1              ; ErrorNo /ERROR_DISP
+CON
+DW #0 @DM2               ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task0 ERROR
+CON
+JMP @MR3206
+STG @MR3206
+AND @MR101               ; Task0 ｴﾗｰ完了
+RES @MR1900              ; Main1 HALT許可
+CON
+RES @MR101               ; Task0 ｴﾗｰ完了
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+AND @MR105               ; SW1
+JMP @MR3204
+STG @MR3210
+RES MR7203               ; ｽﾗｲﾀﾞﾍﾞｰｽ 固定ﾂﾒ前後 後退
+CON
+SET MR7202               ; ｽﾗｲﾀﾞﾍﾞｰｽ 固定ﾂﾒ前後 前進
+CON
+MPS
+LDB MR4300               ; ｽﾗｲﾀﾞﾍﾞｰｽ 固定ﾂﾒ前後L 前進端ERRO
+ANB MR4302               ; ｽﾗｲﾀﾞﾍﾞｰｽ 固定ﾂﾒ前後R 前進端ERRO
+ANB R4301                ; ｽﾗｲﾀﾞﾍﾞｰｽ 固定ﾂﾒ前後L 後退端
+AND R4300                ; ｽﾗｲﾀﾞﾍﾞｰｽ 固定ﾂﾒ前後L 前進端
+ANB R4303                ; ｽﾗｲﾀﾞﾍﾞｰｽ 固定ﾂﾒ前後R 後退端
+AND R4302                ; ｽﾗｲﾀﾞﾍﾞｰｽ 固定ﾂﾒ前後R 前進端
+ANL
+JMP @MR3212
+MPP
+LD MR4300                ; ｽﾗｲﾀﾞﾍﾞｰｽ 固定ﾂﾒ前後L 前進端ERRO
+OR MR4302                ; ｽﾗｲﾀﾞﾍﾞｰｽ 固定ﾂﾒ前後R 前進端ERRO
+AND R41200               ; CELL間 TASK0 PAUSE要求
+ANL
+SET @MR1900              ; Main1 HALT許可
+STG @MR3212
+SET MR7204               ; ｽﾗｲﾀﾞﾍﾞｰｽ 強制分離前後 前進
+CON
+MPS
+LDB MR4304               ; ｽﾗｲﾀﾞﾍﾞｰｽ 強制分離前後L 前進端ER
+ANB MR4306               ; ｽﾗｲﾀﾞﾍﾞｰｽ 強制分離前後R 前進端ER
+ANB R4305                ; ｽﾗｲﾀﾞﾍﾞｰｽ 強制分離前後L 後退端
+AND R4304                ; ｽﾗｲﾀﾞﾍﾞｰｽ 強制分離前後L 前進端
+ANB R4307                ; ｽﾗｲﾀﾞﾍﾞｰｽ 強制分離前後R 後退端
+AND R4306                ; ｽﾗｲﾀﾞﾍﾞｰｽ 強制分離前後R 前進端
+ANL
+JMP @MR3308
+MPP
+LD MR4304                ; ｽﾗｲﾀﾞﾍﾞｰｽ 強制分離前後L 前進端ER
+OR MR4306                ; ｽﾗｲﾀﾞﾍﾞｰｽ 強制分離前後R 前進端ER
+AND R41200               ; CELL間 TASK0 PAUSE要求
+ANL
+SET @MR1900              ; Main1 HALT許可
+STG @MR3300
+ANB @MR001               ; TASK0 ERROR
+SET MR15500              ; 段ﾊﾞﾗｼ要求
+CON
+JMP @MR3301
+STG @MR3301
+MPS
+AND MR15501              ; 段ﾊﾞﾗｼ動作完了
+RES MR15501              ; 段ﾊﾞﾗｼ動作完了
+CON
+JMP @MR3102
+MPP
+LDB MR15501              ; 段ﾊﾞﾗｼ動作完了
+AND R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+ANL
+SET @MR1900              ; Main1 HALT許可
+STG @MR3308
+ANB @MR001               ; TASK0 ERROR
+SET MR15708              ; 分離ﾄﾚｲﾜｰｸ受取り位置移動要求
+CON
+JMP @MR3309
+STG @MR3309
+MPS
+AND MR15709              ; 分離ﾄﾚｲﾜｰｸ受取り位置移動動作完了
+RES MR15709              ; 分離ﾄﾚｲﾜｰｸ受取り位置移動動作完了
+CON
+JMP @MR3310
+MPP
+LDB MR15709              ; 分離ﾄﾚｲﾜｰｸ受取り位置移動動作完了
+AND R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+ANL
+SET @MR1900              ; Main1 HALT許可
+STG @MR3310
+ANB @MR001               ; TASK0 ERROR
+MPS
+ANB R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+RES MR7111               ; ﾄﾚｲ位置決め上下 下降
+CON
+SET MR7110               ; ﾄﾚｲ位置決め上下 上昇
+CON
+MPS
+LDB MR4400               ; ﾄﾚｲ位置決め上下 上昇端ERROR
+ANB R4401                ; ﾄﾚｲ位置決め上下 下降端
+AND R4400                ; ﾄﾚｲ位置決め上下 上昇端
+ANL
+JMP @MR3400
+MPP
+LD MR4400                ; ﾄﾚｲ位置決め上下 上昇端ERROR
+AND R41200               ; CELL間 TASK0 PAUSE要求
+ANL
+SET @MR1900              ; Main1 HALT許可
+MPP
+AND R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR3400
+ANB @MR001               ; TASK0 ERROR
+MPS
+ANB R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+RES MR24200              ; ｻｲｸﾙﾀｲﾑｶｳﾝﾄ開始
+CON
+RES MR19910              ; ｻｲｸﾙﾀｲﾑ計測開始
+CON
+SET MR18800              ; 分離ﾁｬｯｸ　ﾄﾚｲ確認
+CON
+SET B2012                ; ﾒｲﾝへｲﾝﾀｰﾛｯｸ信号
+CON
+SET B2013                ; ﾒｲﾝへﾜｰｸ取込み可
+CON
+JMP @MR3402
+MPP
+AND R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR3402
+MPS
+LDB R41200               ; CELL間 TASK0 PAUSE要求
+ANB R39000               ; ERROR_DISP Start
+ANL
+MPS
+LD B2002                 ; ﾒｲﾝよりｲﾝﾀｰﾛｯｸ信号
+OR DM2000.14             ; 上流 ﾊﾝﾄﾞｼｪｲｸ 有効/無効
+ANL
+MPS
+LD B2005                 ; ﾒｲﾝよりﾄﾚｲﾁｪﾝｼﾞ動作要求
+OR MR24800               ; ﾀｯﾁﾊﾟﾈﾙよりﾀﾞﾐｰ信号
+ANL
+JMP @MR3500
+MPP
+LDB B2005                ; ﾒｲﾝよりﾄﾚｲﾁｪﾝｼﾞ動作要求
+LD B2006                 ; ﾒｲﾝより装置停止処理許可
+OR DM2000.14             ; 上流 ﾊﾝﾄﾞｼｪｲｸ 有効/無効
+ANL
+AND R46106               ; _定停止移行中
+ANL
+RES B2013                ; ﾒｲﾝへﾜｰｸ取込み可
+CON
+JMP @MR3600
+MRD
+LDB B2002                ; ﾒｲﾝよりｲﾝﾀｰﾛｯｸ信号
+ANB DM2000.14            ; 上流 ﾊﾝﾄﾞｼｪｲｸ 有効/無効
+LD B2006                 ; ﾒｲﾝより装置停止処理許可
+OR DM2000.14             ; 上流 ﾊﾝﾄﾞｼｪｲｸ 有効/無効
+ANL
+AND R46106               ; _定停止移行中
+ANL
+RES B2013                ; ﾒｲﾝへﾜｰｸ取込み可
+CON
+JMP @MR3600
+MPP
+LDB R46106               ; _定停止移行中
+ANB B2002                ; ﾒｲﾝよりｲﾝﾀｰﾛｯｸ信号
+ANB B2005                ; ﾒｲﾝよりﾄﾚｲﾁｪﾝｼﾞ動作要求
+AND LR100                ; _割り込みSW1　ON/OFF状態
+ANL
+JMP @MR3800              ; ｴﾚﾍﾞｰﾀ　ﾄﾚｲ下段ﾄﾚﾝｽﾌｧ載せ替え
+MPP
+AND R41200               ; CELL間 TASK0 PAUSE要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR3500
+ANB @MR001               ; TASK0 ERROR
+SET MR24200              ; ｻｲｸﾙﾀｲﾑｶｳﾝﾄ開始
+CON
+RES B2012                ; ﾒｲﾝへｲﾝﾀｰﾛｯｸ信号
+CON
+RES B2013                ; ﾒｲﾝへﾜｰｸ取込み可
+CON
+SET B2014                ; ﾒｲﾝへ動作開始通知
+CON
+JMP @MR3501
+STG @MR3501
+ANB B2005                ; ﾒｲﾝよりﾄﾚｲﾁｪﾝｼﾞ動作要求
+RES B2014                ; ﾒｲﾝへ動作開始通知
+CON
+RES B2012                ; ﾒｲﾝへｲﾝﾀｰﾛｯｸ信号
+CON
+DW.D #0 DM20050          ; ｻｲｸﾙﾀｲﾑ計測
+CON
+SET MR19910              ; ｻｲｸﾙﾀｲﾑ計測開始
+CON
+JMP @MR3502
+STG @MR3502
+ANB @MR001               ; TASK0 ERROR
+MPS
+ANB R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+RES MR7110               ; ﾄﾚｲ位置決め上下 上昇
+CON
+SET MR7111               ; ﾄﾚｲ位置決め上下 下降
+CON
+MPS
+LDB MR4401               ; ﾄﾚｲ位置決め上下 下降端ERROR
+ANB R4400                ; ﾄﾚｲ位置決め上下 上昇端
+AND R4401                ; ﾄﾚｲ位置決め上下 下降端
+ANL
+JMP @MR3504
+MPP
+LD MR4401                ; ﾄﾚｲ位置決め上下 下降端ERROR
+AND R41200               ; CELL間 TASK0 PAUSE要求
+ANL
+SET @MR1900              ; Main1 HALT許可
+MPP
+AND R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR3504
+MPS
+ANB R46106               ; _定停止移行中
+MPS
+LDB MR15011              ; 装置停止処理
+ANB @MR001               ; TASK0 ERROR
+ANL
+JMP @MR3506
+MPP
+AND MR15011              ; 装置停止処理
+SET R46107               ; _定停止要求
+CON
+JMP @MR3602
+MPP
+LD R46106                ; _定停止移行中
+ANB @MR001               ; TASK0 ERROR
+ANL
+JMP @MR3602
+STG @MR3506
+ANB @MR001               ; TASK0 ERROR
+AND R4401                ; ﾄﾚｲ位置決め上下 下降端
+SET MR15800              ; 分離ﾄﾚｲｴﾚﾍﾞｰﾀ載替位置移動要求
+CON
+JMP @MR3507
+STG @MR3507
+MPS
+AND MR15801              ; 分離ﾄﾚｲｴﾚﾍﾞｰﾀ載替位置移動作完了
+RES MR15801              ; 分離ﾄﾚｲｴﾚﾍﾞｰﾀ載替位置移動作完了
+CON
+JMP @MR3508
+MPP
+LDB MR15801              ; 分離ﾄﾚｲｴﾚﾍﾞｰﾀ載替位置移動作完了
+AND R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+ANL
+SET @MR1900              ; Main1 HALT許可
+STG @MR3508
+ANB @MR001               ; TASK0 ERROR
+AND MR15401              ; ﾄﾚｲｻｰﾁ動作完了
+SET MR15600              ; ｴﾚﾍﾞｰﾀ載替え要求
+CON
+JMP @MR3509
+STG @MR3509
+MPS
+AND MR15601              ; ｴﾚﾍﾞｰﾀ載替え動作完了
+@INC.L DM5020            ; _生産ｶｳﾝﾀ1
+CON
+RES MR15601              ; ｴﾚﾍﾞｰﾀ載替え動作完了
+CON
+JMP @MR3510
+MPP
+LDB MR15601              ; ｴﾚﾍﾞｰﾀ載替え動作完了
+AND R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+ANL
+SET @MR1900              ; Main1 HALT許可
+STG @MR3510
+AND MR18801              ; 分離ﾁｬｯｸ ﾄﾚｲ確認完了
+JMP @MR3512
+STG @MR3512
+ANB @MR001               ; TASK0 ERROR
+SET MR15808              ; 分離ﾄﾚｲ分離位置移動要求
+CON
+JMP @MR3513
+STG @MR3513
+MPS
+AND MR15809              ; 分離ﾄﾚｲ分離位置移動作完了
+RES MR15809              ; 分離ﾄﾚｲ分離位置移動作完了
+CON
+JMP @MR3900
+MPP
+LDB MR15809              ; 分離ﾄﾚｲ分離位置移動作完了
+AND R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+ANL
+SET @MR1900              ; Main1 HALT許可
+STG @MR3900
+ANB @MR001               ; TASK0 ERROR
+SET MR15500              ; 段ﾊﾞﾗｼ要求
+CON
+JMP @MR3901
+STG @MR3901
+MPS
+AND MR15501              ; 段ﾊﾞﾗｼ動作完了
+JMP @MR3902
+MPP
+LDB MR15501              ; 段ﾊﾞﾗｼ動作完了
+AND R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+ANL
+SET @MR1900              ; Main1 HALT許可
+STG @MR3902
+RES MR15501              ; 段ﾊﾞﾗｼ動作完了
+CON
+ANB @MR001               ; TASK0 ERROR
+SET MR15708              ; 分離ﾄﾚｲﾜｰｸ受取り位置移動要求
+CON
+JMP @MR3903
+STG @MR3903
+MPS
+AND MR15709              ; 分離ﾄﾚｲﾜｰｸ受取り位置移動動作完了
+RES MR15709              ; 分離ﾄﾚｲﾜｰｸ受取り位置移動動作完了
+CON
+JMP @MR3904
+MPP
+LDB MR15709              ; 分離ﾄﾚｲﾜｰｸ受取り位置移動動作完了
+AND R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+ANL
+SET @MR1900              ; Main1 HALT許可
+STG @MR3904
+ANB @MR001               ; TASK0 ERROR
+MPS
+ANB R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+RES MR7111               ; ﾄﾚｲ位置決め上下 下降
+CON
+SET MR7110               ; ﾄﾚｲ位置決め上下 上昇
+CON
+MPS
+LDB MR4400               ; ﾄﾚｲ位置決め上下 上昇端ERROR
+ANB R4401                ; ﾄﾚｲ位置決め上下 下降端
+AND R4400                ; ﾄﾚｲ位置決め上下 上昇端
+ANL
+JMP @MR3905
+MPP
+LD MR4400                ; ﾄﾚｲ位置決め上下 上昇端ERROR
+AND R41200               ; CELL間 TASK0 PAUSE要求
+ANL
+SET @MR1900              ; Main1 HALT許可
+MPP
+AND R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR3905
+ANB @MR001               ; TASK0 ERROR
+SET B2018                ; ﾒｲﾝへｶｳﾝﾀﾘｾｯﾄ要求
+CON
+JMP @MR3906
+STG @MR3906
+MPS
+LD B200B                 ; ﾒｲﾝよりｽﾃｰﾀｽ(AUTO)
+LD B2008                 ; ﾒｲﾝよりｶｳﾝﾀﾘｾｯﾄ完了
+OR CR2002                ; 常時ON
+ANL
+ANL
+RES B2018                ; ﾒｲﾝへｶｳﾝﾀﾘｾｯﾄ要求
+CON
+JMP @MR3907
+MPP
+ANB B200B                ; ﾒｲﾝよりｽﾃｰﾀｽ(AUTO)
+RES B2018                ; ﾒｲﾝへｶｳﾝﾀﾘｾｯﾄ要求
+CON
+JMP @MR3907
+STG @MR3907
+MPS
+LD B200B                 ; ﾒｲﾝよりｽﾃｰﾀｽ(AUTO)
+ANB B2008                ; ﾒｲﾝよりｶｳﾝﾀﾘｾｯﾄ完了
+ANL
+JMP @MR3400
+MPP
+ANB B200B                ; ﾒｲﾝよりｽﾃｰﾀｽ(AUTO)
+JMP @MR3400
+STG @MR3600
+ANB @MR001               ; TASK0 ERROR
+MPS
+ANB R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+RES MR7110               ; ﾄﾚｲ位置決め上下 上昇
+CON
+SET MR7111               ; ﾄﾚｲ位置決め上下 下降
+CON
+MPS
+LDB MR4401               ; ﾄﾚｲ位置決め上下 下降端ERROR
+ANB R4400                ; ﾄﾚｲ位置決め上下 上昇端
+AND R4401                ; ﾄﾚｲ位置決め上下 下降端
+ANL
+JMP @MR3602
+MPP
+LD MR4401                ; ﾄﾚｲ位置決め上下 下降端ERROR
+AND R41200               ; CELL間 TASK0 PAUSE要求
+ANL
+SET @MR1900              ; Main1 HALT許可
+MPP
+AND R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR3602
+ANB @MR001               ; TASK0 ERROR
+MPS
+ANB R4211                ; ﾄﾚｲ分離UT ﾄﾚｲ有無確認
+JMP @MR3612
+MPP
+AND R4211                ; ﾄﾚｲ分離UT ﾄﾚｲ有無確認
+TMR #736 #10
+CON
+AND T736
+JMP @MR3604
+STG @MR3604
+ANB R39104               ; SELECT_Y_N Interlock
+SET @MR1900              ; Main1 HALT許可
+CON
+SET R39104               ; SELECT_Y_N Interlock
+CON
+DW #8 @DM21              ; ScreenNo /SELECT_Y_N
+CON
+DW #1 @DM22              ; Bz_Use /SELECT_Y_N
+CON
+SET @MR300               ; Task0 SELECT_Y_N
+CON
+JMP @MR3605
+STG @MR3605
+AND @MR301               ; Task0 Y/N END
+RES @MR301               ; Task0 Y/N END
+CON
+RES R39104               ; SELECT_Y_N Interlock
+CON
+MPS
+AND @MR306               ; Task0 Y/N
+RES @MR1900              ; Main1 HALT許可
+CON
+RES R39104               ; SELECT_Y_N Interlock
+CON
+JMP @MR3608
+MPP
+ANB @MR306               ; Task0 Y/N
+RES @MR1900              ; Main1 HALT許可
+CON
+RES R39104               ; SELECT_Y_N Interlock
+CON
+JMP @MR3612
+STG @MR3608
+ANB @MR001               ; TASK0 ERROR
+AND R4401                ; ﾄﾚｲ位置決め上下 下降端
+SET MR15800              ; 分離ﾄﾚｲｴﾚﾍﾞｰﾀ載替位置移動要求
+CON
+JMP @MR3609
+STG @MR3609
+MPS
+AND MR15801              ; 分離ﾄﾚｲｴﾚﾍﾞｰﾀ載替位置移動作完了
+RES MR15801              ; 分離ﾄﾚｲｴﾚﾍﾞｰﾀ載替位置移動作完了
+CON
+JMP @MR3610
+MPP
+LDB MR15801              ; 分離ﾄﾚｲｴﾚﾍﾞｰﾀ載替位置移動作完了
+AND R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+ANL
+SET @MR1900              ; Main1 HALT許可
+STG @MR3610
+ANB @MR001               ; TASK0 ERROR
+AND MR15401              ; ﾄﾚｲｻｰﾁ動作完了
+SET MR15600              ; ｴﾚﾍﾞｰﾀ載替え要求
+CON
+JMP @MR3611
+STG @MR3611
+MPS
+AND MR15601              ; ｴﾚﾍﾞｰﾀ載替え動作完了
+@INC.L DM5020            ; _生産ｶｳﾝﾀ1
+CON
+RES MR15601              ; ｴﾚﾍﾞｰﾀ載替え動作完了
+CON
+JMP @MR3612
+MPP
+LDB MR15601              ; ｴﾚﾍﾞｰﾀ載替え動作完了
+AND R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+ANL
+SET @MR1900              ; Main1 HALT許可
+STG @MR3612
+ANB @MR001               ; TASK0 ERROR
+SET MR15808              ; 分離ﾄﾚｲ分離位置移動要求
+CON
+JMP @MR3613
+STG @MR3613
+MPS
+AND MR15809              ; 分離ﾄﾚｲ分離位置移動作完了
+RES MR15809              ; 分離ﾄﾚｲ分離位置移動作完了
+CON
+JMP @MR3712
+MPP
+LDB MR15809              ; 分離ﾄﾚｲ分離位置移動作完了
+AND R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+ANL
+SET @MR1900              ; Main1 HALT許可
+STG @MR3712
+RES MR15401              ; ﾄﾚｲｻｰﾁ動作完了
+CON
+AND MR16805              ; ﾄﾚｲｴﾚﾍﾞｰﾀ ﾄﾚｲ受渡し位置移動可
+ANB DM10523.3            ; ALM(異常)
+SET MR18703              ; ｴﾚﾍﾞｰﾀRB P1移動要求
+CON
+TMH #712 #5
+CON
+AND T712
+SET MR18708              ; ｴﾚﾍﾞｰﾀRB 移動指令
+CON
+AND MR18709              ; ｴﾚﾍﾞｰﾀRB 移動中
+JMP @MR3713
+STG @MR3713
+AND MR17604              ; TPSW_ｴﾚﾍﾞｰﾀ P1表示
+ANB MR18709              ; ｴﾚﾍﾞｰﾀRB 移動中
+RES MR18703              ; ｴﾚﾍﾞｰﾀRB P1移動要求
+CON
+JMP @MR3714
+STG @MR3714
+ANB @MR001               ; TASK0 ERROR
+RES MR7206               ; ｴﾚﾍﾞｰﾀ ﾄﾚｲｸﾗﾝﾌﾟ ｸﾗﾝﾌﾟ
+CON
+JMP @MR3715
+STG @MR3715
+MPS
+LDB MR4409               ; ｴﾚﾍﾞｰﾀ ﾄﾚｲｸﾗﾝﾌﾟL ｱﾝｸﾗﾝﾌﾟ端ERROR
+ANB MR4411               ; ｴﾚﾍﾞｰﾀ ﾄﾚｲｸﾗﾝﾌﾟR ｱﾝｸﾗﾝﾌﾟ端ERROR
+ANB R4408                ; ｴﾚﾍﾞｰﾀ ﾄﾚｲｸﾗﾝﾌﾟL ｸﾗﾝﾌﾟ端
+AND R4409                ; ｴﾚﾍﾞｰﾀ ﾄﾚｲｸﾗﾝﾌﾟL ｱﾝｸﾗﾝﾌﾟ端
+ANB R4410                ; ｴﾚﾍﾞｰﾀ ﾄﾚｲｸﾗﾝﾌﾟR ｸﾗﾝﾌﾟ端
+AND R4411                ; ｴﾚﾍﾞｰﾀ ﾄﾚｲｸﾗﾝﾌﾟR ｱﾝｸﾗﾝﾌﾟ端
+ANL
+JMP @MR3704
+MPP
+LD MR4409                ; ｴﾚﾍﾞｰﾀ ﾄﾚｲｸﾗﾝﾌﾟL ｱﾝｸﾗﾝﾌﾟ端ERROR
+OR MR4411                ; ｴﾚﾍﾞｰﾀ ﾄﾚｲｸﾗﾝﾌﾟR ｱﾝｸﾗﾝﾌﾟ端ERROR
+AND R41200               ; CELL間 TASK0 PAUSE要求
+ANL
+SET @MR1900              ; Main1 HALT許可
+STG @MR3704
+MPS
+ANB R4413                ; ｴﾚﾍﾞｰﾀ ﾄﾚｲ有無確認
+JMP @MR3915              ; AUTO END
+MPP
+AND R4413                ; ｴﾚﾍﾞｰﾀ ﾄﾚｲ有無確認
+TMR #725 #10
+CON
+AND T725
+JMP @MR3705
+STG @MR3705
+ANB R39104               ; SELECT_Y_N Interlock
+SET @MR1900              ; Main1 HALT許可
+CON
+SET R39104               ; SELECT_Y_N Interlock
+CON
+DW #9 @DM21              ; ScreenNo /SELECT_Y_N
+CON
+DW #1 @DM22              ; Bz_Use /SELECT_Y_N
+CON
+SET @MR300               ; Task0 SELECT_Y_N
+CON
+JMP @MR3706
+STG @MR3706
+AND @MR301               ; Task0 Y/N END
+RES @MR301               ; Task0 Y/N END
+CON
+RES R39104               ; SELECT_Y_N Interlock
+CON
+MPS
+AND @MR306               ; Task0 Y/N
+RES @MR1900              ; Main1 HALT許可
+CON
+RES R39104               ; SELECT_Y_N Interlock
+CON
+JMP @MR3708
+MPP
+ANB @MR306               ; Task0 Y/N
+RES @MR1900              ; Main1 HALT許可
+CON
+RES R39104               ; SELECT_Y_N Interlock
+CON
+JMP @MR3915              ; AUTO END
+STG @MR3708
+SET MR15108              ; 下段ﾄﾚｲ搬送要求
+CON
+JMP @MR3709
+STG @MR3709
+MPS
+AND MR15109              ; 下段ﾄﾚｲ搬送動作完了
+RES MR15109              ; 下段ﾄﾚｲ搬送動作完了
+CON
+JMP @MR3915              ; AUTO END
+MPP
+LDB MR15109              ; 下段ﾄﾚｲ搬送動作完了
+AND R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+ANL
+SET @MR1900              ; Main1 HALT許可
+STG @MR3800              ; ｴﾚﾍﾞｰﾀ　ﾄﾚｲ下段ﾄﾚﾝｽﾌｧ載せ替え
+ANB @MR001               ; TASK0 ERROR
+MPS
+ANB R4413                ; ｴﾚﾍﾞｰﾀ ﾄﾚｲ有無確認
+JMP @MR3402
+MPP
+AND R4413                ; ｴﾚﾍﾞｰﾀ ﾄﾚｲ有無確認
+TMR #758 #10
+CON
+AND T758
+JMP @MR3801
+STG @MR3801
+RES MR15401              ; ﾄﾚｲｻｰﾁ動作完了
+CON
+AND MR16805              ; ﾄﾚｲｴﾚﾍﾞｰﾀ ﾄﾚｲ受渡し位置移動可
+ANB DM10523.3            ; ALM(異常)
+SET MR18703              ; ｴﾚﾍﾞｰﾀRB P1移動要求
+CON
+TMH #713 #5
+CON
+AND T713
+SET MR18708              ; ｴﾚﾍﾞｰﾀRB 移動指令
+CON
+AND MR18709              ; ｴﾚﾍﾞｰﾀRB 移動中
+JMP @MR3802
+STG @MR3802
+AND MR17604              ; TPSW_ｴﾚﾍﾞｰﾀ P1表示
+ANB MR18709              ; ｴﾚﾍﾞｰﾀRB 移動中
+RES MR18703              ; ｴﾚﾍﾞｰﾀRB P1移動要求
+CON
+JMP @MR3803
+STG @MR3803
+ANB @MR001               ; TASK0 ERROR
+RES MR7206               ; ｴﾚﾍﾞｰﾀ ﾄﾚｲｸﾗﾝﾌﾟ ｸﾗﾝﾌﾟ
+CON
+JMP @MR3805
+STG @MR3805
+MPS
+LDB MR4409               ; ｴﾚﾍﾞｰﾀ ﾄﾚｲｸﾗﾝﾌﾟL ｱﾝｸﾗﾝﾌﾟ端ERROR
+ANB MR4411               ; ｴﾚﾍﾞｰﾀ ﾄﾚｲｸﾗﾝﾌﾟR ｱﾝｸﾗﾝﾌﾟ端ERROR
+ANB R4408                ; ｴﾚﾍﾞｰﾀ ﾄﾚｲｸﾗﾝﾌﾟL ｸﾗﾝﾌﾟ端
+AND R4409                ; ｴﾚﾍﾞｰﾀ ﾄﾚｲｸﾗﾝﾌﾟL ｱﾝｸﾗﾝﾌﾟ端
+ANB R4410                ; ｴﾚﾍﾞｰﾀ ﾄﾚｲｸﾗﾝﾌﾟR ｸﾗﾝﾌﾟ端
+AND R4411                ; ｴﾚﾍﾞｰﾀ ﾄﾚｲｸﾗﾝﾌﾟR ｱﾝｸﾗﾝﾌﾟ端
+ANL
+JMP @MR3806
+MPP
+LD MR4409                ; ｴﾚﾍﾞｰﾀ ﾄﾚｲｸﾗﾝﾌﾟL ｱﾝｸﾗﾝﾌﾟ端ERROR
+OR MR4411                ; ｴﾚﾍﾞｰﾀ ﾄﾚｲｸﾗﾝﾌﾟR ｱﾝｸﾗﾝﾌﾟ端ERROR
+AND R41200               ; CELL間 TASK0 PAUSE要求
+ANL
+SET @MR1900              ; Main1 HALT許可
+STG @MR3806
+SET MR15108              ; 下段ﾄﾚｲ搬送要求
+CON
+JMP @MR3807
+STG @MR3807
+MPS
+AND MR15109              ; 下段ﾄﾚｲ搬送動作完了
+RES MR15109              ; 下段ﾄﾚｲ搬送動作完了
+CON
+RES LR100                ; _割り込みSW1　ON/OFF状態
+CON
+JMP @MR3808
+MPP
+LDB MR15109              ; 下段ﾄﾚｲ搬送動作完了
+AND R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+ANL
+SET @MR1900              ; Main1 HALT許可
+STG @MR3808
+SET MR16902              ; 割り込みSW4入力待ち
+CON
+MPS
+LDB R41200               ; CELL間 TASK0 PAUSE要求
+AND LR103                ; _割り込みSW4　ON/OFF状態
+ANL
+JMP @MR3810
+MPP
+AND R41200               ; CELL間 TASK0 PAUSE要求
+SET @MR1900              ; Main1 HALT許可
+LD MR16902               ; 割り込みSW4入力待ち
+AND @MR000               ; 0.5秒ﾌﾘｯｶ
+OUT MR16901              ; 割り込みSW4入力待ちﾌﾘｯｶ
+STG @MR3810
+ANB @MR001               ; TASK0 ERROR
+RES MR16902              ; 割り込みSW4入力待ち
+CON
+SET MR15400              ; ﾄﾚｲｻｰﾁ要求
+CON
+JMP @MR3811
+STG @MR3811
+MPS
+AND MR15401              ; ﾄﾚｲｻｰﾁ動作完了
+RES LR103                ; _割り込みSW4　ON/OFF状態
+CON
+JMP @MR3402
+MPP
+LDB MR15401              ; ﾄﾚｲｻｰﾁ動作完了
+AND R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+ANL
+SET @MR1900              ; Main1 HALT許可
+STG MR18800              ; 分離ﾁｬｯｸ　ﾄﾚｲ確認
+ANB MR18802              ; 分離ﾁｬｯｸ　ﾄﾚｲ確認中
+SET MR18802              ; 分離ﾁｬｯｸ　ﾄﾚｲ確認中
+CON
+JMP @MR5900
+STG @MR5900
+MPS
+ANB R4114                ; 分離ﾂﾒ ﾄﾚｲ有無
+JMP @MR5915
+MPP
+AND R4114                ; 分離ﾂﾒ ﾄﾚｲ有無
+TMR #706 #20
+CON
+AND T706
+JMP @MR5902
+STG @MR5902
+ANB @MR001               ; TASK0 ERROR
+RES MR7200               ; ﾄﾚｲ分離UT 分離ﾂﾒ前後 前進
+CON
+SET MR7201               ; ﾄﾚｲ分離UT 分離ﾂﾒ前後 後退
+CON
+MPS
+LDB MR4201               ; ﾄﾚｲ分離UT 分離ﾂﾒ前後L 後退端ERRO
+ANB MR4203               ; ﾄﾚｲ分離UT 分離ﾂﾒ前後R 後退端ERRO
+ANB R4200                ; ﾄﾚｲ分離UT 分離ﾂﾒ前後L 前進端
+AND R4201                ; ﾄﾚｲ分離UT 分離ﾂﾒ前後L 後退端
+ANB R4202                ; ﾄﾚｲ分離UT 分離ﾂﾒ前後R 前進端
+AND R4203                ; ﾄﾚｲ分離UT 分離ﾂﾒ前後R 後退端
+ANL
+JMP @MR5903
+MPP
+LD MR4201                ; ﾄﾚｲ分離UT 分離ﾂﾒ前後L 後退端ERRO
+OR MR4203                ; ﾄﾚｲ分離UT 分離ﾂﾒ前後R 後退端ERRO
+AND R41200               ; CELL間 TASK0 PAUSE要求
+ANL
+SET @MR1900              ; Main1 HALT許可
+STG @MR5903
+@SET MR15008             ; 上段ﾄﾚｲ搬送要求
+CON
+JMP @MR5904
+STG @MR5904
+MPS
+AND MR15009              ; 上段ﾄﾚｲ搬送動作完了
+MPS
+ANB MR15011              ; 装置停止処理
+RES MR15009              ; 上段ﾄﾚｲ搬送動作完了
+CON
+JMP @MR5900
+MPP
+AND MR15011              ; 装置停止処理
+RES MR15009              ; 上段ﾄﾚｲ搬送動作完了
+CON
+JMP @MR5915
+MPP
+LDB MR15009              ; 上段ﾄﾚｲ搬送動作完了
+AND R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+ANL
+SET @MR1900              ; Main1 HALT許可
+STG @MR5915
+RES MR18802              ; 分離ﾁｬｯｸ　ﾄﾚｲ確認中
+CON
+SET MR18801              ; 分離ﾁｬｯｸ ﾄﾚｲ確認完了
+CON
+ENDS
+STG @MR3915              ; AUTO END
+SET MR21100              ; AUTO終了動作開始
+CON
+ANB R41001               ; _Grp1_Task1_起動中ﾌﾗｸﾞ
+ANB R41002               ; _Grp1_Task2_起動中ﾌﾗｸﾞ
+ANB R41004               ; _Grp1_Task4_起動中ﾌﾗｸﾞ
+ANB @MR001               ; TASK0 ERROR
+MPS
+AND R41200               ; CELL間 TASK0 PAUSE要求
+SET @MR1900              ; Main1 HALT許可
+MPP
+ANB R41200               ; CELL間 TASK0 PAUSE要求
+RES MR18801              ; 分離ﾁｬｯｸ ﾄﾚｲ確認完了
+CON
+RES B2012                ; ﾒｲﾝへｲﾝﾀｰﾛｯｸ信号
+CON
+RES B2013                ; ﾒｲﾝへﾜｰｸ取込み可
+CON
+RES @MR3002              ; AUTO Main1 Busy
+CON
+ZRES LR100 LR103         ; _割り込みSW1　ON/OFF状態  _割り込みSW4　ON/OFF状態
+CON
+RES MR7108               ; 引出し位置決め上下 上昇
+CON
+RES MR21100              ; AUTO終了動作開始
+CON
+JMP LR600                ; _Grp1_Task0_Fin.STG
+;<h1/>MAINTE/ﾒﾝﾃﾅﾝｽ動作
+;[本STG内容]
+;・各TaskのMAINTE動作を記述して下さい
+;・動作ﾓｰﾄﾞは「MAINTEAC*」に格納されています(1～32)
+;・動作終了時は@MR2915にJMPして下さい
+STG LR5600               ; _Grp1_Task0_MAINTE.STG
+JMP @MR2000              ; Mainte
+STG @MR2000              ; Mainte
+SET @MR2002              ; Mainte中
+CON
+JMP @MR2003
+STG @MR2003
+MPS
+AND R41200               ; CELL間 TASK0 PAUSE要求
+SET @MR1900              ; Main1 HALT許可
+MRD
+ANB R41200               ; CELL間 TASK0 PAUSE要求
+MPS
+AND= DM4110 #25          ; _Group1　ﾒﾝﾃ動作番号
+@DW #1901 DM3008         ; _MainTP　切替ﾍﾟｰｼﾞNo
+CON
+AND R45015               ; 単動終了
+JMP @MR2110
+MRD
+AND= DM4110 #1           ; _Group1　ﾒﾝﾃ動作番号
+JMP @MR2200              ; ﾒﾝﾃ上段ﾄﾗﾝｽﾌｧ動作開始
+MRD
+AND= DM4110 #2           ; _Group1　ﾒﾝﾃ動作番号
+JMP @MR2300              ; ﾒﾝﾃ ﾄﾚｲ分離動作
+MRD
+AND= DM4110 #3           ; _Group1　ﾒﾝﾃ動作番号
+JMP @MR2400              ; ｴﾚﾍﾞｰﾀ載せ替え動作
+MPP
+AND= DM4110 #4           ; _Group1　ﾒﾝﾃ動作番号
+JMP @MR2500              ; ﾒﾝﾃ 下段ﾄﾗﾝｽﾌｧ動作開始
+MPP
+AND R47800               ; _Group1　ﾒﾝﾃ動作定停止移行中
+JMP @MR2110
+;ﾒﾝﾃﾅﾝｽ  上段ﾄﾗﾝｽﾌｧ動作ｽﾃｯﾌﾟ/連続動作  @MR2200～
+LD CR2002                ; 常時ON
+AND R4114                ; 分離ﾂﾒ ﾄﾚｲ有無
+AND R4205                ; ﾄﾚｲ分離UT 分離上下L 上端
+AND R4209                ; ﾄﾚｲ分離UT 分離上下R 上端
+OUT @MR2201              ; 上段ﾄﾗﾝｽﾌｧ動作可
+STG @MR2200              ; ﾒﾝﾃ上段ﾄﾗﾝｽﾌｧ動作開始
+MPS
+AND @MR2201              ; 上段ﾄﾗﾝｽﾌｧ動作可
+JMP @MR2203
+MPP
+ANB @MR2201              ; 上段ﾄﾗﾝｽﾌｧ動作可
+JMP @MR2108
+STG @MR2203
+MPS
+MSTRT SELECT_POST #1 #0 #0 @MR2204
+MPP
+AND @MR2204
+JMP @MR2205
+STG @MR2205
+ANB @MR001               ; TASK0 ERROR
+RES MR7200               ; ﾄﾚｲ分離UT 分離ﾂﾒ前後 前進
+CON
+SET MR7201               ; ﾄﾚｲ分離UT 分離ﾂﾒ前後 後退
+CON
+MPS
+LDB MR4201               ; ﾄﾚｲ分離UT 分離ﾂﾒ前後L 後退端ERRO
+ANB MR4203               ; ﾄﾚｲ分離UT 分離ﾂﾒ前後R 後退端ERRO
+ANB R4200                ; ﾄﾚｲ分離UT 分離ﾂﾒ前後L 前進端
+AND R4201                ; ﾄﾚｲ分離UT 分離ﾂﾒ前後L 後退端
+ANB R4202                ; ﾄﾚｲ分離UT 分離ﾂﾒ前後R 前進端
+AND R4203                ; ﾄﾚｲ分離UT 分離ﾂﾒ前後R 後退端
+ANL
+JMP @MR2206
+MPP
+LD MR4201                ; ﾄﾚｲ分離UT 分離ﾂﾒ前後L 後退端ERRO
+OR MR4203                ; ﾄﾚｲ分離UT 分離ﾂﾒ前後R 後退端ERRO
+AND R41200               ; CELL間 TASK0 PAUSE要求
+ANL
+SET @MR1900              ; Main1 HALT許可
+STG @MR2206
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR2207
+STG @MR2207
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR2208
+STG @MR2208
+@SET MR15008             ; 上段ﾄﾚｲ搬送要求
+CON
+JMP @MR2209
+STG @MR2209
+AND MR15009              ; 上段ﾄﾚｲ搬送動作完了
+RES MR15009              ; 上段ﾄﾚｲ搬送動作完了
+CON
+JMP @MR2210
+STG @MR2210
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR2108
+;ﾒﾝﾃﾅﾝｽ  ﾄﾚｲ分離動作ｽﾃｯﾌﾟ/連続動作  @MR2300～
+LD CR2002                ; 常時ON
+AND MR17304              ; TPLP_搬送ｽﾗｲﾀﾞ P1表示
+ANB R4211                ; ﾄﾚｲ分離UT ﾄﾚｲ有無確認
+AND R4300                ; ｽﾗｲﾀﾞﾍﾞｰｽ 固定ﾂﾒ前後L 前進端
+AND R4302                ; ｽﾗｲﾀﾞﾍﾞｰｽ 固定ﾂﾒ前後R 前進端
+AND R4305                ; ｽﾗｲﾀﾞﾍﾞｰｽ 強制分離前後L 後退端
+AND R4307                ; ｽﾗｲﾀﾞﾍﾞｰｽ 強制分離前後R 後退端
+OUT @MR2301              ; ﾄﾚｲ交換動作可
+STG @MR2300              ; ﾒﾝﾃ ﾄﾚｲ分離動作
+MPS
+AND @MR2301              ; ﾄﾚｲ交換動作可
+JMP @MR2303
+MPP
+ANB @MR2301              ; ﾄﾚｲ交換動作可
+JMP @MR2108
+STG @MR2303
+MPS
+MSTRT SELECT_POST #1 #0 #0 @MR2304
+MPP
+AND @MR2304
+JMP @MR2305
+STG @MR2305
+SET MR15500              ; 段ﾊﾞﾗｼ要求
+CON
+JMP @MR2306
+STG @MR2306
+AND MR15501              ; 段ﾊﾞﾗｼ動作完了
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+RES MR15501              ; 段ﾊﾞﾗｼ動作完了
+CON
+JMP @MR2307
+STG @MR2307
+RES MR7204               ; ｽﾗｲﾀﾞﾍﾞｰｽ 強制分離前後 前進
+CON
+MPS
+LDB MR4305               ; ｽﾗｲﾀﾞﾍﾞｰｽ 強制分離前後L 後退端ER
+ANB MR4307               ; ｽﾗｲﾀﾞﾍﾞｰｽ 強制分離前後R 後退端ER
+ANB R4304                ; ｽﾗｲﾀﾞﾍﾞｰｽ 強制分離前後L 前進端
+AND R4305                ; ｽﾗｲﾀﾞﾍﾞｰｽ 強制分離前後L 後退端
+ANB R4306                ; ｽﾗｲﾀﾞﾍﾞｰｽ 強制分離前後R 前進端
+AND R4307                ; ｽﾗｲﾀﾞﾍﾞｰｽ 強制分離前後R 後退端
+ANL
+JMP @MR2308
+MPP
+LD MR4305                ; ｽﾗｲﾀﾞﾍﾞｰｽ 強制分離前後L 後退端ER
+OR MR4307                ; ｽﾗｲﾀﾞﾍﾞｰｽ 強制分離前後R 後退端ER
+AND R41202               ; CELL間 TASK2 PAUSE要求
+ANL
+SET @MR1900              ; Main1 HALT許可
+STG @MR2308
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR2108
+;ﾒﾝﾃﾅﾝｽ  ｴﾚﾍﾞｰﾀ載替え動作ｽﾃｯﾌﾟ/連続動作  @MR2400～
+LD CR2002                ; 常時ON
+AND MR17306              ; TPLP_搬送ｽﾗｲﾀﾞ P3表示
+AND R4211                ; ﾄﾚｲ分離UT ﾄﾚｲ有無確認
+AND R4212                ; ﾄﾚｲ分離UT ﾄﾚｲ浮き確認-1
+AND R4213                ; ﾄﾚｲ分離UT ﾄﾚｲ浮き確認-2
+OUT @MR2401              ; ﾒﾝﾃ ｴﾚﾍﾞｰﾀﾄﾚｲ載替え動作可
+STG @MR2400              ; ｴﾚﾍﾞｰﾀ載せ替え動作
+MPS
+AND @MR2401              ; ﾒﾝﾃ ｴﾚﾍﾞｰﾀﾄﾚｲ載替え動作可
+JMP @MR2403
+MPP
+ANB @MR2401              ; ﾒﾝﾃ ｴﾚﾍﾞｰﾀﾄﾚｲ載替え動作可
+JMP @MR2108
+STG @MR2403
+MPS
+MSTRT SELECT_POST #1 #0 #0 @MR2404
+MPP
+AND @MR2404
+JMP @MR2405
+STG @MR2405
+SET MR15400              ; ﾄﾚｲｻｰﾁ要求
+CON
+JMP @MR2406
+STG @MR2406
+AND MR15401              ; ﾄﾚｲｻｰﾁ動作完了
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR2407
+STG @MR2407
+SET MR15600              ; ｴﾚﾍﾞｰﾀ載替え要求
+CON
+JMP @MR2408
+STG @MR2408
+AND MR15601              ; ｴﾚﾍﾞｰﾀ載替え動作完了
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+RES MR15601              ; ｴﾚﾍﾞｰﾀ載替え動作完了
+CON
+JMP @MR2409
+STG @MR2409
+AND MR16709              ; 搬送ｽﾗｲﾀﾞ固定ﾂﾒ前後 後退可
+RES MR7203               ; ｽﾗｲﾀﾞﾍﾞｰｽ 固定ﾂﾒ前後 後退
+CON
+SET MR7202               ; ｽﾗｲﾀﾞﾍﾞｰｽ 固定ﾂﾒ前後 前進
+CON
+JMP @MR2410
+STG @MR2410
+MPS
+LDB MR4300               ; ｽﾗｲﾀﾞﾍﾞｰｽ 固定ﾂﾒ前後L 前進端ERRO
+ANB MR4302               ; ｽﾗｲﾀﾞﾍﾞｰｽ 固定ﾂﾒ前後R 前進端ERRO
+ANB R4301                ; ｽﾗｲﾀﾞﾍﾞｰｽ 固定ﾂﾒ前後L 後退端
+AND R4300                ; ｽﾗｲﾀﾞﾍﾞｰｽ 固定ﾂﾒ前後L 前進端
+ANB R4303                ; ｽﾗｲﾀﾞﾍﾞｰｽ 固定ﾂﾒ前後R 後退端
+AND R4302                ; ｽﾗｲﾀﾞﾍﾞｰｽ 固定ﾂﾒ前後R 前進端
+ANL
+JMP @MR2411
+MPP
+LD MR4300                ; ｽﾗｲﾀﾞﾍﾞｰｽ 固定ﾂﾒ前後L 前進端ERRO
+OR MR4302                ; ｽﾗｲﾀﾞﾍﾞｰｽ 固定ﾂﾒ前後R 前進端ERRO
+AND R41200               ; CELL間 TASK0 PAUSE要求
+ANL
+SET @MR1900              ; Main1 HALT許可
+STG @MR2411
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR2108
+;ﾒﾝﾃﾅﾝｽ  下段ﾄﾗﾝｽﾌｧ動作ｽﾃｯﾌﾟ/連続動作  @MR2500～
+LD CR2002                ; 常時ON
+OUT @MR2501              ; ﾒﾝﾃ上段ﾄﾗﾝｽﾌｧ動作可
+STG @MR2500              ; ﾒﾝﾃ 下段ﾄﾗﾝｽﾌｧ動作開始
+MPS
+AND @MR2501              ; ﾒﾝﾃ上段ﾄﾗﾝｽﾌｧ動作可
+JMP @MR2503
+MPP
+ANB @MR2501              ; ﾒﾝﾃ上段ﾄﾗﾝｽﾌｧ動作可
+JMP @MR2108
+STG @MR2503
+MPS
+MSTRT SELECT_POST #1 #0 #0 @MR2504
+MPP
+AND @MR2504
+JMP @MR2505
+STG @MR2505
+SET MR15700              ; 下段搬送要求
+CON
+JMP @MR2509
+STG @MR2509
+AND MR15701              ; 下段搬送動作完了
+RES MR15701              ; 下段搬送動作完了
+CON
+JMP @MR2510
+STG @MR2510
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR2108
+;ﾒﾝﾃﾅﾝｽ　ｽﾃｯﾌﾟ/連続　終了動作　
+STG @MR2108
+ANB R39104               ; SELECT_Y_N Interlock
+SET R39104               ; SELECT_Y_N Interlock
+CON
+DW #1 @DM21              ; ScreenNo /SELECT_Y_N
+CON
+DW #0 @DM22              ; Bz_Use /SELECT_Y_N
+CON
+SET @MR300               ; Task0 SELECT_Y_N
+CON
+JMP @MR2109
+STG @MR2109
+AND @MR301               ; Task0 Y/N END
+RES @MR301               ; Task0 Y/N END
+CON
+RES R39104               ; SELECT_Y_N Interlock
+CON
+MPS
+AND @MR306               ; Task0 Y/N
+JMP @MR2000              ; Mainte
+MPP
+ANB @MR306               ; Task0 Y/N
+JMP @MR2110
+STG @MR2110
+MCALL HOLD_REQUEST #1
+JMP @MR2915              ; Mainte END
+STG @MR2915              ; Mainte END
+MPS
+MCALL MODE_INDI #2
+MPP
+ANB @MR001               ; TASK0 ERROR
+MPS
+AND R41200               ; CELL間 TASK0 PAUSE要求
+SET @MR1900              ; Main1 HALT許可
+MPP
+ANB R41200               ; CELL間 TASK0 PAUSE要求
+RES @MR2002              ; Mainte中
+CON
+SET R46103               ; _停止中　ﾓｰﾄﾞﾌﾗｸﾞ
+CON
+JMP LR600                ; _Grp1_Task0_Fin.STG
+;<h1/>ERROR
+;//*Error Sample
+;[使用方法]
+;・@DM1にERROR番号を代入
+;・@DM2にSensor番号を代入(センサ無しエラーの場合は0)
+;・@DM9に復帰SW番号(1～9、0はSW無し)をdegit単位で4桁入力
+;・Task0 ERROR SET(@MR100)でエラー処理開始
+;・エラー復帰でTask0 ERROR END(@MR101)がON
+;・押下復帰SW番号により左から対応した@MR105,@MR106,@MR107,@MR108のいずれかがON
+;・上記ONが成立したらJMPするSTGに対応する処理を記述
+;Error0を左側から1,2,3,4の番号に対応した復帰選択SWを出力する
+;Error Sample *//
+;MyTask Error Process Substance/エラー処理実体
+STG @MR100               ; Task0 ERROR
+ANB R39002               ; ERROR_DISP Busy
+MPS
+ZRES @MR105 @MR108       ; SW1  SW4
+CON
+LDA @DM9                 ; ReturnSW /ERROR_DISP
+CON
+TBCD
+CON
+STA @DM10
+CON
+DISN @DM10 @DM3 #4
+MRD
+DW #0 @DM0               ; TaskNo /ERROR_DISP
+CON
+BMOV @DM0 DM60000 #7     ; TaskNo /ERROR_DISP  TaskNo /ERROR_DISP
+MPP
+SET R39000               ; ERROR_DISP Start
+CON
+SET @MR102               ; Task0 ERROR Busy
+CON
+JMP @MR103
+STG @MR103
+AND R39002               ; ERROR_DISP Busy
+AND= DM60008 @DM1        ; ReturnNo /ERROR_DISP  ErrorNo /ERROR_DISP
+MPS
+AND= DM60007 @DM6        ; ReturnSW /ERROR_DISP
+SET @MR105               ; SW1
+CON
+JMP @MR104
+MRD
+AND= DM60007 @DM5        ; ReturnSW /ERROR_DISP
+SET @MR106               ; SW2
+CON
+JMP @MR104
+MRD
+AND= DM60007 @DM4        ; ReturnSW /ERROR_DISP
+SET @MR107               ; SW3
+CON
+JMP @MR104
+MPP
+AND= DM60007 @DM3        ; ReturnSW /ERROR_DISP
+SET @MR108               ; SW4
+CON
+JMP @MR104
+STG @MR104
+ANB R39002               ; ERROR_DISP Busy
+RES @MR102               ; Task0 ERROR Busy
+CON
+SET @MR101               ; Task0 ｴﾗｰ完了
+CON
+ENDS
+;<h1/>SELECT_ACT
+;//*Select_ACT Sample
+;画面番号33をブザー有りで選択SW番号を左から#5,#10,#0(無し),#34の並びで表示する
+STG @MR4104
+ANB R39204               ; SELECT_ACT Interlock
+SET R39204               ; SELECT_ACT Interlock
+CON
+MPS
+DW #33 @DM31             ; ScreenNo /SELECT_ACT
+CON
+DW #1 @DM32              ; Bz_Use /SELECT_ACT
+CON
+DW #5 @DM33              ; SW1_No /SELECT_ACT
+CON
+DW #10 @DM34             ; SW2_No /SELECT_ACT
+CON
+DW #0 @DM35              ; SW3_No /SELECT_ACT
+CON
+DW #34 @DM36             ; SW4_No /SELECT_ACT
+MPP
+SET @MR200               ; Task0 SELECT_ACT
+CON
+JMP @MR4105
+STG @MR4105
+AND @MR201               ; Task0 SEL_ACT END
+RES @MR201               ; Task0 SEL_ACT END
+CON
+RES R39204               ; SELECT_ACT Interlock
+CON
+MPS
+AND @MR205               ; SW1
+JMP @MR4106
+MRD
+AND @MR206               ; SW2
+JMP @MR4107
+MRD
+AND @MR207               ; SW3
+JMP @MR4108
+MPP
+AND @MR208               ; SW4
+JMP @MR4109
+;Select_ACT Sample *//
+;MyTask Select_ACT Process Substance/SELECT_ACT処理実体
+STG @MR200               ; Task0 SELECT_ACT
+ANB R39202               ; SELECT_ACT Busy
+MPS
+ZRES @MR205 @MR208       ; SW1  SW4
+CON
+DW #0 @DM30              ; TaskNo /SELECT_ACT
+CON
+BMOV @DM30 DM60030 #7    ; TaskNo /SELECT_ACT  TaskNo /SELECT_ACT
+MPP
+SET R39200               ; SELECT_ACT Start
+CON
+SET @MR202               ; Task0 SEL_ACT Busy
+CON
+JMP @MR203
+STG @MR203
+AND R39202               ; SELECT_ACT Busy
+AND<> DM60037 #0         ; SelectSW /SELECT_ACT
+MPS
+AND= DM60037 #1          ; SelectSW /SELECT_ACT
+SET @MR205               ; SW1
+CON
+JMP @MR204
+MRD
+AND= DM60037 #2          ; SelectSW /SELECT_ACT
+SET @MR206               ; SW2
+CON
+JMP @MR204
+MRD
+AND= DM60037 #3          ; SelectSW /SELECT_ACT
+SET @MR207               ; SW3
+CON
+JMP @MR204
+MPP
+AND= DM60037 #4          ; SelectSW /SELECT_ACT
+SET @MR208               ; SW4
+CON
+JMP @MR204
+STG @MR204
+ANB R39202               ; SELECT_ACT Busy
+RES @MR202               ; Task0 SEL_ACT Busy
+CON
+SET @MR201               ; Task0 SEL_ACT END
+CON
+ENDS
+;<h1/>SELECT_Y_N
+;//*Select_Y_N Sample
+STG @MR4203
+ANB R39104               ; SELECT_Y_N Interlock
+SET R39104               ; SELECT_Y_N Interlock
+CON
+DW #7 @DM21              ; ScreenNo /SELECT_Y_N
+CON
+DW #0 @DM22              ; Bz_Use /SELECT_Y_N
+CON
+SET @MR300               ; Task0 SELECT_Y_N
+CON
+JMP @MR4204
+STG @MR4204
+AND @MR301               ; Task0 Y/N END
+RES @MR301               ; Task0 Y/N END
+CON
+RES R39104               ; SELECT_Y_N Interlock
+CON
+MPS
+AND @MR306               ; Task0 Y/N
+JMP @MR4205
+MPP
+ANB @MR306               ; Task0 Y/N
+JMP @MR4206
+;*Select_Y_N Sample//
+;MyTask Select_Y_N Process Substance/SELECT_Y_N処理実体
+STG @MR300               ; Task0 SELECT_Y_N
+ANB R39102               ; SELECT_Y_N Busy
+MPS
+ZRES @MR306 @MR307       ; Task0 Y/N
+CON
+DW #0 @DM20              ; TaskNo /SELECT_Y_N
+CON
+BMOV @DM20 DM60020 #3    ; TaskNo /SELECT_Y_N  TaskNo /SELECT_Y_N
+MPP
+SET R39100               ; SELECT_Y_N Start
+CON
+SET @MR302               ; Task0 Y_N Busy
+CON
+JMP @MR303
+STG @MR303
+AND R39102               ; SELECT_Y_N Busy
+MPS
+AND= DM60023 #1          ; Y_N /SELECT_Y_N
+SET @MR306               ; Task0 Y/N
+CON
+JMP @MR304
+MPP
+AND= DM60023 #2          ; Y_N /SELECT_Y_N
+RES @MR306               ; Task0 Y/N
+CON
+JMP @MR304
+STG @MR304
+ANB R39102               ; SELECT_Y_N Busy
+RES @MR302               ; Task0 Y_N Busy
+CON
+SET @MR301               ; Task0 Y/N END
+CON
+ENDS
+;<h1/>TIMEUP_ERROR
+;//*TIMEUP_ERROR Sample
+;サンプルセンサ:MR5000=ON AND MR5001 = OFF のいずれかが5sタイムアップしたらTIMEUP_ERROR出力
+;エラー復帰後、再度センサ確認
+;TIMEUP_ERROR Sample *//
+;MyTask TIMEUP_ERROR Process Substance/TIMEUP_ERROR処理実体
+STG @MR400               ; Task0 TIMEUP_ERR
+ANB R39302               ; TIMEUP_ERR Busy
+MPS
+DW #0 @DM40              ; TaskNo /TIMEUP_ERR
+CON
+BMOV @DM40 DM60040 #2    ; TaskNo /TIMEUP_ERR  TaskNo /TIMEUP_ERR
+MPP
+SET R39300               ; TIMEUP_ERR Start
+CON
+SET @MR402               ; Task0 TIMEUP Busy
+CON
+JMP @MR403
+STG @MR403
+AND R39302               ; TIMEUP_ERR Busy
+JMP @MR404
+STG @MR404
+ANB R39302               ; TIMEUP_ERR Busy
+RES @MR402               ; Task0 TIMEUP Busy
+CON
+SET @MR401               ; Task0 TIMEUP_END
+CON
+ENDS
+;<h1/>SubRoutines/ｻﾌﾞﾙｰﾁﾝ
+;<h1/>HALT
+LD R41200                ; CELL間 TASK0 PAUSE要求
+AND @MR1900              ; Main1 HALT許可
+LDB MR18509              ; 搬送ｽﾗｲﾀﾞRB 移動中
+ANB MR18709              ; ｴﾚﾍﾞｰﾀRB 移動中
+OR MR18900               ; ｴﾘｱｾﾝｻ遮光
+ANL
+TMR @2 #2
+CON
+AND @T2
+@SET R42600              ; _Grp1_Task0_ﾎﾟｰｽﾞ許可
+LD R42600                ; _Grp1_Task0_ﾎﾟｰｽﾞ許可
+ANB @MR001               ; TASK0 ERROR
+ORF @MR001               ; TASK0 ERROR
+RES @MR1900              ; Main1 HALT許可
+CON
+RES @MR1901              ; Main2 HALT許可
+END
+ENDH

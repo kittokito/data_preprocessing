@@ -1,0 +1,142 @@
+DEVICE:52
+;MODULE:PC通信
+;MODULE_TYPE:0
+;***** PLC状態 *****
+LD T100                  ; 動作遅延ﾀｲﾏ-
+MOV #1 DM110             ; PCへｼｰｹﾝｻ準備OK
+MPS
+AND MR002                ; 2ｓﾌﾘｯｶﾊﾟﾙｽ
+@MOV #1 DM111            ; 動作中ウォッチドグ
+MPP
+ANB MR002                ; 2ｓﾌﾘｯｶﾊﾟﾙｽ
+@MOV #0 DM111            ; 動作中ウォッチドグ
+;***** PC状態 *****
+LD CR2002                ; 常時ON
+AND= DM210 #1
+OUT MR4600               ; PC準備OK
+LD= DM211 #1
+TMR #290 #20
+CON
+AND T290
+OUT MR4601               ; PCウォッチドグ
+LD= DM211 #0
+TMR #291 #20
+CON
+AND T291
+OUT MR4602               ; PCウォッチドグ
+LD MR10209               ; PCへLot読込み要求
+ANB LR501                ; 搬送ﾓｰﾄﾞ
+@BMOV DM900 DM120 #5     ; LOT番号読出し値
+@MOV DM910 DM130         ; ﾚｼﾋﾟ番号
+@BMOV DM920 DM125 #5
+@MOV DM2050 DM150        ; ｷｬﾘｱWF取出しｽﾛｯﾄNo.記憶
+TMH #50 #3
+CON
+AND T50
+@MOV #1 DM100            ; PCへLot読込み要求
+LD= DM200 #1
+MEP
+@FMOV #0 DM120 #30
+@MOV #0 DM100            ; PCへLot読込み要求
+;***** WF報告 接合装置投入完了*****
+LD MR11410               ; 接合装置WF収納完了
+ANB LR501                ; 搬送ﾓｰﾄﾞ
+@MOV DM5703 DM151        ; 転写時接着剤経過時間  転写時接着剤経過時間
+@BMOV DM5705 DM152 #6    ; 転写完了時間(年)  転写完了時間(年)
+@BMOV CM700 DM159 #6     ; ｶﾚﾝﾀﾞﾀｲﾏ（年）  接合装置送付時間(年)
+@MOV DM5701 DM165        ; 接着剤経過時間(ﾎﾟｯﾄﾗｲﾌ)  接合送付時接着剤経過時間(秒)
+@MOV DM2050 DM150        ; ｷｬﾘｱWF取出しｽﾛｯﾄNo.記憶
+@MOV #0 DM166            ; 処理完了ﾌﾗｸﾞ
+TMH #51 #3
+CON
+AND T51
+@MOV #1 DM102            ; PCへWF情報読出し要求
+;***** WF報告 ｷｬﾘｱ収納*****
+LD MR12307               ; PCへWF情報読出し要求
+ANB LR501                ; 搬送ﾓｰﾄﾞ
+MPS
+AND MR914                ; 次WF転写開始信号
+@MOV DM5703 DM151        ; 転写時接着剤経過時間  転写時接着剤経過時間
+MRD
+AND MR914                ; 次WF転写開始信号
+@BMOV DM5705 DM152 #6    ; 転写完了時間(年)  転写完了時間(年)
+MRD
+ANB MR914                ; 次WF転写開始信号
+@BMOV CM700 DM152 #6     ; ｶﾚﾝﾀﾞﾀｲﾏ（年）  転写完了時間(年)
+MRD
+BMOV CM700 DM159 #6      ; ｶﾚﾝﾀﾞﾀｲﾏ（年）  接合装置送付時間(年)
+MRD
+AND MR914                ; 次WF転写開始信号
+@MOV DM5701 DM165        ; 接着剤経過時間(ﾎﾟｯﾄﾗｲﾌ)  接合送付時接着剤経過時間(秒)
+MRD
+@MOV DM2050 DM150        ; ｷｬﾘｱWF取出しｽﾛｯﾄNo.記憶
+MRD
+@MOV #1 DM166            ; 処理完了ﾌﾗｸﾞ
+MPP
+TMH #52 #3
+CON
+AND T52
+@MOV #1 DM102            ; PCへWF情報読出し要求
+;***** WF報告 中断時*****
+LD MR701                 ; 中断PCへWF情報読出し要求
+ANB LR501                ; 搬送ﾓｰﾄﾞ
+MPS
+AND MR914                ; 次WF転写開始信号
+@MOV DM5703 DM151        ; 転写時接着剤経過時間  転写時接着剤経過時間
+MRD
+AND MR914                ; 次WF転写開始信号
+@BMOV DM5705 DM152 #6    ; 転写完了時間(年)  転写完了時間(年)
+MRD
+ANB MR914                ; 次WF転写開始信号
+@BMOV CM700 DM152 #6     ; ｶﾚﾝﾀﾞﾀｲﾏ（年）  転写完了時間(年)
+MRD
+BMOV CM700 DM159 #6      ; ｶﾚﾝﾀﾞﾀｲﾏ（年）  接合装置送付時間(年)
+MRD
+AND MR914                ; 次WF転写開始信号
+@MOV DM5701 DM165        ; 接着剤経過時間(ﾎﾟｯﾄﾗｲﾌ)  接合送付時接着剤経過時間(秒)
+MRD
+@MOV DM2050 DM150        ; ｷｬﾘｱWF取出しｽﾛｯﾄNo.記憶
+MRD
+@MOV #1 DM166            ; 処理完了ﾌﾗｸﾞ
+MPP
+TMH #53 #3
+CON
+AND T53
+@MOV #1 DM102            ; PCへWF情報読出し要求
+LD= DM202 #1
+MEP
+@FMOV #0 DM150 #20
+@MOV #0 DM102            ; PCへWF情報読出し要求
+;***** Lot終了 *****
+LD MR19011               ; PCへLot終了
+OR MR805                 ; 終了SW
+@MOV #1 DM101            ; PCへLot終了要求
+LD= DM201 #1
+MPS
+RES MR900                ; ﾏｯﾋﾟﾝｸﾞ済FLG
+CON
+RES MR901                ; ﾊﾞｰｺｰﾄﾞLot_No.読込み完了
+CON
+RES MR902                ; ﾚｼﾋﾟ_No.読込み完了
+CON
+RES MR903                ; 作業者_No.読込み完了
+CON
+RES LR100                ; ﾊﾞｰｺｰﾄﾞ読込み済みFLG
+CON
+@MOV #0 DM101            ; PCへLot終了要求
+MPP
+@FMOV #0 DM900 #30       ; LOT番号読出し値
+;***** 接合後ﾃﾞｰﾀ　WF ID 読出し要求 *****
+LD MR19008               ; PCへWF_No.読込み要求
+@BMOV DM950 DM170 #3
+@BMOV DM970 DM173 #3
+TMH #54 #3
+CON
+AND T54
+@MOV #1 DM103            ; PCへWF_ID読込み要求
+LD= DM203 #1
+MEP
+@FMOV #0 DM170 #6
+@MOV #0 DM103            ; PCへWF_ID読込み要求
+END
+ENDH

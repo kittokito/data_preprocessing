@@ -1,0 +1,7322 @@
+DEVICE:53
+;MODULE:Group1_Task5
+;MODULE_TYPE:0
+;SCRIPT_TYPE:
+;OneSystem Main-Module
+;
+;-----------------------------------------
+;ModuleName	:	Group1_Task5
+;ModuleType	:	Main Module
+;Line		:	μTFP CAV Plate Assembly Line
+;Cell		:	<CR> 2Cell
+;Function	:	転写部	
+;-----------------------------------------
+;<<Task LocalDevice>>
+;/*項目			/*割付ｴﾘｱ				/*備考
+;---------------------------------------------------------------------			
+;Emergency		@MR000～@MR015			Emergency処理時RESET禁止ｴﾘｱ
+;Free			@MR100～@MR915			ﾕｰｻﾞｰﾌﾘｰｴﾘｱ
+;Home			@MR1000～@MR1515		HOME動作時使用ｴﾘｱ
+;Maintenance		@MR2000～@MR2915		MAINTE動作時使用ｴﾘｱ
+;Auto(Main1)		@MR3000～@MR3915		AUTO(Main1)動作時使用ｴﾘｱ
+;	(Main2)		@MR4000～@MR4415		AUTO(Main2)動作時使用ｴﾘｱ
+;Subroutine		@MR4500～@MR6715		ｻﾌﾞﾙｰﾁﾝ共通動作使用ｴﾘｱ
+;----------------------------------------------------------------------
+;<h1/>Device_Init/ﾃﾞﾊﾞｲｽ初期化
+;[内容]
+;・非常停止、優先ｴﾗｰ発生時に初期化したいﾃﾞﾊﾞｲｽを指定して下さい
+;※本Taskで使用するﾛｰｶﾙﾃﾞﾊﾞｲｽなど
+;※STG～JMPにて使用しているﾃﾞﾊﾞｲｽは必須
+LDP R46104               ; _非常停止中　ﾓｰﾄﾞﾌﾗｸﾞ
+RES MR19708              ; ｸﾞﾛｰﾊﾞﾙｳｨﾝﾄﾞOFF
+CON
+ZRES MR6602 MR6605       ; 接着剤転写UT ｻｲｸﾙﾀｲﾑ計測用  接着剤転写 ｻｲｸﾙﾀｲﾑ計測
+CON
+RES MR16007              ; 巻きだしﾀﾞﾝｻﾛｰﾗ制御ｵﾝ
+CON
+RES MR16107              ; 巻き取りﾀﾞﾝｻﾛｰﾗ制御ｵﾝ
+CON
+ZRES @MR100 @MR6715      ; Task5 ERROR  ﾌｨﾙﾑ交換後 捨て出し完了
+;<h1/>ﾀｲﾏ制御
+LD CR2002                ; 常時ON
+LDA EM2370
+CON
+STA T1747                ; ﾌｨﾙﾑ交換後 捨て出し時間
+CON
+LDA DM7050               ; 装置基礎ﾃﾞｰﾀ26
+CON
+STA T809                 ; 接着剤捨出し時間
+LD CR2002                ; 常時ON
+LDA DM7078               ; 装置基礎ﾃﾞｰﾀ40
+CON
+STA T1800
+;<h1/>Task_Monitor/ﾀｽｸﾓﾆﾀｰ
+LD CR2002                ; 常時ON
+FLIK #50 #50 @MR000
+FLIK #10 #10 @MR005      ; ﾌﾘｯｶ
+LD= DM60000 #5           ; TaskNo /ERROR_DISP
+AND R46208               ; _Group1　ｴﾗｰ発生中
+OUT @MR001               ; TASK5 Error
+;ON STG Main1
+;TYPE EM640.U,EM641.U,@MR000.U,@MR3000.U
+;
+;FOR EM640 = EM640 TO 160 STEP 16
+;	IF @MR3000:EM640 <> 0 THEN
+;		BREAK
+;	END IF	
+;NEXT
+;	
+;IF EM640 < 160 THEN
+;	EM641 = (EM640 / 16) * 100 + DMX(@MR3000:EM640) + #3000
+;END IF		
+;		
+;EM640 = EM640 + 16		
+;IF EM640 > 160 THEN		
+;	EM640 = 0		
+;END IF
+LDP @MR000
+NCJ #1000
+;TYPE EM640.U,EM641.U,@MR000.U,@MR3000.U
+;
+;FOR EM640 = EM640 TO 160 STEP 16
+;
+LD CR2002                ; 常時ON
+MOV EM640 EM640          ; Task5 Main1@MR  Task5 Main1@MR
+LABEL #2000
+LD> EM640 #160           ; Task5 Main1@MR
+CJ #2001
+;	IF @MR3000:EM640 <> 0 THEN
+;
+LD CR2002                ; 常時ON
+LDA EM640                ; Task5 Main1@MR
+CON
+EXT
+CON
+STA.L Z12
+LD<> @MR3000:Z12 #0      ; AUTO Main1
+NCJ #2002
+;		BREAK
+;
+LD CR2002                ; 常時ON
+CJ #2003
+;	END IF	
+;
+LABEL #2002
+;NEXT
+;
+LD CR2002                ; 常時ON
+LDA EM640                ; Task5 Main1@MR
+CON
+ADD #16
+CON
+STA EM640                ; Task5 Main1@MR
+LDB CR2009               ; 演算結果が負
+CJ #2000
+LABEL #2003
+LABEL #2001
+;IF EM640 < 160 THEN
+;
+LD< EM640 #160           ; Task5 Main1@MR
+NCJ #2004
+;	EM641 = (EM640 / 16) * 100 + DMX(@MR3000:EM640) + #3000
+;
+LD CR2002                ; 常時ON
+LDA EM640                ; Task5 Main1@MR
+CON
+EXT
+CON
+STA.L Z12
+CON
+LDA @MR3000:Z12          ; AUTO Main1
+CON
+DMX
+CON
+STA @VM0
+CON
+LDA EM640                ; Task5 Main1@MR
+CON
+EXT
+CON
+EXT.L
+CON
+DIV.L +16
+CON
+MUL.L +100
+CON
+STA.L @VM1
+CON
+LDA @VM0
+CON
+EXT
+CON
+ADD.L @VM1
+CON
+ADD.L +3000
+CON
+STA EM641                ; Task5 Main1@MR
+;END IF		
+;
+LABEL #2004
+;EM640 = EM640 + 16		
+;
+LD CR2002                ; 常時ON
+LDA EM640                ; Task5 Main1@MR
+CON
+EXT
+CON
+ADD.L +16
+CON
+STA EM640                ; Task5 Main1@MR
+;IF EM640 > 160 THEN		
+;
+LD> EM640 #160           ; Task5 Main1@MR
+NCJ #2005
+;	EM640 = 0		
+;
+LD CR2002                ; 常時ON
+MOV #0 EM640             ; Task5 Main1@MR
+;END IF
+LABEL #2005
+LABEL #1000
+;
+;ON STG Main2
+;TYPE EM642.U,EM643.U,@MR4000.U
+;
+;FOR EM642 = EM642 TO 80 STEP 16
+;	IF @MR4000:EM642 <> 0 THEN
+;		BREAK
+;	END IF	
+;NEXT	
+;
+;IF EM642 < 80 THEN
+;	EM643 = (EM642 / 16) * 100 + DMX(@MR4000:EM642) + #4000
+;END IF
+;
+;EM642 = EM642 + 16		
+;
+;IF EM642 > 80 THEN
+;	EM642 = 0	
+;END IF
+LDP @MR000
+NCJ #1001
+;TYPE EM642.U,EM643.U,@MR4000.U
+;
+;FOR EM642 = EM642 TO 80 STEP 16
+;
+LD CR2002                ; 常時ON
+MOV EM642 EM642          ; Task5 Main2@MR  Task5 Main2@MR
+LABEL #2006
+LD> EM642 #80            ; Task5 Main2@MR
+CJ #2007
+;	IF @MR4000:EM642 <> 0 THEN
+;
+LD CR2002                ; 常時ON
+LDA EM642                ; Task5 Main2@MR
+CON
+EXT
+CON
+STA.L Z12
+LD<> @MR4000:Z12 #0      ; AUTO Main2
+NCJ #2008
+;		BREAK
+;
+LD CR2002                ; 常時ON
+CJ #2009
+;	END IF	
+;
+LABEL #2008
+;NEXT	
+;
+LD CR2002                ; 常時ON
+LDA EM642                ; Task5 Main2@MR
+CON
+ADD #16
+CON
+STA EM642                ; Task5 Main2@MR
+LDB CR2009               ; 演算結果が負
+CJ #2006
+LABEL #2009
+LABEL #2007
+;IF EM642 < 80 THEN
+;
+LD< EM642 #80            ; Task5 Main2@MR
+NCJ #2010
+;	EM643 = (EM642 / 16) * 100 + DMX(@MR4000:EM642) + #4000
+;
+LD CR2002                ; 常時ON
+LDA EM642                ; Task5 Main2@MR
+CON
+EXT
+CON
+STA.L Z12
+CON
+LDA @MR4000:Z12          ; AUTO Main2
+CON
+DMX
+CON
+STA @VM3
+CON
+LDA EM642                ; Task5 Main2@MR
+CON
+EXT
+CON
+EXT.L
+CON
+DIV.L +16
+CON
+MUL.L +100
+CON
+STA.L @VM4
+CON
+LDA @VM3
+CON
+EXT
+CON
+ADD.L @VM4
+CON
+ADD.L +4000
+CON
+STA EM643                ; Task5 Main2@MR
+;END IF
+;
+LABEL #2010
+;EM642 = EM642 + 16		
+;
+LD CR2002                ; 常時ON
+LDA EM642                ; Task5 Main2@MR
+CON
+EXT
+CON
+ADD.L +16
+CON
+STA EM642                ; Task5 Main2@MR
+;IF EM642 > 80 THEN
+;
+LD> EM642 #80            ; Task5 Main2@MR
+NCJ #2011
+;	EM642 = 0	
+;
+LD CR2002                ; 常時ON
+MOV #0 EM642             ; Task5 Main2@MR
+;END IF
+LABEL #2011
+LABEL #1001
+;
+;ON STG SubRoutine
+;TYPE EM644.U,EM645.U,@MR4500.U
+;	
+;FOR EM644 = EM644 TO 320 STEP 16
+;	IF @MR4500:EM644 <> 0 THEN
+;		BREAK
+;	END IF	
+;NEXT
+;		
+;IF EM644 < 320 THEN
+;	EM645 = (EM644 / 16) * 100 + DMX(@MR4500:EM644) + #4500
+;END IF
+;		
+;EM644 = EM644 + 16	
+;
+;IF EM644 > 320 THEN
+;   EM644 = 0	
+;END IF
+LDP @MR000
+NCJ #1002
+;TYPE EM644.U,EM645.U,@MR4500.U
+;
+;FOR EM644 = EM644 TO 320 STEP 16
+;
+LD CR2002                ; 常時ON
+MOV EM644 EM644          ; Task5 Sub@MR  Task5 Sub@MR
+LABEL #2012
+LD> EM644 #320           ; Task5 Sub@MR
+CJ #2013
+;	IF @MR4500:EM644 <> 0 THEN
+;
+LD CR2002                ; 常時ON
+LDA EM644                ; Task5 Sub@MR
+CON
+EXT
+CON
+STA.L Z12
+LD<> @MR4500:Z12 #0      ; ﾌｨﾙﾑ受け治具　原点復帰要求
+NCJ #2014
+;		BREAK
+;
+LD CR2002                ; 常時ON
+CJ #2015
+;	END IF	
+;
+LABEL #2014
+;NEXT
+;
+LD CR2002                ; 常時ON
+LDA EM644                ; Task5 Sub@MR
+CON
+ADD #16
+CON
+STA EM644                ; Task5 Sub@MR
+LDB CR2009               ; 演算結果が負
+CJ #2012
+LABEL #2015
+LABEL #2013
+;IF EM644 < 320 THEN
+;
+LD< EM644 #320           ; Task5 Sub@MR
+NCJ #2016
+;	EM645 = (EM644 / 16) * 100 + DMX(@MR4500:EM644) + #4500
+;
+LD CR2002                ; 常時ON
+LDA EM644                ; Task5 Sub@MR
+CON
+EXT
+CON
+STA.L Z12
+CON
+LDA @MR4500:Z12          ; ﾌｨﾙﾑ受け治具　原点復帰要求
+CON
+DMX
+CON
+STA @VM6
+CON
+LDA EM644                ; Task5 Sub@MR
+CON
+EXT
+CON
+EXT.L
+CON
+DIV.L +16
+CON
+MUL.L +100
+CON
+STA.L @VM7
+CON
+LDA @VM6
+CON
+EXT
+CON
+ADD.L @VM7
+CON
+ADD.L +4500
+CON
+STA EM645                ; Task5 Sub@MR
+;END IF
+;
+LABEL #2016
+;EM644 = EM644 + 16	
+;
+LD CR2002                ; 常時ON
+LDA EM644                ; Task5 Sub@MR
+CON
+EXT
+CON
+ADD.L +16
+CON
+STA EM644                ; Task5 Sub@MR
+;IF EM644 > 320 THEN
+;
+LD> EM644 #320           ; Task5 Sub@MR
+NCJ #2017
+;   EM644 = 0	
+;
+LD CR2002                ; 常時ON
+MOV #0 EM644             ; Task5 Sub@MR
+;END IF
+LABEL #2017
+LABEL #1002
+;
+;<h1/>Task_Init/ﾀｽｸ初期化
+;[本STG内容]
+;・本Task起動時に必要な初期化処理を記述して下さい
+;・起動Taskの全Init処理終了後、Task_StartのSTGが起動します
+STG LR805                ; _Grp1_Task5_Init.STG
+RES MR19708              ; ｸﾞﾛｰﾊﾞﾙｳｨﾝﾄﾞOFF
+CON
+ENDS
+;<h1/>転写動作条件
+;<h1/>Task_Start/ﾀｽｸ開始
+;[本STG内容]
+;・Task起動後、以下運転ﾓｰﾄﾞに従い、各STGにJMPします
+;【HOME】	→	LR5200
+;【AUTO】	→	LR5400
+;【MAINTE】	→	LR5600
+;・本STGは追記、修正不要です
+STG LR405                ; _Grp1_Task5_Start.STG
+MPS
+AND R46101               ; _原点復帰中　ﾓｰﾄﾞﾌﾗｸﾞ
+JMP LR5205               ; _Grp1_Task5_HOME.STG
+MRD
+AND R46100               ; _自動運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+RES @MR5308              ; ｽｷｰｼﾞ完了動作中
+CON
+ZRES MR6602 MR6605       ; 接着剤転写UT ｻｲｸﾙﾀｲﾑ計測用  接着剤転写 ｻｲｸﾙﾀｲﾑ計測
+CON
+JMP LR5405               ; _Grp1_Task5_AUTO.STG
+MPP
+AND R46102               ; _ﾒﾝﾃﾅﾝｽ運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+JMP LR5605               ; _Grp1_Task5_MAINTE.STG
+;<h1/>Task_Finish/ﾀｽｸ終了
+;[本STG内容]
+;・各Taskの終了STGになります
+;・運転ﾓｰﾄﾞに係わらず終了時は本STGを経由して終了して下さい
+;・本STGは追記、修正不要です
+STG LR605                ; _Grp1_Task5_Fin.STG
+RES MR22505              ; TASK0→TASK5 START
+CON
+RES R41005               ; _Grp1_Task5_起動中ﾌﾗｸﾞ
+CON
+ENDS
+;<h1/>HOME
+;[本STG内容]
+;・STG @MR1000の続きから各Taskの原点復帰動作を記述する
+;・動作終了時は@MR1515にJMPする事
+STG LR5205               ; _Grp1_Task5_HOME.STG
+ANB @MR001               ; TASK5 Error
+MPS
+ANB R41205               ; TASK5 PAUSE 
+JMP @MR1000              ; HOME
+MPP
+AND R41205               ; TASK5 PAUSE 
+SET @MR1900              ; Main1 HALT許可
+STG @MR1000              ; HOME
+SET MR11209              ; ﾀﾞﾝｻｰﾛｰﾗｸﾗﾝﾌﾟ 開き
+CON
+RES MR11208              ; ﾀﾞﾝｻｰﾛｰﾗｸﾗﾝﾌﾟ 閉じ
+CON
+SET MR16007              ; 巻きだしﾀﾞﾝｻﾛｰﾗ制御ｵﾝ
+CON
+SET MR16107              ; 巻き取りﾀﾞﾝｻﾛｰﾗ制御ｵﾝ
+CON
+SET MR16004              ; 巻だしﾀﾞﾝｻﾛｰﾗ動作ON
+CON
+SET MR16104              ; 巻取りﾀﾞﾝｻﾛｰﾗ動作ON
+CON
+JMP @MR1108
+STG @MR1108
+MPS
+ANB LR10002              ; ﾜｰｸｾｯﾄｼﾞｸﾞ 90度回転使用/未使用
+RES @MR4501              ; ﾌｨﾙﾑ受け原点復帰動作中
+CON
+JMP @MR1100
+MPP
+AND LR10002              ; ﾜｰｸｾｯﾄｼﾞｸﾞ 90度回転使用/未使用
+RES @MR4501              ; ﾌｨﾙﾑ受け原点復帰動作中
+CON
+JMP @MR1109
+STG @MR1109
+RES MR11304              ; ﾌｨﾙﾑ巻取り ﾛｰﾗ上下 上昇
+CON
+MPS
+LDB MR8111               ; ﾌｨﾙﾑ巻取り ﾛｰﾗ上下奥側下限ｴﾗｰ
+ANB MR8113               ; ﾌｨﾙﾑ巻取り ﾛｰﾗ上手前側 下限ｴﾗｰ
+AND R8111                ; ﾌｨﾙﾑ巻取り ﾛｰﾗ上下奥側 下限
+ANB R8110                ; ﾌｨﾙﾑ巻取り ﾛｰﾗ上下奥側 上限
+AND R8113                ; ﾌｨﾙﾑ巻取り ﾛｰﾗ上手前側 下限
+ANB R8112                ; ﾌｨﾙﾑ巻取り ﾛｰﾗ上下手前側 上限
+ANL
+JMP @MR1100
+MPP
+LD MR8111                ; ﾌｨﾙﾑ巻取り ﾛｰﾗ上下奥側下限ｴﾗｰ
+OR MR8113                ; ﾌｨﾙﾑ巻取り ﾛｰﾗ上手前側 下限ｴﾗｰ
+AND R41205               ; TASK5 PAUSE 
+ANL
+SET @MR1900              ; Main1 HALT許可
+STG @MR1100
+SET MR15404              ; ｽｷｰｼﾞ台下流側 破壊確認開始
+CON
+SET MR15412              ; ｽｷｰｼﾞ台上流側 破壊確認開始
+CON
+SET @MR4800              ; 接着剤塗布部　原点復帰要求
+CON
+SET @MR5200              ; ｽｷｰｼﾞ部　原点復帰要求
+CON
+JMP @MR1101
+STG @MR1101
+AND MR15405              ; ｽｷｰｼﾞ台下流側 吸着破壊OK
+AND MR15413              ; ｽｷｰｼﾞ台上流側 吸着破壊OK
+RES MR15405              ; ｽｷｰｼﾞ台下流側 吸着破壊OK
+CON
+RES MR15413              ; ｽｷｰｼﾞ台上流側 吸着破壊OK
+CON
+JMP @MR1102
+STG @MR1102
+RES MR11206              ; ｽｷｰｼﾞ台 上昇
+CON
+MPS
+LDB MR7401               ; ｽｷｰｼﾞ台部 ｽｷｰｼﾞ台 下限ｴﾗｰ
+ANB R7400                ; ｽｷｰｼﾞ台部 ｽｷｰｼﾞ台 上限
+AND R7401                ; ｽｷｰｼﾞ台部 ｽｷｰｼﾞ台 下限
+ANL
+SET @MR4800              ; 接着剤塗布部　原点復帰要求
+CON
+JMP @MR1103
+MPP
+LD MR7401                ; ｽｷｰｼﾞ台部 ｽｷｰｼﾞ台 下限ｴﾗｰ
+AND R41205               ; TASK5 PAUSE 
+ANL
+SET @MR1900              ; Main1 HALT許可
+STG @MR1103
+AND @MR4801              ; 接着剤塗布部原点復帰動作完了
+AND @MR5201              ; ｽｷｰｼﾞ部原点復帰動作完了
+JMP @MR1104
+STG @MR1104
+SET MR16004              ; 巻だしﾀﾞﾝｻﾛｰﾗ動作ON
+CON
+SET MR16104              ; 巻取りﾀﾞﾝｻﾛｰﾗ動作ON
+CON
+RES @MR4801              ; 接着剤塗布部原点復帰動作完了
+CON
+RES @MR5201              ; ｽｷｰｼﾞ部原点復帰動作完了
+CON
+SET @MR5500              ; 接着剤転写部 原点復帰要求
+CON
+JMP @MR1105
+STG @MR1105
+AND @MR5501              ; 接着剤転写部 原点復帰完了
+JMP @MR1106
+STG @MR1106
+RES @MR5501              ; 接着剤転写部 原点復帰完了
+CON
+SET @MR4500              ; ﾌｨﾙﾑ受け治具　原点復帰要求
+CON
+JMP @MR1107
+STG @MR1107
+AND @MR4501              ; ﾌｨﾙﾑ受け原点復帰動作中
+JMP @MR1110
+STG @MR1110
+RES MR11302              ; ﾌｨﾙﾑ受け90度回転 回転
+CON
+SET MR11303              ; ﾌｨﾙﾑ受け90度回転 戻り
+CON
+MPS
+LDB MR8109               ; ﾌｨﾙﾑ受け90度回転 戻し限ｴﾗｰ
+AND R8109                ; ﾌｨﾙﾑ受け90度回転 戻し限
+ANB R8108                ; ﾌｨﾙﾑ受け90度回転 回転側限
+ANL
+RES MR10011              ; ﾌｨﾙﾑ受けｾｯﾄ中
+CON
+JMP @MR1111
+MPP
+LD MR8109                ; ﾌｨﾙﾑ受け90度回転 戻し限ｴﾗｰ
+AND R41205               ; TASK5 PAUSE 
+ANL
+SET @MR1900              ; Main1 HALT許可
+STG @MR1111
+SET MR16005              ; 強制　巻きだしﾓｰﾀ動作ON
+CON
+SET MR16105              ; 強制　巻き取りﾓｰﾀ動作ON
+CON
+TMR @100 #2
+CON
+AND @T100
+JMP @MR1112
+STG @MR1112
+AND R7412                ; F巻取り部 ﾀﾞﾝｻﾛｰﾗ位置 上側
+RES MR16005              ; 強制　巻きだしﾓｰﾀ動作ON
+CON
+RES MR16105              ; 強制　巻き取りﾓｰﾀ動作ON
+CON
+JMP @MR1515              ; HOME END
+STG @MR1515              ; HOME END
+ANB @MR001               ; TASK5 Error
+SET MR009                ; TASK5原点復帰完了
+CON
+JMP LR605                ; _Grp1_Task5_Fin.STG
+;<h1/>AUTO
+STG LR5405               ; _Grp1_Task5_AUTO.STG
+SET MR16005              ; 強制　巻きだしﾓｰﾀ動作ON
+CON
+TMR @0 #10
+CON
+AND @T0
+LD MR7314                ; F巻出し部 ﾀﾞﾝｻﾛｰﾗ位置 下側
+ORB R7315                ; F巻出し部 ﾀﾞﾝｻﾛｰﾗ位置 下OT
+ANL
+ANB MR19700              ; 巻出し動作中
+SET MR16004              ; 巻だしﾀﾞﾝｻﾛｰﾗ動作ON
+CON
+SET MR16104              ; 巻取りﾀﾞﾝｻﾛｰﾗ動作ON
+CON
+JMP @MR3000              ; AUTO Main1
+LD MR6603                ; 接着剤塗布 ｻｲｸﾙﾀｲﾑ計測用
+OR MR6604                ; ｽｷｰｼﾞ ｻｲｸﾙﾀｲﾑ計測用
+OUT MR6610               ; 接着剤塗布 ﾘﾄﾗｲ可
+;<h1/>Auto (Main1)
+;[本STG内容]
+;・各TaskのAUTO動作を記述して下さい
+;・動作ﾓｰﾄﾞは「AUTOAC」に格納されています(1～32)
+;・@MR3000:AUTO_Main1開始、@MR3001:AUTO_Main1完了、@MR3002:AUTO_Main1動作中
+STG @MR3000              ; AUTO Main1
+ANB @MR001               ; TASK5 Error
+MPS
+LDB R41205               ; TASK5 PAUSE 
+ANB MR6302               ; ﾌｨﾙﾑ捨て出し動作中
+ANB MR24903              ; 3ST　動作完了
+ANL
+MPS
+AND MR22505              ; TASK0→TASK5 START
+SET LR12500              ; 転写UNIT ﾜｰｸ救済可
+CON
+SET @MR3002              ; AUTO Main1 Busy
+CON
+JMP @MR3908
+MPP
+AND MR22605              ; TASK0→TASK5 HOLD
+RES @MR3002              ; AUTO Main1 Busy
+CON
+JMP @MR3909
+MPP
+AND R41205               ; TASK5 PAUSE 
+SET @MR1900              ; Main1 HALT許可
+STG @MR3909
+RES MR22605              ; TASK0→TASK5 HOLD
+CON
+JMP @MR3915              ; AUTO END
+STG @MR3908
+RES MR22505              ; TASK0→TASK5 START
+CON
+JMP @MR3003
+STG @MR3003
+MPS
+AND= DM35000 #0          ; ｲﾝﾃﾞｯｸｽ位置ﾃﾞｰﾀ
+MPS
+AND= DM5010 #1           ; _AUTO動作番号
+MPS
+LD R7506                 ; ﾜｰｸｾｯﾄ部 ST3 圧力1
+LD MR9103                ; INDEX_治具-3上ﾜｰｸ全て有り
+OR MR10700               ; ST3ﾜｰｸ吸着 吸着ON
+ANL
+ANL
+MPS
+LD= #0 EM31404
+ANB MR9801               ; ｲﾝﾃﾞｯｸｽ　ﾌｨﾙﾑ受け台交換位置到着
+ANL
+JMP @MR3004
+MPP
+LD<> #0 EM31404
+OR MR9801                ; ｲﾝﾃﾞｯｸｽ　ﾌｨﾙﾑ受け台交換位置到着
+ANL
+JMP @MR3900
+MRD
+LDB R7506                ; ﾜｰｸｾｯﾄ部 ST3 圧力1
+LD MR9103                ; INDEX_治具-3上ﾜｰｸ全て有り
+OR MR10700               ; ST3ﾜｰｸ吸着 吸着ON
+ANL
+ANL
+JMP @MR3110
+MPP
+LDB R7506                ; ﾜｰｸｾｯﾄ部 ST3 圧力1
+ANB MR9103               ; INDEX_治具-3上ﾜｰｸ全て有り
+ANB MR10700              ; ST3ﾜｰｸ吸着 吸着ON
+ANB MR19700              ; 巻出し動作中
+ANB MR16815              ; 巻き取り動作中
+ANL
+DW #0 EM31404
+CON
+JMP @MR3206
+MPP
+AND= DM5010 #4           ; _AUTO動作番号
+MPS
+AND MR9103               ; INDEX_治具-3上ﾜｰｸ全て有り
+MPS
+LD= #0 EM31404
+ANB MR9801               ; ｲﾝﾃﾞｯｸｽ　ﾌｨﾙﾑ受け台交換位置到着
+ANL
+JMP @MR3004
+MPP
+LD<> #0 EM31404
+OR MR9801                ; ｲﾝﾃﾞｯｸｽ　ﾌｨﾙﾑ受け台交換位置到着
+ANL
+JMP @MR3900
+MPP
+LDB MR9103               ; INDEX_治具-3上ﾜｰｸ全て有り
+ANB MR19700              ; 巻出し動作中
+ANB MR16815              ; 巻き取り動作中
+ANL
+DW #0 EM31404
+CON
+JMP @MR3900
+MRD
+AND= DM35000 #1          ; ｲﾝﾃﾞｯｸｽ位置ﾃﾞｰﾀ
+MPS
+AND= DM5010 #1           ; _AUTO動作番号
+MPS
+LD R7508                 ; ﾜｰｸｾｯﾄ部 ST4 圧力1
+LD MR9104                ; INDEX_治具-4上ﾜｰｸ全て有り
+OR MR10703               ; ST4ﾜｰｸ吸着 吸着ON
+ANL
+ANL
+MPS
+LD= #0 EM31404
+ANB MR9801               ; ｲﾝﾃﾞｯｸｽ　ﾌｨﾙﾑ受け台交換位置到着
+ANL
+JMP @MR3004
+MPP
+LD<> #0 EM31404
+OR MR9801                ; ｲﾝﾃﾞｯｸｽ　ﾌｨﾙﾑ受け台交換位置到着
+ANL
+JMP @MR3900
+MRD
+LDB R7508                ; ﾜｰｸｾｯﾄ部 ST4 圧力1
+LD MR9104                ; INDEX_治具-4上ﾜｰｸ全て有り
+OR MR10703               ; ST4ﾜｰｸ吸着 吸着ON
+ANL
+ANL
+JMP @MR3110
+MPP
+LDB R7508                ; ﾜｰｸｾｯﾄ部 ST4 圧力1
+ANB MR9104               ; INDEX_治具-4上ﾜｰｸ全て有り
+ANB MR10703              ; ST4ﾜｰｸ吸着 吸着ON
+ANB MR19700              ; 巻出し動作中
+ANB MR16815              ; 巻き取り動作中
+ANL
+DW #0 EM31404
+CON
+JMP @MR3206
+MPP
+AND= DM5010 #4           ; _AUTO動作番号
+MPS
+AND MR9104               ; INDEX_治具-4上ﾜｰｸ全て有り
+MPS
+LD= #0 EM31404
+ANB MR9801               ; ｲﾝﾃﾞｯｸｽ　ﾌｨﾙﾑ受け台交換位置到着
+ANL
+JMP @MR3004
+MPP
+LD<> #0 EM31404
+OR MR9801                ; ｲﾝﾃﾞｯｸｽ　ﾌｨﾙﾑ受け台交換位置到着
+ANL
+JMP @MR3900
+MPP
+LDB MR9104               ; INDEX_治具-4上ﾜｰｸ全て有り
+ANB MR19700              ; 巻出し動作中
+ANB MR16815              ; 巻き取り動作中
+ANL
+DW #0 EM31404
+CON
+JMP @MR3900
+MRD
+AND= DM35000 #2          ; ｲﾝﾃﾞｯｸｽ位置ﾃﾞｰﾀ
+MPS
+AND= DM5010 #1           ; _AUTO動作番号
+MPS
+LD R7502                 ; ﾜｰｸｾｯﾄ部 ST1 圧力1
+LD MR9101                ; INDEX_治具-1上ﾜｰｸ全て有り
+OR MR10609               ; ST1ﾜｰｸ吸着 吸着ON
+ANL
+ANL
+MPS
+LD= #0 EM31404
+ANB MR9801               ; ｲﾝﾃﾞｯｸｽ　ﾌｨﾙﾑ受け台交換位置到着
+ANL
+JMP @MR3004
+MPP
+LD<> #0 EM31404
+OR MR9801                ; ｲﾝﾃﾞｯｸｽ　ﾌｨﾙﾑ受け台交換位置到着
+ANL
+JMP @MR3900
+MRD
+LDB R7502                ; ﾜｰｸｾｯﾄ部 ST1 圧力1
+LD MR9101                ; INDEX_治具-1上ﾜｰｸ全て有り
+OR MR10609               ; ST1ﾜｰｸ吸着 吸着ON
+ANL
+ANL
+JMP @MR3110
+MPP
+LDB R7502                ; ﾜｰｸｾｯﾄ部 ST1 圧力1
+ANB MR9101               ; INDEX_治具-1上ﾜｰｸ全て有り
+ANB MR10609              ; ST1ﾜｰｸ吸着 吸着ON
+ANB MR19700              ; 巻出し動作中
+ANB MR16815              ; 巻き取り動作中
+ANL
+DW #0 EM31404
+CON
+JMP @MR3206
+MPP
+AND= DM5010 #4           ; _AUTO動作番号
+MPS
+AND MR9101               ; INDEX_治具-1上ﾜｰｸ全て有り
+MPS
+LD= #0 EM31404
+ANB MR9801               ; ｲﾝﾃﾞｯｸｽ　ﾌｨﾙﾑ受け台交換位置到着
+ANL
+JMP @MR3004
+MPP
+LD<> #0 EM31404
+OR MR9801                ; ｲﾝﾃﾞｯｸｽ　ﾌｨﾙﾑ受け台交換位置到着
+ANL
+JMP @MR3900
+MPP
+LDB MR9101               ; INDEX_治具-1上ﾜｰｸ全て有り
+ANB MR19700              ; 巻出し動作中
+ANB MR16815              ; 巻き取り動作中
+ANL
+DW #0 EM31404
+CON
+JMP @MR3900
+MPP
+AND= DM35000 #3          ; ｲﾝﾃﾞｯｸｽ位置ﾃﾞｰﾀ
+MPS
+AND= DM5010 #1           ; _AUTO動作番号
+MPS
+LD R7504                 ; ﾜｰｸｾｯﾄ部 ST2 圧力1
+LD MR9102                ; INDEX_治具-2上ﾜｰｸ全て有り
+OR MR10612               ; ST2ﾜｰｸ吸着 吸着ON
+ANL
+ANL
+MPS
+LD= #0 EM31404
+ANB MR9801               ; ｲﾝﾃﾞｯｸｽ　ﾌｨﾙﾑ受け台交換位置到着
+ANL
+JMP @MR3004
+MPP
+LD<> #0 EM31404
+OR MR9801                ; ｲﾝﾃﾞｯｸｽ　ﾌｨﾙﾑ受け台交換位置到着
+ANL
+JMP @MR3900
+MRD
+LDB R7504                ; ﾜｰｸｾｯﾄ部 ST2 圧力1
+LD MR9102                ; INDEX_治具-2上ﾜｰｸ全て有り
+OR MR10612               ; ST2ﾜｰｸ吸着 吸着ON
+ANL
+ANL
+JMP @MR3110
+MPP
+LDB R7504                ; ﾜｰｸｾｯﾄ部 ST2 圧力1
+ANB MR9102               ; INDEX_治具-2上ﾜｰｸ全て有り
+ANB MR10612              ; ST2ﾜｰｸ吸着 吸着ON
+ANB MR19700              ; 巻出し動作中
+ANB MR16815              ; 巻き取り動作中
+ANL
+DW #0 EM31404
+CON
+JMP @MR3206
+MPP
+AND= DM5010 #4           ; _AUTO動作番号
+MPS
+AND MR9102               ; INDEX_治具-2上ﾜｰｸ全て有り
+MPS
+LD= #0 EM31404
+ANB MR9801               ; ｲﾝﾃﾞｯｸｽ　ﾌｨﾙﾑ受け台交換位置到着
+ANL
+JMP @MR3004
+MPP
+LD<> #0 EM31404
+OR MR9801                ; ｲﾝﾃﾞｯｸｽ　ﾌｨﾙﾑ受け台交換位置到着
+ANL
+JMP @MR3900
+MPP
+LDB MR9102               ; INDEX_治具-2上ﾜｰｸ全て有り
+ANB MR19700              ; 巻出し動作中
+ANB MR16815              ; 巻き取り動作中
+ANL
+DW #0 EM31404
+CON
+JMP @MR3900
+STG @MR3206
+MPS
+ANB MR9801               ; ｲﾝﾃﾞｯｸｽ　ﾌｨﾙﾑ受け台交換位置到着
+JMP @MR3900
+MPP
+AND MR9801               ; ｲﾝﾃﾞｯｸｽ　ﾌｨﾙﾑ受け台交換位置到着
+JMP @MR3004
+STG @MR3110
+MPS
+LD= DM35000 #0           ; ｲﾝﾃﾞｯｸｽ位置ﾃﾞｰﾀ
+ANB R39004               ; ｴﾗｰ中
+ANL
+SET R39004               ; ｴﾗｰ中
+CON
+DW #1009 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #133 @DM1             ; ErrorNo /ERROR_DISP
+CON
+DW #7506 @DM2            ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task5 ERROR
+CON
+JMP @MR3111
+MRD
+LD= DM35000 #1           ; ｲﾝﾃﾞｯｸｽ位置ﾃﾞｰﾀ
+ANB R39004               ; ｴﾗｰ中
+ANL
+SET R39004               ; ｴﾗｰ中
+CON
+DW #1009 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #134 @DM1             ; ErrorNo /ERROR_DISP
+CON
+DW #7508 @DM2            ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task5 ERROR
+CON
+JMP @MR3111
+MRD
+LD= DM35000 #2           ; ｲﾝﾃﾞｯｸｽ位置ﾃﾞｰﾀ
+ANB R39004               ; ｴﾗｰ中
+ANL
+SET R39004               ; ｴﾗｰ中
+CON
+DW #1009 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #131 @DM1             ; ErrorNo /ERROR_DISP
+CON
+DW #7502 @DM2            ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task5 ERROR
+CON
+JMP @MR3111
+MPP
+LD= DM35000 #3           ; ｲﾝﾃﾞｯｸｽ位置ﾃﾞｰﾀ
+ANB R39004               ; ｴﾗｰ中
+ANL
+SET R39004               ; ｴﾗｰ中
+CON
+DW #1009 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #132 @DM1             ; ErrorNo /ERROR_DISP
+CON
+DW #7504 @DM2            ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task5 ERROR
+CON
+JMP @MR3111
+STG @MR3111
+SET @MR1900              ; Main1 HALT許可
+CON
+AND @MR101               ; Task5 ERROR_End
+RES @MR101               ; Task5 ERROR_End
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+JMP @MR3101
+STG @MR3101
+MPS
+AND @MR105               ; SW1
+JMP @MR3908
+MPP
+AND @MR108               ; SW4
+DW #5 EM31404
+CON
+JMP @MR3900
+;ﾌｨﾙﾑ減少検出(R7302) or ﾌｨﾙﾑｴﾝﾄﾞ検出(R7303) 確認
+STG @MR3004
+MPS
+LDB LR17302              ; F巻出し部 ﾌｨﾙﾑ減少 ﾒﾓﾘｰﾌﾗｸﾞ
+ANB LR17303              ; F巻出し部 ﾌｨﾙﾑｴﾝﾄﾞ ﾒﾓﾘｰﾌﾗｸﾞ
+ANL
+DW #0 DM25500            ; ﾌｨﾙﾑ交換ｴﾗｰ出力間隔
+CON
+JMP @MR3005
+MPP
+LD LR17302               ; F巻出し部 ﾌｨﾙﾑ減少 ﾒﾓﾘｰﾌﾗｸﾞ
+OR LR17303               ; F巻出し部 ﾌｨﾙﾑｴﾝﾄﾞ ﾒﾓﾘｰﾌﾗｸﾞ
+ANB @MR3412              ; 終了動作中
+ANL
+MPS
+LDB MR6305               ; ﾌｨﾙﾑ交換待ち
+OR LR17303               ; F巻出し部 ﾌｨﾙﾑｴﾝﾄﾞ ﾒﾓﾘｰﾌﾗｸﾞ
+ANL
+JMP @MR3006
+MPP
+LD MR6305                ; ﾌｨﾙﾑ交換待ち
+ANB LR17303              ; F巻出し部 ﾌｨﾙﾑｴﾝﾄﾞ ﾒﾓﾘｰﾌﾗｸﾞ
+ANL
+MPS
+AND>= DM25500 DM7056     ; ﾌｨﾙﾑ交換ｴﾗｰ出力間隔  装置基礎ﾃﾞｰﾀ29
+JMP @MR3006
+MPP
+AND< DM25500 DM7056      ; ﾌｨﾙﾑ交換ｴﾗｰ出力間隔  装置基礎ﾃﾞｰﾀ29
+@INC DM25500             ; ﾌｨﾙﾑ交換ｴﾗｰ出力間隔
+CON
+JMP @MR3005
+STG @MR3006
+ANB R39004               ; ｴﾗｰ中
+DW #1 DM25500            ; ﾌｨﾙﾑ交換ｴﾗｰ出力間隔
+CON
+SET R39004               ; ｴﾗｰ中
+CON
+MPS
+ANB DM2000.9             ; ﾌｨﾙﾑ検出ｾﾝｻｰ選択(R7302 or R7303)
+DW #2004 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #104 @DM1             ; ErrorNo /ERROR_DISP
+CON
+DW #7302 @DM2            ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task5 ERROR
+CON
+JMP @MR3007
+MPP
+AND DM2000.9             ; ﾌｨﾙﾑ検出ｾﾝｻｰ選択(R7302 or R7303)
+DW #2000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #103 @DM1             ; ErrorNo /ERROR_DISP
+CON
+DW #7303 @DM2            ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task5 ERROR
+CON
+JMP @MR3007
+STG @MR3007
+SET @MR1900              ; Main1 HALT許可
+CON
+AND @MR101               ; Task5 ERROR_End
+RES @MR101               ; Task5 ERROR_End
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+JMP @MR3008
+STG @MR3008
+MPS
+ANB DM2000.9             ; ﾌｨﾙﾑ検出ｾﾝｻｰ選択(R7302 or R7303)
+MPS
+AND @MR105               ; SW1
+JMP @MR3009
+MPP
+AND @MR108               ; SW4
+SET MR6305               ; ﾌｨﾙﾑ交換待ち
+CON
+JMP @MR3100
+MPP
+LD DM2000.9              ; ﾌｨﾙﾑ検出ｾﾝｻｰ選択(R7302 or R7303)
+AND @MR105               ; SW1
+ANL
+JMP @MR3009
+STG @MR3009
+MPS
+ANB DM2000.9             ; ﾌｨﾙﾑ検出ｾﾝｻｰ選択(R7302 or R7303)
+MPS
+ANB R7302                ; F巻出し部 ﾌｨﾙﾑ減少検出
+JMP @MR3006
+MPP
+AND R7302                ; F巻出し部 ﾌｨﾙﾑ減少検出
+SET @MR6708              ; ﾌｨﾙﾑ交換後 捨て出し開始
+CON
+JMP @MR3010
+MPP
+AND DM2000.9             ; ﾌｨﾙﾑ検出ｾﾝｻｰ選択(R7302 or R7303)
+MPS
+LDB R7302                ; F巻出し部 ﾌｨﾙﾑ減少検出
+ORB R7303                ; F巻出し部 ﾌｨﾙﾑｴﾝﾄﾞ検出
+ANL
+JMP @MR3006
+MPP
+LD R7302                 ; F巻出し部 ﾌｨﾙﾑ減少検出
+AND R7303                ; F巻出し部 ﾌｨﾙﾑｴﾝﾄﾞ検出
+ANL
+JMP @MR3210
+STG @MR3210
+ANB R39104               ; SELECT_Y_N Interlock
+SET R39104               ; SELECT_Y_N Interlock
+CON
+DW #20 @DM21             ; ScreenNo /SELECT_Y_N
+CON
+DW #0 @DM22              ; Bz_Use /SELECT_Y_N
+CON
+SET @MR300               ; Task5 SELECT_Y_N
+CON
+SET MR24408              ; F交換完了確認 Y/N画面表示
+CON
+JMP @MR3211
+STG @MR3211
+AND @MR301               ; Task5 Y/N END
+RES @MR301               ; Task5 Y/N END
+CON
+RES MR24408              ; F交換完了確認 Y/N画面表示
+CON
+RES R39104               ; SELECT_Y_N Interlock
+CON
+MPS
+AND @MR306               ; Task5 Y/N
+SET @MR6708              ; ﾌｨﾙﾑ交換後 捨て出し開始
+CON
+JMP @MR3010
+MPP
+ANB @MR306               ; Task5 Y/N
+JMP @MR3006
+STG @MR3010
+AND @MR6715              ; ﾌｨﾙﾑ交換後 捨て出し完了
+RES MR6305               ; ﾌｨﾙﾑ交換待ち
+CON
+DW #0 DM25500            ; ﾌｨﾙﾑ交換ｴﾗｰ出力間隔
+CON
+RES LR17302              ; F巻出し部 ﾌｨﾙﾑ減少 ﾒﾓﾘｰﾌﾗｸﾞ
+CON
+RES LR17303              ; F巻出し部 ﾌｨﾙﾑｴﾝﾄﾞ ﾒﾓﾘｰﾌﾗｸﾞ
+CON
+RES @MR6715              ; ﾌｨﾙﾑ交換後 捨て出し完了
+CON
+JMP @MR3004
+;ﾌｨﾙﾑ受台状態確認
+STG @MR3005
+MPS
+ANB DM2000.2             ; ﾌｨﾙﾑ受台時間管理 有効/無効
+MPS
+LD< #0 DM27220
+OR LR102                 ; _割り込みSW3　ON/OFF状態
+ANL
+JMP @MR3607
+MPP
+LD= #0 DM27220
+ANB LR102                ; _割り込みSW3　ON/OFF状態
+ANL
+JMP @MR3011
+MPP
+AND DM2000.2             ; ﾌｨﾙﾑ受台時間管理 有効/無効
+JMP @MR3607
+STG @MR3011
+ANB R39004               ; ｴﾗｰ中
+SET R39004               ; ｴﾗｰ中
+CON
+DW #5004 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #62 @DM1              ; ErrorNo /ERROR_DISP
+CON
+DW #0 @DM2               ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task5 ERROR
+CON
+JMP @MR3012
+STG @MR3012
+SET @MR1900              ; Main1 HALT許可
+CON
+AND @MR101               ; Task5 ERROR_End
+RES @MR101               ; Task5 ERROR_End
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+JMP @MR3013
+STG @MR3013
+MPS
+AND @MR105               ; SW1
+SET LR102                ; _割り込みSW3　ON/OFF状態
+CON
+JMP @MR3607
+MPP
+AND @MR108               ; SW4
+SET MR8100               ; ﾌｨﾙﾑ受け台交換要求ﾒｯｾｰｼﾞ
+CON
+JMP @MR3607
+;ﾎﾟｯﾄﾗｲﾌ管理
+STG @MR3607
+MPS
+ANB DM2000.1             ; ﾎﾟｯﾄﾗｲﾌﾀｲﾏ 有効/無効
+MPS
+ANB LR101                ; _割り込みSW2　ON/OFF状態
+MPS
+AND= DM27200 #0
+JMP @MR3608
+MPP
+LD>= DM25212 DM7064      ; 接着剤塗布回数  装置基礎ﾃﾞｰﾀ33
+AND<> DM27200 #0
+ANL
+JMP @MR3609
+MPP
+LD> DM27200 #0
+AND< DM25212 DM7064      ; 接着剤塗布回数  装置基礎ﾃﾞｰﾀ33
+OR LR101                 ; _割り込みSW2　ON/OFF状態
+ANL
+JMP @MR3100
+MPP
+AND DM2000.1             ; ﾎﾟｯﾄﾗｲﾌﾀｲﾏ 有効/無効
+JMP @MR3100
+STG @MR3608
+SET @MR1900              ; Main1 HALT許可
+CON
+ANB R39004               ; ｴﾗｰ中
+SET R39004               ; ｴﾗｰ中
+CON
+DW #5004 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #60 @DM1              ; ErrorNo /ERROR_DISP
+CON
+DW #0 @DM2               ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task5 ERROR
+CON
+JMP @MR3610
+STG @MR3609
+ANB R39004               ; ｴﾗｰ中
+SET R39004               ; ｴﾗｰ中
+CON
+DW #5004 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #61 @DM1              ; ErrorNo /ERROR_DISP
+CON
+DW #0 @DM2               ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task5 ERROR
+CON
+JMP @MR3610
+STG @MR3610
+SET @MR1900              ; Main1 HALT許可
+CON
+AND @MR101               ; Task5 ERROR_End
+RES @MR101               ; Task5 ERROR_End
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+JMP @MR3611
+STG @MR3611
+MPS
+AND @MR105               ; SW1
+SET LR102                ; _割り込みSW3　ON/OFF状態
+CON
+SET LR101                ; _割り込みSW2　ON/OFF状態
+CON
+JMP @MR3100
+MPP
+AND @MR108               ; SW4
+SET MR8014               ; 接着剤交換要求ﾒｯｾｰｼﾞ
+CON
+JMP @MR3100
+;ﾌｨﾙﾑ受け台交換/清掃動作
+STG @MR3100
+RES MR24702              ; ﾌｨﾙﾑ受け台交換後ﾘｾｯﾄSW
+CON
+MPS
+AND LR102                ; _割り込みSW3　ON/OFF状態
+MPS
+LDB MR9801               ; ｲﾝﾃﾞｯｸｽ　ﾌｨﾙﾑ受け台交換位置到着
+ANB @MR3412              ; 終了動作中
+ANB @MR3300              ; ﾌｨﾙﾑ受け交換動作
+ANB @MR3305
+ANL
+JMP @MR3207
+MPP
+LD MR9801                ; ｲﾝﾃﾞｯｸｽ　ﾌｨﾙﾑ受け台交換位置到着
+ANB @MR3207
+ANB @MR3305
+ANL
+JMP @MR3300              ; ﾌｨﾙﾑ受け交換動作
+MPP
+LDB LR102                ; _割り込みSW3　ON/OFF状態
+ANB @MR3207
+ANB @MR3300              ; ﾌｨﾙﾑ受け交換動作
+ANL
+MPS
+AND LR101                ; _割り込みSW2　ON/OFF状態
+SET MR9804               ; 割込SW2(LR101) Memory Flag 
+CON
+JMP @MR3305
+MPP
+ANB LR101                ; _割り込みSW2　ON/OFF状態
+RES MR9804               ; 割込SW2(LR101) Memory Flag 
+CON
+JMP @MR3305
+STG @MR3207
+SET MR9801               ; ｲﾝﾃﾞｯｸｽ　ﾌｨﾙﾑ受け台交換位置到着
+CON
+JMP @MR3900
+STG @MR3300              ; ﾌｨﾙﾑ受け交換動作
+SET @MR3301              ; ﾌｨﾙﾑ受け交換動作開始
+CON
+JMP @MR3303
+STG @MR3303
+AND @MR3302              ; ﾌｨﾙﾑ受け交換動作完了
+RES LR102                ; _割り込みSW3　ON/OFF状態
+CON
+RES @MR3302              ; ﾌｨﾙﾑ受け交換動作完了
+CON
+SET MR24702              ; ﾌｨﾙﾑ受け台交換後ﾘｾｯﾄSW
+CON
+JMP @MR3307
+STG @MR3307
+TMR @1 #10
+CON
+AND @T1
+RES MR9801               ; ｲﾝﾃﾞｯｸｽ　ﾌｨﾙﾑ受け台交換位置到着
+CON
+RES MR24702              ; ﾌｨﾙﾑ受け台交換後ﾘｾｯﾄSW
+CON
+JMP @MR3900
+STG @MR3305
+SET MR6602               ; 接着剤転写UT ｻｲｸﾙﾀｲﾑ計測用
+CON
+SET @MR4600              ; ﾌｨﾙﾑ受け動作ｻﾌﾞﾙｰﾁﾝ
+CON
+JMP @MR3313
+STG @MR3313
+MPS
+ANB LR10002              ; ﾜｰｸｾｯﾄｼﾞｸﾞ 90度回転使用/未使用
+JMP @MR3306
+MPP
+AND LR10002              ; ﾜｰｸｾｯﾄｼﾞｸﾞ 90度回転使用/未使用
+JMP @MR3314
+STG @MR3314
+SET MR11304              ; ﾌｨﾙﾑ巻取り ﾛｰﾗ上下 上昇
+CON
+MPS
+LDB MR8110               ; ﾌｨﾙﾑ巻取り ﾛｰﾗ上下奥側 上限ｴﾗｰ
+ANB MR8112               ; ﾌｨﾙﾑ巻取り ﾛｰﾗ上下手前側 上限ｴﾗｰ
+AND R8110                ; ﾌｨﾙﾑ巻取り ﾛｰﾗ上下奥側 上限
+ANB R8111                ; ﾌｨﾙﾑ巻取り ﾛｰﾗ上下奥側 下限
+AND R8112                ; ﾌｨﾙﾑ巻取り ﾛｰﾗ上下手前側 上限
+ANB R8113                ; ﾌｨﾙﾑ巻取り ﾛｰﾗ上手前側 下限
+ANL
+JMP @MR3306
+MPP
+LD MR8110                ; ﾌｨﾙﾑ巻取り ﾛｰﾗ上下奥側 上限ｴﾗｰ
+OR MR8112                ; ﾌｨﾙﾑ巻取り ﾛｰﾗ上下手前側 上限ｴﾗｰ
+AND R41200               ; TASK0 PAUSE 
+ANL
+SET @MR1900              ; Main1 HALT許可
+STG @MR3306
+AND @MR4601              ; ﾌｨﾙﾑ受け動作ｻﾌﾞﾙｰﾁﾝ動作完了
+RES @MR4601              ; ﾌｨﾙﾑ受け動作ｻﾌﾞﾙｰﾁﾝ動作完了
+CON
+JMP @MR3102
+;転写前位置移動
+STG @MR3102
+ANB @MR3412              ; 終了動作中
+SET @MR6000              ; 剥離位置→待機位置移（同期送り）
+CON
+JMP @MR3103
+STG @MR3103
+MPS
+AND @MR6001              ; 剥離位置→待機位置移中
+RES @MR6001              ; 剥離位置→待機位置移中
+CON
+ANB MR6013               ; DRV-2 反転
+JMP @MR3304
+MPP
+ANB R7411                ; F巻取り部 ﾀﾞﾝｻﾛｰﾗ位置 上OT
+JMP @MR3202
+STG @MR3202
+SET MR6013               ; DRV-2 反転
+CON
+AND R7411                ; F巻取り部 ﾀﾞﾝｻﾛｰﾗ位置 上OT
+TMR @3 #10
+CON
+AND @T3
+JMP @MR3203
+STG @MR3203
+RES MR6013               ; DRV-2 反転
+CON
+JMP @MR3103
+;接着剤交換動作
+STG @MR3304
+MPS
+LD MR9804                ; 割込SW2(LR101) Memory Flag 
+ANB @MR3412              ; 終了動作中
+ANB @MR3104
+ANL
+JMP @MR3308              ; 接着剤交換動作
+MPP
+LDB MR9804               ; 割込SW2(LR101) Memory Flag 
+ANB MR002                ; ｲﾝﾃﾞｯｸｽ回転中
+AND R5307                ; INDEX 起動入力待ち
+ANB @MR3308              ; 接着剤交換動作
+ANL
+TMR @6 #10
+CON
+AND @T6
+JMP @MR3104
+STG @MR3308              ; 接着剤交換動作
+SET @MR3309              ; 接着剤交換動作開始
+CON
+SET MR9805               ; 接着剤交換中
+CON
+JMP @MR3311
+STG @MR3311
+AND @MR3310              ; 接着剤交換動作完了
+RES MR9804               ; 割込SW2(LR101) Memory Flag 
+CON
+RES LR101                ; _割り込みSW2　ON/OFF状態
+CON
+RES @MR3310              ; 接着剤交換動作完了
+CON
+JMP @MR3312
+STG @MR3312
+TMR @2 #10
+CON
+AND @T2
+RES MR9805               ; 接着剤交換中
+CON
+JMP @MR800
+STG @MR800
+SET @MR5500              ; 接着剤転写部 原点復帰要求
+CON
+JMP @MR801
+STG @MR801
+AND @MR5501              ; 接着剤転写部 原点復帰完了
+RES @MR5501              ; 接着剤転写部 原点復帰完了
+CON
+JMP @MR802
+STG @MR802
+RES MR11210              ; ｽﾌﾟﾘﾝｸﾞ　上昇
+CON
+SET MR11214              ; 巻き出しﾌｨﾙﾑ押え 上昇
+CON
+SET MR6008               ; DRV-1 正転
+CON
+ANB R7305                ; F巻出し部 巻出しF押え 下限
+AND R7304                ; F巻出し部 巻出しF押え 上限
+JMP @MR803
+STG @MR803
+AND R7314                ; F巻出し部 ﾀﾞﾝｻﾛｰﾗ位置 下側
+RES MR6008               ; DRV-1 正転
+CON
+RES MR11214              ; 巻き出しﾌｨﾙﾑ押え 上昇
+CON
+JMP @MR3102
+;ｽｷｰｼﾞ台上昇
+STG @MR3104
+SET MR11206              ; ｽｷｰｼﾞ台 上昇
+CON
+MPS
+LDB MR7400               ; ｽｷｰｼﾞ台部 ｽｷｰｼﾞ台 上限ｴﾗｰ
+AND R7400                ; ｽｷｰｼﾞ台部 ｽｷｰｼﾞ台 上限
+ANB R7401                ; ｽｷｰｼﾞ台部 ｽｷｰｼﾞ台 下限
+ANL
+JMP @MR3105
+MPP
+LD MR7400                ; ｽｷｰｼﾞ台部 ｽｷｰｼﾞ台 上限ｴﾗｰ
+AND R41205               ; TASK5 PAUSE 
+ANL
+SET @MR1900              ; Main1 HALT許可
+STG @MR3105
+SET MR15400              ; ｽｷｰｼﾞ台下流側 吸着確認開始
+CON
+SET MR15408              ; ｽｷｰｼﾞ台上流側 吸着確認開始
+CON
+JMP @MR3106
+STG @MR3106
+MPS
+LD MR15401               ; ｽｷｰｼﾞ台下流側 吸着確認-ON
+AND MR15409              ; ｽｷｰｼﾞ台上流側 吸着確認完了
+ANL
+ZRES MR15400 MR15415     ; ｽｷｰｼﾞ台下流側 吸着確認開始
+CON
+JMP @MR3109
+MRD
+AND MR15402              ; ｽｷｰｼﾞ台下流側 吸着確認-OFF
+DW #7402 @DM2            ; SensorNo /ERROR_DISP
+CON
+JMP @MR3107
+MPP
+AND MR15411              ; ｽｷｰｼﾞ台上流側 吸着NG
+DW #7404 @DM2            ; SensorNo /ERROR_DISP
+CON
+JMP @MR3107
+STG @MR3107
+ANB R39004               ; ｴﾗｰ中
+SET R39004               ; ｴﾗｰ中
+CON
+DW #1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #45 @DM1              ; ErrorNo /ERROR_DISP
+CON
+SET @MR100               ; Task5 ERROR
+CON
+JMP @MR3108
+STG @MR3108
+SET @MR1900              ; Main1 HALT許可
+CON
+AND @MR101               ; Task5 ERROR_End
+RES @MR101               ; Task5 ERROR_End
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+JMP @MR3014
+STG @MR3014
+AND @MR105               ; SW1
+ZRES MR15400 MR15415     ; ｽｷｰｼﾞ台下流側 吸着確認開始
+CON
+JMP @MR3105
+STG @MR3112
+SET MR11206              ; ｽｷｰｼﾞ台 上昇
+CON
+MPS
+LDB MR7400               ; ｽｷｰｼﾞ台部 ｽｷｰｼﾞ台 上限ｴﾗｰ
+AND R7400                ; ｽｷｰｼﾞ台部 ｽｷｰｼﾞ台 上限
+ANB R7401                ; ｽｷｰｼﾞ台部 ｽｷｰｼﾞ台 下限
+ANL
+JMP @MR3113
+MPP
+LD MR7400                ; ｽｷｰｼﾞ台部 ｽｷｰｼﾞ台 上限ｴﾗｰ
+AND R41205               ; TASK5 PAUSE 
+ANL
+SET @MR1900              ; Main1 HALT許可
+STG @MR3113
+SET MR15400              ; ｽｷｰｼﾞ台下流側 吸着確認開始
+CON
+SET MR15408              ; ｽｷｰｼﾞ台上流側 吸着確認開始
+CON
+JMP @MR3114
+STG @MR3114
+MPS
+LD MR15401               ; ｽｷｰｼﾞ台下流側 吸着確認-ON
+AND MR15409              ; ｽｷｰｼﾞ台上流側 吸着確認完了
+ANL
+ZRES MR15400 MR15415     ; ｽｷｰｼﾞ台下流側 吸着確認開始
+CON
+JMP @MR3109
+MRD
+AND MR15402              ; ｽｷｰｼﾞ台下流側 吸着確認-OFF
+DW #7402 @DM2            ; SensorNo /ERROR_DISP
+CON
+JMP @MR3115
+MPP
+AND MR15411              ; ｽｷｰｼﾞ台上流側 吸着NG
+DW #7404 @DM2            ; SensorNo /ERROR_DISP
+CON
+JMP @MR3115
+STG @MR3115
+ANB R39004               ; ｴﾗｰ中
+SET R39004               ; ｴﾗｰ中
+CON
+DW #1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #45 @DM1              ; ErrorNo /ERROR_DISP
+CON
+SET @MR100               ; Task5 ERROR
+CON
+JMP @MR3204
+STG @MR3204
+SET @MR1900              ; Main1 HALT許可
+CON
+AND @MR101               ; Task5 ERROR_End
+RES @MR101               ; Task5 ERROR_End
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+JMP @MR3205
+STG @MR3205
+AND @MR105               ; SW1
+ZRES MR15400 MR15415     ; ｽｷｰｼﾞ台下流側 吸着確認開始
+CON
+JMP @MR3113
+STG @MR3109
+MPS
+AND R41205               ; TASK5 PAUSE 
+SET @MR1900              ; Main1 HALT許可
+MPP
+LDB R41205               ; TASK5 PAUSE 
+ANB LR103                ; _割り込みSW4　ON/OFF状態
+ANL
+JMP @MR3200
+STG @MR3200
+SET @MR4900              ; 塗布開始
+CON
+SET MR6603               ; 接着剤塗布 ｻｲｸﾙﾀｲﾑ計測用
+CON
+JMP @MR3201
+STG @MR3201
+AND @MR4901              ; 接着剤塗布部動作完了
+@INC DM25212             ; 接着剤塗布回数
+CON
+RES MR6603               ; 接着剤塗布 ｻｲｸﾙﾀｲﾑ計測用
+CON
+RES @MR4901              ; 接着剤塗布部動作完了
+CON
+JMP @MR3208
+STG @MR3208
+MPS
+ANB MR24510              ; 再 接着剤塗布動作
+SET @MR5300              ; ｽｷｰｼﾞ動作ｻﾌﾞﾙｰﾁﾝ
+CON
+SET MR6604               ; ｽｷｰｼﾞ ｻｲｸﾙﾀｲﾑ計測用
+CON
+RES MR24510              ; 再 接着剤塗布動作
+CON
+JMP @MR3209
+MPP
+AND MR24510              ; 再 接着剤塗布動作
+RES MR24510              ; 再 接着剤塗布動作
+CON
+JMP @MR3112
+STG @MR3209
+AND @MR5301              ; ｽｷｰｼﾞ動作完了
+RES MR6604               ; ｽｷｰｼﾞ ｻｲｸﾙﾀｲﾑ計測用
+CON
+RES @MR5301              ; ｽｷｰｼﾞ動作完了
+CON
+JMP @MR3400
+STG @MR3400
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR3402
+STG @MR3402
+MPS
+ANB MR24512              ; 接着剤交換より
+MPS
+ANB MR24510              ; 再 接着剤塗布動作
+MPS
+ANB MR24511              ; 再 ｽｷｰｼﾞ動作
+SET MR6605               ; 接着剤転写 ｻｲｸﾙﾀｲﾑ計測
+CON
+SET MR19708              ; ｸﾞﾛｰﾊﾞﾙｳｨﾝﾄﾞOFF
+CON
+SET @MR6100              ; 弛み付け開始分ﾌｨﾙﾑ送り開始
+CON
+JMP @MR3404
+MPP
+LD MR24511               ; 再 ｽｷｰｼﾞ動作
+AND R7401                ; ｽｷｰｼﾞ台部 ｽｷｰｼﾞ台 下限
+ANB @MR5308              ; ｽｷｰｼﾞ完了動作中
+ANL
+RES MR24511              ; 再 ｽｷｰｼﾞ動作
+CON
+RES MR24512              ; 接着剤交換より
+CON
+JMP @MR3508
+MPP
+LD MR24510               ; 再 接着剤塗布動作
+ANB @MR5308              ; ｽｷｰｼﾞ完了動作中
+ANL
+RES MR24511              ; 再 ｽｷｰｼﾞ動作
+CON
+RES MR24510              ; 再 接着剤塗布動作
+CON
+RES MR24512              ; 接着剤交換より
+CON
+JMP @MR3104
+MPP
+LD MR24512               ; 接着剤交換より
+ANB @MR5308              ; ｽｷｰｼﾞ完了動作中
+ANL
+RES MR24511              ; 再 ｽｷｰｼﾞ動作
+CON
+RES MR24510              ; 再 接着剤塗布動作
+CON
+RES MR24512              ; 接着剤交換より
+CON
+JMP @MR3505
+STG @MR3505
+SET @MR3309              ; 接着剤交換動作開始
+CON
+SET MR9805               ; 接着剤交換中
+CON
+JMP @MR3506
+STG @MR3506
+AND @MR3310              ; 接着剤交換動作完了
+RES LR101                ; _割り込みSW2　ON/OFF状態
+CON
+RES @MR3310              ; 接着剤交換動作完了
+CON
+JMP @MR3507
+STG @MR3507
+TMR @4 #10
+CON
+AND @T4
+MPS
+ANB MR24513              ; ﾌｨﾙﾑ送り動作
+RES MR9805               ; 接着剤交換中
+CON
+JMP @MR3104
+MPP
+AND MR24513              ; ﾌｨﾙﾑ送り動作
+RES MR9805               ; 接着剤交換中
+CON
+JMP @MR3700
+STG @MR3700
+SET @MR5500              ; 接着剤転写部 原点復帰要求
+CON
+JMP @MR701
+STG @MR701
+AND @MR5501              ; 接着剤転写部 原点復帰完了
+RES @MR5501              ; 接着剤転写部 原点復帰完了
+CON
+JMP @MR702
+STG @MR702
+RES MR11210              ; ｽﾌﾟﾘﾝｸﾞ　上昇
+CON
+SET MR11214              ; 巻き出しﾌｨﾙﾑ押え 上昇
+CON
+SET MR6008               ; DRV-1 正転
+CON
+ANB R7305                ; F巻出し部 巻出しF押え 下限
+AND R7304                ; F巻出し部 巻出しF押え 上限
+JMP @MR703
+STG @MR703
+AND R7314                ; F巻出し部 ﾀﾞﾝｻﾛｰﾗ位置 下側
+RES MR6008               ; DRV-1 正転
+CON
+RES MR11214              ; 巻き出しﾌｨﾙﾑ押え 上昇
+CON
+SET @MR6300              ; ﾌｨﾙﾑ捨出し動作開始
+CON
+JMP @MR3701
+STG @MR3701
+AND @MR6301              ; ﾌｨﾙﾑ捨出し動作完了
+RES MR24513              ; ﾌｨﾙﾑ送り動作
+CON
+RES MR6302               ; ﾌｨﾙﾑ捨て出し動作中
+CON
+RES @MR6301              ; ﾌｨﾙﾑ捨出し動作完了
+CON
+JMP @MR3702
+STG @MR3702
+SET MR16005              ; 強制　巻きだしﾓｰﾀ動作ON
+CON
+SET MR16105              ; 強制　巻き取りﾓｰﾀ動作ON
+CON
+JMP @MR3703
+STG @MR3703
+ANB MR19700              ; 巻出し動作中
+ANB MR16815              ; 巻き取り動作中
+JMP @MR3100
+STG @MR3508
+SET MR11206              ; ｽｷｰｼﾞ台 上昇
+CON
+MPS
+LDB MR7400               ; ｽｷｰｼﾞ台部 ｽｷｰｼﾞ台 上限ｴﾗｰ
+AND R7400                ; ｽｷｰｼﾞ台部 ｽｷｰｼﾞ台 上限
+ANB R7401                ; ｽｷｰｼﾞ台部 ｽｷｰｼﾞ台 下限
+ANL
+JMP @MR3509
+MPP
+LD MR7400                ; ｽｷｰｼﾞ台部 ｽｷｰｼﾞ台 上限ｴﾗｰ
+AND R41205               ; TASK5 PAUSE 
+ANL
+SET @MR1900              ; Main1 HALT許可
+STG @MR3509
+SET MR15400              ; ｽｷｰｼﾞ台下流側 吸着確認開始
+CON
+SET MR15408              ; ｽｷｰｼﾞ台上流側 吸着確認開始
+CON
+JMP @MR3510
+STG @MR3510
+MPS
+LD MR15401               ; ｽｷｰｼﾞ台下流側 吸着確認-ON
+AND MR15409              ; ｽｷｰｼﾞ台上流側 吸着確認完了
+ANL
+ZRES MR15400 MR15415     ; ｽｷｰｼﾞ台下流側 吸着確認開始
+CON
+JMP @MR3514
+MRD
+AND MR15402              ; ｽｷｰｼﾞ台下流側 吸着確認-OFF
+DW #7402 @DM2            ; SensorNo /ERROR_DISP
+CON
+JMP @MR3511
+MPP
+AND MR15411              ; ｽｷｰｼﾞ台上流側 吸着NG
+DW #7404 @DM2            ; SensorNo /ERROR_DISP
+CON
+JMP @MR3511
+STG @MR3511
+ANB R39004               ; ｴﾗｰ中
+SET R39004               ; ｴﾗｰ中
+CON
+DW #1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #45 @DM1              ; ErrorNo /ERROR_DISP
+CON
+SET @MR100               ; Task5 ERROR
+CON
+JMP @MR3512
+STG @MR3512
+SET @MR1900              ; Main1 HALT許可
+CON
+AND @MR101               ; Task5 ERROR_End
+RES @MR101               ; Task5 ERROR_End
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+JMP @MR3513
+STG @MR3513
+AND @MR105               ; SW1
+ZRES MR15400 MR15415     ; ｽｷｰｼﾞ台下流側 吸着確認開始
+CON
+JMP @MR3509
+STG @MR3514
+MPS
+AND R41205               ; TASK5 PAUSE 
+SET @MR1900              ; Main1 HALT許可
+MPP
+ANB R41205               ; TASK5 PAUSE 
+JMP @MR3208
+STG @MR3404
+AND @MR6101              ; 弛み付け開始分ﾌｨﾙﾑ送り動作完了
+MPS
+ANB @MR915               ; 転写動作ﾘｽﾀｰﾄ
+RES MR19708              ; ｸﾞﾛｰﾊﾞﾙｳｨﾝﾄﾞOFF
+CON
+RES @MR6101              ; 弛み付け開始分ﾌｨﾙﾑ送り動作完了
+CON
+JMP @MR3405
+MPP
+AND @MR915               ; 転写動作ﾘｽﾀｰﾄ
+RES @MR915               ; 転写動作ﾘｽﾀｰﾄ
+CON
+RES @MR6101              ; 弛み付け開始分ﾌｨﾙﾑ送り動作完了
+CON
+JMP @MR3102
+STG @MR3405
+SET MR16005              ; 強制　巻きだしﾓｰﾀ動作ON
+CON
+SET MR16105              ; 強制　巻き取りﾓｰﾀ動作ON
+CON
+SET @MR6200              ; 弛み付けﾌｨﾙﾑ送り開始
+CON
+JMP @MR3406
+STG @MR3406
+DW #5 EM31404
+CON
+AND @MR6201              ; 弛み付けﾌｨﾙﾑ送り動作完了
+RES @MR6201              ; 弛み付けﾌｨﾙﾑ送り動作完了
+CON
+RES LR12500              ; 転写UNIT ﾜｰｸ救済可
+CON
+JMP @MR3407
+STG @MR3407
+SET @MR5700              ; 転写動作開始
+CON
+JMP @MR3408
+STG @MR3408
+AND @MR5701              ; 転写動作完了
+RES @MR5701              ; 転写動作完了
+CON
+JMP @MR3409
+STG @MR3409
+SET @MR5800              ; はぎ取り動作開始
+CON
+JMP @MR3410
+STG @MR3410
+AND @MR5801              ; はぎ取り動作完了
+DW #10 EM31404
+CON
+RES MR6605               ; 接着剤転写 ｻｲｸﾙﾀｲﾑ計測
+CON
+JMP @MR3411
+STG @MR3411
+RES MR6605               ; 接着剤転写 ｻｲｸﾙﾀｲﾑ計測
+CON
+RES @MR5801              ; はぎ取り動作完了
+CON
+SET @MR4700              ; ﾌｨﾙﾑ受け終了動作ｻﾌﾞﾙｰﾁﾝ
+CON
+SET @MR3414
+CON
+JMP @MR3601
+STG @MR3601
+MPS
+ANB LR10002              ; ﾜｰｸｾｯﾄｼﾞｸﾞ 90度回転使用/未使用
+JMP @MR3602
+MPP
+AND LR10002              ; ﾜｰｸｾｯﾄｼﾞｸﾞ 90度回転使用/未使用
+JMP @MR3603
+STG @MR3603
+RES MR11304              ; ﾌｨﾙﾑ巻取り ﾛｰﾗ上下 上昇
+CON
+MPS
+LDB MR8111               ; ﾌｨﾙﾑ巻取り ﾛｰﾗ上下奥側下限ｴﾗｰ
+ANB MR8113               ; ﾌｨﾙﾑ巻取り ﾛｰﾗ上手前側 下限ｴﾗｰ
+AND R8111                ; ﾌｨﾙﾑ巻取り ﾛｰﾗ上下奥側 下限
+ANB R8110                ; ﾌｨﾙﾑ巻取り ﾛｰﾗ上下奥側 上限
+AND R8113                ; ﾌｨﾙﾑ巻取り ﾛｰﾗ上手前側 下限
+ANB R8112                ; ﾌｨﾙﾑ巻取り ﾛｰﾗ上下手前側 上限
+ANL
+JMP @MR3602
+MPP
+LD MR8111                ; ﾌｨﾙﾑ巻取り ﾛｰﾗ上下奥側下限ｴﾗｰ
+OR MR8113                ; ﾌｨﾙﾑ巻取り ﾛｰﾗ上手前側 下限ｴﾗｰ
+AND R41200               ; TASK0 PAUSE 
+ANL
+SET @MR1900              ; Main1 HALT許可
+STG @MR3602
+AND @MR4701              ; ﾌｨﾙﾑ受け終了動作終了
+RES MR6602               ; 接着剤転写UT ｻｲｸﾙﾀｲﾑ計測用
+CON
+RES @MR4701              ; ﾌｨﾙﾑ受け終了動作終了
+CON
+JMP @MR3900
+STG @MR3414
+SET @MR3412              ; 終了動作中
+CON
+SET @MR6300              ; ﾌｨﾙﾑ捨出し動作開始
+CON
+JMP @MR3415
+STG @MR3415
+AND @MR6301              ; ﾌｨﾙﾑ捨出し動作完了
+RES MR6302               ; ﾌｨﾙﾑ捨て出し動作中
+CON
+RES @MR6301              ; ﾌｨﾙﾑ捨出し動作完了
+CON
+JMP @MR3500
+STG @MR3500
+SET MR16005              ; 強制　巻きだしﾓｰﾀ動作ON
+CON
+SET MR16105              ; 強制　巻き取りﾓｰﾀ動作ON
+CON
+JMP @MR3600
+STG @MR3600
+ANB MR19700              ; 巻出し動作中
+ANB MR16815              ; 巻き取り動作中
+RES @MR3412              ; 終了動作中
+CON
+ENDS
+;Auto終了処理
+STG @MR3900
+ANB @MR002               ; TASK3 ERROR
+MPS
+LDB R41205               ; TASK5 PAUSE 
+LDB MR6302               ; ﾌｨﾙﾑ捨て出し動作中
+OR CR2002                ; 常時ON
+ANL
+ANL
+SET MR24903              ; 3ST　動作完了
+CON
+AND MR24903              ; 3ST　動作完了
+JMP @MR3000              ; AUTO Main1
+MPP
+AND R41205               ; TASK5 PAUSE 
+SET @MR1900              ; Main1 HALT許可
+STG @MR3915              ; AUTO END
+RES MR16004              ; 巻だしﾀﾞﾝｻﾛｰﾗ動作ON
+CON
+RES MR16104              ; 巻取りﾀﾞﾝｻﾛｰﾗ動作ON
+CON
+JMP LR605                ; _Grp1_Task5_Fin.STG
+;<h1/>Maintenance
+;[本STG内容]
+;・各TaskのMAINTE動作を記述して下さい
+;・動作ﾓｰﾄﾞは「MAINTEAC*」に格納されています(1～32)
+;・動作終了時は@MR2915にJMPして下さい
+STG LR5605               ; _Grp1_Task5_MAINTE.STG
+MPS
+ANB MR8400               ; 装置原点復帰待ち
+SET MR16004              ; 巻だしﾀﾞﾝｻﾛｰﾗ動作ON
+CON
+SET MR16104              ; 巻取りﾀﾞﾝｻﾛｰﾗ動作ON
+CON
+JMP @MR2000              ; Mainte
+MPP
+AND MR8400               ; 装置原点復帰待ち
+JMP @MR2000              ; Mainte
+STG @MR2000              ; Mainte
+SET MR23914              ; ﾒﾝﾃﾅﾝｽ中
+CON
+JMP @MR2100
+STG @MR2100
+LD> #2000 DM3000         ; _MainTP　表示中ﾍﾟｰｼﾞNo
+OR> DM3000 #2118         ; _MainTP　表示中ﾍﾟｰｼﾞNo
+LD<= #2000 DM3000        ; _MainTP　表示中ﾍﾟｰｼﾞNo
+AND<= DM3000 #2118       ; _MainTP　表示中ﾍﾟｰｼﾞNo
+ORL
+ANL
+MPS
+AND R41205               ; TASK5 PAUSE 
+SET @MR1900              ; Main1 HALT許可
+MRD
+ANB R41205               ; TASK5 PAUSE 
+MPS
+AND= DM4110 #1           ; _Group1　ﾒﾝﾃ動作番号
+JMP @MR2600              ; STEP　接着剤塗布動作開始
+MRD
+AND= DM4110 #2           ; _Group1　ﾒﾝﾃ動作番号
+JMP @MR2500              ; STEP　ｽｷｰｼﾞ動作開始
+MRD
+AND= DM4110 #3           ; _Group1　ﾒﾝﾃ動作番号
+JMP @MR2200              ; STEP　転写動作開始
+MRD
+AND= DM4110 #4           ; _Group1　ﾒﾝﾃ動作番号
+JMP @MR2408              ; STEP 接着剤交換位置動作
+MRD
+AND= DM4110 #5           ; _Group1　ﾒﾝﾃ動作番号
+JMP @MR2500              ; STEP　ｽｷｰｼﾞ動作開始
+MRD
+AND= DM4110 #6           ; _Group1　ﾒﾝﾃ動作番号
+JMP @MR2800              ; STEP　転写ﾍｯﾄﾞ戻し動作開始
+MRD
+AND= DM4110 #13          ; _Group1　ﾒﾝﾃ動作番号
+JMP @MR2700              ; STEP　ﾌｨﾙﾑ受台ｾｯﾄ開始
+MRD
+AND= DM4110 #14          ; _Group1　ﾒﾝﾃ動作番号
+JMP @MR2708              ; STEP　ﾌｨﾙﾑ受台外し開始
+MRD
+AND= DM4110 #17          ; _Group1　ﾒﾝﾃ動作番号
+JMP @MR2808              ; 巻出しﾀﾞﾝｻﾛｰﾗ動作
+MRD
+AND= DM4110 #18          ; _Group1　ﾒﾝﾃ動作番号
+JMP @MR2908              ; 巻取りﾀﾞﾝｻﾛｰﾗ動作
+MRD
+LD= DM4110 #25           ; _Group1　ﾒﾝﾃ動作番号
+AND R45015               ; 単動終了
+ANL
+JMP @MR2915              ; Mainte END
+MRD
+LD= DM4110 #26           ; _Group1　ﾒﾝﾃ動作番号
+AND R44914               ; *Group3　ｴﾘｱｾﾝｻ継続実行SW2ﾗﾝﾌﾟ
+ANL
+JMP @MR2915              ; Mainte END
+MRD
+AND= DM4110 #27          ; _Group1　ﾒﾝﾃ動作番号
+SET MR16800              ; ｻﾝﾌﾟﾙ取り 接着剤手動塗布
+CON
+JMP @MR6400              ; ｽｷｰｼﾞｻﾝﾌﾟﾙ動作
+MRD
+AND= DM4110 #28          ; _Group1　ﾒﾝﾃ動作番号
+JMP @MR6400              ; ｽｷｰｼﾞｻﾝﾌﾟﾙ動作
+MRD
+AND= DM4110 #19          ; _Group1　ﾒﾝﾃ動作番号
+JMP @MR6608              ; ﾌｨﾙﾑ送り（巻取り）　大　小
+MPP
+AND= DM4110 #20          ; _Group1　ﾒﾝﾃ動作番号
+JMP @MR6608              ; ﾌｨﾙﾑ送り（巻取り）　大　小
+MPP
+AND R47800               ; _Group1　ﾒﾝﾃ動作定停止移行中
+JMP @MR2110
+;ﾒﾝﾃﾅﾝｽ
+;No.3 転写動作
+LD CR2002                ; 常時ON
+AND MR001                ; ｲﾝﾃﾞｯｸｽ原点復帰完了
+ANB R7513                ; ﾌｨﾙﾑ受け部  Fﾊﾝﾄﾞ 閉限
+AND R7512                ; ﾌｨﾙﾑ受け部  Fﾊﾝﾄﾞ 開限
+ANB R7515                ; ﾌｨﾙﾑ受け部  F受け 上限
+AND R7514                ; ﾌｨﾙﾑ受け部  F受け 下限
+ANB R7600                ; 接着剤塗布部 ﾕﾆｯﾄ 下限
+AND R7601                ; 接着剤塗布部 ﾕﾆｯﾄ 上限
+ANB R7602                ; 接着剤塗布部 ﾍｯﾄﾞ 前限
+AND R7603                ; 接着剤塗布部 ﾍｯﾄﾞ 後限
+LD= DM11064 #1           ; RB2 現在ﾎﾟｼﾞｼｮﾝ番号
+OR= DM11064 #0           ; RB2 現在ﾎﾟｼﾞｼｮﾝ番号
+ANL
+AND R7409                ; ｽｷｰｼﾞ部 ｽｸﾚｰﾊﾟｰ（大） 上限
+ANB R7408                ; ｽｷｰｼﾞ部 ｽｸﾚｰﾊﾟｰ（大） 下限
+AND R7407                ; ｽｷｰｼﾞ部 ｽｸﾚｰﾊﾟｰ（小） 上限
+ANB R7406                ; ｽｷｰｼﾞ部 ｽｸﾚｰﾊﾟｰ（小） 下限
+LD= DM11044 #1           ; RB1 現在ﾎﾟｼﾞｼｮﾝ番号
+OR= DM11044 #0           ; RB1 現在ﾎﾟｼﾞｼｮﾝ番号
+ANL
+OUT @MR1008              ; 転写STEP可能条件
+STG @MR2200              ; STEP　転写動作開始
+SET @MR5105              ; ﾒﾝﾃﾅﾝｽﾓｰﾄﾞ時 ﾌｨﾙﾑ確認
+CON
+JMP @MR2201
+STG @MR2201
+AND @MR5115              ; ﾒﾝﾃﾅﾝｽﾓｰﾄﾞ時 ﾌｨﾙﾑ確認終了
+RES @MR5115              ; ﾒﾝﾃﾅﾝｽﾓｰﾄﾞ時 ﾌｨﾙﾑ確認終了
+CON
+MPS
+LD MR8500                ; ﾌｨﾙﾑ確認 OK
+OR MR8501                ; ﾒﾝﾃﾅﾝｽ動作継続
+ANL
+JMP @MR2202
+MPP
+LDB MR8500               ; ﾌｨﾙﾑ確認 OK
+ANB MR8501               ; ﾒﾝﾃﾅﾝｽ動作継続
+ANL
+JMP @MR2110
+STG @MR2202
+RES MR8500               ; ﾌｨﾙﾑ確認 OK
+CON
+RES MR8501               ; ﾒﾝﾃﾅﾝｽ動作継続
+CON
+MPS
+AND @MR1008              ; 転写STEP可能条件
+JMP @MR2203
+MPP
+ANB @MR1008              ; 転写STEP可能条件
+JMP @MR2307
+STG @MR2203
+MPS
+MSTRT SELECT_POST #1 #5 #0 @MR2204
+MPP
+AND @MR2204
+JMP @MR2205
+STG @MR2205
+MPS
+ANB R003                 ; ｽﾄｯﾌﾟSW
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+RES @MR2204
+CON
+JMP @MR2306
+MPP
+AND R003                 ; ｽﾄｯﾌﾟSW
+RES @MR2204
+CON
+JMP @MR2110
+STG @MR2306
+RES MR11206              ; ｽｷｰｼﾞ台 上昇
+CON
+MPS
+LDB MR7401               ; ｽｷｰｼﾞ台部 ｽｷｰｼﾞ台 下限ｴﾗｰ
+ANB R7400                ; ｽｷｰｼﾞ台部 ｽｷｰｼﾞ台 上限
+AND R7401                ; ｽｷｰｼﾞ台部 ｽｷｰｼﾞ台 下限
+ANL
+JMP @MR2206
+MPP
+LD MR7401                ; ｽｷｰｼﾞ台部 ｽｷｰｼﾞ台 下限ｴﾗｰ
+AND R41205               ; TASK5 PAUSE 
+ANL
+SET @MR1900              ; Main1 HALT許可
+STG @MR2206
+MPS
+AND<>.L DM21790 +25000   ; 軸1 現在座標
+SET @MR6000              ; 剥離位置→待機位置移（同期送り）
+CON
+JMP @MR2207
+MPP
+AND=.L DM21790 +25000    ; 軸1 現在座標
+JMP @MR2208
+STG @MR2207
+AND @MR6001              ; 剥離位置→待機位置移中
+RES @MR6001              ; 剥離位置→待機位置移中
+CON
+JMP @MR2208
+STG @MR2208
+SET @MR6100              ; 弛み付け開始分ﾌｨﾙﾑ送り開始
+CON
+JMP @MR2209
+STG @MR2209
+AND @MR6101              ; 弛み付け開始分ﾌｨﾙﾑ送り動作完了
+RES @MR6101              ; 弛み付け開始分ﾌｨﾙﾑ送り動作完了
+CON
+JMP @MR2210
+STG @MR2210
+SET MR16005              ; 強制　巻きだしﾓｰﾀ動作ON
+CON
+SET MR16105              ; 強制　巻き取りﾓｰﾀ動作ON
+CON
+SET @MR6200              ; 弛み付けﾌｨﾙﾑ送り開始
+CON
+JMP @MR2211
+STG @MR2211
+AND @MR6201              ; 弛み付けﾌｨﾙﾑ送り動作完了
+RES @MR6201              ; 弛み付けﾌｨﾙﾑ送り動作完了
+CON
+JMP @MR2212
+STG @MR2212
+SET @MR5700              ; 転写動作開始
+CON
+JMP @MR2213
+STG @MR2213
+AND @MR5701              ; 転写動作完了
+RES @MR5701              ; 転写動作完了
+CON
+JMP @MR2214
+STG @MR2214
+SET @MR5800              ; はぎ取り動作開始
+CON
+JMP @MR2315
+STG @MR2315
+AND @MR5801              ; はぎ取り動作完了
+RES @MR5801              ; はぎ取り動作完了
+CON
+JMP @MR2300
+STG @MR2300
+SET @MR6300              ; ﾌｨﾙﾑ捨出し動作開始
+CON
+JMP @MR2301
+STG @MR2301
+AND @MR6301              ; ﾌｨﾙﾑ捨出し動作完了
+RES @MR6301              ; ﾌｨﾙﾑ捨出し動作完了
+CON
+JMP @MR2307
+STG @MR2307
+SET MR16005              ; 強制　巻きだしﾓｰﾀ動作ON
+CON
+SET MR16105              ; 強制　巻き取りﾓｰﾀ動作ON
+CON
+JMP @MR2108
+;ﾒﾝﾃﾅﾝｽ
+;No.2 ｽｷｰｼﾞ動作 ･ No.5 転写ﾍｯﾄﾞ前進
+LD CR2002                ; 常時ON
+MPS
+LD= DM4110 #2            ; _Group1　ﾒﾝﾃ動作番号
+AND<=.L DM21790 EM44002  ; 軸1 現在座標
+AND MR001                ; ｲﾝﾃﾞｯｸｽ原点復帰完了
+AND R7409                ; ｽｷｰｼﾞ部 ｽｸﾚｰﾊﾟｰ（大） 上限
+ANB R7408                ; ｽｷｰｼﾞ部 ｽｸﾚｰﾊﾟｰ（大） 下限
+AND R7407                ; ｽｷｰｼﾞ部 ｽｸﾚｰﾊﾟｰ（小） 上限
+ANB R7406                ; ｽｷｰｼﾞ部 ｽｸﾚｰﾊﾟｰ（小） 下限
+LD= DM4110 #5            ; _Group1　ﾒﾝﾃ動作番号
+AND R7604                ; 転写部  転写RB原点位置
+ORL
+ANL
+OUT @MR1009              ; ｽｷｰｼﾞSTEP可能条件
+MPP
+LD<=.L DM21790 EM44002   ; 軸1 現在座標
+AND MR001                ; ｲﾝﾃﾞｯｸｽ原点復帰完了
+AND R7409                ; ｽｷｰｼﾞ部 ｽｸﾚｰﾊﾟｰ（大） 上限
+ANB R7408                ; ｽｷｰｼﾞ部 ｽｸﾚｰﾊﾟｰ（大） 下限
+AND R7407                ; ｽｷｰｼﾞ部 ｽｸﾚｰﾊﾟｰ（小） 上限
+ANB R7406                ; ｽｷｰｼﾞ部 ｽｸﾚｰﾊﾟｰ（小） 下限
+ANL
+OUT @MR1012              ; STEP可能条件
+STG @MR2500              ; STEP　ｽｷｰｼﾞ動作開始
+SET @MR5105              ; ﾒﾝﾃﾅﾝｽﾓｰﾄﾞ時 ﾌｨﾙﾑ確認
+CON
+JMP @MR2501
+STG @MR2501
+AND @MR5115              ; ﾒﾝﾃﾅﾝｽﾓｰﾄﾞ時 ﾌｨﾙﾑ確認終了
+RES @MR5115              ; ﾒﾝﾃﾅﾝｽﾓｰﾄﾞ時 ﾌｨﾙﾑ確認終了
+CON
+MPS
+LD MR8500                ; ﾌｨﾙﾑ確認 OK
+OR MR8501                ; ﾒﾝﾃﾅﾝｽ動作継続
+ANL
+JMP @MR2502
+MPP
+LDB MR8500               ; ﾌｨﾙﾑ確認 OK
+ANB MR8501               ; ﾒﾝﾃﾅﾝｽ動作継続
+ANL
+JMP @MR2110
+STG @MR2502
+RES MR8500               ; ﾌｨﾙﾑ確認 OK
+CON
+RES MR8501               ; ﾒﾝﾃﾅﾝｽ動作継続
+CON
+MPS
+AND @MR1009              ; ｽｷｰｼﾞSTEP可能条件
+JMP @MR2503
+MPP
+ANB @MR1009              ; ｽｷｰｼﾞSTEP可能条件
+JMP @MR2515
+STG @MR2503
+MPS
+MSTRT SELECT_POST #1 #5 #0 @MR2504
+MPP
+AND @MR2504
+JMP @MR2505
+STG @MR2505
+MPS
+ANB R003                 ; ｽﾄｯﾌﾟSW
+MPS
+LD<=.L EM43002 DM21790   ; 軸1 現在座標
+AND<=.L DM21790 EM44002  ; 軸1 現在座標
+ANB R7604                ; 転写部  転写RB原点位置
+ANL
+RES @MR2504
+CON
+JMP @MR2512
+MPP
+LD>.L EM43002 DM21790    ; 軸1 現在座標
+OR>.L DM21790 EM44002    ; 軸1 現在座標
+OR R7604                 ; 転写部  転写RB原点位置
+ANL
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+RES @MR2504
+CON
+JMP @MR2506
+MPP
+AND R003                 ; ｽﾄｯﾌﾟSW
+RES @MR2504
+CON
+JMP @MR2110
+STG @MR2506
+RES MR11206              ; ｽｷｰｼﾞ台 上昇
+CON
+MPS
+LDB MR7401               ; ｽｷｰｼﾞ台部 ｽｷｰｼﾞ台 下限ｴﾗｰ
+ANB R7400                ; ｽｷｰｼﾞ台部 ｽｷｰｼﾞ台 上限
+AND R7401                ; ｽｷｰｼﾞ台部 ｽｷｰｼﾞ台 下限
+ANL
+JMP @MR2507
+MPP
+LD MR7401                ; ｽｷｰｼﾞ台部 ｽｷｰｼﾞ台 下限ｴﾗｰ
+AND R41205               ; TASK5 PAUSE 
+ANL
+SET @MR1900              ; Main1 HALT許可
+STG @MR2507
+MPS
+LD R7512                 ; ﾌｨﾙﾑ受け部  Fﾊﾝﾄﾞ 開限
+AND R7514                ; ﾌｨﾙﾑ受け部  F受け 下限
+ANL
+JMP @MR2510
+MPP
+LDB R7512                ; ﾌｨﾙﾑ受け部  Fﾊﾝﾄﾞ 開限
+ORB R7514                ; ﾌｨﾙﾑ受け部  F受け 下限
+ANL
+JMP @MR2508
+STG @MR2508
+SET @MR4600              ; ﾌｨﾙﾑ受け動作ｻﾌﾞﾙｰﾁﾝ
+CON
+JMP @MR2900
+STG @MR2900
+MPS
+ANB LR10002              ; ﾜｰｸｾｯﾄｼﾞｸﾞ 90度回転使用/未使用
+JMP @MR2509
+MPP
+AND LR10002              ; ﾜｰｸｾｯﾄｼﾞｸﾞ 90度回転使用/未使用
+JMP @MR2901
+STG @MR2901
+SET MR11304              ; ﾌｨﾙﾑ巻取り ﾛｰﾗ上下 上昇
+CON
+MPS
+LDB MR8110               ; ﾌｨﾙﾑ巻取り ﾛｰﾗ上下奥側 上限ｴﾗｰ
+ANB MR8112               ; ﾌｨﾙﾑ巻取り ﾛｰﾗ上下手前側 上限ｴﾗｰ
+AND R8110                ; ﾌｨﾙﾑ巻取り ﾛｰﾗ上下奥側 上限
+ANB R8111                ; ﾌｨﾙﾑ巻取り ﾛｰﾗ上下奥側 下限
+AND R8112                ; ﾌｨﾙﾑ巻取り ﾛｰﾗ上下手前側 上限
+ANB R8113                ; ﾌｨﾙﾑ巻取り ﾛｰﾗ上手前側 下限
+ANL
+JMP @MR2509
+MPP
+LD MR8110                ; ﾌｨﾙﾑ巻取り ﾛｰﾗ上下奥側 上限ｴﾗｰ
+OR MR8112                ; ﾌｨﾙﾑ巻取り ﾛｰﾗ上下手前側 上限ｴﾗｰ
+AND R41200               ; TASK0 PAUSE 
+ANL
+SET @MR1900              ; Main1 HALT許可
+STG @MR2509
+AND @MR4601              ; ﾌｨﾙﾑ受け動作ｻﾌﾞﾙｰﾁﾝ動作完了
+RES @MR4601              ; ﾌｨﾙﾑ受け動作ｻﾌﾞﾙｰﾁﾝ動作完了
+CON
+JMP @MR2510
+STG @MR2510
+SET @MR6000              ; 剥離位置→待機位置移（同期送り）
+CON
+JMP @MR2511
+STG @MR2511
+AND @MR6001              ; 剥離位置→待機位置移中
+RES @MR6001              ; 剥離位置→待機位置移中
+CON
+JMP @MR2512
+STG @MR2512
+MPS
+AND= DM4110 #2           ; _Group1　ﾒﾝﾃ動作番号
+SET @MR5300              ; ｽｷｰｼﾞ動作ｻﾌﾞﾙｰﾁﾝ
+CON
+JMP @MR2513
+MPP
+AND= DM4110 #5           ; _Group1　ﾒﾝﾃ動作番号
+JMP @MR2108
+STG @MR2513
+AND @MR5301              ; ｽｷｰｼﾞ動作完了
+RES @MR5301              ; ｽｷｰｼﾞ動作完了
+CON
+JMP @MR2515
+STG @MR2515
+JMP @MR2108
+;ﾒﾝﾃﾅﾝｽ
+;No.1 接着剤自動塗布動作
+LD CR2002                ; 常時ON
+AND<=.L DM21790 EM44002  ; 軸1 現在座標
+AND MR001                ; ｲﾝﾃﾞｯｸｽ原点復帰完了
+AND R7409                ; ｽｷｰｼﾞ部 ｽｸﾚｰﾊﾟｰ（大） 上限
+ANB R7408                ; ｽｷｰｼﾞ部 ｽｸﾚｰﾊﾟｰ（大） 下限
+AND R7407                ; ｽｷｰｼﾞ部 ｽｸﾚｰﾊﾟｰ（小） 上限
+ANB R7406                ; ｽｷｰｼﾞ部 ｽｸﾚｰﾊﾟｰ（小） 下限
+OUT @MR1010              ; 接着剤塗布STEP可能条件
+STG @MR2600              ; STEP　接着剤塗布動作開始
+SET @MR5105              ; ﾒﾝﾃﾅﾝｽﾓｰﾄﾞ時 ﾌｨﾙﾑ確認
+CON
+JMP @MR2601
+STG @MR2601
+AND @MR5115              ; ﾒﾝﾃﾅﾝｽﾓｰﾄﾞ時 ﾌｨﾙﾑ確認終了
+RES @MR5115              ; ﾒﾝﾃﾅﾝｽﾓｰﾄﾞ時 ﾌｨﾙﾑ確認終了
+CON
+MPS
+LD MR8500                ; ﾌｨﾙﾑ確認 OK
+OR MR8501                ; ﾒﾝﾃﾅﾝｽ動作継続
+ANL
+JMP @MR2602
+MPP
+LDB MR8500               ; ﾌｨﾙﾑ確認 OK
+ANB MR8501               ; ﾒﾝﾃﾅﾝｽ動作継続
+ANL
+JMP @MR2110
+STG @MR2602
+RES MR8500               ; ﾌｨﾙﾑ確認 OK
+CON
+RES MR8501               ; ﾒﾝﾃﾅﾝｽ動作継続
+CON
+MPS
+AND @MR1010              ; 接着剤塗布STEP可能条件
+JMP @MR2603
+MPP
+ANB @MR1010              ; 接着剤塗布STEP可能条件
+JMP @MR2108
+STG @MR2603
+MPS
+MSTRT SELECT_POST #1 #5 #0 @MR2604
+MPP
+AND @MR2604
+JMP @MR2605
+STG @MR2605
+MPS
+ANB R003                 ; ｽﾄｯﾌﾟSW
+MPS
+LD<=.L EM43002 DM21790   ; 軸1 現在座標
+AND<=.L DM21790 EM44002  ; 軸1 現在座標
+ANL
+RES @MR2604
+CON
+JMP @MR2612
+MPP
+LD>.L EM43002 DM21790    ; 軸1 現在座標
+OR>.L DM21790 EM44002    ; 軸1 現在座標
+ANL
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+RES @MR2604
+CON
+JMP @MR2606
+MPP
+AND R003                 ; ｽﾄｯﾌﾟSW
+RES @MR2604
+CON
+JMP @MR2110
+STG @MR2606
+RES MR11206              ; ｽｷｰｼﾞ台 上昇
+CON
+MPS
+LDB MR7401               ; ｽｷｰｼﾞ台部 ｽｷｰｼﾞ台 下限ｴﾗｰ
+ANB R7400                ; ｽｷｰｼﾞ台部 ｽｷｰｼﾞ台 上限
+AND R7401                ; ｽｷｰｼﾞ台部 ｽｷｰｼﾞ台 下限
+ANL
+JMP @MR2607
+MPP
+LD MR7401                ; ｽｷｰｼﾞ台部 ｽｷｰｼﾞ台 下限ｴﾗｰ
+AND R41205               ; TASK5 PAUSE 
+ANL
+SET @MR1900              ; Main1 HALT許可
+STG @MR2607
+MPS
+LD R7512                 ; ﾌｨﾙﾑ受け部  Fﾊﾝﾄﾞ 開限
+AND R7514                ; ﾌｨﾙﾑ受け部  F受け 下限
+ANL
+JMP @MR2610
+MPP
+LDB R7512                ; ﾌｨﾙﾑ受け部  Fﾊﾝﾄﾞ 開限
+ORB R7514                ; ﾌｨﾙﾑ受け部  F受け 下限
+ANL
+JMP @MR2608
+STG @MR2608
+SET @MR4600              ; ﾌｨﾙﾑ受け動作ｻﾌﾞﾙｰﾁﾝ
+CON
+JMP @MR2902
+STG @MR2902
+MPS
+ANB LR10002              ; ﾜｰｸｾｯﾄｼﾞｸﾞ 90度回転使用/未使用
+JMP @MR2609
+MPP
+AND LR10002              ; ﾜｰｸｾｯﾄｼﾞｸﾞ 90度回転使用/未使用
+JMP @MR2903
+STG @MR2903
+SET MR11304              ; ﾌｨﾙﾑ巻取り ﾛｰﾗ上下 上昇
+CON
+MPS
+LDB MR8110               ; ﾌｨﾙﾑ巻取り ﾛｰﾗ上下奥側 上限ｴﾗｰ
+ANB MR8112               ; ﾌｨﾙﾑ巻取り ﾛｰﾗ上下手前側 上限ｴﾗｰ
+AND R8110                ; ﾌｨﾙﾑ巻取り ﾛｰﾗ上下奥側 上限
+ANB R8111                ; ﾌｨﾙﾑ巻取り ﾛｰﾗ上下奥側 下限
+AND R8112                ; ﾌｨﾙﾑ巻取り ﾛｰﾗ上下手前側 上限
+ANB R8113                ; ﾌｨﾙﾑ巻取り ﾛｰﾗ上手前側 下限
+ANL
+JMP @MR2609
+MPP
+LD MR8110                ; ﾌｨﾙﾑ巻取り ﾛｰﾗ上下奥側 上限ｴﾗｰ
+OR MR8112                ; ﾌｨﾙﾑ巻取り ﾛｰﾗ上下手前側 上限ｴﾗｰ
+AND R41200               ; TASK0 PAUSE 
+ANL
+SET @MR1900              ; Main1 HALT許可
+STG @MR2609
+AND @MR4601              ; ﾌｨﾙﾑ受け動作ｻﾌﾞﾙｰﾁﾝ動作完了
+RES @MR4601              ; ﾌｨﾙﾑ受け動作ｻﾌﾞﾙｰﾁﾝ動作完了
+CON
+JMP @MR2610
+STG @MR2610
+SET @MR6000              ; 剥離位置→待機位置移（同期送り）
+CON
+JMP @MR2611
+STG @MR2611
+AND @MR6001              ; 剥離位置→待機位置移中
+RES @MR6001              ; 剥離位置→待機位置移中
+CON
+JMP @MR2612
+STG @MR2612
+SET MR11206              ; ｽｷｰｼﾞ台 上昇
+CON
+MPS
+LDB MR7400               ; ｽｷｰｼﾞ台部 ｽｷｰｼﾞ台 上限ｴﾗｰ
+ANB R7401                ; ｽｷｰｼﾞ台部 ｽｷｰｼﾞ台 下限
+AND R7400                ; ｽｷｰｼﾞ台部 ｽｷｰｼﾞ台 上限
+ANL
+JMP @MR2613
+MPP
+LD MR7400                ; ｽｷｰｼﾞ台部 ｽｷｰｼﾞ台 上限ｴﾗｰ
+AND R41205               ; TASK5 PAUSE 
+ANL
+SET @MR1900              ; Main1 HALT許可
+STG @MR2613
+SET @MR4900              ; 塗布開始
+CON
+JMP @MR2614
+STG @MR2614
+AND @MR4901              ; 接着剤塗布部動作完了
+RES @MR4901              ; 接着剤塗布部動作完了
+CON
+JMP @MR2615
+STG @MR2615
+JMP @MR2108
+;ﾒﾝﾃﾅﾝｽ
+;No.9 ﾌｨﾙﾑ受け台ｾｯﾄ動作
+STG @MR2700              ; STEP　ﾌｨﾙﾑ受台ｾｯﾄ開始
+MPS
+AND MR001                ; ｲﾝﾃﾞｯｸｽ原点復帰完了
+JMP @MR2703
+MPP
+ANB MR001                ; ｲﾝﾃﾞｯｸｽ原点復帰完了
+JMP @MR2108
+STG @MR2703
+MPS
+MSTRT SELECT_POST #1 #5 #0 @MR2704
+MPP
+AND @MR2704
+JMP @MR2705
+STG @MR2705
+MPS
+ANB R003                 ; ｽﾄｯﾌﾟSW
+RES @MR2704
+CON
+SET @MR4600              ; ﾌｨﾙﾑ受け動作ｻﾌﾞﾙｰﾁﾝ
+CON
+JMP @MR2706
+MPP
+AND R003                 ; ｽﾄｯﾌﾟSW
+RES @MR2704
+CON
+JMP @MR2110
+STG @MR2706
+AND @MR4601              ; ﾌｨﾙﾑ受け動作ｻﾌﾞﾙｰﾁﾝ動作完了
+RES @MR4601              ; ﾌｨﾙﾑ受け動作ｻﾌﾞﾙｰﾁﾝ動作完了
+CON
+JMP @MR2707
+STG @MR2707
+RES @MR2701              ; STEP　ﾌｨﾙﾑ受台ｾｯﾄ中
+CON
+JMP @MR2108
+;ﾒﾝﾃﾅﾝｽ
+;No.6 ﾌｨﾙﾑ受け台外し動作
+STG @MR2708              ; STEP　ﾌｨﾙﾑ受台外し開始
+JMP @MR2710
+STG @MR2710
+MPS
+MSTRT SELECT_POST #1 #5 #0 @MR2711
+MPP
+AND @MR2711
+JMP @MR2712
+STG @MR2712
+MPS
+ANB R003                 ; ｽﾄｯﾌﾟSW
+RES @MR2711
+CON
+SET @MR4700              ; ﾌｨﾙﾑ受け終了動作ｻﾌﾞﾙｰﾁﾝ
+CON
+JMP @MR2713
+MPP
+AND R003                 ; ｽﾄｯﾌﾟSW
+RES @MR2711
+CON
+JMP @MR2110
+STG @MR2713
+AND @MR4701              ; ﾌｨﾙﾑ受け終了動作終了
+RES @MR4701              ; ﾌｨﾙﾑ受け終了動作終了
+CON
+JMP @MR2108
+;ﾒﾝﾃﾅﾝｽ
+;No.4 接着剤交換位置動作及び捨出し
+STG @MR2408              ; STEP 接着剤交換位置動作
+JMP @MR2409
+STG @MR2409
+SET @MR5000              ; ｼﾘﾝｼﾞ交換要求
+CON
+JMP @MR2410
+STG @MR2410
+AND @MR5001              ; ｼﾘﾝｼﾞ交換動作完了
+RES @MR5001              ; ｼﾘﾝｼﾞ交換動作完了
+CON
+JMP @MR2108
+;ﾒﾝﾃﾅﾝｽ
+;No.6 転写ﾍｯﾄﾞ戻し
+STG @MR2800              ; STEP　転写ﾍｯﾄﾞ戻し動作開始
+AND @MR1012              ; STEP可能条件
+RES MR11206              ; ｽｷｰｼﾞ台 上昇
+CON
+MPS
+LDB MR7401               ; ｽｷｰｼﾞ台部 ｽｷｰｼﾞ台 下限ｴﾗｰ
+AND R7401                ; ｽｷｰｼﾞ台部 ｽｷｰｼﾞ台 下限
+ANB R7400                ; ｽｷｰｼﾞ台部 ｽｷｰｼﾞ台 上限
+ANL
+JMP @MR2803
+MPP
+LD MR7401                ; ｽｷｰｼﾞ台部 ｽｷｰｼﾞ台 下限ｴﾗｰ
+AND R41205               ; TASK5 PAUSE 
+ANL
+SET @MR1900              ; Main1 HALT許可
+STG @MR2803
+SET MR11408              ; 巻き取りﾌｨﾙﾑ押え　下降
+CON
+MPS
+LDB MR7500               ; F巻取り部 巻取りF押え上下 下限ｴﾗ
+ANB R7501                ; F巻取り部 巻取りF押え上下 上限
+AND R7500                ; F巻取り部 巻取りF押え上下 下限
+ANL
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+AND R7401                ; ｽｷｰｼﾞ台部 ｽｷｰｼﾞ台 下限
+SET MR16805              ; 転写ﾍｯﾄﾞ 原点復帰 F送り無し
+CON
+SET @MR5500              ; 接着剤転写部 原点復帰要求
+CON
+JMP @MR2804
+MPP
+LD MR7500                ; F巻取り部 巻取りF押え上下 下限ｴﾗ
+AND R41205               ; TASK5 PAUSE 
+ANL
+SET @MR1900              ; Main1 HALT許可
+STG @MR2804
+AND MR16806              ; 転写ﾍｯﾄﾞ 原点復帰 F送り無し完了
+RES MR16806              ; 転写ﾍｯﾄﾞ 原点復帰 F送り無し完了
+CON
+JMP @MR2805
+STG @MR2805
+RES MR11408              ; 巻き取りﾌｨﾙﾑ押え　下降
+CON
+MPS
+LDB MR7501               ; F巻取り部 巻取りF押え上下 上限ｴﾗ
+ANB R7500                ; F巻取り部 巻取りF押え上下 下限
+AND R7501                ; F巻取り部 巻取りF押え上下 上限
+ANL
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR2806
+MPP
+LD MR7501                ; F巻取り部 巻取りF押え上下 上限ｴﾗ
+AND R41205               ; TASK5 PAUSE 
+ANL
+SET @MR1900              ; Main1 HALT許可
+STG @MR2806
+JMP @MR2108
+;ﾒﾝﾃﾅﾝｽ
+;No.21 巻出しﾀﾞﾝｻﾛｰﾗ動作
+STG @MR2808              ; 巻出しﾀﾞﾝｻﾛｰﾗ動作
+SET @MR5105              ; ﾒﾝﾃﾅﾝｽﾓｰﾄﾞ時 ﾌｨﾙﾑ確認
+CON
+JMP @MR2809
+STG @MR2809
+AND @MR5115              ; ﾒﾝﾃﾅﾝｽﾓｰﾄﾞ時 ﾌｨﾙﾑ確認終了
+RES @MR5115              ; ﾒﾝﾃﾅﾝｽﾓｰﾄﾞ時 ﾌｨﾙﾑ確認終了
+CON
+MPS
+LD MR8500                ; ﾌｨﾙﾑ確認 OK
+OR MR8501                ; ﾒﾝﾃﾅﾝｽ動作継続
+ANL
+JMP @MR2810
+MPP
+LDB MR8500               ; ﾌｨﾙﾑ確認 OK
+ANB MR8501               ; ﾒﾝﾃﾅﾝｽ動作継続
+ANL
+JMP @MR2110
+STG @MR2810
+RES MR8500               ; ﾌｨﾙﾑ確認 OK
+CON
+RES MR8501               ; ﾒﾝﾃﾅﾝｽ動作継続
+CON
+SET MR16004              ; 巻だしﾀﾞﾝｻﾛｰﾗ動作ON
+CON
+JMP @MR2811              ; 巻取りﾀﾞﾝｻﾛｰﾗ動作
+STG @MR2811              ; 巻取りﾀﾞﾝｻﾛｰﾗ動作
+SET MR16005              ; 強制　巻きだしﾓｰﾀ動作ON
+CON
+JMP @MR2812
+STG @MR2812
+ANB MR16005              ; 強制　巻きだしﾓｰﾀ動作ON
+TMR @20 #5
+CON
+AND @T20
+JMP @MR2108
+;ﾒﾝﾃﾅﾝｽ
+;No.22 巻取りﾀﾞﾝｻﾛｰﾗ動作
+STG @MR2908              ; 巻取りﾀﾞﾝｻﾛｰﾗ動作
+SET @MR5105              ; ﾒﾝﾃﾅﾝｽﾓｰﾄﾞ時 ﾌｨﾙﾑ確認
+CON
+JMP @MR2909
+STG @MR2909
+AND @MR5115              ; ﾒﾝﾃﾅﾝｽﾓｰﾄﾞ時 ﾌｨﾙﾑ確認終了
+RES @MR5115              ; ﾒﾝﾃﾅﾝｽﾓｰﾄﾞ時 ﾌｨﾙﾑ確認終了
+CON
+MPS
+LD MR8500                ; ﾌｨﾙﾑ確認 OK
+OR MR8501                ; ﾒﾝﾃﾅﾝｽ動作継続
+ANL
+JMP @MR2910
+MPP
+LDB MR8500               ; ﾌｨﾙﾑ確認 OK
+ANB MR8501               ; ﾒﾝﾃﾅﾝｽ動作継続
+ANL
+JMP @MR2110
+STG @MR2910
+RES MR8500               ; ﾌｨﾙﾑ確認 OK
+CON
+RES MR8501               ; ﾒﾝﾃﾅﾝｽ動作継続
+CON
+SET MR16104              ; 巻取りﾀﾞﾝｻﾛｰﾗ動作ON
+CON
+JMP @MR2911
+STG @MR2911
+SET MR16105              ; 強制　巻き取りﾓｰﾀ動作ON
+CON
+JMP @MR2912
+STG @MR2912
+ANB MR16005              ; 強制　巻きだしﾓｰﾀ動作ON
+TMR @21 #5
+CON
+AND @T21
+JMP @MR2108
+;ﾒﾝﾃﾅﾝｽ
+;No.27,28 ｽｷｰｼﾞｻﾝﾌﾟﾙ取り動作
+STG @MR6400              ; ｽｷｰｼﾞｻﾝﾌﾟﾙ動作
+SET R50800               ; _Group1 Post無効宣言
+CON
+JMP @MR6401
+STG @MR6401
+SET @MR5105              ; ﾒﾝﾃﾅﾝｽﾓｰﾄﾞ時 ﾌｨﾙﾑ確認
+CON
+JMP @MR6402
+STG @MR6402
+AND @MR5115              ; ﾒﾝﾃﾅﾝｽﾓｰﾄﾞ時 ﾌｨﾙﾑ確認終了
+RES @MR5115              ; ﾒﾝﾃﾅﾝｽﾓｰﾄﾞ時 ﾌｨﾙﾑ確認終了
+CON
+MPS
+LD MR8500                ; ﾌｨﾙﾑ確認 OK
+OR MR8501                ; ﾒﾝﾃﾅﾝｽ動作継続
+ANL
+JMP @MR6403
+MPP
+LDB MR8500               ; ﾌｨﾙﾑ確認 OK
+ANB MR8501               ; ﾒﾝﾃﾅﾝｽ動作継続
+ANL
+JMP @MR2110
+STG @MR6403
+RES MR8500               ; ﾌｨﾙﾑ確認 OK
+CON
+RES MR8501               ; ﾒﾝﾃﾅﾝｽ動作継続
+CON
+MPS
+LD R7514                 ; ﾌｨﾙﾑ受け部  F受け 下限
+AND R7512                ; ﾌｨﾙﾑ受け部  Fﾊﾝﾄﾞ 開限
+ANL
+JMP @MR6406
+MPP
+LDB R7514                ; ﾌｨﾙﾑ受け部  F受け 下限
+ANB R7512                ; ﾌｨﾙﾑ受け部  Fﾊﾝﾄﾞ 開限
+ANL
+JMP @MR6404
+STG @MR6404
+SET @MR4600              ; ﾌｨﾙﾑ受け動作ｻﾌﾞﾙｰﾁﾝ
+CON
+JMP @MR2904
+STG @MR2904
+MPS
+ANB LR10002              ; ﾜｰｸｾｯﾄｼﾞｸﾞ 90度回転使用/未使用
+JMP @MR6405
+MPP
+AND LR10002              ; ﾜｰｸｾｯﾄｼﾞｸﾞ 90度回転使用/未使用
+JMP @MR2905
+STG @MR2905
+SET MR11304              ; ﾌｨﾙﾑ巻取り ﾛｰﾗ上下 上昇
+CON
+MPS
+LDB MR8110               ; ﾌｨﾙﾑ巻取り ﾛｰﾗ上下奥側 上限ｴﾗｰ
+ANB MR8112               ; ﾌｨﾙﾑ巻取り ﾛｰﾗ上下手前側 上限ｴﾗｰ
+AND R8110                ; ﾌｨﾙﾑ巻取り ﾛｰﾗ上下奥側 上限
+ANB R8111                ; ﾌｨﾙﾑ巻取り ﾛｰﾗ上下奥側 下限
+AND R8112                ; ﾌｨﾙﾑ巻取り ﾛｰﾗ上下手前側 上限
+ANB R8113                ; ﾌｨﾙﾑ巻取り ﾛｰﾗ上手前側 下限
+ANL
+JMP @MR6405
+MPP
+LD MR8110                ; ﾌｨﾙﾑ巻取り ﾛｰﾗ上下奥側 上限ｴﾗｰ
+OR MR8112                ; ﾌｨﾙﾑ巻取り ﾛｰﾗ上下手前側 上限ｴﾗｰ
+AND R41200               ; TASK0 PAUSE 
+ANL
+SET @MR1900              ; Main1 HALT許可
+STG @MR6405
+AND @MR4601              ; ﾌｨﾙﾑ受け動作ｻﾌﾞﾙｰﾁﾝ動作完了
+RES @MR4601              ; ﾌｨﾙﾑ受け動作ｻﾌﾞﾙｰﾁﾝ動作完了
+CON
+JMP @MR6406
+STG @MR6406
+MPS
+ANB R7604                ; 転写部  転写RB原点位置
+JMP @MR6409
+MPP
+AND R7604                ; 転写部  転写RB原点位置
+JMP @MR6407
+STG @MR6407
+SET @MR6000              ; 剥離位置→待機位置移（同期送り）
+CON
+JMP @MR6408
+STG @MR6408
+AND @MR6001              ; 剥離位置→待機位置移中
+RES @MR6001              ; 剥離位置→待機位置移中
+CON
+JMP @MR6409
+STG @MR6409
+SET MR11206              ; ｽｷｰｼﾞ台 上昇
+CON
+MPS
+LDB MR7400               ; ｽｷｰｼﾞ台部 ｽｷｰｼﾞ台 上限ｴﾗｰ
+AND R7400                ; ｽｷｰｼﾞ台部 ｽｷｰｼﾞ台 上限
+ANB R7401                ; ｽｷｰｼﾞ台部 ｽｷｰｼﾞ台 下限
+ANL
+JMP @MR6410
+MPP
+LD MR7400                ; ｽｷｰｼﾞ台部 ｽｷｰｼﾞ台 上限ｴﾗｰ
+AND R41205               ; TASK5 PAUSE 
+ANL
+SET @MR1900              ; Main1 HALT許可
+STG @MR6410
+MPS
+AND MR16800              ; ｻﾝﾌﾟﾙ取り 接着剤手動塗布
+JMP @MR6412
+MPP
+ANB MR16800              ; ｻﾝﾌﾟﾙ取り 接着剤手動塗布
+TMR @22 #20
+CON
+AND @T22
+JMP @MR6411
+STG @MR6411
+ANB R39104               ; SELECT_Y_N Interlock
+SET @MR1900              ; Main1 HALT許可
+CON
+SET R39104               ; SELECT_Y_N Interlock
+CON
+DW #15 @DM21             ; ScreenNo /SELECT_Y_N
+CON
+DW #1 @DM22              ; Bz_Use /SELECT_Y_N
+CON
+SET @MR300               ; Task5 SELECT_Y_N
+CON
+SET MR24405              ; ｾﾚｸﾄY/N ﾒｸﾗ
+CON
+JMP @MR6414
+STG @MR6414
+AND @MR301               ; Task5 Y/N END
+RES @MR301               ; Task5 Y/N END
+CON
+RES R39104               ; SELECT_Y_N Interlock
+CON
+MPS
+AND @MR306               ; Task5 Y/N
+RES MR24405              ; ｾﾚｸﾄY/N ﾒｸﾗ
+CON
+JMP @MR6500
+MPP
+ANB @MR306               ; Task5 Y/N
+RES MR24405              ; ｾﾚｸﾄY/N ﾒｸﾗ
+CON
+JMP @MR6500
+STG @MR6412
+SET @MR4900              ; 塗布開始
+CON
+JMP @MR6413
+STG @MR6413
+AND @MR4901              ; 接着剤塗布部動作完了
+RES @MR4901              ; 接着剤塗布部動作完了
+CON
+JMP @MR6500
+STG @MR6500
+SET @MR5300              ; ｽｷｰｼﾞ動作ｻﾌﾞﾙｰﾁﾝ
+CON
+JMP @MR6501
+STG @MR6501
+AND @MR5301              ; ｽｷｰｼﾞ動作完了
+RES @MR5301              ; ｽｷｰｼﾞ動作完了
+CON
+JMP @MR6502
+STG @MR6502
+SET MR16805              ; 転写ﾍｯﾄﾞ 原点復帰 F送り無し
+CON
+SET @MR5500              ; 接着剤転写部 原点復帰要求
+CON
+JMP @MR6503
+STG @MR6503
+AND MR16806              ; 転写ﾍｯﾄﾞ 原点復帰 F送り無し完了
+RES MR16806              ; 転写ﾍｯﾄﾞ 原点復帰 F送り無し完了
+CON
+JMP @MR6504
+STG @MR6504
+RES MR11210              ; ｽﾌﾟﾘﾝｸﾞ　上昇
+CON
+RES MR11214              ; 巻き出しﾌｨﾙﾑ押え 上昇
+CON
+RES MR11212              ; ﾀﾞﾝｻ後ﾌｨﾙﾑ押え 上昇
+CON
+RES MR11200              ; 主軸ﾛｰﾗｸﾗﾝﾌﾟ 上昇
+CON
+SET MR11201              ; 主軸ﾛｰﾗｸﾗﾝﾌﾟ 下降
+CON
+SET MR11408              ; 巻き取りﾌｨﾙﾑ押え　下降
+CON
+AND R7307                ; F巻出し部 ﾀﾞﾝｻﾛｰﾗ後F押え 下限
+ANB R7306                ; F巻出し部 ﾀﾞﾝｻﾛｰﾗ後F押え 上限
+ANB R7606                ; 転写部  主軸ﾛｰﾗｸﾗﾝﾌﾟ 上限
+AND R7607                ; 転写部  主軸ﾛｰﾗｸﾗﾝﾌﾟ 下限
+ANB R7501                ; F巻取り部 巻取りF押え上下 上限
+AND R7500                ; F巻取り部 巻取りF押え上下 下限
+JMP @MR6505
+STG @MR6505
+AND R24913               ; 軸2 ｻｰﾎﾞON
+ANB R20012               ; 軸2 現在座標変更要求
+U_WRCPOS.L #3 #2 +0
+TMR @23 #2
+CON
+AND @T23
+JMP @MR6506
+STG @MR6506
+SET R20012               ; 軸2 現在座標変更要求
+CON
+AND R20812               ; 軸2 現在座標変更完了
+AND=.L DM21850 +0        ; 軸2 現在座標
+JMP @MR6507
+STG @MR6507
+RES R20012               ; 軸2 現在座標変更要求
+CON
+TMR @24 #2
+CON
+AND @T24
+JMP @MR6508
+STG @MR6508
+SET MR11408              ; 巻き取りﾌｨﾙﾑ押え　下降
+CON
+MPS
+LDB MR7500               ; F巻取り部 巻取りF押え上下 下限ｴﾗ
+ANB R7501                ; F巻取り部 巻取りF押え上下 上限
+AND R7500                ; F巻取り部 巻取りF押え上下 下限
+ANL
+JMP @MR6509
+MPP
+LD MR7500                ; F巻取り部 巻取りF押え上下 下限ｴﾗ
+AND R41205               ; TASK5 PAUSE 
+ANL
+SET @MR1900              ; Main1 HALT許可
+STG @MR6509
+JMP @MR6510
+STG @MR6510
+SET MR21706              ; MC 軸2 ﾎﾟｲﾝﾄ-6移動要求
+CON
+AND MR21911              ; MC 軸2移動完了
+JMP @MR6511
+STG @MR6511
+ANB MR21910              ; MC 軸2動作中
+AND<=.L EM43252 DM21850  ; 軸2 現在座標
+AND<=.L DM21850 EM44252  ; 軸2 現在座標
+JMP @MR6512
+STG @MR6512
+RES MR21706              ; MC 軸2 ﾎﾟｲﾝﾄ-6移動要求
+CON
+ANB MR21706              ; MC 軸2 ﾎﾟｲﾝﾄ-6移動要求
+TMR @25 #2
+CON
+AND @T25
+JMP @MR6513
+STG @MR6513
+RES MR11408              ; 巻き取りﾌｨﾙﾑ押え　下降
+CON
+MPS
+LDB MR7501               ; F巻取り部 巻取りF押え上下 上限ｴﾗ
+ANB R7500                ; F巻取り部 巻取りF押え上下 下限
+AND R7501                ; F巻取り部 巻取りF押え上下 上限
+ANL
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR6514
+MPP
+LD MR7501                ; F巻取り部 巻取りF押え上下 上限ｴﾗ
+AND R41205               ; TASK5 PAUSE 
+ANL
+SET @MR1900              ; Main1 HALT許可
+STG @MR6514
+SET @MR4700              ; ﾌｨﾙﾑ受け終了動作ｻﾌﾞﾙｰﾁﾝ
+CON
+JMP @MR6515
+STG @MR6515
+AND @MR4701              ; ﾌｨﾙﾑ受け終了動作終了
+RES @MR4701              ; ﾌｨﾙﾑ受け終了動作終了
+CON
+JMP @MR6600
+STG @MR6600
+LD R7412                 ; F巻取り部 ﾀﾞﾝｻﾛｰﾗ位置 上側
+ORB R7411                ; F巻取り部 ﾀﾞﾝｻﾛｰﾗ位置 上OT
+OR CR2002                ; 常時ON
+ANL
+ANB MR6012               ; DRV-2 正転
+RES MR16104              ; 巻取りﾀﾞﾝｻﾛｰﾗ動作ON
+CON
+TMR @26 #10
+CON
+AND @T26
+JMP @MR6601
+STG @MR6601
+SET MR6013               ; DRV-2 反転
+CON
+MPS
+ANB R7414                ; F巻取り部 ﾀﾞﾝｻﾛｰﾗ位置 下OT
+JMP @MR6602
+MPP
+TMR @27 #90
+CON
+AND @T27
+JMP @MR6602
+STG @MR6602
+RES MR6013               ; DRV-2 反転
+CON
+ANB MR6013               ; DRV-2 反転
+SET MR16812              ; 巻き取り動作無効
+CON
+JMP @MR6603
+STG @MR6603
+ANB R39104               ; SELECT_Y_N Interlock
+SET @MR1900              ; Main1 HALT許可
+CON
+SET R39104               ; SELECT_Y_N Interlock
+CON
+DW #16 @DM21             ; ScreenNo /SELECT_Y_N
+CON
+DW #1 @DM22              ; Bz_Use /SELECT_Y_N
+CON
+SET @MR300               ; Task5 SELECT_Y_N
+CON
+SET MR24405              ; ｾﾚｸﾄY/N ﾒｸﾗ
+CON
+JMP @MR6604
+STG @MR6604
+AND @MR301               ; Task5 Y/N END
+RES @MR301               ; Task5 Y/N END
+CON
+RES R39104               ; SELECT_Y_N Interlock
+CON
+MPS
+AND @MR306               ; Task5 Y/N
+RES MR24405              ; ｾﾚｸﾄY/N ﾒｸﾗ
+CON
+JMP @MR6605
+MPP
+ANB @MR306               ; Task5 Y/N
+RES MR24405              ; ｾﾚｸﾄY/N ﾒｸﾗ
+CON
+JMP @MR6605
+STG @MR6605
+RES MR16812              ; 巻き取り動作無効
+CON
+JMP @MR6606
+STG @MR6606
+SET MR16104              ; 巻取りﾀﾞﾝｻﾛｰﾗ動作ON
+CON
+RES R50800               ; _Group1 Post無効宣言
+CON
+RES MR16800              ; ｻﾝﾌﾟﾙ取り 接着剤手動塗布
+CON
+JMP @MR2108
+;ﾒﾝﾃﾅﾝｽ
+;No.19､20 ﾌｨﾙﾑ巻取り動作
+STG @MR6608              ; ﾌｨﾙﾑ送り（巻取り）　大　小
+SET @MR5105              ; ﾒﾝﾃﾅﾝｽﾓｰﾄﾞ時 ﾌｨﾙﾑ確認
+CON
+JMP @MR6609
+STG @MR6609
+AND @MR5115              ; ﾒﾝﾃﾅﾝｽﾓｰﾄﾞ時 ﾌｨﾙﾑ確認終了
+RES @MR5115              ; ﾒﾝﾃﾅﾝｽﾓｰﾄﾞ時 ﾌｨﾙﾑ確認終了
+CON
+MPS
+LD MR8500                ; ﾌｨﾙﾑ確認 OK
+OR MR8501                ; ﾒﾝﾃﾅﾝｽ動作継続
+ANL
+JMP @MR6610
+MPP
+LDB MR8500               ; ﾌｨﾙﾑ確認 OK
+ANB MR8501               ; ﾒﾝﾃﾅﾝｽ動作継続
+ANL
+JMP @MR2110
+STG @MR6610
+RES MR8500               ; ﾌｨﾙﾑ確認 OK
+CON
+RES MR8501               ; ﾒﾝﾃﾅﾝｽ動作継続
+CON
+RES MR11210              ; ｽﾌﾟﾘﾝｸﾞ　上昇
+CON
+RES MR11214              ; 巻き出しﾌｨﾙﾑ押え 上昇
+CON
+RES MR11212              ; ﾀﾞﾝｻ後ﾌｨﾙﾑ押え 上昇
+CON
+RES MR11200              ; 主軸ﾛｰﾗｸﾗﾝﾌﾟ 上昇
+CON
+SET MR11201              ; 主軸ﾛｰﾗｸﾗﾝﾌﾟ 下降
+CON
+SET MR11408              ; 巻き取りﾌｨﾙﾑ押え　下降
+CON
+AND R7307                ; F巻出し部 ﾀﾞﾝｻﾛｰﾗ後F押え 下限
+ANB R7306                ; F巻出し部 ﾀﾞﾝｻﾛｰﾗ後F押え 上限
+ANB R7606                ; 転写部  主軸ﾛｰﾗｸﾗﾝﾌﾟ 上限
+AND R7607                ; 転写部  主軸ﾛｰﾗｸﾗﾝﾌﾟ 下限
+ANB R7501                ; F巻取り部 巻取りF押え上下 上限
+AND R7500                ; F巻取り部 巻取りF押え上下 下限
+SET MR16004              ; 巻だしﾀﾞﾝｻﾛｰﾗ動作ON
+CON
+SET MR16104              ; 巻取りﾀﾞﾝｻﾛｰﾗ動作ON
+CON
+JMP @MR6611
+STG @MR6611
+AND R24913               ; 軸2 ｻｰﾎﾞON
+ANB R20012               ; 軸2 現在座標変更要求
+U_WRCPOS.L #3 #2 +0
+TMR @28 #2
+CON
+AND @T28
+JMP @MR6612
+STG @MR6612
+SET R20012               ; 軸2 現在座標変更要求
+CON
+AND R20812               ; 軸2 現在座標変更完了
+AND=.L DM21850 +0        ; 軸2 現在座標
+JMP @MR6613
+STG @MR6613
+RES R20012               ; 軸2 現在座標変更要求
+CON
+TMR @29 #2
+CON
+AND @T29
+JMP @MR6614
+STG @MR6614
+SET MR11408              ; 巻き取りﾌｨﾙﾑ押え　下降
+CON
+MPS
+LDB MR7500               ; F巻取り部 巻取りF押え上下 下限ｴﾗ
+ANB R7501                ; F巻取り部 巻取りF押え上下 上限
+AND R7500                ; F巻取り部 巻取りF押え上下 下限
+ANL
+JMP @MR6615
+MPP
+LD MR7500                ; F巻取り部 巻取りF押え上下 下限ｴﾗ
+AND R41205               ; TASK5 PAUSE 
+ANL
+SET @MR1900              ; Main1 HALT許可
+STG @MR6615
+JMP @MR6700
+STG @MR6700
+MPS
+AND= DM4110 #20          ; _Group1　ﾒﾝﾃ動作番号
+SET MR21706              ; MC 軸2 ﾎﾟｲﾝﾄ-6移動要求
+CON
+AND MR21911              ; MC 軸2移動完了
+JMP @MR6701
+MPP
+AND= DM4110 #19          ; _Group1　ﾒﾝﾃ動作番号
+SET MR21703              ; MC 軸2 ﾎﾟｲﾝﾄ-3移動要求
+CON
+AND MR21911              ; MC 軸2移動完了
+JMP @MR6701
+STG @MR6701
+ANB MR21910              ; MC 軸2動作中
+MPS
+LD= DM4110 #20           ; _Group1　ﾒﾝﾃ動作番号
+AND<=.L EM43252 DM21850  ; 軸2 現在座標
+AND<=.L DM21850 EM44252  ; 軸2 現在座標
+ANL
+JMP @MR6702
+MPP
+LD= DM4110 #19           ; _Group1　ﾒﾝﾃ動作番号
+AND<=.L EM43222 DM21850  ; 軸2 現在座標
+AND<=.L DM21850 EM44222  ; 軸2 現在座標
+ANL
+JMP @MR6702
+STG @MR6702
+MPS
+AND= DM4110 #20          ; _Group1　ﾒﾝﾃ動作番号
+RES MR21706              ; MC 軸2 ﾎﾟｲﾝﾄ-6移動要求
+CON
+ANB MR21706              ; MC 軸2 ﾎﾟｲﾝﾄ-6移動要求
+TMR @30 #2
+CON
+AND @T30
+JMP @MR6703
+MPP
+AND= DM4110 #19          ; _Group1　ﾒﾝﾃ動作番号
+RES MR21703              ; MC 軸2 ﾎﾟｲﾝﾄ-3移動要求
+CON
+ANB MR21703              ; MC 軸2 ﾎﾟｲﾝﾄ-3移動要求
+TMR @31 #2
+CON
+AND @T31
+JMP @MR6703
+STG @MR6703
+RES MR11408              ; 巻き取りﾌｨﾙﾑ押え　下降
+CON
+MPS
+LDB MR7501               ; F巻取り部 巻取りF押え上下 上限ｴﾗ
+ANB R7500                ; F巻取り部 巻取りF押え上下 下限
+AND R7501                ; F巻取り部 巻取りF押え上下 上限
+ANL
+JMP @MR6704
+MPP
+LD MR7501                ; F巻取り部 巻取りF押え上下 上限ｴﾗ
+AND R41205               ; TASK5 PAUSE 
+ANL
+SET @MR1900              ; Main1 HALT許可
+STG @MR6704
+JMP @MR2108
+LD MR23914               ; ﾒﾝﾃﾅﾝｽ中
+LD>= DM3000 #2003        ; _MainTP　表示中ﾍﾟｰｼﾞNo
+AND<= DM3000 #2008       ; _MainTP　表示中ﾍﾟｰｼﾞNo
+LD>= DM3000 #2103        ; _MainTP　表示中ﾍﾟｰｼﾞNo
+AND<= DM3000 #2108       ; _MainTP　表示中ﾍﾟｰｼﾞNo
+ORL
+ANL
+OUT @MR2101              ; 転写部手動操作有効
+LD @MR2101               ; 転写部手動操作有効
+AND MR001                ; ｲﾝﾃﾞｯｸｽ原点復帰完了
+MPS
+LDP MR706                ; ﾌｨﾙﾑ受け吸着 吸着ON SW
+ANB MR707                ; ﾌｨﾙﾑ受け吸着 吸着OFF SW
+ANB MR708                ; ﾌｨﾙﾑ受け吸着 破壊ON SW
+ANL
+SET MR10706              ; 治具ｴｱｰ真空　吸着ON
+CON
+RES MR10707              ; 治具ｴｱｰ真空　吸着OFF
+CON
+RES MR10708              ; 治具ｴｱｰ真空　破壊ON
+CON
+RES MR15301              ; 治具ｴｱｰ吸着OFF
+MRD
+LDP MR707                ; ﾌｨﾙﾑ受け吸着 吸着OFF SW
+ANB MR706                ; ﾌｨﾙﾑ受け吸着 吸着ON SW
+ANB MR708                ; ﾌｨﾙﾑ受け吸着 破壊ON SW
+ANL
+RES MR10706              ; 治具ｴｱｰ真空　吸着ON
+CON
+SET MR10707              ; 治具ｴｱｰ真空　吸着OFF
+CON
+RES MR10708              ; 治具ｴｱｰ真空　破壊ON
+CON
+SET MR15301              ; 治具ｴｱｰ吸着OFF
+MPP
+LDP MR708                ; ﾌｨﾙﾑ受け吸着 破壊ON SW
+ANB MR706                ; ﾌｨﾙﾑ受け吸着 吸着ON SW
+ANB MR707                ; ﾌｨﾙﾑ受け吸着 吸着OFF SW
+ANL
+SET MR15504              ; ﾌｨﾙﾑ受け台 破壊確認開始
+CON
+SET @MR2400
+STG @MR2400
+AND MR15505              ; ﾌｨﾙﾑ受け台 吸着破壊OK
+RES MR15505              ; ﾌｨﾙﾑ受け台 吸着破壊OK
+CON
+ENDS
+LD @MR2101               ; 転写部手動操作有効
+AND MR001                ; ｲﾝﾃﾞｯｸｽ原点復帰完了
+MPS
+LD= DM35000 #0           ; ｲﾝﾃﾞｯｸｽ位置ﾃﾞｰﾀ
+ANP MR709                ; ﾌｨﾙﾑ受け全吸着 吸着ON SW
+ANB MR710                ; ﾌｨﾙﾑ受け全吸着 吸着OFF SW
+ANB MR711                ; ﾌｨﾙﾑ受け全吸着 破壊ON SW
+ANL
+SET MR10700              ; ST3ﾜｰｸ吸着 吸着ON
+CON
+RES MR10701              ; ST3ﾜｰｸ吸着 吸着OFF
+CON
+RES MR10702              ; ST3ﾜｰｸ吸着 破壊ON
+MRD
+LD= DM35000 #1           ; ｲﾝﾃﾞｯｸｽ位置ﾃﾞｰﾀ
+ANP MR709                ; ﾌｨﾙﾑ受け全吸着 吸着ON SW
+ANB MR710                ; ﾌｨﾙﾑ受け全吸着 吸着OFF SW
+ANB MR711                ; ﾌｨﾙﾑ受け全吸着 破壊ON SW
+ANL
+SET MR10703              ; ST4ﾜｰｸ吸着 吸着ON
+CON
+RES MR10704              ; ST4ﾜｰｸ吸着 吸着OFF
+CON
+RES MR10705              ; ST4ﾜｰｸ吸着 破壊ON
+MRD
+LD= DM35000 #2           ; ｲﾝﾃﾞｯｸｽ位置ﾃﾞｰﾀ
+ANP MR709                ; ﾌｨﾙﾑ受け全吸着 吸着ON SW
+ANB MR710                ; ﾌｨﾙﾑ受け全吸着 吸着OFF SW
+ANB MR711                ; ﾌｨﾙﾑ受け全吸着 破壊ON SW
+ANL
+SET MR10609              ; ST1ﾜｰｸ吸着 吸着ON
+CON
+RES MR10610              ; ST1ﾜｰｸ吸着 吸着OFF
+CON
+RES MR10611              ; ST1ﾜｰｸ吸着 破壊ON
+MRD
+LD= DM35000 #3           ; ｲﾝﾃﾞｯｸｽ位置ﾃﾞｰﾀ
+ANP MR709                ; ﾌｨﾙﾑ受け全吸着 吸着ON SW
+ANB MR710                ; ﾌｨﾙﾑ受け全吸着 吸着OFF SW
+ANB MR711                ; ﾌｨﾙﾑ受け全吸着 破壊ON SW
+ANL
+SET MR10612              ; ST2ﾜｰｸ吸着 吸着ON
+CON
+RES MR10613              ; ST2ﾜｰｸ吸着 吸着OFF
+CON
+RES MR10614              ; ST2ﾜｰｸ吸着 破壊ON
+MRD
+LD= DM35000 #0           ; ｲﾝﾃﾞｯｸｽ位置ﾃﾞｰﾀ
+ANB MR709                ; ﾌｨﾙﾑ受け全吸着 吸着ON SW
+ANP MR710                ; ﾌｨﾙﾑ受け全吸着 吸着OFF SW
+ANB MR711                ; ﾌｨﾙﾑ受け全吸着 破壊ON SW
+ANL
+RES MR10700              ; ST3ﾜｰｸ吸着 吸着ON
+CON
+SET MR10701              ; ST3ﾜｰｸ吸着 吸着OFF
+CON
+RES MR10702              ; ST3ﾜｰｸ吸着 破壊ON
+MRD
+LD= DM35000 #1           ; ｲﾝﾃﾞｯｸｽ位置ﾃﾞｰﾀ
+ANB MR709                ; ﾌｨﾙﾑ受け全吸着 吸着ON SW
+ANP MR710                ; ﾌｨﾙﾑ受け全吸着 吸着OFF SW
+ANB MR711                ; ﾌｨﾙﾑ受け全吸着 破壊ON SW
+ANL
+RES MR10703              ; ST4ﾜｰｸ吸着 吸着ON
+CON
+SET MR10704              ; ST4ﾜｰｸ吸着 吸着OFF
+CON
+RES MR10705              ; ST4ﾜｰｸ吸着 破壊ON
+MRD
+LD= DM35000 #2           ; ｲﾝﾃﾞｯｸｽ位置ﾃﾞｰﾀ
+ANB MR709                ; ﾌｨﾙﾑ受け全吸着 吸着ON SW
+ANP MR710                ; ﾌｨﾙﾑ受け全吸着 吸着OFF SW
+ANB MR711                ; ﾌｨﾙﾑ受け全吸着 破壊ON SW
+ANL
+RES MR10609              ; ST1ﾜｰｸ吸着 吸着ON
+CON
+SET MR10610              ; ST1ﾜｰｸ吸着 吸着OFF
+CON
+RES MR10611              ; ST1ﾜｰｸ吸着 破壊ON
+MRD
+LD= DM35000 #3           ; ｲﾝﾃﾞｯｸｽ位置ﾃﾞｰﾀ
+ANB MR709                ; ﾌｨﾙﾑ受け全吸着 吸着ON SW
+ANP MR710                ; ﾌｨﾙﾑ受け全吸着 吸着OFF SW
+ANB MR711                ; ﾌｨﾙﾑ受け全吸着 破壊ON SW
+ANL
+RES MR10612              ; ST2ﾜｰｸ吸着 吸着ON
+CON
+SET MR10613              ; ST2ﾜｰｸ吸着 吸着OFF
+CON
+RES MR10614              ; ST2ﾜｰｸ吸着 破壊ON
+MRD
+LD= DM35000 #0           ; ｲﾝﾃﾞｯｸｽ位置ﾃﾞｰﾀ
+ANB MR709                ; ﾌｨﾙﾑ受け全吸着 吸着ON SW
+ANB MR710                ; ﾌｨﾙﾑ受け全吸着 吸着OFF SW
+ANP MR711                ; ﾌｨﾙﾑ受け全吸着 破壊ON SW
+ANL
+SET MR12704              ; 給材部ﾃｰﾌﾞﾙ3 破壊確認開始
+CON
+SET @MR2401
+MRD
+LD= DM35000 #1           ; ｲﾝﾃﾞｯｸｽ位置ﾃﾞｰﾀ
+ANB MR709                ; ﾌｨﾙﾑ受け全吸着 吸着ON SW
+ANB MR710                ; ﾌｨﾙﾑ受け全吸着 吸着OFF SW
+ANP MR711                ; ﾌｨﾙﾑ受け全吸着 破壊ON SW
+ANL
+SET MR12712              ; 給材部ﾃｰﾌﾞﾙ4 破壊確認開始
+CON
+SET @MR2402
+MRD
+LD= DM35000 #2           ; ｲﾝﾃﾞｯｸｽ位置ﾃﾞｰﾀ
+ANB MR709                ; ﾌｨﾙﾑ受け全吸着 吸着ON SW
+ANB MR710                ; ﾌｨﾙﾑ受け全吸着 吸着OFF SW
+ANP MR711                ; ﾌｨﾙﾑ受け全吸着 破壊ON SW
+ANL
+SET MR12604              ; 給材部ﾃｰﾌﾞﾙ1 破壊確認開始
+CON
+SET @MR2403
+MPP
+LD= DM35000 #3           ; ｲﾝﾃﾞｯｸｽ位置ﾃﾞｰﾀ
+ANB MR709                ; ﾌｨﾙﾑ受け全吸着 吸着ON SW
+ANB MR710                ; ﾌｨﾙﾑ受け全吸着 吸着OFF SW
+ANP MR711                ; ﾌｨﾙﾑ受け全吸着 破壊ON SW
+ANL
+SET MR12612              ; 給材部ﾃｰﾌﾞﾙ2 破壊確認開始
+CON
+SET @MR2404
+STG @MR2401
+AND MR12613              ; 給材部ﾃｰﾌﾞﾙ2 吸着破壊OK
+RES MR12613              ; 給材部ﾃｰﾌﾞﾙ2 吸着破壊OK
+CON
+ENDS
+STG @MR2402
+AND MR12705              ; 給材部ﾃｰﾌﾞﾙ3 吸着破壊OK
+RES MR12705              ; 給材部ﾃｰﾌﾞﾙ3 吸着破壊OK
+CON
+ENDS
+STG @MR2403
+AND MR12713              ; 給材部ﾃｰﾌﾞﾙ4 吸着破壊OK
+RES MR12713              ; 給材部ﾃｰﾌﾞﾙ4 吸着破壊OK
+CON
+ENDS
+STG @MR2404
+AND MR12605              ; 給材部ﾃｰﾌﾞﾙ1 吸着破壊OK
+RES MR12605              ; 給材部ﾃｰﾌﾞﾙ1 吸着破壊OK
+CON
+ENDS
+LD CR2002                ; 常時ON
+LD= DM35000 #0           ; ｲﾝﾃﾞｯｸｽ位置ﾃﾞｰﾀ
+AND MR10700              ; ST3ﾜｰｸ吸着 吸着ON
+LD= DM35000 #1           ; ｲﾝﾃﾞｯｸｽ位置ﾃﾞｰﾀ
+AND MR10703              ; ST4ﾜｰｸ吸着 吸着ON
+ORL
+LD= DM35000 #2           ; ｲﾝﾃﾞｯｸｽ位置ﾃﾞｰﾀ
+AND MR10609              ; ST1ﾜｰｸ吸着 吸着ON
+ORL
+LD= DM35000 #3           ; ｲﾝﾃﾞｯｸｽ位置ﾃﾞｰﾀ
+AND MR10612              ; ST2ﾜｰｸ吸着 吸着ON
+ORL
+ANL
+OUT MR800                ; ﾌｨﾙﾑ受け 全吸着 吸着ON ﾗﾝﾌﾟ
+LD CR2002                ; 常時ON
+LD= DM35000 #0           ; ｲﾝﾃﾞｯｸｽ位置ﾃﾞｰﾀ
+AND MR10701              ; ST3ﾜｰｸ吸着 吸着OFF
+ANB MR10702              ; ST3ﾜｰｸ吸着 破壊ON
+LD= DM35000 #1           ; ｲﾝﾃﾞｯｸｽ位置ﾃﾞｰﾀ
+AND MR10704              ; ST4ﾜｰｸ吸着 吸着OFF
+ANB MR10705              ; ST4ﾜｰｸ吸着 破壊ON
+ORL
+LD= DM35000 #2           ; ｲﾝﾃﾞｯｸｽ位置ﾃﾞｰﾀ
+AND MR10610              ; ST1ﾜｰｸ吸着 吸着OFF
+ANB MR10611              ; ST1ﾜｰｸ吸着 破壊ON
+ORL
+LD= DM35000 #3           ; ｲﾝﾃﾞｯｸｽ位置ﾃﾞｰﾀ
+AND MR10613              ; ST2ﾜｰｸ吸着 吸着OFF
+ANB MR10614              ; ST2ﾜｰｸ吸着 破壊ON
+ORL
+ANL
+OUT MR801                ; ﾌｨﾙﾑ受け 全吸着 吸着OFF ﾗﾝﾌﾟ
+LD CR2002                ; 常時ON
+LD= DM35000 #0           ; ｲﾝﾃﾞｯｸｽ位置ﾃﾞｰﾀ
+AND MR10702              ; ST3ﾜｰｸ吸着 破壊ON
+LD= DM35000 #1           ; ｲﾝﾃﾞｯｸｽ位置ﾃﾞｰﾀ
+AND MR10705              ; ST4ﾜｰｸ吸着 破壊ON
+ORL
+LD= DM35000 #2           ; ｲﾝﾃﾞｯｸｽ位置ﾃﾞｰﾀ
+AND MR10611              ; ST1ﾜｰｸ吸着 破壊ON
+ORL
+LD= DM35000 #3           ; ｲﾝﾃﾞｯｸｽ位置ﾃﾞｰﾀ
+AND MR10614              ; ST2ﾜｰｸ吸着 破壊ON
+ORL
+ANL
+OUT MR802                ; ﾌｨﾙﾑ受け 全吸着 破壊ON ﾗﾝﾌﾟ
+LD CR2002                ; 常時ON
+LD= DM35000 #0           ; ｲﾝﾃﾞｯｸｽ位置ﾃﾞｰﾀ
+AND R7506                ; ﾜｰｸｾｯﾄ部 ST3 圧力1
+LD= DM35000 #1           ; ｲﾝﾃﾞｯｸｽ位置ﾃﾞｰﾀ
+AND R7508                ; ﾜｰｸｾｯﾄ部 ST4 圧力1
+ORL
+LD= DM35000 #2           ; ｲﾝﾃﾞｯｸｽ位置ﾃﾞｰﾀ
+AND R7502                ; ﾜｰｸｾｯﾄ部 ST1 圧力1
+ORL
+LD= DM35000 #3           ; ｲﾝﾃﾞｯｸｽ位置ﾃﾞｰﾀ
+AND R7504                ; ﾜｰｸｾｯﾄ部 ST2 圧力1
+ORL
+ANL
+OUT MR803                ; ﾌｨﾙﾑ受け 全吸着 圧力ｾﾝｻOUT1 ﾗﾝﾌﾟ
+LD CR2002                ; 常時ON
+LD= DM35000 #0           ; ｲﾝﾃﾞｯｸｽ位置ﾃﾞｰﾀ
+AND R7505                ; ﾜｰｸｾｯﾄ部 ST2 圧力2
+LD= DM35000 #1           ; ｲﾝﾃﾞｯｸｽ位置ﾃﾞｰﾀ
+AND R7507                ; ﾜｰｸｾｯﾄ部 ST3 圧力2
+ORL
+LD= DM35000 #2           ; ｲﾝﾃﾞｯｸｽ位置ﾃﾞｰﾀ
+AND R7509                ; ﾜｰｸｾｯﾄ部 ST4 圧力2
+ORL
+LD= DM35000 #3           ; ｲﾝﾃﾞｯｸｽ位置ﾃﾞｰﾀ
+AND R7503                ; ﾜｰｸｾｯﾄ部 ST1 圧力2
+ORL
+ANL
+OUT MR804                ; ﾌｨﾙﾑ受け 全吸着 圧力ｾﾝｻOUT2 ﾗﾝﾌﾟ
+LD @MR2101               ; 転写部手動操作有効
+MPS
+LDP MR900                ; 塗布ﾕﾆｯﾄ上下 上昇 SW
+ANB MR901                ; 塗布ﾕﾆｯﾄ上下 下降 SW
+ANL
+RES MR11406              ; ﾕﾆｯﾄ 下降
+MRD
+LDB MR900                ; 塗布ﾕﾆｯﾄ上下 上昇 SW
+BANB DM10531 #2          ; MSEP Axis-2 状態信号
+ANP MR901                ; 塗布ﾕﾆｯﾄ上下 下降 SW
+ANL
+SET MR11406              ; ﾕﾆｯﾄ 下降
+MRD
+LDP MR902                ; 塗布ﾍｯﾄﾞ 後退 SW
+ANB MR903                ; 塗布ﾍｯﾄﾞ 前進 SW
+ANL
+RES MR11404              ; ﾍｯﾄﾞ前後 前進
+MPP
+LDB MR902                ; 塗布ﾍｯﾄﾞ 後退 SW
+ANP MR903                ; 塗布ﾍｯﾄﾞ 前進 SW
+LD R7604                 ; 転写部  転写RB原点位置
+OR>= DM21790 #25000      ; 軸1 現在座標
+ANL
+AND R7601                ; 接着剤塗布部 ﾕﾆｯﾄ 上限
+AND R7407                ; ｽｷｰｼﾞ部 ｽｸﾚｰﾊﾟｰ（小） 上限
+AND R7409                ; ｽｷｰｼﾞ部 ｽｸﾚｰﾊﾟｰ（大） 上限
+ANL
+SET MR11404              ; ﾍｯﾄﾞ前後 前進
+LD @MR2101               ; 転写部手動操作有効
+MPS
+LDB R7512                ; ﾌｨﾙﾑ受け部  Fﾊﾝﾄﾞ 開限
+AND R7513                ; ﾌｨﾙﾑ受け部  Fﾊﾝﾄﾞ 閉限
+ANL
+MPS
+LD<= DM21790 #25000      ; 軸1 現在座標
+AND R7604                ; 転写部  転写RB原点位置
+AND MR700                ; ﾌｨﾙﾑ受け上昇 SW
+ANB MR701                ; ﾌｨﾙﾑ受け下降 SW
+ANL
+MPS
+LDB LR10002              ; ﾜｰｸｾｯﾄｼﾞｸﾞ 90度回転使用/未使用
+ANB MR11302              ; ﾌｨﾙﾑ受け90度回転 回転
+AND MR11303              ; ﾌｨﾙﾑ受け90度回転 戻り
+ANB R8108                ; ﾌｨﾙﾑ受け90度回転 回転側限
+AND R8109                ; ﾌｨﾙﾑ受け90度回転 戻し限
+ANL
+RES MR11402              ; ﾌｨﾙﾑ受け 下降
+CON
+SET MR11403              ; ﾌｨﾙﾑ受け 上昇
+MPP
+LD LR10002               ; ﾜｰｸｾｯﾄｼﾞｸﾞ 90度回転使用/未使用
+AND MR11302              ; ﾌｨﾙﾑ受け90度回転 回転
+ANB MR11303              ; ﾌｨﾙﾑ受け90度回転 戻り
+AND R8108                ; ﾌｨﾙﾑ受け90度回転 回転側限
+ANB R8109                ; ﾌｨﾙﾑ受け90度回転 戻し限
+ANL
+RES MR11402              ; ﾌｨﾙﾑ受け 下降
+CON
+SET MR11403              ; ﾌｨﾙﾑ受け 上昇
+MPP
+LD MR001                 ; ｲﾝﾃﾞｯｸｽ原点復帰完了
+AND R7604                ; 転写部  転写RB原点位置
+AND MR701                ; ﾌｨﾙﾑ受け下降 SW
+ANB MR700                ; ﾌｨﾙﾑ受け上昇 SW
+ANL
+MPS
+LDB LR10002              ; ﾜｰｸｾｯﾄｼﾞｸﾞ 90度回転使用/未使用
+ANB MR11302              ; ﾌｨﾙﾑ受け90度回転 回転
+AND MR11303              ; ﾌｨﾙﾑ受け90度回転 戻り
+ANB R8108                ; ﾌｨﾙﾑ受け90度回転 回転側限
+AND R8109                ; ﾌｨﾙﾑ受け90度回転 戻し限
+ANL
+RES MR11403              ; ﾌｨﾙﾑ受け 上昇
+CON
+SET MR11402              ; ﾌｨﾙﾑ受け 下降
+MPP
+LD LR10002               ; ﾜｰｸｾｯﾄｼﾞｸﾞ 90度回転使用/未使用
+AND MR11302              ; ﾌｨﾙﾑ受け90度回転 回転
+ANB MR11303              ; ﾌｨﾙﾑ受け90度回転 戻り
+AND R8108                ; ﾌｨﾙﾑ受け90度回転 回転側限
+ANB R8109                ; ﾌｨﾙﾑ受け90度回転 戻し限
+ANL
+RES MR11403              ; ﾌｨﾙﾑ受け 上昇
+CON
+SET MR11402              ; ﾌｨﾙﾑ受け 下降
+MRD
+LD MR20501               ; MC_軸1 ｻｰﾎﾞON LP
+ANB MR21110              ; MC 軸1BUSY
+ANB MR21310              ; MC 軸2BUSY
+LD CR2002                ; 常時ON
+AND MR001                ; ｲﾝﾃﾞｯｸｽ原点復帰完了
+ORL
+ANL
+MPS
+LDB R7515                ; ﾌｨﾙﾑ受け部  F受け 上限
+AND R7514                ; ﾌｨﾙﾑ受け部  F受け 下限
+ANL
+MPS
+LD MR702                 ; ﾌｨﾙﾑ受けﾊﾝﾄﾞ閉 SW
+ANB MR703                ; ﾌｨﾙﾑ受けﾊﾝﾄﾞ開 SW
+ANL
+RES MR11400              ; ﾌｨﾙﾑﾊﾝﾄﾞ開閉 開
+CON
+SET MR11401              ; ﾌｨﾙﾑﾊﾝﾄﾞ開閉 閉
+MPP
+LD MR703                 ; ﾌｨﾙﾑ受けﾊﾝﾄﾞ開 SW
+ANB MR702                ; ﾌｨﾙﾑ受けﾊﾝﾄﾞ閉 SW
+ANL
+RES MR11401              ; ﾌｨﾙﾑﾊﾝﾄﾞ開閉 閉
+CON
+SET MR11400              ; ﾌｨﾙﾑﾊﾝﾄﾞ開閉 開
+MRD
+LD MR704                 ; JIGｴｱｰ下降 SW
+ANB MR705                ; JIGｴｱｰ上昇 SW
+ANL
+RES MR11410              ; 治具ｴｱｰ真空  上昇
+MPP
+LD MR705                 ; JIGｴｱｰ上昇 SW
+ANB MR704                ; JIGｴｱｰ下降 SW
+ANL
+SET MR11410              ; 治具ｴｱｰ真空  上昇
+MPP
+LD R7515                 ; ﾌｨﾙﾑ受け部  F受け 上限
+ANB R7514                ; ﾌｨﾙﾑ受け部  F受け 下限
+AND MR001                ; ｲﾝﾃﾞｯｸｽ原点復帰完了
+AND R7604                ; 転写部  転写RB原点位置
+ANL
+MPS
+LD MR712                 ; ﾌｨﾙﾑ受け90度回転 戻り
+ANB MR713                ; ﾌｨﾙﾑ受け90度回転 回転
+ANL
+RES MR11302              ; ﾌｨﾙﾑ受け90度回転 回転
+CON
+SET MR11303              ; ﾌｨﾙﾑ受け90度回転 戻り
+MPP
+LDB MR712                ; ﾌｨﾙﾑ受け90度回転 戻り
+AND MR713                ; ﾌｨﾙﾑ受け90度回転 回転
+ANL
+RES MR11303              ; ﾌｨﾙﾑ受け90度回転 戻り
+CON
+SET MR11302              ; ﾌｨﾙﾑ受け90度回転 回転
+LD @MR2101               ; 転写部手動操作有効
+AND>= DM21850 #3000      ; 軸2 現在座標
+ANB MR21110              ; MC 軸1BUSY
+ANB MR21310              ; MC 軸2BUSY
+MPS
+LDP MR1100               ; ｽｷｰｼﾞ台上下 下降 SW
+ANB MR1101               ; ｽｷｰｼﾞ台上下 上昇 SW
+ANL
+RES MR11206              ; ｽｷｰｼﾞ台 上昇
+MPP
+LDP MR1101               ; ｽｷｰｼﾞ台上下 上昇 SW
+ANB MR1100               ; ｽｷｰｼﾞ台上下 下降 SW
+AND>= DM21790 #25000     ; 軸1 現在座標
+ANL
+SET MR11206              ; ｽｷｰｼﾞ台 上昇
+LD @MR2101               ; 転写部手動操作有効
+MPS
+LDP MR1102               ; ｽｷｰｼﾞ台上流側吸着 吸着ON SW
+ANB MR1103               ; ｽｷｰｼﾞ台上流側吸着 吸着OFF SW
+ANB MR1104               ; ｽｷｰｼﾞ台上流側吸着 破壊ON SW
+ANL
+SET MR10603              ; ｽｷｰｼﾞ台上流 吸着ON
+CON
+RES MR10604              ; ｽｷｰｼﾞ台上流 吸着OFF
+CON
+RES MR10605              ; ｽｷｰｼﾞ台上流 破壊ON
+MRD
+LDP MR1103               ; ｽｷｰｼﾞ台上流側吸着 吸着OFF SW
+ANB MR1102               ; ｽｷｰｼﾞ台上流側吸着 吸着ON SW
+ANB MR1104               ; ｽｷｰｼﾞ台上流側吸着 破壊ON SW
+ANL
+RES MR10603              ; ｽｷｰｼﾞ台上流 吸着ON
+CON
+SET MR10604              ; ｽｷｰｼﾞ台上流 吸着OFF
+CON
+RES MR10605              ; ｽｷｰｼﾞ台上流 破壊ON
+MPP
+LDP MR1104               ; ｽｷｰｼﾞ台上流側吸着 破壊ON SW
+ANB MR1102               ; ｽｷｰｼﾞ台上流側吸着 吸着ON SW
+ANB MR1103               ; ｽｷｰｼﾞ台上流側吸着 吸着OFF SW
+ANL
+SET MR15412              ; ｽｷｰｼﾞ台上流側 破壊確認開始
+CON
+SET @MR2405
+STG @MR2405
+AND MR15413              ; ｽｷｰｼﾞ台上流側 吸着破壊OK
+RES MR15413              ; ｽｷｰｼﾞ台上流側 吸着破壊OK
+CON
+ENDS
+LD @MR2101               ; 転写部手動操作有効
+MPS
+LDP MR1105               ; ｽｷｰｼﾞ台下流側吸着 吸着ON SW
+ANB MR1106               ; ｽｷｰｼﾞ台下流側吸着 吸着OFF SW
+ANB MR1107               ; ｽｷｰｼﾞ台下流側吸着 破壊ON SW
+ANL
+SET MR10600              ; ｽｷｰｼﾞ台下流 吸着ON
+CON
+RES MR10601              ; ｽｷｰｼﾞ台下流 吸着OFF
+CON
+RES MR10602              ; ｽｷｰｼﾞ台下流 破壊ON
+MRD
+LDP MR1106               ; ｽｷｰｼﾞ台下流側吸着 吸着OFF SW
+ANB MR1105               ; ｽｷｰｼﾞ台下流側吸着 吸着ON SW
+ANB MR1107               ; ｽｷｰｼﾞ台下流側吸着 破壊ON SW
+ANL
+RES MR10600              ; ｽｷｰｼﾞ台下流 吸着ON
+CON
+SET MR10601              ; ｽｷｰｼﾞ台下流 吸着OFF
+CON
+RES MR10602              ; ｽｷｰｼﾞ台下流 破壊ON
+MPP
+LDP MR1107               ; ｽｷｰｼﾞ台下流側吸着 破壊ON SW
+ANB MR1105               ; ｽｷｰｼﾞ台下流側吸着 吸着ON SW
+ANB MR1106               ; ｽｷｰｼﾞ台下流側吸着 吸着OFF SW
+ANL
+SET MR15404              ; ｽｷｰｼﾞ台下流側 破壊確認開始
+CON
+SET @MR2406
+STG @MR2406
+AND MR15405              ; ｽｷｰｼﾞ台下流側 吸着破壊OK
+RES MR15405              ; ｽｷｰｼﾞ台下流側 吸着破壊OK
+CON
+ENDS
+LD @MR2101               ; 転写部手動操作有効
+AND MR1304               ; ｽｷｰｼﾞRB ｲﾝﾀｰﾛｯｸ ﾗﾝﾌﾟ
+MPS
+LDP MR1108               ; ｽｸﾚｰﾊﾟ大上昇 SW
+ANB MR1109               ; ｽｸﾚｰﾊﾟ大下降 SW
+ANL
+RES MR11204              ; ｽｸﾚｰﾊﾟｰ（大） 下降
+MRD
+LDP MR1109               ; ｽｸﾚｰﾊﾟ大下降 SW
+ANB MR1108               ; ｽｸﾚｰﾊﾟ大上昇 SW
+AND>= DM21790 #25000     ; 軸1 現在座標
+AND R7603                ; 接着剤塗布部 ﾍｯﾄﾞ 後限
+AND<= DM10524 #220       ; MSEP Axis-2 現在位置（下位8bit）
+ANL
+SET MR11204              ; ｽｸﾚｰﾊﾟｰ（大） 下降
+MRD
+LDP MR1110               ; ｽｸﾚｰﾊﾟ小上昇 SW
+ANB MR1111               ; ｽｸﾚｰﾊﾟ小下降 SW
+ANL
+RES MR11202              ; ｽｸﾚｰﾊﾟｰ（小） 下降
+MPP
+LDP MR1111               ; ｽｸﾚｰﾊﾟ小下降 SW
+ANB MR1110               ; ｽｸﾚｰﾊﾟ小上昇 SW
+AND>= DM21790 #25000     ; 軸1 現在座標
+AND R7603                ; 接着剤塗布部 ﾍｯﾄﾞ 後限
+AND<= DM10524 #220       ; MSEP Axis-2 現在位置（下位8bit）
+ANL
+SET MR11202              ; ｽｸﾚｰﾊﾟｰ（小） 下降
+LD @MR2101               ; 転写部手動操作有効
+MPS
+LD MR1400                ; 主軸ﾛｰﾗｸﾗﾝﾌﾟ 上昇 SW
+ANB MR1401               ; 主軸ﾛｰﾗｸﾗﾝﾌﾟ 下降 SW
+ANL
+RES MR11201              ; 主軸ﾛｰﾗｸﾗﾝﾌﾟ 下降
+CON
+SET MR11200              ; 主軸ﾛｰﾗｸﾗﾝﾌﾟ 上昇
+MRD
+LD MR1401                ; 主軸ﾛｰﾗｸﾗﾝﾌﾟ 下降 SW
+ANB MR1400               ; 主軸ﾛｰﾗｸﾗﾝﾌﾟ 上昇 SW
+ANL
+RES MR11200              ; 主軸ﾛｰﾗｸﾗﾝﾌﾟ 上昇
+CON
+SET MR11201              ; 主軸ﾛｰﾗｸﾗﾝﾌﾟ 下降
+MRD
+LD MR1402                ; 自重ｷｬﾝｾﾙOFF SW
+ANB MR1403               ; 自重ｷｬﾝｾﾙON SW
+ANL
+RES MR11210              ; ｽﾌﾟﾘﾝｸﾞ　上昇
+MRD
+LD MR1403                ; 自重ｷｬﾝｾﾙON SW
+ANB MR1402               ; 自重ｷｬﾝｾﾙOFF SW
+ANL
+SET MR11210              ; ｽﾌﾟﾘﾝｸﾞ　上昇
+MRD
+LD MR1404                ; ﾀﾞﾝｻﾛｰﾗ後ﾌｨﾙﾑ押さえ下降 SW
+ANB MR1405               ; ﾀﾞﾝｻﾛｰﾗ後ﾌｨﾙﾑ押さえ上昇 SW
+ANL
+RES MR11212              ; ﾀﾞﾝｻ後ﾌｨﾙﾑ押え 上昇
+MPP
+LD MR1405                ; ﾀﾞﾝｻﾛｰﾗ後ﾌｨﾙﾑ押さえ上昇 SW
+ANB MR1404               ; ﾀﾞﾝｻﾛｰﾗ後ﾌｨﾙﾑ押さえ下降 SW
+ANL
+SET MR11212              ; ﾀﾞﾝｻ後ﾌｨﾙﾑ押え 上昇
+LD @MR2101               ; 転写部手動操作有効
+ANB @MR2308              ; ﾌｨﾙﾑ巻出し動作中
+ANP MR1406               ; 巻出動作ﾀﾞﾝｻﾛｰﾗ SW
+SET MR16005              ; 強制　巻きだしﾓｰﾀ動作ON
+CON
+SET MR1600               ; 巻出動作ﾀﾞﾝｻﾛｰﾗ　動作中 ﾗﾝﾌﾟ
+CON
+SET @MR2308              ; ﾌｨﾙﾑ巻出し動作中
+CON
+SET @MR2309
+STG @MR2309
+TMR @32 #2
+CON
+AND @T32
+RES MR16005              ; 強制　巻きだしﾓｰﾀ動作ON
+CON
+JMP @MR2310              ; ﾎﾟｲﾝﾄ10移動中
+STG @MR2310              ; ﾎﾟｲﾝﾄ10移動中
+RES MR1600               ; 巻出動作ﾀﾞﾝｻﾛｰﾗ　動作中 ﾗﾝﾌﾟ
+CON
+RES @MR2308              ; ﾌｨﾙﾑ巻出し動作中
+CON
+ENDS
+LD @MR2101               ; 転写部手動操作有効
+ANB @MR2311
+ANP MR1407               ; 巻取動作ﾀﾞﾝｻﾛｰﾗ SW
+SET MR16105              ; 強制　巻き取りﾓｰﾀ動作ON
+CON
+SET MR1601               ; 巻取動作ﾀﾞﾝｻﾛｰﾗ　動作中 ﾗﾝﾌﾟ
+CON
+SET @MR2311
+CON
+SET @MR2312              ; ﾎﾟｲﾝﾄ2移動中
+STG @MR2312              ; ﾎﾟｲﾝﾄ2移動中
+TMR @33 #2
+CON
+AND @T33
+JMP @MR2313              ; ﾎﾟｲﾝﾄ3移動中
+STG @MR2313              ; ﾎﾟｲﾝﾄ3移動中
+RES MR1601               ; 巻取動作ﾀﾞﾝｻﾛｰﾗ　動作中 ﾗﾝﾌﾟ
+CON
+RES @MR2311
+CON
+ENDS
+LD @MR2101               ; 転写部手動操作有効
+MPS
+LD MR1800                ; 巻き出しﾌｨﾙﾑ押さえ下降 SW
+ANB MR1801               ; 巻き出しﾌｨﾙﾑ押さえ上昇 SW
+ANL
+RES MR11214              ; 巻き出しﾌｨﾙﾑ押え 上昇
+MRD
+LDB MR1800               ; 巻き出しﾌｨﾙﾑ押さえ下降 SW
+AND MR1801               ; 巻き出しﾌｨﾙﾑ押さえ上昇 SW
+ANL
+SET MR11214              ; 巻き出しﾌｨﾙﾑ押え 上昇
+MRD
+LDP MR1802               ; ﾀﾞﾝｻﾛｰﾗｸﾗﾝﾌﾟ ｱﾝﾛｯｸ SW
+ANB MR1803               ; ﾀﾞﾝｻﾛｰﾗｸﾗﾝﾌﾟ ﾛｯｸ SW
+ANL
+SET MR11209              ; ﾀﾞﾝｻｰﾛｰﾗｸﾗﾝﾌﾟ 開き
+CON
+RES MR11208              ; ﾀﾞﾝｻｰﾛｰﾗｸﾗﾝﾌﾟ 閉じ
+MRD
+LDP MR1803               ; ﾀﾞﾝｻﾛｰﾗｸﾗﾝﾌﾟ ﾛｯｸ SW
+ANB MR1802               ; ﾀﾞﾝｻﾛｰﾗｸﾗﾝﾌﾟ ｱﾝﾛｯｸ SW
+ANL
+SET MR11208              ; ﾀﾞﾝｻｰﾛｰﾗｸﾗﾝﾌﾟ 閉じ
+CON
+RES MR11209              ; ﾀﾞﾝｻｰﾛｰﾗｸﾗﾝﾌﾟ 開き
+MRD
+LD MR1806                ; ﾊﾞｰｲｵﾅｲｻﾞOFF SW
+ANB MR1807               ; ﾊﾞｰｲｵﾅｲｻﾞON SW
+ANL
+RES MR6111               ; ﾊﾞｰｲｵﾅｲｻﾞ放電制御入力
+MRD
+LD MR1807                ; ﾊﾞｰｲｵﾅｲｻﾞON SW
+ANB MR1806               ; ﾊﾞｰｲｵﾅｲｻﾞOFF SW
+ANL
+SET MR6111               ; ﾊﾞｰｲｵﾅｲｻﾞ放電制御入力
+MRD
+LD MR1804                ; 巻き出しﾓｰﾀCW SW
+ANB MR1805               ; 巻き出しﾓｰﾀCCW SW
+ANB MR6009               ; DRV-1 反転
+ANL
+SET MR2005               ; 巻き出しﾓｰﾀ回転中 ﾗﾝﾌﾟ
+CON
+RES MR6009               ; DRV-1 反転
+CON
+SET MR6008               ; DRV-1 正転
+MRD
+ANF MR1804               ; 巻き出しﾓｰﾀCW SW
+RES MR2005               ; 巻き出しﾓｰﾀ回転中 ﾗﾝﾌﾟ
+CON
+RES MR6009               ; DRV-1 反転
+CON
+RES MR6008               ; DRV-1 正転
+MRD
+LD MR1805                ; 巻き出しﾓｰﾀCCW SW
+ANB MR1804               ; 巻き出しﾓｰﾀCW SW
+ANB MR6008               ; DRV-1 正転
+ANL
+SET MR2005               ; 巻き出しﾓｰﾀ回転中 ﾗﾝﾌﾟ
+CON
+RES MR6008               ; DRV-1 正転
+CON
+SET MR6009               ; DRV-1 反転
+MRD
+ANF MR1805               ; 巻き出しﾓｰﾀCCW SW
+RES MR2005               ; 巻き出しﾓｰﾀ回転中 ﾗﾝﾌﾟ
+CON
+RES MR6008               ; DRV-1 正転
+CON
+RES MR6009               ; DRV-1 反転
+MRD
+LD MR2000                ; 巻き取りﾌｨﾙﾑ押さえ上昇 SW
+ANB MR2001               ; 巻き取りﾌｨﾙﾑ押さえ下降 SW
+ANL
+RES MR11408              ; 巻き取りﾌｨﾙﾑ押え　下降
+MRD
+LDB MR2000               ; 巻き取りﾌｨﾙﾑ押さえ上昇 SW
+AND MR2001               ; 巻き取りﾌｨﾙﾑ押さえ下降 SW
+ANL
+SET MR11408              ; 巻き取りﾌｨﾙﾑ押え　下降
+MRD
+LD MR2002                ; 巻き取りﾓｰﾀCW SW
+ANB MR2003               ; 巻き取りﾓｰﾀCCW SW
+ANB MR6013               ; DRV-2 反転
+ANL
+SET MR2100               ; 巻き取りﾓｰﾀ回転中 ﾗﾝﾌﾟ
+CON
+RES MR6013               ; DRV-2 反転
+CON
+SET MR6012               ; DRV-2 正転
+MRD
+ANF MR2002               ; 巻き取りﾓｰﾀCW SW
+RES MR2100               ; 巻き取りﾓｰﾀ回転中 ﾗﾝﾌﾟ
+CON
+RES MR6013               ; DRV-2 反転
+CON
+RES MR6012               ; DRV-2 正転
+MRD
+LD MR2003                ; 巻き取りﾓｰﾀCCW SW
+ANB MR2002               ; 巻き取りﾓｰﾀCW SW
+ANB MR6012               ; DRV-2 正転
+ANL
+SET MR2100               ; 巻き取りﾓｰﾀ回転中 ﾗﾝﾌﾟ
+CON
+RES MR6012               ; DRV-2 正転
+CON
+SET MR6013               ; DRV-2 反転
+MRD
+ANF MR2003               ; 巻き取りﾓｰﾀCCW SW
+RES MR2100               ; 巻き取りﾓｰﾀ回転中 ﾗﾝﾌﾟ
+CON
+RES MR6012               ; DRV-2 正転
+CON
+RES MR6013               ; DRV-2 反転
+MRD
+LD MR2006                ; ﾌｨﾙﾑ巻取り ﾛｰﾗ上下 下降
+ANB MR2007               ; ﾌｨﾙﾑ巻取り ﾛｰﾗ上下 上昇
+ANL
+RES MR11304              ; ﾌｨﾙﾑ巻取り ﾛｰﾗ上下 上昇
+MPP
+LD MR2007                ; ﾌｨﾙﾑ巻取り ﾛｰﾗ上下 上昇
+ANB MR2006               ; ﾌｨﾙﾑ巻取り ﾛｰﾗ上下 下降
+AND MR001                ; ｲﾝﾃﾞｯｸｽ原点復帰完了
+ANL
+SET MR11304              ; ﾌｨﾙﾑ巻取り ﾛｰﾗ上下 上昇
+STG @MR2108
+ANB R39104               ; SELECT_Y_N Interlock
+SET R39104               ; SELECT_Y_N Interlock
+CON
+DW #7 @DM21              ; ScreenNo /SELECT_Y_N
+CON
+DW #0 @DM22              ; Bz_Use /SELECT_Y_N
+CON
+SET @MR300               ; Task5 SELECT_Y_N
+CON
+JMP @MR2109
+STG @MR2109
+AND @MR301               ; Task5 Y/N END
+RES @MR301               ; Task5 Y/N END
+CON
+RES R39104               ; SELECT_Y_N Interlock
+CON
+MPS
+AND @MR306               ; Task5 Y/N
+JMP @MR2000              ; Mainte
+MPP
+ANB @MR306               ; Task5 Y/N
+JMP @MR2110
+STG @MR2110
+MCALL HOLD_REQUEST #1
+JMP @MR2915              ; Mainte END
+STG @MR2915              ; Mainte END
+MPS
+MCALL MODE_INDI #2
+MPP
+ANB @MR001               ; TASK5 Error
+MPS
+ANB R41205               ; TASK5 PAUSE 
+RES MR23914              ; ﾒﾝﾃﾅﾝｽ中
+CON
+SET R46103               ; _停止中　ﾓｰﾄﾞﾌﾗｸﾞ
+CON
+JMP LR605                ; _Grp1_Task5_Fin.STG
+MPP
+AND R41205               ; TASK5 PAUSE 
+SET @MR1900              ; Main1 HALT許可
+;<h1/>ERROR
+;[使用方法]
+;・@DM1にERROR番号を代入
+;・@DM2にSensor番号を代入(ｾﾝｻ無しｴﾗｰの場合は0)
+;・@DM9に復帰SW番号(1～9、0はSW無し)をdegit単位で4桁入力
+;・Task0 ERROR SET(@MR100)でｴﾗｰ処理開始
+;・ｴﾗｰ復帰でTask0 ERROR END(@MR101)がON
+;・押下復帰SW番号により左から対応した@MR105,@MR106,@MR107,@MR108のいずれかがON
+;・上記ONが成立したらJMPするSTGに対応する処理を記述
+;Error0を左側から1,2,3,4の番号に対応した復帰選択SWを出力する
+;MyTask Error Process Substance/ｴﾗｰ処理実体
+STG @MR100               ; Task5 ERROR
+ANB R39002               ; ERROR_DISP Busy
+MPS
+ZRES @MR105 @MR108       ; SW1  SW4
+CON
+LDA @DM9                 ; ReturnSW /ERROR_DISP
+CON
+TBCD
+CON
+STA @DM10
+CON
+DISN @DM10 @DM3 #4
+MRD
+DW #5 @DM0               ; TaskNo /ERROR_DISP
+CON
+BMOV @DM0 DM60000 #7     ; TaskNo /ERROR_DISP  TaskNo /ERROR_DISP
+MPP
+SET R39000               ; ERROR_DISP Start
+CON
+SET @MR102               ; Task5 ERROR Busy
+CON
+JMP @MR103
+STG @MR103
+AND R39002               ; ERROR_DISP Busy
+AND= DM60008 @DM1        ; ReturnNo /ERROR_DISP  ErrorNo /ERROR_DISP
+MPS
+AND= DM60007 @DM6        ; ReturnSW /ERROR_DISP
+SET @MR105               ; SW1
+CON
+JMP @MR104
+MRD
+AND= DM60007 @DM5        ; ReturnSW /ERROR_DISP
+SET @MR106               ; SW2
+CON
+JMP @MR104
+MRD
+AND= DM60007 @DM4        ; ReturnSW /ERROR_DISP
+SET @MR107               ; SW3
+CON
+JMP @MR104
+MPP
+AND= DM60007 @DM3        ; ReturnSW /ERROR_DISP
+SET @MR108               ; SW4
+CON
+JMP @MR104
+STG @MR104
+ANB R39002               ; ERROR_DISP Busy
+RES @MR102               ; Task5 ERROR Busy
+CON
+SET @MR101               ; Task5 ERROR_End
+CON
+ENDS
+;<h1/>SELECT_ACT
+;//*Select_ACT Sample
+;画面番号33をﾌﾞｻﾞｰ有りで選択SW番号を左から#5,#10,#0(無し),#34の並びで表示する
+STG @MR4104
+ANB R39204               ; SELECT_ACT Interlock
+SET R39204               ; SELECT_ACT Interlock
+CON
+MPS
+DW #33 @DM31             ; ScreenNo /SELECT_ACT
+CON
+DW #1 @DM32              ; Bz_Use /SELECT_ACT
+CON
+DW #5 @DM33              ; SW1_No /SELECT_ACT
+CON
+DW #10 @DM34             ; SW2_No /SELECT_ACT
+CON
+DW #0 @DM35              ; SW3_No /SELECT_ACT
+CON
+DW #34 @DM36             ; SW4_No /SELECT_ACT
+MPP
+SET @MR200               ; Task5 SELECT_ACT
+CON
+JMP @MR4105
+STG @MR4105
+AND @MR201               ; Task5 SEL_ACT END
+RES @MR201               ; Task5 SEL_ACT END
+CON
+RES R39204               ; SELECT_ACT Interlock
+CON
+MPS
+AND @MR205               ; SW1
+JMP @MR4106
+MRD
+AND @MR206               ; SW2
+JMP @MR4107
+MRD
+AND @MR207               ; SW3
+JMP @MR4108
+MPP
+AND @MR208               ; SW4
+JMP @MR4109
+;Select_ACT Sample *//
+;MyTask Select_ACT Process Substance/SELECT_ACT処理実体
+STG @MR200               ; Task5 SELECT_ACT
+ANB R39202               ; SELECT_ACT Busy
+MPS
+ZRES @MR205 @MR208       ; SW1  SW4
+CON
+DW #5 @DM30              ; TaskNo /SELECT_ACT
+CON
+BMOV @DM30 DM60030 #7    ; TaskNo /SELECT_ACT
+MPP
+SET R39200               ; SELECT_ACT Start
+CON
+SET @MR202               ; Task5 SEL_ACT Busy
+CON
+JMP @MR203
+STG @MR203
+AND R39202               ; SELECT_ACT Busy
+AND<> DM60037 #0         ; SelectSW /SELECT_ACT
+MPS
+AND= DM60037 #1          ; SelectSW /SELECT_ACT
+SET @MR205               ; SW1
+CON
+JMP @MR204
+MRD
+AND= DM60037 #2          ; SelectSW /SELECT_ACT
+SET @MR206               ; SW2
+CON
+JMP @MR204
+MRD
+AND= DM60037 #3          ; SelectSW /SELECT_ACT
+SET @MR207               ; SW3
+CON
+JMP @MR204
+MPP
+AND= DM60037 #4          ; SelectSW /SELECT_ACT
+SET @MR208               ; SW4
+CON
+JMP @MR204
+STG @MR204
+ANB R39202               ; SELECT_ACT Busy
+RES @MR202               ; Task5 SEL_ACT Busy
+CON
+SET @MR201               ; Task5 SEL_ACT END
+CON
+ENDS
+;<h1/>SELECT_Y_N
+;//*Select_Y_N Sample
+STG @MR4203
+ANB R39104               ; SELECT_Y_N Interlock
+SET R39104               ; SELECT_Y_N Interlock
+CON
+DW #7 @DM21              ; ScreenNo /SELECT_Y_N
+CON
+DW #0 @DM22              ; Bz_Use /SELECT_Y_N
+CON
+SET @MR300               ; Task5 SELECT_Y_N
+CON
+JMP @MR4204
+STG @MR4204
+AND @MR301               ; Task5 Y/N END
+RES @MR301               ; Task5 Y/N END
+CON
+RES R39104               ; SELECT_Y_N Interlock
+CON
+MPS
+AND @MR306               ; Task5 Y/N
+JMP @MR4205
+MPP
+ANB @MR306               ; Task5 Y/N
+JMP @MR4206
+;*Select_Y_N Sample//
+;MyTask Select_Y_N Process Substance/SELECT_Y_N処理実体
+STG @MR300               ; Task5 SELECT_Y_N
+ANB R39102               ; SELECT_Y_N Busy
+MPS
+ZRES @MR306 @MR307       ; Task5 Y/N
+CON
+DW #5 @DM20              ; TaskNo /SELECT_Y_N
+CON
+BMOV @DM20 DM60020 #3    ; TaskNo /SELECT_Y_N  TaskNo /SELECT_Y_N
+MPP
+SET R39100               ; SELECT_Y_N Start
+CON
+SET @MR302               ; Task5 Y_N Busy
+CON
+JMP @MR303
+STG @MR303
+AND R39102               ; SELECT_Y_N Busy
+MPS
+AND= DM60023 #1          ; Y_N /SELECT_Y_N
+SET @MR306               ; Task5 Y/N
+CON
+JMP @MR304
+MPP
+AND= DM60023 #2          ; Y_N /SELECT_Y_N
+RES @MR306               ; Task5 Y/N
+CON
+JMP @MR304
+STG @MR304
+ANB R39102               ; SELECT_Y_N Busy
+RES @MR302               ; Task5 Y_N Busy
+CON
+SET @MR301               ; Task5 Y/N END
+CON
+ENDS
+;<h1/>TIMEUP_ERROR
+;//*TIMEUP_ERROR Sample
+;ｻﾝﾌﾟﾙｾﾝｻ:MR5000=ON AND MR5001 = OFF のいずれかが5sﾀｲﾑｱｯﾌﾟしたらTIMEUP_ERROR出力
+;ｴﾗｰ復帰後、再度ｾﾝｻ確認
+;TIMEUP_ERROR Sample *//
+;MyTask TIMEUP_ERROR Process Substance/TIMEUP_ERROR処理実体
+STG @MR400               ; Task5 TIMEUP_ERR
+ANB R39302               ; TIMEUP_ERR Busy
+MPS
+DW #5 @DM40              ; TaskNo /TIMEUP_ERR
+CON
+BMOV @DM40 DM60040 #2    ; TaskNo /TIMEUP_ERR  TaskNo /TIMEUP_ERR
+MPP
+SET R39300               ; TIMEUP_ERR Start
+CON
+SET @MR402               ; Task5 TIMEUP Busy
+CON
+JMP @MR403
+STG @MR403
+AND R39302               ; TIMEUP_ERR Busy
+JMP @MR404
+STG @MR404
+ANB R39302               ; TIMEUP_ERR Busy
+RES @MR402               ; Task5 TIMEUP Busy
+CON
+SET @MR401               ; Task5 TIMEUP_END
+CON
+ENDS
+;<h1/>SubRoutines/ｻﾌﾞﾙｰﾁﾝ
+;[記述方法]
+;・ｻﾌﾞﾙｰﾁﾝは本ﾌﾞｯｸﾏｰｸから下に記述していって下さい
+;・ｻﾌﾞﾙｰﾁﾝは必ずﾌﾞｯｸﾏｰｸを挿入して処理内容を明確にする事
+;<h1/>ﾌｨﾙﾑ受け治具部 原点復帰ｻﾌﾞﾙｰﾁﾝ
+STG @MR4500              ; ﾌｨﾙﾑ受け治具　原点復帰要求
+JMP @MR4505
+STG @MR4505
+RES MR10706              ; 治具ｴｱｰ真空　吸着ON
+CON
+TMH @81 #3
+CON
+AND @T81
+SET MR10708              ; 治具ｴｱｰ真空　破壊ON
+CON
+SET MR10707              ; 治具ｴｱｰ真空　吸着OFF
+CON
+JMP @MR4506
+STG @MR4506
+MPS
+AND R7613                ; 治具ｴｱｰ真空 圧力2 (破壊)
+RES MR10708              ; 治具ｴｱｰ真空　破壊ON
+CON
+JMP @MR4510
+MPP
+TMR @40 #10
+CON
+AND @T40
+RES MR10708              ; 治具ｴｱｰ真空　破壊ON
+CON
+JMP @MR4510
+STG @MR4510
+RES MR11400              ; ﾌｨﾙﾑﾊﾝﾄﾞ開閉 開
+CON
+SET MR11401              ; ﾌｨﾙﾑﾊﾝﾄﾞ開閉 閉
+CON
+MPS
+LDB MR7513               ; ﾌｨﾙﾑ受け部  Fﾊﾝﾄﾞ 閉限ｴﾗｰ
+AND R7513                ; ﾌｨﾙﾑ受け部  Fﾊﾝﾄﾞ 閉限
+ANB R7512                ; ﾌｨﾙﾑ受け部  Fﾊﾝﾄﾞ 開限
+ANL
+JMP @MR4511
+MPP
+LD MR7513                ; ﾌｨﾙﾑ受け部  Fﾊﾝﾄﾞ 閉限ｴﾗｰ
+AND R41205               ; TASK5 PAUSE 
+ANL
+SET @MR1900              ; Main1 HALT許可
+STG @MR4511
+AND R7604                ; 転写部  転写RB原点位置
+RES MR11402              ; ﾌｨﾙﾑ受け 下降
+CON
+SET MR11403              ; ﾌｨﾙﾑ受け 上昇
+CON
+RES MR11410              ; 治具ｴｱｰ真空  上昇
+CON
+MPS
+LDB MR7515               ; ﾌｨﾙﾑ受け部  F受け 上限ｴﾗｰ
+ANB MR7609               ; 治具ｴｱｰ真空  下限ｴﾗｰ
+ANB R7514                ; ﾌｨﾙﾑ受け部  F受け 下限
+AND R7515                ; ﾌｨﾙﾑ受け部  F受け 上限
+ANB R7608                ; 治具ｴｱｰ真空  上限
+AND R7609                ; 治具ｴｱｰ真空  下限
+ANL
+JMP @MR4512
+MPP
+LD MR7515                ; ﾌｨﾙﾑ受け部  F受け 上限ｴﾗｰ
+OR MR7609                ; 治具ｴｱｰ真空  下限ｴﾗｰ
+AND R41205               ; TASK5 PAUSE 
+ANL
+SET @MR1900              ; Main1 HALT許可
+STG @MR4512
+SET @MR4501              ; ﾌｨﾙﾑ受け原点復帰動作中
+CON
+ENDS
+;<h1/>ﾌｨﾙﾑ受け治具部 動作ｻﾌﾞﾙｰﾁﾝ
+STG @MR4600              ; ﾌｨﾙﾑ受け動作ｻﾌﾞﾙｰﾁﾝ
+MPS
+ANB LR10002              ; ﾜｰｸｾｯﾄｼﾞｸﾞ 90度回転使用/未使用
+JMP @MR4605
+MPP
+AND LR10002              ; ﾜｰｸｾｯﾄｼﾞｸﾞ 90度回転使用/未使用
+RES MR11413              ; 給材側 吸着治具 下降
+CON
+SET MR11412              ; 給材側 吸着治具 上昇
+CON
+RES MR11415              ; 除材側  吸着治具 下降
+CON
+SET MR11414              ; 除材側  吸着治具 上昇
+CON
+MPS
+LDB MR7700               ; 給材側 吸着治具 上限ｴﾗｰ
+ANB MR7900               ; 除材側  吸着治具 上昇ｴﾗｰ
+ANB R7701                ; 給材側 吸着治具 下限
+AND R7700                ; 給材側 吸着治具 上限
+ANB R7901                ; 除材側  吸着治具 下限
+AND R7900                ; 除材側  吸着治具 上限
+ANL
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR4603
+MPP
+LD MR7700                ; 給材側 吸着治具 上限ｴﾗｰ
+OR MR7900                ; 除材側  吸着治具 上昇ｴﾗｰ
+AND R41205               ; TASK5 PAUSE 
+ANL
+SET @MR1900              ; Main1 HALT許可
+STG @MR4603
+RES MR11303              ; ﾌｨﾙﾑ受け90度回転 戻り
+CON
+SET MR11302              ; ﾌｨﾙﾑ受け90度回転 回転
+CON
+MPS
+LDB MR8108               ; ﾌｨﾙﾑ受け90度回転 回転側限ｴﾗｰ
+AND R8108                ; ﾌｨﾙﾑ受け90度回転 回転側限
+ANB R8109                ; ﾌｨﾙﾑ受け90度回転 戻し限
+ANL
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+SET MR10011              ; ﾌｨﾙﾑ受けｾｯﾄ中
+CON
+JMP @MR4605
+MPP
+LD MR8108                ; ﾌｨﾙﾑ受け90度回転 回転側限ｴﾗｰ
+AND R41205               ; TASK5 PAUSE 
+ANL
+SET @MR1900              ; Main1 HALT許可
+STG @MR4605
+AND R7604                ; 転写部  転写RB原点位置
+RES MR11403              ; ﾌｨﾙﾑ受け 上昇
+CON
+SET MR11402              ; ﾌｨﾙﾑ受け 下降
+CON
+SET MR11410              ; 治具ｴｱｰ真空  上昇
+CON
+MPS
+LDB MR7514               ; ﾌｨﾙﾑ受け部  F受け 下限ｴﾗｰ
+ANB MR7608               ; 治具ｴｱｰ真空  上限ｴﾗｰ
+ANB R7515                ; ﾌｨﾙﾑ受け部  F受け 上限
+AND R7514                ; ﾌｨﾙﾑ受け部  F受け 下限
+ANB R7609                ; 治具ｴｱｰ真空  下限
+AND R7608                ; 治具ｴｱｰ真空  上限
+ANL
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR4606
+MRD
+AND MR7514               ; ﾌｨﾙﾑ受け部  F受け 下限ｴﾗｰ
+SET MR17514              ; ｽｲｯﾁ表示
+CON
+AND R41205               ; TASK5 PAUSE 
+SET @MR1900              ; Main1 HALT許可
+MPP
+LD MR7608                ; 治具ｴｱｰ真空  上限ｴﾗｰ
+AND R41205               ; TASK5 PAUSE 
+ANL
+SET @MR1900              ; Main1 HALT許可
+LD MR17514               ; ｽｲｯﾁ表示
+AND @MR001               ; TASK5 Error
+MPS
+LD MR700                 ; ﾌｨﾙﾑ受け上昇 SW
+ANB MR701                ; ﾌｨﾙﾑ受け下降 SW
+ANL
+RES @MR4605
+CON
+RES MR11402              ; ﾌｨﾙﾑ受け 下降
+CON
+SET MR11403              ; ﾌｨﾙﾑ受け 上昇
+MRD
+LD MR701                 ; ﾌｨﾙﾑ受け下降 SW
+ANB MR700                ; ﾌｨﾙﾑ受け上昇 SW
+ANL
+RES @MR4605
+CON
+RES MR11403              ; ﾌｨﾙﾑ受け 上昇
+CON
+SET MR11402              ; ﾌｨﾙﾑ受け 下降
+MRD
+LD MR702                 ; ﾌｨﾙﾑ受けﾊﾝﾄﾞ閉 SW
+ANB MR703                ; ﾌｨﾙﾑ受けﾊﾝﾄﾞ開 SW
+ANL
+RES @MR4605
+CON
+RES MR11400              ; ﾌｨﾙﾑﾊﾝﾄﾞ開閉 開
+CON
+SET MR11401              ; ﾌｨﾙﾑﾊﾝﾄﾞ開閉 閉
+MPP
+LD MR703                 ; ﾌｨﾙﾑ受けﾊﾝﾄﾞ開 SW
+ANB MR702                ; ﾌｨﾙﾑ受けﾊﾝﾄﾞ閉 SW
+ANL
+RES @MR4605
+CON
+RES MR11401              ; ﾌｨﾙﾑﾊﾝﾄﾞ開閉 閉
+CON
+SET MR11400              ; ﾌｨﾙﾑﾊﾝﾄﾞ開閉 開
+LDB @MR4605
+ANF MR17514              ; ｽｲｯﾁ表示
+SET @MR4600              ; ﾌｨﾙﾑ受け動作ｻﾌﾞﾙｰﾁﾝ
+STG @MR4606
+RES MR11401              ; ﾌｨﾙﾑﾊﾝﾄﾞ開閉 閉
+CON
+SET MR11400              ; ﾌｨﾙﾑﾊﾝﾄﾞ開閉 開
+CON
+MPS
+LDB MR7512               ; ﾌｨﾙﾑ受け部  Fﾊﾝﾄﾞ 開限ｴﾗｰ
+ANB R7513                ; ﾌｨﾙﾑ受け部  Fﾊﾝﾄﾞ 閉限
+AND R7512                ; ﾌｨﾙﾑ受け部  Fﾊﾝﾄﾞ 開限
+ANL
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR4607
+MPP
+LD MR7512                ; ﾌｨﾙﾑ受け部  Fﾊﾝﾄﾞ 開限ｴﾗｰ
+AND R41205               ; TASK5 PAUSE 
+ANL
+SET @MR1900              ; Main1 HALT許可
+STG @MR4607
+SET MR12800              ; ﾌｨﾙﾑ受台 吸着確認開始
+CON
+JMP @MR4608
+STG @MR4608
+ANB MR12800              ; ﾌｨﾙﾑ受台 吸着確認開始
+MPS
+AND MR12801              ; ﾌｨﾙﾑ受台 吸着確認-ON
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR4615
+MPP
+LDB MR12801              ; ﾌｨﾙﾑ受台 吸着確認-ON
+AND MR12802              ; ﾌｨﾙﾑ受台 吸着確認ｰOFF
+ANL
+JMP @MR4609
+STG @MR4609
+ANB R39004               ; ｴﾗｰ中
+SET R39004               ; ｴﾗｰ中
+CON
+DW #1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #44 @DM1              ; ErrorNo /ERROR_DISP
+CON
+DW #7612 @DM2            ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task5 ERROR
+CON
+JMP @MR4610
+STG @MR4610
+SET @MR1900              ; Main1 HALT許可
+CON
+AND @MR101               ; Task5 ERROR_End
+RES @MR101               ; Task5 ERROR_End
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+JMP @MR4611
+STG @MR4611
+AND @MR105               ; SW1
+JMP @MR4607
+STG @MR4615
+RES MR12801              ; ﾌｨﾙﾑ受台 吸着確認-ON
+CON
+SET @MR4601              ; ﾌｨﾙﾑ受け動作ｻﾌﾞﾙｰﾁﾝ動作完了
+CON
+ENDS
+;<h1/>ﾌｨﾙﾑ受け治具部 終了動作ｻﾌﾞﾙｰﾁﾝ
+STG @MR4700              ; ﾌｨﾙﾑ受け終了動作ｻﾌﾞﾙｰﾁﾝ
+JMP @MR4705
+STG @MR4705
+RES MR10706              ; 治具ｴｱｰ真空　吸着ON
+CON
+TMH @82 #3
+CON
+AND @T82
+SET MR10708              ; 治具ｴｱｰ真空　破壊ON
+CON
+SET MR10707              ; 治具ｴｱｰ真空　吸着OFF
+CON
+JMP @MR4706
+STG @MR4706
+MPS
+AND R7613                ; 治具ｴｱｰ真空 圧力2 (破壊)
+RES MR10708              ; 治具ｴｱｰ真空　破壊ON
+CON
+JMP @MR4708
+MPP
+TMR @41 #10
+CON
+AND @T41
+RES MR10708              ; 治具ｴｱｰ真空　破壊ON
+CON
+JMP @MR4708
+STG @MR4708
+RES MR11400              ; ﾌｨﾙﾑﾊﾝﾄﾞ開閉 開
+CON
+SET MR11401              ; ﾌｨﾙﾑﾊﾝﾄﾞ開閉 閉
+CON
+MPS
+LDB MR7513               ; ﾌｨﾙﾑ受け部  Fﾊﾝﾄﾞ 閉限ｴﾗｰ
+ANB R7512                ; ﾌｨﾙﾑ受け部  Fﾊﾝﾄﾞ 開限
+AND R7513                ; ﾌｨﾙﾑ受け部  Fﾊﾝﾄﾞ 閉限
+ANL
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR4709
+MPP
+LD MR7513                ; ﾌｨﾙﾑ受け部  Fﾊﾝﾄﾞ 閉限ｴﾗｰ
+AND R41205               ; TASK5 PAUSE 
+ANL
+SET @MR1900              ; Main1 HALT許可
+STG @MR4709
+AND R7604                ; 転写部  転写RB原点位置
+RES MR11402              ; ﾌｨﾙﾑ受け 下降
+CON
+SET MR11403              ; ﾌｨﾙﾑ受け 上昇
+CON
+RES MR11410              ; 治具ｴｱｰ真空  上昇
+CON
+MPS
+LDB MR7515               ; ﾌｨﾙﾑ受け部  F受け 上限ｴﾗｰ
+ANB MR7609               ; 治具ｴｱｰ真空  下限ｴﾗｰ
+ANB R7514                ; ﾌｨﾙﾑ受け部  F受け 下限
+AND R7515                ; ﾌｨﾙﾑ受け部  F受け 上限
+ANB R7608                ; 治具ｴｱｰ真空  上限
+AND R7609                ; 治具ｴｱｰ真空  下限
+ANL
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR4710
+MPP
+LD MR7515                ; ﾌｨﾙﾑ受け部  F受け 上限ｴﾗｰ
+OR MR7609                ; 治具ｴｱｰ真空  下限ｴﾗｰ
+AND R41205               ; TASK5 PAUSE 
+ANL
+SET @MR1900              ; Main1 HALT許可
+STG @MR4710
+MPS
+ANB LR10002              ; ﾜｰｸｾｯﾄｼﾞｸﾞ 90度回転使用/未使用
+JMP @MR4715
+MPP
+AND LR10002              ; ﾜｰｸｾｯﾄｼﾞｸﾞ 90度回転使用/未使用
+SET MR11303              ; ﾌｨﾙﾑ受け90度回転 戻り
+CON
+RES MR11302              ; ﾌｨﾙﾑ受け90度回転 回転
+CON
+JMP @MR4711
+STG @MR4711
+MPS
+LDB MR8109               ; ﾌｨﾙﾑ受け90度回転 戻し限ｴﾗｰ
+ANB R8108                ; ﾌｨﾙﾑ受け90度回転 回転側限
+AND R8109                ; ﾌｨﾙﾑ受け90度回転 戻し限
+ANL
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR4712
+MPP
+LD MR8109                ; ﾌｨﾙﾑ受け90度回転 戻し限ｴﾗｰ
+AND R41205               ; TASK5 PAUSE 
+ANL
+SET @MR1900              ; Main1 HALT許可
+STG @MR4712
+RES MR10011              ; ﾌｨﾙﾑ受けｾｯﾄ中
+CON
+MPS
+LDB R41205               ; TASK5 PAUSE 
+LD R46100                ; _自動運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+LD MR24901               ; 1ST　動作完了
+LDB MR22501              ; TASK0→TASK1 START
+ANB MR10012              ; 給材中
+ORL
+ANL
+AND MR24904              ; 4ST　動作完了
+OR R46102                ; _ﾒﾝﾃﾅﾝｽ運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+ANL
+ANL
+JMP @MR4713
+MPP
+AND R41205               ; TASK5 PAUSE 
+SET @MR1900              ; Main1 HALT許可
+STG @MR4713
+RES MR11412              ; 給材側 吸着治具 上昇
+CON
+SET MR11413              ; 給材側 吸着治具 下降
+CON
+RES MR11414              ; 除材側  吸着治具 上昇
+CON
+SET MR11415              ; 除材側  吸着治具 下降
+CON
+JMP @MR4714
+STG @MR4714
+MPS
+LDB MR7701               ; 給材側 吸着治具 下限ｴﾗｰ
+ANB MR7901               ; 除材側  吸着治具 下降ｴﾗｰ
+ANB R7700                ; 給材側 吸着治具 上限
+AND R7701                ; 給材側 吸着治具 下限
+ANB R7900                ; 除材側  吸着治具 上限
+AND R7901                ; 除材側  吸着治具 下限
+ANL
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR4715
+MPP
+LD MR7701                ; 給材側 吸着治具 下限ｴﾗｰ
+OR MR7901                ; 除材側  吸着治具 下降ｴﾗｰ
+AND R41205               ; TASK5 PAUSE 
+ANL
+SET @MR1900              ; Main1 HALT許可
+STG @MR4715
+SET @MR4701              ; ﾌｨﾙﾑ受け終了動作終了
+CON
+ENDS
+;<h1/>接着剤塗布部 原点復帰ｻﾌﾞﾙｰﾁﾝ
+STG @MR4800              ; 接着剤塗布部　原点復帰要求
+RES MR18602              ; RB2:原点復帰完了
+CON
+RES MR18600              ; RB2:動作完了
+CON
+RES MR1011               ; 接着剤塗布RB 原点復帰済み ﾗﾝﾌﾟ
+CON
+JMP @MR4805
+STG @MR4805
+SET MR4401               ; 接着剤塗布終了
+CON
+AND MR4405               ; 接着剤塗布終了動作中
+JMP @MR4806
+STG @MR4806
+ANB MR4405               ; 接着剤塗布終了動作中
+RES MR11406              ; ﾕﾆｯﾄ 下降
+CON
+MPS
+LDB MR7601               ; 接着剤塗布部 ﾕﾆｯﾄ 上限ｴﾗｰ
+ANB R7600                ; 接着剤塗布部 ﾕﾆｯﾄ 下限
+AND R7601                ; 接着剤塗布部 ﾕﾆｯﾄ 上限
+ANL
+JMP @MR4807
+MPP
+LD MR7601                ; 接着剤塗布部 ﾕﾆｯﾄ 上限ｴﾗｰ
+AND R41205               ; TASK5 PAUSE 
+ANL
+SET @MR1900              ; Main1 HALT許可
+STG @MR4807
+RES MR11404              ; ﾍｯﾄﾞ前後 前進
+CON
+SET MR18609              ; RB2:ARMRST
+CON
+JMP @MR4808
+STG @MR4808
+MPS
+AND MR18600              ; RB2:動作完了
+TMR @50 #1
+CON
+AND @T50
+RES MR18600              ; RB2:動作完了
+CON
+JMP @MR4810
+MPP
+ANB MR18600              ; RB2:動作完了
+TMR @51 #50
+CON
+AND @T51
+RES MR18600              ; RB2:動作完了
+CON
+ANB R39004               ; ｴﾗｰ中
+SET R39004               ; ｴﾗｰ中
+CON
+DW #1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #81 @DM1              ; ErrorNo /ERROR_DISP
+CON
+DW #0 @DM2               ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task5 ERROR
+CON
+JMP @MR4809
+STG @MR4809
+SET @MR1900              ; Main1 HALT許可
+CON
+AND @MR101               ; Task5 ERROR_End
+RES @MR101               ; Task5 ERROR_End
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+JMP @MR4803
+STG @MR4803
+AND @MR105               ; SW1
+JMP @MR4807
+STG @MR4810
+RES MR1011               ; 接着剤塗布RB 原点復帰済み ﾗﾝﾌﾟ
+CON
+RES MR18602              ; RB2:原点復帰完了
+CON
+TMR @52 #1
+CON
+AND @T52
+SET MR18604              ; RB2:HOME
+CON
+JMP @MR4811
+STG @MR4811
+MPS
+AND MR18602              ; RB2:原点復帰完了
+SET MR1011               ; 接着剤塗布RB 原点復帰済み ﾗﾝﾌﾟ
+CON
+RES MR18602              ; RB2:原点復帰完了
+CON
+JMP @MR4813
+MPP
+ANB MR18602              ; RB2:原点復帰完了
+TMR @53 #300
+CON
+AND @T53
+ANB R39004               ; ｴﾗｰ中
+SET R39004               ; ｴﾗｰ中
+CON
+DW #8000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #28 @DM1              ; ErrorNo /ERROR_DISP
+CON
+DW #0 @DM2               ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task5 ERROR
+CON
+RES MR18602              ; RB2:原点復帰完了
+CON
+JMP @MR4812
+STG @MR4812
+SET @MR1900              ; Main1 HALT許可
+CON
+AND @MR101               ; Task5 ERROR_End
+RES @MR101               ; Task5 ERROR_End
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+JMP @MR4804
+STG @MR4804
+AND @MR105               ; SW1
+JMP @MR4810
+STG @MR4813
+DW #1 DM11068            ; RB2 目標ﾎﾟｲﾝﾄ番号
+CON
+SET @R005                ; RB2動作開始
+CON
+JMP @MR4814
+STG @MR4814
+AND @R006                ; RB2動作完了
+RES @R006                ; RB2動作完了
+CON
+JMP @MR4815
+STG @MR4815
+MPS
+LDB MR7603               ; 接着剤塗布部 ﾍｯﾄﾞ 後限ｴﾗｰ
+ANB R7602                ; 接着剤塗布部 ﾍｯﾄﾞ 前限
+AND R7603                ; 接着剤塗布部 ﾍｯﾄﾞ 後限
+ANL
+SET @MR4801              ; 接着剤塗布部原点復帰動作完了
+CON
+ENDS
+MPP
+LD MR7603                ; 接着剤塗布部 ﾍｯﾄﾞ 後限ｴﾗｰ
+AND R41205               ; TASK5 PAUSE 
+ANL
+SET @MR1900              ; Main1 HALT許可
+;<h1/>接着剤塗布部 動作ｻﾌﾞﾙｰﾁﾝ
+STG @MR4900              ; 塗布開始
+SET @MR4902              ; 接着剤塗布部動作中
+CON
+JMP @MR4903
+STG @MR4903
+AND R7601                ; 接着剤塗布部 ﾕﾆｯﾄ 上限
+ANB MR18601              ; RB2:動作中
+AND MR1011               ; 接着剤塗布RB 原点復帰済み ﾗﾝﾌﾟ
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR4904
+STG @MR4904
+SET MR11404              ; ﾍｯﾄﾞ前後 前進
+CON
+DW #2 DM11068            ; RB2 目標ﾎﾟｲﾝﾄ番号
+CON
+SET @R005                ; RB2動作開始
+CON
+JMP @MR4905
+STG @MR4905
+AND @R006                ; RB2動作完了
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+RES @R006                ; RB2動作完了
+CON
+JMP @MR4906
+STG @MR4906
+MPS
+LDB MR7602               ; 接着剤塗布部 ﾍｯﾄﾞ 前限ｴﾗｰ
+ANB R7603                ; 接着剤塗布部 ﾍｯﾄﾞ 後限
+AND R7602                ; 接着剤塗布部 ﾍｯﾄﾞ 前限
+ANL
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR4907
+MPP
+LD MR7602                ; 接着剤塗布部 ﾍｯﾄﾞ 前限ｴﾗｰ
+AND R41205               ; TASK5 PAUSE 
+ANL
+SET @MR1900              ; Main1 HALT許可
+STG @MR4907
+SET MR11406              ; ﾕﾆｯﾄ 下降
+CON
+MPS
+LDB MR7600               ; 接着剤塗布部 ﾕﾆｯﾄ 下限ｴﾗｰ
+ANB R7601                ; 接着剤塗布部 ﾕﾆｯﾄ 上限
+AND R7600                ; 接着剤塗布部 ﾕﾆｯﾄ 下限
+ANL
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR4908
+MPP
+LD MR7600                ; 接着剤塗布部 ﾕﾆｯﾄ 下限ｴﾗｰ
+AND R41205               ; TASK5 PAUSE 
+ANL
+SET @MR1900              ; Main1 HALT許可
+STG @MR4908
+RES MR4400               ; 接着剤塗布開始
+CON
+DW #3 DM11068            ; RB2 目標ﾎﾟｲﾝﾄ番号
+CON
+SET MR4400               ; 接着剤塗布開始
+CON
+SET @R005                ; RB2動作開始
+CON
+JMP @MR4909
+STG @MR4909
+AND @R006                ; RB2動作完了
+SET MR4401               ; 接着剤塗布終了
+CON
+RES @R006                ; RB2動作完了
+CON
+JMP @MR4910
+STG @MR4910
+DW #5 DM11068            ; RB2 目標ﾎﾟｲﾝﾄ番号
+CON
+SET MR4401               ; 接着剤塗布終了
+CON
+SET @R005                ; RB2動作開始
+CON
+JMP @MR4911
+STG @MR4911
+AND @R006                ; RB2動作完了
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+RES @R006                ; RB2動作完了
+CON
+JMP @MR4912
+STG @MR4912
+RES MR11406              ; ﾕﾆｯﾄ 下降
+CON
+MPS
+LDB MR7601               ; 接着剤塗布部 ﾕﾆｯﾄ 上限ｴﾗｰ
+ANB R7600                ; 接着剤塗布部 ﾕﾆｯﾄ 下限
+AND R7601                ; 接着剤塗布部 ﾕﾆｯﾄ 上限
+ANL
+TMR @54 #0
+CON
+AND @T54
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR4913
+MPP
+LD MR7601                ; 接着剤塗布部 ﾕﾆｯﾄ 上限ｴﾗｰ
+AND R41205               ; TASK5 PAUSE 
+ANL
+SET @MR1900              ; Main1 HALT許可
+STG @MR4913
+RES MR11404              ; ﾍｯﾄﾞ前後 前進
+CON
+DW #1 DM11068            ; RB2 目標ﾎﾟｲﾝﾄ番号
+CON
+SET @R005                ; RB2動作開始
+CON
+JMP @MR4914
+STG @MR4914
+AND @R006                ; RB2動作完了
+MPS
+LDB MR7603               ; 接着剤塗布部 ﾍｯﾄﾞ 後限ｴﾗｰ
+ANB R7602                ; 接着剤塗布部 ﾍｯﾄﾞ 前限
+AND R7603                ; 接着剤塗布部 ﾍｯﾄﾞ 後限
+ANL
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+RES @R006                ; RB2動作完了
+CON
+JMP @MR4915
+MPP
+LD MR7603                ; 接着剤塗布部 ﾍｯﾄﾞ 後限ｴﾗｰ
+AND R41205               ; TASK5 PAUSE 
+ANL
+SET @MR1900              ; Main1 HALT許可
+STG @MR4915
+RES @MR4902              ; 接着剤塗布部動作中
+CON
+SET @MR4901              ; 接着剤塗布部動作完了
+CON
+ENDS
+;<h1/>ｼﾘﾝｼﾞ交換ｻﾌﾞﾙｰﾁﾝ
+STG @MR5000              ; ｼﾘﾝｼﾞ交換要求
+SET @MR5002              ; ｼﾘﾝｼﾞ交換中
+CON
+JMP @MR5003
+STG @MR5003
+AND R7601                ; 接着剤塗布部 ﾕﾆｯﾄ 上限
+ANB MR18601              ; RB2:動作中
+AND MR1011               ; 接着剤塗布RB 原点復帰済み ﾗﾝﾌﾟ
+JMP @MR5004
+STG @MR5004
+DW #4 DM11068            ; RB2 目標ﾎﾟｲﾝﾄ番号
+CON
+SET @R005                ; RB2動作開始
+CON
+JMP @MR5005
+STG @MR5005
+AND @R006                ; RB2動作完了
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+RES @R006                ; RB2動作完了
+CON
+JMP @MR5006
+STG @MR5006
+SET MR11406              ; ﾕﾆｯﾄ 下降
+CON
+MPS
+LDB MR7600               ; 接着剤塗布部 ﾕﾆｯﾄ 下限ｴﾗｰ
+ANB R7601                ; 接着剤塗布部 ﾕﾆｯﾄ 上限
+AND R7600                ; 接着剤塗布部 ﾕﾆｯﾄ 下限
+ANL
+JMP @MR5007
+MPP
+LD MR7600                ; 接着剤塗布部 ﾕﾆｯﾄ 下限ｴﾗｰ
+AND R41205               ; TASK5 PAUSE 
+ANL
+SET @MR1900              ; Main1 HALT許可
+STG @MR5007
+ANB R39104               ; SELECT_Y_N Interlock
+SET @MR1900              ; Main1 HALT許可
+CON
+SET R39104               ; SELECT_Y_N Interlock
+CON
+DW #9 @DM21              ; ScreenNo /SELECT_Y_N
+CON
+DW #1 @DM22              ; Bz_Use /SELECT_Y_N
+CON
+SET @MR300               ; Task5 SELECT_Y_N
+CON
+SET MR24405              ; ｾﾚｸﾄY/N ﾒｸﾗ
+CON
+JMP @MR5008
+STG @MR5008
+SET MR24406              ; 接着剤設定 ｽｲｯﾁ表示
+CON
+AND @MR301               ; Task5 Y/N END
+RES @MR301               ; Task5 Y/N END
+CON
+RES R39104               ; SELECT_Y_N Interlock
+CON
+MPS
+AND @MR306               ; Task5 Y/N
+RES MR24405              ; ｾﾚｸﾄY/N ﾒｸﾗ
+CON
+RES R39104               ; SELECT_Y_N Interlock
+CON
+JMP @MR5009
+MPP
+ANB @MR306               ; Task5 Y/N
+RES MR24405              ; ｾﾚｸﾄY/N ﾒｸﾗ
+CON
+RES R39104               ; SELECT_Y_N Interlock
+CON
+JMP @MR5009
+STG @MR5009
+RES MR24406              ; 接着剤設定 ｽｲｯﾁ表示
+CON
+RES R42605               ; _Grp1_Task5_ﾎﾟｰｽﾞ許可
+CON
+RES MR11406              ; ﾕﾆｯﾄ 下降
+CON
+MPS
+LDB MR7601               ; 接着剤塗布部 ﾕﾆｯﾄ 上限ｴﾗｰ
+ANB R7600                ; 接着剤塗布部 ﾕﾆｯﾄ 下限
+AND R7601                ; 接着剤塗布部 ﾕﾆｯﾄ 上限
+ANL
+JMP @MR5010
+MPP
+LD MR7601                ; 接着剤塗布部 ﾕﾆｯﾄ 上限ｴﾗｰ
+AND R41205               ; TASK5 PAUSE 
+ANL
+SET @MR1900              ; Main1 HALT許可
+STG @MR5010
+DW #1 DM11068            ; RB2 目標ﾎﾟｲﾝﾄ番号
+CON
+SET @R005                ; RB2動作開始
+CON
+JMP @MR5011
+STG @MR5011
+AND @R006                ; RB2動作完了
+RES @R006                ; RB2動作完了
+CON
+JMP @MR5012
+STG @MR5012
+SET MR11406              ; ﾕﾆｯﾄ 下降
+CON
+MPS
+LDB MR7600               ; 接着剤塗布部 ﾕﾆｯﾄ 下限ｴﾗｰ
+ANB R7601                ; 接着剤塗布部 ﾕﾆｯﾄ 上限
+AND R7600                ; 接着剤塗布部 ﾕﾆｯﾄ 下限
+ANL
+JMP @MR5013
+MPP
+LD MR7600                ; 接着剤塗布部 ﾕﾆｯﾄ 下限ｴﾗｰ
+AND R41205               ; TASK5 PAUSE 
+ANL
+SET @MR1900              ; Main1 HALT許可
+STG @MR5013
+SET MR4400               ; 接着剤塗布開始
+CON
+JMP @MR5014
+STG @MR5014
+TMR #809 #9999           ; 接着剤捨出し時間
+CON
+AND T809                 ; 接着剤捨出し時間
+RES MR4400               ; 接着剤塗布開始
+CON
+SET MR4401               ; 接着剤塗布終了
+CON
+AND MR4405               ; 接着剤塗布終了動作中
+JMP @MR5015
+STG @MR5015
+ANB R39104               ; SELECT_Y_N Interlock
+SET MR24407              ; 塗布ｽｲｯﾁ Y/N画面表示
+CON
+SET @MR1900              ; Main1 HALT許可
+CON
+SET R39104               ; SELECT_Y_N Interlock
+CON
+DW #10 @DM21             ; ScreenNo /SELECT_Y_N
+CON
+DW #1 @DM22              ; Bz_Use /SELECT_Y_N
+CON
+SET @MR300               ; Task5 SELECT_Y_N
+CON
+SET MR24405              ; ｾﾚｸﾄY/N ﾒｸﾗ
+CON
+JMP @MR5100
+STG @MR5100
+AND @MR301               ; Task5 Y/N END
+RES @MR301               ; Task5 Y/N END
+CON
+RES R39104               ; SELECT_Y_N Interlock
+CON
+MPS
+AND @MR306               ; Task5 Y/N
+RES MR24407              ; 塗布ｽｲｯﾁ Y/N画面表示
+CON
+RES MR24405              ; ｾﾚｸﾄY/N ﾒｸﾗ
+CON
+JMP @MR5101
+MPP
+ANB @MR306               ; Task5 Y/N
+RES MR24407              ; 塗布ｽｲｯﾁ Y/N画面表示
+CON
+RES MR24405              ; ｾﾚｸﾄY/N ﾒｸﾗ
+CON
+JMP @MR5101
+STG @MR5101
+ANB MR4405               ; 接着剤塗布終了動作中
+RES R42605               ; _Grp1_Task5_ﾎﾟｰｽﾞ許可
+CON
+RES MR11406              ; ﾕﾆｯﾄ 下降
+CON
+MPS
+LDB MR7601               ; 接着剤塗布部 ﾕﾆｯﾄ 上限ｴﾗｰ
+ANB R7600                ; 接着剤塗布部 ﾕﾆｯﾄ 下限
+AND R7601                ; 接着剤塗布部 ﾕﾆｯﾄ 上限
+ANL
+JMP @MR5102
+MPP
+LD MR7601                ; 接着剤塗布部 ﾕﾆｯﾄ 上限ｴﾗｰ
+AND R41205               ; TASK5 PAUSE 
+ANL
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+SET @MR1900              ; Main1 HALT許可
+STG @MR5102
+MPS
+DIFU @MR5103             ; 接着剤準備時間取得
+CON
+RES @MR5002              ; ｼﾘﾝｼﾞ交換中
+CON
+SET @MR5001              ; ｼﾘﾝｼﾞ交換動作完了
+CON
+ENDS
+MPP
+SEC CM700 DM25210        ; ｶﾚﾝﾀﾞﾀｲﾏ（年）  接着剤ｾｯﾄ完了時間
+LD @MR5103               ; 接着剤準備時間取得
+MPS
+LDA CM700                ; ｶﾚﾝﾀﾞﾀｲﾏ（年）
+CON
+STA EM40030              ; AUTO_接着剤準備時間_YY
+CON
+LDA CM701                ; ｶﾚﾝﾀﾞﾀｲﾏ（月）
+CON
+STA EM40031              ; AUTO_接着剤準備時間_MM
+CON
+LDA CM702                ; ｶﾚﾝﾀﾞﾀｲﾏ（日）
+CON
+STA EM40032              ; AUTO_接着剤準備時間_DD
+CON
+LDA CM703                ; ｶﾚﾝﾀﾞﾀｲﾏ（時）
+CON
+STA EM40033              ; AUTO_接着剤準備時間_HH
+MPP
+LDA CM704                ; ｶﾚﾝﾀﾞﾀｲﾏ（分）
+CON
+STA EM40034              ; AUTO_接着剤準備時間_MM
+CON
+LDA CM705                ; ｶﾚﾝﾀﾞﾀｲﾏ（秒）
+CON
+STA EM40035              ; AUTO_接着剤準備時間_SS
+;<h1/>ﾒﾝﾃﾅﾝｽﾓｰﾄﾞ時 ﾌｨﾙﾑ減少検出 or ﾌｨﾙﾑｴﾝﾄﾞ検出 確認ｻﾌﾞﾙｰﾁﾝ
+STG @MR5105              ; ﾒﾝﾃﾅﾝｽﾓｰﾄﾞ時 ﾌｨﾙﾑ確認
+ANB @MR5115              ; ﾒﾝﾃﾅﾝｽﾓｰﾄﾞ時 ﾌｨﾙﾑ確認終了
+MPS
+LDB LR17302              ; F巻出し部 ﾌｨﾙﾑ減少 ﾒﾓﾘｰﾌﾗｸﾞ
+ANB LR17303              ; F巻出し部 ﾌｨﾙﾑｴﾝﾄﾞ ﾒﾓﾘｰﾌﾗｸﾞ
+ANL
+SET MR8500               ; ﾌｨﾙﾑ確認 OK
+CON
+JMP @MR5114
+MPP
+LD LR17302               ; F巻出し部 ﾌｨﾙﾑ減少 ﾒﾓﾘｰﾌﾗｸﾞ
+OR LR17303               ; F巻出し部 ﾌｨﾙﾑｴﾝﾄﾞ ﾒﾓﾘｰﾌﾗｸﾞ
+ANL
+JMP @MR5106
+STG @MR5106
+ANB R39004               ; ｴﾗｰ中
+SET R39004               ; ｴﾗｰ中
+CON
+MPS
+ANB DM2000.9             ; ﾌｨﾙﾑ検出ｾﾝｻｰ選択(R7302 or R7303)
+DW #2084 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #104 @DM1             ; ErrorNo /ERROR_DISP
+CON
+DW #7302 @DM2            ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task5 ERROR
+CON
+JMP @MR5107
+MPP
+AND DM2000.9             ; ﾌｨﾙﾑ検出ｾﾝｻｰ選択(R7302 or R7303)
+DW #2080 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #103 @DM1             ; ErrorNo /ERROR_DISP
+CON
+DW #7303 @DM2            ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task5 ERROR
+CON
+JMP @MR5107
+STG @MR5107
+SET @MR1900              ; Main1 HALT許可
+CON
+AND @MR101               ; Task5 ERROR_End
+RES @MR101               ; Task5 ERROR_End
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+JMP @MR5108
+STG @MR5108
+MPS
+ANB DM2000.9             ; ﾌｨﾙﾑ検出ｾﾝｻｰ選択(R7302 or R7303)
+MPS
+AND @MR105               ; SW1
+JMP @MR5109
+MRD
+AND @MR107               ; SW3
+JMP @MR5114
+MPP
+AND @MR108               ; SW4
+SET MR8501               ; ﾒﾝﾃﾅﾝｽ動作継続
+CON
+JMP @MR5114
+MPP
+AND DM2000.9             ; ﾌｨﾙﾑ検出ｾﾝｻｰ選択(R7302 or R7303)
+MPS
+AND @MR105               ; SW1
+JMP @MR5109
+MPP
+AND @MR107               ; SW3
+JMP @MR5114
+STG @MR5109
+MPS
+ANB DM2000.9             ; ﾌｨﾙﾑ検出ｾﾝｻｰ選択(R7302 or R7303)
+MPS
+ANB R7302                ; F巻出し部 ﾌｨﾙﾑ減少検出
+JMP @MR5106
+MPP
+AND R7302                ; F巻出し部 ﾌｨﾙﾑ減少検出
+SET @MR6708              ; ﾌｨﾙﾑ交換後 捨て出し開始
+CON
+JMP @MR5112
+MPP
+AND DM2000.9             ; ﾌｨﾙﾑ検出ｾﾝｻｰ選択(R7302 or R7303)
+MPS
+LDB R7302                ; F巻出し部 ﾌｨﾙﾑ減少検出
+ORB R7303                ; F巻出し部 ﾌｨﾙﾑｴﾝﾄﾞ検出
+ANL
+JMP @MR5106
+MPP
+LD R7302                 ; F巻出し部 ﾌｨﾙﾑ減少検出
+AND R7303                ; F巻出し部 ﾌｨﾙﾑｴﾝﾄﾞ検出
+ANL
+JMP @MR5110
+STG @MR5110
+ANB R39104               ; SELECT_Y_N Interlock
+SET R39104               ; SELECT_Y_N Interlock
+CON
+DW #20 @DM21             ; ScreenNo /SELECT_Y_N
+CON
+DW #0 @DM22              ; Bz_Use /SELECT_Y_N
+CON
+SET @MR300               ; Task5 SELECT_Y_N
+CON
+SET MR24408              ; F交換完了確認 Y/N画面表示
+CON
+JMP @MR5111
+STG @MR5111
+AND @MR301               ; Task5 Y/N END
+RES @MR301               ; Task5 Y/N END
+CON
+RES MR24408              ; F交換完了確認 Y/N画面表示
+CON
+RES R39104               ; SELECT_Y_N Interlock
+CON
+MPS
+AND @MR306               ; Task5 Y/N
+SET @MR6708              ; ﾌｨﾙﾑ交換後 捨て出し開始
+CON
+JMP @MR5112
+MPP
+ANB @MR306               ; Task5 Y/N
+JMP @MR5114
+STG @MR5112
+AND @MR6715              ; ﾌｨﾙﾑ交換後 捨て出し完了
+RES LR17302              ; F巻出し部 ﾌｨﾙﾑ減少 ﾒﾓﾘｰﾌﾗｸﾞ
+CON
+RES LR17303              ; F巻出し部 ﾌｨﾙﾑｴﾝﾄﾞ ﾒﾓﾘｰﾌﾗｸﾞ
+CON
+RES @MR6715              ; ﾌｨﾙﾑ交換後 捨て出し完了
+CON
+JMP @MR5114
+STG @MR5114
+SET @MR5115              ; ﾒﾝﾃﾅﾝｽﾓｰﾄﾞ時 ﾌｨﾙﾑ確認終了
+CON
+ENDS
+;<h1/>ｽｷｰｼﾞ部 原点復帰ｻﾌﾞﾙｰﾁﾝ
+STG @MR5200              ; ｽｷｰｼﾞ部　原点復帰要求
+RES MR18400              ; RB1:動作完了
+CON
+RES MR18402              ; RB1:原点復帰完了
+CON
+JMP @MR5204
+STG @MR5204
+SET MR15404              ; ｽｷｰｼﾞ台下流側 破壊確認開始
+CON
+SET MR15412              ; ｽｷｰｼﾞ台上流側 破壊確認開始
+CON
+MPS
+LD MR15405               ; ｽｷｰｼﾞ台下流側 吸着破壊OK
+AND MR15413              ; ｽｷｰｼﾞ台上流側 吸着破壊OK
+ANL
+RES MR11206              ; ｽｷｰｼﾞ台 上昇
+CON
+SET MR18409              ; RB1:ARMRST
+CON
+JMP @MR5205
+MPP
+TMR @55 #20
+CON
+AND @T55
+RES MR11206              ; ｽｷｰｼﾞ台 上昇
+CON
+SET MR18409              ; RB1:ARMRST
+CON
+JMP @MR5205
+STG @MR5205
+ZRES MR15400 MR15415     ; ｽｷｰｼﾞ台下流側 吸着確認開始
+CON
+MPS
+AND MR18400              ; RB1:動作完了
+RES MR18400              ; RB1:動作完了
+CON
+JMP @MR5206
+MPP
+ANB MR18400              ; RB1:動作完了
+TMR @56 #50
+CON
+AND @T56
+RES MR18400              ; RB1:動作完了
+CON
+ENDS
+STG @MR5206
+SET MR18404              ; RB1:HOME
+CON
+JMP @MR5207
+STG @MR5207
+MPS
+AND MR18402              ; RB1:原点復帰完了
+SET MR1306               ; ｽｷｰｼﾞRB 原点復帰済み ﾗﾝﾌﾟ
+CON
+RES MR18402              ; RB1:原点復帰完了
+CON
+JMP @MR5208
+MPP
+ANB MR18402              ; RB1:原点復帰完了
+TMR @57 #300
+CON
+AND @T57
+RES MR18402              ; RB1:原点復帰完了
+CON
+ENDS
+STG @MR5208
+DW #1 DM11048            ; RB1 目標ﾎﾟｲﾝﾄ番号
+CON
+SET @R000                ; RB1動作開始
+CON
+JMP @MR5209
+STG @MR5209
+AND @R001                ; RB1動作完了
+RES @R001                ; RB1動作完了
+CON
+JMP @MR5210
+STG @MR5210
+MPS
+LDB MR7401               ; ｽｷｰｼﾞ台部 ｽｷｰｼﾞ台 下限ｴﾗｰ
+ANB R7400                ; ｽｷｰｼﾞ台部 ｽｷｰｼﾞ台 上限
+AND R7401                ; ｽｷｰｼﾞ台部 ｽｷｰｼﾞ台 下限
+ANL
+SET @MR5201              ; ｽｷｰｼﾞ部原点復帰動作完了
+CON
+ENDS
+MPP
+LD MR7401                ; ｽｷｰｼﾞ台部 ｽｷｰｼﾞ台 下限ｴﾗｰ
+AND R41205               ; TASK5 PAUSE 
+ANL
+SET @MR1900              ; Main1 HALT許可
+;<h1/>ｽｷｰｼﾞ部 動作ｻﾌﾞﾙｰﾁﾝ
+STG @MR5300              ; ｽｷｰｼﾞ動作ｻﾌﾞﾙｰﾁﾝ
+JMP @MR5303
+STG @MR5303
+SET MR10600              ; ｽｷｰｼﾞ台下流 吸着ON
+CON
+RES MR10601              ; ｽｷｰｼﾞ台下流 吸着OFF
+CON
+RES MR10602              ; ｽｷｰｼﾞ台下流 破壊ON
+CON
+SET MR11206              ; ｽｷｰｼﾞ台 上昇
+CON
+AND R7400                ; ｽｷｰｼﾞ台部 ｽｷｰｼﾞ台 上限
+LD R7610                 ; ｽｷｰｼﾞ部 ｽｸﾚｰﾊﾟ荷重　圧力1
+AND R7402                ; ｽｷｰｼﾞ台下流側 ﾜｰｸ圧力1
+AND R7404                ; ｽｷｰｼﾞ台上流側 ﾜｰｸ圧力1
+OR CR2002                ; 常時ON
+ANL
+DW #0 DM11500            ; ｽｷｰｼﾞ実回数
+CON
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR5304
+STG @MR5304
+SET MR11204              ; ｽｸﾚｰﾊﾟｰ（大） 下降
+CON
+DW #2 DM11048            ; RB1 目標ﾎﾟｲﾝﾄ番号
+CON
+SET @R000                ; RB1動作開始
+CON
+JMP @MR5305
+STG @MR5305
+AND @R001                ; RB1動作完了
+MPS
+LDB MR7408               ; ｽｷｰｼﾞ部 ｽｸﾚｰﾊﾟｰ（大） 下限ｴﾗｰ
+ANB R7409                ; ｽｷｰｼﾞ部 ｽｸﾚｰﾊﾟｰ（大） 上限
+AND R7408                ; ｽｷｰｼﾞ部 ｽｸﾚｰﾊﾟｰ（大） 下限
+ANL
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+RES @R001                ; RB1動作完了
+CON
+JMP @MR5306
+MPP
+LD MR7408                ; ｽｷｰｼﾞ部 ｽｸﾚｰﾊﾟｰ（大） 下限ｴﾗｰ
+AND R41205               ; TASK5 PAUSE 
+ANL
+SET @MR1900              ; Main1 HALT許可
+STG @MR5306
+SET MR11202              ; ｽｸﾚｰﾊﾟｰ（小） 下降
+CON
+MPS
+LDB MR7406               ; ｽｷｰｼﾞ部 ｽｸﾚｰﾊﾟｰ（小） 下限ｴﾗｰ
+ANB R7407                ; ｽｷｰｼﾞ部 ｽｸﾚｰﾊﾟｰ（小） 上限
+AND R7406                ; ｽｷｰｼﾞ部 ｽｸﾚｰﾊﾟｰ（小） 下限
+ANL
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR5307
+MPP
+LD MR7406                ; ｽｷｰｼﾞ部 ｽｸﾚｰﾊﾟｰ（小） 下限ｴﾗｰ
+AND R41205               ; TASK5 PAUSE 
+ANL
+SET @MR1900              ; Main1 HALT許可
+STG @MR5307
+SET MR10605              ; ｽｷｰｼﾞ台上流 破壊ON
+CON
+SET MR10604              ; ｽｷｰｼﾞ台上流 吸着OFF
+CON
+RES MR10603              ; ｽｷｰｼﾞ台上流 吸着ON
+CON
+AND R7405                ; ｽｷｰｼﾞ台上流側 ﾜｰｸ圧力2
+JMP @MR5310
+STG @MR5310
+RES MR10605              ; ｽｷｰｼﾞ台上流 破壊ON
+CON
+MPS
+AND= #0 DM11500          ; ｽｷｰｼﾞ実回数
+MPS
+ANB MR22700              ; 1回目ｽｷｰｼﾞ断続ON
+DW #3 DM11048            ; RB1 目標ﾎﾟｲﾝﾄ番号
+CON
+SET @R000                ; RB1動作開始
+CON
+JMP @MR5311
+MPP
+AND MR22700              ; 1回目ｽｷｰｼﾞ断続ON
+SET @R010                ; ｽｷｰｼﾞ断続運転要求
+CON
+DW #3 DM11048            ; RB1 目標ﾎﾟｲﾝﾄ番号
+CON
+SET @R000                ; RB1動作開始
+CON
+JMP @MR5311
+MRD
+AND= #1 DM11500          ; ｽｷｰｼﾞ実回数
+MPS
+ANB MR22701              ; 2回目ｽｷｰｼﾞ断続ON
+DW #4 DM11048            ; RB1 目標ﾎﾟｲﾝﾄ番号
+CON
+SET @R000                ; RB1動作開始
+CON
+JMP @MR5311
+MPP
+AND MR22701              ; 2回目ｽｷｰｼﾞ断続ON
+SET @R010                ; ｽｷｰｼﾞ断続運転要求
+CON
+DW #4 DM11048            ; RB1 目標ﾎﾟｲﾝﾄ番号
+CON
+SET @R000                ; RB1動作開始
+CON
+JMP @MR5311
+MPP
+AND<= #2 DM11500         ; ｽｷｰｼﾞ実回数
+MPS
+ANB MR22702              ; 3回目ｽｷｰｼﾞ断続ON
+DW #5 DM11048            ; RB1 目標ﾎﾟｲﾝﾄ番号
+CON
+SET @R000                ; RB1動作開始
+CON
+JMP @MR5311
+MPP
+AND MR22702              ; 3回目ｽｷｰｼﾞ断続ON
+SET @R010                ; ｽｷｰｼﾞ断続運転要求
+CON
+DW #5 DM11048            ; RB1 目標ﾎﾟｲﾝﾄ番号
+CON
+SET @R000                ; RB1動作開始
+CON
+JMP @MR5311
+STG @MR5311
+MPS
+AND @R001                ; RB1動作完了
+RES @R001                ; RB1動作完了
+CON
+MPS
+AND<> #2 DM11500         ; ｽｷｰｼﾞ実回数
+SET MR10603              ; ｽｷｰｼﾞ台上流 吸着ON
+CON
+RES MR10604              ; ｽｷｰｼﾞ台上流 吸着OFF
+CON
+RES MR10605              ; ｽｷｰｼﾞ台上流 破壊ON
+CON
+JMP @MR5312
+MPP
+AND= #2 DM11500          ; ｽｷｰｼﾞ実回数
+JMP @MR5400
+MPP
+AND= #2 DM11500          ; ｽｷｰｼﾞ実回数
+TMR @58 #10
+CON
+AND @T58
+RES @R010                ; ｽｷｰｼﾞ断続運転要求
+CON
+@LDA.D DM25018           ; ｽｷｰｼﾞ圧TP表示
+CON
+@STA.D EM40004           ; AUTO_ｽｷｰｼﾞ台吸着圧取得
+CON
+@LDA EM2074              ; RB1 P5 指令速度
+CON
+@STA EM40002             ; AUTO_ｽｷｰｼﾞ台ｽﾋﾟｰﾄﾞ取得
+STG @MR5312
+MPS
+AND R7404                ; ｽｷｰｼﾞ台上流側 ﾜｰｸ圧力1
+RES @R010                ; ｽｷｰｼﾞ断続運転要求
+CON
+JMP @MR5400
+MPP
+TMR @59 #20
+CON
+AND @T59
+RES @R010                ; ｽｷｰｼﾞ断続運転要求
+CON
+JMP @MR5400
+STG @MR5400
+@INC DM11500             ; ｽｷｰｼﾞ実回数
+CON
+RES MR11202              ; ｽｸﾚｰﾊﾟｰ（小） 下降
+CON
+MPS
+LDB MR7407               ; ｽｷｰｼﾞ部 ｽｸﾚｰﾊﾟｰ（小） 上限ｴﾗｰ
+ANB R7406                ; ｽｷｰｼﾞ部 ｽｸﾚｰﾊﾟｰ（小） 下限
+AND R7407                ; ｽｷｰｼﾞ部 ｽｸﾚｰﾊﾟｰ（小） 上限
+ANL
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR5401
+MPP
+LD MR7407                ; ｽｷｰｼﾞ部 ｽｸﾚｰﾊﾟｰ（小） 上限ｴﾗｰ
+AND R41205               ; TASK5 PAUSE 
+ANL
+SET @MR1900              ; Main1 HALT許可
+STG @MR5401
+MPS
+AND< DM11500 DM7054      ; ｽｷｰｼﾞ実回数  装置基礎ﾃﾞｰﾀ28
+JMP @MR5402
+MPP
+AND>= DM11500 DM7054     ; ｽｷｰｼﾞ実回数  装置基礎ﾃﾞｰﾀ28
+JMP @MR5405
+STG @MR5402
+DW #2 DM11048            ; RB1 目標ﾎﾟｲﾝﾄ番号
+CON
+SET @R000                ; RB1動作開始
+CON
+JMP @MR5403
+STG @MR5403
+AND @R001                ; RB1動作完了
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+RES @R001                ; RB1動作完了
+CON
+JMP @MR5304
+STG @MR5405
+MPS
+LD R46100                ; _自動運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+OR R46102                ; _ﾒﾝﾃﾅﾝｽ運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+ANL
+RES MR11204              ; ｽｸﾚｰﾊﾟｰ（大） 下降
+CON
+MPS
+LDB MR7409               ; ｽｷｰｼﾞ部 ｽｸﾚｰﾊﾟｰ（大） 上限ｴﾗｰ
+ANB R7408                ; ｽｷｰｼﾞ部 ｽｸﾚｰﾊﾟｰ（大） 下限
+AND R7409                ; ｽｷｰｼﾞ部 ｽｸﾚｰﾊﾟｰ（大） 上限
+ANL
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR5406
+MPP
+LD MR7409                ; ｽｷｰｼﾞ部 ｽｸﾚｰﾊﾟｰ（大） 上限ｴﾗｰ
+AND R41205               ; TASK5 PAUSE 
+ANL
+SET @MR1900              ; Main1 HALT許可
+MPP
+LD R46100                ; _自動運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+ANB CR2002               ; 常時ON
+ANL
+RES MR11204              ; ｽｸﾚｰﾊﾟｰ（大） 下降
+CON
+SET @MR5301              ; ｽｷｰｼﾞ動作完了
+CON
+SET @MR5308              ; ｽｷｰｼﾞ完了動作中
+CON
+JMP @MR5406
+STG @MR5406
+DW #1 DM11048            ; RB1 目標ﾎﾟｲﾝﾄ番号
+CON
+SET @R000                ; RB1動作開始
+CON
+SET MR10602              ; ｽｷｰｼﾞ台下流 破壊ON
+CON
+SET MR10601              ; ｽｷｰｼﾞ台下流 吸着OFF
+CON
+RES MR10600              ; ｽｷｰｼﾞ台下流 吸着ON
+CON
+SET MR10605              ; ｽｷｰｼﾞ台上流 破壊ON
+CON
+SET MR10604              ; ｽｷｰｼﾞ台上流 吸着OFF
+CON
+RES MR10603              ; ｽｷｰｼﾞ台上流 吸着ON
+CON
+JMP @MR5407
+STG @MR5407
+AND R7403                ; ｽｷｰｼﾞ台下流側 ﾜｰｸ圧力2
+AND R7405                ; ｽｷｰｼﾞ台上流側 ﾜｰｸ圧力2
+SET MR10602              ; ｽｷｰｼﾞ台下流 破壊ON
+CON
+ZRES MR15400 MR15415     ; ｽｷｰｼﾞ台下流側 吸着確認開始
+CON
+JMP @MR5408
+STG @MR5408
+RES MR11206              ; ｽｷｰｼﾞ台 上昇
+CON
+MPS
+LDB MR7401               ; ｽｷｰｼﾞ台部 ｽｷｰｼﾞ台 下限ｴﾗｰ
+ANB R7400                ; ｽｷｰｼﾞ台部 ｽｷｰｼﾞ台 上限
+AND R7401                ; ｽｷｰｼﾞ台部 ｽｷｰｼﾞ台 下限
+ANL
+JMP @MR5409
+MPP
+LD MR7401                ; ｽｷｰｼﾞ台部 ｽｷｰｼﾞ台 下限ｴﾗｰ
+AND R41205               ; TASK5 PAUSE 
+ANL
+SET @MR1900              ; Main1 HALT許可
+STG @MR5409
+AND R7409                ; ｽｷｰｼﾞ部 ｽｸﾚｰﾊﾟｰ（大） 上限
+RES MR10602              ; ｽｷｰｼﾞ台下流 破壊ON
+CON
+RES MR10605              ; ｽｷｰｼﾞ台上流 破壊ON
+CON
+AND @R001                ; RB1動作完了
+RES @R001                ; RB1動作完了
+CON
+MPS
+LD R46100                ; _自動運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+OR R46102                ; _ﾒﾝﾃﾅﾝｽ運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+ANL
+RES @MR5308              ; ｽｷｰｼﾞ完了動作中
+CON
+SET @MR5301              ; ｽｷｰｼﾞ動作完了
+CON
+ENDS
+MPP
+LD R46100                ; _自動運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+ANB CR2002               ; 常時ON
+ANL
+RES @MR5308              ; ｽｷｰｼﾞ完了動作中
+CON
+ENDS
+;<h1/>接着剤転写部 原点復帰ｻﾌﾞﾙｰﾁﾝ
+STG @MR5500              ; 接着剤転写部 原点復帰要求
+JMP @MR5503
+STG @MR5503
+ANB R7406                ; ｽｷｰｼﾞ部 ｽｸﾚｰﾊﾟｰ（小） 下限
+AND R7407                ; ｽｷｰｼﾞ部 ｽｸﾚｰﾊﾟｰ（小） 上限
+ANB R7408                ; ｽｷｰｼﾞ部 ｽｸﾚｰﾊﾟｰ（大） 下限
+AND R7409                ; ｽｷｰｼﾞ部 ｽｸﾚｰﾊﾟｰ（大） 上限
+ANB R7600                ; 接着剤塗布部 ﾕﾆｯﾄ 下限
+AND R7601                ; 接着剤塗布部 ﾕﾆｯﾄ 上限
+ANB R7602                ; 接着剤塗布部 ﾍｯﾄﾞ 前限
+AND R7603                ; 接着剤塗布部 ﾍｯﾄﾞ 後限
+AND<=.L DM11062 +250     ; RB2 現在位置1
+ANB R7400                ; ｽｷｰｼﾞ台部 ｽｷｰｼﾞ台 上限
+AND R7401                ; ｽｷｰｼﾞ台部 ｽｷｰｼﾞ台 下限
+RES MR21109              ; MC 軸1原点復帰完了記憶
+CON
+JMP @MR5504
+STG @MR5504
+SET MR11212              ; ﾀﾞﾝｻ後ﾌｨﾙﾑ押え 上昇
+CON
+MPS
+LDB MR7306               ; F巻出し部 ﾀﾞﾝｻﾛｰﾗ後F押え 上限ｴﾗｰ
+ANB R7307                ; F巻出し部 ﾀﾞﾝｻﾛｰﾗ後F押え 下限
+AND R7306                ; F巻出し部 ﾀﾞﾝｻﾛｰﾗ後F押え 上限
+ANL
+JMP @MR5505
+MPP
+LD MR7306                ; F巻出し部 ﾀﾞﾝｻﾛｰﾗ後F押え 上限ｴﾗｰ
+AND R41205               ; TASK5 PAUSE 
+ANL
+SET @MR1900              ; Main1 HALT許可
+STG @MR5505
+SET MR11408              ; 巻き取りﾌｨﾙﾑ押え　下降
+CON
+MPS
+LDB MR7500               ; F巻取り部 巻取りF押え上下 下限ｴﾗ
+ANB R7501                ; F巻取り部 巻取りF押え上下 上限
+AND R7500                ; F巻取り部 巻取りF押え上下 下限
+ANL
+JMP @MR5510
+MPP
+LD MR7500                ; F巻取り部 巻取りF押え上下 下限ｴﾗ
+AND R41205               ; TASK5 PAUSE 
+ANL
+SET @MR1900              ; Main1 HALT許可
+STG @MR5510
+MPS
+AND CR2003               ; 常時OFF
+JMP @MR5511
+MPP
+LD CR2002                ; 常時ON
+AND R7401                ; ｽｷｰｼﾞ台部 ｽｷｰｼﾞ台 下限
+ANL
+RES MR11201              ; 主軸ﾛｰﾗｸﾗﾝﾌﾟ 下降
+CON
+SET MR11200              ; 主軸ﾛｰﾗｸﾗﾝﾌﾟ 上昇
+CON
+MPS
+LDB MR7606               ; 主軸ﾛｰﾗｸﾗﾝﾌﾟ 上昇ｴﾗｰ
+ANB R7607                ; 転写部  主軸ﾛｰﾗｸﾗﾝﾌﾟ 下限
+AND R7606                ; 転写部  主軸ﾛｰﾗｸﾗﾝﾌﾟ 上限
+ANL
+TMR @60 #5
+CON
+AND @T60
+JMP @MR5511
+MPP
+LD MR7606                ; 主軸ﾛｰﾗｸﾗﾝﾌﾟ 上昇ｴﾗｰ
+AND R41205               ; TASK5 PAUSE 
+ANL
+SET @MR1900              ; Main1 HALT許可
+;
+STG @MR5511
+MCALL MC_ORIGIN_OP #3 #1 MR6100 R5400 MR20511;SCON-1 HOME  SCON HEND  転写RB 原点復帰完了
+SET MR10013              ; 軸2 JOG正方向
+CON
+AND MR20511              ; 転写RB 原点復帰完了
+JMP @MR600
+LD @MR5511
+AND R7604                ; 転写部  転写RB原点位置
+RES MR11201              ; 主軸ﾛｰﾗｸﾗﾝﾌﾟ 下降
+CON
+SET MR11200              ; 主軸ﾛｰﾗｸﾗﾝﾌﾟ 上昇
+;
+STG @MR600
+RES MR10013              ; 軸2 JOG正方向
+CON
+AND R24913               ; 軸2 ｻｰﾎﾞON
+ANB R20012               ; 軸2 現在座標変更要求
+U_WRCPOS.L #3 #2 +0
+TMR #863 #2              ; 軸2 現在座標変更待ち
+CON
+AND T863                 ; 軸2 現在座標変更待ち
+JMP @MR601
+STG @MR601
+SET R20012               ; 軸2 現在座標変更要求
+CON
+AND R20812               ; 軸2 現在座標変更完了
+AND=.L DM21850 +0        ; 軸2 現在座標
+JMP @MR602
+STG @MR602
+RES R20012               ; 軸2 現在座標変更要求
+CON
+TMR @34 #2
+CON
+AND @T34
+JMP @MR5512
+;
+STG @MR5512
+ANB @MR5510
+RES MR6100               ; SCON-1 HOME
+CON
+AND R5400                ; SCON HEND
+SET MR21109              ; MC 軸1原点復帰完了記憶
+CON
+AND MR21109              ; MC 軸1原点復帰完了記憶
+JMP @MR5513
+STG @MR5513
+RES MR20511              ; 転写RB 原点復帰完了
+CON
+ANB MR20511              ; 転写RB 原点復帰完了
+TMR @61 #2
+CON
+AND @T61
+JMP @MR5514
+STG @MR5514
+SET MR21503              ; MC 軸1 ﾎﾟｲﾝﾄ-3移動要求
+CON
+AND MR21611              ; MC 軸1移動完了
+JMP @MR5515
+STG @MR5515
+RES MR21503              ; MC 軸1 ﾎﾟｲﾝﾄ-3移動要求
+CON
+AND<=.L EM43022 DM21790  ; 軸1 現在座標
+AND<=.L DM21790 EM44022  ; 軸1 現在座標
+ANB MR21610              ; MC 軸1動作中
+JMP @MR5600
+STG @MR5600
+RES MR11200              ; 主軸ﾛｰﾗｸﾗﾝﾌﾟ 上昇
+CON
+SET MR11201              ; 主軸ﾛｰﾗｸﾗﾝﾌﾟ 下降
+CON
+MPS
+LDB MR7607               ; 転写部  主軸ﾛｰﾗｸﾗﾝﾌﾟ 下限ｴﾗｰ
+ANB R7606                ; 転写部  主軸ﾛｰﾗｸﾗﾝﾌﾟ 上限
+AND R7607                ; 転写部  主軸ﾛｰﾗｸﾗﾝﾌﾟ 下限
+ANL
+MPS
+ANB MR16805              ; 転写ﾍｯﾄﾞ 原点復帰 F送り無し
+JMP @MR5601
+MPP
+AND MR16805              ; 転写ﾍｯﾄﾞ 原点復帰 F送り無し
+SET MR16806              ; 転写ﾍｯﾄﾞ 原点復帰 F送り無し完了
+CON
+RES MR16805              ; 転写ﾍｯﾄﾞ 原点復帰 F送り無し
+CON
+ENDS
+MPP
+LD MR7607                ; 転写部  主軸ﾛｰﾗｸﾗﾝﾌﾟ 下限ｴﾗｰ
+AND R41205               ; TASK5 PAUSE 
+ANL
+SET @MR1900              ; Main1 HALT許可
+STG @MR5601
+RES MR11212              ; ﾀﾞﾝｻ後ﾌｨﾙﾑ押え 上昇
+CON
+MPS
+LDB MR7307               ; F巻出し部 ﾀﾞﾝｻﾛｰﾗ後F押え 下限ｴﾗｰ
+ANB R7306                ; F巻出し部 ﾀﾞﾝｻﾛｰﾗ後F押え 上限
+AND R7307                ; F巻出し部 ﾀﾞﾝｻﾛｰﾗ後F押え 下限
+ANL
+JMP @MR5602
+MPP
+LD MR7307                ; F巻出し部 ﾀﾞﾝｻﾛｰﾗ後F押え 下限ｴﾗｰ
+AND R41205               ; TASK5 PAUSE 
+ANL
+SET @MR1900              ; Main1 HALT許可
+STG @MR5602
+SET MR11408              ; 巻き取りﾌｨﾙﾑ押え　下降
+CON
+MPS
+LDB MR7500               ; F巻取り部 巻取りF押え上下 下限ｴﾗ
+ANB R7501                ; F巻取り部 巻取りF押え上下 上限
+AND R7500                ; F巻取り部 巻取りF押え上下 下限
+ANL
+JMP @MR5603
+MPP
+LD MR7500                ; F巻取り部 巻取りF押え上下 下限ｴﾗ
+AND R41205               ; TASK5 PAUSE 
+ANL
+SET @MR1900              ; Main1 HALT許可
+STG @MR5603
+ANB R20012               ; 軸2 現在座標変更要求
+U_WRCPOS.L #3 #2 +0
+TMR #817 #2              ; 軸2 現在座標変更待ち
+CON
+AND T817                 ; 軸2 現在座標変更待ち
+JMP @MR5604
+STG @MR5604
+SET R20012               ; 軸2 現在座標変更要求
+CON
+AND R20812               ; 軸2 現在座標変更完了
+AND=.L DM21850 +0        ; 軸2 現在座標
+JMP @MR5605
+STG @MR5605
+RES R20012               ; 軸2 現在座標変更要求
+CON
+TMR @62 #2
+CON
+AND @T62
+JMP @MR5606
+STG @MR5606
+SET MR21703              ; MC 軸2 ﾎﾟｲﾝﾄ-3移動要求
+CON
+AND=.L DM21850 EM3222    ; 軸2 現在座標  MC 軸2 Point3 移動量
+JMP @MR5607
+STG @MR5607
+RES MR21703              ; MC 軸2 ﾎﾟｲﾝﾄ-3移動要求
+CON
+TMR @63 #2
+CON
+AND @T63
+JMP @MR5608
+STG @MR5608
+RES MR11212              ; ﾀﾞﾝｻ後ﾌｨﾙﾑ押え 上昇
+CON
+MPS
+LDB MR7307               ; F巻出し部 ﾀﾞﾝｻﾛｰﾗ後F押え 下限ｴﾗｰ
+ANB R7306                ; F巻出し部 ﾀﾞﾝｻﾛｰﾗ後F押え 上限
+AND R7307                ; F巻出し部 ﾀﾞﾝｻﾛｰﾗ後F押え 下限
+ANL
+JMP @MR5609
+MPP
+LD MR7307                ; F巻出し部 ﾀﾞﾝｻﾛｰﾗ後F押え 下限ｴﾗｰ
+AND R41205               ; TASK5 PAUSE 
+ANL
+SET @MR1900              ; Main1 HALT許可
+STG @MR5609
+MPS
+LD MR6012                ; DRV-2 正転
+AND R7412                ; F巻取り部 ﾀﾞﾝｻﾛｰﾗ位置 上側
+ANB MR6012               ; DRV-2 正転
+ANL
+RES MR11408              ; 巻き取りﾌｨﾙﾑ押え　下降
+CON
+MPS
+LDB MR7501               ; F巻取り部 巻取りF押え上下 上限ｴﾗ
+ANB R7500                ; F巻取り部 巻取りF押え上下 下限
+AND R7501                ; F巻取り部 巻取りF押え上下 上限
+ANL
+JMP @MR5610
+MPP
+LD MR7501                ; F巻取り部 巻取りF押え上下 上限ｴﾗ
+AND R41205               ; TASK5 PAUSE 
+ANL
+SET @MR1900              ; Main1 HALT許可
+MPP
+ANB MR6012               ; DRV-2 正転
+SET MR16105              ; 強制　巻き取りﾓｰﾀ動作ON
+CON
+AND R7412                ; F巻取り部 ﾀﾞﾝｻﾛｰﾗ位置 上側
+ANB MR6012               ; DRV-2 正転
+RES MR11408              ; 巻き取りﾌｨﾙﾑ押え　下降
+CON
+MPS
+LDB MR7501               ; F巻取り部 巻取りF押え上下 上限ｴﾗ
+ANB R7500                ; F巻取り部 巻取りF押え上下 下限
+AND R7501                ; F巻取り部 巻取りF押え上下 上限
+ANL
+JMP @MR5610
+MPP
+LD MR7501                ; F巻取り部 巻取りF押え上下 上限ｴﾗ
+AND R41205               ; TASK5 PAUSE 
+ANL
+SET @MR1900              ; Main1 HALT許可
+STG @MR5610
+TMR @64 #5
+CON
+AND @T64
+JMP @MR5611
+STG @MR5611
+SET MR16005              ; 強制　巻きだしﾓｰﾀ動作ON
+CON
+SET MR16105              ; 強制　巻き取りﾓｰﾀ動作ON
+CON
+TMR @65 #2
+CON
+AND @T65
+JMP @MR5612
+STG @MR5612
+RES MR16005              ; 強制　巻きだしﾓｰﾀ動作ON
+CON
+RES MR16105              ; 強制　巻き取りﾓｰﾀ動作ON
+CON
+SET @MR5501              ; 接着剤転写部 原点復帰完了
+CON
+ENDS
+;<h1/>接着剤転写部 動作ｻﾌﾞﾙｰﾁﾝ
+STG @MR5700              ; 転写動作開始
+JMP @MR5703
+STG @MR5703
+SET MR16005              ; 強制　巻きだしﾓｰﾀ動作ON
+CON
+RES MR11210              ; ｽﾌﾟﾘﾝｸﾞ　上昇
+CON
+RES MR11214              ; 巻き出しﾌｨﾙﾑ押え 上昇
+CON
+RES MR11212              ; ﾀﾞﾝｻ後ﾌｨﾙﾑ押え 上昇
+CON
+ANB R7304                ; F巻出し部 巻出しF押え 上限
+AND R7305                ; F巻出し部 巻出しF押え 下限
+ANB R7306                ; F巻出し部 ﾀﾞﾝｻﾛｰﾗ後F押え 上限
+AND R7307                ; F巻出し部 ﾀﾞﾝｻﾛｰﾗ後F押え 下限
+LD MR7314                ; F巻出し部 ﾀﾞﾝｻﾛｰﾗ位置 下側
+ORB R7315                ; F巻出し部 ﾀﾞﾝｻﾛｰﾗ位置 下OT
+ANL
+JMP @MR5704
+STG @MR5704
+AND R24913               ; 軸2 ｻｰﾎﾞON
+ANB R20012               ; 軸2 現在座標変更要求
+U_WRCPOS.L #3 #2 +0
+TMR #818 #2              ; 軸2 現在座標変更待ち
+CON
+AND T818                 ; 軸2 現在座標変更待ち
+JMP @MR5705
+STG @MR5705
+SET R20012               ; 軸2 現在座標変更要求
+CON
+AND R20812               ; 軸2 現在座標変更完了
+AND=.L DM21850 +0        ; 軸2 現在座標
+JMP @MR5706
+STG @MR5706
+RES R20012               ; 軸2 現在座標変更要求
+CON
+ANB R20012               ; 軸2 現在座標変更要求
+TMR @66 #2
+CON
+AND @T66
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR5707
+STG @MR5707
+JMP @MR5708
+STG @MR5708
+SET MR11210              ; ｽﾌﾟﾘﾝｸﾞ　上昇
+CON
+MPS
+TMR @67 #10
+CON
+AND @T67
+SET MR21512              ; MC 軸1 ﾎﾟｲﾝﾄ-12移動要求
+CON
+AND MR21610              ; MC 軸1動作中
+JMP @MR5709
+MPP
+AND R7310                ; F巻出し部 ｽﾌﾟﾘﾝｸﾞ 上限
+SET MR21512              ; MC 軸1 ﾎﾟｲﾝﾄ-12移動要求
+CON
+AND MR21610              ; MC 軸1動作中
+JMP @MR5709
+STG @MR5709
+AND<=.L EM43042 DM21790  ; 軸1 現在座標
+AND<=.L DM21790 EM44042  ; 軸1 現在座標
+ANB MR21610              ; MC 軸1動作中
+JMP @MR5710
+STG @MR5710
+RES MR21512              ; MC 軸1 ﾎﾟｲﾝﾄ-12移動要求
+CON
+ANB MR21512              ; MC 軸1 ﾎﾟｲﾝﾄ-12移動要求
+TMR @68 #2
+CON
+AND @T68
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR5715
+STG @MR5715
+RES MR11210              ; ｽﾌﾟﾘﾝｸﾞ　上昇
+CON
+SET @MR5701              ; 転写動作完了
+CON
+ENDS
+;<h1/>接着剤転写部　はぎ取り動作ｻﾌﾞﾙｰﾁﾝ
+STG @MR5800              ; はぎ取り動作開始
+RES MR11210              ; ｽﾌﾟﾘﾝｸﾞ　上昇
+CON
+MPS
+LDB MR7311               ; F巻出し部 ｽﾌﾟﾘﾝｸﾞ 下限ｴﾗｰ
+AND R7311                ; F巻出し部 ｽﾌﾟﾘﾝｸﾞ 下限
+ANB R7310                ; F巻出し部 ｽﾌﾟﾘﾝｸﾞ 上限
+ANL
+JMP @MR5803
+MPP
+LD MR7311                ; F巻出し部 ｽﾌﾟﾘﾝｸﾞ 下限ｴﾗｰ
+AND R41205               ; TASK5 PAUSE 
+ANL
+SET @MR1900              ; Main1 HALT許可
+STG @MR5803
+RES MR11214              ; 巻き出しﾌｨﾙﾑ押え 上昇
+CON
+RES MR11212              ; ﾀﾞﾝｻ後ﾌｨﾙﾑ押え 上昇
+CON
+RES MR11206              ; ｽｷｰｼﾞ台 上昇
+CON
+MPS
+LDB MR7305               ; F巻出し部 巻出しF押え 下限ｴﾗｰ
+ANB MR7307               ; F巻出し部 ﾀﾞﾝｻﾛｰﾗ後F押え 下限ｴﾗｰ
+ANB MR7401               ; ｽｷｰｼﾞ台部 ｽｷｰｼﾞ台 下限ｴﾗｰ
+ANB R7304                ; F巻出し部 巻出しF押え 上限
+AND R7305                ; F巻出し部 巻出しF押え 下限
+ANB R7306                ; F巻出し部 ﾀﾞﾝｻﾛｰﾗ後F押え 上限
+AND R7307                ; F巻出し部 ﾀﾞﾝｻﾛｰﾗ後F押え 下限
+ANB R7400                ; ｽｷｰｼﾞ台部 ｽｷｰｼﾞ台 上限
+AND R7401                ; ｽｷｰｼﾞ台部 ｽｷｰｼﾞ台 下限
+ANL
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+TMS @5 DM7072            ; 装置基礎ﾃﾞｰﾀ37
+CON
+AND @T5
+JMP @MR5804
+MPP
+LD MR7305                ; F巻出し部 巻出しF押え 下限ｴﾗｰ
+OR MR7307                ; F巻出し部 ﾀﾞﾝｻﾛｰﾗ後F押え 下限ｴﾗｰ
+OR MR7401                ; ｽｷｰｼﾞ台部 ｽｷｰｼﾞ台 下限ｴﾗｰ
+AND R41205               ; TASK5 PAUSE 
+ANL
+SET @MR1900              ; Main1 HALT許可
+STG @MR5804
+SET MR21503              ; MC 軸1 ﾎﾟｲﾝﾄ-3移動要求
+CON
+AND MR21610              ; MC 軸1動作中
+JMP @MR5805
+STG @MR5805
+RES MR21503              ; MC 軸1 ﾎﾟｲﾝﾄ-3移動要求
+CON
+AND<=.L EM43022 DM21790  ; 軸1 現在座標
+AND<=.L DM21790 EM44022  ; 軸1 現在座標
+ANB MR21610              ; MC 軸1動作中
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+SET MR409                ; 転写ﾃﾞｰﾀ書き込みﾌﾗｸﾞ
+CON
+JMP @MR5807
+STG @MR5807
+TMR @69 #1
+CON
+AND @T69
+SET @MR5801              ; はぎ取り動作完了
+CON
+ENDS
+;<h1/>接着剤転写部 剥離位置→待機位置移動 (ﾛｰﾗ逆転、同期送り) ｻﾌﾞﾙｰﾁﾝ
+STG @MR6000              ; 剥離位置→待機位置移（同期送り）
+RES MR11206              ; ｽｷｰｼﾞ台 上昇
+CON
+AND R7401                ; ｽｷｰｼﾞ台部 ｽｷｰｼﾞ台 下限
+JMP @MR6003
+STG @MR6003
+RES MR11210              ; ｽﾌﾟﾘﾝｸﾞ　上昇
+CON
+RES MR11214              ; 巻き出しﾌｨﾙﾑ押え 上昇
+CON
+SET MR11212              ; ﾀﾞﾝｻ後ﾌｨﾙﾑ押え 上昇
+CON
+MPS
+LDB MR7306               ; F巻出し部 ﾀﾞﾝｻﾛｰﾗ後F押え 上限ｴﾗｰ
+ANB R7307                ; F巻出し部 ﾀﾞﾝｻﾛｰﾗ後F押え 下限
+AND R7306                ; F巻出し部 ﾀﾞﾝｻﾛｰﾗ後F押え 上限
+ANL
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR6004
+MPP
+LD MR7306                ; F巻出し部 ﾀﾞﾝｻﾛｰﾗ後F押え 上限ｴﾗｰ
+AND R41205               ; TASK5 PAUSE 
+ANL
+SET @MR1900              ; Main1 HALT許可
+STG @MR6004
+SET MR11408              ; 巻き取りﾌｨﾙﾑ押え　下降
+CON
+MPS
+LDB MR7500               ; F巻取り部 巻取りF押え上下 下限ｴﾗ
+ANB R7501                ; F巻取り部 巻取りF押え上下 上限
+AND R7500                ; F巻取り部 巻取りF押え上下 下限
+ANL
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR6005
+MPP
+LD MR7500                ; F巻取り部 巻取りF押え上下 下限ｴﾗ
+AND R41205               ; TASK5 PAUSE 
+ANL
+SET @MR1900              ; Main1 HALT許可
+STG @MR6005
+RES MR11201              ; 主軸ﾛｰﾗｸﾗﾝﾌﾟ 下降
+CON
+SET MR11200              ; 主軸ﾛｰﾗｸﾗﾝﾌﾟ 上昇
+CON
+MPS
+LDB MR7606               ; 主軸ﾛｰﾗｸﾗﾝﾌﾟ 上昇ｴﾗｰ
+ANB R7607                ; 転写部  主軸ﾛｰﾗｸﾗﾝﾌﾟ 下限
+AND R7606                ; 転写部  主軸ﾛｰﾗｸﾗﾝﾌﾟ 上限
+ANL
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR6006
+MPP
+LD MR7606                ; 主軸ﾛｰﾗｸﾗﾝﾌﾟ 上昇ｴﾗｰ
+AND R41205               ; TASK5 PAUSE 
+ANL
+SET @MR1900              ; Main1 HALT許可
+STG @MR6006
+ANB R7515                ; ﾌｨﾙﾑ受け部  F受け 上限
+AND R7514                ; ﾌｨﾙﾑ受け部  F受け 下限
+AND R24913               ; 軸2 ｻｰﾎﾞON
+ANB R20012               ; 軸2 現在座標変更要求
+U_WRCPOS.L #3 #2 +0
+TMR #819 #5              ; 軸2 現在座標変更待ち
+CON
+AND T819                 ; 軸2 現在座標変更待ち
+JMP @MR6007
+STG @MR6007
+SET R20012               ; 軸2 現在座標変更要求
+CON
+AND R20812               ; 軸2 現在座標変更完了
+AND=.L DM21850 +0        ; 軸2 現在座標
+JMP @MR6008
+STG @MR6008
+RES R20012               ; 軸2 現在座標変更要求
+CON
+TMR @70 #1
+CON
+AND @T70
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR6009
+STG @MR6009
+MPS
+LD>.L EM43002 DM21790    ; 軸1 現在座標
+OR>.L DM21790 EM44002    ; 軸1 現在座標
+ANL
+SET MR21510              ; MC 軸1 ﾎﾟｲﾝﾄ-10移動要求
+CON
+AND MR21610              ; MC 軸1動作中
+JMP @MR6010
+MPP
+LD<=.L EM43002 DM21790   ; 軸1 現在座標
+AND<=.L DM21790 EM44002  ; 軸1 現在座標
+ANL
+JMP @MR6011
+STG @MR6010
+ANB MR21610              ; MC 軸1動作中
+AND<=.L EM43002 DM21790  ; 軸1 現在座標
+AND<=.L DM21790 EM44002  ; 軸1 現在座標
+JMP @MR6011
+STG @MR6011
+RES MR21510              ; MC 軸1 ﾎﾟｲﾝﾄ-10移動要求
+CON
+ANB MR21510              ; MC 軸1 ﾎﾟｲﾝﾄ-10移動要求
+TMR @71 #2
+CON
+AND @T71
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR6012
+STG @MR6012
+RES MR11200              ; 主軸ﾛｰﾗｸﾗﾝﾌﾟ 上昇
+CON
+SET MR11201              ; 主軸ﾛｰﾗｸﾗﾝﾌﾟ 下降
+CON
+MPS
+LDB MR7607               ; 転写部  主軸ﾛｰﾗｸﾗﾝﾌﾟ 下限ｴﾗｰ
+ANB R7606                ; 転写部  主軸ﾛｰﾗｸﾗﾝﾌﾟ 上限
+AND R7607                ; 転写部  主軸ﾛｰﾗｸﾗﾝﾌﾟ 下限
+ANL
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR6013
+MPP
+LD MR7607                ; 転写部  主軸ﾛｰﾗｸﾗﾝﾌﾟ 下限ｴﾗｰ
+AND R41205               ; TASK5 PAUSE 
+ANL
+SET @MR1900              ; Main1 HALT許可
+STG @MR6013
+RES MR11408              ; 巻き取りﾌｨﾙﾑ押え　下降
+CON
+MPS
+LDB MR7501               ; F巻取り部 巻取りF押え上下 上限ｴﾗ
+ANB R7500                ; F巻取り部 巻取りF押え上下 下限
+AND R7501                ; F巻取り部 巻取りF押え上下 上限
+ANL
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR6014
+MPP
+LD MR7501                ; F巻取り部 巻取りF押え上下 上限ｴﾗ
+AND R41205               ; TASK5 PAUSE 
+ANL
+SET @MR1900              ; Main1 HALT許可
+STG @MR6014
+RES MR11212              ; ﾀﾞﾝｻ後ﾌｨﾙﾑ押え 上昇
+CON
+MPS
+LDB MR7307               ; F巻出し部 ﾀﾞﾝｻﾛｰﾗ後F押え 下限ｴﾗｰ
+ANB R7306                ; F巻出し部 ﾀﾞﾝｻﾛｰﾗ後F押え 上限
+AND R7307                ; F巻出し部 ﾀﾞﾝｻﾛｰﾗ後F押え 下限
+ANL
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR6015
+MPP
+LD MR7307                ; F巻出し部 ﾀﾞﾝｻﾛｰﾗ後F押え 下限ｴﾗｰ
+AND R41205               ; TASK5 PAUSE 
+ANL
+SET @MR1900              ; Main1 HALT許可
+STG @MR6015
+MPS
+ANB R46100               ; _自動運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+SET @MR6001              ; 剥離位置→待機位置移中
+CON
+ENDS
+MPP
+AND R46100               ; _自動運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+DIFU @MR6707             ; AUTO_転写ﾃﾞｰﾀ取得
+CON
+SET @MR6001              ; 剥離位置→待機位置移中
+CON
+ENDS
+LD @MR6707               ; AUTO_転写ﾃﾞｰﾀ取得
+MPS
+LDA CM700                ; ｶﾚﾝﾀﾞﾀｲﾏ（年）
+CON
+STA EM40010              ; AUTO_転写時間_YY
+CON
+LDA CM701                ; ｶﾚﾝﾀﾞﾀｲﾏ（月）
+CON
+STA EM40011              ; AUTO_転写時間_MM
+CON
+LDA CM702                ; ｶﾚﾝﾀﾞﾀｲﾏ（日）
+CON
+STA EM40012              ; AUTO_転写時間_DD
+CON
+LDA CM703                ; ｶﾚﾝﾀﾞﾀｲﾏ（時）
+CON
+STA EM40013              ; AUTO_転写時間_HH
+MRD
+LDA CM704                ; ｶﾚﾝﾀﾞﾀｲﾏ（分）
+CON
+STA EM40014              ; AUTO_転写時間_MM
+CON
+LDA CM705                ; ｶﾚﾝﾀﾞﾀｲﾏ（秒）
+CON
+STA EM40015              ; AUTO_転写時間_SS
+MRD
+LDA.L EM3020             ; MC 軸1 Point3 速度
+CON
+EXT.L
+CON
+DIV.L +100
+CON
+STA EM40008              ; AUTO_はぎ取りｽﾋﾟｰﾄﾞ取得
+MPP
+LDA EM3020               ; MC 軸1 Point3 速度
+CON
+STA EM40008              ; AUTO_はぎ取りｽﾋﾟｰﾄﾞ取得
+;<h1/>接着剤転写部 弛み付け開始分ﾌｨﾙﾑ送りｻﾌﾞﾙｰﾁﾝ
+STG @MR6100              ; 弛み付け開始分ﾌｨﾙﾑ送り開始
+RES MR11210              ; ｽﾌﾟﾘﾝｸﾞ　上昇
+CON
+RES MR11214              ; 巻き出しﾌｨﾙﾑ押え 上昇
+CON
+RES MR11212              ; ﾀﾞﾝｻ後ﾌｨﾙﾑ押え 上昇
+CON
+RES MR11200              ; 主軸ﾛｰﾗｸﾗﾝﾌﾟ 上昇
+CON
+SET MR11201              ; 主軸ﾛｰﾗｸﾗﾝﾌﾟ 下降
+CON
+MPS
+LDB MR7307               ; F巻出し部 ﾀﾞﾝｻﾛｰﾗ後F押え 下限ｴﾗｰ
+ANB MR7607               ; 転写部  主軸ﾛｰﾗｸﾗﾝﾌﾟ 下限ｴﾗｰ
+ANB R7306                ; F巻出し部 ﾀﾞﾝｻﾛｰﾗ後F押え 上限
+AND R7307                ; F巻出し部 ﾀﾞﾝｻﾛｰﾗ後F押え 下限
+ANB R7606                ; 転写部  主軸ﾛｰﾗｸﾗﾝﾌﾟ 上限
+AND R7607                ; 転写部  主軸ﾛｰﾗｸﾗﾝﾌﾟ 下限
+ANL
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR6102
+MPP
+LD MR7307                ; F巻出し部 ﾀﾞﾝｻﾛｰﾗ後F押え 下限ｴﾗｰ
+OR MR7607                ; 転写部  主軸ﾛｰﾗｸﾗﾝﾌﾟ 下限ｴﾗｰ
+AND R41205               ; TASK5 PAUSE 
+ANL
+SET @MR1900              ; Main1 HALT許可
+STG @MR6102
+SET MR11408              ; 巻き取りﾌｨﾙﾑ押え　下降
+CON
+MPS
+LDB MR7500               ; F巻取り部 巻取りF押え上下 下限ｴﾗ
+ANB R7501                ; F巻取り部 巻取りF押え上下 上限
+AND R7500                ; F巻取り部 巻取りF押え上下 下限
+ANL
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR6107
+MPP
+LD MR7500                ; F巻取り部 巻取りF押え上下 下限ｴﾗ
+AND R41205               ; TASK5 PAUSE 
+ANL
+SET @MR1900              ; Main1 HALT許可
+STG @MR6107
+AND R24913               ; 軸2 ｻｰﾎﾞON
+ANB R20012               ; 軸2 現在座標変更要求
+U_WRCPOS.L #3 #2 +0
+TMR #860 #2              ; 軸2 現在座標変更待ち
+CON
+AND T860                 ; 軸2 現在座標変更待ち
+JMP @MR6108
+STG @MR6108
+SET R20012               ; 軸2 現在座標変更要求
+CON
+AND R20812               ; 軸2 現在座標変更完了
+AND=.L DM21850 +0        ; 軸2 現在座標
+JMP @MR6109
+STG @MR6109
+RES R20012               ; 軸2 現在座標変更要求
+CON
+TMR @73 #2
+CON
+AND @T73
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR6110
+STG @MR6110
+SET MR21705              ; MC 軸2 ﾎﾟｲﾝﾄ-5移動要求
+CON
+AND MR21911              ; MC 軸2移動完了
+JMP @MR6111
+STG @MR6111
+RES MR21705              ; MC 軸2 ﾎﾟｲﾝﾄ-5移動要求
+CON
+ANB MR21910              ; MC 軸2動作中
+AND<=.L EM43242 DM21850  ; 軸2 現在座標
+AND<=.L DM21850 EM44242  ; 軸2 現在座標
+JMP @MR6112
+STG @MR6112
+RES MR21705              ; MC 軸2 ﾎﾟｲﾝﾄ-5移動要求
+CON
+ANB MR21702              ; MC 軸2 ﾎﾟｲﾝﾄ-2移動要求
+TMR @74 #2
+CON
+AND @T74
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR6113
+;ﾌｨﾙﾑ上接着剤検出追加
+;動作ﾊﾟﾗﾒｰﾀ8　OFFで有効　ONで無効
+;接着剤検出　R7300
+STG @MR6113
+MPS
+BANB DM2000 #8           ; _動作ﾊﾟﾗﾒｰﾀ
+JMP @MR900               ; 接着剤検出
+MPP
+BAND DM2000 #8           ; _動作ﾊﾟﾗﾒｰﾀ
+JMP @MR6103
+STG @MR900               ; 接着剤検出
+MPS
+ANB R46100               ; _自動運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+JMP @MR6103
+MPP
+AND R46100               ; _自動運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+MPS
+AND R7300                ; 接着剤検出
+JMP @MR6103
+MPP
+ANB R7300                ; 接着剤検出
+TMR @7 #50
+CON
+AND @T7
+JMP @MR901
+STG @MR901
+SET R39004               ; ｴﾗｰ中
+CON
+DW #3207 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #113 @DM1             ; ErrorNo /ERROR_DISP
+CON
+DW #0 @DM2               ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task5 ERROR
+CON
+JMP @MR902
+STG @MR902
+SET @MR1900              ; Main1 HALT許可
+CON
+AND @MR101               ; Task5 ERROR_End
+RES @MR101               ; Task5 ERROR_End
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+JMP @MR903
+;1：再検出
+;2：交換・破棄 (接着剤塗布よりﾘｽﾀｰﾄ)
+;3：
+;4：パス (接着剤無しで続行)
+STG @MR903
+MPS
+AND @MR105               ; SW1
+JMP @MR900               ; 接着剤検出
+MRD
+AND @MR106               ; SW2
+JMP @MR904
+MPP
+AND @MR108               ; SW4
+JMP @MR6103
+STG @MR904
+RES MR11210              ; ｽﾌﾟﾘﾝｸﾞ　上昇
+CON
+SET MR11214              ; 巻き出しﾌｨﾙﾑ押え 上昇
+CON
+MPS
+LDB MR7304               ; F巻出し部 巻出しF押え 上限ｴﾗｰ
+ANB R7305                ; F巻出し部 巻出しF押え 下限
+AND R7304                ; F巻出し部 巻出しF押え 上限
+ANL
+SET MR6008               ; DRV-1 正転
+CON
+JMP @MR905
+MPP
+LD MR7304                ; F巻出し部 巻出しF押え 上限ｴﾗｰ
+AND R41205               ; TASK5 PAUSE 
+ANL
+SET @MR1900              ; Main1 HALT許可
+STG @MR905
+AND R7314                ; F巻出し部 ﾀﾞﾝｻﾛｰﾗ位置 下側
+RES MR6008               ; DRV-1 正転
+CON
+RES MR11214              ; 巻き出しﾌｨﾙﾑ押え 上昇
+CON
+JMP @MR906
+STG @MR906
+SET @MR5500              ; 接着剤転写部 原点復帰要求
+CON
+JMP @MR907
+STG @MR907
+AND @MR5501              ; 接着剤転写部 原点復帰完了
+RES @MR5501              ; 接着剤転写部 原点復帰完了
+CON
+JMP @MR908
+STG @MR908
+RES MR11210              ; ｽﾌﾟﾘﾝｸﾞ　上昇
+CON
+SET MR11214              ; 巻き出しﾌｨﾙﾑ押え 上昇
+CON
+MPS
+LDB MR7304               ; F巻出し部 巻出しF押え 上限ｴﾗｰ
+ANB R7305                ; F巻出し部 巻出しF押え 下限
+AND R7304                ; F巻出し部 巻出しF押え 上限
+ANL
+SET MR6008               ; DRV-1 正転
+CON
+JMP @MR909
+MPP
+LD MR7304                ; F巻出し部 巻出しF押え 上限ｴﾗｰ
+AND R41205               ; TASK5 PAUSE 
+ANL
+SET @MR1900              ; Main1 HALT許可
+STG @MR909
+AND R7314                ; F巻出し部 ﾀﾞﾝｻﾛｰﾗ位置 下側
+RES MR6008               ; DRV-1 正転
+CON
+RES MR11214              ; 巻き出しﾌｨﾙﾑ押え 上昇
+CON
+JMP @MR910
+STG @MR910
+SET MR16005              ; 強制　巻きだしﾓｰﾀ動作ON
+CON
+SET MR16105              ; 強制　巻き取りﾓｰﾀ動作ON
+CON
+JMP @MR911
+STG @MR911
+SET @MR915               ; 転写動作ﾘｽﾀｰﾄ
+CON
+SET @MR6101              ; 弛み付け開始分ﾌｨﾙﾑ送り動作完了
+CON
+ENDS
+;
+STG @MR6103
+SET MR21504              ; MC 軸1 ﾎﾟｲﾝﾄ-4移動要求
+CON
+AND MR21610              ; MC 軸1動作中
+JMP @MR6104
+STG @MR6104
+ANB MR21610              ; MC 軸1動作中
+AND<=.L EM43032 DM21790  ; 軸1 現在座標
+AND<=.L DM21790 EM44032  ; 軸1 現在座標
+JMP @MR6105
+STG @MR6105
+RES MR21504              ; MC 軸1 ﾎﾟｲﾝﾄ-4移動要求
+CON
+ANB MR21504              ; MC 軸1 ﾎﾟｲﾝﾄ-4移動要求
+TMR @72 #2
+CON
+AND @T72
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR6106
+STG @MR6106
+RES MR11210              ; ｽﾌﾟﾘﾝｸﾞ　上昇
+CON
+RES MR11214              ; 巻き出しﾌｨﾙﾑ押え 上昇
+CON
+RES MR11212              ; ﾀﾞﾝｻ後ﾌｨﾙﾑ押え 上昇
+CON
+RES MR11200              ; 主軸ﾛｰﾗｸﾗﾝﾌﾟ 上昇
+CON
+SET MR11201              ; 主軸ﾛｰﾗｸﾗﾝﾌﾟ 下降
+CON
+MPS
+LDB MR7307               ; F巻出し部 ﾀﾞﾝｻﾛｰﾗ後F押え 下限ｴﾗｰ
+ANB MR7607               ; 転写部  主軸ﾛｰﾗｸﾗﾝﾌﾟ 下限ｴﾗｰ
+ANB R7306                ; F巻出し部 ﾀﾞﾝｻﾛｰﾗ後F押え 上限
+AND R7307                ; F巻出し部 ﾀﾞﾝｻﾛｰﾗ後F押え 下限
+ANB R7606                ; 転写部  主軸ﾛｰﾗｸﾗﾝﾌﾟ 上限
+AND R7607                ; 転写部  主軸ﾛｰﾗｸﾗﾝﾌﾟ 下限
+ANL
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR6114
+MPP
+LD MR7307                ; F巻出し部 ﾀﾞﾝｻﾛｰﾗ後F押え 下限ｴﾗｰ
+OR MR7607                ; 転写部  主軸ﾛｰﾗｸﾗﾝﾌﾟ 下限ｴﾗｰ
+AND R41205               ; TASK5 PAUSE 
+ANL
+SET @MR1900              ; Main1 HALT許可
+STG @MR6114
+SET MR11408              ; 巻き取りﾌｨﾙﾑ押え　下降
+CON
+MPS
+LDB MR7500               ; F巻取り部 巻取りF押え上下 下限ｴﾗ
+ANB R7501                ; F巻取り部 巻取りF押え上下 上限
+AND R7500                ; F巻取り部 巻取りF押え上下 下限
+ANL
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR6115
+MPP
+LD MR7500                ; F巻取り部 巻取りF押え上下 下限ｴﾗ
+AND R41205               ; TASK5 PAUSE 
+ANL
+SET @MR1900              ; Main1 HALT許可
+STG @MR6115
+SET @MR6101              ; 弛み付け開始分ﾌｨﾙﾑ送り動作完了
+CON
+ENDS
+;<h1/>接着剤転写部 弛み付けﾌｨﾙﾑ送りｻﾌﾞﾙｰﾁﾝ
+STG @MR6200              ; 弛み付けﾌｨﾙﾑ送り開始
+JMP @MR6203
+STG @MR6203
+RES MR11210              ; ｽﾌﾟﾘﾝｸﾞ　上昇
+CON
+RES MR11214              ; 巻き出しﾌｨﾙﾑ押え 上昇
+CON
+RES MR11212              ; ﾀﾞﾝｻ後ﾌｨﾙﾑ押え 上昇
+CON
+RES MR11408              ; 巻き取りﾌｨﾙﾑ押え　下降
+CON
+RES MR11200              ; 主軸ﾛｰﾗｸﾗﾝﾌﾟ 上昇
+CON
+SET MR11201              ; 主軸ﾛｰﾗｸﾗﾝﾌﾟ 下降
+CON
+MPS
+LDB MR7307               ; F巻出し部 ﾀﾞﾝｻﾛｰﾗ後F押え 下限ｴﾗｰ
+ANB MR7501               ; F巻取り部 巻取りF押え上下 上限ｴﾗ
+ANB MR7607               ; 転写部  主軸ﾛｰﾗｸﾗﾝﾌﾟ 下限ｴﾗｰ
+ANB R7306                ; F巻出し部 ﾀﾞﾝｻﾛｰﾗ後F押え 上限
+AND R7307                ; F巻出し部 ﾀﾞﾝｻﾛｰﾗ後F押え 下限
+ANB R7500                ; F巻取り部 巻取りF押え上下 下限
+AND R7501                ; F巻取り部 巻取りF押え上下 上限
+ANB R7606                ; 転写部  主軸ﾛｰﾗｸﾗﾝﾌﾟ 上限
+AND R7607                ; 転写部  主軸ﾛｰﾗｸﾗﾝﾌﾟ 下限
+ANL
+JMP @MR6204
+MPP
+LD MR7307                ; F巻出し部 ﾀﾞﾝｻﾛｰﾗ後F押え 下限ｴﾗｰ
+OR MR7501                ; F巻取り部 巻取りF押え上下 上限ｴﾗ
+OR MR7607                ; 転写部  主軸ﾛｰﾗｸﾗﾝﾌﾟ 下限ｴﾗｰ
+AND R41205               ; TASK5 PAUSE 
+ANL
+SET @MR1900              ; Main1 HALT許可
+STG @MR6204
+AND R24913               ; 軸2 ｻｰﾎﾞON
+ANB R20012               ; 軸2 現在座標変更要求
+U_WRCPOS.L #3 #2 +0
+TMR #861 #2              ; 軸2 現在座標変更待ち
+CON
+AND T861                 ; 軸2 現在座標変更待ち
+JMP @MR6205
+STG @MR6205
+SET R20012               ; 軸2 現在座標変更要求
+CON
+AND R20812               ; 軸2 現在座標変更完了
+AND=.L DM21850 +0        ; 軸2 現在座標
+JMP @MR6206
+STG @MR6206
+RES R20012               ; 軸2 現在座標変更要求
+CON
+TMR @75 #2
+CON
+AND @T75
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR6207
+STG @MR6207
+SET MR21702              ; MC 軸2 ﾎﾟｲﾝﾄ-2移動要求
+CON
+AND MR21911              ; MC 軸2移動完了
+JMP @MR6208
+STG @MR6208
+ANB MR21910              ; MC 軸2動作中
+AND<=.L EM43212 DM21850  ; 軸2 現在座標
+AND<=.L DM21850 EM44212  ; 軸2 現在座標
+JMP @MR6209
+STG @MR6209
+RES MR21702              ; MC 軸2 ﾎﾟｲﾝﾄ-2移動要求
+CON
+ANB MR21702              ; MC 軸2 ﾎﾟｲﾝﾄ-2移動要求
+TMR @76 #2
+CON
+AND @T76
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR6215
+STG @MR6215
+SET @MR6201              ; 弛み付けﾌｨﾙﾑ送り動作完了
+CON
+ENDS
+;<h1/>接着剤転写部 ﾌｨﾙﾑ捨て出しｻﾌﾞﾙｰﾁﾝ
+STG @MR6300              ; ﾌｨﾙﾑ捨出し動作開始
+SET MR6302               ; ﾌｨﾙﾑ捨て出し動作中
+CON
+JMP @MR6302
+STG @MR6302
+RES MR11210              ; ｽﾌﾟﾘﾝｸﾞ　上昇
+CON
+RES MR11214              ; 巻き出しﾌｨﾙﾑ押え 上昇
+CON
+RES MR11212              ; ﾀﾞﾝｻ後ﾌｨﾙﾑ押え 上昇
+CON
+SET MR11408              ; 巻き取りﾌｨﾙﾑ押え　下降
+CON
+MPS
+LDB MR7307               ; F巻出し部 ﾀﾞﾝｻﾛｰﾗ後F押え 下限ｴﾗｰ
+ANB MR7500               ; F巻取り部 巻取りF押え上下 下限ｴﾗ
+ANB R7306                ; F巻出し部 ﾀﾞﾝｻﾛｰﾗ後F押え 上限
+AND R7307                ; F巻出し部 ﾀﾞﾝｻﾛｰﾗ後F押え 下限
+ANB R7501                ; F巻取り部 巻取りF押え上下 上限
+AND R7500                ; F巻取り部 巻取りF押え上下 下限
+ANL
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+MPS
+AND CR2003               ; 常時OFF
+JMP @MR6303
+MPP
+AND CR2002               ; 常時ON
+JMP @MR6304
+MPP
+LD MR7307                ; F巻出し部 ﾀﾞﾝｻﾛｰﾗ後F押え 下限ｴﾗｰ
+OR MR7500                ; F巻取り部 巻取りF押え上下 下限ｴﾗ
+AND R41205               ; TASK5 PAUSE 
+ANL
+SET @MR1900              ; Main1 HALT許可
+STG @MR6303
+RES MR11201              ; 主軸ﾛｰﾗｸﾗﾝﾌﾟ 下降
+CON
+SET MR11200              ; 主軸ﾛｰﾗｸﾗﾝﾌﾟ 上昇
+CON
+MPS
+LDB MR7606               ; 主軸ﾛｰﾗｸﾗﾝﾌﾟ 上昇ｴﾗｰ
+ANB R7607                ; 転写部  主軸ﾛｰﾗｸﾗﾝﾌﾟ 下限
+AND R7606                ; 転写部  主軸ﾛｰﾗｸﾗﾝﾌﾟ 上限
+ANL
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR6304
+MPP
+LD MR7606                ; 主軸ﾛｰﾗｸﾗﾝﾌﾟ 上昇ｴﾗｰ
+AND R41205               ; TASK5 PAUSE 
+ANL
+SET @MR1900              ; Main1 HALT許可
+STG @MR6304
+AND R24913               ; 軸2 ｻｰﾎﾞON
+ANB R20012               ; 軸2 現在座標変更要求
+U_WRCPOS.L #3 #2 +0
+TMR #862 #2              ; 軸2 現在座標変更待ち
+CON
+AND T862                 ; 軸2 現在座標変更待ち
+JMP @MR6305
+STG @MR6305
+SET R20012               ; 軸2 現在座標変更要求
+CON
+AND R20812               ; 軸2 現在座標変更完了
+AND=.L DM21850 +0        ; 軸2 現在座標
+JMP @MR6306
+STG @MR6306
+RES R20012               ; 軸2 現在座標変更要求
+CON
+TMR @77 #2
+CON
+AND @T77
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR6307
+STG @MR6307
+SET MR11408              ; 巻き取りﾌｨﾙﾑ押え　下降
+CON
+MPS
+LDB MR7500               ; F巻取り部 巻取りF押え上下 下限ｴﾗ
+ANB R7501                ; F巻取り部 巻取りF押え上下 上限
+AND R7500                ; F巻取り部 巻取りF押え上下 下限
+ANL
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR6308
+MPP
+LD MR7500                ; F巻取り部 巻取りF押え上下 下限ｴﾗ
+AND R41205               ; TASK5 PAUSE 
+ANL
+SET @MR1900              ; Main1 HALT許可
+STG @MR6308
+JMP @MR6309
+STG @MR6309
+SET MR21703              ; MC 軸2 ﾎﾟｲﾝﾄ-3移動要求
+CON
+AND MR21911              ; MC 軸2移動完了
+JMP @MR6310
+STG @MR6310
+ANB MR21910              ; MC 軸2動作中
+AND<=.L EM43222 DM21850  ; 軸2 現在座標
+AND<=.L DM21850 EM44222  ; 軸2 現在座標
+JMP @MR6311
+STG @MR6311
+RES MR21703              ; MC 軸2 ﾎﾟｲﾝﾄ-3移動要求
+CON
+ANB MR21703              ; MC 軸2 ﾎﾟｲﾝﾄ-3移動要求
+TMR @78 #2
+CON
+AND @T78
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR6312
+STG @MR6312
+RES MR11408              ; 巻き取りﾌｨﾙﾑ押え　下降
+CON
+MPS
+LDB MR7501               ; F巻取り部 巻取りF押え上下 上限ｴﾗ
+ANB R7500                ; F巻取り部 巻取りF押え上下 下限
+AND R7501                ; F巻取り部 巻取りF押え上下 上限
+ANL
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR6313
+MPP
+LD MR7501                ; F巻取り部 巻取りF押え上下 上限ｴﾗ
+AND R41205               ; TASK5 PAUSE 
+ANL
+SET @MR1900              ; Main1 HALT許可
+STG @MR6313
+RES MR11200              ; 主軸ﾛｰﾗｸﾗﾝﾌﾟ 上昇
+CON
+SET MR11201              ; 主軸ﾛｰﾗｸﾗﾝﾌﾟ 下降
+CON
+MPS
+LDB MR7607               ; 転写部  主軸ﾛｰﾗｸﾗﾝﾌﾟ 下限ｴﾗｰ
+ANB R7606                ; 転写部  主軸ﾛｰﾗｸﾗﾝﾌﾟ 上限
+AND R7607                ; 転写部  主軸ﾛｰﾗｸﾗﾝﾌﾟ 下限
+ANL
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR6315
+MPP
+LD MR7607                ; 転写部  主軸ﾛｰﾗｸﾗﾝﾌﾟ 下限ｴﾗｰ
+AND R41205               ; TASK5 PAUSE 
+ANL
+SET @MR1900              ; Main1 HALT許可
+STG @MR6315
+RES MR6302               ; ﾌｨﾙﾑ捨て出し動作中
+CON
+SET @MR6301              ; ﾌｨﾙﾑ捨出し動作完了
+CON
+ENDS
+;<h1/>接着剤転写部 ﾌｨﾙﾑ交換後捨て出しｻﾌﾞﾙｰﾁﾝ
+STG @MR6708              ; ﾌｨﾙﾑ交換後 捨て出し開始
+SET MR6303               ; ﾌｨﾙﾑ交換後 捨て出し動作中
+CON
+JMP @MR6709
+STG @MR6709
+RES MR11210              ; ｽﾌﾟﾘﾝｸﾞ　上昇
+CON
+SET MR11214              ; 巻き出しﾌｨﾙﾑ押え 上昇
+CON
+RES MR11212              ; ﾀﾞﾝｻ後ﾌｨﾙﾑ押え 上昇
+CON
+SET MR11408              ; 巻き取りﾌｨﾙﾑ押え　下降
+CON
+SET MR11200              ; 主軸ﾛｰﾗｸﾗﾝﾌﾟ 上昇
+CON
+RES MR11201              ; 主軸ﾛｰﾗｸﾗﾝﾌﾟ 下降
+CON
+MPS
+LDB MR7304               ; F巻出し部 巻出しF押え 上限ｴﾗｰ
+ANB MR7500               ; F巻取り部 巻取りF押え上下 下限ｴﾗ
+ANB MR7606               ; 主軸ﾛｰﾗｸﾗﾝﾌﾟ 上昇ｴﾗｰ
+ANB R7305                ; F巻出し部 巻出しF押え 下限
+AND R7304                ; F巻出し部 巻出しF押え 上限
+ANB R7501                ; F巻取り部 巻取りF押え上下 上限
+AND R7500                ; F巻取り部 巻取りF押え上下 下限
+ANB R7607                ; 転写部  主軸ﾛｰﾗｸﾗﾝﾌﾟ 下限
+AND R7606                ; 転写部  主軸ﾛｰﾗｸﾗﾝﾌﾟ 上限
+ANL
+JMP @MR6710
+MPP
+LD MR7304                ; F巻出し部 巻出しF押え 上限ｴﾗｰ
+OR MR7500                ; F巻取り部 巻取りF押え上下 下限ｴﾗ
+OR MR7606                ; 主軸ﾛｰﾗｸﾗﾝﾌﾟ 上昇ｴﾗｰ
+AND R41205               ; TASK5 PAUSE 
+ANL
+SET @MR1900              ; Main1 HALT許可
+STG @MR6710
+RES MR16004              ; 巻だしﾀﾞﾝｻﾛｰﾗ動作ON
+CON
+RES MR16104              ; 巻取りﾀﾞﾝｻﾛｰﾗ動作ON
+CON
+SET MR6012               ; DRV-2 正転
+CON
+AND MR6012               ; DRV-2 正転
+TMR #1747 #1200          ; ﾌｨﾙﾑ交換後 捨て出し時間
+CON
+AND T1747                ; ﾌｨﾙﾑ交換後 捨て出し時間
+JMP @MR6711
+STG @MR6711
+RES MR6012               ; DRV-2 正転
+CON
+RES MR11210              ; ｽﾌﾟﾘﾝｸﾞ　上昇
+CON
+RES MR11214              ; 巻き出しﾌｨﾙﾑ押え 上昇
+CON
+RES MR11212              ; ﾀﾞﾝｻ後ﾌｨﾙﾑ押え 上昇
+CON
+RES MR11408              ; 巻き取りﾌｨﾙﾑ押え　下降
+CON
+RES MR11200              ; 主軸ﾛｰﾗｸﾗﾝﾌﾟ 上昇
+CON
+SET MR11201              ; 主軸ﾛｰﾗｸﾗﾝﾌﾟ 下降
+CON
+MPS
+LDB MR7307               ; F巻出し部 ﾀﾞﾝｻﾛｰﾗ後F押え 下限ｴﾗｰ
+ANB MR7501               ; F巻取り部 巻取りF押え上下 上限ｴﾗ
+ANB MR7607               ; 転写部  主軸ﾛｰﾗｸﾗﾝﾌﾟ 下限ｴﾗｰ
+AND R7307                ; F巻出し部 ﾀﾞﾝｻﾛｰﾗ後F押え 下限
+ANB R7306                ; F巻出し部 ﾀﾞﾝｻﾛｰﾗ後F押え 上限
+ANB R7500                ; F巻取り部 巻取りF押え上下 下限
+AND R7501                ; F巻取り部 巻取りF押え上下 上限
+ANB R7606                ; 転写部  主軸ﾛｰﾗｸﾗﾝﾌﾟ 上限
+AND R7607                ; 転写部  主軸ﾛｰﾗｸﾗﾝﾌﾟ 下限
+ANL
+JMP @MR6712
+MPP
+LD MR7307                ; F巻出し部 ﾀﾞﾝｻﾛｰﾗ後F押え 下限ｴﾗｰ
+OR MR7501                ; F巻取り部 巻取りF押え上下 上限ｴﾗ
+OR MR7607                ; 転写部  主軸ﾛｰﾗｸﾗﾝﾌﾟ 下限ｴﾗｰ
+AND R41205               ; TASK5 PAUSE 
+ANL
+SET @MR1900              ; Main1 HALT許可
+STG @MR6712
+SET MR16004              ; 巻だしﾀﾞﾝｻﾛｰﾗ動作ON
+CON
+SET MR16104              ; 巻取りﾀﾞﾝｻﾛｰﾗ動作ON
+CON
+TMR @79 #50
+CON
+AND @T79
+ANB MR6008               ; DRV-1 正転
+ANB MR6012               ; DRV-2 正転
+JMP @MR6713
+STG @MR6713
+SET MR16105              ; 強制　巻き取りﾓｰﾀ動作ON
+CON
+TMR @80 #50
+CON
+AND @T80
+SET MR16005              ; 強制　巻きだしﾓｰﾀ動作ON
+CON
+ANB MR6008               ; DRV-1 正転
+ANB MR6012               ; DRV-2 正転
+RES MR6303               ; ﾌｨﾙﾑ交換後 捨て出し動作中
+CON
+SET @MR6715              ; ﾌｨﾙﾑ交換後 捨て出し完了
+CON
+ENDS
+;<h1/>RB1動作ｻﾌﾞﾙｰﾁﾝ
+STG @R000                ; RB1動作開始
+ANB @R002                ; RB1動作中
+SET @R002                ; RB1動作中
+CON
+JMP @R003
+STG @R003
+TMH @10 #5
+CON
+AND @T10
+SET MR18405              ; RB1:MOVE
+CON
+SET @R011                ; ｽｷｰｼﾞ動作中
+CON
+JMP @R004
+STG @R004
+AND= DM11048 DM11044     ; RB1 目標ﾎﾟｲﾝﾄ番号  RB1 現在ﾎﾟｼﾞｼｮﾝ番号
+ANB MR18405              ; RB1:MOVE
+ZRES @R010 @R013         ; ｽｷｰｼﾞ断続運転要求
+CON
+TMH @11 #5
+CON
+AND @T11
+RES @R002                ; RB1動作中
+CON
+SET @R001                ; RB1動作完了
+CON
+ENDS
+STG @R011                ; ｽｷｰｼﾞ動作中
+AND @R010                ; ｽｷｰｼﾞ断続運転要求
+MPS
+@LDA.L DM10508           ; MSEP Axis-0 現在位置（下位8bit）
+CON
+@SUB.L DM7076            ; 装置基礎ﾃﾞｰﾀ39
+CON
+@STA.L DM11050
+MPP
+JMP @R012
+STG @R012
+AND>=.L DM11050 DM10508  ; MSEP Axis-0 現在位置（下位8bit）
+BSET DM10715 #2          ; MSEP Axis-0 制御信号
+CON
+JMP @R013
+STG @R013
+TMR #1800 #9999
+CON
+AND T1800
+BRES DM10715 #2          ; MSEP Axis-0 制御信号
+CON
+JMP @R011                ; ｽｷｰｼﾞ動作中
+;<h1/>RB2動作ｻﾌﾞﾙｰﾁﾝ
+STG @R005                ; RB2動作開始
+ANB @R007                ; RB2動作中
+SET @R007                ; RB2動作中
+CON
+JMP @R008
+STG @R008
+TMH @12 #5
+CON
+AND @T12
+SET MR18605              ; RB2:MOVE
+CON
+JMP @R009
+STG @R009
+AND= DM11068 DM11064     ; RB2 目標ﾎﾟｲﾝﾄ番号  RB2 現在ﾎﾟｼﾞｼｮﾝ番号
+ANB MR18605              ; RB2:MOVE
+TMH @13 #5
+CON
+AND @T13
+RES @R007                ; RB2動作中
+CON
+SET @R006                ; RB2動作完了
+CON
+ENDS
+;<h1/>接着剤交換動作ｻﾌﾞﾙｰﾁﾝ
+STG @MR3309              ; 接着剤交換動作開始
+SET @MR5000              ; ｼﾘﾝｼﾞ交換要求
+CON
+JMP @MR5900
+STG @MR5900
+AND @MR5001              ; ｼﾘﾝｼﾞ交換動作完了
+RES MR8014               ; 接着剤交換要求ﾒｯｾｰｼﾞ
+CON
+RES @MR5001              ; ｼﾘﾝｼﾞ交換動作完了
+CON
+SET @MR3310              ; 接着剤交換動作完了
+CON
+ENDS
+;<h1/>ﾌｨﾙﾑ受け交換動作ｻﾌﾞﾙｰﾁﾝ
+STG @MR3301              ; ﾌｨﾙﾑ受け交換動作開始
+SET MR9810               ; ﾌｨﾙﾑ受け交換中
+CON
+JMP @MR5903
+STG @MR5903
+MPS
+AND R41205               ; TASK5 PAUSE 
+SET @MR1900              ; Main1 HALT許可
+MPP
+ANB R41205               ; TASK5 PAUSE 
+JMP @MR5904
+STG @MR5904
+SET @MR4600              ; ﾌｨﾙﾑ受け動作ｻﾌﾞﾙｰﾁﾝ
+CON
+JMP @MR5905
+STG @MR5905
+AND @MR4601              ; ﾌｨﾙﾑ受け動作ｻﾌﾞﾙｰﾁﾝ動作完了
+RES @MR4601              ; ﾌｨﾙﾑ受け動作ｻﾌﾞﾙｰﾁﾝ動作完了
+CON
+JMP @MR5906
+STG @MR5906
+RES MR10706              ; 治具ｴｱｰ真空　吸着ON
+CON
+TMH @83 #3
+CON
+AND @T83
+SET MR10708              ; 治具ｴｱｰ真空　破壊ON
+CON
+SET MR10707              ; 治具ｴｱｰ真空　吸着OFF
+CON
+TMR @19 #10
+CON
+AND @T19
+JMP @MR5907
+STG @MR5907
+RES MR10708              ; 治具ｴｱｰ真空　破壊ON
+CON
+ANB R39104               ; SELECT_Y_N Interlock
+SET @MR1900              ; Main1 HALT許可
+CON
+SET R39104               ; SELECT_Y_N Interlock
+CON
+DW #8 @DM21              ; ScreenNo /SELECT_Y_N
+CON
+DW #1 @DM22              ; Bz_Use /SELECT_Y_N
+CON
+SET @MR300               ; Task5 SELECT_Y_N
+CON
+SET MR24405              ; ｾﾚｸﾄY/N ﾒｸﾗ
+CON
+JMP @MR5908
+STG @MR5908
+AND @MR301               ; Task5 Y/N END
+RES @MR301               ; Task5 Y/N END
+CON
+RES R39104               ; SELECT_Y_N Interlock
+CON
+MPS
+AND @MR306               ; Task5 Y/N
+RES MR24405              ; ｾﾚｸﾄY/N ﾒｸﾗ
+CON
+JMP @MR5909
+MPP
+ANB @MR306               ; Task5 Y/N
+RES MR24405              ; ｾﾚｸﾄY/N ﾒｸﾗ
+CON
+JMP @MR5909
+STG @MR5909
+RES R42605               ; _Grp1_Task5_ﾎﾟｰｽﾞ許可
+CON
+SET @MR4700              ; ﾌｨﾙﾑ受け終了動作ｻﾌﾞﾙｰﾁﾝ
+CON
+JMP @MR5910
+STG @MR5910
+AND @MR4701              ; ﾌｨﾙﾑ受け終了動作終了
+RES @MR4701              ; ﾌｨﾙﾑ受け終了動作終了
+CON
+JMP @MR5911
+STG @MR5911
+RES MR24401              ; 交換作業用ﾌﾗｸﾞ
+CON
+RES MR24400              ; ﾒｯｾｰｼﾞ表示 OKｽｲｯﾁON
+CON
+RES R54500
+CON
+SET MR9802               ; ﾌｨﾙﾑ交換完了
+CON
+JMP @MR5912
+STG @MR5912
+JMP @MR5913
+STG @MR5913
+RES MR8100               ; ﾌｨﾙﾑ受け台交換要求ﾒｯｾｰｼﾞ
+CON
+RES @MR4701              ; ﾌｨﾙﾑ受け終了動作終了
+CON
+RES MR9810               ; ﾌｨﾙﾑ受け交換中
+CON
+SET @MR3302              ; ﾌｨﾙﾑ受け交換動作完了
+CON
+ENDS
+;<h1/>接着剤捨出し動作ｻﾌﾞﾙｰﾁﾝ
+LD R46100                ; _自動運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+ANB @MR4902              ; 接着剤塗布部動作中
+MPS
+LDB MR24407              ; 塗布ｽｲｯﾁ Y/N画面表示
+ANB @MR5002              ; ｼﾘﾝｼﾞ交換中
+AND MR6310               ; 接着剤捨て出しSW
+ANL
+RES MR11502              ; ｼﾘﾝｼﾞ大気開放
+CON
+SET MR11500              ; ｸﾘｱｼﾘﾝｼﾞ
+MPP
+LD MR24407               ; 塗布ｽｲｯﾁ Y/N画面表示
+AND MR6310               ; 接着剤捨て出しSW
+ANL
+RES MR11502              ; ｼﾘﾝｼﾞ大気開放
+CON
+SET MR11500              ; ｸﾘｱｼﾘﾝｼﾞ
+LDF MR6310               ; 接着剤捨て出しSW
+SET MR11502              ; ｼﾘﾝｼﾞ大気開放
+CON
+RES MR11500              ; ｸﾘｱｼﾘﾝｼﾞ
+;<h1/>ﾌｨﾙﾑ交換後捨て出し動作ｻﾌﾞﾙｰﾁﾝ
+LD R46100                ; _自動運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+OR= DM3000 #290          ; _MainTP　表示中ﾍﾟｰｼﾞNo
+ANB MR6303               ; ﾌｨﾙﾑ交換後 捨て出し動作中
+ANB R39004               ; ｴﾗｰ中
+AND MR6311               ; ﾌｨﾙﾑ交換後捨て出しSWSW
+ANB R46200               ; _安全ｶﾊﾞｰ1開中
+SET @MR6708              ; ﾌｨﾙﾑ交換後 捨て出し開始
+CON
+SET @MR6714
+STG @MR6714
+AND @MR6715              ; ﾌｨﾙﾑ交換後 捨て出し完了
+RES @MR6715              ; ﾌｨﾙﾑ交換後 捨て出し完了
+CON
+ENDS
+;<h1/>HALT
+LD R41205                ; TASK5 PAUSE 
+LD @MR1900               ; Main1 HALT許可
+OR MR1900                ; 毎ｽｷｬﾝMD_Main1 HALT許可
+ANL
+ANB MR6302               ; ﾌｨﾙﾑ捨て出し動作中
+ANB MR6008               ; DRV-1 正転
+ANB MR6012               ; DRV-2 正転
+ANB @R007                ; RB2動作中
+ANB @R002                ; RB1動作中
+ANB MR21610              ; MC 軸1動作中
+ANB MR21910              ; MC 軸2動作中
+TMR @190 #2
+CON
+AND @T190
+SET R42605               ; _Grp1_Task5_ﾎﾟｰｽﾞ許可
+LDB R41205               ; TASK5 PAUSE 
+RES @MR1900              ; Main1 HALT許可
+CON
+RES MR1900               ; 毎ｽｷｬﾝMD_Main1 HALT許可
+CON
+RES R42605               ; _Grp1_Task5_ﾎﾟｰｽﾞ許可
+;
+END
+ENDH

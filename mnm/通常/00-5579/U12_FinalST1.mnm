@@ -1,0 +1,1727 @@
+DEVICE:53
+;MODULE:U12_FinalST1
+;MODULE_TYPE:0
+;SCRIPT_TYPE:
+;<h1/>□_入力受け
+;関連する入力受け(ｾﾝｻのﾃﾞｨﾚｲﾀｲﾏ等)を必要があれば作成する。
+;通常は入力ﾕﾆｯﾄに入力時定数(ﾃﾞｨﾚｲ)があるので直接使用しても問題は無い。
+LD M99                   ; 能拡後対応FLG
+MC
+LD M123                  ; 安全扉正常
+AND M124                 ; ｴﾘｱｾﾝｻ正常
+TMR K1201 K5             ; ST1-2間ﾗｲﾄｶｰﾃﾝOK
+LD X1504                 ; ST1_電特部_ﾜｰｸ押_下降端
+TMH K1202 K50            ; ST1_電特部_ﾜｰｸ押_下降端
+LD CR2003                ; 常時OFF
+TMR K1203 K3
+LD M6621                 ; RB4_ﾜｰｸ受取り位置(ID確認位置)
+TMR K1204 K5             ; ST1_電特部_ﾊﾟﾚｯﾄ_後退端
+;ｺﾝﾀｸﾄﾍｯﾄﾞID
+LD X1508                 ; ST1_電特部_ｺﾝﾀｸﾄﾍｯﾄﾞID_1
+OUT D6606.0
+LD X1509                 ; ST1_電特部_ｺﾝﾀｸﾄﾍｯﾄﾞID_2
+OUT D6606.1
+LD X150A                 ; ST1_電特部_ｺﾝﾀｸﾄﾍｯﾄﾞID_3
+OUT D6606.2
+;ﾊﾟﾚｯﾄID
+LD X150B                 ; ST1_電特部_ﾊﾟﾚｯﾄID_1
+OUT D6607.0
+LD X150C                 ; ST1_電特部_ﾊﾟﾚｯﾄID_2
+OUT D6607.1
+LD X150D                 ; ST1_電特部_ﾊﾟﾚｯﾄID_3
+OUT D6607.2
+;ＩＤ保持
+LD M71                   ; 自動運転開始BZ
+AND L1200                ; FINALST1_有効状態
+LD M6912                 ; FinalST1_ID保持ﾄﾘｶﾞ
+ANB M6910                ; FainlST1_無効中
+ORL
+AND M71                  ; 自動運転開始BZ
+OUT M6912                ; FinalST1_ID保持ﾄﾘｶﾞ
+;____ｺﾝﾀｸﾄﾍｯﾄﾞＩＤ保持
+;※PC送信用は生ﾃﾞｰﾀに変更
+LD L1200                 ; FINALST1_有効状態
+MPS
+TMR K1206 K5             ; FinalST1_ｺﾝﾀｸﾄﾍｯﾄﾞID_更新_DLY
+MPP
+AND T1206                ; FinalST1_ｺﾝﾀｸﾄﾍｯﾄﾞID_更新_DLY
+@MOV D6606 D6600         ; FinalST1_ｺﾝﾀｸﾄﾍｯﾄﾞID_Copy  FinalST1_ｺﾝﾀｸﾄﾍｯﾄﾞID
+LD CR2002                ; 常時ON
+MOV D6606 W0138          ; FinalST1_ｺﾝﾀｸﾄﾍｯﾄﾞID_Copy  電特ﾃｽﾄﾍｯﾄﾞID#1
+LDB L1200                ; FINALST1_有効状態
+MOV K0 D6600             ; FinalST1_ｺﾝﾀｸﾄﾍｯﾄﾞID
+;____ﾊﾟﾚｯﾄＩＤ保持
+LD L1200                 ; FINALST1_有効状態
+LD T1204                 ; ST1_電特部_ﾊﾟﾚｯﾄ_後退端
+OR T1207                 ; FinalST1_ﾊﾟﾚｯﾄID_更新_DLY
+ANL
+TMR K1207 K5             ; FinalST1_ﾊﾟﾚｯﾄID_更新_DLY
+@MOV D6607 D6601         ; FinalST1_ﾊﾟﾚｯﾄID_ｾﾝｻ状態  FinalST1_ﾊﾟﾚｯﾄID
+LD CR2002                ; 常時ON
+MOV D6601 W0130          ; FinalST1_ﾊﾟﾚｯﾄID  電特ﾊﾟﾚｯﾄID#1
+LDB L1200                ; FINALST1_有効状態
+MOV K0 D6601             ; FinalST1_ﾊﾟﾚｯﾄID
+;<h1/>__FINAL_ST_治具有効/無効選択
+;段取り状態中ﾌﾗｸﾞの追加
+;自動中は段取り状態中に、ST上のﾜｰｸ無、RBﾊﾝﾄﾞﾜｰｸ無し、供給部ﾜｰｸ無しにて無効状態OKとなる
+LDB X1208                ; ST1_電特検査 有効/無効SW
+ANB B11EA                ; ST1_Final検査_有効/無効_Tpb
+INV
+OUT M6904                ; ST1電特検査_有効/無効SW
+LD= D1201 K0             ; 投入部1_ﾜｰｸ有無記憶
+OR= D1207 K1             ; 投入部_BreakMode品(ONで)
+LD= D6201 K0             ; Leak_ST1_ﾜｰｸ有無記憶
+OR= D6207 K1             ; Leak_ST1_BreakMode品(ONで)
+ANL
+LD= D7201 K0             ; Leak_ST2_ﾜｰｸ有無記憶
+OR= D7207 K1             ; Leak_ST2_BreakMode品(ONで)
+ANL
+ANB M3102                ; ﾊﾝﾄﾞ1_Final検査品
+ANB M3152                ; ﾊﾝﾄﾞ2_Final検査品
+LDB T220                 ; ST1-2_ﾊﾝﾄﾞ1吸着確認ONﾀｲﾏ
+OR M3103                 ; ﾊﾝﾄﾞ1_検査完了品(排出ﾜｰｸ)
+ANL
+LDB T222                 ; ST1-2_ﾊﾝﾄﾞ2吸着確認ONﾀｲﾏ
+OR M3153                 ; ﾊﾝﾄﾞ2_検査完了品(排出ﾜｰｸ)
+ANL
+LD L1400                 ; FINALST2_有効状態
+AND= D6600 D7600         ; FinalST1_ｺﾝﾀｸﾄﾍｯﾄﾞID  FinalST2_ｺﾝﾀｸﾄﾍｯﾄﾞID
+AND= D6601 D7601         ; FinalST1_ﾊﾟﾚｯﾄID  FinalST2_ﾊﾟﾚｯﾄID
+ORL
+LD L1600                 ; FINALST3_有効状態
+AND= D6600 D8600         ; FinalST1_ｺﾝﾀｸﾄﾍｯﾄﾞID  FinalST3_ｺﾝﾀｸﾄﾍｯﾄﾞID
+AND= D6601 D8601         ; FinalST1_ﾊﾟﾚｯﾄID  FinalST3_ﾊﾟﾚｯﾄID
+ORL
+LD L1800                 ; FINALST4_有効状態
+AND= D6600 D9600         ; FinalST1_ｺﾝﾀｸﾄﾍｯﾄﾞID  FinalST4_ｺﾝﾀｸﾄﾍｯﾄﾞID
+AND= D6601 D9601         ; FinalST1_ﾊﾟﾚｯﾄID  FinalST4_ﾊﾟﾚｯﾄID
+LD L2000                 ; FINALST5_有効状態
+AND= D6600 D10600        ; FinalST1_ｺﾝﾀｸﾄﾍｯﾄﾞID  FinalST5_ｺﾝﾀｸﾄﾍｯﾄﾞID
+AND= D6601 D10601        ; FinalST1_ﾊﾟﾚｯﾄID  FinalST5_ﾊﾟﾚｯﾄID
+ORL
+LD L2200                 ; FINALST6_有効状態
+AND= D6600 D11600        ; FinalST1_ｺﾝﾀｸﾄﾍｯﾄﾞID  FinalST6_ｺﾝﾀｸﾄﾍｯﾄﾞID
+AND= D6601 D11601        ; FinalST1_ﾊﾟﾚｯﾄID  FinalST6_ﾊﾟﾚｯﾄID
+ORL
+ANB M99                  ; 能拡後対応FLG
+ORL
+OR W09.8                 ; 電特ｽﾃｰｼﾞ#1 無効切替要求
+LDB M6574                ; U12-1起動中
+LD M6501                 ; U12-1_S1_ﾜｰｸ供給要求
+ANB M2861                ; 【搬送】搬送→FINAL_ST1搬送開始
+ORL
+ANL
+LDB M3111                ; ﾊﾝﾄﾞ1_FinalST1再検品
+ANB M3161                ; ﾊﾝﾄﾞ2_FinalST1再検品
+OR W09.8                 ; 電特ｽﾃｰｼﾞ#1 無効切替要求
+ANL
+ANB M3216                ; ﾊﾝﾄﾞ1_FinalST1給材中flg
+ANB M3217                ; ﾊﾝﾄﾞ2_FinalST1給材中flg
+LD= D6701 K0             ; Final_ST1_ﾜｰｸ有無記憶
+LD= D6701 K1             ; Final_ST1_ﾜｰｸ有無記憶
+AND<> D6704 K0           ; Final_ST1_Final検査結果(1=OK_2=N
+ORL
+ANL
+OUT M6907                ; FainlST1_自動中無効条件OK
+LDB M71                  ; 自動運転開始BZ
+LD M6909                 ; FainlST1_無効予約(自動運転)
+AND M6907                ; FainlST1_自動中無効条件OK
+ORL
+OUT M6908                ; FainlST1_無効OK条件
+LD M6909                 ; FainlST1_無効予約(自動運転)
+ANB M6910                ; FainlST1_無効中
+ANP M6904                ; ST1電特検査_有効/無効SW
+ANB W09.8                ; 電特ｽﾃｰｼﾞ#1 無効切替要求
+ANB D6708.0
+OUT M6911                ; FainlST1_予約ｷｬﾝｾﾙ
+LDP M6904                ; ST1電特検査_有効/無効SW
+ORP W09.8                ; 電特ｽﾃｰｼﾞ#1 無効切替要求
+AND L1200                ; FINALST1_有効状態
+AND M71                  ; 自動運転開始BZ
+ANB M6909                ; FainlST1_無効予約(自動運転)
+LD M6909                 ; FainlST1_無効予約(自動運転)
+ANB M6910                ; FainlST1_無効中
+ANB M6911                ; FainlST1_予約ｷｬﾝｾﾙ
+ORL
+OUT M6909                ; FainlST1_無効予約(自動運転)
+LD M6909                 ; FainlST1_無効予約(自動運転)
+AND M6908                ; FainlST1_無効OK条件
+LDP M6904                ; ST1電特検査_有効/無効SW
+ANB W09.8                ; 電特ｽﾃｰｼﾞ#1 無効切替要求
+ORP W09.8                ; 電特ｽﾃｰｼﾞ#1 無効切替要求
+ANB M41                  ; U_起動中
+ORL
+LDB B0182                ; 386)FinalST1ﾃｽﾄﾍｯﾄﾞID不
+ANB B0183                ; 387)FinalST1ﾊﾟﾚｯﾄID不一
+INV
+MEP
+ORL
+LDB M300                 ; PC通信正常
+ANB M3                   ; OFFLINE_MODE
+ORL
+LD M6910                 ; FainlST1_無効中
+ANB L1200                ; FINALST1_有効状態
+ORL
+OUT M6910                ; FainlST1_無効中
+;<h1/>__Final ST_有効処理
+LDP M6904                ; ST1電特検査_有効/無効SW
+LD<> D6606 K0            ; FinalST1_ｺﾝﾀｸﾄﾍｯﾄﾞID_Copy
+AND<> D6607 K0           ; FinalST1_ﾊﾟﾚｯﾄID_ｾﾝｻ状態
+AND M6621                ; RB4_ﾜｰｸ受取り位置(ID確認位置)
+LD M35                   ; 空運転ﾓｰﾄﾞ
+AND= D6606 K0            ; FinalST1_ｺﾝﾀｸﾄﾍｯﾄﾞID_Copy
+AND= D6607 K0            ; FinalST1_ﾊﾟﾚｯﾄID_ｾﾝｻ状態
+ORL
+ANL
+ANB L1200                ; FINALST1_有効状態
+LD M6915                 ; FinalST1有効要求
+ANB M6917                ; ST有効OK
+ANB M6918                ; ST有効化NG
+ORL
+LD M300                  ; PC通信正常
+OR M3                    ; OFFLINE_MODE
+ANL
+OUT M6915                ; FinalST1有効要求
+LD M6915                 ; FinalST1有効要求
+ANB M3                   ; OFFLINE_MODE
+ANB M9                   ; ﾁｪｯｶｰﾁｪｯｸ有効ﾓｰﾄﾞOFF(step2でOFF)
+OUT W0108.0              ; ﾁｪｯｶｰ#1確認要求
+LD M6915                 ; FinalST1有効要求
+LD W0108.0               ; ﾁｪｯｶｰ#1確認要求
+OR M3                    ; OFFLINE_MODE
+OR M9                    ; ﾁｪｯｶｰﾁｪｯｸ有効ﾓｰﾄﾞOFF(step2でOFF)
+ANL
+OR M6916                 ; ST有効確認要求
+AND M6915                ; FinalST1有効要求
+OUT M6916                ; ST有効確認要求
+;有効化ok
+LD M6916                 ; ST有効確認要求
+LD W0A.0                 ; ﾁｪｯｶｰ#1確認完了
+ANB W09.8                ; 電特ｽﾃｰｼﾞ#1 無効切替要求
+OR M3                    ; OFFLINE_MODE
+OR M9                    ; ﾁｪｯｶｰﾁｪｯｸ有効ﾓｰﾄﾞOFF(step2でOFF)
+ANL
+OR M6917                 ; ST有効OK
+AND M6915                ; FinalST1有効要求
+OUT M6917                ; ST有効OK
+LD M6917                 ; ST有効OK
+LD L1200                 ; FINALST1_有効状態
+ANB M6910                ; FainlST1_無効中
+ANB M6918                ; ST有効化NG
+ORL
+OUT L1200                ; FINALST1_有効状態
+;有効化不可
+LD M6916                 ; ST有効確認要求
+ANB M3                   ; OFFLINE_MODE
+ANB M9                   ; ﾁｪｯｶｰﾁｪｯｸ有効ﾓｰﾄﾞOFF(step2でOFF)
+AND W0A.0                ; ﾁｪｯｶｰ#1確認完了
+AND W09.8                ; 電特ｽﾃｰｼﾞ#1 無効切替要求
+OR M6918                 ; ST有効化NG
+AND M6915                ; FinalST1有効要求
+OUT M6918                ; ST有効化NG
+;JIG_ID一致確認
+LD L1200                 ; FINALST1_有効状態
+MPS
+LD M99                   ; 能拡後対応FLG
+AND= D6600 D1714         ; FinalST1_ｺﾝﾀｸﾄﾍｯﾄﾞID  搬送ﾊﾝﾄﾞ1_電特ﾃｽﾄﾍｯﾄﾞID
+AND= D6601 D1713         ; FinalST1_ﾊﾟﾚｯﾄID  搬送ﾊﾝﾄﾞ1_電特ﾊﾟﾚｯﾄID
+LDB M99                  ; 能拡後対応FLG
+AND= D6600 D3714         ; FinalST1_ｺﾝﾀｸﾄﾍｯﾄﾞID  搬送2ﾊﾝﾄﾞ1_電特ﾃｽﾄﾍｯﾄﾞID
+AND= D6601 D3713         ; FinalST1_ﾊﾟﾚｯﾄID  搬送2ﾊﾝﾄﾞ1_電特ﾊﾟﾚｯﾄID
+ORL
+OR M35                   ; 空運転ﾓｰﾄﾞ
+ANL
+OUT M6901                ; FinalST1-搬送2ﾊﾝﾄﾞ1ID一致ﾌﾗｸﾞ
+MPP
+LD M99                   ; 能拡後対応FLG
+AND= D6600 D1814         ; FinalST1_ｺﾝﾀｸﾄﾍｯﾄﾞID  搬送ﾊﾝﾄﾞ2_電特ﾃｽﾄﾍｯﾄﾞID
+AND= D6601 D1813         ; FinalST1_ﾊﾟﾚｯﾄID  搬送ﾊﾝﾄﾞ2_電特ﾊﾟﾚｯﾄID
+LDB M99                  ; 能拡後対応FLG
+AND= D6600 D3814         ; FinalST1_ｺﾝﾀｸﾄﾍｯﾄﾞID  搬送2ﾊﾝﾄﾞ2_電特ﾃｽﾄﾍｯﾄﾞID
+AND= D6601 D3813         ; FinalST1_ﾊﾟﾚｯﾄID  搬送2ﾊﾝﾄﾞ2_電特ﾊﾟﾚｯﾄID
+ORL
+OR M35                   ; 空運転ﾓｰﾄﾞ
+ANL
+OUT M6902                ; FinalST1-搬送2ﾊﾝﾄﾞ2ID一致ﾌﾗｸﾞ
+;<h1/>□_装置状態・動作条件
+;ﾕﾆｯﾄまとめ
+LD M6570                 ; U12-1原点
+AND M6730                ; U12-3原点
+OUT M6980                ; ﾌｧｲﾅﾙST1U12原点
+;□ 非常停止
+LDB M6571                ; U12-1全異常
+ANB M6731                ; U12-3全異常
+INV
+OUT M6981                ; U12即停止異常
+;□ 起動条件
+LD CR2003                ; 常時OFF
+OUT M6982                ; U12起動条件
+;□ 起動OFF
+LDB M50                  ; 運転準備
+LD M60                   ; ｴﾗｰ発生
+OR M52                   ; ｻｲｸﾙ停止異常(ｻｲｸﾙ停止)
+AND M6984                ; U12原点復帰中
+ORL
+OR T15                   ; 強制停止
+OUT M6983                ; U12起動OFF
+;□ 原点復帰
+LD M82                   ; 原点復帰開始
+ANB M6984                ; U12原点復帰中
+OR M6984                 ; U12原点復帰中
+ANB M6983                ; U12起動OFF
+ANB M6991                ; U12ｴﾗｰ発生
+ANB M6797                ; OrgSEND
+AND M99                  ; 能拡後対応FLG
+OUT M6984                ; U12原点復帰中
+;□ 起動中
+LDB M6574                ; U12-1起動中
+ANB M6734                ; U12-3(電特検査SUB)起動中
+INV
+OUT M6985                ; U12起動中
+;□ ｻｲｸﾙ停止異常
+LDB M6575                ; U12-1ｻｲｸﾙ停止異常
+ANB M6735                ; U12-3ｻｲｸﾙ停止異常
+INV
+OUT M6986                ; U12ｻｲｸﾙ停止異常
+;□ 払出停止異常
+LDB CR2003               ; 常時OFF
+INV
+OUT M6987                ; U12払出停止異常
+;□ 警報補助
+LDB CR2003               ; 常時OFF
+INV
+OUT M6988                ; U12警報補助
+;□ 機器準備確認
+LD CR2002                ; 常時ON
+OUT M6990                ; U12機器準備完了
+;□ ｴﾗｰ発生　一時停止
+LDB M6576                ; U12-1ｴﾗｰ発生
+ANB M6736                ; U12-3ｴﾗｰ発生
+INV
+OUT M6991                ; U12ｴﾗｰ発生
+;□ 動作中ﾕﾆｯﾄ無し
+LD M6577                 ; U12-1動作無し
+AND M6737                ; U12-3動作無し
+OUT M6992                ; U12動作無し確認
+;□ 払出しﾜｰｸ無し
+LDB X1506                ; ST1_電特部_ﾜｰｸ確認(ON=有)
+ANB M6421                ; LeakST1_ﾜｰｸ除材要求
+ANB M7421                ; LeakST2_ﾜｰｸ除材要求
+ANB M2574                ; U2-1起動中
+AND M36                  ; 払出ﾓｰﾄﾞ
+ANB M3100                ; ﾊﾝﾄﾞ1_ﾜｰｸ有
+ANB M3150                ; ﾊﾝﾄﾞ2_ﾜｰｸ有
+ANB M5100                ; Hand1_ﾜｰｸ有
+ANB M5150                ; Hand2_ﾜｰｸ有
+TMR K1214 K10            ; U12_ﾜｰｸ無し(払出時)
+LD T1214                 ; U12_ﾜｰｸ無し(払出時)
+OUT M6993                ; U12ﾜｰｸ無し
+;□ ｽﾃｯﾌﾟ起動
+LD M30                   ; 自動ﾓｰﾄﾞ
+OR M31                   ; 手動ﾓｰﾄﾞ
+AND T1201                ; ST1-2間ﾗｲﾄｶｰﾃﾝOK
+ANB M130                 ; 一時停止
+ANB M51                  ; 即停止異常(緊急停止)
+ANB M52                  ; ｻｲｸﾙ停止異常(ｻｲｸﾙ停止)
+ANB M57                  ; 自動起動停止指令(払出停止)
+ANB M59                  ; 払出停止異常まとめ
+ANB M60                  ; ｴﾗｰ発生
+OUT M6979                ; U12ｽﾃｯﾌﾟ動作
+;<h1/>□_自動回路
+;<h1/>◇_ﾕﾆｯﾄ-1状態・動作条件(補助)
+LD X1505                 ; ST1_電特部_ﾜｰｸ押_上昇端
+AND M6621                ; RB4_ﾜｰｸ受取り位置(ID確認位置)
+ANB X1506                ; ST1_電特部_ﾜｰｸ確認(ON=有)
+AND= D6701 K0            ; Final_ST1_ﾜｰｸ有無記憶
+OUT M6570                ; U12-1原点
+LDB B0182                ; 386)FinalST1ﾃｽﾄﾍｯﾄﾞID不
+ANB B0183                ; 387)FinalST1ﾊﾟﾚｯﾄID不一
+ANB B0184                ; 388)FinalST1ﾜｰｸ受取異常
+ANB B0185                ; 389)FinalST1ﾜｰｸ受渡し異常
+INV
+OUT M6571                ; U12-1全異常
+LD M6570                 ; U12-1原点
+ANB M6574                ; U12-1起動中
+AND M6979                ; U12ｽﾃｯﾌﾟ動作
+ANB L11                  ; Final検査有無(0_有/1_無)
+ANB M6908                ; FainlST1_無効OK条件
+ANB M6993                ; U12ﾜｰｸ無し
+OUT M6572                ; U12-1起動条件
+LDB M50                  ; 運転準備
+ORB L1200                ; FINALST1_有効状態
+OR M6986                 ; U12ｻｲｸﾙ停止異常
+OR T15                   ; 強制停止
+OUT M6573                ; U12-1起動OFF
+LD M73                   ; 各工程起動指令
+AND M6572                ; U12-1起動条件
+OR M6574                 ; U12-1起動中
+ANB M6573                ; U12-1起動OFF
+ANB M6563                ; U12-1ｻｲｸﾙ終了
+AND M99                  ; 能拡後対応FLG
+OUT M6574                ; U12-1起動中
+;ﾕﾆｯﾄ1-1 ｻｲｸﾙ停止異常
+LDB CR2003               ; 常時OFF
+INV
+OUT M6575                ; U12-1ｻｲｸﾙ停止異常
+;ﾕﾆｯﾄ1-1 ｴﾗｰ発生まとめ
+LDB B0180                ; 384)FinalST1_RB異常
+ANB B0181                ; 385)FinalST1ｸﾗﾝﾌﾟ開閉CLS異常
+ANB B0331                ; 817)FinalST1ﾜｰｸ除去要求
+ANB B0332                ; 818)FinalST1検査中
+INV
+OUT M6576                ; U12-1ｴﾗｰ発生
+;ﾕﾆｯﾄ1-1 停止判定
+LD= D6500 D6505          ; Unit12-1自動運転ｽﾃｯﾌﾟ  Unit12-1動作中判定
+ORB M6574                ; U12-1起動中
+ANB M6604                ; RB4位置決めSub起動中
+TMR K1210 K20            ; U12-1_停止中
+LD CR2002                ; 常時ON
+MOV D6500 D6505          ; Unit12-1自動運転ｽﾃｯﾌﾟ  Unit12-1動作中判定
+LD T1210                 ; U12-1_停止中
+OUT M6577                ; U12-1動作無し
+;□
+;□　ﾕﾆｯﾄ1-1 自動運転ステップ開始
+;□
+LD CR2002                ; 常時ON
+FMOV K0 M6500 K4         ; U12-1_S0
+LDB M6574                ; U12-1起動中
+MOV K0 D6500             ; Unit12-1自動運転ｽﾃｯﾌﾟ
+LD M6574                 ; U12-1起動中
+MOV D6500 Z1             ; Unit12-1自動運転ｽﾃｯﾌﾟ
+SET M6500:Z1             ; U12-1_S0
+;　ｶｳﾝﾄﾘｾｯﾄ
+LDP M73                  ; 各工程起動指令
+ORP L1200                ; FINALST1_有効状態
+MOV K0 D6520             ; Finalﾜｰｸ投入数(ST1)
+MOV K0 D6521             ; Finalﾜｰｸ排出数(ST1)
+;　ｻｲｸﾙ開始
+LD M6500                 ; U12-1_S0
+AND T1201                ; ST1-2間ﾗｲﾄｶｰﾃﾝOK
+AND M6979                ; U12ｽﾃｯﾌﾟ動作
+ANB X1506                ; ST1_電特部_ﾜｰｸ確認(ON=有)
+INC D6500                ; Unit12-1自動運転ｽﾃｯﾌﾟ
+;<h1/>__S01_ﾜｰｸ給材要求
+LD M6501                 ; U12-1_S1_ﾜｰｸ供給要求
+MPS
+LD L1200                 ; FINALST1_有効状態
+ANB M6993                ; U12ﾜｰｸ無し
+ANL
+MPS
+LD M99                   ; 能拡後対応FLG
+AND M2861                ; 【搬送】搬送→FINAL_ST1搬送開始
+LDB M99                  ; 能拡後対応FLG
+AND M4861                ; 【搬送2】搬送→FINAL_ST1搬送開始
+ORL
+ANL
+INC D6500                ; Unit12-1自動運転ｽﾃｯﾌﾟ
+MPP
+LD M6901                 ; FinalST1-搬送2ﾊﾝﾄﾞ1ID一致ﾌﾗｸﾞ
+OR M6902                 ; FinalST1-搬送2ﾊﾝﾄﾞ2ID一致ﾌﾗｸﾞ
+ANB D3721.0              ; 再投入品投入不可能#1
+ANB D3821.0              ; 再投入品投入不可能#1
+ANL
+OUT M6920                ; FinalST1→搬送ﾜｰｸ供給要求
+MPP
+LD M6993                 ; U12ﾜｰｸ無し
+LD M6910                 ; FainlST1_無効中
+ANB L1200                ; FINALST1_有効状態
+ORL
+ANL
+MOV K63 D6500            ; Unit12-1自動運転ｽﾃｯﾌﾟ
+LD M6502                 ; U12-1_S2
+LD M99                   ; 能拡後対応FLG
+AND M2871                ; 【搬送】搬送→FINAL_ST1搬送完了
+LDB M99                  ; 能拡後対応FLG
+AND M4871                ; 【搬送2】搬送→FINAL_ST1搬送完了
+ORL
+OR M6922                 ; FinalST1→搬送ﾜｰｸ受取り完了
+ANL
+MPS
+LDB M2861                ; 【搬送】搬送→FINAL_ST1搬送開始
+ANB M2871                ; 【搬送】搬送→FINAL_ST1搬送完了
+ANB M4861                ; 【搬送2】搬送→FINAL_ST1搬送開始
+ANB M4871                ; 【搬送2】搬送→FINAL_ST1搬送完了
+ANL
+INC D6500                ; Unit12-1自動運転ｽﾃｯﾌﾟ
+MPP
+OUT M6922                ; FinalST1→搬送ﾜｰｸ受取り完了
+LD M6503                 ; U12-1_S3
+AND T1201                ; ST1-2間ﾗｲﾄｶｰﾃﾝOK
+AND M6979                ; U12ｽﾃｯﾌﾟ動作
+AND= D6701 K1            ; Final_ST1_ﾜｰｸ有無記憶
+MPS
+LD X1506                 ; ST1_電特部_ﾜｰｸ確認(ON=有)
+OR M35                   ; 空運転ﾓｰﾄﾞ
+ANL
+INC D6500                ; Unit12-1自動運転ｽﾃｯﾌﾟ
+MPP
+LDB X1506                ; ST1_電特部_ﾜｰｸ確認(ON=有)
+ANB M35                  ; 空運転ﾓｰﾄﾞ
+ANL
+MOV K60 D6500            ; Unit12-1自動運転ｽﾃｯﾌﾟ
+LD M6560                 ; U12-1_S60_ﾌｧｲﾅﾙST1_ﾜｰｸ受取異常
+AND B0184                ; 388)FinalST1ﾜｰｸ受取異常
+MOV K63 D6500            ; Unit12-1自動運転ｽﾃｯﾌﾟ
+;　　ｸﾗﾝﾌﾟ指令
+LD M6504                 ; U12-1_S4_ｸﾗﾝﾌﾟ指令
+AND T1201                ; ST1-2間ﾗｲﾄｶｰﾃﾝOK
+AND M6979                ; U12ｽﾃｯﾌﾟ動作
+AND X1504                ; ST1_電特部_ﾜｰｸ押_下降端
+ANB B0181                ; 385)FinalST1ｸﾗﾝﾌﾟ開閉CLS異常
+INC D6500                ; Unit12-1自動運転ｽﾃｯﾌﾟ
+;　　Z軸上昇確認
+LD M6505                 ; U12-1_S5_電特開始確認待ち
+AND T1201                ; ST1-2間ﾗｲﾄｶｰﾃﾝOK
+AND M6979                ; U12ｽﾃｯﾌﾟ動作
+LD L309                  ; Z_搬送高さ(P9)
+OR L308                  ; Z_搬送高さ(P8)
+ANL
+INC D6500                ; Unit12-1自動運転ｽﾃｯﾌﾟ
+LD M6506                 ; U12-1_S6_投入数ｶｳﾝﾄ
+INC D6500                ; Unit12-1自動運転ｽﾃｯﾌﾟ
+LDP M6506                ; U12-1_S6_投入数ｶｳﾝﾄ
+AND= D6705 K0            ; Final_ST1_再検査品st
+LD= D6203 K2             ; Leak_ST1_Leak検査結果(1=OK_2=NG)
+ANB M98                  ; Break品優先排出変更ﾌﾗｸﾞ
+AND= D6207 K0            ; Leak_ST1_BreakMode品(ONで)
+MEP
+AND CR2003               ; 常時OFF
+ORL
+@INC D6520               ; Finalﾜｰｸ投入数(ST1)
+LD M6507                 ; U12-1_S7
+INC D6500                ; Unit12-1自動運転ｽﾃｯﾌﾟ
+LD M6508                 ; U12-1_S8
+INC D6500                ; Unit12-1自動運転ｽﾃｯﾌﾟ
+LD M6509                 ; U12-1_S9
+INC D6500                ; Unit12-1自動運転ｽﾃｯﾌﾟ
+;　　■電特検査前処理
+LD M6510                 ; U12-1_S10
+MPS
+LD= D6703 K1             ; Final_ST1_Leak検査結果(1=OK_2=NG
+OR<> D6705 K0            ; Final_ST1_再検査品st
+OR L10                   ; Leak検査有無(0_有/1_無)
+ANL
+INC D6500                ; Unit12-1自動運転ｽﾃｯﾌﾟ
+MPP
+LD= D6703 K2             ; Final_ST1_Leak検査結果(1=OK_2=NG
+AND<> D6705 K0           ; Final_ST1_再検査品st
+ANB L10                  ; Leak検査有無(0_有/1_無)
+ANL
+MOV K20 D6500            ; Unit12-1自動運転ｽﾃｯﾌﾟ
+;	■_電特connecter接触前位置移動
+LD M6511                 ; U12-1_S11
+AND M6979                ; U12ｽﾃｯﾌﾟ動作
+AND M6603                ; RB4位置決めSub起動条件
+MOV D6541 D6530          ; ｺﾈｸﾀ挿入開始位置指令Pos  RB4_指令Pos_NO.
+INC D6500                ; Unit12-1自動運転ｽﾃｯﾌﾟ
+LD M6512                 ; U12-1_S12_接触前位置移動指令
+AND M6600                ; RB4位置決め指令
+AND M6601                ; RB4位置決め完了
+AND M6623                ; RB4_ｺﾈｸﾀ挿入開始位置
+INC D6500                ; Unit12-1自動運転ｽﾃｯﾌﾟ
+LD M6513                 ; U12-1_S13
+AND M6979                ; U12ｽﾃｯﾌﾟ動作
+AND M6603                ; RB4位置決めSub起動条件
+MOV D6542 D6530          ; ｺﾈｸﾀ挿入押込み位置指令Pos  RB4_指令Pos_NO.
+INC D6500                ; Unit12-1自動運転ｽﾃｯﾌﾟ
+LD M6514                 ; U12-1_S14_ｺﾈｸﾀ押込位置移動
+AND M6600                ; RB4位置決め指令
+AND M6601                ; RB4位置決め完了
+AND M6624                ; RB4_ｺﾈｸﾀ挿入押込み位置
+INC D6500                ; Unit12-1自動運転ｽﾃｯﾌﾟ
+;<h1/>__S15_電特検査処理開始
+LD M6515                 ; U12-1_S15
+AND M6979                ; U12ｽﾃｯﾌﾟ動作
+INC D6500                ; Unit12-1自動運転ｽﾃｯﾌﾟ
+LD M6516                 ; U12-1_S16_電特検査SUB開始ﾌﾗｸﾞ
+AND M6734                ; U12-3(電特検査SUB)起動中
+INC D6500                ; Unit12-1自動運転ｽﾃｯﾌﾟ
+LD M6517                 ; U12-1_S17
+ANB M6734                ; U12-3(電特検査SUB)起動中
+AND<> D6704 K0           ; Final_ST1_Final検査結果(1=OK_2=N
+INC D6500                ; Unit12-1自動運転ｽﾃｯﾌﾟ
+;　　ｽﾃｰｼﾞ後退
+LD M6518                 ; U12-1_S18
+AND M6979                ; U12ｽﾃｯﾌﾟ動作
+AND M6603                ; RB4位置決めSub起動条件
+MOV D6543 D6530          ; ｺﾈｸﾀ抜き位置Pos  RB4_指令Pos_NO.
+INC D6500                ; Unit12-1自動運転ｽﾃｯﾌﾟ
+LD M6519                 ; U12-1_S19_ｺﾈｸﾀ抜き位置
+AND M6600                ; RB4位置決め指令
+AND M6601                ; RB4位置決め完了
+AND M6625                ; RB4_ｺﾈｸﾀ抜き位置
+INC D6500                ; Unit12-1自動運転ｽﾃｯﾌﾟ
+LD M6520                 ; U12-1_S20_ｽﾃｰｼﾞ後退命令
+AND M6979                ; U12ｽﾃｯﾌﾟ動作
+AND M6603                ; RB4位置決めSub起動条件
+MOV D6549 D6530          ; 待機位置指令Pos  RB4_指令Pos_NO.
+INC D6500                ; Unit12-1自動運転ｽﾃｯﾌﾟ
+LD M6521                 ; U12-1_S21_待機位置移動
+AND M6600                ; RB4位置決め指令
+AND M6601                ; RB4位置決め完了
+AND M6621                ; RB4_ﾜｰｸ受取り位置(ID確認位置)
+INC D6500                ; Unit12-1自動運転ｽﾃｯﾌﾟ
+LD M6522                 ; U12-1_S22
+AND M6979                ; U12ｽﾃｯﾌﾟ動作
+INC D6500                ; Unit12-1自動運転ｽﾃｯﾌﾟ
+LD M6523                 ; U12-1_S23
+AND M6979                ; U12ｽﾃｯﾌﾟ動作
+INC D6500                ; Unit12-1自動運転ｽﾃｯﾌﾟ
+LD M6524                 ; U12-1_S24
+AND M6979                ; U12ｽﾃｯﾌﾟ動作
+INC D6500                ; Unit12-1自動運転ｽﾃｯﾌﾟ
+;<h1/>__S25_ﾜｰｸ除材要求
+LD M6525                 ; U12-1_S25
+MPS
+LD M99                   ; 能拡後対応FLG
+AND M2881                ; 【搬送】FinalST1除材開始
+LDB M99                  ; 能拡後対応FLG
+AND M4881                ; 【搬送2】FinalST1除材開始
+ORL
+ANL
+INC D6500                ; Unit12-1自動運転ｽﾃｯﾌﾟ
+MPP
+LDB M3101                ; ﾊﾝﾄﾞ1_ﾘｰｸ検査品
+ANB M3151                ; ﾊﾝﾄﾞ2_ﾘｰｸ検査品
+ANB M5101                ; Hand1_Leak検査品
+ANB M5151                ; Hand2_Leak検査品
+OR<> D6705 K0            ; Final_ST1_再検査品st
+OR L10                   ; Leak検査有無(0_有/1_無)
+OR M3230                 ; ﾊﾝﾄﾞ1_FinalST1除材中flg
+OR M3231                 ; ﾊﾝﾄﾞ2_FinalST1除材中flg
+OR M5230                 ; Hand1_FinalST1除材中flg
+OR M5231                 ; Hand2_FinalST1除材中flg
+ANL
+OUT M6921                ; FinalST1→搬送1除材要求
+LD M6526                 ; U12-1_S26
+LD M99                   ; 能拡後対応FLG
+AND M2891                ; 【搬送】FinalST1除材完了
+LDB M99                  ; 能拡後対応FLG
+AND M4891                ; 【搬送2】FinalST1除材完了
+ORL
+OR M6923                 ; FinalST1→搬送除材完了受取
+ANL
+MPS
+LDB M2881                ; 【搬送】FinalST1除材開始
+ANB M2891                ; 【搬送】FinalST1除材完了
+ANB M4881                ; 【搬送2】FinalST1除材開始
+ANB M4891                ; 【搬送2】FinalST1除材完了
+ANL
+INC D6500                ; Unit12-1自動運転ｽﾃｯﾌﾟ
+MPP
+OUT M6923                ; FinalST1→搬送除材完了受取
+LD M6527                 ; U12-1_S27
+AND T1201                ; ST1-2間ﾗｲﾄｶｰﾃﾝOK
+AND M6979                ; U12ｽﾃｯﾌﾟ動作
+AND= D6701 K0            ; Final_ST1_ﾜｰｸ有無記憶
+LD L309                  ; Z_搬送高さ(P9)
+OR L308                  ; Z_搬送高さ(P8)
+OR L307                  ; Z_ﾜｰｸ入替高さ(搬送禁止)
+ANL
+MPS
+ANB X1506                ; ST1_電特部_ﾜｰｸ確認(ON=有)
+INC D6500                ; Unit12-1自動運転ｽﾃｯﾌﾟ
+MPP
+AND X1506                ; ST1_電特部_ﾜｰｸ確認(ON=有)
+OUT M6930                ; Final_ST1_ﾜｰｸ受渡し異常
+LD M6528                 ; U12-1_S28
+INC D6500                ; Unit12-1自動運転ｽﾃｯﾌﾟ
+LDP M6528                ; U12-1_S28
+AND= D6705 K0            ; Final_ST1_再検査品st
+LD= D6203 K2             ; Leak_ST1_Leak検査結果(1=OK_2=NG)
+MEP
+AND CR2003               ; 常時OFF
+ORL
+@INC D6521               ; Finalﾜｰｸ排出数(ST1)
+LD M6529                 ; U12-1_S29
+AND T1201                ; ST1-2間ﾗｲﾄｶｰﾃﾝOK
+AND M6979                ; U12ｽﾃｯﾌﾟ動作
+MOV K63 D6500            ; Unit12-1自動運転ｽﾃｯﾌﾟ
+;<h1/>◇_ﾕﾆｯﾄ-3(電特検査SUB)状態・動作条件(補助)
+LD CR2002                ; 常時ON
+OUT M6730                ; U12-3原点
+LDB CR2003               ; 常時OFF
+INV
+OUT M6731                ; U12-3全異常
+LD M6730                 ; U12-3原点
+ANB M6734                ; U12-3(電特検査SUB)起動中
+AND M6979                ; U12ｽﾃｯﾌﾟ動作
+AND M300                 ; PC通信正常
+OUT M6732                ; U12-3起動条件
+LDB M50                  ; 運転準備
+OR M6986                 ; U12ｻｲｸﾙ停止異常
+OR T15                   ; 強制停止
+OUT M6733                ; U12-3起動OFF
+LD M6516                 ; U12-1_S16_電特検査SUB開始ﾌﾗｸﾞ
+AND M6732                ; U12-3起動条件
+OR M6734                 ; U12-3(電特検査SUB)起動中
+ANB M6733                ; U12-3起動OFF
+ANB M6723                ; U12-3ｻｲｸﾙ終了
+OUT M6734                ; U12-3(電特検査SUB)起動中
+;tp表示
+LD CR2002                ; 常時ON
+DW K0 D6900              ; Final検査_ｽﾃｰﾀｽ表示
+LD M6734                 ; U12-3(電特検査SUB)起動中
+DW K1 D6900              ; Final検査_ｽﾃｰﾀｽ表示
+LD= D6704 K1             ; Final_ST1_Final検査結果(1=OK_2=N
+DW K2 D6900              ; Final検査_ｽﾃｰﾀｽ表示
+LD= D6704 K2             ; Final_ST1_Final検査結果(1=OK_2=N
+DW K3 D6900              ; Final検査_ｽﾃｰﾀｽ表示
+LDB L1200                ; FINALST1_有効状態
+DW K4 D6900              ; Final検査_ｽﾃｰﾀｽ表示
+;ﾕﾆｯﾄ1-3ｻｲｸﾙ停止異常
+LDB CR2003               ; 常時OFF
+INV
+OUT M6735                ; U12-3ｻｲｸﾙ停止異常
+;ﾕﾆｯﾄ1-3ｴﾗｰ発生まとめ
+LDB CR2003               ; 常時OFF
+INV
+OUT M6736                ; U12-3ｴﾗｰ発生
+;ﾕﾆｯﾄ1-3停止判定
+LD= D6502 D6507          ; Unit12-3自動運転ｽﾃｯﾌﾟ  Unit12-3動作中判定
+TMR K1212 K20            ; U12-3_停止中
+LD CR2002                ; 常時ON
+MOV D6502 D6507          ; Unit12-3自動運転ｽﾃｯﾌﾟ  Unit12-3動作中判定
+LD T1212                 ; U12-3_停止中
+ORB M6734                ; U12-3(電特検査SUB)起動中
+OUT M6737                ; U12-3動作無し
+;□
+;□　ﾕﾆｯﾄ1-3自動運転ステップ開始
+;□
+LD CR2002                ; 常時ON
+FMOV K0 M6660 K4         ; U12-3_S0
+LDB M6734                ; U12-3(電特検査SUB)起動中
+MOV K0 D6502             ; Unit12-3自動運転ｽﾃｯﾌﾟ
+LD M6734                 ; U12-3(電特検査SUB)起動中
+MOV D6502 Z1             ; Unit12-3自動運転ｽﾃｯﾌﾟ
+SET M6660:Z1             ; U12-3_S0
+;<h1/>__S0_ﾜｰｸ有無判定
+LD M6660                 ; U12-3_S0
+MPS
+LD T1201                 ; ST1-2間ﾗｲﾄｶｰﾃﾝOK
+AND M6979                ; U12ｽﾃｯﾌﾟ動作
+ANB M35                  ; 空運転ﾓｰﾄﾞ
+ANB M3                   ; OFFLINE_MODE
+ANL
+INC D6502                ; Unit12-3自動運転ｽﾃｯﾌﾟ
+MPP
+LD M35                   ; 空運転ﾓｰﾄﾞ
+OR M3                    ; OFFLINE_MODE
+ANL
+MPS
+AND T1230                ; Final検査時間(仮)
+INC D6502                ; Unit12-3自動運転ｽﾃｯﾌﾟ
+MPP
+TMR K1230 K450           ; Final検査時間(仮)
+LD M6661                 ; U12-3_S1_ﾌｧｲﾅﾙ検査ｽﾀｰﾄ要求
+AND W0107.0              ; 電気特性検査開始要求#1
+LD W07.0                 ; 電気特性検査ｽﾃｰｼﾞ状態#1
+OR M3                    ; OFFLINE_MODE
+OR M35                   ; 空運転ﾓｰﾄﾞ
+ANL
+@INC D6502               ; Unit12-3自動運転ｽﾃｯﾌﾟ
+LD M6662                 ; U12-3_S2
+LDB W07.0                ; 電気特性検査ｽﾃｰｼﾞ状態#1
+OR M3                    ; OFFLINE_MODE
+ANL
+@INC D6502               ; Unit12-3自動運転ｽﾃｯﾌﾟ
+LD M6663                 ; U12-3_S3
+MPS
+AND<> D6704 K0           ; Final_ST1_Final検査結果(1=OK_2=N
+@INC D6502               ; Unit12-3自動運転ｽﾃｯﾌﾟ
+MRD
+LDB M35                  ; 空運転ﾓｰﾄﾞ
+ANB M3                   ; OFFLINE_MODE
+ANL
+MPS
+AND W07.8                ; 電気特性検査結果#1
+MOV K1 D6704             ; Final_ST1_Final検査結果(1=OK_2=N
+MPP
+ANB W07.8                ; 電気特性検査結果#1
+MOV K2 D6704             ; Final_ST1_Final検査結果(1=OK_2=N
+MPP
+LD M3                    ; OFFLINE_MODE
+OR M35                   ; 空運転ﾓｰﾄﾞ
+ANL
+MPS
+ANB B1038                ; ﾌｧｲﾅﾙST2_強制NG_TEST
+MOV K1 D6704             ; Final_ST1_Final検査結果(1=OK_2=N
+MPP
+AND B1038                ; ﾌｧｲﾅﾙST2_強制NG_TEST
+MOV K2 D6704             ; Final_ST1_Final検査結果(1=OK_2=N
+LD M6664                 ; U12-3_S4
+@INC D6502               ; Unit12-3自動運転ｽﾃｯﾌﾟ
+LD M6665                 ; U12-3_S5
+@INC D6502               ; Unit12-3自動運転ｽﾃｯﾌﾟ
+LD M6666                 ; U12-3_S6
+@INC D6502               ; Unit12-3自動運転ｽﾃｯﾌﾟ
+LD M6667                 ; U12-3_S7
+@INC D6502               ; Unit12-3自動運転ｽﾃｯﾌﾟ
+LD M6668                 ; U12-3_S8
+@INC D6502               ; Unit12-3自動運転ｽﾃｯﾌﾟ
+LD M6669                 ; U12-3_S9
+AND T1201                ; ST1-2間ﾗｲﾄｶｰﾃﾝOK
+AND M6979                ; U12ｽﾃｯﾌﾟ動作
+MOV K63 D6502            ; Unit12-3自動運転ｽﾃｯﾌﾟ
+;<h1/>□_原点復帰回路
+LD CR2002                ; 常時ON
+FMOV K0 M6750 K3         ; OrgS0
+LDB M6984                ; U12原点復帰中
+MOV K0 D6510             ; Unit12原点復帰ｽﾃｯﾌﾟ
+LD M6984                 ; U12原点復帰中
+MOV D6510 Z1             ; Unit12原点復帰ｽﾃｯﾌﾟ
+SET M6750:Z1             ; OrgS0
+;原点復帰ｻｲｸﾙ監視
+LD M6984                 ; U12原点復帰中
+TMR K1200 K200
+;原点復帰ステップ開始
+LD M6750                 ; OrgS0
+AND M6979                ; U12ｽﾃｯﾌﾟ動作
+AND L309                 ; Z_搬送高さ(P9)
+INC D6510                ; Unit12原点復帰ｽﾃｯﾌﾟ
+LD M6751                 ; OrgS1
+MPS
+ANB X178A                ; RB4_ST1_原点確定_HEND
+INC D6510                ; Unit12原点復帰ｽﾃｯﾌﾟ
+MPP
+AND X178A                ; RB4_ST1_原点確定_HEND
+MOV K3 D6510             ; Unit12原点復帰ｽﾃｯﾌﾟ
+LD M6752                 ; OrgS2_RB原点復帰指令
+AND X178A                ; RB4_ST1_原点確定_HEND
+INC D6510                ; Unit12原点復帰ｽﾃｯﾌﾟ
+LD M6753                 ; OrgS3_
+AND M6979                ; U12ｽﾃｯﾌﾟ動作
+AND M6603                ; RB4位置決めSub起動条件
+MOV D6549 D6530          ; 待機位置指令Pos  RB4_指令Pos_NO.
+INC D6510                ; Unit12原点復帰ｽﾃｯﾌﾟ
+LD M6754                 ; OrgS4_待機位置移動指令
+AND M6600                ; RB4位置決め指令
+AND M6601                ; RB4位置決め完了
+AND M6621                ; RB4_ﾜｰｸ受取り位置(ID確認位置)
+INC D6510                ; Unit12原点復帰ｽﾃｯﾌﾟ
+LD M6755                 ; OrgS5_
+INC D6510                ; Unit12原点復帰ｽﾃｯﾌﾟ
+LD M6756                 ; OrgS6_ｸﾗﾝﾌﾟ上昇指令
+AND M6979                ; U12ｽﾃｯﾌﾟ動作
+AND X1505                ; ST1_電特部_ﾜｰｸ押_上昇端
+INC D6510                ; Unit12原点復帰ｽﾃｯﾌﾟ
+;　　ﾜｰｸ有無ﾁｪｯｸ
+LD M6757                 ; OrgS7
+AND T1201                ; ST1-2間ﾗｲﾄｶｰﾃﾝOK
+AND M6979                ; U12ｽﾃｯﾌﾟ動作
+MPS
+ANB X1506                ; ST1_電特部_ﾜｰｸ確認(ON=有)
+MOV K10 D6510            ; Unit12原点復帰ｽﾃｯﾌﾟ
+MPP
+LD X1506                 ; ST1_電特部_ﾜｰｸ確認(ON=有)
+AND M89                  ; 全STﾜｰｸｱﾝｸﾗﾝﾌﾟ状態
+ANL
+INC D6510                ; Unit12原点復帰ｽﾃｯﾌﾟ
+;　　ﾜｰｸ除去要求
+LD M6758                 ; OrgS8_ORGﾜｰｸ除去要求
+AND T1201                ; ST1-2間ﾗｲﾄｶｰﾃﾝOK
+AND M6979                ; U12ｽﾃｯﾌﾟ動作
+AND B0331                ; 817)FinalST1ﾜｰｸ除去要求
+MOV K46 D6510            ; Unit12原点復帰ｽﾃｯﾌﾟ
+;　　
+LD M6759                 ; OrgS9
+AND T1201                ; ST1-2間ﾗｲﾄｶｰﾃﾝOK
+AND M6979                ; U12ｽﾃｯﾌﾟ動作
+INC D6510                ; Unit12原点復帰ｽﾃｯﾌﾟ
+LD M6760                 ; OrgS10
+MPS
+AND M6980                ; ﾌｧｲﾅﾙST1U12原点
+MOV K46 D6510            ; Unit12原点復帰ｽﾃｯﾌﾟ
+MPP
+FMOV K0 D6700 K100       ; Final_ST1_INDEX NO.
+LD M6796                 ; OrgS46
+ANB M82                  ; 原点復帰開始
+MOV K47 D6510            ; Unit12原点復帰ｽﾃｯﾌﾟ
+;<h1/>□_手動回路
+LD M31                   ; 手動ﾓｰﾄﾞ
+AND M32                  ; ﾒｲﾝ手動操作可能条件
+ANB M6985                ; U12起動中
+ANB M6984                ; U12原点復帰中
+MC
+;Pallet RB 位置移動
+LD CR2002                ; 常時ON
+AND M129                 ; 安全入力OK
+AND L309                 ; Z_搬送高さ(P9)
+LD X1504                 ; ST1_電特部_ﾜｰｸ押_下降端
+ORB X178A                ; RB4_ST1_原点確定_HEND
+ANL
+AND M6603                ; RB4位置決めSub起動条件
+ANB W07.0                ; 電気特性検査ｽﾃｰｼﾞ状態#1
+OUT M6842                ; ST1_Pallet 待機位置条件
+OUT M6843                ; ST1_Pallet ｺﾈｸﾀ挿入前条件
+OUT M6844                ; ST1_Pallet ｺﾈｸﾀ接触位置条件
+OUT M6845                ; ST1_Pallet ｺﾈｸﾀ接触後戻位置条件
+LDB M6840                ; M_ST1_選択位置移動指令
+MPS
+LDP B11F0                ; ST1_Pallet 待機位置SW
+AND M6842                ; ST1_Pallet 待機位置条件
+ANL
+MOV D6549 D6530          ; 待機位置指令Pos  RB4_指令Pos_NO.
+MRD
+LDP B11F1                ; ST1_Pallet ｺﾈｸﾀ挿入前SW
+AND M6843                ; ST1_Pallet ｺﾈｸﾀ挿入前条件
+ANL
+MOV D6541 D6530          ; ｺﾈｸﾀ挿入開始位置指令Pos  RB4_指令Pos_NO.
+MRD
+LDP B11F2                ; ST1_Pallet ｺﾈｸﾀ接触位置SW
+AND M6844                ; ST1_Pallet ｺﾈｸﾀ接触位置条件
+ANL
+MOV D6542 D6530          ; ｺﾈｸﾀ挿入押込み位置指令Pos  RB4_指令Pos_NO.
+MPP
+LDP B11F3                ; ST1_Pallet ｺﾈｸﾀ接触後戻り位置SW
+AND M6845                ; ST1_Pallet ｺﾈｸﾀ接触後戻位置条件
+ANL
+MOV D6543 D6530          ; ｺﾈｸﾀ抜き位置Pos  RB4_指令Pos_NO.
+LDP B11F0                ; ST1_Pallet 待機位置SW
+AND M6842                ; ST1_Pallet 待機位置条件
+LDP B11F1                ; ST1_Pallet ｺﾈｸﾀ挿入前SW
+AND M6843                ; ST1_Pallet ｺﾈｸﾀ挿入前条件
+ORL
+LDP B11F2                ; ST1_Pallet ｺﾈｸﾀ接触位置SW
+AND M6844                ; ST1_Pallet ｺﾈｸﾀ接触位置条件
+ORL
+LDP B11F3                ; ST1_Pallet ｺﾈｸﾀ接触後戻り位置SW
+AND M6845                ; ST1_Pallet ｺﾈｸﾀ接触後戻位置条件
+ORL
+OR M6840                 ; M_ST1_選択位置移動指令
+ANB M6841                ; M_ST1_選択位置移動完了
+OUT M6840                ; M_ST1_選択位置移動指令
+LD M6840                 ; M_ST1_選択位置移動指令
+LD M6600                 ; RB4位置決め指令
+AND M6601                ; RB4位置決め完了
+OR M6841                 ; M_ST1_選択位置移動完了
+ANL
+OUT M6841                ; M_ST1_選択位置移動完了
+;　　ｸﾗﾝﾌﾟ上下
+LD CR2002                ; 常時ON
+AND M129                 ; 安全入力OK
+LD M2732                 ; U2-3_RCX240起動条件
+AND M2801                ; RCX240動作完了
+AND L309                 ; Z_搬送高さ(P9)
+LD M4732                 ; U6-3_RCX240起動条件
+AND M4801                ; RCX240動作完了
+AND L709                 ; Z_搬送高さ(P9)
+ORL
+AND M6621                ; RB4_ﾜｰｸ受取り位置(ID確認位置)
+OR M39                   ; ｴﾘｱｾﾝｻ-無視Mode
+ANL
+OUT M6804                ; ｸﾗﾝﾌﾟ開閉_閉_起動OK
+LDP B11E2                ; ST1_Clamp下降TpSW
+ORP M6822                ; 電特ｸﾗﾝﾌﾟ&前進_ｸﾗﾝﾌﾟ閉指令
+AND M6804                ; ｸﾗﾝﾌﾟ開閉_閉_起動OK
+LD M6805                 ; ｸﾗﾝﾌﾟ開閉_閉_指令
+ANB M6807                ; ｸﾗﾝﾌﾟ開閉_開__指令
+ORL
+OUT M6805                ; ｸﾗﾝﾌﾟ開閉_閉_指令
+LD CR2002                ; 常時ON
+ANB W07.0                ; 電気特性検査ｽﾃｰｼﾞ状態#1
+LD M6621                 ; RB4_ﾜｰｸ受取り位置(ID確認位置)
+OR M39                   ; ｴﾘｱｾﾝｻ-無視Mode
+ANL
+OUT M6806                ; ｸﾗﾝﾌﾟ開閉_開_起動OK
+LDP B11E3                ; ST1_Clamp上昇TpSW
+ORP M6834                ; 電特ｸﾗﾝﾌﾟ&前進_ｸﾗﾝﾌﾟ開指令
+AND M6806                ; ｸﾗﾝﾌﾟ開閉_開_起動OK
+LD M6807                 ; ｸﾗﾝﾌﾟ開閉_開__指令
+ANB M6805                ; ｸﾗﾝﾌﾟ開閉_閉_指令
+ORL
+OUT M6807                ; ｸﾗﾝﾌﾟ開閉_開__指令
+;ｸﾗﾝﾌﾟ閉→ﾊﾟﾚｯﾄ前進
+LD M129                  ; 安全入力OK
+LD M2732                 ; U2-3_RCX240起動条件
+AND M2801                ; RCX240動作完了
+AND L309                 ; Z_搬送高さ(P9)
+LD M4732                 ; U6-3_RCX240起動条件
+AND M4801                ; RCX240動作完了
+AND L709                 ; Z_搬送高さ(P9)
+ORL
+ANL
+AND M6621                ; RB4_ﾜｰｸ受取り位置(ID確認位置)
+OUT M6820                ; 電特ｸﾗﾝﾌﾟ&前進指令条件
+LD M6813                 ; SwBoxMode_電特ｸﾗﾝﾌﾟ&ﾊﾟﾚｯﾄFlag
+ANP X0E                  ; ﾜｲﾔﾚｽSW1
+ANB X0F                  ; ﾜｲﾔﾚｽSW2
+AND M6804                ; ｸﾗﾝﾌﾟ開閉_閉_起動OK
+AND M6820                ; 電特ｸﾗﾝﾌﾟ&前進指令条件
+OR M6821                 ; 電特ｸﾗﾝﾌﾟ&前進開始
+ANB M6828                ; ｸﾗﾝﾌﾟ閉→ﾊﾟﾚｯﾄ前進動作完了
+ANB B0180                ; 384)FinalST1_RB異常
+ANB B0181                ; 385)FinalST1ｸﾗﾝﾌﾟ開閉CLS異常
+AND M6813                ; SwBoxMode_電特ｸﾗﾝﾌﾟ&ﾊﾟﾚｯﾄFlag
+OUT M6821                ; 電特ｸﾗﾝﾌﾟ&前進開始
+LD M6821                 ; 電特ｸﾗﾝﾌﾟ&前進開始
+AND M6804                ; ｸﾗﾝﾌﾟ開閉_閉_起動OK
+OR M6822                 ; 電特ｸﾗﾝﾌﾟ&前進_ｸﾗﾝﾌﾟ閉指令
+AND M6821                ; 電特ｸﾗﾝﾌﾟ&前進開始
+OUT M6822                ; 電特ｸﾗﾝﾌﾟ&前進_ｸﾗﾝﾌﾟ閉指令
+LD M6822                 ; 電特ｸﾗﾝﾌﾟ&前進_ｸﾗﾝﾌﾟ閉指令
+AND T1202                ; ST1_電特部_ﾜｰｸ押_下降端
+OR M6823                 ; 電特ｸﾗﾝﾌﾟ&前進_ｸﾗﾝﾌﾟ確認
+AND M6821                ; 電特ｸﾗﾝﾌﾟ&前進開始
+OUT M6823                ; 電特ｸﾗﾝﾌﾟ&前進_ｸﾗﾝﾌﾟ確認
+LD M6823                 ; 電特ｸﾗﾝﾌﾟ&前進_ｸﾗﾝﾌﾟ確認
+AND M6603                ; RB4位置決めSub起動条件
+OR M6824                 ; 電特ｸﾗﾝﾌﾟ&前進_ﾊﾟﾚｯﾄ前進指令
+AND M6821                ; 電特ｸﾗﾝﾌﾟ&前進開始
+OUT M6824                ; 電特ｸﾗﾝﾌﾟ&前進_ﾊﾟﾚｯﾄ前進指令
+@MOV D6541 D6530         ; ｺﾈｸﾀ挿入開始位置指令Pos  RB4_指令Pos_NO.
+LD M6824                 ; 電特ｸﾗﾝﾌﾟ&前進_ﾊﾟﾚｯﾄ前進指令
+AND M6600                ; RB4位置決め指令
+AND M6601                ; RB4位置決め完了
+AND M6623                ; RB4_ｺﾈｸﾀ挿入開始位置
+OR M6825                 ; 電特ｸﾗﾝﾌﾟ&前進_ﾊﾟﾚｯﾄ前進確認
+AND M6821                ; 電特ｸﾗﾝﾌﾟ&前進開始
+OUT M6825                ; 電特ｸﾗﾝﾌﾟ&前進_ﾊﾟﾚｯﾄ前進確認
+LD M6825                 ; 電特ｸﾗﾝﾌﾟ&前進_ﾊﾟﾚｯﾄ前進確認
+AND M6603                ; RB4位置決めSub起動条件
+OR M6826                 ; RB4_ｺﾈｸﾀ挿入押込み位置移動指令
+AND M6821                ; 電特ｸﾗﾝﾌﾟ&前進開始
+OUT M6826                ; RB4_ｺﾈｸﾀ挿入押込み位置移動指令
+@MOV D6542 D6530         ; ｺﾈｸﾀ挿入押込み位置指令Pos  RB4_指令Pos_NO.
+LD M6826                 ; RB4_ｺﾈｸﾀ挿入押込み位置移動指令
+AND M6600                ; RB4位置決め指令
+AND M6601                ; RB4位置決め完了
+AND M6624                ; RB4_ｺﾈｸﾀ挿入押込み位置
+OR M6827                 ; RB4_ｺﾈｸﾀ挿入押込み位置移動完了
+AND M6821                ; 電特ｸﾗﾝﾌﾟ&前進開始
+OUT M6827                ; RB4_ｺﾈｸﾀ挿入押込み位置移動完了
+LD M6827                 ; RB4_ｺﾈｸﾀ挿入押込み位置移動完了
+ANB M6600                ; RB4位置決め指令
+ANB M6601                ; RB4位置決め完了
+OR M6828                 ; ｸﾗﾝﾌﾟ閉→ﾊﾟﾚｯﾄ前進動作完了
+AND M6821                ; 電特ｸﾗﾝﾌﾟ&前進開始
+OUT M6828                ; ｸﾗﾝﾌﾟ閉→ﾊﾟﾚｯﾄ前進動作完了
+;ﾊﾟﾚｯﾄ後退→ｸﾗﾝﾌﾟ解除
+LD M129                  ; 安全入力OK
+LD M2732                 ; U2-3_RCX240起動条件
+AND M2801                ; RCX240動作完了
+AND L309                 ; Z_搬送高さ(P9)
+LD M4732                 ; U6-3_RCX240起動条件
+AND M4801                ; RCX240動作完了
+AND L709                 ; Z_搬送高さ(P9)
+ORL
+ANL
+OUT M6830                ; 電特ｸﾗﾝﾌﾟ解除&ﾊﾟﾚｯﾄ後退_指令条件
+LD M6813                 ; SwBoxMode_電特ｸﾗﾝﾌﾟ&ﾊﾟﾚｯﾄFlag
+ANB X0E                  ; ﾜｲﾔﾚｽSW1
+ANP X0F                  ; ﾜｲﾔﾚｽSW2
+AND M6820                ; 電特ｸﾗﾝﾌﾟ&前進指令条件
+AND M6830                ; 電特ｸﾗﾝﾌﾟ解除&ﾊﾟﾚｯﾄ後退_指令条件
+OR M6831                 ; 電特ﾊﾟﾚｯﾄ後退&ｸﾗﾝﾌﾟ解除開始
+ANB M6836                ; ﾊﾟﾚｯﾄ後退→ｸﾗﾝﾌﾟ開動作完了
+ANB B0180                ; 384)FinalST1_RB異常
+ANB B0181                ; 385)FinalST1ｸﾗﾝﾌﾟ開閉CLS異常
+AND M6813                ; SwBoxMode_電特ｸﾗﾝﾌﾟ&ﾊﾟﾚｯﾄFlag
+OUT M6831                ; 電特ﾊﾟﾚｯﾄ後退&ｸﾗﾝﾌﾟ解除開始
+LD M6831                 ; 電特ﾊﾟﾚｯﾄ後退&ｸﾗﾝﾌﾟ解除開始
+AND M6603                ; RB4位置決めSub起動条件
+OR M6832                 ; 電特ﾊﾟﾚｯﾄ後退指令
+AND M6831                ; 電特ﾊﾟﾚｯﾄ後退&ｸﾗﾝﾌﾟ解除開始
+OUT M6832                ; 電特ﾊﾟﾚｯﾄ後退指令
+@MOV D6549 D6530         ; 待機位置指令Pos  RB4_指令Pos_NO.
+LD M6832                 ; 電特ﾊﾟﾚｯﾄ後退指令
+AND M6600                ; RB4位置決め指令
+AND M6601                ; RB4位置決め完了
+AND M6621                ; RB4_ﾜｰｸ受取り位置(ID確認位置)
+OR M6833                 ; 電特ｸﾗﾝﾌﾟ&前進_ﾊﾟﾚｯﾄ後退確認
+AND M6831                ; 電特ﾊﾟﾚｯﾄ後退&ｸﾗﾝﾌﾟ解除開始
+OUT M6833                ; 電特ｸﾗﾝﾌﾟ&前進_ﾊﾟﾚｯﾄ後退確認
+LD M6833                 ; 電特ｸﾗﾝﾌﾟ&前進_ﾊﾟﾚｯﾄ後退確認
+ANB M6600                ; RB4位置決め指令
+ANB M6601                ; RB4位置決め完了
+AND M6806                ; ｸﾗﾝﾌﾟ開閉_開_起動OK
+OR M6834                 ; 電特ｸﾗﾝﾌﾟ&前進_ｸﾗﾝﾌﾟ開指令
+AND M6831                ; 電特ﾊﾟﾚｯﾄ後退&ｸﾗﾝﾌﾟ解除開始
+OUT M6834                ; 電特ｸﾗﾝﾌﾟ&前進_ｸﾗﾝﾌﾟ開指令
+LD M6834                 ; 電特ｸﾗﾝﾌﾟ&前進_ｸﾗﾝﾌﾟ開指令
+AND X1505                ; ST1_電特部_ﾜｰｸ押_上昇端
+OR M6835                 ; 電特ｸﾗﾝﾌﾟ&前進_ｸﾗﾝﾌﾟ開確認
+AND M6831                ; 電特ﾊﾟﾚｯﾄ後退&ｸﾗﾝﾌﾟ解除開始
+OUT M6835                ; 電特ｸﾗﾝﾌﾟ&前進_ｸﾗﾝﾌﾟ開確認
+LD M6835                 ; 電特ｸﾗﾝﾌﾟ&前進_ｸﾗﾝﾌﾟ開確認
+OUT M6836                ; ﾊﾟﾚｯﾄ後退→ｸﾗﾝﾌﾟ開動作完了
+MCR
+LDP B11E6                ; ST1_SWBox_Pallet前後ﾓｰﾄﾞsw
+ANB M6812                ; SwBoxMode_電特ﾊﾟﾚｯﾄ前後Flag
+LDPB B11E6               ; ST1_SWBox_Pallet前後ﾓｰﾄﾞsw
+AND M6812                ; SwBoxMode_電特ﾊﾟﾚｯﾄ前後Flag
+ANB M6312                ; SwBoxMode_LeakﾁｬﾝﾊﾞｰFlag
+ANB M6813                ; SwBoxMode_電特ｸﾗﾝﾌﾟ&ﾊﾟﾚｯﾄFlag
+ORL
+AND= D50 K201            ; TpM-K_表示中ページNo.
+AND M31                  ; 手動ﾓｰﾄﾞ
+ANB M81                  ; 原点復帰動作中
+AND M50                  ; 運転準備
+OUT M6812                ; SwBoxMode_電特ﾊﾟﾚｯﾄ前後Flag
+LDP B11E7                ; ST1_SWBox_Clamp&Palletﾓｰﾄﾞsw
+ANB M6813                ; SwBoxMode_電特ｸﾗﾝﾌﾟ&ﾊﾟﾚｯﾄFlag
+LDPB B11E7               ; ST1_SWBox_Clamp&Palletﾓｰﾄﾞsw
+AND M6813                ; SwBoxMode_電特ｸﾗﾝﾌﾟ&ﾊﾟﾚｯﾄFlag
+ANB M6812                ; SwBoxMode_電特ﾊﾟﾚｯﾄ前後Flag
+ANB M6312                ; SwBoxMode_LeakﾁｬﾝﾊﾞｰFlag
+ORL
+AND= D50 K201            ; TpM-K_表示中ページNo.
+AND M31                  ; 手動ﾓｰﾄﾞ
+ANB M81                  ; 原点復帰動作中
+AND M50                  ; 運転準備
+OUT M6813                ; SwBoxMode_電特ｸﾗﾝﾌﾟ&ﾊﾟﾚｯﾄFlag
+;<h1/>□_RB4位置決めSub[M6600]
+;__ロボット等機器入力受け
+LD X178B                 ; RB4_ST1_位置決め完了_PEND
+ORB Y278C                ; RB4_ST1_一時停止_*STP
+AND X178A                ; RB4_ST1_原点確定_HEND
+MPS
+LDA X1780                ; RB4_ST1_完了Pos_PM1
+CON
+ANDA H00FF
+CON
+STA D6534                ; RB4_完了Pos
+MRD
+INV
+MOV K0 D6534             ; RB4_完了Pos
+MPP
+AND<> D6534 K0           ; RB4_完了Pos
+MPS
+AND= D6534 K1            ; RB4_完了Pos
+OUT M6621                ; RB4_ﾜｰｸ受取り位置(ID確認位置)
+MRD
+AND= D6540 D6534         ; ﾜｰｸ浮き確認位置指令Pos  RB4_完了Pos
+OUT M6622                ; RB4_ﾜｰｸ浮き確認位置
+MRD
+AND= D6541 D6534         ; ｺﾈｸﾀ挿入開始位置指令Pos  RB4_完了Pos
+OUT M6623                ; RB4_ｺﾈｸﾀ挿入開始位置
+MRD
+AND= D6542 D6534         ; ｺﾈｸﾀ挿入押込み位置指令Pos  RB4_完了Pos
+OUT M6624                ; RB4_ｺﾈｸﾀ挿入押込み位置
+MPP
+AND= D6543 D6534         ; ｺﾈｸﾀ抜き位置Pos  RB4_完了Pos
+OUT M6625                ; RB4_ｺﾈｸﾀ抜き位置
+; POS NO.
+LD CR2002                ; 常時ON
+MOV K1 D6549             ; 待機位置指令Pos
+;'RB3 POS MANUAL JIG SETTING
+;IF D500 < K1 THEN
+;   D500 = K1
+;END IF
+;D6540 = D500 + 10 		   '浮き確認位置
+;D6541 = (D500 - K1)*3 + 51 'ｺﾈｸﾀ挿入開始
+;D6542 = (D500 - K1)*3 + 52 'ｺﾈｸﾀ挿入完了位置
+;D6543 = (D500 - K1)*3 + 53 'ｺﾈｸﾀ挿入完了位置
+LD M31                   ; 手動ﾓｰﾄﾞ
+NCJ K1000
+;'RB3 POS MANUAL JIG SETTING
+;
+;IF D500 < K1 THEN
+;
+LD< D500 K1              ; 手動_JIG_NO.指定
+NCJ K2000
+;   D500 = K1
+;
+LD CR2002                ; 常時ON
+MOV K1 D500              ; 手動_JIG_NO.指定
+;END IF
+;
+LABEL K2000
+;D6540 = D500 + 10 		   '浮き確認位置
+;
+LD CR2002                ; 常時ON
+LDA D500                 ; 手動_JIG_NO.指定
+CON
+EXT
+CON
+ADD.L +10
+CON
+STA D6540                ; ﾜｰｸ浮き確認位置指令Pos
+;D6541 = (D500 - K1)*3 + 51 'ｺﾈｸﾀ挿入開始
+;
+LD CR2002                ; 常時ON
+LDA D500                 ; 手動_JIG_NO.指定
+CON
+EXT
+CON
+SUB.L +1
+CON
+MUL.L +3
+CON
+ADD.L +51
+CON
+STA D6541                ; ｺﾈｸﾀ挿入開始位置指令Pos
+;D6542 = (D500 - K1)*3 + 52 'ｺﾈｸﾀ挿入完了位置
+;
+LD CR2002                ; 常時ON
+LDA D500                 ; 手動_JIG_NO.指定
+CON
+EXT
+CON
+SUB.L +1
+CON
+MUL.L +3
+CON
+ADD.L +52
+CON
+STA D6542                ; ｺﾈｸﾀ挿入押込み位置指令Pos
+;D6543 = (D500 - K1)*3 + 53 'ｺﾈｸﾀ挿入完了位置
+LD CR2002                ; 常時ON
+LDA D500                 ; 手動_JIG_NO.指定
+CON
+EXT
+CON
+SUB.L +1
+CON
+MUL.L +3
+CON
+ADD.L +53
+CON
+STA D6543                ; ｺﾈｸﾀ抜き位置Pos
+LABEL K1000
+;
+;'RB3 POS AUTO JIG SETTING
+;D6540 = D6713 + 10 			'浮き確認位置
+;D6541 = (D6713 - K1)*3 + 51	'ｺﾈｸﾀ挿入開始
+;D6542 = (D6713 - K1)*3 + 52 'ｺﾈｸﾀ挿入完了位置
+;D6543 = (D6713 - K1)*3 + 53 'ｺﾈｸﾀ挿入完了位置
+LD M30                   ; 自動ﾓｰﾄﾞ
+NCJ K1001
+;'RB3 POS AUTO JIG SETTING
+;
+;D6540 = D6713 + 10 			'浮き確認位置
+;
+LD CR2002                ; 常時ON
+LDA D6713                ; Final_ST1_電特ﾊﾟﾚｯﾄID
+CON
+EXT
+CON
+ADD.L +10
+CON
+STA D6540                ; ﾜｰｸ浮き確認位置指令Pos
+;D6541 = (D6713 - K1)*3 + 51	'ｺﾈｸﾀ挿入開始
+;
+LD CR2002                ; 常時ON
+LDA D6713                ; Final_ST1_電特ﾊﾟﾚｯﾄID
+CON
+EXT
+CON
+SUB.L +1
+CON
+MUL.L +3
+CON
+ADD.L +51
+CON
+STA D6541                ; ｺﾈｸﾀ挿入開始位置指令Pos
+;D6542 = (D6713 - K1)*3 + 52 'ｺﾈｸﾀ挿入完了位置
+;
+LD CR2002                ; 常時ON
+LDA D6713                ; Final_ST1_電特ﾊﾟﾚｯﾄID
+CON
+EXT
+CON
+SUB.L +1
+CON
+MUL.L +3
+CON
+ADD.L +52
+CON
+STA D6542                ; ｺﾈｸﾀ挿入押込み位置指令Pos
+;D6543 = (D6713 - K1)*3 + 53 'ｺﾈｸﾀ挿入完了位置
+LD CR2002                ; 常時ON
+LDA D6713                ; Final_ST1_電特ﾊﾟﾚｯﾄID
+CON
+EXT
+CON
+SUB.L +1
+CON
+MUL.L +3
+CON
+ADD.L +53
+CON
+STA D6543                ; ｺﾈｸﾀ抜き位置Pos
+LABEL K1001
+;
+;	位置決めSub
+LDB X1789                ; RB4_ST1_運転ﾓｰﾄﾞ_RMDS
+LD X178A                 ; RB4_ST1_原点確定_HEND
+OR CR2002                ; 常時ON
+ANL
+AND X178C                ; RB4_ST1_ｻｰﾎﾞ状態_SV
+AND X178D                ; RB4_ST1_非常停止_*EMGS
+AND X178E                ; RB4_ST1_ｱﾗｰﾑ_*ALM
+OUT M6602                ; RB4_状態OK
+LD M50                   ; 運転準備
+ANB M51                  ; 即停止異常(緊急停止)
+AND M6602                ; RB4_状態OK
+ANB M6600                ; RB4位置決め指令
+ANB M6601                ; RB4位置決め完了
+ANB M6604                ; RB4位置決めSub起動中
+OUT M6603                ; RB4位置決めSub起動条件
+LDB M6512                ; U12-1_S12_接触前位置移動指令
+ANB M6514                ; U12-1_S14_ｺﾈｸﾀ押込位置移動
+ANB M6519                ; U12-1_S19_ｺﾈｸﾀ抜き位置
+ANB M6521                ; U12-1_S21_待機位置移動
+ANB M6754                ; OrgS4_待機位置移動指令
+ANB M6840                ; M_ST1_選択位置移動指令
+LDB M6824                ; 電特ｸﾗﾝﾌﾟ&前進_ﾊﾟﾚｯﾄ前進指令
+OR M6825                 ; 電特ｸﾗﾝﾌﾟ&前進_ﾊﾟﾚｯﾄ前進確認
+ANL
+LDB M6826                ; RB4_ｺﾈｸﾀ挿入押込み位置移動指令
+OR M6827                 ; RB4_ｺﾈｸﾀ挿入押込み位置移動完了
+ANL
+LDB M6832                ; 電特ﾊﾟﾚｯﾄ後退指令
+OR M6833                 ; 電特ｸﾗﾝﾌﾟ&前進_ﾊﾟﾚｯﾄ後退確認
+ANL
+INV
+LD M6603                 ; RB4位置決めSub起動条件
+OR M6604                 ; RB4位置決めSub起動中
+ANL
+AND M50                  ; 運転準備
+ANB M51                  ; 即停止異常(緊急停止)
+AND X178D                ; RB4_ST1_非常停止_*EMGS
+AND X178E                ; RB4_ST1_ｱﾗｰﾑ_*ALM
+OUT M6600                ; RB4位置決め指令
+LD M6600                 ; RB4位置決め指令
+MC
+LD M6600                 ; RB4位置決め指令
+AND M6603                ; RB4位置決めSub起動条件
+OR M6604                 ; RB4位置決めSub起動中
+OUT M6604                ; RB4位置決めSub起動中
+LD M6604                 ; RB4位置決めSub起動中
+MPS
+@MOV D6530 D6532         ; RB4_指令Pos_NO.  RB4_ｺﾝﾄﾛｰﾗへ指令Pos_NO.
+MPP
+AND Y278C                ; RB4_ST1_一時停止_*STP
+TMH K1220 K5             ; ﾃﾞｰﾀ転送ﾃﾞｨﾚｲ
+LD T1220                 ; ﾃﾞｰﾀ転送ﾃﾞｨﾚｲ
+OR M6605                 ; RB4位置決めｽﾀｰﾄ指令ON
+AND Y278C                ; RB4_ST1_一時停止_*STP
+OUT M6605                ; RB4位置決めｽﾀｰﾄ指令ON
+LD M6605                 ; RB4位置決めｽﾀｰﾄ指令ON
+AND Y278D                ; RB4_ST1_ｽﾀｰﾄ_CSTR
+ANB X178B                ; RB4_ST1_位置決め完了_PEND
+OR M6606                 ; RB4位置決め動作中
+AND M124                 ; ｴﾘｱｾﾝｻ正常
+OUT M6606                ; RB4位置決め動作中
+LD M6606                 ; RB4位置決め動作中
+ANB Y278D                ; RB4_ST1_ｽﾀｰﾄ_CSTR
+AND X178B                ; RB4_ST1_位置決め完了_PEND
+AND= D6530 D6534         ; RB4_指令Pos_NO.  RB4_完了Pos
+OR M6607                 ; RB4位置決め完了
+OUT M6607                ; RB4位置決め完了
+LD M6607                 ; RB4位置決め完了
+OUT M6601                ; RB4位置決め完了
+MCR
+;<h1/>□_出力回路
+;ソレノイドバルブ出力
+;<h1/>__RB動作出力
+LD M6605                 ; RB4位置決めｽﾀｰﾄ指令ON
+ANB M6606                ; RB4位置決め動作中
+OUT Y278D                ; RB4_ST1_ｽﾀｰﾄ_CSTR
+LD CR2002                ; 常時ON
+MPS
+AND D6532.0
+OUT Y2780                ; RB4_ST1_指令pos_PC1
+MRD
+AND D6532.1
+OUT Y2781                ; RB4_ST1_指令pos_PC2
+MRD
+AND D6532.2
+OUT Y2782                ; RB4_ST1_指令pos_PC4
+MRD
+AND D6532.3
+OUT Y2783                ; RB4_ST1_指令pos_PC8
+MRD
+AND D6532.4
+OUT Y2784                ; RB4_ST1_指令pos_PC16
+MRD
+AND D6532.5
+OUT Y2785                ; RB4_ST1_指令pos_PC32
+MRD
+AND D6532.6
+OUT Y2786                ; RB4_ST1_指令pos_PC64
+MPP
+AND D6532.7
+OUT Y2787                ; RB4_ST1_指令pos_PC128
+LDP B11EF                ; ST1_RB_AUTO/MANU切替SW
+ANB Y278A                ; RB4_ST1_運転ﾓｰﾄﾞ_RMOD(OFF:AUTO)
+LDPB B11EF               ; ST1_RB_AUTO/MANU切替SW
+AND Y278A                ; RB4_ST1_運転ﾓｰﾄﾞ_RMOD(OFF:AUTO)
+ORL
+AND M50                  ; 運転準備
+ANB M71                  ; 自動運転開始BZ
+ANB M82                  ; 原点復帰開始
+AND<> D50 K1             ; TpM-K_表示中ページNo.
+ANB B11E6                ; ST1_SWBox_Pallet前後ﾓｰﾄﾞsw
+ANB B11E7                ; ST1_SWBox_Clamp&Palletﾓｰﾄﾞsw
+OUT Y278A                ; RB4_ST1_運転ﾓｰﾄﾞ_RMOD(OFF:AUTO)
+LD M6752                 ; OrgS2_RB原点復帰指令
+AND M124                 ; ｴﾘｱｾﾝｻ正常
+AND M6979                ; U12ｽﾃｯﾌﾟ動作
+OUT Y278B                ; RB4_ST1_原点復帰_HOME
+LD X06                   ; ST1-2部ﾗｲﾄｶｰﾃﾝOUT1
+AND X0A                  ; ST1-2背面ﾗｲﾄｶｰﾃﾝOUT1
+AND X06                  ; ST1-2部ﾗｲﾄｶｰﾃﾝOUT1
+AND X07                  ; ST1-2部ﾗｲﾄｶｰﾃﾝOUT2
+AND X08                  ; ST3-4部ﾗｲﾄｶｰﾃﾝOUT1
+AND X09                  ; ST3-4部ﾗｲﾄｶｰﾃﾝOUT2
+AND X0A                  ; ST1-2背面ﾗｲﾄｶｰﾃﾝOUT1
+AND X0B                  ; ST1-2背面ﾗｲﾄｶｰﾃﾝOUT1
+AND X0C                  ; ST3-4背面ﾗｲﾄｶｰﾃﾝOUT1
+AND X0D                  ; ST3-4背面ﾗｲﾄｶｰﾃﾝOUT1
+OR M39                   ; ｴﾘｱｾﾝｻ-無視Mode
+AND M120                 ; 圧空正常
+AND M121                 ; 非常停止正常
+AND M123                 ; 安全扉正常
+OUT Y278C                ; RB4_ST1_一時停止_*STP
+LD M16                   ; ﾘｾｯﾄPB
+ANB X178E                ; RB4_ST1_ｱﾗｰﾑ_*ALM
+OUT Y278E                ; RB4_ST1_ﾘｾｯﾄ_RES
+LD M50                   ; 運転準備
+AND X178E                ; RB4_ST1_ｱﾗｰﾑ_*ALM
+OUT Y278F                ; RB4_ST1_ｻｰﾎﾞON_SON
+;<h1/>__I/O
+;ｽﾃｰｼﾞ(ﾊﾟﾚｯﾄ前後)
+LD M6805                 ; ｸﾗﾝﾌﾟ開閉_閉_指令
+AND M6804                ; ｸﾗﾝﾌﾟ開閉_閉_起動OK
+LD M1919                 ; U2-S419_電特部ｸﾗﾝﾌﾟ指令
+LD M3217                 ; ﾊﾝﾄﾞ2_FinalST1給材中flg
+OR M3216                 ; ﾊﾝﾄﾞ1_FinalST1給材中flg
+ANL
+ORL
+LD M3919                 ; U6-S419_電特部ｸﾗﾝﾌﾟ指令
+LD M5217                 ; Hand2_FinalST1給材中flg
+OR M5216                 ; Hand1_FinalST1給材中flg
+ANL
+ORL
+OR M6504                 ; U12-1_S4_ｸﾗﾝﾌﾟ指令
+LD Y2680                 ; 電特ST1_ﾜｰｸｸﾗﾝﾌﾟ_下降
+ANB Y2681                ; 電特ST1_ﾜｰｸｸﾗﾝﾌﾟ_上昇
+ORL
+AND M50                  ; 運転準備
+OUT Y2680                ; 電特ST1_ﾜｰｸｸﾗﾝﾌﾟ_下降
+LD M6807                 ; ｸﾗﾝﾌﾟ開閉_開__指令
+AND M6806                ; ｸﾗﾝﾌﾟ開閉_開_起動OK
+LDB M6756                ; OrgS6_ｸﾗﾝﾌﾟ上昇指令
+ANB M3286                ; ST1_電特部_ﾜｰｸ押_上昇指令
+ANB M5286                ; ST1_電特部_ﾜｰｸ押_上昇指令
+INV
+ORL
+LD Y2681                 ; 電特ST1_ﾜｰｸｸﾗﾝﾌﾟ_上昇
+ANB Y2680                ; 電特ST1_ﾜｰｸｸﾗﾝﾌﾟ_下降
+ORL
+AND M50                  ; 運転準備
+OUT Y2681                ; 電特ST1_ﾜｰｸｸﾗﾝﾌﾟ_上昇
+;■その他制御出力
+LD M6661                 ; U12-3_S1_ﾌｧｲﾅﾙ検査ｽﾀｰﾄ要求
+OUT W0107.0              ; 電気特性検査開始要求#1
+LD L1200                 ; FINALST1_有効状態
+OUT W0107.8              ; 電気特性検査ｽﾃｰｼﾞ有効/無効#1
+LD L1200                 ; FINALST1_有効状態
+ANB M6909                ; FainlST1_無効予約(自動運転)
+LD M6909                 ; FainlST1_無効予約(自動運転)
+AND CR2006               ; 1sｸﾛｯｸﾊﾟﾙｽ
+ORL
+LD M6916                 ; ST有効確認要求
+AND CR2005               ; 100msｸﾛｯｸﾊﾟﾙｽ
+ORL
+OUT Y2218                ; ST1_電特_有効/無効表示
+OUT B16EA                ; ST1電特検査_有効/無効_TPl
+;□□　　パネル表示　　□□
+LD Y2680                 ; 電特ST1_ﾜｰｸｸﾗﾝﾌﾟ_下降
+AND CR2006               ; 1sｸﾛｯｸﾊﾟﾙｽ
+OR X1504                 ; ST1_電特部_ﾜｰｸ押_下降端
+OUT B16E2                ; ｸﾗﾝﾌﾟ下降TpPL
+LD Y2681                 ; 電特ST1_ﾜｰｸｸﾗﾝﾌﾟ_上昇
+AND CR2006               ; 1sｸﾛｯｸﾊﾟﾙｽ
+OR X1505                 ; ST1_電特部_ﾜｰｸ押_上昇端
+OUT B16E3                ; ｸﾗﾝﾌﾟ上昇TpPL
+LD M6812                 ; SwBoxMode_電特ﾊﾟﾚｯﾄ前後Flag
+OUT B16E6                ; PLBox_ﾊﾟﾚｯﾄ前後ﾓｰﾄﾞPL
+LD M6813                 ; SwBoxMode_電特ｸﾗﾝﾌﾟ&ﾊﾟﾚｯﾄFlag
+OUT B16E7                ; PLBox_ｸﾗﾝﾌﾟ&ﾊﾟﾚｯﾄﾓｰﾄﾞPL
+LD= D6549 D6530          ; 待機位置指令Pos  RB4_指令Pos_NO.
+AND M6600                ; RB4位置決め指令
+AND CR2006               ; 1sｸﾛｯｸﾊﾟﾙｽ
+OR M6621                 ; RB4_ﾜｰｸ受取り位置(ID確認位置)
+OUT B16F0                ; ST1_Pallet 待機位置PL
+LD= D6541 D6530          ; ｺﾈｸﾀ挿入開始位置指令Pos  RB4_指令Pos_NO.
+AND M6600                ; RB4位置決め指令
+AND CR2006               ; 1sｸﾛｯｸﾊﾟﾙｽ
+OR M6623                 ; RB4_ｺﾈｸﾀ挿入開始位置
+OUT B16F1                ; ST1_Pallet ｺﾈｸﾀ挿入前PL
+LD= D6542 D6530          ; ｺﾈｸﾀ挿入押込み位置指令Pos  RB4_指令Pos_NO.
+AND M6600                ; RB4位置決め指令
+AND CR2006               ; 1sｸﾛｯｸﾊﾟﾙｽ
+OR M6624                 ; RB4_ｺﾈｸﾀ挿入押込み位置
+OUT B16F2                ; ST1_Pallet ｺﾈｸﾀ接触位置PL
+LD= D6543 D6530          ; ｺﾈｸﾀ抜き位置Pos  RB4_指令Pos_NO.
+AND M6600                ; RB4位置決め指令
+AND CR2006               ; 1sｸﾛｯｸﾊﾟﾙｽ
+OR M6625                 ; RB4_ｺﾈｸﾀ抜き位置
+OUT B16F3                ; ST1_Pallet ｺﾈｸﾀ接触後戻り位置PL
+;<h1/>□_異常検出
+LD M50                   ; 運転準備
+ANB X178E                ; RB4_ST1_ｱﾗｰﾑ_*ALM
+LD CR2003                ; 常時OFF
+ANB B0680                ; 256)_Bz停止
+ORB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B0180                ; 384)FinalST1_RB異常
+ORL
+MPS
+AND T1290                ; 異常監視時間
+OUT B0180                ; 384)FinalST1_RB異常
+MPP
+TMR K1290 K50            ; 異常監視時間
+LDP B0180                ; 384)FinalST1_RB異常
+AND< D13510 K64          ; FIFO_DATA_VALUE
+MOV K1384 D13500         ; ALM_WRITE_CODE(複合)
+FIFOW D13500 D13510      ; ALM_WRITE_CODE(複合)  FIFO_DATA_VALUE
+LD M110                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B0680                 ; 256)_Bz停止
+AND B0180                ; 384)FinalST1_RB異常
+OUT B0680                ; 256)_Bz停止
+;　　
+LD Y2680                 ; 電特ST1_ﾜｰｸｸﾗﾝﾌﾟ_下降
+ANB X1504                ; ST1_電特部_ﾜｰｸ押_下降端
+LD Y2681                 ; 電特ST1_ﾜｰｸｸﾗﾝﾌﾟ_上昇
+ANB X1505                ; ST1_電特部_ﾜｰｸ押_上昇端
+ORL
+LD X1504                 ; ST1_電特部_ﾜｰｸ押_下降端
+AND X1505                ; ST1_電特部_ﾜｰｸ押_上昇端
+ORL
+LD CR2003                ; 常時OFF
+ANB B0681                ; 257)_Bz停止
+ORB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B0181                ; 385)FinalST1ｸﾗﾝﾌﾟ開閉CLS異常
+ORL
+MPS
+AND T1291                ; CLSﾀｲﾑｱｳﾄ
+OUT B0181                ; 385)FinalST1ｸﾗﾝﾌﾟ開閉CLS異常
+MPP
+TMR K1291 K100           ; CLSﾀｲﾑｱｳﾄ
+LDP B0181                ; 385)FinalST1ｸﾗﾝﾌﾟ開閉CLS異常
+AND< D13510 K64          ; FIFO_DATA_VALUE
+MOV K385 D13500          ; ALM_WRITE_CODE(複合)
+FIFOW D13500 D13510      ; ALM_WRITE_CODE(複合)  FIFO_DATA_VALUE
+LD M110                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B0681                 ; 257)_Bz停止
+AND B0181                ; 385)FinalST1ｸﾗﾝﾌﾟ開閉CLS異常
+OUT B0681                ; 257)_Bz停止
+;
+LD T1206                 ; FinalST1_ｺﾝﾀｸﾄﾍｯﾄﾞID_更新_DLY
+AND L1200                ; FINALST1_有効状態
+AND<> D6600 D6606        ; FinalST1_ｺﾝﾀｸﾄﾍｯﾄﾞID  FinalST1_ｺﾝﾀｸﾄﾍｯﾄﾞID_Copy
+LD CR2003                ; 常時OFF
+ANB B0682                ; 258)_Bz停止
+ORB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B0182                ; 386)FinalST1ﾃｽﾄﾍｯﾄﾞID不
+ORL
+OUT B0182                ; 386)FinalST1ﾃｽﾄﾍｯﾄﾞID不
+LDP B0182                ; 386)FinalST1ﾃｽﾄﾍｯﾄﾞID不
+AND< D13510 K64          ; FIFO_DATA_VALUE
+MOV K1386 D13500         ; ALM_WRITE_CODE(複合)
+FIFOW D13500 D13510      ; ALM_WRITE_CODE(複合)  FIFO_DATA_VALUE
+LD M110                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B0682                 ; 258)_Bz停止
+AND B0182                ; 386)FinalST1ﾃｽﾄﾍｯﾄﾞID不
+OUT B0682                ; 258)_Bz停止
+;
+LD T1207                 ; FinalST1_ﾊﾟﾚｯﾄID_更新_DLY
+AND L1200                ; FINALST1_有効状態
+AND<> D6601 D6607        ; FinalST1_ﾊﾟﾚｯﾄID  FinalST1_ﾊﾟﾚｯﾄID_ｾﾝｻ状態
+AND T1204                ; ST1_電特部_ﾊﾟﾚｯﾄ_後退端
+LD CR2003                ; 常時OFF
+ANB B0683                ; 259)_Bz停止
+ORB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B0183                ; 387)FinalST1ﾊﾟﾚｯﾄID不一
+ORL
+OUT B0183                ; 387)FinalST1ﾊﾟﾚｯﾄID不一
+LDP B0183                ; 387)FinalST1ﾊﾟﾚｯﾄID不一
+AND< D13510 K64          ; FIFO_DATA_VALUE
+MOV K1387 D13500         ; ALM_WRITE_CODE(複合)
+FIFOW D13500 D13510      ; ALM_WRITE_CODE(複合)  FIFO_DATA_VALUE
+LD M110                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B0683                 ; 259)_Bz停止
+AND B0183                ; 387)FinalST1ﾊﾟﾚｯﾄID不一
+OUT B0683                ; 259)_Bz停止
+;
+LD M6560                 ; U12-1_S60_ﾌｧｲﾅﾙST1_ﾜｰｸ受取異常
+LD CR2003                ; 常時OFF
+ANB B0684                ; 260)_Bz停止
+ORB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B0184                ; 388)FinalST1ﾜｰｸ受取異常
+ORL
+OUT B0184                ; 388)FinalST1ﾜｰｸ受取異常
+LDP B0184                ; 388)FinalST1ﾜｰｸ受取異常
+AND< D13510 K64          ; FIFO_DATA_VALUE
+MOV K1388 D13500         ; ALM_WRITE_CODE(複合)
+FIFOW D13500 D13510      ; ALM_WRITE_CODE(複合)  FIFO_DATA_VALUE
+LD M110                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B0684                 ; 260)_Bz停止
+AND B0184                ; 388)FinalST1ﾜｰｸ受取異常
+OUT B0684                ; 260)_Bz停止
+;
+LD M6930                 ; Final_ST1_ﾜｰｸ受渡し異常
+LD CR2003                ; 常時OFF
+ANB B0685                ; 261)_Bz停止
+ORB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B0185                ; 389)FinalST1ﾜｰｸ受渡し異常
+ORL
+OUT B0185                ; 389)FinalST1ﾜｰｸ受渡し異常
+LDP B0185                ; 389)FinalST1ﾜｰｸ受渡し異常
+AND< D13510 K64          ; FIFO_DATA_VALUE
+MOV K1389 D13500         ; ALM_WRITE_CODE(複合)
+FIFOW D13500 D13510      ; ALM_WRITE_CODE(複合)  FIFO_DATA_VALUE
+LD M110                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B0685                 ; 261)_Bz停止
+AND B0185                ; 389)FinalST1ﾜｰｸ受渡し異常
+OUT B0685                ; 261)_Bz停止
+;　　
+LD M6758                 ; OrgS8_ORGﾜｰｸ除去要求
+LD M2020                 ; U2_S520_吸着ﾐｽ発報orﾜｰｸ除去要求
+LD M3231                 ; ﾊﾝﾄﾞ2_FinalST1除材中flg
+OR M3230                 ; ﾊﾝﾄﾞ1_FinalST1除材中flg
+ANL
+AND>= D1540 K2           ; 吸着ﾘﾄﾗｲ回数ｶｳﾝﾀ
+ORL
+LD CR2003                ; 常時OFF
+ANB B0831                ; 817)BzStop
+ORB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B0331                ; 817)FinalST1ﾜｰｸ除去要求
+ORL
+OUT B0331                ; 817)FinalST1ﾜｰｸ除去要求
+LDP B0331                ; 817)FinalST1ﾜｰｸ除去要求
+AND< D13510 K64          ; FIFO_DATA_VALUE
+MOV K817 D13500          ; ALM_WRITE_CODE(複合)
+FIFOW D13500 D13510      ; ALM_WRITE_CODE(複合)  FIFO_DATA_VALUE
+LD M110                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B0831                 ; 817)BzStop
+AND B0331                ; 817)FinalST1ﾜｰｸ除去要求
+OUT B0831                ; 817)BzStop
+;
+LD W07.0                 ; 電気特性検査ｽﾃｰｼﾞ状態#1
+AND M31                  ; 手動ﾓｰﾄﾞ
+ANP M17                  ; 原点復帰PB
+LD CR2003                ; 常時OFF
+ANB B0832                ; 818)BzStop
+ORB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B0332                ; 818)FinalST1検査中
+ORL
+OUT B0332                ; 818)FinalST1検査中
+LDP B0332                ; 818)FinalST1検査中
+AND< D13510 K64          ; FIFO_DATA_VALUE
+MOV K818 D13500          ; ALM_WRITE_CODE(複合)
+FIFOW D13500 D13510      ; ALM_WRITE_CODE(複合)  FIFO_DATA_VALUE
+LD M110                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B0832                 ; 818)BzStop
+AND B0332                ; 818)FinalST1検査中
+OUT B0832                ; 818)BzStop
+;異常ﾌﾞｻﾞｰまとめ
+LDB B0180                ; 384)FinalST1_RB異常
+OR B0680                 ; 256)_Bz停止
+LDB B0181                ; 385)FinalST1ｸﾗﾝﾌﾟ開閉CLS異常
+OR B0681                 ; 257)_Bz停止
+ANL
+LDB B0182                ; 386)FinalST1ﾃｽﾄﾍｯﾄﾞID不
+OR B0682                 ; 258)_Bz停止
+ANL
+LDB B0183                ; 387)FinalST1ﾊﾟﾚｯﾄID不一
+OR B0683                 ; 259)_Bz停止
+ANL
+LDB B0184                ; 388)FinalST1ﾜｰｸ受取異常
+OR B0684                 ; 260)_Bz停止
+ANL
+LDB B0185                ; 389)FinalST1ﾜｰｸ受渡し異常
+OR B0685                 ; 261)_Bz停止
+ANL
+LDB B0186                ; 390)
+OR B0686                 ; 262)_Bz停止
+ANL
+LDB B0187                ; 391)
+OR B0687                 ; 263)_Bz停止
+ANL
+LDB B0188                ; 392)
+OR B0688                 ; 264)_Bz停止
+ANL
+LDB B0189                ; 393)
+OR B0689                 ; 265)_Bz停止
+ANL
+LDB B018A                ; 394)
+OR B068A                 ; 266)_Bz停止
+ANL
+LDB B018B                ; 395)
+OR B068B                 ; 267)_Bz停止
+ANL
+LDB B018C                ; 396)
+OR B068C                 ; 268)_Bz停止
+ANL
+LDB B018D                ; 397)
+OR B068D                 ; 269)_Bz停止
+ANL
+LDB B018E                ; 398)
+OR B068E                 ; 270)_Bz停止
+ANL
+LDB B018F                ; 399)
+OR B068F                 ; 271)_Bz停止
+ANL
+LDB B0190                ; 400)
+OR B0690                 ; 272)_Bz停止
+ANL
+LDB B0191                ; 401)
+OR B0691                 ; 273)_Bz停止
+ANL
+LDB B0192                ; 402)
+OR B0692                 ; 274)_Bz停止
+ANL
+LDB B0193                ; 403)
+OR B0693                 ; 275)_Bz停止
+ANL
+LDB B0174                ; 372)
+OR B0674                 ; 244)_Bz停止
+ANL
+LDB B0175                ; 373)
+OR B0675                 ; 245)_Bz停止
+ANL
+LDB B0176                ; 374)
+OR B0676                 ; 246)_Bz停止
+ANL
+LDB B0177                ; 375)
+OR B0677                 ; 247)_Bz停止
+ANL
+LDB B0178                ; 376)
+OR B0678                 ; 248)_Bz停止
+ANL
+LDB B0179                ; 377)
+OR B0679                 ; 249)_Bz停止
+ANL
+LDB B017A                ; 378)
+OR B067A                 ; 250)_Bz停止
+ANL
+LDB B017B                ; 379)
+OR B067B                 ; 251)_Bz停止
+ANL
+LDB B017C                ; 380)
+OR B067C                 ; 252)_Bz停止
+ANL
+LDB B017D                ; 381)
+OR B067D                 ; 253)_Bz停止
+ANL
+LDB B017E                ; 382)
+OR B067E                 ; 254)_Bz停止
+ANL
+LDB B017F                ; 383)
+OR B067F                 ; 255)_Bz停止
+ANL
+LDB B0331                ; 817)FinalST1ﾜｰｸ除去要求
+OR B0831                 ; 817)BzStop
+ANL
+LDB B0332                ; 818)FinalST1検査中
+OR B0832                 ; 818)BzStop
+ANL
+INV
+OUT M6989                ; U12異常BZ補助
+MCR
+END
+ENDH

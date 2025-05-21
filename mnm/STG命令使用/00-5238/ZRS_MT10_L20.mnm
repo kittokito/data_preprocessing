@@ -1,0 +1,706 @@
+DEVICE:52
+;MODULE:ZRS_MT10_L20
+;MODULE_TYPE:1
+;SCRIPT_TYPE:
+;★★★　ZRS_MT10_L20  KV-L20V/R 通信マクロを実行する　★★★
+;■ 使用条件
+;　・KV-L20V/R を使用して、通信ﾌﾟﾛﾄｺﾙが << PROTOCOL STUDIOﾓｰﾄﾞで動作している事 >>
+;　・プロトコルマクロ　COM1_ﾐﾆﾏﾉﾒｰﾀ通信v000.psm　COM2_ﾐﾆﾏﾉﾒｰﾀ通信v000.psm　が転送されている事
+;　
+;■ 引数説明
+;　UR0/UM0 	: ユニット番号		　　　　　　	[#1 - #48]
+;  P0 		: パラメータ格納先					[DMxxx,EMxxx等]
+;			:  Adrs+0 : 通信ﾁｬﾝﾈﾙ番号(1,2)
+;			:  Adrs+1 : 通信ﾀｲﾑｱｳﾄ(#1 - #999 ×100ms)
+;  P1		: 受信データを格納するメモリー		[DMxxx,EMxxx等]
+;  P3		: エラーフラグ   0:OK 1:Error		[MRxxx等]
+;　P4		: エラー情報						[DMxxx,EMxxx等]
+;
+;■ 機能
+;　・P0の(adr+0)で指定したチャンネル番号(1)or(2)を使用する。
+;　
+;  ・ミニマノメータ(YOKOGAWA MT10)のゼロリセットを行い、リセット後の圧力を取得する。
+;
+;    <P1> 圧力ﾃﾞｰﾀの格納ｴﾘｱ
+;   
+;■ エラーフラグ(P3)をセットする条件
+;  ・P0(Adr+0～1)が範囲外で呼ばれたとき。
+;  ・通信エラー（ﾚｽﾎﾟﾝｽ異常、受信タイムアウト）が発生した時。
+;  ・通信マクロデータが異常な時。
+;  ・P4にエラー情報を格納する。
+;		1:ﾃﾞｰﾀ数範囲外(1-999)
+;  　	2:受信ﾃﾞｰﾀ異常(ﾚｰｽﾎﾟﾝｽ2)
+;  　	3:通信ｴﾗｰ
+;  　	4:通信ﾀｲﾑｱｳﾄ
+;  　	5:通信ﾏｸﾛｴﾗｰ
+;<<　初期化処理　>>
+LD @CR2008
+ZRES @MR000 @MR015
+CON
+RES P3                   ; ｴﾗｰﾌﾗｸﾞ
+;
+;adrset( P0, @DM40.D )
+;
+;@DM4 = *@DM40		'通信ﾁｬﾝﾈﾙ　	Adrs +0
+;
+;adradd( #1, @DM40.D )
+;@DM24.D = *@DM40	'通信ﾀｲﾑｱｳﾄ		Adrs +1
+;
+LD @CR2008
+NCJ #1005
+;adrset( P0, @DM40.D )
+;
+LD CR2002                ; 常時ON
+ADRSET P0 @DM40          ; ﾊﾟﾗﾒｰﾀ格納先  ｱﾄﾞﾚｽﾜｰｸ変数
+;@DM4 = *@DM40		'通信ﾁｬﾝﾈﾙ　	Adrs +0
+;
+LD CR2002                ; 常時ON
+MOV *@DM40 @DM4          ; ｱﾄﾞﾚｽﾜｰｸ変数  通信ﾁｬﾝﾈﾙ
+;adradd( #1, @DM40.D )
+;
+LD CR2002                ; 常時ON
+ADRADD.S +1 @DM40        ; ｱﾄﾞﾚｽﾜｰｸ変数
+;@DM24.D = *@DM40	'通信ﾀｲﾑｱｳﾄ		Adrs +1
+;
+LD CR2002                ; 常時ON
+LDA *@DM40               ; ｱﾄﾞﾚｽﾜｰｸ変数
+CON
+EXT
+CON
+STA.D @DM24              ; 通信ﾀｲﾑｱｳﾄ時間
+LABEL #1005
+;
+;'通信ﾎﾟｰﾄ番号の有効範囲を確認する
+;if @DM4 < #1 or @DM4 > #2 then			'ﾃﾞｰﾀ数の有効範囲を確認
+;	set( P3.B )							'範囲外ならｴﾗｰﾌﾗｸﾞをONする
+;	P4 = 1								'ｺﾏﾝﾄﾞ範囲外
+;end if
+;
+;'通信ﾀｲﾑｱｳﾄ時間の有効範囲を確認する
+;if @DM24.D < #1 or @DM24.D > #999 then	'通信ﾀｲﾑｱｳﾄ時間の有効範囲を確認
+;	set( P3.B )							'範囲外ならｴﾗｰﾌﾗｸﾞをONする
+;	P4 = 1								'ｺﾏﾝﾄﾞ範囲外
+;end if
+;
+LD @CR2008
+NCJ #1004
+;'通信ﾎﾟｰﾄ番号の有効範囲を確認する
+;
+;if @DM4 < #1 or @DM4 > #2 then			'ﾃﾞｰﾀ数の有効範囲を確認
+;
+LD< @DM4 #1              ; 通信ﾁｬﾝﾈﾙ
+OUT @VB00
+LD> @DM4 #2              ; 通信ﾁｬﾝﾈﾙ
+OR @VB00
+NCJ #2000
+;	set( P3.B )							'範囲外ならｴﾗｰﾌﾗｸﾞをONする
+;
+LD CR2002                ; 常時ON
+SET P3                   ; ｴﾗｰﾌﾗｸﾞ
+;	P4 = 1								'ｺﾏﾝﾄﾞ範囲外
+;
+LD CR2002                ; 常時ON
+MOV #1 P4                ; ｴﾗｰ情報
+;end if
+;
+LABEL #2000
+;'通信ﾀｲﾑｱｳﾄ時間の有効範囲を確認する
+;
+;if @DM24.D < #1 or @DM24.D > #999 then	'通信ﾀｲﾑｱｳﾄ時間の有効範囲を確認
+;
+LD<.D @DM24 #1           ; 通信ﾀｲﾑｱｳﾄ時間
+OUT @VB01
+LD>.D @DM24 #999         ; 通信ﾀｲﾑｱｳﾄ時間
+OR @VB01
+NCJ #2001
+;	set( P3.B )							'範囲外ならｴﾗｰﾌﾗｸﾞをONする
+;
+LD CR2002                ; 常時ON
+SET P3                   ; ｴﾗｰﾌﾗｸﾞ
+;	P4 = 1								'ｺﾏﾝﾄﾞ範囲外
+;
+LD CR2002                ; 常時ON
+MOV #1 P4                ; ｴﾗｰ情報
+;end if
+;
+LABEL #2001
+LABEL #1004
+;
+;'通信ﾏｸﾛに使用するｱﾄﾞﾚｽを設定する
+;
+;select case @DM4				'通信ﾁｬﾝﾈﾙ
+;case 1
+;	adrset(UR0:#0,@EM0.D)		'ﾏｸﾛ開始			+0
+;	adrset(UR0:#32,@EM2.D)		'受信読出し完了		+200
+;	adrset(UR0:#80,@EM4.D)		'ﾚｽﾎﾟﾝｽ1 受信照合	+500
+;	adrset(UR0:#80,@EM6.D)		'ﾚｽﾎﾟﾝｽ2 受信照合	+500
+;	adrset(UR0:#128,@EM8.D)		'受信読出し要求		+800
+;	adrset(UR0:#160,@EM10.D)	'送信完了			+1000
+;case 2
+;	adrset(UR0:#224,@EM0.D)		'ﾏｸﾛ開始			+1400
+;	adrset(UR0:#256,@EM2.D)		'受信読出し完了		+1600
+;	adrset(UR0:#304,@EM4.D)		'ﾚｽﾎﾟﾝｽ1 受信照合	+1900
+;	adrset(UR0:#304,@EM6.D)		'ﾚｽﾎﾟﾝｽ2 受信照合	+1900
+;	adrset(UR0:#352,@EM8.D)		'受信読出し要求		+2200
+;	adrset(UR0:#384,@EM10.D)	'送信完了			+2400
+;end select
+;
+LD @CR2008
+NCJ #1001
+;'通信ﾏｸﾛに使用するｱﾄﾞﾚｽを設定する
+;
+;select case @DM4				'通信ﾁｬﾝﾈﾙ
+;
+LD CR2002                ; 常時ON
+MOV @DM4 @VM0            ; 通信ﾁｬﾝﾈﾙ
+;case 1
+;
+LD= @VM0 #1
+NCJ #2002
+;	adrset(UR0:#0,@EM0.D)		'ﾏｸﾛ開始			+0
+;
+LD CR2002                ; 常時ON
+ADRSET UR0 @EM0          ; ﾕﾆｯﾄ番号  ﾏｸﾛ開始
+;	adrset(UR0:#32,@EM2.D)		'受信読出し完了		+200
+;
+LD CR2002                ; 常時ON
+ADRSET UR0:#32 @EM2      ; ﾕﾆｯﾄ番号  受信読出完了
+;	adrset(UR0:#80,@EM4.D)		'ﾚｽﾎﾟﾝｽ1 受信照合	+500
+;
+LD CR2002                ; 常時ON
+ADRSET UR0:#80 @EM4      ; ﾕﾆｯﾄ番号  ﾚｽﾎﾟﾝｽ1受信照合
+;	adrset(UR0:#80,@EM6.D)		'ﾚｽﾎﾟﾝｽ2 受信照合	+500
+;
+LD CR2002                ; 常時ON
+ADRSET UR0:#80 @EM6      ; ﾕﾆｯﾄ番号  ﾚｽﾎﾟﾝｽ2受信照合
+;	adrset(UR0:#128,@EM8.D)		'受信読出し要求		+800
+;
+LD CR2002                ; 常時ON
+ADRSET UR0:#128 @EM8     ; ﾕﾆｯﾄ番号  受信読出要求
+;	adrset(UR0:#160,@EM10.D)	'送信完了			+1000
+;
+LD CR2002                ; 常時ON
+ADRSET UR0:#160 @EM10    ; ﾕﾆｯﾄ番号  送信完了
+LD CR2002                ; 常時ON
+CJ #2003
+LABEL #2002
+;case 2
+;
+LD= @VM0 #2
+NCJ #2004
+;	adrset(UR0:#224,@EM0.D)		'ﾏｸﾛ開始			+1400
+;
+LD CR2002                ; 常時ON
+ADRSET UR0:#224 @EM0     ; ﾕﾆｯﾄ番号  ﾏｸﾛ開始
+;	adrset(UR0:#256,@EM2.D)		'受信読出し完了		+1600
+;
+LD CR2002                ; 常時ON
+ADRSET UR0:#256 @EM2     ; ﾕﾆｯﾄ番号  受信読出完了
+;	adrset(UR0:#304,@EM4.D)		'ﾚｽﾎﾟﾝｽ1 受信照合	+1900
+;
+LD CR2002                ; 常時ON
+ADRSET UR0:#304 @EM4     ; ﾕﾆｯﾄ番号  ﾚｽﾎﾟﾝｽ1受信照合
+;	adrset(UR0:#304,@EM6.D)		'ﾚｽﾎﾟﾝｽ2 受信照合	+1900
+;
+LD CR2002                ; 常時ON
+ADRSET UR0:#304 @EM6     ; ﾕﾆｯﾄ番号  ﾚｽﾎﾟﾝｽ2受信照合
+;	adrset(UR0:#352,@EM8.D)		'受信読出し要求		+2200
+;
+LD CR2002                ; 常時ON
+ADRSET UR0:#352 @EM8     ; ﾕﾆｯﾄ番号  受信読出要求
+;	adrset(UR0:#384,@EM10.D)	'送信完了			+2400
+;
+LD CR2002                ; 常時ON
+ADRSET UR0:#384 @EM10    ; ﾕﾆｯﾄ番号  送信完了
+;end select
+;
+LABEL #2004
+LABEL #2003
+LABEL #1001
+;
+;'通信ﾏｸﾛに使用するｱﾄﾞﾚｽを設定する
+;
+;select case @DM4				'通信ﾁｬﾝﾈﾙ
+;case 1
+;	adrset(UR0:#64,@EM30.D)		'Port 動作許可			+400
+;	adrset(UR0:#65,@EM32.D)		'Port ｴﾗｰｸﾘｱ要求		+401
+;	adrset(UR0:#192,@EM34.D)	'Port 動作可能			+1200
+;	adrset(UR0:#193,@EM36.D)	'Port ｴﾗｰｸﾘｱ完了		+1201
+;	adrset(UR0:#194,@EM38.D)	'Port 受信待ちﾀｲﾑｱｳﾄｴﾗｰ	+1202
+;	adrset(UR0:#195,@EM40.D)	'Port 受信完了ﾀｲﾑｱｳﾄｴﾗｰ	+1203
+;	adrset(UR0:#200,@EM42.D)	'Port 受信照合不一致ｴﾗｰ	+1208
+;	adrset(UR0:#202,@EM44.D)	'Port ﾏｸﾛ実行ｴﾗｰ		+1210
+;	adrset(UR0:#203,@EM46.D)	'Port ﾏｸﾛﾃﾞｰﾀｴﾗｰ		+1211
+;case 2
+;	adrset(UR0:#288,@EM30.D)	'Port 動作許可			+1800
+;	adrset(UR0:#289,@EM32.D)	'Port ｴﾗｰｸﾘｱ要求		+1801
+;	adrset(UR0:#416,@EM34.D)	'Port 動作可能			+2600
+;	adrset(UR0:#417,@EM36.D)	'Port ｴﾗｰｸﾘｱ完了		+2601
+;	adrset(UR0:#418,@EM38.D)	'Port 受信待ちﾀｲﾑｱｳﾄｴﾗｰ	+2602
+;	adrset(UR0:#419,@EM40.D)	'Port 受信完了ﾀｲﾑｱｳﾄｴﾗｰ	+2603
+;	adrset(UR0:#424,@EM42.D)	'Port 受信照合不一致ｴﾗｰ	+2608
+;	adrset(UR0:#426,@EM44.D)	'Port ﾏｸﾛ実行ｴﾗｰ		+2610
+;	adrset(UR0:#427,@EM46.D)	'Port ﾏｸﾛﾃﾞｰﾀｴﾗｰ		+2611
+;end select
+LD @CR2008
+NCJ #1003
+;'通信ﾏｸﾛに使用するｱﾄﾞﾚｽを設定する
+;
+;select case @DM4				'通信ﾁｬﾝﾈﾙ
+;
+LD CR2002                ; 常時ON
+MOV @DM4 @VM1            ; 通信ﾁｬﾝﾈﾙ
+;case 1
+;
+LD= @VM1 #1
+NCJ #2005
+;	adrset(UR0:#64,@EM30.D)		'Port 動作許可			+400
+;
+LD CR2002                ; 常時ON
+ADRSET UR0:#64 @EM30     ; ﾕﾆｯﾄ番号  Port 動作許可
+;	adrset(UR0:#65,@EM32.D)		'Port ｴﾗｰｸﾘｱ要求		+401
+;
+LD CR2002                ; 常時ON
+ADRSET UR0:#65 @EM32     ; ﾕﾆｯﾄ番号  Port ｴﾗｰｸﾘｱ要求
+;	adrset(UR0:#192,@EM34.D)	'Port 動作可能			+1200
+;
+LD CR2002                ; 常時ON
+ADRSET UR0:#192 @EM34    ; ﾕﾆｯﾄ番号  Port 動作可能
+;	adrset(UR0:#193,@EM36.D)	'Port ｴﾗｰｸﾘｱ完了		+1201
+;
+LD CR2002                ; 常時ON
+ADRSET UR0:#193 @EM36    ; ﾕﾆｯﾄ番号  Port ｴﾗｰｸﾘｱ完了
+;	adrset(UR0:#194,@EM38.D)	'Port 受信待ちﾀｲﾑｱｳﾄｴﾗｰ	+1202
+;
+LD CR2002                ; 常時ON
+ADRSET UR0:#194 @EM38    ; ﾕﾆｯﾄ番号  Port 受信待ちﾀｲﾑｱｳﾄｴﾗｰ
+;	adrset(UR0:#195,@EM40.D)	'Port 受信完了ﾀｲﾑｱｳﾄｴﾗｰ	+1203
+;
+LD CR2002                ; 常時ON
+ADRSET UR0:#195 @EM40    ; ﾕﾆｯﾄ番号  Port 受信完了ﾀｲﾑｱｳﾄｴﾗｰ
+;	adrset(UR0:#200,@EM42.D)	'Port 受信照合不一致ｴﾗｰ	+1208
+;
+LD CR2002                ; 常時ON
+ADRSET UR0:#200 @EM42    ; ﾕﾆｯﾄ番号  Port 受信照合不一致ｴﾗｰ
+;	adrset(UR0:#202,@EM44.D)	'Port ﾏｸﾛ実行ｴﾗｰ		+1210
+;
+LD CR2002                ; 常時ON
+ADRSET UR0:#202 @EM44    ; ﾕﾆｯﾄ番号  Port ﾏｸﾛ実行ｴﾗｰ
+;	adrset(UR0:#203,@EM46.D)	'Port ﾏｸﾛﾃﾞｰﾀｴﾗｰ		+1211
+;
+LD CR2002                ; 常時ON
+ADRSET UR0:#203 @EM46    ; ﾕﾆｯﾄ番号  Port ﾏｸﾛﾃﾞｰﾀｴﾗｰ
+LD CR2002                ; 常時ON
+CJ #2006
+LABEL #2005
+;case 2
+;
+LD= @VM1 #2
+NCJ #2007
+;	adrset(UR0:#288,@EM30.D)	'Port 動作許可			+1800
+;
+LD CR2002                ; 常時ON
+ADRSET UR0:#288 @EM30    ; ﾕﾆｯﾄ番号  Port 動作許可
+;	adrset(UR0:#289,@EM32.D)	'Port ｴﾗｰｸﾘｱ要求		+1801
+;
+LD CR2002                ; 常時ON
+ADRSET UR0:#289 @EM32    ; ﾕﾆｯﾄ番号  Port ｴﾗｰｸﾘｱ要求
+;	adrset(UR0:#416,@EM34.D)	'Port 動作可能			+2600
+;
+LD CR2002                ; 常時ON
+ADRSET UR0:#416 @EM34    ; ﾕﾆｯﾄ番号  Port 動作可能
+;	adrset(UR0:#417,@EM36.D)	'Port ｴﾗｰｸﾘｱ完了		+2601
+;
+LD CR2002                ; 常時ON
+ADRSET UR0:#417 @EM36    ; ﾕﾆｯﾄ番号  Port ｴﾗｰｸﾘｱ完了
+;	adrset(UR0:#418,@EM38.D)	'Port 受信待ちﾀｲﾑｱｳﾄｴﾗｰ	+2602
+;
+LD CR2002                ; 常時ON
+ADRSET UR0:#418 @EM38    ; ﾕﾆｯﾄ番号  Port 受信待ちﾀｲﾑｱｳﾄｴﾗｰ
+;	adrset(UR0:#419,@EM40.D)	'Port 受信完了ﾀｲﾑｱｳﾄｴﾗｰ	+2603
+;
+LD CR2002                ; 常時ON
+ADRSET UR0:#419 @EM40    ; ﾕﾆｯﾄ番号  Port 受信完了ﾀｲﾑｱｳﾄｴﾗｰ
+;	adrset(UR0:#424,@EM42.D)	'Port 受信照合不一致ｴﾗｰ	+2608
+;
+LD CR2002                ; 常時ON
+ADRSET UR0:#424 @EM42    ; ﾕﾆｯﾄ番号  Port 受信照合不一致ｴﾗｰ
+;	adrset(UR0:#426,@EM44.D)	'Port ﾏｸﾛ実行ｴﾗｰ		+2610
+;
+LD CR2002                ; 常時ON
+ADRSET UR0:#426 @EM44    ; ﾕﾆｯﾄ番号  Port ﾏｸﾛ実行ｴﾗｰ
+;	adrset(UR0:#427,@EM46.D)	'Port ﾏｸﾛﾃﾞｰﾀｴﾗｰ		+2611
+;
+LD CR2002                ; 常時ON
+ADRSET UR0:#427 @EM46    ; ﾕﾆｯﾄ番号  Port ﾏｸﾛﾃﾞｰﾀｴﾗｰ
+;end select
+LABEL #2007
+LABEL #2006
+LABEL #1003
+;
+;'ｺﾏﾝﾄﾞの有効範囲を確認する
+;'ｺﾏﾝﾄﾞ毎に通信ﾏｸﾛ用のﾘﾚｰを設定する
+;
+;@DM0 = 2								'ﾏｸﾛｺﾏﾝﾄﾞ番号設定
+;
+;if @DM0 < #1 or @DM0 > #99 then			'ｺﾏﾝﾄﾞの有効範囲を確認
+;	set( P3.B )							'範囲外ならｴﾗｰﾌﾗｸﾞをONする
+;	P4 = 1								'ｺﾏﾝﾄﾞ範囲外
+;else
+;	@DM0 = @DM0 -1
+;	adradd( @DM0, @EM0.D )				'ﾏｸﾛ開始
+;	adradd( @DM0, @EM2.D )				'受信読出し完了
+;	adradd( ( @DM0 * #1 ), @EM4.D )		'ﾚｽﾎﾟﾝｽ1 受信照合
+;	adradd( ( @DM0 * #1 + 1 ), @EM6.D )	'ﾚｽﾎﾟﾝｽ2 受信照合
+;	adradd( @DM0, @EM8.D )				'受信読出し要求
+;	adradd( @DM0, @EM10.D )				'送信完了
+;end if
+;
+LD @CR2008
+NCJ #1002
+;'ｺﾏﾝﾄﾞの有効範囲を確認する
+;
+;'ｺﾏﾝﾄﾞ毎に通信ﾏｸﾛ用のﾘﾚｰを設定する
+;
+;@DM0 = 2								'ﾏｸﾛｺﾏﾝﾄﾞ番号設定
+;
+LD CR2002                ; 常時ON
+MOV #2 @DM0              ; ｺﾏﾝﾄﾞ番号
+;if @DM0 < #1 or @DM0 > #99 then			'ｺﾏﾝﾄﾞの有効範囲を確認
+;
+LD< @DM0 #1              ; ｺﾏﾝﾄﾞ番号
+OUT @VB02
+LD> @DM0 #99             ; ｺﾏﾝﾄﾞ番号
+OR @VB02
+NCJ #2008
+;	set( P3.B )							'範囲外ならｴﾗｰﾌﾗｸﾞをONする
+;
+LD CR2002                ; 常時ON
+SET P3                   ; ｴﾗｰﾌﾗｸﾞ
+;	P4 = 1								'ｺﾏﾝﾄﾞ範囲外
+;
+LD CR2002                ; 常時ON
+MOV #1 P4                ; ｴﾗｰ情報
+;else
+;
+LD CR2002                ; 常時ON
+CJ #2009
+LABEL #2008
+;	@DM0 = @DM0 -1
+;
+;;Warning[1103]: "=": (符号付き32ビット整数型->符号無し16ビット整数型) 代入によりデータが欠落する可能性があります。
+LD CR2002                ; 常時ON
+LDA @DM0                 ; ｺﾏﾝﾄﾞ番号
+CON
+EXT
+CON
+SUB.L +1
+CON
+STA @DM0                 ; ｺﾏﾝﾄﾞ番号
+;	adradd( @DM0, @EM0.D )				'ﾏｸﾛ開始
+;
+LD CR2002                ; 常時ON
+ADRADD.S @DM0 @EM0       ; ｺﾏﾝﾄﾞ番号  ﾏｸﾛ開始
+;	adradd( @DM0, @EM2.D )				'受信読出し完了
+;
+LD CR2002                ; 常時ON
+ADRADD.S @DM0 @EM2       ; ｺﾏﾝﾄﾞ番号  受信読出完了
+;	adradd( ( @DM0 * #1 ), @EM4.D )		'ﾚｽﾎﾟﾝｽ1 受信照合
+;
+LD CR2002                ; 常時ON
+LDA @DM0                 ; ｺﾏﾝﾄﾞ番号
+CON
+EXT
+CON
+MUL.L +1
+CON
+STA.L @VM2
+ADRADD.L @VM2 @EM4       ; ﾚｽﾎﾟﾝｽ1受信照合
+;	adradd( ( @DM0 * #1 + 1 ), @EM6.D )	'ﾚｽﾎﾟﾝｽ2 受信照合
+;
+LD CR2002                ; 常時ON
+LDA @DM0                 ; ｺﾏﾝﾄﾞ番号
+CON
+EXT
+CON
+MUL.L +1
+CON
+ADD.L +1
+CON
+STA.L @VM4
+ADRADD.L @VM4 @EM6       ; ﾚｽﾎﾟﾝｽ2受信照合
+;	adradd( @DM0, @EM8.D )				'受信読出し要求
+;
+LD CR2002                ; 常時ON
+ADRADD.S @DM0 @EM8       ; ｺﾏﾝﾄﾞ番号  受信読出要求
+;	adradd( @DM0, @EM10.D )				'送信完了
+;
+LD CR2002                ; 常時ON
+ADRADD.S @DM0 @EM10      ; ｺﾏﾝﾄﾞ番号  送信完了
+;end if
+;
+LABEL #2009
+LABEL #1002
+;
+;'送受信ﾊﾟﾗﾒｰﾀを必要としないｺﾏﾝﾄﾞ用にﾀﾞﾐｰｴﾘｱを設定する
+;@EM20=0
+;@EM21=0
+;adrset( @EM20,@EM12.D)
+;adrset( @EM21,@EM14.D)
+;
+;'送受信ﾊﾟﾗﾒｰﾀを必要とするｺﾏﾝﾄﾞは、正式な格納ｴﾘｱを再設定する
+;
+;'ｾﾞﾛﾘｾｯﾄｺﾏﾝﾄﾞ用
+;select case @DM4				'通信ﾁｬﾝﾈﾙ
+;case 1
+;	adrset(UM0:#268,@EM12.D)
+;	adrset(UM0:#277,@EM14.D)
+;case 2
+;	adrset(UM0:#2268,@EM12.D)
+;	adrset(UM0:#2277,@EM14.D)
+;end select
+;@DM1=9							'送信ﾃﾞｰﾀ数(ﾜｰﾄﾞ単位)
+;@DM2=5							'受信ﾃﾞｰﾀ数(ﾜｰﾄﾞ単位)
+;
+LD @CR2008
+NCJ #1000
+;'送受信ﾊﾟﾗﾒｰﾀを必要としないｺﾏﾝﾄﾞ用にﾀﾞﾐｰｴﾘｱを設定する
+;
+;@EM20=0
+;
+LD CR2002                ; 常時ON
+MOV #0 @EM20             ; 受信ﾃﾞｰﾀ 格納先
+;@EM21=0
+;
+LD CR2002                ; 常時ON
+MOV #0 @EM21
+;adrset( @EM20,@EM12.D)
+;
+LD CR2002                ; 常時ON
+ADRSET @EM20 @EM12       ; 受信ﾃﾞｰﾀ 格納先  送信ﾊﾟﾗﾒｰﾀ
+;adrset( @EM21,@EM14.D)
+;
+LD CR2002                ; 常時ON
+ADRSET @EM21 @EM14       ; 受信ﾊﾟﾗﾒｰﾀ
+;'送受信ﾊﾟﾗﾒｰﾀを必要とするｺﾏﾝﾄﾞは、正式な格納ｴﾘｱを再設定する
+;
+;'ｾﾞﾛﾘｾｯﾄｺﾏﾝﾄﾞ用
+;
+;select case @DM4				'通信ﾁｬﾝﾈﾙ
+;
+LD CR2002                ; 常時ON
+MOV @DM4 @VM6            ; 通信ﾁｬﾝﾈﾙ
+;case 1
+;
+LD= @VM6 #1
+NCJ #2010
+;	adrset(UM0:#268,@EM12.D)
+;
+LD CR2002                ; 常時ON
+ADRSET UM0:#268 @EM12    ; ﾕﾆｯﾄ番号  送信ﾊﾟﾗﾒｰﾀ
+;	adrset(UM0:#277,@EM14.D)
+;
+LD CR2002                ; 常時ON
+ADRSET UM0:#277 @EM14    ; ﾕﾆｯﾄ番号  受信ﾊﾟﾗﾒｰﾀ
+LD CR2002                ; 常時ON
+CJ #2011
+LABEL #2010
+;case 2
+;
+LD= @VM6 #2
+NCJ #2012
+;	adrset(UM0:#2268,@EM12.D)
+;
+LD CR2002                ; 常時ON
+ADRSET UM0:#2268 @EM12   ; ﾕﾆｯﾄ番号  送信ﾊﾟﾗﾒｰﾀ
+;	adrset(UM0:#2277,@EM14.D)
+;
+LD CR2002                ; 常時ON
+ADRSET UM0:#2277 @EM14   ; ﾕﾆｯﾄ番号  受信ﾊﾟﾗﾒｰﾀ
+;end select
+;
+LABEL #2012
+LABEL #2011
+;@DM1=9							'送信ﾃﾞｰﾀ数(ﾜｰﾄﾞ単位)
+;
+LD CR2002                ; 常時ON
+MOV #9 @DM1              ; 送信ﾃﾞｰﾀ数
+;@DM2=5							'受信ﾃﾞｰﾀ数(ﾜｰﾄﾞ単位)
+;
+LD CR2002                ; 常時ON
+MOV #5 @DM2              ; 受信ﾃﾞｰﾀ数
+LABEL #1000
+;
+;'ﾐﾆﾏﾉﾒｰﾀへｾﾞﾛﾘｾｯﾄｺﾏﾝﾄﾞを設定する
+;@DM10 = $0000
+;@DM11 = $120C
+;@DM12 = $400A
+;@DM13 = $0A00
+;@DM14 = $2020
+;@DM15 = $2020
+;@DM16 = $2030
+;@DM17 = $2E30
+;@DM18 = $A000
+;
+;'読取りｺﾏﾝﾄﾞを送信ｴﾘｱに設定する
+;bmov( @DM10,*@EM12,@DM1)
+;
+;'ﾐﾆﾏﾉﾒｰﾀから圧力値を格納するｱﾄﾞﾚｽを設定する
+;adrset( P1,@EM20.D )		'ﾃﾞｰﾀ格納先ｱﾄﾞﾚｽを設定
+;adradd( #1, @EM20.D )
+;
+;adrset( P1,@EM22.D )		'ﾃﾞｰﾀ数 格納先ｱﾄﾞﾚｽを設定
+;*@EM22.S = #0
+;
+;set( @MR0.B )				'処理開始
+;
+LD @CR2008
+NCJ #1006
+;'ﾐﾆﾏﾉﾒｰﾀへｾﾞﾛﾘｾｯﾄｺﾏﾝﾄﾞを設定する
+;
+;@DM10 = $0000
+;
+LD CR2002                ; 常時ON
+MOV $0000 @DM10          ; 送信ｺﾏﾝﾄﾞﾃﾞｰﾀ
+;@DM11 = $120C
+;
+LD CR2002                ; 常時ON
+MOV $120C @DM11
+;@DM12 = $400A
+;
+LD CR2002                ; 常時ON
+MOV $400A @DM12
+;@DM13 = $0A00
+;
+LD CR2002                ; 常時ON
+MOV $0A00 @DM13
+;@DM14 = $2020
+;
+LD CR2002                ; 常時ON
+MOV $2020 @DM14
+;@DM15 = $2020
+;
+LD CR2002                ; 常時ON
+MOV $2020 @DM15
+;@DM16 = $2030
+;
+LD CR2002                ; 常時ON
+MOV $2030 @DM16
+;@DM17 = $2E30
+;
+LD CR2002                ; 常時ON
+MOV $2E30 @DM17
+;@DM18 = $A000
+;
+LD CR2002                ; 常時ON
+MOV $A000 @DM18
+;'読取りｺﾏﾝﾄﾞを送信ｴﾘｱに設定する
+;
+;bmov( @DM10,*@EM12,@DM1)
+;
+LD CR2002                ; 常時ON
+BMOV @DM10 *@EM12 @DM1   ; 送信ｺﾏﾝﾄﾞﾃﾞｰﾀ  送信ﾊﾟﾗﾒｰﾀ  送信ﾃﾞｰﾀ数
+;'ﾐﾆﾏﾉﾒｰﾀから圧力値を格納するｱﾄﾞﾚｽを設定する
+;
+;adrset( P1,@EM20.D )		'ﾃﾞｰﾀ格納先ｱﾄﾞﾚｽを設定
+;
+LD CR2002                ; 常時ON
+ADRSET P1 @EM20          ; 受信ﾃﾞｰﾀ格先  受信ﾃﾞｰﾀ 格納先
+;adradd( #1, @EM20.D )
+;
+LD CR2002                ; 常時ON
+ADRADD.S +1 @EM20        ; 受信ﾃﾞｰﾀ 格納先
+;adrset( P1,@EM22.D )		'ﾃﾞｰﾀ数 格納先ｱﾄﾞﾚｽを設定
+;
+LD CR2002                ; 常時ON
+ADRSET P1 @EM22          ; 受信ﾃﾞｰﾀ格先  受信ﾃﾞｰﾀ数 格納先
+;*@EM22.S = #0
+;
+LD CR2002                ; 常時ON
+MOV.S +0 *@EM22          ; 受信ﾃﾞｰﾀ数 格納先
+;set( @MR0.B )				'処理開始
+;
+LD CR2002                ; 常時ON
+SET @MR000
+LABEL #1006
+;
+LD P3                    ; ｴﾗｰﾌﾗｸﾞ
+MEND
+;<<　通信マクロを起動して処理する　>>
+LD CR2002                ; 常時ON
+OUT *@EM30               ; Port 動作許可
+STG @MR000
+AND *@EM34               ; Port 動作可能
+SET *@EM0                ; ﾏｸﾛ開始
+JMP @MR001
+STG @MR001
+MPS
+ANP *@EM8                ; 受信読出要求
+MPS
+AND *@EM4                ; ﾚｽﾎﾟﾝｽ1受信照合
+DW #0 P4                 ; ｴﾗｰ情報
+CON
+MOV.S *@EM14 *@EM20      ; 受信ﾊﾟﾗﾒｰﾀ  受信ﾃﾞｰﾀ 格納先
+@INC.S *@EM22            ; 受信ﾃﾞｰﾀ数 格納先
+SET *@EM2                ; 受信読出完了
+JMP @MR002
+MPP
+AND *@EM6                ; ﾚｽﾎﾟﾝｽ2受信照合
+DW #2 P4                 ; ｴﾗｰ情報
+CON
+RES *@EM0                ; ﾏｸﾛ開始
+CON
+SET P3                   ; ｴﾗｰﾌﾗｸﾞ
+CON
+ENDS
+MPP
+AND *@EM0                ; ﾏｸﾛ開始
+MPS
+LD *@EM42                ; Port 受信照合不一致ｴﾗｰ
+OR *@EM38                ; Port 受信待ちﾀｲﾑｱｳﾄｴﾗｰ
+OR *@EM40                ; Port 受信完了ﾀｲﾑｱｳﾄｴﾗｰ
+ANL
+DW #3 P4                 ; ｴﾗｰ情報
+CON
+SET *@EM32               ; Port ｴﾗｰｸﾘｱ要求
+MRD
+LD *@EM44                ; Port ﾏｸﾛ実行ｴﾗｰ
+OR *@EM46                ; Port ﾏｸﾛﾃﾞｰﾀｴﾗｰ
+ANL
+DW #5 P4                 ; ｴﾗｰ情報
+CON
+SET *@EM32               ; Port ｴﾗｰｸﾘｱ要求
+MRD
+ANP *@EM36               ; Port ｴﾗｰｸﾘｱ完了
+RES *@EM32               ; Port ｴﾗｰｸﾘｱ要求
+CON
+RES *@EM0                ; ﾏｸﾛ開始
+CON
+SET P3                   ; ｴﾗｰﾌﾗｸﾞ
+CON
+ENDS
+MPP
+AND<> @DM24 #0           ; 通信ﾀｲﾑｱｳﾄ時間
+TMR @2 @DM24             ; 通信ﾀｲﾑｱｳﾄ時間  通信ﾀｲﾑｱｳﾄ時間
+CON
+AND @T2                  ; 通信ﾀｲﾑｱｳﾄ時間
+DW #4 P4                 ; ｴﾗｰ情報
+CON
+RES *@EM0                ; ﾏｸﾛ開始
+CON
+SET P3                   ; ｴﾗｰﾌﾗｸﾞ
+CON
+ENDS
+STG @MR002
+ANF *@EM8                ; 受信読出要求
+RES *@EM2                ; 受信読出完了
+CON
+RES *@EM0                ; ﾏｸﾛ開始
+CON
+JMP @MR010
+;<<　受信データ処理を終了する　>>
+STG @MR010
+ENDS
+MEND
+END
+ENDH

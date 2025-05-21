@@ -1,0 +1,157 @@
+DEVICE:53
+;MODULE:FFU
+;MODULE_TYPE:0
+;
+LD CR2002                ; 常時ON
+OUT @R001                ; FFU1 ON=使用
+LD CR2002                ; 常時ON
+OUT @R002                ; FFU2 ON=使用
+LD CR2003                ; 常時OFF
+OUT @R003                ; FFU3 ON=使用
+LD CR2003                ; 常時OFF
+OUT @R004                ; FFU4 ON=使用
+LD CR2003                ; 常時OFF
+OUT @R005                ; FFU5 ON=使用
+LD CR2003                ; 常時OFF
+OUT @R006                ; FFU6 ON=使用
+LD CR2003                ; 常時OFF
+OUT @R007                ; FFU7 ON=使用
+LD CR2003                ; 常時OFF
+OUT @R008                ; FFU8 ON=使用
+LD CR2003                ; 常時OFF
+OUT @R009                ; FFU9 ON=使用
+LD CR2002                ; 常時ON
+OUT R34300               ; Port2 通信許可
+;
+LD CR2008                ; 運転開始時1ｽｷｬﾝON
+DW #1 @DM11              ; FFU動作確認ﾕﾆｯﾄNo.指定
+CON
+SET @R015                ; FFU通信中
+STG @R015                ; FFU通信中
+TMH @0 #100
+CON
+AND @T0
+JMP @R100                ; FFU1 通信開始
+;<h1/>　FFU 通信
+STG @R100                ; FFU1 通信開始
+MPS
+BAND @R000 @DM11         ; FFU動作確認ﾕﾆｯﾄNo.指定
+TMR @1 #10
+CON
+AND @T1
+JMP @R101
+MPP
+BANB @R000 @DM11         ; FFU動作確認ﾕﾆｯﾄNo.指定
+JMP @R105
+LDP @R101
+DW #0 @DM10              ; FFU通信ﾏｸﾛ結果No.
+CON
+MSTRT FFU_READ @DM11 R28200 DM11500 @DM10;FFU動作確認ﾕﾆｯﾄNo.指定  Port2 通信可能  Port2 送信ﾃﾞｰﾀ  FFU通信ﾏｸﾛ結果No.
+STG @R101
+MPS
+AND= @DM10 #20           ; FFU通信ﾏｸﾛ結果No.
+JMP @R105
+MPP
+LD<> @DM10 #20           ; FFU通信ﾏｸﾛ結果No.
+AND<> @DM10 #0           ; FFU通信ﾏｸﾛ結果No.
+ANL
+JMP @R102
+;Err226 FFU通信異常
+;Err226 FFU Communication Abnormality
+STG @R102
+ANB R39004               ; ｴﾗｰ処理中
+SET R39004               ; ｴﾗｰ処理中
+CON
+DW #1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #226 @DM1             ; ErrorNo /ERROR_DISP
+CON
+LDA @DM11                ; FFU動作確認ﾕﾆｯﾄNo.指定
+CON
+ADD #5700
+CON
+STA @DM2                 ; SensorNo /ERROR_DISP
+CON
+SET @R200                ; FFU Error
+CON
+JMP @R103
+STG @R103
+AND @R201                ; FFU Error End
+RES @R201                ; FFU Error End
+CON
+RES R39004               ; ｴﾗｰ処理中
+CON
+AND @R205                ; SW1
+JMP @R100                ; FFU1 通信開始
+;
+STG @R105
+INC @DM11                ; FFU動作確認ﾕﾆｯﾄNo.指定
+CON
+JMP @R106
+STG @R106
+MPS
+AND>= @DM11 #9           ; FFU動作確認ﾕﾆｯﾄNo.指定
+JMP @R108
+MPP
+AND< @DM11 #9            ; FFU動作確認ﾕﾆｯﾄNo.指定
+JMP @R107
+STG @R107
+JMP @R100                ; FFU1 通信開始
+STG @R108
+DW #1 @DM11              ; FFU動作確認ﾕﾆｯﾄNo.指定
+CON
+JMP @R015                ; FFU通信中
+;<h1/>MyTask Error Process Substance/エラー処理実体
+STG @R200                ; FFU Error
+ANB R39002               ; ERROR_DISP Busy
+MPS
+ZRES @R205 @R208         ; SW1  SW4
+CON
+LDA @DM9                 ; ReturnSW /ERROR_DISP
+CON
+TBCD
+CON
+STA @DM8
+CON
+DISN @DM8 @DM3 #4
+MRD
+BMOV @DM0 DM60000 #7     ; TaskNo /ERROR_DISP  TaskNo /ERROR_DISP
+MPP
+SET R39000               ; ERROR_DISP Start
+CON
+SET @R202
+CON
+JMP @R203
+STG @R203
+AND R39002               ; ERROR_DISP Busy
+AND= DM60008 @DM1        ; ReturnNo /ERROR_DISP  ErrorNo /ERROR_DISP
+MPS
+AND= DM60007 @DM6        ; ReturnSW /ERROR_DISP
+SET @R205                ; SW1
+CON
+JMP @R204
+MRD
+AND= DM60007 @DM5        ; ReturnSW /ERROR_DISP
+SET @R206                ; SW2
+CON
+JMP @R204
+MRD
+AND= DM60007 @DM4        ; ReturnSW /ERROR_DISP
+SET @R207                ; SW3
+CON
+JMP @R204
+MPP
+AND= DM60007 @DM3        ; ReturnSW /ERROR_DISP
+SET @R208                ; SW4
+CON
+JMP @R204
+STG @R204
+ANB R39002               ; ERROR_DISP Busy
+RES @R202
+CON
+SET @R201                ; FFU Error End
+CON
+ENDS
+;
+END
+ENDH

@@ -1,0 +1,3405 @@
+DEVICE:53
+;MODULE:Inspection
+;MODULE_TYPE:0
+;検査ﾓｼﾞｭｰﾙ強制終了条件/Inspection module forced termination condition
+LDP MR30500              ; (TP)check force end
+ORP MR900                ; severe err：pwr rstr necessary
+MPS
+RES MR100                ; check in action
+CON
+ZRES @MR000 @MR3515      ; NG notification reservation
+MPP
+MDSTOP Inspection
+;<h1/>初期化/Initialize
+LD @CR2008
+SET MR100                ; check in action
+CON
+SET @MR100
+;検査の順番変更要望
+;→ﾘｰｸ検査→ﾊﾞﾈ、逆止弁→ﾁｮｰｸの順番
+;検査詳細/Examination details
+;<h1/>①ｲﾝｸ流路ﾘｰｸ検査/Ink flow path leakage inspection
+STG @MR100
+MPS
+LD MR310                 ; Individual operation
+ANB DM20.0               ; Inspection 1 = ON
+ANL
+JMP @MR400
+MPP
+LD MR310                 ; Individual operation
+AND DM20.0               ; Inspection 1 = ON
+ORB MR310                ; Individual operation
+ANB MR902                ; error
+ANL
+SET MR103                ; Ink flow path leakage inspection
+CON
+DW #2 EM502              ; Ink flow path leak total result
+CON
+DW #1 EM512              ; Ink flow path leak No
+CON
+JMP @MR101
+;検査ﾁｬﾝﾈﾙﾙｰﾌﾟ先頭/Inspection channel loop head
+;検査状態ﾗﾝﾌﾟ書込み：実行中/nspection status lamp write: running
+STG @MR101
+LDA EM512                ; Ink flow path leak No
+CON
+SUB #1
+CON
+STA Z1
+CON
+DW #2 EM150:Z1           ; Ink leak chk1 result
+CON
+JMP @MR102
+;検査準備/Preparation of test
+;2:高圧電空ﾚｷﾞｭﾚｰﾀｰ入口			/	2: High pressure electropneumatic regulator entrance
+;4:高圧電空ﾚｷﾞｭﾚｰﾀｰ出口			/	4: High pressure electropneumatic regulator outlet
+;5:ｲﾝｸ供給側回路					/	5: ink supply side circuit
+;7:ｲﾝｸ1供給入口					/	7: Ink 1 supply inlet
+;8:ｲﾝｸ2供給入口					/	8: Ink 2 supply inlet
+;18:ｲﾝｸ2吐出側回路				/	18: ink 2 discharge side circuit
+;19:ｲﾝｸ1吐出側回路				/	19: Ink 1 discharge side circuit
+;検査1/Inspection1
+;検査2/Inspection2
+STG @MR102
+MPS
+AND= EM512 #1            ; Ink flow path leak No
+SET MR8006               ;  flow valve 7(ON=open)
+CON
+SET MR8102               ;  flow valve 19(ON=open)
+MRD
+AND= EM512 #2            ; Ink flow path leak No
+SET MR8007               ;  flow valve 8(ON=open)
+CON
+SET MR8101               ;  flow valve 18(ON=open)
+MPP
+SET MR8001               ;  flow valve 2(ON=open)
+CON
+SET MR8003               ;  flow valve 4(ON=open)
+CON
+SET MR8004               ;  flow valve 5(ON=open)
+CON
+TMR #28 DM711            ; Awaiting preparation  Ink leak waiting preparation
+CON
+AND T28                  ; Awaiting preparation
+JMP @MR103
+;<h1/> 検査回路閉/Check valve close
+;2:高圧電空ﾚｷﾞｭﾚｰﾀｰ入口			/	2: High pressure electropneumatic regulator entrance
+;4:高圧電空ﾚｷﾞｭﾚｰﾀｰ出口			/	4: High pressure electropneumatic regulator outlet
+;5:ｲﾝｸ供給側回路					/	5: ink supply side circuit
+;11:ｲﾝｸ1供給入口大気開放			/	11: Ink 1 supply inlet Atmospheric release
+;12:ｲﾝｸ2供給入口大気開放			/	12: Ink 2 supply inlet Atmospheric release
+;15:ｲﾝｸ2吐出側大気開放			/	15: Ink 2 discharge side Atmospheric release
+;16:ｲﾝｸ1吐出側大気開放			/	16: Ink 1 discharge side Atmospheric release
+;検査1/Inspection1
+;検査2/Inspection2
+STG @MR103
+MPS
+AND= EM512 #1            ; Ink flow path leak No
+SET MR8011               ;  flow valve 12(ON=open)
+CON
+SET MR8014               ;  flow valve 15(ON=open)
+MRD
+AND= EM512 #2            ; Ink flow path leak No
+SET MR8010               ;  flow valve 11(ON=open)
+CON
+SET MR8015               ;  flow valve 16(ON=open)
+MRD
+TMR #29 #2               ; Air-op time difference
+MRD
+TMR #30 DM727            ; Ink leak after preparation  Ink leak after preparation
+MPP
+RES MR8004               ;  flow valve 5(ON=open)
+CON
+AND T29                  ; Air-op time difference
+RES MR8001               ;  flow valve 2(ON=open)
+CON
+RES MR8003               ;  flow valve 4(ON=open)
+CON
+AND T30                  ; Ink leak after preparation
+JMP @MR104
+;L側初期圧取得/Acquisition of inlet pressure on L side
+STG @MR104
+ANB MR301                ; Rside pressure acquisition
+SET MR300                ; Lside pressure acquisition
+CON
+JMP @MR105
+STG @MR105
+ANB MR300                ; Lside pressure acquisition
+LDA EM512                ; Ink flow path leak No
+CON
+SUB #1
+CON
+STA Z1
+CON
+LDA.S DM100              ; L side Pressure result
+CON
+STA.S EM50:Z1            ; Ink leak1 L_ini_pre
+CON
+JMP @MR106
+;R側初期圧力取得/Acquire initial pressure on the R side
+STG @MR106
+SET MR301                ; Rside pressure acquisition
+CON
+JMP @MR107
+STG @MR107
+ANB MR301                ; Rside pressure acquisition
+LDA EM512                ; Ink flow path leak No
+CON
+SUB #1
+CON
+STA Z1
+CON
+LDA.S DM101              ; R side Pressure result
+CON
+STA.S EM52:Z1            ; Ink leak1 R_ini_pre
+CON
+JMP @MR108
+;<h1/> 初期圧判定/Initial pressure determination
+;L側初期圧力判定/L side arrival pressure determination
+STG @MR108
+LDA EM512                ; Ink flow path leak No
+CON
+SUB #1
+CON
+STA Z1
+CON
+MPS
+LD>=.S EM50:Z1 DM715     ; Ink leak1 L_ini_pre  Ink leak L_ini_pre_L
+AND<=.S EM50:Z1 DM716    ; Ink leak1 L_ini_pre  Ink leak L_ini_pre_H
+ANL
+JMP @MR109
+MPP
+LD<.S EM50:Z1 DM715      ; Ink leak1 L_ini_pre  Ink leak L_ini_pre_L
+OR>.S EM50:Z1 DM716      ; Ink leak1 L_ini_pre  Ink leak L_ini_pre_H
+ANL
+BSET FM0:Z1 #0           ; Inquiry inspection 1NG Details
+CON
+SET MR31502              ; Err83 ink flow path leak err
+CON
+DW #4 EM150:Z1           ; Ink leak chk1 result
+CON
+JMP @MR109
+;R側初期圧力判定/R side initial pressure determination
+STG @MR109
+LDA EM512                ; Ink flow path leak No
+CON
+SUB #1
+CON
+STA Z1
+CON
+MPS
+LD>=.S EM52:Z1 DM717     ; Ink leak1 R_ini_pre  Ink leak R_ini_pre_L
+AND<=.S EM52:Z1 DM718    ; Ink leak1 R_ini_pre  Ink leak R_ini_pre_H
+ANL
+JMP @MR110
+MPP
+LD<.S EM52:Z1 DM717      ; Ink leak1 R_ini_pre  Ink leak R_ini_pre_L
+OR>.S EM52:Z1 DM718      ; Ink leak1 R_ini_pre  Ink leak R_ini_pre_H
+ANL
+BSET FM0:Z1 #1           ; Inquiry inspection 1NG Details
+CON
+SET MR31502              ; Err83 ink flow path leak err
+CON
+DW #4 EM150:Z1           ; Ink leak chk1 result
+CON
+JMP @MR110
+;都度判定の場合NG有りで終了/In case of judgment every time ending with NG
+STG @MR110
+MPS
+ANB MR31502              ; Err83 ink flow path leak err
+JMP @MR200
+MPP
+AND MR31502              ; Err83 ink flow path leak err
+MPS
+AND< EM30014 #1          ; For judgment method confirmation
+JMP @MR300
+MPP
+AND>= EM30014 #1         ; For judgment method confirmation
+JMP @MR200
+;<h1/> 検査時間待ち/Waiting for inspection time
+LDP @MR200
+SET @MR3000              ; sub1 call
+CON
+SET @MR3100              ; sub2 call
+STG @MR200
+TMR #31 DM713            ; inspection time  Ink leak chk_time
+CON
+AND T31                  ; inspection time
+SET @MR3002              ; sub1 end req
+CON
+SET @MR3102              ; sub2 end req
+CON
+JMP @MR201
+;sub1,2 END
+;Sub3 call
+STG @MR201
+AND @MR3001              ; sub1 end
+AND @MR3101              ; sub2 end
+RES @MR3001              ; sub1 end
+CON
+RES @MR3002              ; sub1 end req
+CON
+RES @MR3101              ; sub2 end
+CON
+RES @MR3102              ; sub2 end req
+CON
+MPS
+AND DM504.1              ; Memory write_measure Invalid
+JMP @MR202
+MPP
+ANB DM504.1              ; Memory write_measure Invalid
+SET @MR3200              ; sub3 call
+CON
+JMP @MR202
+;L側結果圧取得/Acquire L side result pressure
+STG @MR202
+ANB MR301                ; Rside pressure acquisition
+SET MR300                ; Lside pressure acquisition
+CON
+JMP @MR203
+STG @MR203
+ANB MR300                ; Lside pressure acquisition
+LDA EM512                ; Ink flow path leak No
+CON
+SUB #1
+CON
+STA Z1
+CON
+LDA.S DM100              ; L side Pressure result
+CON
+STA.S EM54:Z1            ; Ink leak1 L_judge_pre
+CON
+JMP @MR204
+;R側結果圧取得/Acquire R pressure result
+STG @MR204
+SET MR301                ; Rside pressure acquisition
+CON
+JMP @MR205
+STG @MR205
+ANB MR301                ; Rside pressure acquisition
+LDA EM512                ; Ink flow path leak No
+CON
+SUB #1
+CON
+STA Z1
+CON
+LDA.S DM101              ; R side Pressure result
+CON
+STA.S EM56:Z1            ; Ink leak1 R_judge_pre
+CON
+JMP @MR206
+;L側漏れ量算出/Calculation of L side leakage
+STG @MR206
+LDA EM512                ; Ink flow path leak No
+CON
+SUB #1
+CON
+STA Z1
+CON
+LDA.S EM50:Z1            ; Ink leak1 L_ini_pre
+CON
+SUB.S EM54:Z1            ; Ink leak1 L_judge_pre
+CON
+STA.S EM58:Z1            ; Ink leak1 L(before correctio
+CON
+JMP @MR207
+;R側漏れ量算出/Calculation on R side leakage
+STG @MR207
+LDA EM512                ; Ink flow path leak No
+CON
+SUB #1
+CON
+STA Z1
+CON
+LDA.S EM52:Z1            ; Ink leak1 R_ini_pre
+CON
+SUB.S EM56:Z1            ; Ink leak1 R_judge_pre
+CON
+STA.S EM60:Z1            ; Ink leak1 L(before correctio
+CON
+JMP @MR208
+;L側圧力補正値適応/Adjustment of L side pressure correction value
+STG @MR208
+LDA EM512                ; Ink flow path leak No
+CON
+SUB #1
+CON
+STA Z1
+CON
+LDA.S EM58:Z1            ; Ink leak1 L(before correctio
+CON
+SUB.S DM723:Z1           ; Ink leak L_pre_correction1
+CON
+STA.S EM62:Z1            ; Ink leak1 L(after correction
+CON
+JMP @MR209
+;R側圧力補正値適応/Adaptation of R side pressure correction value
+STG @MR209
+LDA EM512                ; Ink flow path leak No
+CON
+SUB #1
+CON
+STA Z1
+CON
+LDA.S EM60:Z1            ; Ink leak1 L(before correctio
+CON
+SUB.S DM725:Z1           ; Ink leak R_pre_correction1
+CON
+STA.S EM64:Z1            ; Ink leak1 L(after correction)
+CON
+JMP @MR210
+;<h1/> 結果判定/Judgment
+;L側漏れ圧力判定/L side leak pressure determination
+STG @MR210
+LDA EM512                ; Ink flow path leak No
+CON
+SUB #1
+CON
+STA Z1
+CON
+MPS
+LD>=.S EM62:Z1 DM719     ; Ink leak1 L(after correction  Ink leak L_judge_pre_L
+AND<=.S EM62:Z1 DM720    ; Ink leak1 L(after correction  Ink leak L_judge_pre_H
+ANL
+JMP @MR211
+MPP
+LD<.S EM62:Z1 DM719      ; Ink leak1 L(after correction  Ink leak L_judge_pre_L
+OR>.S EM62:Z1 DM720      ; Ink leak1 L(after correction  Ink leak L_judge_pre_H
+ANL
+BSET FM0:Z1 #2           ; Inquiry inspection 1NG Details
+CON
+SET MR31502              ; Err83 ink flow path leak err
+CON
+DW #4 EM150:Z1           ; Ink leak chk1 result
+CON
+JMP @MR211
+;R側漏れ圧力判定/R side leak pressure determination
+STG @MR211
+LDA EM512                ; Ink flow path leak No
+CON
+SUB #1
+CON
+STA Z1
+CON
+MPS
+LD>=.S EM64:Z1 DM721     ; Ink leak1 L(after correction)  Ink leak R_judge_pre_L
+AND<=.S EM64:Z1 DM722    ; Ink leak1 L(after correction)  Ink leak R_judge_pre_H
+ANL
+JMP @MR300
+MPP
+LD<.S EM64:Z1 DM721      ; Ink leak1 L(after correction)  Ink leak R_judge_pre_L
+OR>.S EM64:Z1 DM722      ; Ink leak1 L(after correction)  Ink leak R_judge_pre_H
+ANL
+BSET FM0:Z1 #3           ; Inquiry inspection 1NG Details
+CON
+SET MR31502              ; Err83 ink flow path leak err
+CON
+DW #4 EM150:Z1           ; Ink leak chk1 result
+CON
+JMP @MR300
+;<h1/> 大気開放:回路初期化処理/Atmospheric release: circuit initialization processing
+;NGが書かれていなければOK書込み/If NG is not written OK write 
+STG @MR300
+LDA EM512                ; Ink flow path leak No
+CON
+SUB #1
+CON
+STA Z1
+CON
+MPS
+AND<> EM150:Z1 #4        ; Ink leak chk1 result
+DW #3 EM150:Z1           ; Ink leak chk1 result
+MPP
+SET MR400                ; Atmospheric release circuit init
+CON
+JMP @MR301
+STG @MR301
+ANB MR400                ; Atmospheric release circuit init
+ANB MR301                ; Rside pressure acquisition
+SET MR300                ; Lside pressure acquisition
+CON
+JMP @MR302
+STG @MR302
+ANB MR300                ; Lside pressure acquisition
+SET MR301                ; Rside pressure acquisition
+CON
+JMP @MR303
+;sub3 END
+STG @MR303
+ANB MR301                ; Rside pressure acquisition
+MPS
+ANB @MR3214              ; Sub3act
+JMP @MR304
+MPP
+LD @MR3214               ; Sub3act
+AND @MR3201              ; sub3 end
+ANL
+RES @MR3214              ; Sub3act
+CON
+RES @MR3201              ; sub3 end
+CON
+RES @MR3202              ; sub3 end req
+CON
+JMP @MR304
+;都度判定の場合NG有りで終了/In case of judgment every time ending with NG
+STG @MR304
+MPS
+ANB MR31502              ; Err83 ink flow path leak err
+JMP @MR305
+MPP
+AND MR31502              ; Err83 ink flow path leak err
+MPS
+AND< EM30014 #1          ; For judgment method confirmation
+JMP @MR307
+MPP
+AND>= EM30014 #1         ; For judgment method confirmation
+JMP @MR305
+;検査回数終了？/End of inspection number?
+STG @MR305
+MPS
+AND>= EM512 #2           ; Ink flow path leak No
+JMP @MR307
+MPP
+AND< EM512 #2            ; Ink flow path leak No
+JMP @MR306
+STG @MR306
+INC EM512                ; Ink flow path leak No
+CON
+JMP @MR101
+;検査総合結果書込み/Inspection total result write
+STG @MR307
+RES MR103                ; Ink flow path leakage inspection
+CON
+SET TM90.1
+CON
+MPS
+ANB MR31502              ; Err83 ink flow path leak err
+DW #3 EM502              ; Ink flow path leak total result
+CON
+JMP @MR400
+MPP
+AND MR31502              ; Err83 ink flow path leak err
+SET @MR000               ; NG notification reservation
+CON
+DW #4 EM502              ; Ink flow path leak total result
+CON
+MPS
+AND< EM30014 #1          ; For judgment method confirmation
+JMP @MR2900
+MPP
+AND>= EM30014 #1         ; For judgment method confirmation
+JMP @MR400
+;<h1/>②圧空経路ﾘｰｸ検査/Compressed air path leakage inspection
+STG @MR400
+MPS
+AND MR30000              ; (TP)automatic choosing
+JMP @MR700
+MPP
+ANB MR30000              ; (TP)automatic choosing
+MPS
+LD MR310                 ; Individual operation
+ANB DM20.1               ; Inspection 2 = ON
+ANL
+JMP @MR700
+MPP
+LD MR310                 ; Individual operation
+AND DM20.1               ; Inspection 2 = ON
+ORB MR310                ; Individual operation
+ANB MR902                ; error
+ANL
+SET MR104                ; Pneumatic leak check
+CON
+DW #2 EM503              ; Pneumatic leak result
+CON
+DW #1 EM513              ; Pneumatic leak No
+CON
+JMP @MR401
+;検査ﾁｬﾝﾈﾙﾙｰﾌﾟ先頭/Inspection channel loop head
+;検査状態ﾗﾝﾌﾟ書込み：実行中/nspection status lamp write: running
+STG @MR401
+LDA EM513                ; Pneumatic leak No
+CON
+SUB #1
+CON
+STA Z1
+CON
+DW #2 EM160:Z1           ; P leak chk1 result
+CON
+JMP @MR402
+;検査準備/Preparation of test
+;2:高圧電空ﾚｷﾞｭﾚｰﾀｰ入口			/	2: High pressure electropneumatic regulator entrance
+;4:高圧電空ﾚｷﾞｭﾚｰﾀｰ出口			/	4: High pressure electropneumatic regulator outlet
+;5:ｲﾝｸ供給側回路					/	5: ink supply side circuit
+;9:圧力供給口出口回路			/	9: Pressure supply outlet circuit
+;13:圧力供給口出口L				/	13: Pressure supply outlet L
+;14:圧力供給口出口R				/	14: pressure supply outlet R
+;20:圧力供給口入口側回路			/	20: Pressure supply port entrance side circuit
+;検査1/Inspection1
+;検査2/Inspection2
+STG @MR402
+MPS
+AND= EM513 #1            ; Pneumatic leak No
+SET MR8012               ;  flow valve 13(ON=open)
+MRD
+AND= EM513 #2            ; Pneumatic leak No
+SET MR8013               ;  flow valve 14(ON=open)
+MPP
+SET MR8001               ;  flow valve 2(ON=open)
+CON
+SET MR8003               ;  flow valve 4(ON=open)
+CON
+SET MR8004               ;  flow valve 5(ON=open)
+CON
+SET MR8008               ;  flow valve 9(ON=open)
+CON
+SET MR8103               ;  flow valve 20(ON=open)
+CON
+TMR #32 DM741            ; Awaiting preparation  P leak waiting preparation
+CON
+AND T32                  ; Awaiting preparation
+JMP @MR403
+;<h1/> 検査回路閉/Check valve close
+;2:高圧電空ﾚｷﾞｭﾚｰﾀｰ入口			/	2: High pressure electropneumatic regulator entrance
+;4:高圧電空ﾚｷﾞｭﾚｰﾀｰ出口			/	4: High pressure electropneumatic regulator outlet
+;5:ｲﾝｸ供給側回路					/	5: ink supply side circuit
+;検査1/Inspection1
+;検査2/Inspection2
+STG @MR403
+TMR #33 #2               ; Air-op time difference
+TMR #34 DM757            ; after preparation  P leak after preparation
+RES MR8004               ;  flow valve 5(ON=open)
+CON
+AND T33                  ; Air-op time difference
+RES MR8001               ;  flow valve 2(ON=open)
+CON
+RES MR8003               ;  flow valve 4(ON=open)
+CON
+AND T34                  ; after preparation
+JMP @MR404
+;L側初期圧取得/Acquisition of inlet pressure on L side
+STG @MR404
+ANB MR301                ; Rside pressure acquisition
+SET MR300                ; Lside pressure acquisition
+CON
+JMP @MR405
+STG @MR405
+ANB MR300                ; Lside pressure acquisition
+LDA EM513                ; Pneumatic leak No
+CON
+SUB #1
+CON
+STA Z1
+CON
+LDA.S DM100              ; L side Pressure result
+CON
+STA.S EM70:Z1            ; P leak1 L_ini_pre
+CON
+JMP @MR406
+;R側初期圧力取得/Acquire initial pressure on the R side
+STG @MR406
+SET MR301                ; Rside pressure acquisition
+CON
+JMP @MR407
+STG @MR407
+ANB MR301                ; Rside pressure acquisition
+LDA EM513                ; Pneumatic leak No
+CON
+SUB #1
+CON
+STA Z1
+CON
+LDA.S DM101              ; R side Pressure result
+CON
+STA.S EM72:Z1            ; P leak1 R_ini_pre
+CON
+JMP @MR408
+;<h1/> 初期圧判定/Initial pressure determination
+;L側初期圧力判定/L side arrival pressure determination
+STG @MR408
+LDA EM513                ; Pneumatic leak No
+CON
+SUB #1
+CON
+STA Z1
+CON
+MPS
+LD>=.S EM70:Z1 DM745     ; P leak1 L_ini_pre  P leak L_ini_pre_L
+AND<=.S EM70:Z1 DM746    ; P leak1 L_ini_pre  P leak L_ini_pre_H
+ANL
+JMP @MR409
+MPP
+LD<.S EM70:Z1 DM745      ; P leak1 L_ini_pre  P leak L_ini_pre_L
+OR>.S EM70:Z1 DM746      ; P leak1 L_ini_pre  P leak L_ini_pre_H
+ANL
+BSET FM2:Z1 #0           ; Pressure leak detection 1 NG Det
+CON
+SET MR31503              ; Err84 Pneumatic path leak err
+CON
+DW #4 EM160:Z1           ; P leak chk1 result
+CON
+JMP @MR409
+;R側初期圧力判定/R side initial pressure determination
+STG @MR409
+LDA EM513                ; Pneumatic leak No
+CON
+SUB #1
+CON
+STA Z1
+CON
+MPS
+LD>=.S EM72:Z1 DM747     ; P leak1 R_ini_pre  P leak R_ini_pre_L
+AND<=.S EM72:Z1 DM748    ; P leak1 R_ini_pre  P leak R_ini_pre_H
+ANL
+JMP @MR410
+MPP
+LD<.S EM72:Z1 DM747      ; P leak1 R_ini_pre  P leak R_ini_pre_L
+OR>.S EM72:Z1 DM748      ; P leak1 R_ini_pre  P leak R_ini_pre_H
+ANL
+BSET FM2:Z1 #1           ; Pressure leak detection 1 NG Det
+CON
+SET MR31503              ; Err84 Pneumatic path leak err
+CON
+DW #4 EM160:Z1           ; P leak chk1 result
+CON
+JMP @MR410
+;都度判定の場合NG有りで終了/In case of judgment every time ending with NG
+STG @MR410
+MPS
+ANB MR31503              ; Err84 Pneumatic path leak err
+JMP @MR500
+MPP
+AND MR31503              ; Err84 Pneumatic path leak err
+MPS
+AND< EM30014 #1          ; For judgment method confirmation
+JMP @MR600
+MPP
+AND>= EM30014 #1         ; For judgment method confirmation
+JMP @MR500
+;<h1/> 検査時間待ち/Waiting for inspection time
+LDP @MR500
+SET @MR3000              ; sub1 call
+CON
+SET @MR3100              ; sub2 call
+STG @MR500
+TMR #35 DM743            ; inspection time  P leak chk_time
+CON
+AND T35                  ; inspection time
+SET @MR3002              ; sub1 end req
+CON
+SET @MR3102              ; sub2 end req
+CON
+JMP @MR501
+;sub1,2 END
+;Sub3 call
+STG @MR501
+AND @MR3001              ; sub1 end
+AND @MR3101              ; sub2 end
+RES @MR3001              ; sub1 end
+CON
+RES @MR3002              ; sub1 end req
+CON
+RES @MR3101              ; sub2 end
+CON
+RES @MR3102              ; sub2 end req
+CON
+MPS
+AND DM504.1              ; Memory write_measure Invalid
+JMP @MR502
+MPP
+ANB DM504.1              ; Memory write_measure Invalid
+SET @MR3200              ; sub3 call
+CON
+JMP @MR502
+;L側結果圧取得/Acquire L side result pressure
+STG @MR502
+ANB MR301                ; Rside pressure acquisition
+SET MR300                ; Lside pressure acquisition
+CON
+JMP @MR503
+STG @MR503
+ANB MR300                ; Lside pressure acquisition
+LDA EM513                ; Pneumatic leak No
+CON
+SUB #1
+CON
+STA Z1
+CON
+LDA.S DM100              ; L side Pressure result
+CON
+STA.S EM74:Z1            ; P leak1 L_judge_pre
+CON
+JMP @MR504
+;R側結果圧取得/Acquire R side pressure result
+STG @MR504
+SET MR301                ; Rside pressure acquisition
+CON
+JMP @MR505
+STG @MR505
+ANB MR301                ; Rside pressure acquisition
+LDA EM513                ; Pneumatic leak No
+CON
+SUB #1
+CON
+STA Z1
+CON
+LDA.S DM101              ; R side Pressure result
+CON
+STA.S EM76:Z1            ; P leak1 R_judge_pre
+CON
+JMP @MR506
+;L側漏れ量算出/Calculation of L side leakage
+STG @MR506
+LDA EM513                ; Pneumatic leak No
+CON
+SUB #1
+CON
+STA Z1
+CON
+LDA.S EM70:Z1            ; P leak1 L_ini_pre
+CON
+SUB.S EM74:Z1            ; P leak1 L_judge_pre
+CON
+STA.S EM78:Z1            ; P leak1 L(before correction)
+CON
+JMP @MR507
+;R側漏れ量算出/Calculation on R side leakage
+STG @MR507
+LDA EM513                ; Pneumatic leak No
+CON
+SUB #1
+CON
+STA Z1
+CON
+LDA.S EM72:Z1            ; P leak1 R_ini_pre
+CON
+SUB.S EM76:Z1            ; P leak1 R_judge_pre
+CON
+STA.S EM80:Z1            ; P leak1 L(before correction)
+CON
+JMP @MR508
+;L側圧力補正値適応/Adjustment of L side pressure correction value
+STG @MR508
+LDA EM513                ; Pneumatic leak No
+CON
+SUB #1
+CON
+STA Z1
+CON
+LDA.S EM78:Z1            ; P leak1 L(before correction)
+CON
+SUB.S DM753:Z1           ; P leak L_pre_correction1
+CON
+STA.S EM82:Z1            ; P leak1 L(after correction)
+CON
+JMP @MR509
+;R側圧力補正値適応/Adaptation of R side pressure correction value
+STG @MR509
+LDA EM513                ; Pneumatic leak No
+CON
+SUB #1
+CON
+STA Z1
+CON
+LDA.S EM80:Z1            ; P leak1 L(before correction)
+CON
+SUB.S DM755:Z1           ; P leak R_pre_correction1
+CON
+STA.S EM84:Z1            ; P leak1 L(after correction)
+CON
+JMP @MR510
+;<h1/> 結果判定/Judgment
+;L側漏れ圧力判定/L side leak pressure determination
+STG @MR510
+LDA EM513                ; Pneumatic leak No
+CON
+SUB #1
+CON
+STA Z1
+CON
+MPS
+LD>=.S EM82:Z1 DM749     ; P leak1 L(after correction)  P leak L_judge_pre_L
+AND<=.S EM82:Z1 DM750    ; P leak1 L(after correction)  P leak L_judge_pre_H
+ANL
+JMP @MR511
+MPP
+LD<.S EM82:Z1 DM749      ; P leak1 L(after correction)  P leak L_judge_pre_L
+OR>.S EM82:Z1 DM750      ; P leak1 L(after correction)  P leak L_judge_pre_H
+ANL
+BSET FM2:Z1 #2           ; Pressure leak detection 1 NG Det
+CON
+SET MR31503              ; Err84 Pneumatic path leak err
+CON
+DW #4 EM160:Z1           ; P leak chk1 result
+CON
+JMP @MR511
+;R側漏れ圧力判定/R side leak pressure determination
+STG @MR511
+LDA EM513                ; Pneumatic leak No
+CON
+SUB #1
+CON
+STA Z1
+CON
+MPS
+LD>=.S EM84:Z1 DM751     ; P leak1 L(after correction)  P leak R_judge_pre_L
+AND<=.S EM84:Z1 DM752    ; P leak1 L(after correction)  P leak R_judge_pre_H
+ANL
+JMP @MR600
+MPP
+LD<.S EM84:Z1 DM751      ; P leak1 L(after correction)  P leak R_judge_pre_L
+OR>.S EM84:Z1 DM752      ; P leak1 L(after correction)  P leak R_judge_pre_H
+ANL
+BSET FM2:Z1 #3           ; Pressure leak detection 1 NG Det
+CON
+SET MR31503              ; Err84 Pneumatic path leak err
+CON
+DW #4 EM160:Z1           ; P leak chk1 result
+CON
+JMP @MR600
+;<h1/> 大気開放:回路初期化処理/Atmospheric release: circuit initialization processing
+;NGが書かれていなければOK書込み/If NG is not written OK write 
+STG @MR600
+LDA EM513                ; Pneumatic leak No
+CON
+SUB #1
+CON
+STA Z1
+CON
+MPS
+AND<> EM160:Z1 #4        ; P leak chk1 result
+DW #3 EM160:Z1           ; P leak chk1 result
+MPP
+SET MR400                ; Atmospheric release circuit init
+CON
+JMP @MR601
+STG @MR601
+ANB MR400                ; Atmospheric release circuit init
+ANB MR301                ; Rside pressure acquisition
+SET MR300                ; Lside pressure acquisition
+CON
+JMP @MR602
+STG @MR602
+ANB MR300                ; Lside pressure acquisition
+SET MR301                ; Rside pressure acquisition
+CON
+JMP @MR603
+;sub3 END
+STG @MR603
+ANB MR301                ; Rside pressure acquisition
+MPS
+ANB @MR3214              ; Sub3act
+JMP @MR604
+MPP
+LD @MR3214               ; Sub3act
+AND @MR3201              ; sub3 end
+ANL
+RES @MR3214              ; Sub3act
+CON
+RES @MR3201              ; sub3 end
+CON
+RES @MR3202              ; sub3 end req
+CON
+JMP @MR604
+;都度判定の場合NG有りで終了/In case of judgment every time ending with NG
+STG @MR604
+MPS
+ANB MR31503              ; Err84 Pneumatic path leak err
+JMP @MR605
+MPP
+AND MR31503              ; Err84 Pneumatic path leak err
+MPS
+AND< EM30014 #1          ; For judgment method confirmation
+JMP @MR607
+MPP
+AND>= EM30014 #1         ; For judgment method confirmation
+JMP @MR605
+;検査回数終了？/End of inspection number?
+STG @MR605
+MPS
+AND>= EM513 #2           ; Pneumatic leak No
+JMP @MR607
+MPP
+AND< EM513 #2            ; Pneumatic leak No
+JMP @MR606
+STG @MR606
+INC EM513                ; Pneumatic leak No
+CON
+JMP @MR401
+;検査総合結果書込み/Inspection total result write
+STG @MR607
+RES MR104                ; Pneumatic leak check
+CON
+SET TM90.2
+CON
+MPS
+ANB MR31503              ; Err84 Pneumatic path leak err
+DW #3 EM503              ; Pneumatic leak result
+CON
+JMP @MR700
+MPP
+AND MR31503              ; Err84 Pneumatic path leak err
+SET @MR000               ; NG notification reservation
+CON
+DW #4 EM503              ; Pneumatic leak result
+CON
+MPS
+AND< EM30014 #1          ; For judgment method confirmation
+JMP @MR2900
+MPP
+AND>= EM30014 #1         ; For judgment method confirmation
+JMP @MR700
+;<h1/>③ﾀﾞｲﾔﾌﾗﾑ部押えﾊﾞﾈ有無検査/Diaphragm part presser spring presence inspection
+;※2019/9/30
+;ﾊﾞﾈ有無検査無効化/TP該当SW表示類は画面外に退避してあります。
+;Invalidity Diaphragm part presser spring presence inspection / TP corresponding SW display is saved outside the screen.
+STG @MR700
+MPS
+AND CR2002               ; always on
+JMP @MR1000
+MPP
+AND CR2003               ; always off
+MPS
+LD MR310                 ; Individual operation
+ANB DM20.2               ; Inspection 3 = ON
+ANL
+JMP @MR1000
+MPP
+LD MR310                 ; Individual operation
+AND DM20.2               ; Inspection 3 = ON
+ORB MR310                ; Individual operation
+ANB MR902                ; error
+ANL
+SET MR101                ; Spring Inspection
+CON
+DW #2 EM500              ; Presser spring overall result
+CON
+DW #1 EM510              ; Presser spring No
+CON
+JMP @MR701
+;検査ﾁｬﾝﾈﾙﾙｰﾌﾟ先頭/Inspection channel loop head
+;検査状態ﾗﾝﾌﾟ書込み：実行中/nspection status lamp write: running
+STG @MR701
+LDA EM510                ; Presser spring No
+CON
+SUB #1
+CON
+STA Z1
+CON
+DW #2 EM130:Z1           ; Spring chk1 result
+CON
+JMP @MR702
+;検査準備/Preparation of test
+;1:低圧電空ﾚｷﾞｭﾚｰﾀｰ入口			/	1: Low pressure electropneumatic regulator entrance
+;3:低圧電空ﾚｷﾞｭﾚｰﾀｰ出口			/	3: Low pressure electropneumatic regulator outlet
+;5:ｲﾝｸ供給側回路					/	5: ink supply side circuit
+;18:ｲﾝｸ2吐出側回路				/	18: ink 2 discharge side circuit
+;19:ｲﾝｸ1吐出側回路				/	19: Ink 1 discharge side circuit
+;検査1/Inspection1
+;検査2/Inspection2
+STG @MR702
+MPS
+AND= EM510 #1            ; Presser spring No
+SET MR8102               ;  flow valve 19(ON=open)
+MRD
+AND= EM510 #2            ; Presser spring No
+SET MR8101               ;  flow valve 18(ON=open)
+MPP
+SET MR8000               ;  flow valve 1(ON=open)
+CON
+SET MR8002               ;  flow valve 3(ON=open)
+CON
+SET MR8004               ;  flow valve 5(ON=open)
+CON
+TMR #20 DM651            ; Spring inspection preparation  Spring chk waiting preparation
+CON
+AND T20                  ; Spring inspection preparation
+JMP @MR703
+;L側初期圧取得/Acquisition of inlet pressure on L side
+STG @MR703
+ANB MR301                ; Rside pressure acquisition
+SET MR300                ; Lside pressure acquisition
+CON
+JMP @MR704
+STG @MR704
+ANB MR300                ; Lside pressure acquisition
+LDA EM510                ; Presser spring No
+CON
+SUB #1
+CON
+STA Z1
+CON
+LDA.S DM100              ; L side Pressure result
+CON
+STA.S EM0:Z1             ; Spring chk1 L_ini_pre
+CON
+JMP @MR705
+;R側初期圧力取得/Acquire initial pressure on the R side
+STG @MR705
+SET MR301                ; Rside pressure acquisition
+CON
+JMP @MR706
+STG @MR706
+ANB MR301                ; Rside pressure acquisition
+LDA EM510                ; Presser spring No
+CON
+SUB #1
+CON
+STA Z1
+CON
+LDA.S DM101              ; R side Pressure result
+CON
+STA.S EM2:Z1             ; Spring chk1 R_ini_pre
+CON
+JMP @MR707
+;<h1/> 初期圧判定/Initial pressure determination
+;L側初期圧力判定/L side arrival pressure determination
+STG @MR707
+LDA EM510                ; Presser spring No
+CON
+SUB #1
+CON
+STA Z1
+CON
+MPS
+LD>=.S EM0:Z1 DM655      ; Spring chk1 L_ini_pre  Spring chk L_ini_pre_L
+AND<=.S EM0:Z1 DM656     ; Spring chk1 L_ini_pre  Spring chk L_ini_pre_H
+ANL
+JMP @MR708
+MPP
+LD<.S EM0:Z1 DM655       ; Spring chk1 L_ini_pre  Spring chk L_ini_pre_L
+OR>.S EM0:Z1 DM656       ; Spring chk1 L_ini_pre  Spring chk L_ini_pre_H
+ANL
+BSET FM4:Z1 #0           ; Spring test 1 NG Details
+CON
+SET MR31500              ; Err81 Crimp spring inspection er
+CON
+DW #4 EM130:Z1           ; Spring chk1 result
+CON
+JMP @MR708
+;R側初期圧力判定/R side initial pressure determination
+STG @MR708
+LDA EM510                ; Presser spring No
+CON
+SUB #1
+CON
+STA Z1
+CON
+MPS
+LD>=.S EM2:Z1 DM657      ; Spring chk1 R_ini_pre  Spring chk R_ini_pre_L
+AND<=.S EM2:Z1 DM658     ; Spring chk1 R_ini_pre  Spring chk R_ini_pre_H
+ANL
+JMP @MR709
+MPP
+LD<.S EM2:Z1 DM657       ; Spring chk1 R_ini_pre  Spring chk R_ini_pre_L
+OR>.S EM2:Z1 DM658       ; Spring chk1 R_ini_pre  Spring chk R_ini_pre_H
+ANL
+BSET FM4:Z1 #1           ; Spring test 1 NG Details
+CON
+SET MR31500              ; Err81 Crimp spring inspection er
+CON
+DW #4 EM130:Z1           ; Spring chk1 result
+CON
+JMP @MR709
+;都度判定の場合NG有りで終了/In case of judgment every time ending with NG
+STG @MR709
+MPS
+ANB MR31500              ; Err81 Crimp spring inspection er
+JMP @MR710
+MPP
+AND MR31500              ; Err81 Crimp spring inspection er
+MPS
+AND< EM30014 #1          ; For judgment method confirmation
+JMP @MR900
+MPP
+AND>= EM30014 #1         ; For judgment method confirmation
+JMP @MR710
+STG @MR710
+TMR #21 DM663            ; after preparation  Spring chk after preparation
+CON
+AND T21                  ; after preparation
+JMP @MR800
+;<h1/> 検査回路開/Check valve open
+LDP @MR800
+SET @MR3000              ; sub1 call
+CON
+SET @MR3100              ; sub2 call
+;7:ｲﾝｸ1供給入口					/	7: Ink 1 supply inlet
+;8:ｲﾝｸ2供給入口					/	8: Ink 2 supply inlet
+;検査1/Inspection1
+;検査2/Inspection2
+STG @MR800
+MPS
+AND= EM510 #1            ; Presser spring No
+SET MR8006               ;  flow valve 7(ON=open)
+MRD
+AND= EM510 #2            ; Presser spring No
+SET MR8007               ;  flow valve 8(ON=open)
+MPP
+TMR #22 DM653            ; Waiting for presser spring check  Spring chk time
+CON
+AND T22                  ; Waiting for presser spring check
+SET @MR3002              ; sub1 end req
+CON
+SET @MR3102              ; sub2 end req
+CON
+JMP @MR801
+;sub1,2 END
+;Sub3 call
+STG @MR801
+AND @MR3001              ; sub1 end
+AND @MR3101              ; sub2 end
+RES @MR3001              ; sub1 end
+CON
+RES @MR3002              ; sub1 end req
+CON
+RES @MR3101              ; sub2 end
+CON
+RES @MR3102              ; sub2 end req
+CON
+MPS
+AND DM504.1              ; Memory write_measure Invalid
+JMP @MR802
+MPP
+ANB DM504.1              ; Memory write_measure Invalid
+SET @MR3200              ; sub3 call
+CON
+JMP @MR802
+;L側結果圧取得/Acquire L side result pressure
+STG @MR802
+ANB MR301                ; Rside pressure acquisition
+SET MR300                ; Lside pressure acquisition
+CON
+JMP @MR803
+STG @MR803
+ANB MR300                ; Lside pressure acquisition
+LDA EM510                ; Presser spring No
+CON
+SUB #1
+CON
+STA Z1
+CON
+LDA.S DM100              ; L side Pressure result
+CON
+STA.S EM4:Z1             ; Spring chk1 L_judge_pre
+CON
+JMP @MR804
+;R側結果圧取得/Acquire R side pressure result
+STG @MR804
+SET MR301                ; Rside pressure acquisition
+CON
+JMP @MR805
+STG @MR805
+ANB MR301                ; Rside pressure acquisition
+LDA EM510                ; Presser spring No
+CON
+SUB #1
+CON
+STA Z1
+CON
+LDA.S DM101              ; R side Pressure result
+CON
+STA.S EM6:Z1             ; Spring chk1 R_judge_pre
+CON
+JMP @MR806
+;R側圧力増加算出/Calculate R side pressure increase
+STG @MR806
+LDA EM510                ; Presser spring No
+CON
+SUB #1
+CON
+STA Z1
+CON
+MPS
+AND<.S EM6:Z1 EM2:Z1     ; Spring chk1 R_judge_pre  Spring chk1 R_ini_pre
+DW #0 EM8:Z1             ; Spring chk1 R_inc_pre
+CON
+JMP @MR807
+MPP
+AND>=.S EM6:Z1 EM2:Z1    ; Spring chk1 R_judge_pre  Spring chk1 R_ini_pre
+LDA.S EM6:Z1             ; Spring chk1 R_judge_pre
+CON
+SUB.S EM2:Z1             ; Spring chk1 R_ini_pre
+CON
+STA.S EM8:Z1             ; Spring chk1 R_inc_pre
+CON
+JMP @MR807
+;<h1/> 結果判定/Judgment
+;L側到達圧力判定/L side arrival pressure determination
+STG @MR807
+LDA EM510                ; Presser spring No
+CON
+SUB #1
+CON
+STA Z1
+CON
+MPS
+LD>=.S EM4:Z1 DM659      ; Spring chk1 L_judge_pre  Spring chk L_judge_pre_L
+AND<=.S EM4:Z1 DM660     ; Spring chk1 L_judge_pre  Spring chk L_judge_pre_H
+ANL
+JMP @MR808
+MPP
+LD<.S EM4:Z1 DM659       ; Spring chk1 L_judge_pre  Spring chk L_judge_pre_L
+OR>.S EM4:Z1 DM660       ; Spring chk1 L_judge_pre  Spring chk L_judge_pre_H
+ANL
+BSET FM4:Z1 #2           ; Spring test 1 NG Details
+CON
+SET MR31500              ; Err81 Crimp spring inspection er
+CON
+DW #4 EM130:Z1           ; Spring chk1 result
+CON
+JMP @MR808
+;R側増加圧力判定/R side increase pressure determination
+STG @MR808
+LDA EM510                ; Presser spring No
+CON
+SUB #1
+CON
+STA Z1
+CON
+MPS
+LD>=.S EM8:Z1 DM661      ; Spring chk1 R_inc_pre  Spring chk R_judge_pre_L
+AND<=.S EM8:Z1 DM662     ; Spring chk1 R_inc_pre  Spring chk R_judge_pre_H
+ANL
+JMP @MR900
+MPP
+LD<.S EM8:Z1 DM661       ; Spring chk1 R_inc_pre  Spring chk R_judge_pre_L
+OR>.S EM8:Z1 DM662       ; Spring chk1 R_inc_pre  Spring chk R_judge_pre_H
+ANL
+BSET FM4:Z1 #3           ; Spring test 1 NG Details
+CON
+SET MR31500              ; Err81 Crimp spring inspection er
+CON
+DW #4 EM130:Z1           ; Spring chk1 result
+CON
+JMP @MR900
+;<h1/> 大気開放:回路初期化処理/Atmospheric release: circuit initialization processing
+;NGが書かれていなければOK書込み/If NG is not written OK write 
+STG @MR900
+LDA EM510                ; Presser spring No
+CON
+SUB #1
+CON
+STA Z1
+CON
+MPS
+AND<> EM130:Z1 #4        ; Spring chk1 result
+DW #3 EM130:Z1           ; Spring chk1 result
+MPP
+SET MR400                ; Atmospheric release circuit init
+CON
+JMP @MR901
+STG @MR901
+ANB MR400                ; Atmospheric release circuit init
+ANB MR301                ; Rside pressure acquisition
+SET MR300                ; Lside pressure acquisition
+CON
+JMP @MR902
+STG @MR902
+ANB MR300                ; Lside pressure acquisition
+SET MR301                ; Rside pressure acquisition
+CON
+JMP @MR903
+;sub3 END
+STG @MR903
+ANB MR301                ; Rside pressure acquisition
+MPS
+ANB @MR3214              ; Sub3act
+JMP @MR904
+MPP
+LD @MR3214               ; Sub3act
+AND @MR3201              ; sub3 end
+ANL
+RES @MR3214              ; Sub3act
+CON
+RES @MR3201              ; sub3 end
+CON
+RES @MR3202              ; sub3 end req
+CON
+JMP @MR904
+;都度判定の場合NG有りで終了/In case of judgment every time ending with NG
+STG @MR904
+MPS
+ANB MR31500              ; Err81 Crimp spring inspection er
+JMP @MR905
+MPP
+AND MR31500              ; Err81 Crimp spring inspection er
+MPS
+AND< EM30014 #1          ; For judgment method confirmation
+JMP @MR907
+MPP
+AND>= EM30014 #1         ; For judgment method confirmation
+JMP @MR905
+;検査回数終了？/End of inspection number?
+STG @MR905
+MPS
+AND>= EM510 #2           ; Presser spring No
+JMP @MR907
+MPP
+AND< EM510 #2            ; Presser spring No
+JMP @MR906
+STG @MR906
+INC EM510                ; Presser spring No
+CON
+JMP @MR701
+;検査総合結果書込み/Inspection total result write
+STG @MR907
+RES MR101                ; Spring Inspection
+CON
+SET TM90.3
+CON
+MPS
+ANB MR31500              ; Err81 Crimp spring inspection er
+DW #3 EM500              ; Presser spring overall result
+CON
+JMP @MR1000
+MPP
+AND MR31500              ; Err81 Crimp spring inspection er
+SET @MR000               ; NG notification reservation
+CON
+DW #4 EM500              ; Presser spring overall result
+CON
+MPS
+AND< EM30014 #1          ; For judgment method confirmation
+JMP @MR2900
+MPP
+AND>= EM30014 #1         ; For judgment method confirmation
+JMP @MR1000
+;<h1/>④逆止弁(ｱﾝﾌﾞﾚﾗ弁)機能検査/Check valve (umbrella valve) Function test
+STG @MR1000
+MPS
+LD MR310                 ; Individual operation
+ANB DM20.3               ; Inspection 4 = ON
+ANL
+JMP @MR1900
+MPP
+LD MR310                 ; Individual operation
+AND DM20.3               ; Inspection 4 = ON
+ORB MR310                ; Individual operation
+ANB MR902                ; error
+ANL
+SET MR102                ; Check valve checking in progress
+CON
+DW #2 EM501              ; Check valve test overall result
+CON
+DW #1 EM511              ; Check valve test No
+CON
+JMP @MR1001
+;検査ﾁｬﾝﾈﾙﾙｰﾌﾟ先頭/Inspection channel loop head
+;検査状態ﾗﾝﾌﾟ書込み：実行中/nspection status lamp write: running
+STG @MR1001
+LDA EM511                ; Check valve test No
+CON
+SUB #1
+CON
+STA Z1
+CON
+DW #2 EM140:Z1           ; Valve chk1 result
+CON
+JMP @MR1002
+;<h1/> 充填/charge
+;検査準備/Preparation of test
+;1:低圧電空ﾚｷﾞｭﾚｰﾀｰ入口			/	1: Low pressure electropneumatic regulator entrance
+;3:低圧電空ﾚｷﾞｭﾚｰﾀｰ出口			/	3: Low pressure electropneumatic regulator outlet
+;5:ｲﾝｸ供給側回路					/	5: ink supply side circuit
+;7:ｲﾝｸ1供給入口					/	7: Ink 1 supply inlet
+;8:ｲﾝｸ2供給入口					/	8: Ink 2 supply inlet
+;9:圧力供給口出口回路			/	9: Pressure supply outlet circuit
+;18:ｲﾝｸ2吐出側回路				/	18: ink 2 discharge side circuit
+;19:ｲﾝｸ1吐出側回路				/	19: Ink 1 discharge side circuit
+;検査1/Inspection1
+;検査2/Inspection2
+STG @MR1002
+MPS
+AND= EM511 #1            ; Check valve test No
+SET MR8006               ;  flow valve 7(ON=open)
+CON
+SET MR8102               ;  flow valve 19(ON=open)
+MRD
+AND= EM511 #2            ; Check valve test No
+SET MR8007               ;  flow valve 8(ON=open)
+CON
+SET MR8101               ;  flow valve 18(ON=open)
+MPP
+SET MR8000               ;  flow valve 1(ON=open)
+CON
+SET MR8002               ;  flow valve 3(ON=open)
+CON
+SET MR8004               ;  flow valve 5(ON=open)
+CON
+TMR #23 DM672            ; Valve chk charge time  Valve chk charge time
+CON
+AND T23                  ; Valve chk charge time
+JMP @MR1003
+;L側初期圧取得/Acquisition of inlet pressure on L side
+STG @MR1003
+ANB MR301                ; Rside pressure acquisition
+SET MR300                ; Lside pressure acquisition
+CON
+JMP @MR1004
+STG @MR1004
+ANB MR300                ; Lside pressure acquisition
+LDA EM511                ; Check valve test No
+CON
+SUB #1
+CON
+STA Z1
+CON
+LDA.S DM100              ; L side Pressure result
+CON
+STA.S EM20:Z1            ; Valve chk charge pre L result1
+CON
+JMP @MR1005
+;R側初期圧力取得/Acquire initial pressure on the R side
+STG @MR1005
+SET MR301                ; Rside pressure acquisition
+CON
+JMP @MR1006
+STG @MR1006
+ANB MR301                ; Rside pressure acquisition
+LDA EM511                ; Check valve test No
+CON
+SUB #1
+CON
+STA Z1
+CON
+LDA.S DM101              ; R side Pressure result
+CON
+STA.S EM22:Z1            ; Valve chk charge pre R result1
+CON
+JMP @MR1007
+;<h1/> -充填中圧力判定/Charge pressure judgment
+;L側初期圧力判定/L side arrival pressure determination
+STG @MR1007
+LDA EM511                ; Check valve test No
+CON
+SUB #1
+CON
+STA Z1
+CON
+MPS
+LD>=.S EM20:Z1 DM676     ; Valve chk charge pre L result1  Valve chk charge pre L low
+AND<=.S EM20:Z1 DM677    ; Valve chk charge pre L result1  Valve chk charge pre L hi
+ANL
+JMP @MR1008
+MPP
+LD<.S EM20:Z1 DM676      ; Valve chk charge pre L result1  Valve chk charge pre L low
+OR>.S EM20:Z1 DM677      ; Valve chk charge pre L result1  Valve chk charge pre L hi
+ANL
+BSET FM6:Z1 #0           ; Non-return inspection 1 NG Detai
+CON
+SET MR31501              ; Err82 Check valve err
+CON
+DW #4 EM140:Z1           ; Valve chk1 result
+CON
+JMP @MR1008
+;R 側初期圧力判定/R side initial pressure determination
+STG @MR1008
+LDA EM511                ; Check valve test No
+CON
+SUB #1
+CON
+STA Z1
+CON
+MPS
+LD>=.S EM22:Z1 DM678     ; Valve chk charge pre R result1  Valve chk charge pre R low
+AND<=.S EM22:Z1 DM679    ; Valve chk charge pre R result1  Valve chk charge pre R hi
+ANL
+JMP @MR1009
+MPP
+LD<.S EM22:Z1 DM678      ; Valve chk charge pre R result1  Valve chk charge pre R low
+OR>.S EM22:Z1 DM679      ; Valve chk charge pre R result1  Valve chk charge pre R hi
+ANL
+BSET FM6:Z1 #1           ; Non-return inspection 1 NG Detai
+CON
+SET MR31501              ; Err82 Check valve err
+CON
+DW #4 EM140:Z1           ; Valve chk1 result
+CON
+JMP @MR1009
+;都度判定の場合NG有りで終了/In case of judgment every time ending with NG
+STG @MR1009
+MPS
+ANB MR31501              ; Err82 Check valve err
+JMP @MR1100
+MPP
+AND MR31501              ; Err82 Check valve err
+MPS
+AND< EM30014 #1          ; For judgment method confirmation
+JMP @MR1800
+MPP
+AND>= EM30014 #1         ; For judgment method confirmation
+JMP @MR1100
+;<h1/> -充填回路閉/charge valve close
+;1:低圧電空ﾚｷﾞｭﾚｰﾀｰ入口			/	1: Low pressure electropneumatic regulator entrance
+;3:低圧電空ﾚｷﾞｭﾚｰﾀｰ出口			/	3: Low pressure electropneumatic regulator outlet
+;5:ｲﾝｸ供給側回路					/	5: ink supply side circuit
+;検査1/Inspection1
+;検査2/Inspection2
+STG @MR1100
+RES MR8004               ;  flow valve 5(ON=open)
+CON
+TMR @0 #2
+CON
+AND @T0
+RES MR8000               ;  flow valve 1(ON=open)
+CON
+RES MR8002               ;  flow valve 3(ON=open)
+CON
+JMP @MR1101
+STG @MR1101
+TMR #24 DM674            ; Valve chk after charge time  Valve chk after charge time
+CON
+AND T24                  ; Valve chk after charge time
+JMP @MR1102
+;L側結果圧取得/Acquire L side result pressure
+STG @MR1102
+ANB MR301                ; Rside pressure acquisition
+SET MR300                ; Lside pressure acquisition
+CON
+JMP @MR1103
+STG @MR1103
+ANB MR300                ; Lside pressure acquisition
+LDA EM511                ; Check valve test No
+CON
+SUB #1
+CON
+STA Z1
+CON
+LDA.S DM100              ; L side Pressure result
+CON
+STA.S EM24:Z1            ; Valve chk after charge pre L re1
+CON
+JMP @MR1104
+;R側結果圧取得/Acquire R side pressure result
+STG @MR1104
+SET MR301                ; Rside pressure acquisition
+CON
+JMP @MR1105
+STG @MR1105
+ANB MR301                ; Rside pressure acquisition
+LDA EM511                ; Check valve test No
+CON
+SUB #1
+CON
+STA Z1
+CON
+LDA.S DM101              ; R side Pressure result
+CON
+STA.S EM26:Z1            ; Valve chk after charge pre R re1
+CON
+JMP @MR1107
+;<h1/> -充填結果判定/charge result Judgment
+;L側圧力判定/L side pressure determination
+STG @MR1107
+LDA EM511                ; Check valve test No
+CON
+SUB #1
+CON
+STA Z1
+CON
+MPS
+LD>=.S EM24:Z1 DM680     ; Valve chk after charge pre L re1  Valve chk after charge pre L low
+AND<=.S EM24:Z1 DM681    ; Valve chk after charge pre L re1  Valve chk after charge pre L hi
+ANL
+JMP @MR1108
+MPP
+LD<.S EM24:Z1 DM680      ; Valve chk after charge pre L re1  Valve chk after charge pre L low
+OR>.S EM24:Z1 DM681      ; Valve chk after charge pre L re1  Valve chk after charge pre L hi
+ANL
+BSET FM6:Z1 #2           ; Non-return inspection 1 NG Detai
+CON
+SET MR31501              ; Err82 Check valve err
+CON
+DW #4 EM140:Z1           ; Valve chk1 result
+CON
+JMP @MR1108
+;R側圧力判定/R side pressure determination
+STG @MR1108
+LDA EM511                ; Check valve test No
+CON
+SUB #1
+CON
+STA Z1
+CON
+MPS
+LD>=.S EM26:Z1 DM682     ; Valve chk after charge pre R re1  Valve chk after charge pre R low
+AND<=.S EM26:Z1 DM683    ; Valve chk after charge pre R re1  Valve chk after charge pre R hi
+ANL
+JMP @MR1109
+MPP
+LD<.S EM26:Z1 DM682      ; Valve chk after charge pre R re1  Valve chk after charge pre R low
+OR>.S EM26:Z1 DM683      ; Valve chk after charge pre R re1  Valve chk after charge pre R hi
+ANL
+BSET FM6:Z1 #3           ; Non-return inspection 1 NG Detai
+CON
+SET MR31501              ; Err82 Check valve err
+CON
+DW #4 EM140:Z1           ; Valve chk1 result
+CON
+JMP @MR1109
+;都度判定の場合NG有りで終了/In case of judgment every time ending with NG
+STG @MR1109
+MPS
+ANB MR31501              ; Err82 Check valve err
+JMP @MR1200
+MPP
+AND MR31501              ; Err82 Check valve err
+MPS
+AND< EM30014 #1          ; For judgment method confirmation
+JMP @MR1800
+MPP
+AND>= EM30014 #1         ; For judgment method confirmation
+JMP @MR1200
+;<h1/> 大気開放/release
+;検査準備/Preparation of test
+;11:ｲﾝｸ1供給入口大気開放			/	11: Ink 1 supply inlet Atmospheric release
+;12:ｲﾝｸ2供給入口大気開放			/	12: Ink 2 supply inlet Atmospheric release
+;検査1/Inspection1
+;検査2/Inspection2
+STG @MR1200
+MPS
+AND= EM511 #1            ; Check valve test No
+SET MR8010               ;  flow valve 11(ON=open)
+MRD
+AND= EM511 #2            ; Check valve test No
+SET MR8011               ;  flow valve 12(ON=open)
+MPP
+TMR #25 DM684            ; Valve chk release time  Valve chk release time
+CON
+AND T25                  ; Valve chk release time
+JMP @MR1201
+;L側大気開放後初期圧取得/Initial pressure boost after opening to atmosphere L side
+STG @MR1201
+ANB MR301                ; Rside pressure acquisition
+SET MR300                ; Lside pressure acquisition
+CON
+JMP @MR1202
+STG @MR1202
+ANB MR300                ; Lside pressure acquisition
+LDA EM511                ; Check valve test No
+CON
+SUB #1
+CON
+STA Z1
+CON
+LDA.S DM100              ; L side Pressure result
+CON
+STA.S EM28:Z1            ; Valve chk release pre L result1
+CON
+JMP @MR1203
+;R側大気開放後初期圧力取得/Initial pressure boost after opening to atmosphere R side
+STG @MR1203
+SET MR301                ; Rside pressure acquisition
+CON
+JMP @MR1204
+STG @MR1204
+ANB MR301                ; Rside pressure acquisition
+MPS
+LDA EM511                ; Check valve test No
+CON
+SUB #1
+CON
+STA Z1
+CON
+LDA.S DM101              ; R side Pressure result
+CON
+STA.S EM30:Z1            ; Valve chk release pre R result1
+MPP
+LDA.S EM26:Z1            ; Valve chk after charge pre R re1
+CON
+SUB.S EM30:Z1            ; Valve chk release pre R result1
+CON
+STA.S EM32:Z1            ; Valve chk release leak R result1
+CON
+JMP @MR1205
+;<h1/> -大気開放圧判定/release pressure determination
+;L側判定/L side determination
+STG @MR1205
+LDA EM511                ; Check valve test No
+CON
+SUB #1
+CON
+STA Z1
+CON
+MPS
+LD>=.S EM28:Z1 DM688     ; Valve chk release pre L result1  Valve chk release pre L low
+AND<=.S EM28:Z1 DM689    ; Valve chk release pre L result1  Valve chk release pre L hi
+ANL
+JMP @MR1206
+MPP
+LD<.S EM28:Z1 DM688      ; Valve chk release pre L result1  Valve chk release pre L low
+OR>.S EM28:Z1 DM689      ; Valve chk release pre L result1  Valve chk release pre L hi
+ANL
+BSET FM6:Z1 #4           ; Non-return inspection 1 NG Detai
+CON
+SET MR31501              ; Err82 Check valve err
+CON
+DW #4 EM140:Z1           ; Valve chk1 result
+CON
+JMP @MR1206
+;R側判定/R side determination
+STG @MR1206
+LDA EM511                ; Check valve test No
+CON
+SUB #1
+CON
+STA Z1
+CON
+MPS
+LD>=.S EM32:Z1 DM690     ; Valve chk release leak R result1  Valve chk release leak R low
+AND<=.S EM32:Z1 DM691    ; Valve chk release leak R result1  Valve chk release leak R hi
+ANL
+JMP @MR1207
+MPP
+LD<.S EM32:Z1 DM690      ; Valve chk release leak R result1  Valve chk release leak R low
+OR>.S EM32:Z1 DM691      ; Valve chk release leak R result1  Valve chk release leak R hi
+ANL
+BSET FM6:Z1 #5           ; Non-return inspection 1 NG Detai
+CON
+SET MR31501              ; Err82 Check valve err
+CON
+DW #4 EM140:Z1           ; Valve chk1 result
+CON
+JMP @MR1207
+;都度判定の場合NG有りで終了/In case of judgment every time ending with NG
+STG @MR1207
+MPS
+ANB MR31501              ; Err82 Check valve err
+JMP @MR1300
+MPP
+AND MR31501              ; Err82 Check valve err
+MPS
+AND< EM30014 #1          ; For judgment method confirmation
+JMP @MR1800
+MPP
+AND>= EM30014 #1         ; For judgment method confirmation
+JMP @MR1300
+;<h1/> 大気開放閉/release close
+;検査準備/Preparation of test
+;11:ｲﾝｸ1供給入口大気開放			/	11: Ink 1 supply inlet Atmospheric release
+;12:ｲﾝｸ2供給入口大気開放			/	12: Ink 2 supply inlet Atmospheric release
+;検査1/Inspection1
+;検査2/Inspection2
+STG @MR1300
+MPS
+AND= EM511 #1            ; Check valve test No
+RES MR8010               ;  flow valve 11(ON=open)
+MRD
+AND= EM511 #2            ; Check valve test No
+RES MR8011               ;  flow valve 12(ON=open)
+MPP
+TMR #26 DM686            ; Valve chk after release time  Valve chk after release time
+CON
+AND T26                  ; Valve chk after release time
+JMP @MR1301
+;L側結果圧取得/Acquire L side result pressure
+STG @MR1301
+ANB MR301                ; Rside pressure acquisition
+SET MR300                ; Lside pressure acquisition
+CON
+JMP @MR1302
+STG @MR1302
+ANB MR300                ; Lside pressure acquisition
+LDA EM511                ; Check valve test No
+CON
+SUB #1
+CON
+STA Z1
+CON
+LDA.S DM100              ; L side Pressure result
+CON
+STA.S EM34:Z1            ; Valve chk afterrelease pre L re1
+CON
+JMP @MR1303
+;R側結果圧取得/Acquire R side pressure result
+STG @MR1303
+SET MR301                ; Rside pressure acquisition
+CON
+JMP @MR1304
+STG @MR1304
+ANB MR301                ; Rside pressure acquisition
+LDA EM511                ; Check valve test No
+CON
+SUB #1
+CON
+STA Z1
+CON
+LDA.S DM101              ; R side Pressure result
+CON
+STA.S EM36:Z1            ; Valve chk afterrelease pre R re1
+CON
+JMP @MR1305
+;R側漏れ量算出/Calculation on R side leakage
+STG @MR1305
+LDA EM511                ; Check valve test No
+CON
+SUB #1
+CON
+STA Z1
+CON
+LDA.S EM30:Z1            ; Valve chk release pre R result1
+CON
+SUB.S EM36:Z1            ; Valve chk afterrelease pre R re1
+CON
+STA.S EM38:Z1            ; Valve chk afterelease leak R re1
+CON
+JMP @MR1309
+;<h1/> -開放結果判定/after release Judgment
+;L側増加圧力判定/L side increase pressure determination
+STG @MR1309
+LDA EM511                ; Check valve test No
+CON
+SUB #1
+CON
+STA Z1
+CON
+MPS
+LD>=.S EM34:Z1 DM692     ; Valve chk afterrelease pre L re1  Valve chk afterrelease pre L low
+AND<=.S EM34:Z1 DM693    ; Valve chk afterrelease pre L re1  Valve chk afterrelease pre L hi
+ANL
+JMP @MR1310
+MPP
+LD<.S EM34:Z1 DM692      ; Valve chk afterrelease pre L re1  Valve chk afterrelease pre L low
+OR>.S EM34:Z1 DM693      ; Valve chk afterrelease pre L re1  Valve chk afterrelease pre L hi
+ANL
+BSET FM6:Z1 #6           ; Non-return inspection 1 NG Detai
+CON
+SET MR31501              ; Err82 Check valve err
+CON
+DW #4 EM140:Z1           ; Valve chk1 result
+CON
+JMP @MR1310
+;R側漏れ量判定/R side leakage judgment
+STG @MR1310
+LDA EM511                ; Check valve test No
+CON
+SUB #1
+CON
+STA Z1
+CON
+MPS
+LD>=.S EM38:Z1 DM694     ; Valve chk afterelease leak R re1  Valve chk afterelease leak R low
+AND<=.S EM38:Z1 DM695    ; Valve chk afterelease leak R re1  Valve chk afterrelease leak R hi
+ANL
+JMP @MR1311
+MPP
+LD<.S EM38:Z1 DM694      ; Valve chk afterelease leak R re1  Valve chk afterelease leak R low
+OR>.S EM38:Z1 DM695      ; Valve chk afterelease leak R re1  Valve chk afterrelease leak R hi
+ANL
+BSET FM6:Z1 #7           ; Non-return inspection 1 NG Detai
+CON
+SET MR31501              ; Err82 Check valve err
+CON
+DW #4 EM140:Z1           ; Valve chk1 result
+CON
+JMP @MR1311
+;都度判定の場合NG有りで終了/In case of judgment every time ending with NG
+STG @MR1311
+MPS
+ANB MR31501              ; Err82 Check valve err
+JMP @MR1400
+MPP
+AND MR31501              ; Err82 Check valve err
+MPS
+AND< EM30014 #1          ; For judgment method confirmation
+JMP @MR1800
+MPP
+AND>= EM30014 #1         ; For judgment method confirmation
+JMP @MR1400
+;<h1/> 微小ﾘｰｸ検査/micro leak check
+STG @MR1400
+SET @MR3000              ; sub1 call
+CON
+SET @MR3100              ; sub2 call
+CON
+JMP @MR1401
+STG @MR1401
+TMR #27 DM696            ; Valve chk micro leak time  Valve chk micro leak time
+CON
+AND T27                  ; Valve chk micro leak time
+SET @MR3002              ; sub1 end req
+CON
+SET @MR3102              ; sub2 end req
+CON
+JMP @MR1402
+;sub1,2 END
+;Sub3 call
+STG @MR1402
+AND @MR3001              ; sub1 end
+AND @MR3101              ; sub2 end
+RES @MR3001              ; sub1 end
+CON
+RES @MR3002              ; sub1 end req
+CON
+RES @MR3101              ; sub2 end
+CON
+RES @MR3102              ; sub2 end req
+CON
+MPS
+AND DM504.1              ; Memory write_measure Invalid
+JMP @MR1403
+MPP
+ANB DM504.1              ; Memory write_measure Invalid
+SET @MR3200              ; sub3 call
+CON
+JMP @MR1403
+;L側結果圧取得/Acquire L side result pressure
+STG @MR1403
+ANB MR301                ; Rside pressure acquisition
+SET MR300                ; Lside pressure acquisition
+CON
+JMP @MR1404
+STG @MR1404
+ANB MR300                ; Lside pressure acquisition
+LDA EM511                ; Check valve test No
+CON
+SUB #1
+CON
+STA Z1
+CON
+LDA.S DM100              ; L side Pressure result
+CON
+STA.S EM40:Z1            ; Valve chk micro leak L pre resu1
+CON
+JMP @MR1405
+;R側結果圧取得/Acquire R side pressure result
+STG @MR1405
+SET MR301                ; Rside pressure acquisition
+CON
+JMP @MR1406
+STG @MR1406
+ANB MR301                ; Rside pressure acquisition
+LDA EM511                ; Check valve test No
+CON
+SUB #1
+CON
+STA Z1
+CON
+LDA.S DM101              ; R side Pressure result
+CON
+STA.S EM44:Z1            ; Valve chk micro leak R pre resu1
+CON
+JMP @MR1407
+;L側増加量算出/L side Increase calculation
+STG @MR1407
+LDA EM511                ; Check valve test No
+CON
+SUB #1
+CON
+STA Z1
+CON
+LDA.S EM40:Z1            ; Valve chk micro leak L pre resu1
+CON
+SUB.S EM34:Z1            ; Valve chk afterrelease pre L re1
+CON
+STA.S EM42:Z1            ; Valve chk micro leak L incpre r1
+CON
+JMP @MR1408
+;R側漏れ量算出/R side leak calculation
+STG @MR1408
+LDA EM511                ; Check valve test No
+CON
+SUB #1
+CON
+STA Z1
+CON
+LDA.S EM36:Z1            ; Valve chk afterrelease pre R re1
+CON
+SUB.S EM44:Z1            ; Valve chk micro leak R pre resu1
+CON
+STA.S EM46:Z1            ; Valve chk micro leak R leak res1
+CON
+JMP @MR1500
+;<h1/> -微小ﾘｰｸ判定/micro leak Judgment
+;L側増加圧力判定/L side increase pressure determination
+STG @MR1500
+LDA EM511                ; Check valve test No
+CON
+SUB #1
+CON
+STA Z1
+CON
+MPS
+LD>=.S EM42:Z1 DM698     ; Valve chk micro leak L incpre r1  Valve chk micro leak L inc low
+AND<=.S EM42:Z1 DM699    ; Valve chk micro leak L incpre r1  Valve chk micro leak L inc hi
+ANL
+JMP @MR1501
+MPP
+LD<.S EM42:Z1 DM698      ; Valve chk micro leak L incpre r1  Valve chk micro leak L inc low
+OR>.S EM42:Z1 DM699      ; Valve chk micro leak L incpre r1  Valve chk micro leak L inc hi
+ANL
+BSET FM6:Z1 #8           ; Non-return inspection 1 NG Detai
+CON
+SET MR31501              ; Err82 Check valve err
+CON
+DW #4 EM140:Z1           ; Valve chk1 result
+CON
+JMP @MR1501
+;R側漏れ量判定/R side leakage judgment
+STG @MR1501
+LDA EM511                ; Check valve test No
+CON
+SUB #1
+CON
+STA Z1
+CON
+MPS
+LD>=.S EM46:Z1 DM700     ; Valve chk micro leak R leak res1  Valve chk micro leak R leak low
+AND<=.S EM46:Z1 DM701    ; Valve chk micro leak R leak res1  Valve chk micro leak R leak hi
+ANL
+JMP @MR1800
+MPP
+LD<.S EM46:Z1 DM700      ; Valve chk micro leak R leak res1  Valve chk micro leak R leak low
+OR>.S EM46:Z1 DM701      ; Valve chk micro leak R leak res1  Valve chk micro leak R leak hi
+ANL
+BSET FM6:Z1 #9           ; Non-return inspection 1 NG Detai
+CON
+SET MR31501              ; Err82 Check valve err
+CON
+DW #4 EM140:Z1           ; Valve chk1 result
+CON
+JMP @MR1800
+;<h1/> 大気開放:回路初期化処理/Atmospheric release: circuit initialization processing
+;NGが書かれていなければOK書込み/If NG is not written OK write 
+STG @MR1800
+LDA EM511                ; Check valve test No
+CON
+SUB #1
+CON
+STA Z1
+CON
+MPS
+AND<> EM140:Z1 #4        ; Valve chk1 result
+DW #3 EM140:Z1           ; Valve chk1 result
+MPP
+SET MR400                ; Atmospheric release circuit init
+CON
+JMP @MR1801
+STG @MR1801
+ANB MR400                ; Atmospheric release circuit init
+ANB MR301                ; Rside pressure acquisition
+SET MR300                ; Lside pressure acquisition
+CON
+JMP @MR1802
+STG @MR1802
+ANB MR300                ; Lside pressure acquisition
+SET MR301                ; Rside pressure acquisition
+CON
+JMP @MR1803
+;sub3 END
+STG @MR1803
+ANB MR301                ; Rside pressure acquisition
+MPS
+ANB @MR3214              ; Sub3act
+JMP @MR1804
+MPP
+LD @MR3214               ; Sub3act
+AND @MR3201              ; sub3 end
+ANL
+RES @MR3214              ; Sub3act
+CON
+RES @MR3201              ; sub3 end
+CON
+RES @MR3202              ; sub3 end req
+CON
+JMP @MR1804
+;都度判定の場合NG有りで終了/In case of judgment every time ending with NG
+STG @MR1804
+MPS
+ANB MR31501              ; Err82 Check valve err
+JMP @MR1805
+MPP
+AND MR31501              ; Err82 Check valve err
+MPS
+AND< EM30014 #1          ; For judgment method confirmation
+JMP @MR1807
+MPP
+AND>= EM30014 #1         ; For judgment method confirmation
+JMP @MR1805
+;検査回数終了？/End of inspection number?
+STG @MR1805
+MPS
+AND>= EM511 #2           ; Check valve test No
+JMP @MR1807
+MPP
+AND< EM511 #2            ; Check valve test No
+JMP @MR1806
+STG @MR1806
+INC EM511                ; Check valve test No
+CON
+JMP @MR1001
+;検査総合結果書込み/Inspection total result write
+STG @MR1807
+RES MR102                ; Check valve checking in progress
+CON
+SET TM90.4
+CON
+MPS
+ANB MR31501              ; Err82 Check valve err
+DW #3 EM501              ; Check valve test overall result
+CON
+JMP @MR1900
+MPP
+AND MR31501              ; Err82 Check valve err
+SET @MR000               ; NG notification reservation
+CON
+DW #4 EM501              ; Check valve test overall result
+CON
+MPS
+AND< EM30014 #1          ; For judgment method confirmation
+JMP @MR2900
+MPP
+AND>= EM30014 #1         ; For judgment method confirmation
+JMP @MR1900
+;<h1/>⑤ﾁｮｰｸ開放検査/Choke open inspection
+STG @MR1900
+MPS
+LD MR310                 ; Individual operation
+ANB DM20.4               ; Inspection 5 = ON
+ANL
+JMP @MR2800
+MPP
+LD MR310                 ; Individual operation
+AND DM20.4               ; Inspection 5 = ON
+ORB MR310                ; Individual operation
+ANB MR902                ; error
+ANL
+SET MR105                ; Chalk open test in progress
+CON
+DW #2 EM504              ; Choke open comprehension result
+CON
+DW #1 EM514              ; Choke open comprehension No
+CON
+JMP @MR1901
+;検査ﾁｬﾝﾈﾙﾙｰﾌﾟ先頭/Inspection channel loop head
+;検査状態ﾗﾝﾌﾟ書込み：実行中/nspection status lamp write: running
+STG @MR1901
+LDA EM514                ; Choke open comprehension No
+CON
+SUB #1
+CON
+STA Z1
+CON
+DW #2 EM170:Z1           ; Choke chk1 result
+CON
+JMP @MR1902
+;検査準備/Preparation of test
+;7:ｲﾝｸ1供給入口					/	7: Ink 1 supply inlet
+;8:ｲﾝｸ2供給入口					/	8: Ink 2 supply inlet
+;18:ｲﾝｸ2吐出側回路				/	18: ink 2 discharge side circuit
+;19:ｲﾝｸ1吐出側回路				/	19: Ink 1 discharge side circuit
+;21:真空ﾎﾟﾝﾌﾟ回路				/	21: Vacuum pump circuit
+;検査1/Inspection1
+;検査2/Inspection2
+STG @MR1902
+MPS
+AND= EM514 #1            ; Choke open comprehension No
+SET MR8006               ;  flow valve 7(ON=open)
+CON
+SET MR8102               ;  flow valve 19(ON=open)
+MRD
+AND= EM514 #2            ; Choke open comprehension No
+SET MR8007               ;  flow valve 8(ON=open)
+CON
+SET MR8101               ;  flow valve 18(ON=open)
+MPP
+SET MR500                ; Vacuum pump ON
+CON
+SET MR8104               ;  flow valve 21(ON=open)
+CON
+TMR #36 DM771            ; Awaiting preparation  Choke chk waiting preparation
+CON
+AND T36                  ; Awaiting preparation
+JMP @MR1903
+;<h1/> 検査回路閉/Check valve close
+;真空値記録/Vacuum value recording
+LDP @MR1903
+LDA EM514                ; Choke open comprehension No
+CON
+SUB #1
+CON
+STA Z1
+CON
+LDA.S DM45               ; Present value of vacuum pump
+CON
+STA.S EM106:Z1           ; Choke chk1 Vacuum sensor value
+;21:真空ﾎﾟﾝﾌﾟ回路				/	21: Vacuum pump circuit
+;22:真空ﾎﾟﾝﾌﾟ大気開放			/	22: Vacuum pump open to atmosphere
+;検査1/Inspection1
+;検査2/Inspection2
+STG @MR1903
+TMR #37 #2               ; Air-op time difference
+TMR #38 DM794            ; after preparation  Choke chk after preparation
+RES MR8104               ;  flow valve 21(ON=open)
+CON
+AND T37                  ; Air-op time difference
+RES MR500                ; Vacuum pump ON
+CON
+SET MR8105               ;  flow valve 22(ON=open)
+CON
+AND T38                  ; after preparation
+JMP @MR1904
+;L側初期圧取得/Acquisition of inlet pressure on L side
+STG @MR1904
+ANB MR301                ; Rside pressure acquisition
+SET MR300                ; Lside pressure acquisition
+CON
+JMP @MR1905
+STG @MR1905
+ANB MR300                ; Lside pressure acquisition
+LDA EM514                ; Choke open comprehension No
+CON
+SUB #1
+CON
+STA Z1
+CON
+LDA.S DM100              ; L side Pressure result
+CON
+STA.S EM90:Z1            ; Choke chk1 L_ini_pre
+CON
+JMP @MR1906
+;R側初期圧力取得/Acquire initial pressure on the R side
+STG @MR1906
+SET MR301                ; Rside pressure acquisition
+CON
+JMP @MR1907
+STG @MR1907
+ANB MR301                ; Rside pressure acquisition
+LDA EM514                ; Choke open comprehension No
+CON
+SUB #1
+CON
+STA Z1
+CON
+LDA.S DM101              ; R side Pressure result
+CON
+STA.S EM92:Z1            ; Choke chk1 R_ini_pre
+CON
+JMP @MR1908
+;<h1/> 初期圧判定/Initial pressure determination
+;L側初期圧力判定/L side arrival pressure determination
+STG @MR1908
+LDA EM514                ; Choke open comprehension No
+CON
+SUB #1
+CON
+STA Z1
+CON
+MPS
+LD>=.S EM90:Z1 DM775     ; Choke chk1 L_ini_pre  Choke chk L_ini_pre_L
+AND<=.S EM90:Z1 DM776    ; Choke chk1 L_ini_pre  Choke chk L_ini_pre_H
+ANL
+JMP @MR1909
+MPP
+LD<.S EM90:Z1 DM775      ; Choke chk1 L_ini_pre  Choke chk L_ini_pre_L
+OR>.S EM90:Z1 DM776      ; Choke chk1 L_ini_pre  Choke chk L_ini_pre_H
+ANL
+BSET FM8:Z1 #0           ; Chalk inspection 1 NG Details
+CON
+SET MR31504              ; Err85 Choke open test err
+CON
+DW #4 EM170:Z1           ; Choke chk1 result
+CON
+JMP @MR1909
+;R側初期圧力判定/R side initial pressure determination
+STG @MR1909
+LDA EM514                ; Choke open comprehension No
+CON
+SUB #1
+CON
+STA Z1
+CON
+MPS
+LD>=.S EM92:Z1 DM777     ; Choke chk1 R_ini_pre  Choke chk R_ini_pre_L
+AND<=.S EM92:Z1 DM778    ; Choke chk1 R_ini_pre  Choke chk R_ini_pre_H
+ANL
+JMP @MR1910
+MPP
+LD<.S EM92:Z1 DM777      ; Choke chk1 R_ini_pre  Choke chk R_ini_pre_L
+OR>.S EM92:Z1 DM778      ; Choke chk1 R_ini_pre  Choke chk R_ini_pre_H
+ANL
+BSET FM8:Z1 #1           ; Chalk inspection 1 NG Details
+CON
+SET MR31504              ; Err85 Choke open test err
+CON
+DW #4 EM170:Z1           ; Choke chk1 result
+CON
+JMP @MR1910
+;都度判定の場合NG有りで終了/In case of judgment every time ending with NG
+STG @MR1910
+MPS
+ANB MR31504              ; Err85 Choke open test err
+JMP @MR2000
+MPP
+AND MR31504              ; Err85 Choke open test err
+MPS
+AND< EM30014 #1          ; For judgment method confirmation
+JMP @MR2700
+MPP
+AND>= EM30014 #1         ; For judgment method confirmation
+JMP @MR2000
+;<h1/> 検査時間待ち/Waiting for inspection time
+LDP @MR2000
+SET @MR3000              ; sub1 call
+CON
+SET @MR3100              ; sub2 call
+STG @MR2000
+TMR #39 DM773            ; inspection time  Choke chk_time
+CON
+AND T39                  ; inspection time
+SET @MR3002              ; sub1 end req
+CON
+SET @MR3102              ; sub2 end req
+CON
+JMP @MR2001
+;sub1,2 END
+;Sub3 call
+STG @MR2001
+AND @MR3001              ; sub1 end
+AND @MR3101              ; sub2 end
+MPS
+RES @MR3001              ; sub1 end
+CON
+RES @MR3002              ; sub1 end req
+CON
+RES @MR3101              ; sub2 end
+CON
+RES @MR3102              ; sub2 end req
+MRD
+AND DM504.1              ; Memory write_measure Invalid
+JMP @MR2002
+MPP
+ANB DM504.1              ; Memory write_measure Invalid
+RES MR015                ; Choke release data
+CON
+SET @MR3200              ; sub3 call
+CON
+JMP @MR2002
+;L側結果圧取得/Acquire L side result pressure
+STG @MR2002
+ANB MR301                ; Rside pressure acquisition
+SET MR300                ; Lside pressure acquisition
+CON
+JMP @MR2003
+STG @MR2003
+ANB MR300                ; Lside pressure acquisition
+LDA EM514                ; Choke open comprehension No
+CON
+SUB #1
+CON
+STA Z1
+CON
+LDA.S DM100              ; L side Pressure result
+CON
+STA.S EM94:Z1            ; Choke chk1 L_judge_pre
+CON
+JMP @MR2004
+;R側結果圧取得/Acquire R side pressure result
+STG @MR2004
+SET MR301                ; Rside pressure acquisition
+CON
+JMP @MR2005
+STG @MR2005
+ANB MR301                ; Rside pressure acquisition
+LDA EM514                ; Choke open comprehension No
+CON
+SUB #1
+CON
+STA Z1
+CON
+LDA.S DM101              ; R side Pressure result
+CON
+STA.S EM96:Z1            ; Choke chk1 R_judge_pre
+CON
+JMP @MR2006
+;L側圧力補正値適応/Adjustment of L side pressure correction value
+STG @MR2006
+LDA EM514                ; Choke open comprehension No
+CON
+SUB #1
+CON
+STA Z1
+CON
+MPS
+LDA.S EM90:Z1            ; Choke chk1 L_ini_pre
+CON
+SUB.S EM94:Z1            ; Choke chk1 L_judge_pre
+CON
+MUL.S -1
+CON
+STA.S EM98:Z1            ; Choke chk1 L(befor correctio
+MRD
+LDA.S EM98:Z1            ; Choke chk1 L(befor correctio
+CON
+ADD.S DM783:Z1           ; Choke chk L_pre_correction1
+CON
+STA.S EM102:Z1           ; Choke chk1 L(after correctio
+MPP
+JMP @MR2007
+;R側圧力補正値適応/Adaptation of R side pressure correction value
+STG @MR2007
+LDA EM514                ; Choke open comprehension No
+CON
+SUB #1
+CON
+STA Z1
+CON
+MPS
+LDA.S EM92:Z1            ; Choke chk1 R_ini_pre
+CON
+SUB.S EM96:Z1            ; Choke chk1 R_judge_pre
+CON
+MUL.S -1
+CON
+STA.S EM100:Z1           ; Choke chk1 R(befor correctio
+MRD
+LDA.S EM100:Z1           ; Choke chk1 R(befor correctio
+CON
+ADD.S DM785:Z1           ; Choke chk R_pre_correction1
+CON
+STA.S EM104:Z1           ; Choke chk1 R(after correctio
+MPP
+JMP @MR2008
+;<h1/> 結果判定/Judgment
+;L側判定/L side Judgment
+STG @MR2008
+LDA EM514                ; Choke open comprehension No
+CON
+SUB #1
+CON
+STA Z1
+CON
+MPS
+LD>=.S EM102:Z1 DM779    ; Choke chk1 L(after correctio  Choke chk L_judge_pre_L
+AND<=.S EM102:Z1 DM780   ; Choke chk1 L(after correctio  Choke chk L_judge_pre_H
+ANL
+JMP @MR2009
+MPP
+LD<.S EM102:Z1 DM779     ; Choke chk1 L(after correctio  Choke chk L_judge_pre_L
+OR>.S EM102:Z1 DM780     ; Choke chk1 L(after correctio  Choke chk L_judge_pre_H
+ANL
+BSET FM8:Z1 #2           ; Chalk inspection 1 NG Details
+CON
+SET MR31504              ; Err85 Choke open test err
+CON
+DW #4 EM170:Z1           ; Choke chk1 result
+CON
+JMP @MR2009
+;R側判定/R side Judgment
+STG @MR2009
+LDA EM514                ; Choke open comprehension No
+CON
+SUB #1
+CON
+STA Z1
+CON
+MPS
+LD>=.S EM104:Z1 DM781    ; Choke chk1 R(after correctio  Choke chk R_judge_pre_L
+AND<=.S EM104:Z1 DM782   ; Choke chk1 R(after correctio  Choke chk R_judge_pre_H
+ANL
+JMP @MR2010
+MPP
+LD<.S EM104:Z1 DM781     ; Choke chk1 R(after correctio  Choke chk R_judge_pre_L
+OR>.S EM104:Z1 DM782     ; Choke chk1 R(after correctio  Choke chk R_judge_pre_H
+ANL
+BSET FM8:Z1 #3           ; Chalk inspection 1 NG Details
+CON
+SET MR31504              ; Err85 Choke open test err
+CON
+DW #4 EM170:Z1           ; Choke chk1 result
+CON
+JMP @MR2010
+;7:ｲﾝｸ1供給入口					/	7: Ink 1 supply inlet
+;8:ｲﾝｸ2供給入口					/	8: Ink 2 supply inlet
+STG @MR2010
+MPS
+AND= EM514 #1            ; Choke open comprehension No
+RES MR8006               ;  flow valve 7(ON=open)
+MRD
+AND= EM514 #2            ; Choke open comprehension No
+RES MR8007               ;  flow valve 8(ON=open)
+MPP
+TMR @1 #2
+CON
+AND @T1
+JMP @MR2011
+;<h1/>⑤'ﾁｮｰｸ解除/Chok Release
+LD CR2003                ; always off
+OUT MR9915               ; Old choke release selection
+STG @MR2011
+MPS
+ANB MR9915               ; Old choke release selection
+JMP @MR2300
+MPP
+AND MR9915               ; Old choke release selection
+JMP @MR2100
+;<h1/> A※↓_無効中_ﾁｮｰｸ解除変更前/ ↓ Invalid_Before changing choke release  2019/9/30
+;<h1/>  |-ﾁｮｰｸ解除ﾁｪｯｸ/Choke release check
+;検査準備/Preparation of test
+;1:低圧電空ﾚｷﾞｭﾚｰﾀｰ入口			/	1: Low pressure electropneumatic regulator entrance
+;3:低圧電空ﾚｷﾞｭﾚｰﾀｰ出口			/	3: Low pressure electropneumatic regulator outlet
+;5:ｲﾝｸ供給側回路					/	5: ink supply side circuit
+;7:ｲﾝｸ1供給入口					/	7: Ink 1 supply inlet
+;8:ｲﾝｸ2供給入口					/	8: Ink 2 supply inlet
+;検査1/Inspection1→②
+;検査2/Inspection2→②
+STG @MR2100
+SET MR8000               ;  flow valve 1(ON=open)
+CON
+SET MR8002               ;  flow valve 3(ON=open)
+CON
+SET MR8004               ;  flow valve 5(ON=open)
+CON
+TMR #40 DM796            ; Choke release preparation  Choke release preparation
+CON
+AND T40                  ; Choke release preparation
+MPS
+AND= EM514 #1            ; Choke open comprehension No
+SET MR8006               ;  flow valve 7(ON=open)
+MRD
+AND= EM514 #2            ; Choke open comprehension No
+SET MR8007               ;  flow valve 8(ON=open)
+MPP
+TMR #41 DM788            ; Choke release time  Choke chk release time
+CON
+AND T41                  ; Choke release time
+JMP @MR2101
+;L側結果圧取得/Acquire L side result pressure
+STG @MR2101
+ANB MR301                ; Rside pressure acquisition
+SET MR300                ; Lside pressure acquisition
+CON
+JMP @MR2102
+STG @MR2102
+ANB MR300                ; Lside pressure acquisition
+LDA EM514                ; Choke open comprehension No
+CON
+SUB #1
+CON
+STA Z1
+CON
+LDA.S DM100              ; L side Pressure result
+CON
+STA.S EM110:Z1           ; Choke release1_L_judge_pre
+CON
+JMP @MR2103
+;R側結果圧取得/Acquire R side pressure result
+STG @MR2103
+SET MR301                ; Rside pressure acquisition
+CON
+JMP @MR2104
+STG @MR2104
+ANB MR301                ; Rside pressure acquisition
+LDA EM514                ; Choke open comprehension No
+CON
+SUB #1
+CON
+STA Z1
+CON
+LDA.S DM101              ; R side Pressure result
+CON
+STA.S EM112:Z1           ; Choke release1_R_judge_pre
+CON
+JMP @MR2105
+;<h1/>  |-結果判定/Judgment
+;L側圧力判定/L side pressure determination
+STG @MR2105
+LDA EM514                ; Choke open comprehension No
+CON
+SUB #1
+CON
+STA Z1
+CON
+MPS
+LD>=.S EM110:Z1 DM790    ; Choke release1_L_judge_pre  Choke release_L_judge_pre_L
+AND<=.S EM110:Z1 DM791   ; Choke release1_L_judge_pre  Choke release_L_judge_pre_H
+ANL
+JMP @MR2106
+MPP
+LD<.S EM110:Z1 DM790     ; Choke release1_L_judge_pre  Choke release_L_judge_pre_L
+OR>.S EM110:Z1 DM791     ; Choke release1_L_judge_pre  Choke release_L_judge_pre_H
+ANL
+BSET FM8:Z1 #4           ; Chalk inspection 1 NG Details
+CON
+SET MR31505              ; Err86 Chalk unlock inspection er
+CON
+DW #4 EM170:Z1           ; Choke chk1 result
+CON
+JMP @MR2106
+;R側増加圧力判定/R side increase pressure determination
+STG @MR2106
+LDA EM514                ; Choke open comprehension No
+CON
+SUB #1
+CON
+STA Z1
+CON
+MPS
+LD>=.S EM112:Z1 DM792    ; Choke release1_R_judge_pre  Choke release_R_judge_pre_L
+AND<=.S EM112:Z1 DM793   ; Choke release1_R_judge_pre  Choke release_R_judge_pre_H
+ANL
+JMP @MR2700
+MPP
+LD<.S EM112:Z1 DM792     ; Choke release1_R_judge_pre  Choke release_R_judge_pre_L
+OR>.S EM112:Z1 DM793     ; Choke release1_R_judge_pre  Choke release_R_judge_pre_H
+ANL
+BSET FM8:Z1 #5           ; Chalk inspection 1 NG Details
+CON
+SET MR31505              ; Err86 Chalk unlock inspection er
+CON
+DW #4 EM170:Z1           ; Choke chk1 result
+CON
+JMP @MR2700
+;<h1/>  |_↑END_無効中_ﾁｮｰｸ解除変更前/ ↑ Invalid_Before changing choke release  2019/9/30
+;<h1/> B※↓_新_ﾁｮｰｸ解除変更後/ ↓ New_After changing choke release  2019/9/30
+;sub3 END
+;※ﾁｮｰｸ検査のMesﾃﾞｰﾀ記録
+STG @MR2300
+MPS
+ANB @MR3214              ; Sub3act
+JMP @MR2301
+MPP
+LD @MR3214               ; Sub3act
+AND @MR3201              ; sub3 end
+ANL
+RES @MR3214              ; Sub3act
+CON
+RES @MR3201              ; sub3 end
+CON
+RES @MR3202              ; sub3 end req
+CON
+JMP @MR2301
+;仕様/specification
+;<h1/> ﾁｮｰｸ解除ﾁｪｯｸ/Choke release check
+;測定ﾃﾞｰﾀﾘｾｯﾄ※Mesﾃﾞｰﾀ
+STG @MR2301
+MPS
+AND DM504.1              ; Memory write_measure Invalid
+JMP @MR2302
+MPP
+ANB DM504.1              ; Memory write_measure Invalid
+FMOV #0 ZF20000 #1000    ; Pressure gauge1 total data
+FMOV #0 ZF21000 #1000    ; Pressure gauge2 total data
+DW #1 @DM2               ; Number of choke release data
+CON
+JMP @MR2302
+;<h1/>  |-ﾁｮｰｸ解除ﾁｪｯｸ/Choke release check
+;検査準備/Preparation of test
+;1:低圧電空ﾚｷﾞｭﾚｰﾀｰ入口			/	1: Low pressure electropneumatic regulator entrance
+;3:低圧電空ﾚｷﾞｭﾚｰﾀｰ出口			/	3: Low pressure electropneumatic regulator outlet
+;5:ｲﾝｸ供給側回路					/	5: ink supply side circuit
+;7:ｲﾝｸ1供給入口					/	7: Ink 1 supply inlet
+;8:ｲﾝｸ2供給入口					/	8: Ink 2 supply inlet
+;検査1/Inspection1→②
+;検査2/Inspection2→②
+STG @MR2302
+SET MR8000               ;  flow valve 1(ON=open)
+CON
+SET MR8002               ;  flow valve 3(ON=open)
+CON
+SET MR8004               ;  flow valve 5(ON=open)
+CON
+LDA DM799                ; choke rls first pressure
+CON
+STA DM104                ; Chalk opening fluctuation value
+CON
+TMR #43 DM796            ; Choke release preparation2  Choke release preparation
+CON
+AND T43                  ; Choke release preparation2
+MPS
+AND= EM514 #1            ; Choke open comprehension No
+SET MR8006               ;  flow valve 7(ON=open)
+MRD
+AND= EM514 #2            ; Choke open comprehension No
+SET MR8007               ;  flow valve 8(ON=open)
+MPP
+SET @MR2303              ; During choke release
+CON
+JMP @MR2400
+;設定値[ﾁｮｰｸ解除変動圧力]/[ﾁｮｰｸ解除変動時間]より加算値を算出
+;Calculate the additional value from the set value [Choke release fluctuation pressure] / [Choke release fluctuation time].
+LD @MR2303               ; During choke release
+OUT MR008                ; Durig_release
+TMR #44 DM788            ; Choke release time2  Choke chk release time
+MPS
+DW #65000 @DM4           ; Maximum time (100ms)
+CON
+TMR @3 @DM4              ; Elapsed time timer (100ms)  Maximum time (100ms)
+MRD
+LDA @DM4                 ; Maximum time (100ms)
+CON
+SUB @T3                  ; Elapsed time timer (100ms)
+CON
+STA @DM3                 ; Elapsed time (100ms)
+MRD
+AND< DM104 DM800         ; Chalk opening fluctuation value  Max rls pressure for choke
+LDA @DM3                 ; Elapsed time (100ms)
+CON
+MUL DM801                ; choke rls fluctuating pressure
+CON
+DIV DM802                ; choke rls change time
+CON
+ADD DM799                ; choke rls first pressure
+CON
+STA DM104                ; Chalk opening fluctuation value
+MRD
+AND>= DM104 DM800        ; Chalk opening fluctuation value  Max rls pressure for choke
+LDA DM800                ; Max rls pressure for choke
+CON
+STA DM104                ; Chalk opening fluctuation value
+MPP
+AND T44                  ; Choke release time2
+SET @MR2304              ; End condition of choke release
+CON
+OUT MR011                ; END
+LDB DM504.1              ; Memory write_measure Invalid
+AND @MR2303              ; During choke release
+ANB @MR2305              ; Measurement data is available
+AND<= @DM2 #998          ; Number of choke release data
+TMR @4 DM15              ; Mea data capture interval  Measurement capture interval
+LDP @MR2303              ; During choke release
+ANB DM504.1              ; Memory write_measure Invalid
+OR @T4                   ; Mea data capture interval
+OUT @MR2305              ; Measurement data is available
+;R側現在圧取得/R side current pressure acquisition
+STG @MR2400
+ANB MR300                ; Lside pressure acquisition
+SET MR301                ; Rside pressure acquisition
+CON
+JMP @MR2401
+STG @MR2401
+ANB MR301                ; Rside pressure acquisition
+JMP @MR2402
+;R側初期圧取得済？
+;Has the R side initial pressure been acquired?
+STG @MR2402
+MPS
+AND @MR2308              ; R side initial written
+JMP @MR2403
+MPP
+ANB @MR2308              ; R side initial written
+MPS
+LDA EM514                ; Choke open comprehension No
+CON
+SUB #1
+CON
+STA Z1
+CON
+LDA.S DM101              ; R side Pressure result
+CON
+STA.S EM114:Z1           ; Choke release1_R_ini_pre
+MPP
+SET @MR2308              ; R side initial written
+CON
+JMP @MR2403
+LD @MR2308               ; R side initial written
+OUT MR012
+;測定ﾃﾞｰﾀ取得有り？※Mesﾃﾞｰﾀの取得
+;Is there measurement data acquisition? * Acquisition of Mes data
+STG @MR2403
+MPS
+AND @MR2305              ; Measurement data is available
+LDA @DM2                 ; Number of choke release data
+CON
+SUB #1
+CON
+STA Z1
+CON
+LDA.S DM101              ; R side Pressure result
+CON
+STA.S ZF21001:Z1         ; Pressure gauge2 data1
+MPP
+JMP @MR2404
+;現在の保持側変化量を算出
+;現在圧力-初期圧力＝変化量
+;※現在圧力（ﾏｲﾅｽ値小)-初期圧力(ﾏｲﾅｽ値大)＝変化量(ﾌﾟﾗｽ値)
+;Calculate the amount of change on the current holding side
+;Current pressure-initial pressure = amount of change
+;* Current pressure (minus value is small)-Initial pressure (minus value is large) = Change amount (plus value)
+LD @MR2404
+LDA EM514                ; Choke open comprehension No
+CON
+SUB #1
+CON
+STA Z1
+CON
+LDA.S DM101              ; R side Pressure result
+CON
+SUB.S EM114:Z1           ; Choke release1_R_ini_pre
+CON
+STA.S @DM6               ; R side current change
+;R側ﾁｮｰｸ解除設定変化量になった？
+;終了条件？
+;結果書き込み済？
+;Has the R side choke release setting changed?
+;Exit conditions?
+;Has the result been written?
+STG @MR2404
+MPS
+AND>=.S @DM6 DM804       ; R side current change  choke rls R side fluctuation set
+MPS
+AND @MR2306              ; R side result written
+JMP @MR2407
+MPP
+ANB @MR2306              ; R side result written
+JMP @MR2406
+MPP
+AND<.S @DM6 DM804        ; R side current change  choke rls R side fluctuation set
+MPS
+ANB @MR2304              ; End condition of choke release
+JMP @MR2407
+MPP
+AND @MR2304              ; End condition of choke release
+MPS
+AND @MR2306              ; R side result written
+JMP @MR2500
+MPP
+ANB @MR2306              ; R side result written
+JMP @MR2405
+;R側NG※検査時間中に目標圧以上にならなかった
+;R side NG * Not exceeded target pressure during inspection time
+STG @MR2405
+LDA EM514                ; Choke open comprehension No
+CON
+SUB #1
+CON
+STA Z1
+CON
+BSET FM8:Z1 #5           ; Chalk inspection 1 NG Details
+CON
+SET MR31505              ; Err86 Chalk unlock inspection er
+CON
+DW #4 EM170:Z1           ; Choke chk1 result
+CON
+JMP @MR2406
+;R側結果書き込み/R side result writing
+STG @MR2406
+LDA EM514                ; Choke open comprehension No
+CON
+SUB #1
+CON
+STA Z1
+CON
+LDA.S DM101              ; R side Pressure result
+CON
+STA.S EM112:Z1           ; Choke release1_R_judge_pre
+CON
+SET @MR2306              ; R side result written
+CON
+JMP @MR2500
+LD @MR2306               ; R side result written
+OUT MR009                ; R_get
+;測定ﾃﾞｰﾀ取得有り？※有ならL側現在値を取得  Mesﾃﾞｰﾀ
+STG @MR2407
+MPS
+LD @MR2305               ; Measurement data is available
+OR CR2002                ; always on
+ANL
+JMP @MR2500
+MPP
+LD CR2003                ; always off
+ANB @MR2305              ; Measurement data is available
+ANL
+MPS
+LDB @MR2306              ; R side result written
+OR @MR2307               ; L result obtained
+ANL
+JMP @MR2505
+MPP
+LD @MR2306               ; R side result written
+ANB @MR2307              ; L result obtained
+ANL
+JMP @MR2500
+;L側現在圧取得/L side current pressure acquisition
+STG @MR2500
+ANB MR301                ; Rside pressure acquisition
+SET MR300                ; Lside pressure acquisition
+CON
+JMP @MR2501
+STG @MR2501
+ANB MR300                ; Lside pressure acquisition
+JMP @MR2502
+;測定ﾃﾞｰﾀ取得有り？※Mesﾃﾞｰﾀの取得
+;Is there measurement data acquisition? * Acquisition of Mes data
+STG @MR2502
+MPS
+AND @MR2305              ; Measurement data is available
+MPS
+LDA @DM2                 ; Number of choke release data
+CON
+SUB #1
+CON
+STA Z1
+CON
+LDA.S DM100              ; L side Pressure result
+CON
+STA.S ZF20001:Z1         ; Pressure gauge1 data1
+MPP
+INC @DM2                 ; Number of choke release data
+MPP
+JMP @MR2503
+;R側ﾁｮｰｸ解除設定圧力になった&L側結果未取得？
+;R side choke release set pressure has been reached & L side result not yet acquired?
+STG @MR2503
+MPS
+LD @MR2306               ; R side result written
+ANB @MR2307              ; L result obtained
+ANL
+JMP @MR2504
+MPP
+LDB @MR2306              ; R side result written
+OR @MR2307               ; L result obtained
+ANL
+JMP @MR2505
+;L側結果書き込み/L side result writing
+STG @MR2504
+LDA EM514                ; Choke open comprehension No
+CON
+SUB #1
+CON
+STA Z1
+CON
+LDA.S DM100              ; L side Pressure result
+CON
+STA.S EM110:Z1           ; Choke release1_L_judge_pre
+CON
+SET @MR2307              ; L result obtained
+CON
+JMP @MR2505
+LD @MR2307               ; L result obtained
+OUT MR010                ; L_get
+;共通処理/Common processing
+STG @MR2505
+MPS
+LDB @MR2306              ; R side result written
+ORB @MR2307              ; L result obtained
+ANL
+JMP @MR2400
+MPP
+LD @MR2306               ; R side result written
+AND @MR2307              ; L result obtained
+ANL
+JMP @MR2506
+;<h1/>  |-結果判定/Judgment
+;L側結果圧判定/Judge L side result pressure
+STG @MR2506
+LDA EM514                ; Choke open comprehension No
+CON
+SUB #1
+CON
+STA Z1
+CON
+MPS
+LD>=.S EM110:Z1 DM805    ; Choke release1_L_judge_pre  choke rls L side judge low limit
+AND<=.S EM110:Z1 DM806   ; Choke release1_L_judge_pre  choke rls L side judge up limit
+ANL
+JMP @MR2508
+MPP
+LD<.S EM110:Z1 DM805     ; Choke release1_L_judge_pre  choke rls L side judge low limit
+OR>.S EM110:Z1 DM806     ; Choke release1_L_judge_pre  choke rls L side judge up limit
+ANL
+JMP @MR2507
+;L側NG/L side NG
+STG @MR2507
+LDA EM514                ; Choke open comprehension No
+CON
+SUB #1
+CON
+STA Z1
+CON
+BSET FM8:Z1 #4           ; Chalk inspection 1 NG Details
+CON
+SET MR31505              ; Err86 Chalk unlock inspection er
+CON
+DW #4 EM170:Z1           ; Choke chk1 result
+CON
+JMP @MR2508
+;共通終了STG/Common termination STG
+STG @MR2508
+RES @MR2303              ; During choke release
+CON
+RES @MR2304              ; End condition of choke release
+CON
+RES @MR2306              ; R side result written
+CON
+RES @MR2307              ; L result obtained
+CON
+RES @MR2308              ; R side initial written
+CON
+JMP @MR2509
+;Sub3 call
+;※ﾁｮｰｸ解除のMesﾃﾞｰﾀ書き込み
+;* Write Mes data for choke release
+STG @MR2509
+MPS
+AND DM504.1              ; Memory write_measure Invalid
+JMP @MR2700
+MPP
+ANB DM504.1              ; Memory write_measure Invalid
+SET MR015                ; Choke release data
+CON
+SET @MR3200              ; sub3 call
+CON
+JMP @MR2700
+;<h1/>  |_↑END_新_ﾁｮｰｸ解除変更後/ ↑ New_After changing choke release  2019/9/30
+;<h1/> 大気開放:回路初期化処理/Atmospheric release: circuit initialization processing
+;NGが書かれていなければOK書込み/If NG is not written OK write 
+STG @MR2700
+LDA EM514                ; Choke open comprehension No
+CON
+SUB #1
+CON
+STA Z1
+CON
+MPS
+AND<> EM170:Z1 #4        ; Choke chk1 result
+DW #3 EM170:Z1           ; Choke chk1 result
+MPP
+SET MR400                ; Atmospheric release circuit init
+CON
+JMP @MR2701
+STG @MR2701
+ANB MR400                ; Atmospheric release circuit init
+ANB MR301                ; Rside pressure acquisition
+SET MR300                ; Lside pressure acquisition
+CON
+JMP @MR2702
+STG @MR2702
+ANB MR300                ; Lside pressure acquisition
+SET MR301                ; Rside pressure acquisition
+CON
+JMP @MR2703
+;sub3 END
+STG @MR2703
+ANB MR301                ; Rside pressure acquisition
+MPS
+ANB @MR3214              ; Sub3act
+JMP @MR2704
+MPP
+LD @MR3214               ; Sub3act
+AND @MR3201              ; sub3 end
+ANL
+RES MR015                ; Choke release data
+CON
+RES @MR3214              ; Sub3act
+CON
+RES @MR3201              ; sub3 end
+CON
+RES @MR3202              ; sub3 end req
+CON
+JMP @MR2704
+;都度判定の場合NG有りで終了/In case of judgment every time ending with NG
+STG @MR2704
+MPS
+LDB MR31504              ; Err85 Choke open test err
+ANB MR31505              ; Err86 Chalk unlock inspection er
+ANL
+JMP @MR2705
+MPP
+LD MR31504               ; Err85 Choke open test err
+OR MR31505               ; Err86 Chalk unlock inspection er
+ANL
+MPS
+AND< EM30014 #1          ; For judgment method confirmation
+JMP @MR2707
+MPP
+AND>= EM30014 #1         ; For judgment method confirmation
+JMP @MR2705
+;検査回数終了？/End of inspection number?
+STG @MR2705
+MPS
+AND>= EM514 #2           ; Choke open comprehension No
+JMP @MR2707
+MPP
+AND< EM514 #2            ; Choke open comprehension No
+JMP @MR2706
+STG @MR2706
+INC EM514                ; Choke open comprehension No
+CON
+JMP @MR1901
+;検査総合結果書込み/Inspection total result write
+STG @MR2707
+RES MR105                ; Chalk open test in progress
+CON
+SET TM90.5
+CON
+MPS
+LDB MR31504              ; Err85 Choke open test err
+ANB MR31505              ; Err86 Chalk unlock inspection er
+ANL
+DW #3 EM504              ; Choke open comprehension result
+CON
+JMP @MR2800
+MPP
+LD MR31504               ; Err85 Choke open test err
+OR MR31505               ; Err86 Chalk unlock inspection er
+ANL
+SET @MR000               ; NG notification reservation
+CON
+DW #4 EM504              ; Choke open comprehension result
+CON
+MPS
+AND< EM30014 #1          ; For judgment method confirmation
+JMP @MR2900
+MPP
+AND>= EM30014 #1         ; For judgment method confirmation
+JMP @MR2800
+;<h1/>⑥良品ﾏｰｷﾝｸﾞ/Good product marking
+STG @MR2800
+MPS
+AND MR310                ; Individual operation
+JMP @MR2900
+MPP
+ANB MR310                ; Individual operation
+MPS
+ANB DM824.1              ; Marking pen 1 enabled(=ON
+JMP @MR2900
+MPP
+AND DM824.1              ; Marking pen 1 enabled(=ON
+JMP @MR2801
+;NGﾜｰｸでない？/NG products?
+STG @MR2801
+MPS
+AND @MR000               ; NG notification reservation
+JMP @MR2900
+MPP
+ANB @MR000               ; NG notification reservation
+JMP @MR2802
+;ﾏｰｷﾝｸﾞ前進/Advance marking
+STG @MR2802
+ANB MR902                ; error
+SET MR8108               ; Marking pen 1 forward
+CON
+RES MR8109               ; Marking pen 1 retreat
+CON
+AND R2012                ; Marking pen 1 forward limit
+ANB R2013                ; Marking pen 1 retraction limit
+JMP @MR2803
+;ﾏｰｷﾝｸﾞ時間/Marking time
+STG @MR2803
+TMR #42 #10              ; Marking
+CON
+AND T42                  ; Marking
+JMP @MR2804
+;ﾏｰｷﾝｸﾞﾍﾟﾝ後退/Marking pen back
+STG @MR2804
+ANB MR902                ; error
+RES MR8108               ; Marking pen 1 forward
+CON
+SET MR8109               ; Marking pen 1 retreat
+CON
+ANB R2012                ; Marking pen 1 forward limit
+AND R2013                ; Marking pen 1 retraction limit
+JMP @MR2900
+;<h1/>■ﾓｼﾞｭｰﾙ終了/End module
+STG @MR2900
+JMP @MR2901
+;ﾜｰｸ良品？/Good product？
+;TP520：検査結果/TP 520: Inspection result
+STG @MR2901
+ANB MR902                ; error
+MPS
+ANB @MR000               ; NG notification reservation
+DW #520 EM30001          ; (TP)page screen switching No.
+CON
+SET MR003                ; product ok
+CON
+JMP @MR2903
+MPP
+AND @MR000               ; NG notification reservation
+SET MR004                ; product defective product
+CON
+SET MR911                ; chk NG（key sw rls Err）
+CON
+DW #80 DM149             ; error screen details message
+CON
+SET MR902                ; error
+CON
+JMP @MR2902
+;ｴﾗｰ解除待ち/Waiting for error cancellation
+STG @MR2902
+RES @MR000               ; NG notification reservation
+CON
+ANB MR902                ; error
+RES MR31500              ; Err81 Crimp spring inspection er
+CON
+RES MR31501              ; Err82 Check valve err
+CON
+RES MR31502              ; Err83 ink flow path leak err
+CON
+RES MR31503              ; Err84 Pneumatic path leak err
+CON
+RES MR31504              ; Err85 Choke open test err
+CON
+RES MR31505              ; Err86 Chalk unlock inspection er
+CON
+JMP @MR2903
+;終了/end
+STG @MR2903
+RES MR100                ; check in action
+CON
+MDSTOP Inspection
+ENDS
+;<h1/>■ｻﾌﾞﾙｰﾁﾝ/Subroutine
+;<h1/>Sub1 L側測定ﾃﾞｰﾀ取得/L side measurement data acquisition
+STG @MR3000              ; sub1 call
+FMOV #0 ZF20000 #1000    ; Pressure gauge1 total data
+DW #1 @DM0               ; sub1counter
+CON
+JMP @MR3003
+STG @MR3003
+MPS
+ANB @MR3002              ; sub1 end req
+TMR @30 DM15             ; Measurement capture interval  Measurement capture interval
+CON
+AND @T30                 ; Measurement capture interval
+JMP @MR3004
+MPP
+AND @MR3002              ; sub1 end req
+JMP @MR3015
+;Write data
+STG @MR3004
+ANB MR301                ; Rside pressure acquisition
+SET MR300                ; Lside pressure acquisition
+CON
+JMP @MR3005
+STG @MR3005
+ANB MR300                ; Lside pressure acquisition
+LDA @DM0                 ; sub1counter
+CON
+SUB #1
+CON
+STA Z1
+CON
+LDA.S DM100              ; L side Pressure result
+CON
+STA.S ZF20001:Z1         ; Pressure gauge1 data1
+CON
+JMP @MR3006
+;Check counter
+STG @MR3006
+MPS
+AND> @DM0 #998           ; sub1counter
+JMP @MR3015
+MPP
+AND<= @DM0 #998          ; sub1counter
+MPS
+ANB @MR3002              ; sub1 end req
+JMP @MR3007
+MPP
+AND @MR3002              ; sub1 end req
+JMP @MR3015
+STG @MR3007
+INC @DM0                 ; sub1counter
+CON
+JMP @MR3003
+;END
+STG @MR3015
+LDA @DM0                 ; sub1counter
+CON
+STA ZF20000              ; Pressure gauge1 total data
+CON
+SET @MR3001              ; sub1 end
+CON
+ENDS
+;<h1/>Sub2 R側測定ﾃﾞｰﾀ取得/R side measurement data acquisition
+STG @MR3100              ; sub2 call
+FMOV #0 ZF21000 #1000    ; Pressure gauge2 total data
+DW #1 @DM1               ; sub2counter
+CON
+JMP @MR3103
+STG @MR3103
+MPS
+ANB @MR3102              ; sub2 end req
+TMR @31 DM15             ; Measurement capture interval  Measurement capture interval
+CON
+AND @T31                 ; Measurement capture interval
+JMP @MR3104
+MPP
+AND @MR3102              ; sub2 end req
+JMP @MR3115
+;Write data
+STG @MR3104
+ANB MR300                ; Lside pressure acquisition
+SET MR301                ; Rside pressure acquisition
+CON
+JMP @MR3105
+STG @MR3105
+ANB MR301                ; Rside pressure acquisition
+LDA @DM1                 ; sub2counter
+CON
+SUB #1
+CON
+STA Z1
+CON
+LDA.S DM101              ; R side Pressure result
+CON
+STA.S ZF21001:Z1         ; Pressure gauge2 data1
+CON
+JMP @MR3106
+;Check counter
+STG @MR3106
+MPS
+AND> @DM1 #998           ; sub2counter
+JMP @MR3115
+MPP
+AND<= @DM1 #998          ; sub2counter
+MPS
+ANB @MR3102              ; sub2 end req
+JMP @MR3107
+MPP
+AND @MR3102              ; sub2 end req
+JMP @MR3115
+STG @MR3107
+INC @DM1                 ; sub2counter
+CON
+JMP @MR3103
+;END
+STG @MR3115
+LDA @DM1                 ; sub2counter
+CON
+STA ZF21000              ; Pressure gauge2 total data
+CON
+SET @MR3101              ; sub2 end
+CON
+ENDS
+;<h1/>Sub3 測定ﾃﾞｰﾀ書込み
+STG @MR3200              ; sub3 call
+SET @MR3214              ; Sub3act
+CON
+JMP @MR3203
+;書込み準備/Preparation for writing
+STG @MR3203
+ANB MR902                ; error
+AND T0                   ; Memory writing in (exclusive) OF
+SET MR109                ; mem card wrt during(exclusion）
+CON
+JMP @MR3204
+;"MemoryCard_Access"ﾓｼﾞｭｰﾙ実行/"MemoryCard_Access" module execution
+STG @MR3204
+MDSTRT MemoryCard_Access
+SET MR108                ; Write measurement data
+CON
+SET MR111                ; memory card write during
+CON
+JMP @MR3205
+;<<書込ﾓｼﾞｭｰﾙ停止処理>>/<< Write module stop process >>
+STG @MR3205
+AND _MemoryCard_Access
+ANB MR111                ; memory card write during
+MDSTOP MemoryCard_Access
+JMP @MR3206
+STG @MR3206
+ANB _MemoryCard_AccessMC
+RES MR108                ; Write measurement data
+CON
+RES MR109                ; mem card wrt during(exclusion）
+CON
+JMP @MR3215
+;END
+STG @MR3215
+SET @MR3201              ; sub3 end
+CON
+ENDS
+END
+ENDH

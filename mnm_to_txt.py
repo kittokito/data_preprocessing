@@ -131,8 +131,8 @@ def merge_plaintext_files(directory, output_file, error_directory, temp_director
 
 # 使用例（各ディレクトリのパスを適宜指定してください）
 merge_plaintext_files(
-    directory="/Users/nomura/02_Airion/長野オートメーション/prepare_training_data/mnm_通常",
-    output_file="/Users/nomura/02_Airion/長野オートメーション/prepare_training_data/txt_merged/plc_normal_01.txt",
-    error_directory="/Users/nomura/02_Airion/長野オートメーション/prepare_training_data/mnm_encoding_error",
-    temp_directory="/Users/nomura/02_Airion/長野オートメーション/prepare_training_data/txt_normal"
+    directory="./mnm/mnm_sft/01/00-8303",
+    output_file="./txt/txt_merged/sample_sft_00.txt",
+    error_directory="./mnm/mnm_encoding_error",
+    temp_directory="./txt/txt_sft"
 )

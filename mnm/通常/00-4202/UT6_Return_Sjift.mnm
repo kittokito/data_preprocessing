@@ -1,0 +1,2322 @@
+DEVICE:53
+;MODULE:UT6_Return_Sjift
+;MODULE_TYPE:0
+;□□　　入力受け　　□□
+LD X1702                 ; 排出部ﾗｲﾄｶｰﾃﾝ1OUT1
+TMR K611 K5              ; 排出部ﾗｲﾄｶｰﾃﾝ確認ﾀｲﾏ
+;■ロボット等機器入力受け
+;ｼﾌﾄﾛﾎﾞｯﾄ現在値
+;Ret_Shift_RB_Current_Position
+LD X170B                 ; 排出ｼﾌﾄﾛﾎﾞｯﾄ準備完了
+AND X400B                ; Ret_Shift_RB_ORG-S
+ANB X400C                ; Ret_Sift_RB_Busy
+AND X400D                ; Ret_Sift_RB_END
+MPS
+AND X4000                ; Ret_Sift_RB_Pout1
+OUT D3528.0              ; Ret_Sift_RB_POS1
+MRD
+AND X4001                ; Ret_Sift_RB_Pout2
+OUT D3528.1              ; Ret_Sift_RB_POS2
+MRD
+AND X4002                ; Ret_Sift_RB_Pout4
+OUT D3528.2              ; Ret_Sift_RB_POS4
+MRD
+AND X4003                ; Ret_Sift_RB_Pout8
+OUT D3528.3              ; Ret_Sift_RB_POS8
+MRD
+AND X4004                ; Ret_Sift_RB_Pout16
+OUT D3528.4              ; Ret_Sift_RB_POS16
+MRD
+AND X4005                ; Ret_Sift_RB_Pout32
+OUT D3528.5              ; Ret_Sift_RB_POS32
+MRD
+AND X4006                ; Ret_Sift_RB_Pout64
+OUT D3528.6              ; Ret_Sift_RB_POS64
+MRD
+AND X4007                ; Ret_Sift_RB_Pout128
+OUT D3528.7              ; Ret_Sift_RB_POS128
+MPP
+INV
+MOV K0 D3528             ; Ret_Sift_RB_完了POS
+;□
+;□□ 装置状態・動作条件 □□
+;□
+LD X1722                 ; 排出ｼﾌﾄｷｬﾘｱ引込戻端
+AND X172A                ; ﾘﾀｰﾝ排出戻り端
+AND= D3528 K1            ; Ret_Sift_RB_完了POS
+LD X1723                 ; 排出ｽﾄｯﾊﾟ下降端
+OR X1727                 ; 排出ｼﾌﾀ引込側ﾜｰｸ確認  (ON=無)
+ANL
+LD X1725                 ; 排出ｼﾌﾀｷｬﾘｱ確認
+AND X172D                ; 排出ｼﾌﾄﾛｯｸ端
+LDB X1725                ; 排出ｼﾌﾀｷｬﾘｱ確認
+AND X172C                ; 排出ｼﾌﾄﾛｯｸ解除端
+ORL
+ANL
+OUT M3980                ; ﾕﾆｯﾄ6原点
+;□ 非常停止
+LDB B0CB                 ; 再投入ﾜｰｸ行方不明
+INV
+OUT M3981                ; ﾕﾆｯﾄ6全異常
+;□ 起動条件
+LD M3980                 ; ﾕﾆｯﾄ6原点
+OUT M3982                ; ﾕﾆｯﾄ6起動条件
+;□ 起動OFF
+LDB M50                  ; 運転準備
+OR M3986                 ; ﾕﾆｯﾄ6ｻｲｸﾙ停止異常
+OR T15                   ; 強制停止
+OUT M3983                ; ﾕﾆｯﾄ6起動OFF
+;□ 原点復帰
+LD M82                   ; 原点復帰開始
+LDB M82                  ; 原点復帰開始
+AND CR2003               ; 常時OFF
+ORL
+ANB M3984                ; ﾕﾆｯﾄ6原点復帰中
+OR M3984                 ; ﾕﾆｯﾄ6原点復帰中
+ANB M3983                ; ﾕﾆｯﾄ6起動OFF
+ANB M3991                ; ﾕﾆｯﾄ6ｴﾗｰ発生
+ANB M3799                ; ﾕﾆｯﾄ6原点復帰完了
+OUT M3984                ; ﾕﾆｯﾄ6原点復帰中
+;□ 起動中
+LD M73                   ; 各工程起動指令
+AND M3982                ; ﾕﾆｯﾄ6起動条件
+OR M3985                 ; ﾕﾆｯﾄ6起動中
+ANB M3983                ; ﾕﾆｯﾄ6起動OFF
+LDB M3549                ; ﾕﾆｯﾄ5-1ｻｲｸﾙ停止
+ORB M3699                ; ﾕﾆｯﾄ5-2ｻｲｸﾙ停止
+ANL
+OUT M3985                ; ﾕﾆｯﾄ6起動中
+;□ ｻｲｸﾙ停止異常
+LDB B0C4                 ; ﾘﾀｰﾝｼﾌﾄRB異常
+ANB B0C5                 ; 給材ﾜｰｸ紛失異常
+LDB B0C6                 ; 排出ｼﾌﾄ干渉異常
+OR CR2002                ; 常時ON
+ANL
+ANB B0C7                 ; 排出ｼﾌﾄ原点復帰ﾜｰｸ有異常
+ANB B0CA                 ; ﾘﾀｰﾝCVﾄﾞﾗｲﾊﾞ異常
+INV
+OUT M3986                ; ﾕﾆｯﾄ6ｻｲｸﾙ停止異常
+;□ 払出停止異常
+LDB CR2003               ; 常時OFF
+INV
+OUT M3987                ; ﾕﾆｯﾄ6払出停止異常
+;□ 警報補助
+LDB M3513                ; ｷｬﾘｱ引込NG中
+ANB M3594                ; ﾘﾀｰﾝｷｬﾘｱID照合NG中
+ANB M3646                ; ﾘﾀｰﾝｷｬﾘｱID照合NG中
+ANB M3676                ; ﾘﾀｰﾝｷｬﾘｱID照合NG中
+INV
+OUT M3988                ; ﾕﾆｯﾄ6警報補助
+;□ 機器準備確認
+LD X170B                 ; 排出ｼﾌﾄﾛﾎﾞｯﾄ準備完了
+OUT M3990                ; ﾕﾆｯﾄ6機器準備完了
+;□ ｴﾗｰ発生　一時停止
+LDB B0C0                 ; 排出ｼﾌﾄ引込異常
+ANB B0C1                 ; 排出ｼﾌﾄ引込ｽﾄｯﾊﾟ異常
+ANB B0C2                 ; ﾘﾀｰﾝ排出送戻異常
+ANB B0C3                 ; 排出ｼﾌﾄﾛｯｸ異常
+ANB B0C6                 ; 排出ｼﾌﾄ干渉異常
+INV
+OUT M3991                ; ﾕﾆｯﾄ6ｴﾗｰ発生
+;□ 動作中ﾕﾆｯﾄ無し
+LDB X400C                ; Ret_Sift_RB_Busy
+ANB Y2313                ; ｷｬﾘｱﾘﾀｰﾝCV回転
+ORB M3985                ; ﾕﾆｯﾄ6起動中
+ANB M3984                ; ﾕﾆｯﾄ6原点復帰中
+TMR K601 K30             ; ﾕﾆｯﾄ6動作無し判定ﾀｲﾏ
+LD CR2002                ; 常時ON
+MOV D3500 D3505          ; ﾕﾆｯﾄ6-1自動運転ｽﾃｯﾌﾟ  ﾕﾆｯﾄ6-1動作中判定
+LD T601                  ; ﾕﾆｯﾄ6動作無し判定ﾀｲﾏ
+OUT M3992                ; ﾕﾆｯﾄ6動作無し確認
+;□ 払出しﾜｰｸ無し
+LD CR2002                ; 常時ON
+MPS
+WSUM D15600 K100         ; UT6-1ﾌﾚｰﾑ投入ﾊﾟﾚｯﾄID
+CON
+STA D3550                ; UT4-1ﾜｰｸ情報(ﾜｰｸ有無)
+MRD
+WSUM D15700 K100         ; RT1ﾌﾚｰﾑ投入ﾊﾟﾚｯﾄID
+CON
+STA D3552                ; ﾘﾀｰﾝCV1ﾜｰｸ情報(ﾜｰｸ有無)
+MRD
+WSUM D15800 K100         ; RT2ﾌﾚｰﾑ投入ﾊﾟﾚｯﾄID
+CON
+STA D3554                ; ﾘﾀｰﾝCV2ﾜｰｸ情報(ﾜｰｸ有無)
+MRD
+WSUM D15900 K100         ; RT3ﾌﾚｰﾑ投入ﾊﾟﾚｯﾄID
+CON
+STA D3556                ; ﾘﾀｰﾝCV3ﾜｰｸ情報(ﾜｰｸ有無)
+MRD
+WSUM D16000 K100         ; RT4ﾌﾚｰﾑ投入ﾊﾟﾚｯﾄID
+CON
+STA D3558                ; ﾘﾀｰﾝCV4ﾜｰｸ情報(ﾜｰｸ有無)
+MPP
+WSUM D16900 K55          ; 取出ﾌﾚｰﾑ投入ﾊﾟﾚｯﾄID
+CON
+STA D3560                ; 取出部ﾜｰｸ情報
+CON
+WSUM D16958 K42
+CON
+ADD D3560                ; 取出部ﾜｰｸ情報
+LD= D3550 K0             ; UT4-1ﾜｰｸ情報(ﾜｰｸ有無)
+AND= D3552 K0            ; ﾘﾀｰﾝCV1ﾜｰｸ情報(ﾜｰｸ有無)
+AND= D3554 K0            ; ﾘﾀｰﾝCV2ﾜｰｸ情報(ﾜｰｸ有無)
+AND= D3556 K0            ; ﾘﾀｰﾝCV3ﾜｰｸ情報(ﾜｰｸ有無)
+TMR K605 K20             ; UNIT6払出処理ﾜｰｸ無し
+LD T605                  ; UNIT6払出処理ﾜｰｸ無し
+OUT M3993                ; ﾕﾆｯﾄ6ﾜｰｸ無し
+;□ ｽﾃｯﾌﾟ起動
+LD M30                   ; 自動ﾓｰﾄﾞ
+LD M31                   ; 手動ﾓｰﾄﾞ
+AND CR2003               ; 常時OFF
+ORL
+OUT M3979                ; ﾕﾆｯﾄ6ｽﾃｯﾌﾟ動作
+;□□□□□□□□□□□□□□□
+;□　　 　UNIT5自動回路  　　□
+;□□□□□□□□□□□□□□□
+;<h1/>■自動 引込
+;
+;□　UNIT6-1 引込自動
+;
+LD CR2002                ; 常時ON
+ZRES M3500 M3549         ; ﾘﾀｰﾝ引込ｽﾃｯﾌﾟ開始  ﾕﾆｯﾄ5-1ｻｲｸﾙ停止
+LDB M3985                ; ﾕﾆｯﾄ6起動中
+MOV K0 D3500             ; ﾕﾆｯﾄ6-1自動運転ｽﾃｯﾌﾟ
+ZRES M3730 M3739         ; ｼﾌﾄ投入位置移動・ﾜｰｸ残確認  ﾜｰｸ取出要求
+CON
+DW K0 D3700              ; UT6 main 1 STEP monior
+LD M3985                 ; ﾕﾆｯﾄ6起動中
+MOV D3500 Z1             ; ﾕﾆｯﾄ6-1自動運転ｽﾃｯﾌﾟ
+SET M3500:Z1             ; ﾘﾀｰﾝ引込ｽﾃｯﾌﾟ開始
+CAL+ D3500 K3500 D3700   ; ﾕﾆｯﾄ6-1自動運転ｽﾃｯﾌﾟ  UT6 main 1 STEP monior
+;引込部ｷｬﾘｱ有無確認
+LD M3500                 ; ﾘﾀｰﾝ引込ｽﾃｯﾌﾟ開始
+MPS
+AND X1720                ; ｷｬﾘｱ引込ｷｬﾘｱ無し
+@INC D3500               ; ﾕﾆｯﾄ6-1自動運転ｽﾃｯﾌﾟ
+MPP
+ANB X1720                ; ｷｬﾘｱ引込ｷｬﾘｱ無し
+MOV K5 D3500             ; ﾕﾆｯﾄ6-1自動運転ｽﾃｯﾌﾟ
+;ｷｬﾘｱ無､ｽﾄｯﾊﾟ上昇
+LD M3501                 ; 排出ﾊﾞｯﾌｧｷｬﾘｱ無し
+AND M3553                ; 排出ｼﾌﾄ引込要求(引込へ)
+@INC D3500               ; ﾕﾆｯﾄ6-1自動運転ｽﾃｯﾌﾟ
+LD M3502                 ; 排出ｽﾄｯﾊﾟ上昇
+AND X1724                ; 排出ｽﾄｯﾊﾟ上昇端
+@INC D3500               ; ﾕﾆｯﾄ6-1自動運転ｽﾃｯﾌﾟ
+;ﾘﾆｱ搬送可
+LD M3503                 ; 排出ﾊﾞｯﾌｧ排出可(ﾘﾆｺﾝへ)
+AND M3014                ; ｷｬﾘｱ排出完了(ｼﾌﾄ排出へ)
+@INC D3500               ; ﾕﾆｯﾄ6-1自動運転ｽﾃｯﾌﾟ
+LD M3504                 ; 搬送完了OFF確認
+ANB M3014                ; ｷｬﾘｱ排出完了(ｼﾌﾄ排出へ)
+@INC D3500               ; ﾕﾆｯﾄ6-1自動運転ｽﾃｯﾌﾟ
+LD M3505                 ; ｷｬﾘｱ確認
+ANB X1720                ; ｷｬﾘｱ引込ｷｬﾘｱ無し
+@INC D3500               ; ﾕﾆｯﾄ6-1自動運転ｽﾃｯﾌﾟ
+;ｽﾄｯﾊﾟ下降
+LD M3506                 ; 排出ｽﾄｯﾊﾟ下降
+AND X1723                ; 排出ｽﾄｯﾊﾟ下降端
+@INC D3500               ; ﾕﾆｯﾄ6-1自動運転ｽﾃｯﾌﾟ
+;排出ｼﾌﾄ引込
+LD M3507                 ; 排出ｼﾌﾄ引込可(排出ｼﾌﾄへ)
+AND M3553                ; 排出ｼﾌﾄ引込要求(引込へ)
+@INC D3500               ; ﾕﾆｯﾄ6-1自動運転ｽﾃｯﾌﾟ
+LD M3508                 ; 排出ｼﾌﾄ引込
+AND X1721                ; 排出ｼﾌﾄｷｬﾘｱ引込端
+@INC D3500               ; ﾕﾆｯﾄ6-1自動運転ｽﾃｯﾌﾟ
+LD M3509                 ; 排出ｼﾌﾄﾛｯｸ
+AND X172D                ; 排出ｼﾌﾄﾛｯｸ端
+@INC D3500               ; ﾕﾆｯﾄ6-1自動運転ｽﾃｯﾌﾟ
+LD M3510                 ; 排出ｼﾌﾄ引込戻
+AND X1722                ; 排出ｼﾌﾄｷｬﾘｱ引込戻端
+@INC D3500               ; ﾕﾆｯﾄ6-1自動運転ｽﾃｯﾌﾟ
+;ｷｬﾘｱ引込確認
+LD M3511                 ; ｷｬﾘｱ確認
+MPS
+LD X1720                 ; ｷｬﾘｱ引込ｷｬﾘｱ無し
+AND X1725                ; 排出ｼﾌﾀｷｬﾘｱ確認
+ANL
+MOV K15 D3500            ; ﾕﾆｯﾄ6-1自動運転ｽﾃｯﾌﾟ
+MPP
+LDB X1720                ; ｷｬﾘｱ引込ｷｬﾘｱ無し
+ORB X1725                ; 排出ｼﾌﾀｷｬﾘｱ確認
+ANL
+@INC D3500               ; ﾕﾆｯﾄ6-1自動運転ｽﾃｯﾌﾟ
+;ｷｬﾘｱ引込NG
+LD M3512                 ; ｷｬﾘｱ引込NG
+AND= D200 K0             ; ｴﾗｰｺｰﾄﾞNo.
+DW K600 D200             ; ｴﾗｰｺｰﾄﾞNo.
+CON
+@INC D3500               ; ﾕﾆｯﾄ6-1自動運転ｽﾃｯﾌﾟ
+LD M3513                 ; ｷｬﾘｱ引込NG中
+AND<> D200 K0            ; ｴﾗｰｺｰﾄﾞNo.
+MPS
+ANP B1024                ; ﾘﾄﾗｲ確認TP-PB
+DW K0 D200               ; ｴﾗｰｺｰﾄﾞNo.
+CON
+@INC D3500               ; ﾕﾆｯﾄ6-1自動運転ｽﾃｯﾌﾟ
+MPP
+OUT M3950                ; Err600:排出ｷｬﾘｱ引込_NG
+LD M3514                 ; ｷｬﾘｱ引込NG解除
+AND= D200 K0             ; ｴﾗｰｺｰﾄﾞNo.
+MOV K7 D3500             ; ﾕﾆｯﾄ6-1自動運転ｽﾃｯﾌﾟ
+;ｽﾄｯﾊﾟ上昇､引込完了
+LD M3515                 ; 排出ｼﾌﾄ引込完了(ｼﾌﾄへ)
+ANB M3553                ; 排出ｼﾌﾄ引込要求(引込へ)
+MOV K0 D3500             ; ﾕﾆｯﾄ6-1自動運転ｽﾃｯﾌﾟ
+;ｻｲｸﾙ停止処理
+LD M56                   ; 自動起動停止指令(ｻｲｸﾙ停止)
+LD M3501                 ; 排出ﾊﾞｯﾌｧｷｬﾘｱ無し
+OR M3503                 ; 排出ﾊﾞｯﾌｧ排出可(ﾘﾆｺﾝへ)
+OR M3507                 ; 排出ｼﾌﾄ引込可(排出ｼﾌﾄへ)
+ANL
+MOV K48 D3500            ; ﾕﾆｯﾄ6-1自動運転ｽﾃｯﾌﾟ
+;ｻｲｸﾙ終了
+LD M3548                 ; ﾕﾆｯﾄ5-1ｻｲｸﾙ停止処理
+@MOV K49 D3500           ; ﾕﾆｯﾄ6-1自動運転ｽﾃｯﾌﾟ
+;<h1/>■自動 ｼﾌﾄ通常ﾓｰﾄﾞ
+;
+;□　UNIT6-2 ｼﾌﾄ自動
+;
+LD CR2002                ; 常時ON
+ZRES M3550 M3699         ; 排出ｼﾌﾄｽﾃｯﾌﾟ開始  ﾕﾆｯﾄ5-2ｻｲｸﾙ停止
+LDB M3985                ; ﾕﾆｯﾄ6起動中
+MOV K0 D3501             ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+DW K0 D3701              ; UT6 main 2 STEP monitor
+LD M3985                 ; ﾕﾆｯﾄ6起動中
+MOV D3501 Z1             ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+SET M3550:Z1             ; 排出ｼﾌﾄｽﾃｯﾌﾟ開始
+CAL+ D3501 K3550 D3701   ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ  UT6 main 2 STEP monitor
+;ｼﾌﾄ上ｷｬﾘｱ確認
+LD M3550                 ; 排出ｼﾌﾄｽﾃｯﾌﾟ開始
+AND T611                 ; 排出部ﾗｲﾄｶｰﾃﾝ確認ﾀｲﾏ
+MPS
+AND X1725                ; 排出ｼﾌﾀｷｬﾘｱ確認
+@INC D3501               ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+MPP
+ANB X1725                ; 排出ｼﾌﾀｷｬﾘｱ確認
+MOV K3 D3501             ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+;ｷｬﾘｱ上ﾌﾚｰﾑ確認(初期動作･情報無しﾜｰｸ排出時用)
+LD M3551                 ; ｷｬﾘｱ上ﾌﾚｰﾑ確認
+AND T611                 ; 排出部ﾗｲﾄｶｰﾃﾝ確認ﾀｲﾏ
+MPS
+ANB X1727                ; 排出ｼﾌﾀ引込側ﾜｰｸ確認  (ON=無)
+@INC D3501               ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+MPP
+AND X1727                ; 排出ｼﾌﾀ引込側ﾜｰｸ確認  (ON=無)
+MOV K22 D3501            ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+@FMOV K0 D16900 K100     ; 取出ﾌﾚｰﾑ投入ﾊﾟﾚｯﾄID
+;ｷｬﾘｱ有､ﾜｰｸ情報確認
+LD M3552                 ; ﾌﾚｰﾑ有取出要求
+AND X1727                ; 排出ｼﾌﾀ引込側ﾜｰｸ確認  (ON=無)
+ANB T611                 ; 排出部ﾗｲﾄｶｰﾃﾝ確認ﾀｲﾏ
+MOV K22 D3501            ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+@FMOV K0 D16900 K100     ; 取出ﾌﾚｰﾑ投入ﾊﾟﾚｯﾄID
+;ｼﾌﾄ上ｷｬﾘｱ無し引込要求
+LD M3553                 ; 排出ｼﾌﾄ引込要求(引込へ)
+AND M3515                ; 排出ｼﾌﾄ引込完了(ｼﾌﾄへ)
+@INC D3501               ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+LD M3554                 ; ｷｬﾘｱ引込完了
+ANB M3515                ; 排出ｼﾌﾄ引込完了(ｼﾌﾄへ)
+@INC D3501               ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+;ﾜｰｸ情報無しｷｬﾘｱ上ﾌﾚｰﾑ確認
+LD M3555                 ; ｷｬﾘｱ上ﾌﾚｰﾑ確認
+MPS
+AND<> D3560 K0           ; 取出部ﾜｰｸ情報
+@INC D3501               ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+MPP
+AND= D3560 K0            ; 取出部ﾜｰｸ情報
+MOV K0 D3501             ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+;ﾌﾚｰﾑ有､取出開始
+LD M3556                 ; ﾌﾚｰﾑ有､取出開始ON
+AND W0104.12             ; 製品排出開始
+AND W04.12               ; 製品排出開始受付
+@INC D3501               ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+;製品判定 (NG品､OK品)
+LD M3557                 ; 製品判定
+MPS
+LD<> D16962 K1           ; 取出ﾜｰｸOK/NGﾃﾞｰﾀ
+AND<> D16962 K2          ; 取出ﾜｰｸOK/NGﾃﾞｰﾀ
+OR<> D16907 K0           ; 取出CN塗布幅検査No.(始業点検)
+OR<> D16912 K0           ; 取出HS塗布幅検査No.(始業点検)
+OR<> D16926 K0           ; 取出COV塗布幅検査No.(始業点検)
+ANL
+@INC D3501               ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+MPP
+LD= D16962 K1            ; 取出ﾜｰｸOK/NGﾃﾞｰﾀ
+OR= D16962 K2            ; 取出ﾜｰｸOK/NGﾃﾞｰﾀ
+AND= D16907 K0           ; 取出CN塗布幅検査No.(始業点検)
+AND= D16912 K0           ; 取出HS塗布幅検査No.(始業点検)
+AND= D16926 K0           ; 取出COV塗布幅検査No.(始業点検)
+ANL
+MOV K12 D3501            ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+;NG品取出処理
+;ｼﾌﾄ引込中に取出されてﾜｰｸが無い場合はﾗｲﾄｶｰﾃﾝ確認ﾊﾟｽ
+LD M3558                 ; NG品取出開始
+AND M3705                ; NGﾜｰｸ取出中
+LDB T611                 ; 排出部ﾗｲﾄｶｰﾃﾝ確認ﾀｲﾏ
+OR X1727                 ; 排出ｼﾌﾀ引込側ﾜｰｸ確認  (ON=無)
+ANL
+@INC D3501               ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+LD M3559                 ; NG品取出開始確認
+AND X1727                ; 排出ｼﾌﾀ引込側ﾜｰｸ確認  (ON=無)
+AND T611                 ; 排出部ﾗｲﾄｶｰﾃﾝ確認ﾀｲﾏ
+@INC D3501               ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+LD M3560                 ; NG品取出確認
+AND X172F                ; 排出部NGBOXﾜｰｸ確認
+ANP X170F                ; 取出部ﾘｾｯﾄPB
+@INC D3501               ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+LD M3561                 ; NG品取出完了
+ANB M3705                ; NGﾜｰｸ取出中
+MOV K20 D3501            ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+;OK品取出処理
+;ｼﾌﾄ引込中に取出されてﾜｰｸが無い場合はﾗｲﾄｶｰﾃﾝ確認ﾊﾟｽ
+LD M3562                 ; OK品取出開始
+LDB T611                 ; 排出部ﾗｲﾄｶｰﾃﾝ確認ﾀｲﾏ
+OR X1727                 ; 排出ｼﾌﾀ引込側ﾜｰｸ確認  (ON=無)
+ANL
+@INC D3501               ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+LD M3563                 ; OK品取出開始確認
+AND X1727                ; 排出ｼﾌﾀ引込側ﾜｰｸ確認  (ON=無)
+AND T611                 ; 排出部ﾗｲﾄｶｰﾃﾝ確認ﾀｲﾏ
+@FMOV K0 D16900 K100     ; 取出ﾌﾚｰﾑ投入ﾊﾟﾚｯﾄID
+MOV K20 D3501            ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+;取出結果送信
+LD M3570                 ; ﾌﾚｰﾑ取出結果ｾｯﾄ
+AND W0104.13             ; 製品排出結果
+@INC D3501               ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+LD M3571                 ; ﾌﾚｰﾑ取出開始OFF
+ANB W0104.12             ; 製品排出開始
+ANB W04.12               ; 製品排出開始受付
+@INC D3501               ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+;<h1/>　動作ﾓｰﾄﾞ判定
+;ﾓｰﾄﾞ判定
+;Mode decision
+LD M3572                 ; ﾌﾚｰﾑ取出結果OFF
+ANB W0104.13             ; 製品排出結果
+@FMOV K0 D16900 K100     ; 取出ﾌﾚｰﾑ投入ﾊﾟﾚｯﾄID
+MPS
+LD M56                   ; 自動起動停止指令(ｻｲｸﾙ停止)
+ANB M66                  ; 全ﾕﾆｯﾄﾜｰｸ無
+ORB M56                  ; 自動起動停止指令(ｻｲｸﾙ停止)
+ANL
+@INC D3501               ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+MPP
+LD M56                   ; 自動起動停止指令(ｻｲｸﾙ停止)
+AND M66                  ; 全ﾕﾆｯﾄﾜｰｸ無
+ANL
+MOV K148 D3501           ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+;ｼﾌﾄ投入位置移動
+LD M3573                 ; ｼﾌﾄ投入位置
+ANB M3731                ; ｼﾌﾄ投入位置移動完了
+ANB M3732                ; ｼﾌﾄ投入位置移動中
+SET M3730                ; ｼﾌﾄ投入位置移動・ﾜｰｸ残確認
+CON
+@INC D3501               ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+LD M3574                 ; ｼﾌﾄ投入位置 ﾜｰｸ無し確認
+AND M3731                ; ｼﾌﾄ投入位置移動完了
+ANB M3732                ; ｼﾌﾄ投入位置移動中
+RES M3731                ; ｼﾌﾄ投入位置移動完了
+CON
+MOV K31 D3501            ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+;ｲﾝﾃﾞｯｸｽNoｾｯﾄ
+LD M3581                 ; ｷｬﾘｱｲﾝﾃﾞｯｸｽNoｾｯﾄ
+MPS
+AND>= K0 D3530           ; 投入ｲﾝﾃﾞｯｸｽｶｳﾝﾀ
+MOV K1 D3530             ; 投入ｲﾝﾃﾞｯｸｽｶｳﾝﾀ
+MRD
+AND<= K15 D3530          ; 投入ｲﾝﾃﾞｯｸｽｶｳﾝﾀ
+MOV K1 D3530             ; 投入ｲﾝﾃﾞｯｸｽｶｳﾝﾀ
+MRD
+MOV D3530 W0141          ; 投入ｲﾝﾃﾞｯｸｽｶｳﾝﾀ  ｼｬﾄﾙ排出部ｲﾝﾃﾞｯｸｽNo.
+MRD
+ANB M95                  ; 能拡対応ﾓｰﾄﾞﾌﾗｸﾞ(ONで能拡ﾓｰﾄﾞ)
+@INC D3501               ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+MPP
+AND M95                  ; 能拡対応ﾓｰﾄﾞﾌﾗｸﾞ(ONで能拡ﾓｰﾄﾞ)
+MPS
+LDB M151                 ; Bonding Daily Check MODE
+ANB M152                 ; Re-Enter MODE
+ANL
+MOV K63 D3501            ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+MRD
+AND M151                 ; Bonding Daily Check MODE
+MOV K110 D3501           ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+MPP
+AND M152                 ; Re-Enter MODE
+MOV K80 D3501            ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+;ﾊﾟﾚｯﾄID読込
+LD M3582                 ; ﾊﾟﾚｯﾄID読込要求(PCへ)
+MPS
+OUT W0101.5              ; ﾘﾀｰﾝ側ﾊﾟﾚｯﾄID読込要求
+MPP
+AND W01.5                ; ﾘﾀｰﾝ側ﾊﾟﾚｯﾄID読込完了
+MPS
+ANB W01.6                ; ﾘﾀｰﾝ側ﾊﾟﾚｯﾄID読込ｴﾗｰ
+BMOV W058 D3956 K2       ; ﾘﾀｰﾝ側ﾊﾟﾚｯﾄID(PC)  ﾘﾀｰﾝ側ﾊﾟﾚｯﾄID
+MOV K50 D3501            ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+MPP
+AND W01.6                ; ﾘﾀｰﾝ側ﾊﾟﾚｯﾄID読込ｴﾗｰ
+MOV K40 D3501            ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+;治具ID読込NG
+;待機位置へ移動して治具交換
+LD M3590                 ; ﾊﾟﾚｯﾄID読込NG
+ANB X400C                ; Ret_Sift_RB_Busy
+@INC D3501               ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+MOV K1 D3524             ; Ret_Sift_RB_POS_確定
+LD M3591                 ; ｼﾌﾄRB取出移動
+AND X400C                ; Ret_Sift_RB_Busy
+ANB X400D                ; Ret_Sift_RB_END
+@INC D3501               ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+LD M3592                 ; ｼﾌﾄRB取出移動確認
+ANB X400C                ; Ret_Sift_RB_Busy
+MPS
+AND X400D                ; Ret_Sift_RB_END
+@INC D3501               ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+MPP
+LDB X400D                ; Ret_Sift_RB_END
+AND T611                 ; 排出部ﾗｲﾄｶｰﾃﾝ確認ﾀｲﾏ
+ANB B0C6                 ; 排出ｼﾌﾄ干渉異常
+ANL
+MOV K40 D3501            ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+;ﾀﾞｲｱﾛｸﾞ表示､治具交換
+LD M3593                 ; ﾘﾀｰﾝｷｬﾘｱID照合NG
+AND= D200 K0             ; ｴﾗｰｺｰﾄﾞNo.
+DW K602 D200             ; ｴﾗｰｺｰﾄﾞNo.
+CON
+@INC D3501               ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+LD M3594                 ; ﾘﾀｰﾝｷｬﾘｱID照合NG中
+AND<> D200 K0            ; ｴﾗｰｺｰﾄﾞNo.
+LDP B1024                ; ﾘﾄﾗｲ確認TP-PB
+ORP X170F                ; 取出部ﾘｾｯﾄPB
+ANL
+AND X1727                ; 排出ｼﾌﾀ引込側ﾜｰｸ確認  (ON=無)
+DW K0 D200               ; ｴﾗｰｺｰﾄﾞNo.
+CON
+@INC D3501               ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+;ｼﾌﾄ投入位置移動
+LD M3595                 ; ﾘﾀｰﾝｷｬﾘｱID照合NG解除確認
+AND= D200 K0             ; ｴﾗｰｺｰﾄﾞNo.
+ANB X400C                ; Ret_Sift_RB_Busy
+@INC D3501               ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+MOV K2 D3524             ; Ret_Sift_RB_POS_確定
+LD M3596                 ; ｼﾌﾄRB排出移動
+AND X400C                ; Ret_Sift_RB_Busy
+ANB X400D                ; Ret_Sift_RB_END
+@INC D3501               ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+LD M3597                 ; ｼﾌﾄRB排出移動確認
+ANB X400C                ; Ret_Sift_RB_Busy
+MPS
+AND X400D                ; Ret_Sift_RB_END
+MOV K32 D3501            ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+MPP
+LDB X400D                ; Ret_Sift_RB_END
+AND T611                 ; 排出部ﾗｲﾄｶｰﾃﾝ確認ﾀｲﾏ
+ANB B0C6                 ; 排出ｼﾌﾄ干渉異常
+ANL
+MOV K45 D3501            ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+;ｹｰｽID照合
+LD M3600                 ; 排出ｼﾌﾄ､ﾊﾟﾚｯﾄID読取完(ﾌﾞﾛｰへ)
+MPS
+LDB M151                 ; Bonding Daily Check MODE
+ANB M152                 ; Re-Enter MODE
+ORB M91                  ; 投入ﾓｰﾄﾞﾘﾀｰﾝｼﾌﾄ動作開始
+ANL
+MPS
+ANB M56                  ; 自動起動停止指令(ｻｲｸﾙ停止)
+MPS
+AND M1601                ; ｼﾌﾄID照合要求
+@INC D3501               ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+MPP
+LD M36                   ; 払出ﾓｰﾄﾞ
+ANB M66                  ; 全ﾕﾆｯﾄﾜｰｸ無
+AND M90                  ; 払出ﾓｰﾄﾞｼﾌﾄ動作開始
+ANL
+MOV K140 D3501           ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+MPP
+AND M56                  ; 自動起動停止指令(ｻｲｸﾙ停止)
+MOV K55 D3501            ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+MPP
+AND M91                  ; 投入ﾓｰﾄﾞﾘﾀｰﾝｼﾌﾄ動作開始
+MPS
+AND M151                 ; Bonding Daily Check MODE
+MOV K110 D3501           ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+MPP
+AND M152                 ; Re-Enter MODE
+MOV K80 D3501            ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+LD M3601                 ; ﾌﾚｰﾑ･ｷｬﾘｱID照合
+AND W02.13               ; 投入ﾌﾚｰﾑ･ｷｬﾘｱ照合完了
+MPS
+ANB W02.14               ; 投入ﾌﾚｰﾑ･ｷｬﾘｱ照合NG
+@INC D3501               ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+MPP
+AND W02.14               ; 投入ﾌﾚｰﾑ･ｷｬﾘｱ照合NG
+MOV K53 D3501            ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+LD M3602                 ; ﾌﾚｰﾑ･ｷｬﾘｱ照合OK
+ANB W02.13               ; 投入ﾌﾚｰﾑ･ｷｬﾘｱ照合完了
+ANB W02.14               ; 投入ﾌﾚｰﾑ･ｷｬﾘｱ照合NG
+MOV K60 D3501            ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+LD M3603                 ; ﾌﾚｰﾑ･ｷｬﾘｱ照合NG
+ANB W02.13               ; 投入ﾌﾚｰﾑ･ｷｬﾘｱ照合完了
+ANB W02.14               ; 投入ﾌﾚｰﾑ･ｷｬﾘｱ照合NG
+MOV K40 D3501            ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+;払出ﾓｰﾄﾞ基板搬送
+LD M3690                 ; 排出ｼﾌﾄ払出ﾓｰﾄﾞ基板搬送可
+LD M5104                 ; 搬送可確認
+LDB X124E                ; 基板投入CV読取ﾜｰｸ確認
+ANB X126B                ; 基板投入CVﾜｰｸ有
+ORL
+ANL
+@INC D3501               ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+LD M3691                 ; 払出ﾓｰﾄﾞ基板搬送開始確認
+ANB M5104                ; 搬送可確認
+MOV K60 D3501            ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+;ｻｲｸﾙ停止､取出位置へ移動
+LD M3605                 ; ｻｲｸﾙ停止確認
+ANB X400C                ; Ret_Sift_RB_Busy
+@INC D3501               ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+MOV K1 D3524             ; Ret_Sift_RB_POS_確定
+LD M3606                 ; ｼﾌﾄRB取出移動
+AND X400C                ; Ret_Sift_RB_Busy
+ANB X400D                ; Ret_Sift_RB_END
+@INC D3501               ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+LD M3607                 ; ｼﾌﾄRB取出移動確認
+ANB X400C                ; Ret_Sift_RB_Busy
+MPS
+AND X400D                ; Ret_Sift_RB_END
+@INC D3501               ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+MPP
+LDB X400D                ; Ret_Sift_RB_END
+AND T611                 ; 排出部ﾗｲﾄｶｰﾃﾝ確認ﾀｲﾏ
+ANB B0C6                 ; 排出ｼﾌﾄ干渉異常
+ANL
+MOV K55 D3501            ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+;ﾌﾚｰﾑID照合OK
+LD M3610                 ; ID照合OK
+ANB M1601                ; ｼﾌﾄID照合要求
+@INC D3501               ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+;ﾌﾚｰﾑ投入可･完了確認
+;※排出ﾓｰﾄﾞ時は投入ｼﾌﾄにｷｬﾘｱ投入されてから実行
+LD M3611                 ; 投入ｼﾌﾄ投入可(RBへ)
+MPS
+AND M1608                ; ｼﾌﾄ投入完了(投入ｼﾌﾄへ)
+@MOV D3530 D15655        ; 投入ｲﾝﾃﾞｯｸｽｶｳﾝﾀ  UT6-1投入ｲﾝﾃﾞｯｸｽNo
+MPS
+@BMOV D3956 D15656 K2    ; ﾘﾀｰﾝ側ﾊﾟﾚｯﾄID  UT6-1ﾊﾟﾚｯﾄID
+MPP
+AND= D3956 D15656        ; ﾘﾀｰﾝ側ﾊﾟﾚｯﾄID  UT6-1ﾊﾟﾚｯﾄID
+@INC D3501               ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+MPP
+LD M36                   ; 払出ﾓｰﾄﾞ
+AND M90                  ; 払出ﾓｰﾄﾞｼﾌﾄ動作開始
+AND X1728                ; 排出ｼﾌﾀﾘﾀｰﾝ側ﾜｰｸ確認
+AND M2552                ; 投入ｼﾌﾄ投入可(ﾘﾆｺﾝへ)
+ANL
+@INC D3501               ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+LD M3612                 ; ﾌﾚｰﾑ投入完了OFF確認
+ANB M1608                ; ｼﾌﾄ投入完了(投入ｼﾌﾄへ)
+@INC D3501               ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+FMOV K0 D3956 K2         ; ﾘﾀｰﾝ側ﾊﾟﾚｯﾄID
+;ﾘﾀｰﾝCV投入
+LD M3613                 ; ﾘﾀｰﾝCV投入許可待ち
+AND<= D3600 K2           ; ﾘﾀｰﾝCVｷｬﾘｱ数
+AND M3701                ; ﾘﾀｰﾝCV投入可(ｼﾌﾄへ)
+@INC D3501               ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+LD M3614                 ; CV停止要求(ﾘﾀｰﾝCVへ)
+AND M3700                ; ﾘﾀｰﾝCV停止要求
+@INC D3501               ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+;位置決め解除
+LD M3615                 ; 排出ｼﾌﾄﾛｯｸ解
+AND X172C                ; 排出ｼﾌﾄﾛｯｸ解除端
+@INC D3501               ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+;ｷｬﾘｱ､ﾘﾀｰﾝCV送り
+LD M3616                 ; ﾘﾀｰﾝCV排出送
+AND X1729                ; ﾘﾀｰﾝ排出送り端
+@INC D3501               ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+;送り端ｷｬﾘｱ確認
+LD M3617                 ; 排出送りｷｬﾘｱ確認
+MPS
+LDB X1725                ; 排出ｼﾌﾀｷｬﾘｱ確認
+AND M3720                ; ﾘﾀｰﾝCV排出確認ﾌﾗｸﾞ
+ANL
+MOV K72 D3501            ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+MPP
+LD X1725                 ; 排出ｼﾌﾀｷｬﾘｱ確認
+ORB M3720                ; ﾘﾀｰﾝCV排出確認ﾌﾗｸﾞ
+ANL
+@INC D3501               ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+;ｷｬﾘｱﾘﾀｰﾝCV送りNG
+LD M3618                 ; ﾘﾀｰﾝCV排出NG戻
+AND X172A                ; ﾘﾀｰﾝ排出戻り端
+@INC D3501               ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+LD M3619                 ; 排出送りNG
+AND= D200 K0             ; ｴﾗｰｺｰﾄﾞNo.
+DW K603 D200             ; ｴﾗｰｺｰﾄﾞNo.
+CON
+@INC D3501               ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+LD M3620                 ; 排出送りNG中
+AND<> D200 K0            ; ｴﾗｰｺｰﾄﾞNo.
+MPS
+ANP B1024                ; ﾘﾄﾗｲ確認TP-PB
+DW K0 D200               ; ｴﾗｰｺｰﾄﾞNo.
+CON
+@INC D3501               ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+MPP
+OUT M3952                ; Err603:ﾘﾀｰﾝ CV投入NG
+LD M3621                 ; 排出送りNG解除
+AND= D200 K0             ; ｴﾗｰｺｰﾄﾞNo.
+MOV K65 D3501            ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+;ｷｬﾘｱﾘﾀｰﾝCV送りOK
+LD M3622                 ; ﾘﾀｰﾝCV排出OK戻
+AND X172A                ; ﾘﾀｰﾝ排出戻り端
+@INC D3501               ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+;
+;ﾘﾀｰﾝCV上ｷｬﾘｱｲﾝﾃﾞｯｸ付加
+;※この回路はD3530のINC回路より後にしない事
+LD M3623                 ; 排出送り完了
+AND M3721                ; ﾘﾀｰﾝCVｷｬﾘｱｶｳﾝﾀ(+)受付
+@MOV D17001 D17002       ; RT2ﾌﾚｰﾑ投入ｲﾝﾃﾞｯｸｽ(投入ｼﾌﾄ用)  RT3ﾌﾚｰﾑ投入ｲﾝﾃﾞｯｸｽ(投入ｼﾌﾄ用)
+@MOV D17000 D17001       ; RT1ﾌﾚｰﾑ投入ｲﾝﾃﾞｯｸｽ(投入ｼﾌﾄ用)  RT2ﾌﾚｰﾑ投入ｲﾝﾃﾞｯｸｽ(投入ｼﾌﾄ用)
+@MOV D3530 D17000        ; 投入ｲﾝﾃﾞｯｸｽｶｳﾝﾀ  RT1ﾌﾚｰﾑ投入ｲﾝﾃﾞｯｸｽ(投入ｼﾌﾄ用)
+;投入可､ﾘﾀｰﾝCV停止要求OFF確認
+;ﾘﾀｰﾝｼﾌﾄ→ﾘﾀｰﾝCVﾃﾞｰﾀ移動
+LD M3623                 ; 排出送り完了
+AND M3721                ; ﾘﾀｰﾝCVｷｬﾘｱｶｳﾝﾀ(+)受付
+@INC D3530               ; 投入ｲﾝﾃﾞｯｸｽｶｳﾝﾀ
+@BMOV D15800 D15900 K100 ; RT2ﾌﾚｰﾑ投入ﾊﾟﾚｯﾄID  RT3ﾌﾚｰﾑ投入ﾊﾟﾚｯﾄID
+@BMOV D15700 D15800 K100 ; RT1ﾌﾚｰﾑ投入ﾊﾟﾚｯﾄID  RT2ﾌﾚｰﾑ投入ﾊﾟﾚｯﾄID
+@BMOV D15600 D15700 K100 ; UT6-1ﾌﾚｰﾑ投入ﾊﾟﾚｯﾄID  RT1ﾌﾚｰﾑ投入ﾊﾟﾚｯﾄID
+MPS
+@FMOV K0 D15600 K100     ; UT6-1ﾌﾚｰﾑ投入ﾊﾟﾚｯﾄID
+MPP
+ANB M3700                ; ﾘﾀｰﾝCV停止要求
+@INC D3501               ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+;ｼﾌﾄ引込側移動
+LD M3624                 ; ﾘﾀｰﾝCV要求OFF確認
+ANB X400C                ; Ret_Sift_RB_Busy
+@INC D3501               ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+MOV K1 D3524             ; Ret_Sift_RB_POS_確定
+LD M3625                 ; ｼﾌﾄRB取出移動
+AND X400C                ; Ret_Sift_RB_Busy
+ANB X400D                ; Ret_Sift_RB_END
+@INC D3501               ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+LD M3626                 ; ｼﾌﾄRB取出移動完了
+ANB X400C                ; Ret_Sift_RB_Busy
+MPS
+AND X400D                ; Ret_Sift_RB_END
+MOV K0 D3501             ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+MPP
+LDB X400D                ; Ret_Sift_RB_END
+AND T611                 ; 排出部ﾗｲﾄｶｰﾃﾝ確認ﾀｲﾏ
+ANB B0C6                 ; 排出ｼﾌﾄ干渉異常
+ANL
+MOV K74 D3501            ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+;<h1/>　再投入ﾓｰﾄﾞ
+;再投入ﾓｰﾄﾞ
+;Resupply Mode
+;ﾊﾟﾚｯﾄID読込
+;Pallet ID Read Request
+LD M3630                 ; 再投入開始
+MPS
+AND M152                 ; Re-Enter MODE
+MPS
+OUT W0107.9              ; 再投入時ﾊﾟﾚｯﾄID読込要求
+MPP
+AND W0A.9                ; 再投入時ﾊﾟﾚｯﾄID読込完了
+MPS
+ANB W0A.10               ; 再投入時ﾊﾟﾚｯﾄID不一致
+@BMOV W020 D17100 K64    ; ﾌﾚｰﾑ投入ﾊﾟﾚｯﾄID  Re_ent._ﾌﾚｰﾑ投入ﾊﾟﾚｯﾄID
+@MOV W07 D17163          ; 8_機種情報BITﾃﾞｰﾀ  Re_ent.機種情報
+MOV K106 D3501           ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+MPP
+AND W0A.10               ; 再投入時ﾊﾟﾚｯﾄID不一致
+MOV K105 D3501           ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+MPP
+ANB M152                 ; Re-Enter MODE
+MOV K103 D3501           ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+LD M3655                 ; 再投入品読込NG
+ANP X170F                ; 取出部ﾘｾｯﾄPB
+MOV K80 D3501            ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+;ｼﾌﾄ引込側移動
+LD M3656                 ; ｼﾌﾄRB取出移動開始
+ANB X400C                ; Ret_Sift_RB_Busy
+@INC D3501               ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+MOV K1 D3524             ; Ret_Sift_RB_POS_確定
+LD M3657                 ; ｼﾌﾄRB取出移動中
+AND X400C                ; Ret_Sift_RB_Busy
+ANB X400D                ; Ret_Sift_RB_END
+@INC D3501               ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+LD M3658                 ; ｼﾌﾄRB取出移動完了
+ANB X400C                ; Ret_Sift_RB_Busy
+MPS
+AND X400D                ; Ret_Sift_RB_END
+@INC D3501               ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+MPP
+LDB X400D                ; Ret_Sift_RB_END
+AND T611                 ; 排出部ﾗｲﾄｶｰﾃﾝ確認ﾀｲﾏ
+ANB B0C6                 ; 排出ｼﾌﾄ干渉異常
+ANL
+MOV K106 D3501           ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+LD M3659                 ; 投入抑制待ち
+MPS
+LD M152                  ; Re-Enter MODE
+ANB W0A.7                ; 再投入品読取完了
+ANL
+MOV K81 D3501            ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+MPP
+ANB M152                 ; Re-Enter MODE
+MOV K103 D3501           ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+LD M3631                 ; 再投入品読込要求
+MPS
+AND M152                 ; Re-Enter MODE
+MPS
+OUT W0107.7              ; 再投入品読取要求
+MPP
+AND W0A.7                ; 再投入品読取完了
+MPS
+ANB W0A.8                ; 再投入品投入不可
+@BMOV W020 D17100 K64    ; ﾌﾚｰﾑ投入ﾊﾟﾚｯﾄID  Re_ent._ﾌﾚｰﾑ投入ﾊﾟﾚｯﾄID
+@MOV W07 D17163          ; 8_機種情報BITﾃﾞｰﾀ  Re_ent.機種情報
+MPS
+AND M160                 ; Secret Mode（Re-enter mode 2）
+SET D17163.14            ; 再投入品塗布無し
+MPP
+MOV K83 D3501            ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+MPP
+AND W0A.8                ; 再投入品投入不可
+@INC D3501               ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+MPP
+ANB M152                 ; Re-Enter MODE
+MOV K103 D3501           ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+LD M3632                 ; 再投入品読込NG
+ANP X170F                ; 取出部ﾘｾｯﾄPB
+MOV K109 D3501           ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+;読込OK ﾜｰｸ供給
+;Read OK,Work Supply
+LD M3633                 ; 再投入品読込OK
+ANP T611                 ; 排出部ﾗｲﾄｶｰﾃﾝ確認ﾀｲﾏ
+MPS
+ANB X1727                ; 排出ｼﾌﾀ引込側ﾜｰｸ確認  (ON=無)
+@INC D3501               ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+MPP
+LD X1727                 ; 排出ｼﾌﾀ引込側ﾜｰｸ確認  (ON=無)
+ANB M152                 ; Re-Enter MODE
+ANL
+MOV K103 D3501           ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+;ｼﾌﾄ投入位置移動
+LD M3634                 ; 再投入品供給確認
+AND= D200 K0             ; ｴﾗｰｺｰﾄﾞNo.
+ANB X400C                ; Ret_Sift_RB_Busy
+@INC D3501               ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+MOV K2 D3524             ; Ret_Sift_RB_POS_確定
+LD M3635                 ; 再投入ｼﾌﾄRB排出移動
+AND X400C                ; Ret_Sift_RB_Busy
+ANB X400D                ; Ret_Sift_RB_END
+@INC D3501               ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+LD M3636                 ; 再投入ｼﾌﾄRB排出移動確認
+ANB X400C                ; Ret_Sift_RB_Busy
+MPS
+AND X400D                ; Ret_Sift_RB_END
+MOV K87 D3501            ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+MPP
+LDB X400D                ; Ret_Sift_RB_END
+AND T611                 ; 排出部ﾗｲﾄｶｰﾃﾝ確認ﾀｲﾏ
+ANB B0C6                 ; 排出ｼﾌﾄ干渉異常
+ANL
+MOV K84 D3501            ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+;ﾜｰｸ確認
+;Work Check
+LD M3637                 ; 再投入ｼﾌﾄRB移動完了
+MPS
+ANB X1728                ; 排出ｼﾌﾀﾘﾀｰﾝ側ﾜｰｸ確認
+MPS
+MOV K91 D3501            ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+MPP
+AND M260                 ; 20150618 仮Mori
+MOV D3530 W0141          ; 投入ｲﾝﾃﾞｯｸｽｶｳﾝﾀ  ｼｬﾄﾙ排出部ｲﾝﾃﾞｯｸｽNo.
+MPP
+AND X1728                ; 排出ｼﾌﾀﾘﾀｰﾝ側ﾜｰｸ確認
+TMR K657 K20             ; 再投入ﾜｰｸ行方不明
+;再投入ﾊﾟﾚｯﾄID最終確認完了
+;Reenter_Pallet ID Final check
+LD M3641                 ; 再投入ﾊﾟﾚｯﾄID読込要求
+MPS
+OUT W0107.15             ; 再投入ﾊﾟﾚｯﾄID最終確認要求
+MPP
+AND W0A.14               ; 再投入ﾊﾟﾚｯﾄID最終確認完了
+MPS
+ANB W0A.15               ; 再投入ﾊﾟﾚｯﾄID最終確認ｴﾗｰ
+MOV K98 D3501            ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+MPP
+AND W0A.15               ; 再投入ﾊﾟﾚｯﾄID最終確認ｴﾗｰ
+@INC D3501               ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+;ID照合NG戻
+;Pallet ID Verification NG Return
+LD M3642                 ; 再投入ﾊﾟﾚｯﾄID読込NG
+ANB X400C                ; Ret_Sift_RB_Busy
+@INC D3501               ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+MOV K1 D3524             ; Ret_Sift_RB_POS_確定
+LD M3643                 ; 再投入ｼﾌﾄRB供給移動
+AND X400C                ; Ret_Sift_RB_Busy
+ANB X400D                ; Ret_Sift_RB_END
+@INC D3501               ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+LD M3644                 ; 再投入ｼﾌﾄRB供給移動確認
+ANB X400C                ; Ret_Sift_RB_Busy
+MPS
+AND X400D                ; Ret_Sift_RB_END
+MOV K95 D3501            ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+MPP
+LDB X400D                ; Ret_Sift_RB_END
+AND T611                 ; 排出部ﾗｲﾄｶｰﾃﾝ確認ﾀｲﾏ
+ANB B0C6                 ; 排出ｼﾌﾄ干渉異常
+ANL
+MOV K92 D3501            ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+;ﾀﾞｲｱﾛｸﾞ表示､治具交換
+LD M3645                 ; ﾘﾀｰﾝｷｬﾘｱID照合NG
+AND= D200 K0             ; ｴﾗｰｺｰﾄﾞNo.
+DW K602 D200             ; ｴﾗｰｺｰﾄﾞNo.
+CON
+@INC D3501               ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+LD M3646                 ; ﾘﾀｰﾝｷｬﾘｱID照合NG中
+AND<> D200 K0            ; ｴﾗｰｺｰﾄﾞNo.
+LDP B1024                ; ﾘﾄﾗｲ確認TP-PB
+ORP X170F                ; 取出部ﾘｾｯﾄPB
+ANL
+DW K0 D200               ; ｴﾗｰｺｰﾄﾞNo.
+CON
+@INC D3501               ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+LD M3647                 ; ﾘﾀｰﾝｷｬﾘｱID照合NG解除確認
+AND= D200 K0             ; ｴﾗｰｺｰﾄﾞNo.
+MOV K83 D3501            ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+;ID照合OK
+;Pallet ID Verification OK Data Sift
+LD M3648                 ; ID照合OK_ﾃﾞｰﾀ確定
+@BMOV D17100 D15600 K100 ; Re_ent._ﾌﾚｰﾑ投入ﾊﾟﾚｯﾄID  UT6-1ﾌﾚｰﾑ投入ﾊﾟﾚｯﾄID
+@MOV K1 D15662           ; UT6-1ﾜｰｸOK/NGﾃﾞｰﾀ
+@FMOV K0 D17100 K100     ; Re_ent._ﾌﾚｰﾑ投入ﾊﾟﾚｯﾄID
+@INC D3501               ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+;ﾊﾟﾚｯﾄID ｲﾝﾃﾞｯｸｽﾃﾞｰﾀｾｯﾄ
+;Pallet_ID and INDEX_Data set
+LD M3649                 ; ｲﾝﾃﾞｯｸｽNo.ｾｯﾄ
+@MOV D3530 D15655        ; 投入ｲﾝﾃﾞｯｸｽｶｳﾝﾀ  UT6-1投入ｲﾝﾃﾞｯｸｽNo
+MPS
+@BMOV D3956 D15656 K2    ; ﾘﾀｰﾝ側ﾊﾟﾚｯﾄID  UT6-1ﾊﾟﾚｯﾄID
+MPP
+AND= D3956 D15656        ; ﾘﾀｰﾝ側ﾊﾟﾚｯﾄID  UT6-1ﾊﾟﾚｯﾄID
+@INC D3501               ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+LD M3650                 ; NP
+@INC D3501               ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+LD M3651                 ; 再投入ﾓｰﾄﾞ基板搬送開始確認
+ANB M5104                ; 搬送可確認
+@INC D3501               ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+LD M3652                 ; 再投入ﾓｰﾄﾞ解除
+ANB M152                 ; Re-Enter MODE
+FMOV K0 D3956 K2         ; ﾘﾀｰﾝ側ﾊﾟﾚｯﾄID
+MOV K63 D3501            ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+;★再投入ﾓｰﾄﾞ中止・ｼﾌﾄ投入位置戻し
+LD M3653                 ; ｼﾌﾄ投入位置
+ANB M3731                ; ｼﾌﾄ投入位置移動完了
+ANB M3732                ; ｼﾌﾄ投入位置移動中
+SET M3730                ; ｼﾌﾄ投入位置移動・ﾜｰｸ残確認
+CON
+@INC D3501               ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+LD M3654                 ; ｼﾌﾄ投入位置 ﾜｰｸ無し確認
+AND M3731                ; ｼﾌﾄ投入位置移動完了
+ANB M3732                ; ｼﾌﾄ投入位置移動中
+RES M3731                ; ｼﾌﾄ投入位置移動完了
+CON
+MOV K63 D3501            ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+;<h1/>　点検投入ﾓｰﾄﾞ
+;点検投入ﾓｰﾄﾞ
+;Bonding Check Mode
+;ｼﾌﾄ引込側移動
+LD M3660                 ; 点検投入開始
+ANB X400C                ; Ret_Sift_RB_Busy
+MOV K135 D3501           ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+MOV K1 D3524             ; Ret_Sift_RB_POS_確定
+LD M3685                 ; ｼﾌﾄRB取出移動中
+AND X400C                ; Ret_Sift_RB_Busy
+ANB X400D                ; Ret_Sift_RB_END
+@INC D3501               ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+LD M3686                 ; ｼﾌﾄRB取出移動完了
+ANB X400C                ; Ret_Sift_RB_Busy
+MPS
+AND X400D                ; Ret_Sift_RB_END
+@INC D3501               ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+MPP
+LDB X400D                ; Ret_Sift_RB_END
+AND T611                 ; 排出部ﾗｲﾄｶｰﾃﾝ確認ﾀｲﾏ
+ANB B0C6                 ; 排出ｼﾌﾄ干渉異常
+ANL
+@INC D3501               ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+;投入抑制待ち
+LD M3687                 ; 投入抑制待ち
+ANB W0A.2                ; 接着点検ﾌﾟﾚｰﾄ読込完了
+MOV K111 D3501           ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+LD M3661                 ; 点検投入品読込要求
+MPS
+AND M151                 ; Bonding Daily Check MODE
+MPS
+OUT W0107.2              ; 接着点検ﾌﾟﾚｰﾄ読込要求
+MPP
+AND W0A.2                ; 接着点検ﾌﾟﾚｰﾄ読込完了
+MPS
+ANB W0A.3                ; 接着点検ﾌﾟﾚｰﾄ投入不可
+@BMOV W020 D17100 K64    ; ﾌﾚｰﾑ投入ﾊﾟﾚｯﾄID  Re_ent._ﾌﾚｰﾑ投入ﾊﾟﾚｯﾄID
+SET W07.15               ; 日常点検ﾓｰﾄﾞﾌﾗｸﾞ
+@MOV W07 D17163          ; 8_機種情報BITﾃﾞｰﾀ  Re_ent.機種情報
+MOV K113 D3501           ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+MPP
+AND W0A.3                ; 接着点検ﾌﾟﾚｰﾄ投入不可
+@INC D3501               ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+MPP
+ANB M151                 ; Bonding Daily Check MODE
+MOV K22 D3501            ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+LD M3662                 ; 点検投入品読込NG
+ANP X170F                ; 取出部ﾘｾｯﾄPB
+MOV K110 D3501           ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+;読込OK ﾜｰｸ供給
+;Read OK,Work Supply
+LD M3663                 ; 点検投入品読込OK
+AND T611                 ; 排出部ﾗｲﾄｶｰﾃﾝ確認ﾀｲﾏ
+MPS
+ANB X1727                ; 排出ｼﾌﾀ引込側ﾜｰｸ確認  (ON=無)
+@INC D3501               ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+MPP
+LD X1727                 ; 排出ｼﾌﾀ引込側ﾜｰｸ確認  (ON=無)
+ANB M151                 ; Bonding Daily Check MODE
+ANL
+MOV K22 D3501            ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+;ｼﾌﾄ投入位置移動
+;Sift Supply position move
+LD M3664                 ; 点検投入品供給確認
+AND= D200 K0             ; ｴﾗｰｺｰﾄﾞNo.
+ANB X400C                ; Ret_Sift_RB_Busy
+@INC D3501               ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+MOV K2 D3524             ; Ret_Sift_RB_POS_確定
+LD M3665                 ; 点検投入ｼﾌﾄRB排出移動
+AND X400C                ; Ret_Sift_RB_Busy
+ANB X400D                ; Ret_Sift_RB_END
+@INC D3501               ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+LD M3666                 ; 点検投入ｼﾌﾄRB排出移動確認
+ANB X400C                ; Ret_Sift_RB_Busy
+MPS
+AND X400D                ; Ret_Sift_RB_END
+MOV K117 D3501           ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+MPP
+LDB X400D                ; Ret_Sift_RB_END
+AND T611                 ; 排出部ﾗｲﾄｶｰﾃﾝ確認ﾀｲﾏ
+ANB B0C6                 ; 排出ｼﾌﾄ干渉異常
+ANL
+MOV K114 D3501           ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+;治具板確認
+;JIG Plate Check
+LD M3667                 ; 点検投入ｼﾌﾄRB移動完了
+MPS
+AND X1728                ; 排出ｼﾌﾀﾘﾀｰﾝ側ﾜｰｸ確認
+@INC D3501               ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+MPP
+ANB X1728                ; 排出ｼﾌﾀﾘﾀｰﾝ側ﾜｰｸ確認
+MPS
+MOV K121 D3501           ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+MPP
+AND M260                 ; 20150618 仮Mori
+MOV D3530 W0141          ; 投入ｲﾝﾃﾞｯｸｽｶｳﾝﾀ  ｼｬﾄﾙ排出部ｲﾝﾃﾞｯｸｽNo.
+;ﾜｰｸ無･投入戻り
+;NO Plate Return
+LD M3668                 ; 点検投入ﾜｰｸ無戻り
+ANB X400C                ; Ret_Sift_RB_Busy
+@INC D3501               ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+MOV K1 D3524             ; Ret_Sift_RB_POS_確定
+LD M3669                 ; 点検投入ｼﾌﾄRB投入移動
+AND X400C                ; Ret_Sift_RB_Busy
+ANB X400D                ; Ret_Sift_RB_END
+@INC D3501               ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+LD M3670                 ; 点検投入ｼﾌﾄRB投入移動確認
+ANB X400C                ; Ret_Sift_RB_Busy
+MPS
+AND X400D                ; Ret_Sift_RB_END
+MOV K113 D3501           ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+MPP
+LDB X400D                ; Ret_Sift_RB_END
+AND T611                 ; 排出部ﾗｲﾄｶｰﾃﾝ確認ﾀｲﾏ
+ANB B0C6                 ; 排出ｼﾌﾄ干渉異常
+ANL
+MOV K118 D3501           ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+;ﾊﾟﾚｯﾄID読込
+;Pallet ID Read Request
+LD M3671                 ; 点検投入ﾊﾟﾚｯﾄID読込要求
+MPS
+OUT W0107.4              ; 接着点検時ﾊﾟﾚｯﾄID読込要求
+MPP
+AND W0A.4                ; 接着点検時ﾊﾟﾚｯﾄ読込完了
+MPS
+ANB W0A.5                ; 接着点検時ﾊﾟﾚｯﾄID不一致
+BMOV W058 D3956 K2       ; ﾘﾀｰﾝ側ﾊﾟﾚｯﾄID(PC)  ﾘﾀｰﾝ側ﾊﾟﾚｯﾄID
+MOV K128 D3501           ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+MPP
+AND W0A.5                ; 接着点検時ﾊﾟﾚｯﾄID不一致
+@INC D3501               ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+;ID照合NG戻
+;Pallet ID Verification NG Return
+LD M3672                 ; 点検投入ﾊﾟﾚｯﾄID読込NG
+ANB X400C                ; Ret_Sift_RB_Busy
+@INC D3501               ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+MOV K1 D3524             ; Ret_Sift_RB_POS_確定
+LD M3673                 ; 点検投入ｼﾌﾄRB供給移動
+AND X400C                ; Ret_Sift_RB_Busy
+ANB X400D                ; Ret_Sift_RB_END
+@INC D3501               ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+LD M3674                 ; 点検投入ｼﾌﾄRB供給移動確認
+ANB X400C                ; Ret_Sift_RB_Busy
+MPS
+AND X400D                ; Ret_Sift_RB_END
+MOV K125 D3501           ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+MPP
+LDB X400D                ; Ret_Sift_RB_END
+AND T611                 ; 排出部ﾗｲﾄｶｰﾃﾝ確認ﾀｲﾏ
+ANB B0C6                 ; 排出ｼﾌﾄ干渉異常
+ANL
+MOV K122 D3501           ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+;ﾀﾞｲｱﾛｸﾞ表示､治具交換
+LD M3675                 ; ﾘﾀｰﾝｷｬﾘｱID照合NG
+AND= D200 K0             ; ｴﾗｰｺｰﾄﾞNo.
+DW K602 D200             ; ｴﾗｰｺｰﾄﾞNo.
+CON
+@INC D3501               ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+LD M3676                 ; ﾘﾀｰﾝｷｬﾘｱID照合NG中
+AND<> D200 K0            ; ｴﾗｰｺｰﾄﾞNo.
+LDP B1024                ; ﾘﾄﾗｲ確認TP-PB
+ORP X170F                ; 取出部ﾘｾｯﾄPB
+ANL
+DW K0 D200               ; ｴﾗｰｺｰﾄﾞNo.
+CON
+@INC D3501               ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+LD M3677                 ; ﾘﾀｰﾝｷｬﾘｱID照合NG解除確認
+AND= D200 K0             ; ｴﾗｰｺｰﾄﾞNo.
+MOV K110 D3501           ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+;ID照合OK
+;Pallet ID Verification OK Data Sift
+LD M3678                 ; ID照合OK_ﾃﾞｰﾀ確定
+@BMOV D17100 D15600 K100 ; Re_ent._ﾌﾚｰﾑ投入ﾊﾟﾚｯﾄID  UT6-1ﾌﾚｰﾑ投入ﾊﾟﾚｯﾄID
+@MOV K1 D15662           ; UT6-1ﾜｰｸOK/NGﾃﾞｰﾀ
+@FMOV K0 D5400 K100      ; UT9_ﾌﾚｰﾑ投入ﾊﾟﾚｯﾄID
+@INC D3501               ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+;ﾊﾟﾚｯﾄID ｲﾝﾃﾞｯｸｽﾃﾞｰﾀｾｯﾄ
+;Pallet_ID and INDEX_Data set
+LD M3679                 ; ｲﾝﾃﾞｯｸｽNo.ｾｯﾄ
+@MOV D3530 D15655        ; 投入ｲﾝﾃﾞｯｸｽｶｳﾝﾀ  UT6-1投入ｲﾝﾃﾞｯｸｽNo
+MPS
+@BMOV D3956 D15656 K2    ; ﾘﾀｰﾝ側ﾊﾟﾚｯﾄID  UT6-1ﾊﾟﾚｯﾄID
+MPP
+AND= D3956 D15656        ; ﾘﾀｰﾝ側ﾊﾟﾚｯﾄID  UT6-1ﾊﾟﾚｯﾄID
+@INC D3501               ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+LD M3680                 ; NP
+@INC D3501               ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+LD M3681                 ; 点検投入ﾓｰﾄﾞ基板搬送開始確認
+ANB M5104                ; 搬送可確認
+@INC D3501               ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+LD M3682                 ; 点検投入ﾓｰﾄﾞ解除
+ANB M151                 ; Bonding Daily Check MODE
+@INC D3501               ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+FMOV K0 D3956 K2         ; ﾘﾀｰﾝ側ﾊﾟﾚｯﾄID
+MOV K63 D3501            ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+;ｻｲｸﾙ停止処理
+;Cycle stop processing
+LD M56                   ; 自動起動停止指令(ｻｲｸﾙ停止)
+LD M3553                 ; 排出ｼﾌﾄ引込要求(引込へ)
+OR M3608                 ; ｼﾌﾄRB取出移動終了
+ANL
+AND= D3560 K0            ; 取出部ﾜｰｸ情報
+MOV K148 D3501           ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+;ｻｲｸﾙ終了
+;Cycle stop
+LD M3698                 ; ﾕﾆｯﾄ5-2ｻｲｸﾙ停止処理
+@MOV K149 D3501          ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+;ﾘﾀｰﾝCV投入時停止要求
+LD M3614                 ; CV停止要求(ﾘﾀｰﾝCVへ)
+OR M3700                 ; ﾘﾀｰﾝCV停止要求
+ANB M3623                ; 排出送り完了
+OUT M3700                ; ﾘﾀｰﾝCV停止要求
+;NGﾜｰｸ取出中保持
+;NG work extraction flag
+LD M3558                 ; NG品取出開始
+OR M3705                 ; NGﾜｰｸ取出中
+AND M3985                ; ﾕﾆｯﾄ6起動中
+ANB M3561                ; NG品取出完了
+OUT M3705                ; NGﾜｰｸ取出中
+;基板ねじ検査ﾜｰｸ取出中保持
+;PCB screw check work extraction flag
+LD>= D3501 K4            ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+AND<= D3501 K13          ; ﾕﾆｯﾄ6-2自動運転ｽﾃｯﾌﾟ
+OR>= D3500 K8            ; ﾕﾆｯﾄ6-1自動運転ｽﾃｯﾌﾟ
+OR M3706                 ; 基板ねじ検査ﾜｰｸ取出中
+AND M3985                ; ﾕﾆｯﾄ6起動中
+ANB M3563                ; OK品取出開始確認
+AND= D16962 K2           ; 取出ﾜｰｸOK/NGﾃﾞｰﾀ
+OUT M3706                ; 基板ねじ検査ﾜｰｸ取出中
+;投入抑制ﾌﾗｸﾞ
+;Supply suppression flag
+LD M3630                 ; 再投入開始
+OR M3710                 ; 再投入ﾓｰﾄﾞ開始ﾌﾗｸﾞ
+AND M152                 ; Re-Enter MODE
+OUT M3710                ; 再投入ﾓｰﾄﾞ開始ﾌﾗｸﾞ
+LD M3660                 ; 点検投入開始
+OR M3687                 ; 投入抑制待ち
+OR M3711                 ; 日常点検ﾓｰﾄﾞ開始ﾌﾗｸﾞ
+AND M151                 ; Bonding Daily Check MODE
+OUT M3711                ; 日常点検ﾓｰﾄﾞ開始ﾌﾗｸﾞ
+;ﾓｰﾄﾞ解除禁止ﾌﾗｸﾞ
+LD M3633                 ; 再投入品読込OK
+OR M3663                 ; 点検投入品読込OK
+OR M3715                 ; ﾓｰﾄﾞ解除禁止ﾌﾗｸﾞ
+ANB M3613                ; ﾘﾀｰﾝCV投入許可待ち
+AND M41                  ; 全ﾕﾆｯﾄ起動中
+OUT M3715                ; ﾓｰﾄﾞ解除禁止ﾌﾗｸﾞ
+;ﾀﾞｲｱﾛｸﾞ表示ﾌﾗｸﾞ
+LD M3594                 ; ﾘﾀｰﾝｷｬﾘｱID照合NG中
+OR M3646                 ; ﾘﾀｰﾝｷｬﾘｱID照合NG中
+OR M3676                 ; ﾘﾀｰﾝｷｬﾘｱID照合NG中
+LD<> D200 K0             ; ｴﾗｰｺｰﾄﾞNo.
+OR CR2002                ; 常時ON
+ANL
+OUT M3951                ; Err601:排出ｷｬﾘｱID_NG
+;<h1/>■自動 ﾘﾀｰﾝCV
+;
+;□　UNIT5-3 ﾘﾀｰﾝCV自動
+;
+;ﾘﾀｰﾝ投入部投入許可管理
+LD X1731                 ; ﾘﾀｰﾝCV投入可PH
+OR Y2313                 ; ｷｬﾘｱﾘﾀｰﾝCV回転
+OR L100                  ; ﾘﾀｰﾝCV投入可補助
+LD X172B                 ; 排出ｷｬﾘｱﾘﾀｰﾝCV側
+ANB X1730                ; ﾘﾀｰﾝCV投入禁止PH
+ORB Y2313                ; ｷｬﾘｱﾘﾀｰﾝCV回転
+ANL
+OUT L100                 ; ﾘﾀｰﾝCV投入可補助
+LD L100                  ; ﾘﾀｰﾝCV投入可補助
+AND X172B                ; 排出ｷｬﾘｱﾘﾀｰﾝCV側
+OUT M3701                ; ﾘﾀｰﾝCV投入可(ｼﾌﾄへ)
+;ﾘﾀｰﾝCV引込部ｷｬﾘｱ到着確認､引込可
+LD M3985                 ; ﾕﾆｯﾄ6起動中
+ANB X1246                ; ﾘﾀｰﾝCV引込ｷｬﾘｱ確認
+TMR K630 K25             ; ﾘﾀｰﾝ引込ｷｬﾘｱ確認
+LDP M3985                ; ﾕﾆｯﾄ6起動中
+OR T630                  ; ﾘﾀｰﾝ引込ｷｬﾘｱ確認
+OR M3702                 ; ﾘﾀｰﾝ引込ｷｬﾘｱ有引込可
+ANB M2508                ; ｷｬﾘｱ引込完了
+ANB X1246                ; ﾘﾀｰﾝCV引込ｷｬﾘｱ確認
+OUT M3702                ; ﾘﾀｰﾝ引込ｷｬﾘｱ有引込可
+;ﾘﾀｰﾝCV引込部､引込手前ｷｬﾘｱ有りCV停止
+LD M3985                 ; ﾕﾆｯﾄ6起動中
+LD M3702                 ; ﾘﾀｰﾝ引込ｷｬﾘｱ有引込可
+AND X1245                ; ﾘﾀｰﾝCV引込手前ｷｬﾘｱ確認
+OR M3703                 ; ﾘﾀｰﾝ引込ｷｬﾘｱ有ﾘﾀｰﾝCV停止
+ANL
+AND M3702                ; ﾘﾀｰﾝ引込ｷｬﾘｱ有引込可
+OUT M3703                ; ﾘﾀｰﾝ引込ｷｬﾘｱ有ﾘﾀｰﾝCV停止
+;起動時ﾘﾀｰﾝCV引込部､引込手前ｷｬﾘｱ有りCV停止
+LDP M3985                ; ﾕﾆｯﾄ6起動中
+LD X1246                 ; ﾘﾀｰﾝCV引込ｷｬﾘｱ確認
+AND X1245                ; ﾘﾀｰﾝCV引込手前ｷｬﾘｱ確認
+OR M3704                 ; ﾘﾀｰﾝ引込､引込手前ｷｬﾘｱ有CV停止
+ANL
+LD X1246                 ; ﾘﾀｰﾝCV引込ｷｬﾘｱ確認
+ORB M2508                ; ｷｬﾘｱ引込完了
+ANL
+OUT M3704                ; ﾘﾀｰﾝ引込､引込手前ｷｬﾘｱ有CV停止
+LD M3616                 ; ﾘﾀｰﾝCV排出送
+ANB X172B                ; 排出ｷｬﾘｱﾘﾀｰﾝCV側
+OR M3720                 ; ﾘﾀｰﾝCV排出確認ﾌﾗｸﾞ
+AND M3985                ; ﾕﾆｯﾄ6起動中
+ANB M3618                ; ﾘﾀｰﾝCV排出NG戻
+ANB M3622                ; ﾘﾀｰﾝCV排出OK戻
+OUT M3720                ; ﾘﾀｰﾝCV排出確認ﾌﾗｸﾞ
+;<h1/>□Sub ｼﾌﾄ投入位置移動・ﾜｰｸ残確認
+STG M3730                ; ｼﾌﾄ投入位置移動・ﾜｰｸ残確認
+SET M3732                ; ｼﾌﾄ投入位置移動中
+CON
+ANB X400C                ; Ret_Sift_RB_Busy
+JMP M3733                ; ｼﾌﾄRB排出移動
+MOV K2 D3524             ; Ret_Sift_RB_POS_確定
+STG M3733                ; ｼﾌﾄRB排出移動
+AND X400C                ; Ret_Sift_RB_Busy
+ANB X400D                ; Ret_Sift_RB_END
+JMP M3734                ; ｼﾌﾄRB排出移動確認
+STG M3734                ; ｼﾌﾄRB排出移動確認
+ANB X400C                ; Ret_Sift_RB_Busy
+MPS
+AND X400D                ; Ret_Sift_RB_END
+JMP M3735                ; ｼﾌﾄRB移動完了
+MPP
+LDB X400D                ; Ret_Sift_RB_END
+AND T611                 ; 排出部ﾗｲﾄｶｰﾃﾝ確認ﾀｲﾏ
+ANB B0C6                 ; 排出ｼﾌﾄ干渉異常
+ANL
+JMP M3730                ; ｼﾌﾄ投入位置移動・ﾜｰｸ残確認
+;移動後ﾜｰｸが残っていないか確認
+;残っている場合は取出動作
+STG M3735                ; ｼﾌﾄRB移動完了
+MPS
+AND X1728                ; 排出ｼﾌﾀﾘﾀｰﾝ側ﾜｰｸ確認
+RES M3732                ; ｼﾌﾄ投入位置移動中
+CON
+SET M3731                ; ｼﾌﾄ投入位置移動完了
+CON
+ENDS
+MPP
+ANB X1728                ; 排出ｼﾌﾀﾘﾀｰﾝ側ﾜｰｸ確認
+JMP M3736                ; ﾜｰｸ有取出動作
+;取り残しﾜｰｸ有
+;取出位置へ移動してﾜｰｸ取出
+STG M3736                ; ﾜｰｸ有取出動作
+ANB X400C                ; Ret_Sift_RB_Busy
+JMP M3737                ; ｼﾌﾄRB取出移動
+MOV K1 D3524             ; Ret_Sift_RB_POS_確定
+STG M3737                ; ｼﾌﾄRB取出移動
+AND X400C                ; Ret_Sift_RB_Busy
+ANB X400D                ; Ret_Sift_RB_END
+JMP M3738                ; ｼﾌﾄ取出移動確認
+STG M3738                ; ｼﾌﾄ取出移動確認
+ANB X400C                ; Ret_Sift_RB_Busy
+MPS
+AND X400D                ; Ret_Sift_RB_END
+JMP M3739                ; ﾜｰｸ取出要求
+MPP
+LDB X400D                ; Ret_Sift_RB_END
+AND T611                 ; 排出部ﾗｲﾄｶｰﾃﾝ確認ﾀｲﾏ
+ANB B0C6                 ; 排出ｼﾌﾄ干渉異常
+ANL
+JMP M3736                ; ﾜｰｸ有取出動作
+STG M3739                ; ﾜｰｸ取出要求
+AND X1727                ; 排出ｼﾌﾀ引込側ﾜｰｸ確認  (ON=無)
+AND T611                 ; 排出部ﾗｲﾄｶｰﾃﾝ確認ﾀｲﾏ
+JMP M3730                ; ｼﾌﾄ投入位置移動・ﾜｰｸ残確認
+;<h1/>■PLC→PC I/F
+;ﾜｰｸ排出開始･結果
+LD M3556                 ; ﾌﾚｰﾑ有､取出開始ON
+OR W0104.12              ; 製品排出開始
+ANB M3571                ; ﾌﾚｰﾑ取出開始OFF
+AND M3985                ; ﾕﾆｯﾄ6起動中
+OUT W0104.12             ; 製品排出開始
+LD M3570                 ; ﾌﾚｰﾑ取出結果ｾｯﾄ
+OR W0104.13              ; 製品排出結果
+ANB M3572                ; ﾌﾚｰﾑ取出結果OFF
+AND M3985                ; ﾕﾆｯﾄ6起動中
+OUT W0104.13             ; 製品排出結果
+LD M3623                 ; 排出送り完了
+@CAL+ D3600 K1 D3600     ; ﾘﾀｰﾝCVｷｬﾘｱ数  ﾘﾀｰﾝCVｷｬﾘｱ数
+OUT M3721                ; ﾘﾀｰﾝCVｷｬﾘｱｶｳﾝﾀ(+)受付
+LD M2508                 ; ｷｬﾘｱ引込完了
+@CAL- D3600 K1 D3600     ; ﾘﾀｰﾝCVｷｬﾘｱ数  ﾘﾀｰﾝCVｷｬﾘｱ数
+OUT M3722                ; ﾘﾀｰﾝCVｷｬﾘｱｶｳﾝﾀ(-)受付
+;<h1/>■原点復帰
+;□□□□□□□□□□□□□□□
+;□　　 UNIT6原点復帰回路　　□
+;□□□□□□□□□□□□□□□
+LD CR2002                ; 常時ON
+ZRES M3750 M3799         ; 原点復帰可確認  ﾕﾆｯﾄ6原点復帰完了
+LDB M3984                ; ﾕﾆｯﾄ6原点復帰中
+MOV K0 D3510             ; ﾕﾆｯﾄ6原点復帰ｽﾃｯﾌﾟ
+DW K0 D3710              ; UT6 origin STEP monitor
+LD M3984                 ; ﾕﾆｯﾄ6原点復帰中
+MOV D3510 Z1             ; ﾕﾆｯﾄ6原点復帰ｽﾃｯﾌﾟ
+SET M3750:Z1             ; 原点復帰可確認
+CAL+ D3510 K3750 D3710   ; ﾕﾆｯﾄ6原点復帰ｽﾃｯﾌﾟ  UT6 origin STEP monitor
+;原点復帰ｻｲｸﾙ監視
+LD M3984                 ; ﾕﾆｯﾄ6原点復帰中
+TMR K600 K300            ; UNIT6原点復帰ﾀｲﾑｱｳﾄ
+;原点復帰ステップ開始
+LD M3750                 ; 原点復帰可確認
+MPS
+LD X1229                 ; ﾘﾀｰﾝｺﾝﾍﾞｱﾄﾞﾗｲﾊﾞ異常
+LDB M95                  ; 能拡対応ﾓｰﾄﾞﾌﾗｸﾞ(ONで能拡ﾓｰﾄﾞ)
+AND M1980                ; ﾕﾆｯﾄ2原点
+OR M95                   ; 能拡対応ﾓｰﾄﾞﾌﾗｸﾞ(ONで能拡ﾓｰﾄﾞ)
+ANL
+ANL
+@INC D3510               ; ﾕﾆｯﾄ6原点復帰ｽﾃｯﾌﾟ
+@FMOV K0 D15600 K500     ; UT6-1ﾌﾚｰﾑ投入ﾊﾟﾚｯﾄID
+@FMOV K0 D16900 K100     ; 取出ﾌﾚｰﾑ投入ﾊﾟﾚｯﾄID
+MPP
+ANB X1229                ; ﾘﾀｰﾝｺﾝﾍﾞｱﾄﾞﾗｲﾊﾞ異常
+OUT Y2314                ; ｷｬﾘｱﾘﾀｰﾝCVｱﾗｰﾑﾘｾｯﾄ
+;ｷｬﾘｱ引込戻
+LD M3751                 ; 排出ｼﾌﾄ引込戻
+AND X1722                ; 排出ｼﾌﾄｷｬﾘｱ引込戻端
+@INC D3510               ; ﾕﾆｯﾄ6原点復帰ｽﾃｯﾌﾟ
+;ｽﾄｯﾊﾟ下降
+LD M3752                 ; 排出ｼﾌﾄ引込ｽﾄｯﾊﾟ下降
+AND X1723                ; 排出ｽﾄｯﾊﾟ下降端
+@INC D3510               ; ﾕﾆｯﾄ6原点復帰ｽﾃｯﾌﾟ
+LD M3753                 ; NOP
+@INC D3510               ; ﾕﾆｯﾄ6原点復帰ｽﾃｯﾌﾟ
+;ｷｬﾘｱ送り待機位置
+LD M3754                 ; ﾘﾀｰﾝCV排出戻
+AND X172A                ; ﾘﾀｰﾝ排出戻り端
+@INC D3510               ; ﾕﾆｯﾄ6原点復帰ｽﾃｯﾌﾟ
+;乗移ｷｬﾘｱ干渉確認
+LD M3755                 ; ｷｬﾘｱ干渉確認
+MPS
+AND X172E                ; 排出ｼﾌﾀｷｬﾘｱ通過確認
+MOV K9 D3510             ; ﾕﾆｯﾄ6原点復帰ｽﾃｯﾌﾟ
+MPP
+LD CR2003                ; 常時OFF
+ANB X172E                ; 排出ｼﾌﾀｷｬﾘｱ通過確認
+ANL
+@INC D3510               ; ﾕﾆｯﾄ6原点復帰ｽﾃｯﾌﾟ
+;乗移ｷｬﾘｱ干渉NG
+LD M3756                 ; ｷｬﾘｱ干渉NG
+AND= D200 K0             ; ｴﾗｰｺｰﾄﾞNo.
+@INC D3510               ; ﾕﾆｯﾄ6原点復帰ｽﾃｯﾌﾟ
+LD M3757                 ; ｷｬﾘｱ干渉NG中
+AND<> D200 K0            ; ｴﾗｰｺｰﾄﾞNo.
+@INC D3510               ; ﾕﾆｯﾄ6原点復帰ｽﾃｯﾌﾟ
+LD M3758                 ; ｷｬﾘｱ干渉NG解除確認
+AND= D200 K0             ; ｴﾗｰｺｰﾄﾞNo.
+MOV K1 D3510             ; ﾕﾆｯﾄ6原点復帰ｽﾃｯﾌﾟ
+;排出ｼﾌﾄRB原点確認
+LD M3759                 ; 排出ｼﾌﾄRB原点確認
+MPS
+ANB X400B                ; Ret_Shift_RB_ORG-S
+@INC D3510               ; ﾕﾆｯﾄ6原点復帰ｽﾃｯﾌﾟ
+MPP
+AND X400B                ; Ret_Shift_RB_ORG-S
+MOV K12 D3510            ; ﾕﾆｯﾄ6原点復帰ｽﾃｯﾌﾟ
+;排出ｼﾌﾄRB原点復帰
+LD M3760                 ; 排出ｼﾌﾄRB原点復帰
+AND X400C                ; Ret_Sift_RB_Busy
+ANB X400D                ; Ret_Sift_RB_END
+@INC D3510               ; ﾕﾆｯﾄ6原点復帰ｽﾃｯﾌﾟ
+LD M3761                 ; 排出ｼﾌﾄRB原点復帰起動確認
+ANB X400C                ; Ret_Sift_RB_Busy
+MPS
+LD X400D                 ; Ret_Sift_RB_END
+AND X400B                ; Ret_Shift_RB_ORG-S
+ANL
+@INC D3510               ; ﾕﾆｯﾄ6原点復帰ｽﾃｯﾌﾟ
+MPP
+LDB X400D                ; Ret_Sift_RB_END
+ANB X400B                ; Ret_Shift_RB_ORG-S
+AND T611                 ; 排出部ﾗｲﾄｶｰﾃﾝ確認ﾀｲﾏ
+ANB B0C6                 ; 排出ｼﾌﾄ干渉異常
+ANL
+MOV K10 D3510            ; ﾕﾆｯﾄ6原点復帰ｽﾃｯﾌﾟ
+;排出ｼﾌﾄ引込ｽﾄｯﾊﾟ確認
+LD M3762                 ; 排出ｼﾌﾄRB原点確認
+AND X1723                ; 排出ｽﾄｯﾊﾟ下降端
+@INC D3510               ; ﾕﾆｯﾄ6原点復帰ｽﾃｯﾌﾟ
+LD M3763                 ; 排出ｼﾌﾄ引込ｽﾄｯﾊﾟ確認
+@INC D3510               ; ﾕﾆｯﾄ6原点復帰ｽﾃｯﾌﾟ
+;排出ｼﾌﾄRB引込移動
+LD M3764                 ; 排出ｽﾄｯﾊﾟ戻確認
+ANB X400C                ; Ret_Sift_RB_Busy
+@INC D3510               ; ﾕﾆｯﾄ6原点復帰ｽﾃｯﾌﾟ
+MOV K1 D3524             ; Ret_Sift_RB_POS_確定
+LD M3765                 ; 排出ｼﾌﾄRB引込移動
+AND X400C                ; Ret_Sift_RB_Busy
+ANB X400D                ; Ret_Sift_RB_END
+@INC D3510               ; ﾕﾆｯﾄ6原点復帰ｽﾃｯﾌﾟ
+LD M3766                 ; 位置決完了
+ANB X400C                ; Ret_Sift_RB_Busy
+MPS
+AND X400D                ; Ret_Sift_RB_END
+@INC D3510               ; ﾕﾆｯﾄ6原点復帰ｽﾃｯﾌﾟ
+MPP
+LDB X400D                ; Ret_Sift_RB_END
+AND T611                 ; 排出部ﾗｲﾄｶｰﾃﾝ確認ﾀｲﾏ
+ANB B0C6                 ; 排出ｼﾌﾄ干渉異常
+ANL
+MOV K14 D3510            ; ﾕﾆｯﾄ6原点復帰ｽﾃｯﾌﾟ
+;排出ｼﾌﾄｷｬﾘｱ有無確認
+LD M3767                 ; ｷｬﾘｱ確認
+MPS
+AND X1725                ; 排出ｼﾌﾀｷｬﾘｱ確認
+@INC D3510               ; ﾕﾆｯﾄ6原点復帰ｽﾃｯﾌﾟ
+MPP
+ANB X1725                ; 排出ｼﾌﾀｷｬﾘｱ確認
+MOV K19 D3510            ; ﾕﾆｯﾄ6原点復帰ｽﾃｯﾌﾟ
+LD M3768                 ; 排出ｼﾌﾀﾛｯｸ
+AND X172D                ; 排出ｼﾌﾄﾛｯｸ端
+LD M3769                 ; 排出ｼﾌﾀﾛｯｸ解
+AND X172C                ; 排出ｼﾌﾄﾛｯｸ解除端
+ORL
+MOV K47 D3510            ; ﾕﾆｯﾄ6原点復帰ｽﾃｯﾌﾟ
+;原点復帰終了
+LD M3797                 ; 排出ｼﾌﾄ原点確認
+AND X1727                ; 排出ｼﾌﾀ引込側ﾜｰｸ確認  (ON=無)
+AND M3980                ; ﾕﾆｯﾄ6原点
+@MOV K48 D3510           ; ﾕﾆｯﾄ6原点復帰ｽﾃｯﾌﾟ
+LD M3798                 ; ﾕﾆｯﾄ6原点復帰完了
+ANB M82                  ; 原点復帰開始
+@MOV K49 D3510           ; ﾕﾆｯﾄ6原点復帰ｽﾃｯﾌﾟ
+;<h1/>■手動回路
+;□□□□□□□□□□□□□□□
+;□　　 　UNIT5手動回路  　　□
+;□□□□□□□□□□□□□□□
+LD M31                   ; 手動ﾓｰﾄﾞ
+AND M32                  ; ﾒｲﾝ手動操作可能条件
+ANB M3985                ; ﾕﾆｯﾄ6起動中
+ANB M3984                ; ﾕﾆｯﾄ6原点復帰中
+ANB X3236                ; Blow_RB_自動運転中
+ANB X3233                ; ｼﾌﾄ部干渉外(63)
+LDB M95                  ; 能拡対応ﾓｰﾄﾞﾌﾗｸﾞ(ONで能拡ﾓｰﾄﾞ)
+ANB X3236                ; Blow_RB_自動運転中
+OR M95                   ; 能拡対応ﾓｰﾄﾞﾌﾗｸﾞ(ONで能拡ﾓｰﾄﾞ)
+ANL
+MC
+;排出ｼﾌﾄ引込
+LD= D3528 K1             ; Ret_Sift_RB_完了POS
+AND X172C                ; 排出ｼﾌﾄﾛｯｸ解除端
+LDB X1725                ; 排出ｼﾌﾀｷｬﾘｱ確認
+AND X1723                ; 排出ｽﾄｯﾊﾟ下降端
+OR X1720                 ; ｷｬﾘｱ引込ｷｬﾘｱ無し
+ANL
+ANB X400C                ; Ret_Sift_RB_Busy
+ANB M3821                ; 排出ｼﾌﾄRB引込移動開始
+ANB M3826                ; 排出ｼﾌﾄRB排出移動開始
+ANB M3831                ; 排出ｼﾌﾄRB待機移動開始
+OUT M3800                ; 排出ｼﾌﾄ引込可
+LD B1120                 ; UNIT6-1-1 TP-PB
+AND M3800                ; 排出ｼﾌﾄ引込可
+OR M3801                 ; 排出ｼﾌﾄ引込
+ANPB M3803               ; 排出ｼﾌﾄ引込戻
+OUT M3801                ; 排出ｼﾌﾄ引込
+LD X1723                 ; 排出ｽﾄｯﾊﾟ下降端
+ANB M3821                ; 排出ｼﾌﾄRB引込移動開始
+ANB M3826                ; 排出ｼﾌﾄRB排出移動開始
+ANB M3831                ; 排出ｼﾌﾄRB待機移動開始
+OUT M3802                ; 排出ｼﾌﾄ引込戻可
+LD B1121                 ; UNIT6-1-2 TP-PB
+AND M3802                ; 排出ｼﾌﾄ引込戻可
+OR M3803                 ; 排出ｼﾌﾄ引込戻
+ANPB M3801               ; 排出ｼﾌﾄ引込
+OUT M3803                ; 排出ｼﾌﾄ引込戻
+;排出ｼﾌﾄ引込ｽﾄｯﾊﾟ
+LD= D3528 K2             ; Ret_Sift_RB_完了POS
+OR= D3528 K3             ; Ret_Sift_RB_完了POS
+ORB X1725                ; 排出ｼﾌﾀｷｬﾘｱ確認
+AND X1720                ; ｷｬﾘｱ引込ｷｬﾘｱ無し
+ANB X400C                ; Ret_Sift_RB_Busy
+ANB M3821                ; 排出ｼﾌﾄRB引込移動開始
+OUT M3804                ; 排出ｼﾌﾄ引込ｽﾄｯﾊﾟ出可
+LD B1122                 ; UNIT6-1-3 TP-PB
+AND M3804                ; 排出ｼﾌﾄ引込ｽﾄｯﾊﾟ出可
+OR M3805                 ; 排出ｼﾌﾄ引込ｽﾄｯﾊ閉
+ANPB M3807               ; 排出ｼﾌﾄ引込ｽﾄｯﾊﾟ戻
+OUT M3805                ; 排出ｼﾌﾄ引込ｽﾄｯﾊ閉
+LD CR2002                ; 常時ON
+OUT M3806                ; 排出ｼﾌﾄ引込ｽﾄｯﾊﾟ戻可
+LD B1123                 ; UNIT6-1-4 TP-PB
+AND M3806                ; 排出ｼﾌﾄ引込ｽﾄｯﾊﾟ戻可
+OR M3807                 ; 排出ｼﾌﾄ引込ｽﾄｯﾊﾟ戻
+ANPB M3805               ; 排出ｼﾌﾄ引込ｽﾄｯﾊ閉
+OUT M3807                ; 排出ｼﾌﾄ引込ｽﾄｯﾊﾟ戻
+;排出ｼﾌﾄﾛｯｸ
+LDB X400C                ; Ret_Sift_RB_Busy
+ANB M3821                ; 排出ｼﾌﾄRB引込移動開始
+ANB M3826                ; 排出ｼﾌﾄRB排出移動開始
+ANB M3831                ; 排出ｼﾌﾄRB待機移動開始
+OUT M3808                ; 排出ｼﾌﾄﾛｯｸ可
+LD B1124                 ; UNIT6-1-5 TP-PB
+AND M3808                ; 排出ｼﾌﾄﾛｯｸ可
+OR M3809                 ; 排出ｼﾌﾄﾛｯｸ
+ANPB M3811               ; 排出ｼﾌﾄﾛｯｸ開
+OUT M3809                ; 排出ｼﾌﾄﾛｯｸ
+LDB X400C                ; Ret_Sift_RB_Busy
+ANB M3821                ; 排出ｼﾌﾄRB引込移動開始
+ANB M3826                ; 排出ｼﾌﾄRB排出移動開始
+ANB M3831                ; 排出ｼﾌﾄRB待機移動開始
+OUT M3810                ; 排出ｼﾌﾄﾛｯｸ開可
+LD B1125                 ; UNIT6-1-6 TP-PB
+AND M3810                ; 排出ｼﾌﾄﾛｯｸ開可
+OR M3811                 ; 排出ｼﾌﾄﾛｯｸ開
+ANPB M3809               ; 排出ｼﾌﾄﾛｯｸ
+OUT M3811                ; 排出ｼﾌﾄﾛｯｸ開
+;ﾘﾀｰﾝCV排出
+LD X1725                 ; 排出ｼﾌﾀｷｬﾘｱ確認
+AND X172C                ; 排出ｼﾌﾄﾛｯｸ解除端
+ORB X1725                ; 排出ｼﾌﾀｷｬﾘｱ確認
+OR= D3528 K1             ; Ret_Sift_RB_完了POS
+AND X1728                ; 排出ｼﾌﾀﾘﾀｰﾝ側ﾜｰｸ確認
+ANB X400C                ; Ret_Sift_RB_Busy
+ANB X3233                ; ｼﾌﾄ部干渉外(63)
+ANB M3821                ; 排出ｼﾌﾄRB引込移動開始
+ANB M3826                ; 排出ｼﾌﾄRB排出移動開始
+ANB M3831                ; 排出ｼﾌﾄRB待機移動開始
+OUT M3812                ; ﾘﾀｰﾝCV排出送可
+LD B112A                 ; UNIT6-1-11 TP-PB
+AND M3812                ; ﾘﾀｰﾝCV排出送可
+OR M3813                 ; ﾘﾀｰﾝCV排出送
+ANPB M3815               ; ﾘﾀｰﾝCV排出戻
+OUT M3813                ; ﾘﾀｰﾝCV排出送
+LD= D3528 K2             ; Ret_Sift_RB_完了POS
+ANB X1725                ; 排出ｼﾌﾀｷｬﾘｱ確認
+OR= D3528 K1             ; Ret_Sift_RB_完了POS
+OR= D3528 K3             ; Ret_Sift_RB_完了POS
+ORB X1725                ; 排出ｼﾌﾀｷｬﾘｱ確認
+ANB X400C                ; Ret_Sift_RB_Busy
+ANB M3821                ; 排出ｼﾌﾄRB引込移動開始
+ANB M3826                ; 排出ｼﾌﾄRB排出移動開始
+ANB M3831                ; 排出ｼﾌﾄRB待機移動開始
+OUT M3814                ; ﾘﾀｰﾝCV排出戻可
+LD B112B                 ; UNIT6-1-12 TP-PB
+AND M3814                ; ﾘﾀｰﾝCV排出戻可
+OR M3815                 ; ﾘﾀｰﾝCV排出戻
+ANPB M3813               ; ﾘﾀｰﾝCV排出送
+OUT M3815                ; ﾘﾀｰﾝCV排出戻
+LD CR2002                ; 常時ON
+OUT M3816                ; ﾘﾀｰﾝCV回転可
+LD B112C                 ; UNIT6-1-13 TP-PB
+AND M3816                ; ﾘﾀｰﾝCV回転可
+OR M3817                 ; ﾘﾀｰﾝCV回転
+ANB B112D                ; UNIT6-1-14 TP-PB
+LD X1245                 ; ﾘﾀｰﾝCV引込手前ｷｬﾘｱ確認
+OR X1246                 ; ﾘﾀｰﾝCV引込ｷｬﾘｱ確認
+ANL
+OUT M3817                ; ﾘﾀｰﾝCV回転
+;排出ｼﾌﾄRB引込側移動
+LDB M3821                ; 排出ｼﾌﾄRB引込移動開始
+ANB M3826                ; 排出ｼﾌﾄRB排出移動開始
+ANB M3831                ; 排出ｼﾌﾄRB待機移動開始
+ANB X3233                ; ｼﾌﾄ部干渉外(63)
+AND X172E                ; 排出ｼﾌﾀｷｬﾘｱ通過確認
+AND X1722                ; 排出ｼﾌﾄｷｬﾘｱ引込戻端
+AND X1723                ; 排出ｽﾄｯﾊﾟ下降端
+AND X400B                ; Ret_Shift_RB_ORG-S
+ANB X400C                ; Ret_Sift_RB_Busy
+OUT M3820                ; 排出ｼﾌﾄRB引込移動可
+LD B1127                 ; UNIT6-1-8 TP-PB
+AND M3820                ; 排出ｼﾌﾄRB引込移動可
+OR M3821                 ; 排出ｼﾌﾄRB引込移動開始
+ANB M3824                ; 位置決完了確認
+ANB B0C6                 ; 排出ｼﾌﾄ干渉異常
+MPS
+OUT M3821                ; 排出ｼﾌﾄRB引込移動開始
+MPP
+LDB M3823                ; 位置決完了OFF確認
+AND T611                 ; 排出部ﾗｲﾄｶｰﾃﾝ確認ﾀｲﾏ
+ANL
+OUT M3822                ; 排出ｼﾌﾄRB取出移動
+MOV K1 D3524             ; Ret_Sift_RB_POS_確定
+LD M3822                 ; 排出ｼﾌﾄRB取出移動
+AND X400C                ; Ret_Sift_RB_Busy
+ANB X400D                ; Ret_Sift_RB_END
+OR M3823                 ; 位置決完了OFF確認
+AND M3821                ; 排出ｼﾌﾄRB引込移動開始
+AND T611                 ; 排出部ﾗｲﾄｶｰﾃﾝ確認ﾀｲﾏ
+OUT M3823                ; 位置決完了OFF確認
+LD M3823                 ; 位置決完了OFF確認
+ANB X400C                ; Ret_Sift_RB_Busy
+AND X400D                ; Ret_Sift_RB_END
+OR M3824                 ; 位置決完了確認
+AND M3821                ; 排出ｼﾌﾄRB引込移動開始
+AND T611                 ; 排出部ﾗｲﾄｶｰﾃﾝ確認ﾀｲﾏ
+OUT M3824                ; 位置決完了確認
+;排出ｼﾌﾄﾘﾀｰﾝCV側移動
+LD X1725                 ; 排出ｼﾌﾀｷｬﾘｱ確認
+AND X172D                ; 排出ｼﾌﾄﾛｯｸ端
+ORB X1725                ; 排出ｼﾌﾀｷｬﾘｱ確認
+ANB M3821                ; 排出ｼﾌﾄRB引込移動開始
+ANB M3826                ; 排出ｼﾌﾄRB排出移動開始
+ANB M3831                ; 排出ｼﾌﾄRB待機移動開始
+ANB X3233                ; ｼﾌﾄ部干渉外(63)
+AND X172E                ; 排出ｼﾌﾀｷｬﾘｱ通過確認
+AND X172A                ; ﾘﾀｰﾝ排出戻り端
+AND X400B                ; Ret_Shift_RB_ORG-S
+ANB X400C                ; Ret_Sift_RB_Busy
+OUT M3825                ; 排出ｼﾌﾄRB排出移動可
+LD B1126                 ; UNIT6-1-7 TP-PB
+AND M3825                ; 排出ｼﾌﾄRB排出移動可
+OR M3826                 ; 排出ｼﾌﾄRB排出移動開始
+ANB M3829                ; 位置決完了確認
+ANB B0C6                 ; 排出ｼﾌﾄ干渉異常
+MPS
+OUT M3826                ; 排出ｼﾌﾄRB排出移動開始
+MPP
+LDB M3828                ; 位置決完了OFF確認
+AND T611                 ; 排出部ﾗｲﾄｶｰﾃﾝ確認ﾀｲﾏ
+ANL
+OUT M3827                ; 排出ｼﾌﾄRB排出移動
+MOV K2 D3524             ; Ret_Sift_RB_POS_確定
+LD M3827                 ; 排出ｼﾌﾄRB排出移動
+AND X400C                ; Ret_Sift_RB_Busy
+ANB X400D                ; Ret_Sift_RB_END
+OR M3828                 ; 位置決完了OFF確認
+AND M3826                ; 排出ｼﾌﾄRB排出移動開始
+AND T611                 ; 排出部ﾗｲﾄｶｰﾃﾝ確認ﾀｲﾏ
+OUT M3828                ; 位置決完了OFF確認
+LD M3828                 ; 位置決完了OFF確認
+ANB X400C                ; Ret_Sift_RB_Busy
+AND X400D                ; Ret_Sift_RB_END
+OR M3829                 ; 位置決完了確認
+AND M3826                ; 排出ｼﾌﾄRB排出移動開始
+AND T611                 ; 排出部ﾗｲﾄｶｰﾃﾝ確認ﾀｲﾏ
+OUT M3829                ; 位置決完了確認
+;排出ｼﾌﾄ排出待機移動
+LD X1725                 ; 排出ｼﾌﾀｷｬﾘｱ確認
+AND X172D                ; 排出ｼﾌﾄﾛｯｸ端
+ORB X1725                ; 排出ｼﾌﾀｷｬﾘｱ確認
+ANB M3821                ; 排出ｼﾌﾄRB引込移動開始
+ANB M3826                ; 排出ｼﾌﾄRB排出移動開始
+ANB M3831                ; 排出ｼﾌﾄRB待機移動開始
+ANB X3233                ; ｼﾌﾄ部干渉外(63)
+AND X172E                ; 排出ｼﾌﾀｷｬﾘｱ通過確認
+AND X172A                ; ﾘﾀｰﾝ排出戻り端
+AND X400B                ; Ret_Shift_RB_ORG-S
+ANB X400C                ; Ret_Sift_RB_Busy
+OUT M3830                ; 排出ｼﾌﾄRB待機移動可
+LD B1128                 ; UNIT6-1-9 TP-PB
+AND M3830                ; 排出ｼﾌﾄRB待機移動可
+OR M3831                 ; 排出ｼﾌﾄRB待機移動開始
+ANB M3834                ; 位置決完了確認
+MPS
+OUT M3831                ; 排出ｼﾌﾄRB待機移動開始
+MPP
+LDB M3833                ; 位置決完了OFF確認
+AND T611                 ; 排出部ﾗｲﾄｶｰﾃﾝ確認ﾀｲﾏ
+ANL
+OUT M3832                ; 排出ｼﾌﾄRB待機移動
+MOV K3 D3524             ; Ret_Sift_RB_POS_確定
+LD M3832                 ; 排出ｼﾌﾄRB待機移動
+AND X400C                ; Ret_Sift_RB_Busy
+ANB X400D                ; Ret_Sift_RB_END
+OR M3833                 ; 位置決完了OFF確認
+AND M3831                ; 排出ｼﾌﾄRB待機移動開始
+AND T611                 ; 排出部ﾗｲﾄｶｰﾃﾝ確認ﾀｲﾏ
+OUT M3833                ; 位置決完了OFF確認
+LD M3833                 ; 位置決完了OFF確認
+ANB X400C                ; Ret_Sift_RB_Busy
+AND X400D                ; Ret_Sift_RB_END
+OR M3834                 ; 位置決完了確認
+AND M3831                ; 排出ｼﾌﾄRB待機移動開始
+AND T611                 ; 排出部ﾗｲﾄｶｰﾃﾝ確認ﾀｲﾏ
+OUT M3834                ; 位置決完了確認
+;排出ｼﾌﾄRB原点復帰
+LD X1725                 ; 排出ｼﾌﾀｷｬﾘｱ確認
+AND X172D                ; 排出ｼﾌﾄﾛｯｸ端
+ORB X1725                ; 排出ｼﾌﾀｷｬﾘｱ確認
+ANB M3821                ; 排出ｼﾌﾄRB引込移動開始
+ANB M3826                ; 排出ｼﾌﾄRB排出移動開始
+ANB X3233                ; ｼﾌﾄ部干渉外(63)
+AND X172E                ; 排出ｼﾌﾀｷｬﾘｱ通過確認
+AND X172A                ; ﾘﾀｰﾝ排出戻り端
+AND X1723                ; 排出ｽﾄｯﾊﾟ下降端
+ANB X400C                ; Ret_Sift_RB_Busy
+AND X400E                ; Ret_Sift_RB_Alarm
+OUT M3835                ; 排出ｼﾌﾄRB原点復帰可
+LD B1129                 ; UNIT6-1-10 TP-PB
+AND M3835                ; 排出ｼﾌﾄRB原点復帰可
+OR M3836                 ; 排出ｼﾌﾄRB原点復帰開始
+AND X400E                ; Ret_Sift_RB_Alarm
+ANB M3839                ; 位置決完了確認
+MPS
+OUT M3836                ; 排出ｼﾌﾄRB原点復帰開始
+MPP
+ANB M3838                ; 位置決完了OFF確認
+OUT M3837                ; 排出ｼﾌﾄRB原点復帰
+LD M3837                 ; 排出ｼﾌﾄRB原点復帰
+AND X400C                ; Ret_Sift_RB_Busy
+ANB X400D                ; Ret_Sift_RB_END
+OR M3838                 ; 位置決完了OFF確認
+AND M3836                ; 排出ｼﾌﾄRB原点復帰開始
+OUT M3838                ; 位置決完了OFF確認
+LD M3838                 ; 位置決完了OFF確認
+ANB X400C                ; Ret_Sift_RB_Busy
+AND X400D                ; Ret_Sift_RB_END
+AND X400B                ; Ret_Shift_RB_ORG-S
+OR M3839                 ; 位置決完了確認
+AND M3836                ; 排出ｼﾌﾄRB原点復帰開始
+OUT M3839                ; 位置決完了確認
+MCR
+;<h1/>■出力回路
+;□□　　出力回路　　□□
+;ソレノイドバルブ出力
+;排出ｼﾌﾄｽﾄｯﾊﾟ
+LDB M3506                ; 排出ｽﾄｯﾊﾟ下降
+ANB M3752                ; 排出ｼﾌﾄ引込ｽﾄｯﾊﾟ下降
+ANB M3807                ; 排出ｼﾌﾄ引込ｽﾄｯﾊﾟ戻
+INV
+AND M123                 ; 安全扉正常
+ANB M130                 ; 全体PAUSE
+LD Y2740                 ; 排出ｼﾌﾄ引込ｽﾄｯﾊﾟ下降SV
+ANB Y2741                ; 排出ｼﾌﾄ引込ｽﾄｯﾊﾟ上昇SV
+ORL
+AND T611                 ; 排出部ﾗｲﾄｶｰﾃﾝ確認ﾀｲﾏ
+OUT Y2740                ; 排出ｼﾌﾄ引込ｽﾄｯﾊﾟ下降SV
+LDB M3502                ; 排出ｽﾄｯﾊﾟ上昇
+ANB M3805                ; 排出ｼﾌﾄ引込ｽﾄｯﾊ閉
+INV
+AND M123                 ; 安全扉正常
+ANB M130                 ; 全体PAUSE
+LD Y2741                 ; 排出ｼﾌﾄ引込ｽﾄｯﾊﾟ上昇SV
+ANB Y2740                ; 排出ｼﾌﾄ引込ｽﾄｯﾊﾟ下降SV
+ORL
+AND T611                 ; 排出部ﾗｲﾄｶｰﾃﾝ確認ﾀｲﾏ
+OUT Y2741                ; 排出ｼﾌﾄ引込ｽﾄｯﾊﾟ上昇SV
+;排出ｼﾌﾄ引込
+LDB M3508                ; 排出ｼﾌﾄ引込
+ANB M3801                ; 排出ｼﾌﾄ引込
+INV
+AND M123                 ; 安全扉正常
+ANB M130                 ; 全体PAUSE
+LD Y2742                 ; 排出ｼﾌﾄｷｬﾘｱ引込SV
+ANB Y2742                ; 排出ｼﾌﾄｷｬﾘｱ引込SV
+ORL
+AND T611                 ; 排出部ﾗｲﾄｶｰﾃﾝ確認ﾀｲﾏ
+OUT Y2742                ; 排出ｼﾌﾄｷｬﾘｱ引込SV
+LDB M3510                ; 排出ｼﾌﾄ引込戻
+ANB M3751                ; 排出ｼﾌﾄ引込戻
+ANB M3803                ; 排出ｼﾌﾄ引込戻
+INV
+AND M123                 ; 安全扉正常
+ANB M130                 ; 全体PAUSE
+LD Y2743                 ; 排出ｼﾌﾄｷｬﾘｱ引込戻SV
+ANB Y2742                ; 排出ｼﾌﾄｷｬﾘｱ引込SV
+ORL
+AND T611                 ; 排出部ﾗｲﾄｶｰﾃﾝ確認ﾀｲﾏ
+OUT Y2743                ; 排出ｼﾌﾄｷｬﾘｱ引込戻SV
+;排出ｼﾌﾄ位置決
+LDB M3615                ; 排出ｼﾌﾄﾛｯｸ解
+ANB M3769                ; 排出ｼﾌﾀﾛｯｸ解
+ANB M3811                ; 排出ｼﾌﾄﾛｯｸ開
+ANB M3512                ; ｷｬﾘｱ引込NG
+INV
+AND M123                 ; 安全扉正常
+ANB M130                 ; 全体PAUSE
+LD Y2744                 ; 排出ｼﾌﾄﾛｯｸ解除SV
+ANB Y2745                ; 排出ｼﾌﾄﾛｯｸSV
+ORL
+OUT Y2744                ; 排出ｼﾌﾄﾛｯｸ解除SV
+LDB M3509                ; 排出ｼﾌﾄﾛｯｸ
+ANB M3768                ; 排出ｼﾌﾀﾛｯｸ
+ANB M3809                ; 排出ｼﾌﾄﾛｯｸ
+INV
+AND M123                 ; 安全扉正常
+ANB M130                 ; 全体PAUSE
+LD Y2745                 ; 排出ｼﾌﾄﾛｯｸSV
+ANB Y2744                ; 排出ｼﾌﾄﾛｯｸ解除SV
+ORL
+OUT Y2745                ; 排出ｼﾌﾄﾛｯｸSV
+;ﾘﾀｰﾝ排出送り戻し
+LDB M3616                ; ﾘﾀｰﾝCV排出送
+ANB M3813                ; ﾘﾀｰﾝCV排出送
+INV
+AND M123                 ; 安全扉正常
+ANB M130                 ; 全体PAUSE
+LD Y2746                 ; ﾘﾀｰﾝ排出送りSV
+ANB Y2747                ; ﾘﾀｰﾝ排出戻りSV
+ORL
+OUT Y2746                ; ﾘﾀｰﾝ排出送りSV
+LDB M3618                ; ﾘﾀｰﾝCV排出NG戻
+ANB M3622                ; ﾘﾀｰﾝCV排出OK戻
+ANB M3754                ; ﾘﾀｰﾝCV排出戻
+ANB M3815                ; ﾘﾀｰﾝCV排出戻
+INV
+AND M123                 ; 安全扉正常
+ANB M130                 ; 全体PAUSE
+LD Y2747                 ; ﾘﾀｰﾝ排出戻りSV
+ANB Y2746                ; ﾘﾀｰﾝ排出送りSV
+ORL
+OUT Y2747                ; ﾘﾀｰﾝ排出戻りSV
+;■その他制御出力
+LDB M3985                ; ﾕﾆｯﾄ6起動中
+ANB M3817                ; ﾘﾀｰﾝCV回転
+INV
+ANB M51                  ; 即停止異常(緊急停止)
+LDB M3701                ; ﾘﾀｰﾝCV投入可(ｼﾌﾄへ)
+ORB M3702                ; ﾘﾀｰﾝ引込ｷｬﾘｱ有引込可
+ANL
+LD X1245                 ; ﾘﾀｰﾝCV引込手前ｷｬﾘｱ確認
+OR X1246                 ; ﾘﾀｰﾝCV引込ｷｬﾘｱ確認
+ANL
+AND M123                 ; 安全扉正常
+LD X1161                 ; ｷｬﾘｱ引込戻端(CV側)
+OR= D2528 K2             ; Sup_Shift_RB_完了POS
+ANL
+AND X1229                ; ﾘﾀｰﾝｺﾝﾍﾞｱﾄﾞﾗｲﾊﾞ異常
+OUT Y2313                ; ｷｬﾘｱﾘﾀｰﾝCV回転
+LDB M3594                ; ﾘﾀｰﾝｷｬﾘｱID照合NG中
+ANB M3632                ; 再投入品読込NG
+ANB M3655                ; 再投入品読込NG
+ANB M3662                ; 点検投入品読込NG
+ANB M3646                ; ﾘﾀｰﾝｷｬﾘｱID照合NG中
+ANB M3705                ; NGﾜｰｸ取出中
+ANB M3706                ; 基板ねじ検査ﾜｰｸ取出中
+ANB M3676                ; ﾘﾀｰﾝｷｬﾘｱID照合NG中
+INV
+AND CR2006               ; 1sｸﾛｯｸﾊﾟﾙｽ
+OUT Y271E                ; 取出部確認PL
+;取出部Buzzer
+LDPB M3633               ; 再投入品読込OK
+ANPB M3663               ; 点検投入品読込OK
+INV
+OR M3943                 ; 再投入ﾌﾞｻﾞｰ保持
+ANB T670
+FLIK K10 K10 M3942       ; 再投入ﾌﾞｻﾞｰ補助1(OK)
+OUT M3943                ; 再投入ﾌﾞｻﾞｰ保持
+TMH K670 K30
+LDPB M3632               ; 再投入品読込NG
+ANPB M3655               ; 再投入品読込NG
+ANPB M3662               ; 点検投入品読込NG
+ANPB M3672               ; 点検投入ﾊﾟﾚｯﾄID読込NG
+INV
+OR M3944                 ; 再投入ﾌﾞｻﾞｰ補助2(NG)
+ANB T671
+OUT M3944                ; 再投入ﾌﾞｻﾞｰ補助2(NG)
+TMH K671 K100
+LDB B0C8                 ; 排出部ﾗｲﾄｶｰﾃﾝ遮光
+OR B05C8
+ANB M3552                ; ﾌﾚｰﾑ有取出要求
+ANB M3594                ; ﾘﾀｰﾝｷｬﾘｱID照合NG中
+ANB M3632                ; 再投入品読込NG
+ANB M3655                ; 再投入品読込NG
+ANB M3646                ; ﾘﾀｰﾝｷｬﾘｱID照合NG中
+ANB M3662                ; 点検投入品読込NG
+ANB M3676                ; ﾘﾀｰﾝｷｬﾘｱID照合NG中
+ANB M3705                ; NGﾜｰｸ取出中
+ANB M3739                ; ﾜｰｸ取出要求
+INV
+OUT M3940                ; 取出部ﾌﾞｻﾞｰ補助1
+LD M3940                 ; 取出部ﾌﾞｻﾞｰ補助1
+AND T4                   ; ﾌﾞｻﾞｰ音程ﾀｲﾏ1(1secON､1secOFF)
+LDB B0C9                 ; ﾜｰｸ取出要求
+OR B05C9
+INV
+ANB M3706                ; 基板ねじ検査ﾜｰｸ取出中
+AND T6                   ; ﾌﾞｻﾞｰ音程ﾀｲﾏ2(2secON､2secOFF)
+ORL
+LD M3706                 ; 基板ねじ検査ﾜｰｸ取出中
+AND T40                  ; ねじ検査ﾜｰｸ音程ﾀｲﾏ
+ORL
+LDB M3942                ; 再投入ﾌﾞｻﾞｰ補助1(OK)
+ANB M3944                ; 再投入ﾌﾞｻﾞｰ補助2(NG)
+INV
+ORL
+OUT Y271F                ; 取出部ﾌﾞｻﾞｰ
+LD M3705                 ; NGﾜｰｸ取出中
+AND CR2006               ; 1sｸﾛｯｸﾊﾟﾙｽ
+OR X172F                 ; 排出部NGBOXﾜｰｸ確認
+OUT Y271D                ; 排出表示
+;ロボット出力
+;排出ｼﾌﾄﾛﾎﾞｯﾄ
+LDB M3591                ; ｼﾌﾄRB取出移動
+ANB M3596                ; ｼﾌﾄRB排出移動
+ANB M3606                ; ｼﾌﾄRB取出移動
+INV
+LDB M3625                ; ｼﾌﾄRB取出移動
+ANB M3635                ; 再投入ｼﾌﾄRB排出移動
+ANB M3643                ; 再投入ｼﾌﾄRB供給移動
+ANB M3657                ; ｼﾌﾄRB取出移動中
+ANB M3685                ; ｼﾌﾄRB取出移動中
+INV
+ORL
+LDB M3665                ; 点検投入ｼﾌﾄRB排出移動
+ANB M3669                ; 点検投入ｼﾌﾄRB投入移動
+ANB M3673                ; 点検投入ｼﾌﾄRB供給移動
+ANB M3765                ; 排出ｼﾌﾄRB引込移動
+INV
+ORL
+LDB M3822                ; 排出ｼﾌﾄRB取出移動
+ANB M3827                ; 排出ｼﾌﾄRB排出移動
+ANB M3832                ; 排出ｼﾌﾄRB待機移動
+INV
+ORL
+LDB M3733                ; ｼﾌﾄRB排出移動
+ANB M3737                ; ｼﾌﾄRB取出移動
+INV
+ORL
+@MOV D3524 D3526         ; Ret_Sift_RB_POS_確定  Ret_Sift_RB_指令POS
+MPS
+LD M123                  ; 安全扉正常
+ANB M130                 ; 全体PAUSE
+ANL
+TMH K690 K10             ; Ret_Sift_RB_POS確定ﾃﾞｨﾚｲ
+MPP
+AND T690                 ; Ret_Sift_RB_POS確定ﾃﾞｨﾚｲ
+OUT Y530D                ; Ret_Sift_RB_Start
+LD CR2002                ; 常時ON
+MPS
+AND D3526.0              ; Ret_Shift_RB_指令POS1
+OUT Y5300                ; Ret_Sift_RB_Pin1
+MRD
+AND D3526.1              ; Ret_Shift_RB_指令POS2
+OUT Y5301                ; Ret_Sift_RB_Pin2
+MRD
+AND D3526.2              ; Ret_Shift_RB_指令POS4
+OUT Y5302                ; Ret_Sift_RB_Pin4
+MRD
+AND D3526.3              ; Ret_Shift_RB_指令POS8
+OUT Y5303                ; Ret_Sift_RB_Pin8
+MRD
+AND D3526.4              ; Ret_Shift_RB_指令POS16
+OUT Y5304                ; Ret_Sift_RB_Pin16
+MRD
+AND D3526.5              ; Ret_Shift_RB_指令POS32
+OUT Y5305                ; Ret_Sift_RB_Pin32
+MRD
+AND D3526.6              ; Ret_Shift_RB_指令POS64
+OUT Y5306                ; Ret_Sift_RB_Pin64
+MPP
+AND D3526.7              ; Ret_Shift_RB_指令POS128
+OUT Y5307                ; Ret_Sift_RB_Pin128
+LD CR2003                ; 常時OFF
+OUT Y5308                ; Ret_Sift_RB_JOG+
+OUT Y5309                ; Ret_Sift_RB_JOG-
+OUT Y530A                ; Ret_Sift_RB_Manu
+LDB M3837                ; 排出ｼﾌﾄRB原点復帰
+ANB M3760                ; 排出ｼﾌﾄRB原点復帰
+INV
+OUT Y530B                ; Ret_Sift_RB_ORG
+LD M123                  ; 安全扉正常
+AND T611                 ; 排出部ﾗｲﾄｶｰﾃﾝ確認ﾀｲﾏ
+ANB B0C6                 ; 排出ｼﾌﾄ干渉異常
+OUT Y530C                ; Ret_Sift_RB_IL
+LD M16                   ; ﾘｾｯﾄPB
+ANB X400E                ; Ret_Sift_RB_Alarm
+OUT Y530E                ; Ret_Sift_RB_Reset
+LD M50                   ; 運転準備
+OUT Y530F                ; Ret_Sift_RB_SV_ON
+;ﾛﾎﾞｯﾄｻｰﾎﾞ電源
+LD M121                  ; 非常停止正常
+OUT Y2710                ; 排出ｼﾌﾄﾛﾎﾞｯﾄ電源
+;<h1/>■表示
+;□□　　パネル表示　　□□
+LD X1721                 ; 排出ｼﾌﾄｷｬﾘｱ引込端
+LD Y2742                 ; 排出ｼﾌﾄｷｬﾘｱ引込SV
+AND CR2006               ; 1sｸﾛｯｸﾊﾟﾙｽ
+ORL
+OUT B1620                ; UNIT6-1-1 TP-PL
+LD X1722                 ; 排出ｼﾌﾄｷｬﾘｱ引込戻端
+LD Y2743                 ; 排出ｼﾌﾄｷｬﾘｱ引込戻SV
+AND CR2006               ; 1sｸﾛｯｸﾊﾟﾙｽ
+ORL
+OUT B1621                ; UNIT6-1-2 TP-PL
+LD X1724                 ; 排出ｽﾄｯﾊﾟ上昇端
+LD Y2741                 ; 排出ｼﾌﾄ引込ｽﾄｯﾊﾟ上昇SV
+AND CR2006               ; 1sｸﾛｯｸﾊﾟﾙｽ
+ORL
+OUT B1622                ; UNIT6-1-3 TP-PL
+LD X1723                 ; 排出ｽﾄｯﾊﾟ下降端
+LD Y2740                 ; 排出ｼﾌﾄ引込ｽﾄｯﾊﾟ下降SV
+AND CR2006               ; 1sｸﾛｯｸﾊﾟﾙｽ
+ORL
+OUT B1623                ; UNIT6-1-4 TP-PL
+LD X172D                 ; 排出ｼﾌﾄﾛｯｸ端
+LD Y2745                 ; 排出ｼﾌﾄﾛｯｸSV
+AND CR2006               ; 1sｸﾛｯｸﾊﾟﾙｽ
+ORL
+OUT B1624                ; UNIT6-1-5 TP-PL
+LD X172C                 ; 排出ｼﾌﾄﾛｯｸ解除端
+LD Y2744                 ; 排出ｼﾌﾄﾛｯｸ解除SV
+AND CR2006               ; 1sｸﾛｯｸﾊﾟﾙｽ
+ORL
+OUT B1625                ; UNIT6-1-6 TP-PL
+LD= D3528 K2             ; Ret_Sift_RB_完了POS
+LD= D3526 K2             ; Ret_Sift_RB_指令POS
+AND X400C                ; Ret_Sift_RB_Busy
+AND CR2006               ; 1sｸﾛｯｸﾊﾟﾙｽ
+ORL
+OUT B1626                ; UNIT6-1-7 TP-PL
+LD= D3528 K1             ; Ret_Sift_RB_完了POS
+LD= D3526 K1             ; Ret_Sift_RB_指令POS
+AND X400C                ; Ret_Sift_RB_Busy
+AND CR2006               ; 1sｸﾛｯｸﾊﾟﾙｽ
+ORL
+OUT B1627                ; UNIT6-1-8 TP-PL
+LD= D3528 K3             ; Ret_Sift_RB_完了POS
+LD= D3526 K3             ; Ret_Sift_RB_指令POS
+AND X400C                ; Ret_Sift_RB_Busy
+AND CR2006               ; 1sｸﾛｯｸﾊﾟﾙｽ
+ORL
+OUT B1628                ; UNIT6-1-9 TP-PL
+LD X400B                 ; Ret_Shift_RB_ORG-S
+LDB X400B                ; Ret_Shift_RB_ORG-S
+AND X400C                ; Ret_Sift_RB_Busy
+AND CR2006               ; 1sｸﾛｯｸﾊﾟﾙｽ
+ORL
+OUT B1629                ; UNIT6-1-10 TP-PL
+LD X1729                 ; ﾘﾀｰﾝ排出送り端
+LD Y2746                 ; ﾘﾀｰﾝ排出送りSV
+AND CR2006               ; 1sｸﾛｯｸﾊﾟﾙｽ
+ORL
+OUT B162A                ; UNIT6-1-11 TP-PL
+LD X172A                 ; ﾘﾀｰﾝ排出戻り端
+LD Y2747                 ; ﾘﾀｰﾝ排出戻りSV
+AND CR2006               ; 1sｸﾛｯｸﾊﾟﾙｽ
+ORL
+OUT B162B                ; UNIT6-1-12 TP-PL
+LD Y2313                 ; ｷｬﾘｱﾘﾀｰﾝCV回転
+OUT B162C                ; UNIT6-1-13 TP-PL
+LDB Y2313                ; ｷｬﾘｱﾘﾀｰﾝCV回転
+OUT B162D                ; UNIT6-1-14 TP-PL
+;<h1/>■異常
+;□□　　異常検出　　□□
+;B0C0(K193)--B0CF(K208)  B0D0(K209)--B0DF(K224)
+LD Y2742                 ; 排出ｼﾌﾄｷｬﾘｱ引込SV
+ANB X1721                ; 排出ｼﾌﾄｷｬﾘｱ引込端
+LD Y2743                 ; 排出ｼﾌﾄｷｬﾘｱ引込戻SV
+ANB X1722                ; 排出ｼﾌﾄｷｬﾘｱ引込戻端
+ORL
+AND M50                  ; 運転準備
+AND T611                 ; 排出部ﾗｲﾄｶｰﾃﾝ確認ﾀｲﾏ
+LDB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B0C0                 ; 排出ｼﾌﾄ引込異常
+ORL
+MPS
+TMR K650 K50             ; 排出ｼﾌﾄ引込確認
+MPP
+AND T650                 ; 排出ｼﾌﾄ引込確認
+OUT B0C0                 ; 排出ｼﾌﾄ引込異常
+@DW K192 D0
+CON
+@FIFOW D0 D900           ; 異常内容
+LD M110                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B05C0
+AND B0C0                 ; 排出ｼﾌﾄ引込異常
+OUT B05C0
+LD Y2740                 ; 排出ｼﾌﾄ引込ｽﾄｯﾊﾟ下降SV
+ANB X1723                ; 排出ｽﾄｯﾊﾟ下降端
+LD Y2741                 ; 排出ｼﾌﾄ引込ｽﾄｯﾊﾟ上昇SV
+ANB X1724                ; 排出ｽﾄｯﾊﾟ上昇端
+ORL
+AND M50                  ; 運転準備
+AND T611                 ; 排出部ﾗｲﾄｶｰﾃﾝ確認ﾀｲﾏ
+LDB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B0C1                 ; 排出ｼﾌﾄ引込ｽﾄｯﾊﾟ異常
+ORL
+MPS
+TMR K651 K50             ; 排出ｼﾌﾄ引込ｽﾄｯﾊﾟ確認
+MPP
+AND T651                 ; 排出ｼﾌﾄ引込ｽﾄｯﾊﾟ確認
+OUT B0C1                 ; 排出ｼﾌﾄ引込ｽﾄｯﾊﾟ異常
+@DW K193 D0
+CON
+@FIFOW D0 D900           ; 異常内容
+LD M110                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B05C1
+AND B0C1                 ; 排出ｼﾌﾄ引込ｽﾄｯﾊﾟ異常
+OUT B05C1
+LD Y2747                 ; ﾘﾀｰﾝ排出戻りSV
+ANB X172A                ; ﾘﾀｰﾝ排出戻り端
+LD Y2746                 ; ﾘﾀｰﾝ排出送りSV
+ANB X1729                ; ﾘﾀｰﾝ排出送り端
+ORL
+LDB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B0C2                 ; ﾘﾀｰﾝ排出送戻異常
+ORL
+MPS
+TMR K652 K50             ; ﾘﾀｰﾝ排出送戻確認
+MPP
+AND T652                 ; ﾘﾀｰﾝ排出送戻確認
+OUT B0C2                 ; ﾘﾀｰﾝ排出送戻異常
+@DW K194 D0
+CON
+@FIFOW D0 D900           ; 異常内容
+LD M110                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B05C2
+AND B0C2                 ; ﾘﾀｰﾝ排出送戻異常
+OUT B05C2
+LDB M95                  ; 能拡対応ﾓｰﾄﾞﾌﾗｸﾞ(ONで能拡ﾓｰﾄﾞ)
+LD Y2744                 ; 排出ｼﾌﾄﾛｯｸ解除SV
+ANB X172C                ; 排出ｼﾌﾄﾛｯｸ解除端
+LD Y2745                 ; 排出ｼﾌﾄﾛｯｸSV
+ANB X172D                ; 排出ｼﾌﾄﾛｯｸ端
+ORL
+LDB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B0C3                 ; 排出ｼﾌﾄﾛｯｸ異常
+ORL
+ANL
+MPS
+TMR K653 K50             ; 排出ｼﾌﾄﾛｯｸ確認
+MPP
+AND T653                 ; 排出ｼﾌﾄﾛｯｸ確認
+OUT B0C3                 ; 排出ｼﾌﾄﾛｯｸ異常
+@DW K195 D0
+CON
+@FIFOW D0 D900           ; 異常内容
+LD M110                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B05C3
+AND B0C3                 ; 排出ｼﾌﾄﾛｯｸ異常
+OUT B05C3
+LDB X400E                ; Ret_Sift_RB_Alarm
+AND T11                  ; 運転準備完了2s遅延
+LDB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B0C4                 ; ﾘﾀｰﾝｼﾌﾄRB異常
+ORL
+OUT B0C4                 ; ﾘﾀｰﾝｼﾌﾄRB異常
+@DW K196 D0
+CON
+@FIFOW D0 D900           ; 異常内容
+LD M110                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B05C4
+AND B0C4                 ; ﾘﾀｰﾝｼﾌﾄRB異常
+OUT B05C4
+LD CR2003                ; 常時OFF
+LDB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B0C5                 ; 給材ﾜｰｸ紛失異常
+ORL
+OUT B0C5                 ; 給材ﾜｰｸ紛失異常
+@DW K197 D0
+CON
+@FIFOW D0 D900           ; 異常内容
+LD M110                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B05C5
+AND B0C5                 ; 給材ﾜｰｸ紛失異常
+OUT B05C5
+LD X400C                 ; Ret_Sift_RB_Busy
+OR T690                  ; Ret_Sift_RB_POS確定ﾃﾞｨﾚｲ
+OR M3755                 ; ｷｬﾘｱ干渉確認
+ANB X172E                ; 排出ｼﾌﾀｷｬﾘｱ通過確認
+LDB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B0C6                 ; 排出ｼﾌﾄ干渉異常
+ORL
+OUT B0C6                 ; 排出ｼﾌﾄ干渉異常
+@DW K198 D0
+CON
+@FIFOW D0 D900           ; 異常内容
+LD M110                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B05C6
+AND B0C6                 ; 排出ｼﾌﾄ干渉異常
+OUT B05C6
+LD M3797                 ; 排出ｼﾌﾄ原点確認
+ANB X1727                ; 排出ｼﾌﾀ引込側ﾜｰｸ確認  (ON=無)
+LDB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B0C7                 ; 排出ｼﾌﾄ原点復帰ﾜｰｸ有異常
+ORL
+OUT B0C7                 ; 排出ｼﾌﾄ原点復帰ﾜｰｸ有異常
+@DW K199 D0
+CON
+@FIFOW D0 D900           ; 異常内容
+LD M110                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B05C7
+AND B0C7                 ; 排出ｼﾌﾄ原点復帰ﾜｰｸ有異常
+OUT B05C7
+LDB T611                 ; 排出部ﾗｲﾄｶｰﾃﾝ確認ﾀｲﾏ
+LD>= D12000 K250         ; 表示画面No.
+AND< D12000 K300         ; 表示画面No.
+LD>= D12100 K250         ; Sub.ﾊﾟﾈﾙ 表示画面No.
+AND< D12100 K300         ; Sub.ﾊﾟﾈﾙ 表示画面No.
+ORL
+ANL
+MPS
+TMR K654 K80             ; 排出部ﾗｲﾄｶｰﾃﾝ遮光ﾀｲﾏ
+MPP
+AND T654                 ; 排出部ﾗｲﾄｶｰﾃﾝ遮光ﾀｲﾏ
+OUT B0C8                 ; 排出部ﾗｲﾄｶｰﾃﾝ遮光
+@DW K200 D0
+CON
+@FIFOW D0 D900           ; 異常内容
+LD M110                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B05C8
+AND B0C8                 ; 排出部ﾗｲﾄｶｰﾃﾝ遮光
+OUT B05C8
+LDB M3562                ; OK品取出開始
+ANB M3563                ; OK品取出開始確認
+INV
+MPS
+TMR K655 K100            ; ﾜｰｸ取出時間経過
+MPP
+AND T655                 ; ﾜｰｸ取出時間経過
+OUT B0C9                 ; ﾜｰｸ取出要求
+@DW K201 D0
+CON
+@FIFOW D0 D900           ; 異常内容
+LD M110                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B05C9
+AND B0C9                 ; ﾜｰｸ取出要求
+OUT B05C9
+LD M50                   ; 運転準備
+ANB X1229                ; ﾘﾀｰﾝｺﾝﾍﾞｱﾄﾞﾗｲﾊﾞ異常
+LDB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B0CA                 ; ﾘﾀｰﾝCVﾄﾞﾗｲﾊﾞ異常
+ORL
+MPS
+TMR K656 K10             ; ﾘﾀｰﾝｺﾝﾍﾞｱﾄﾞﾗｲﾊﾞ異常
+MPP
+AND T656                 ; ﾘﾀｰﾝｺﾝﾍﾞｱﾄﾞﾗｲﾊﾞ異常
+OUT B0CA                 ; ﾘﾀｰﾝCVﾄﾞﾗｲﾊﾞ異常
+@DW K202 D0
+CON
+@FIFOW D0 D900           ; 異常内容
+LD M110                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B05CA
+AND B0CA                 ; ﾘﾀｰﾝCVﾄﾞﾗｲﾊﾞ異常
+OUT B05CA
+LD T657                  ; 再投入ﾜｰｸ行方不明
+LDB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B0CB                 ; 再投入ﾜｰｸ行方不明
+ORL
+OUT B0CB                 ; 再投入ﾜｰｸ行方不明
+@DW K203 D0
+CON
+@FIFOW D0 D900           ; 異常内容
+LD M110                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B05CB
+AND B0CB                 ; 再投入ﾜｰｸ行方不明
+OUT B05CB
+;D200警報
+LD= K600 D200            ; ｴﾗｰｺｰﾄﾞNo.
+OUT B0DD                 ; Err600:排出ｷｬﾘｱ引込_NG
+@DW H00DD D0
+CON
+@FIFOW D0 D900           ; 異常内容
+LD= K602 D200            ; ｴﾗｰｺｰﾄﾞNo.
+OUT B0DE                 ; Err602:ﾘﾀｰﾝｷｬﾘｱID照合NG
+@DW H00DE D0
+CON
+@FIFOW D0 D900           ; 異常内容
+LD= K603 D200            ; ｴﾗｰｺｰﾄﾞNo.
+OUT B0DF                 ; Err603:ﾘﾀｰﾝ CV投入NG
+@DW H00DF D0
+CON
+@FIFOW D0 D900           ; 異常内容
+;異常ﾌﾞｻﾞｰまとめ
+LDB B0C0                 ; 排出ｼﾌﾄ引込異常
+OR B05C0
+LDB B0C1                 ; 排出ｼﾌﾄ引込ｽﾄｯﾊﾟ異常
+OR B05C1
+ANL
+LDB B0C2                 ; ﾘﾀｰﾝ排出送戻異常
+OR B05C2
+ANL
+LDB B0C3                 ; 排出ｼﾌﾄﾛｯｸ異常
+OR B05C3
+ANL
+LDB B0C4                 ; ﾘﾀｰﾝｼﾌﾄRB異常
+OR B05C4
+ANL
+LDB B0C5                 ; 給材ﾜｰｸ紛失異常
+OR B05C5
+ANL
+LDB B0C6                 ; 排出ｼﾌﾄ干渉異常
+OR B05C6
+ANL
+LDB B0C7                 ; 排出ｼﾌﾄ原点復帰ﾜｰｸ有異常
+OR B05C7
+ANL
+LDB B0CA                 ; ﾘﾀｰﾝCVﾄﾞﾗｲﾊﾞ異常
+OR B05CA
+ANL
+LDB B0CB                 ; 再投入ﾜｰｸ行方不明
+OR B05CB
+ANL
+INV
+OUT M3989                ; ﾕﾆｯﾄ6異常BZ補助
+;Error location display
+LDB B0C0                 ; 排出ｼﾌﾄ引込異常
+ANB B0C1                 ; 排出ｼﾌﾄ引込ｽﾄｯﾊﾟ異常
+ANB B0C2                 ; ﾘﾀｰﾝ排出送戻異常
+ANB B0C3                 ; 排出ｼﾌﾄﾛｯｸ異常
+ANB B0C4                 ; ﾘﾀｰﾝｼﾌﾄRB異常
+ANB B0C5                 ; 給材ﾜｰｸ紛失異常
+ANB B0C6                 ; 排出ｼﾌﾄ干渉異常
+ANB B0C7                 ; 排出ｼﾌﾄ原点復帰ﾜｰｸ有異常
+ANB B0CA                 ; ﾘﾀｰﾝCVﾄﾞﾗｲﾊﾞ異常
+ANB B0CB                 ; 再投入ﾜｰｸ行方不明
+ANB B01D                 ; 排出部非常停止
+INV
+OUT B0906                ; UT6 Error
+END
+ENDH

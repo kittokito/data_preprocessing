@@ -1,0 +1,568 @@
+DEVICE:53
+;MODULE:Tank
+;MODULE_TYPE:0
+;非常停止 出力ｸﾘｱ
+;Emergency Stop Output Clear
+;
+LDP CR2002               ; 常時ON
+LDB MR915                ; ﾛｰｶﾙｸﾘｱ
+ANB R50000               ; 非常停止停止(復帰不可ｴﾗｰ)
+ANB R55003               ; 即停止ｴﾗｰ(復帰不可)
+INV
+ORL
+ZRES MR7200 MR7209       ; 給水ﾀﾝｸ 給水  液供給ﾏﾆﾎｰﾙﾄﾞ4 給気
+CON
+ZRES @MR000 @MR4915
+;<h1/>水漏れ非常停止
+;Water leak emergency stop
+STG @MR1013              ; EMG
+ZRES MR7200 MR7209       ; 給水ﾀﾝｸ 給水  液供給ﾏﾆﾎｰﾙﾄﾞ4 給気
+CON
+JMP @MR1014              ; ENDへ
+;<h1/>終了
+;END
+STG @MR1014              ; ENDへ
+SET MR3301               ; Tank_END
+CON
+AND MR3301               ; Tank_END
+RES MR7200               ; 給水ﾀﾝｸ 給水
+CON
+RES MR3300               ; Tank_BUSY
+CON
+RES MR1102               ; ﾎﾟﾝﾌﾟON
+CON
+RES MR7201               ; ﾊﾞｲﾊﾟｽﾊﾞﾙﾌﾞ 開
+CON
+JMP @MR1015              ; END
+STG @MR1015              ; END
+ANB MR3101               ; Unit1_END
+ANB MR3201               ; Unit2_END
+ANB MR3301               ; Tank_END
+ZRES @MR000 @MR4915
+CON
+ENDS
+;<h1/>HALT
+LD MR3005                ; 装置ﾎﾟｰｽﾞ
+LD @MR2000               ; ﾎﾟｰｽﾞ許可
+OR R50005                ; 停止中
+ANL
+TMR @2 #2                ; 装置ﾎﾟｰｽﾞ確認ﾀｲﾏｰ
+CON
+AND @T2                  ; 装置ﾎﾟｰｽﾞ確認ﾀｲﾏｰ
+@SET MR3302              ; TANK_HALT
+LDB MR3005               ; 装置ﾎﾟｰｽﾞ
+ANB MR3302               ; TANK_HALT
+RES @MR2000              ; ﾎﾟｰｽﾞ許可
+LD MR3007                ; ﾎﾟｰｽﾞ解除
+RES MR3302               ; TANK_HALT
+CON
+RES @MR2000              ; ﾎﾟｰｽﾞ許可
+;<h1/>HOME/原点復帰
+;[本STG内容]
+;・STG @MR1000の続きから各Taskの原点復帰動作を記述する
+;・動作終了時は@MR1515にJMPする事
+LDP R50003               ; 原点復帰中
+SET MR3300               ; Tank_BUSY
+CON
+SET @MR1001              ; 原点復帰開始
+STG @MR1001              ; 原点復帰開始
+RES MR1102               ; ﾎﾟﾝﾌﾟON
+CON
+RES MR7200               ; 給水ﾀﾝｸ 給水
+CON
+RES MR7201               ; ﾊﾞｲﾊﾟｽﾊﾞﾙﾌﾞ 開
+CON
+RES MR7202               ; 液供給ﾏﾆﾎｰﾙﾄﾞ1 給水
+CON
+RES MR7203               ; 液供給ﾏﾆﾎｰﾙﾄﾞ2 給水
+CON
+RES MR7204               ; 液供給ﾏﾆﾎｰﾙﾄﾞ3 給水
+CON
+RES MR7205               ; 液供給ﾏﾆﾎｰﾙﾄﾞ4 給水
+CON
+RES MR7206               ; 液供給ﾏﾆﾎｰﾙﾄﾞ1 給気
+CON
+RES MR7207               ; 液供給ﾏﾆﾎｰﾙﾄﾞ2 給気
+CON
+RES MR7208               ; 液供給ﾏﾆﾎｰﾙﾄﾞ3 給気
+CON
+RES MR7209               ; 液供給ﾏﾆﾎｰﾙﾄﾞ4 給気
+CON
+JMP @MR1014              ; ENDへ
+;<h1/>AUTO/自動動作
+;自動運転
+;Auto Operation
+;
+LD R50001                ; 自動中
+ANB MR3300               ; Tank_BUSY
+DIFU @MR3000             ; 自動運転開始PLS
+LD @MR3000               ; 自動運転開始PLS
+MPS
+ANB LR002                ; 搬送ﾓｰﾄﾞ
+SET MR1102               ; ﾎﾟﾝﾌﾟON
+CON
+SET MR7201               ; ﾊﾞｲﾊﾟｽﾊﾞﾙﾌﾞ 開
+CON
+SET MR3300               ; Tank_BUSY
+CON
+SET @MR3001              ; 自動運転開始
+MPP
+AND LR002                ; 搬送ﾓｰﾄﾞ
+SET MR3300               ; Tank_BUSY
+CON
+SET @MR3001              ; 自動運転開始
+STG @MR3001              ; 自動運転開始
+MPS
+LD MR3005                ; 装置ﾎﾟｰｽﾞ
+ANB MR3302               ; TANK_HALT
+ANL
+SET @MR2000              ; ﾎﾟｰｽﾞ許可
+MPP
+ANB MR3005               ; 装置ﾎﾟｰｽﾞ
+MPS
+LD MR501                 ; ﾀﾝｸ小量
+LD MR502                 ; ﾀﾝｸ適量下限
+ANB MR503                ; ﾀﾝｸ適量上限
+ORL
+ANB MR3002               ; 停止要求ON
+ANB LR002                ; 搬送ﾓｰﾄﾞ
+ANL
+SET MR7200               ; 給水ﾀﾝｸ 給水
+CON
+AND R7200                ; 給水ﾀﾝｸ 給水
+JMP @MR3002              ; 給水開始
+MRD
+LDB MR3100               ; Unit1_BUSY
+ANB MR3200               ; Unit2_BUSY
+AND MR3002               ; 停止要求ON
+ANL
+JMP @MR1014              ; ENDへ
+MPP
+LD MR4208                ; 給水ﾀﾝｸ_ｵｰﾊﾞｰﾌﾛｰON
+ORB R4212                ; 給水ﾀﾝｸ漏液ｾﾝｻ
+ANL
+SET @MR2000              ; ﾎﾟｰｽﾞ許可
+CON
+JMP @MR1013              ; EMG
+STG @MR3002              ; 給水開始
+MPS
+LDB MR3100               ; Unit1_BUSY
+ANB MR3200               ; Unit2_BUSY
+AND MR3002               ; 停止要求ON
+ANL
+JMP @MR1014              ; ENDへ
+MRD
+AND MR503                ; ﾀﾝｸ適量上限
+RES MR7200               ; 給水ﾀﾝｸ 給水
+CON
+ANB R7200                ; 給水ﾀﾝｸ 給水
+JMP @MR3001              ; 自動運転開始
+MPP
+LD MR4208                ; 給水ﾀﾝｸ_ｵｰﾊﾞｰﾌﾛｰON
+ORB R4212                ; 給水ﾀﾝｸ漏液ｾﾝｻ
+ANL
+SET @MR2000              ; ﾎﾟｰｽﾞ許可
+CON
+JMP @MR1013              ; EMG
+;<h1/>MAINTE/ﾒﾝﾃﾅﾝｽ動作
+;[本STG内容]
+;・各TaskのMAINTE動作を記述して下さい
+;・動作ﾓｰﾄﾞは「MAINTEAC*」に格納されています(1～32)
+;・動作終了時は@MR2915にJMPして下さい
+LDP R50102               ; 手動ﾓｰﾄﾞ
+AND R50002               ; 手動中
+DIFU @MR1300             ; 手動ﾓｰﾄﾞPLS
+LD @MR1300               ; 手動ﾓｰﾄﾞPLS
+SET MR3300               ; Tank_BUSY
+CON
+SET @MR1301              ; 手動ﾓｰﾄﾞ開始
+STG @MR1301              ; 手動ﾓｰﾄﾞ開始
+MPS
+AND MR3005               ; 装置ﾎﾟｰｽﾞ
+MPS
+ANB MR3302               ; TANK_HALT
+SET @MR2000              ; ﾎﾟｰｽﾞ許可
+MPP
+LD @MR1303               ; M_ﾒﾝﾃﾓｰﾄﾞ停止条件
+LD R40002                ; SET UP戻SW
+OR R40008                ; ﾒﾝﾃﾓｰﾄﾞOFF
+ANL
+ANL
+JMP @MR1014              ; ENDへ
+MPP
+ANB MR3005               ; 装置ﾎﾟｰｽﾞ
+MPS
+LDP R48400               ; ﾎﾟﾝﾌﾟ回転SW
+ANB R4208                ; 給水ﾀﾝｸ液ﾚﾍﾞﾙｾﾝｻ ｵｰﾊﾞｰﾌﾛｰ
+ANL
+JMP @MR1400              ; M_ﾎﾟﾝﾌﾟ回転
+MRD
+ANP R48401               ; ﾎﾟﾝﾌﾟ停止SW
+JMP @MR1402              ; M_ﾎﾟﾝﾌﾟ停止
+MRD
+LDP R48402               ; 給水ﾊﾞﾙﾌﾞ開SW
+ANB R4208                ; 給水ﾀﾝｸ液ﾚﾍﾞﾙｾﾝｻ ｵｰﾊﾞｰﾌﾛｰ
+ANB MR503                ; ﾀﾝｸ適量上限
+ANL
+JMP @MR1404              ; M_給水ﾊﾞﾙﾌﾞ開
+MRD
+LDP R48403               ; 給水ﾊﾞﾙﾌﾞ閉SW
+LDB CR2002               ; 常時ON
+ANP MR503                ; ﾀﾝｸ適量上限
+ORL
+LD MR503                 ; ﾀﾝｸ適量上限
+AND MR7200               ; 給水ﾀﾝｸ 給水
+ORL
+ANL
+JMP @MR1406              ; M_給水ﾊﾞﾙﾌﾞ閉
+MRD
+ANP R48404               ; ﾊﾞｲﾊﾟｽﾊﾞﾙﾌﾞ閉SW
+JMP @MR1408              ; M_ﾊﾞｲﾊﾟｽﾊﾞﾙﾌﾞ閉
+MRD
+ANP R48405               ; ﾊﾞｲﾊﾟｽﾊﾞﾙﾌﾞ開SW
+JMP @MR1410              ; M_ﾊﾞｲﾊﾟｽﾊﾞﾙﾌﾞ開
+MRD
+LDP R48406               ; 洗浄水1ﾊﾞﾙﾌﾞ開SW
+AND R4002                ; ﾉｽﾞﾙﾕﾆｯﾄ1 液受けｼﾘﾝﾀﾞ 上昇端
+AND R4103                ; ﾉｽﾞﾙﾕﾆｯﾄ1上治具昇降ｼﾘﾝﾀﾞ 下降限
+AND R4105                ; ﾉｽﾞﾙﾕﾆｯﾄ1上治具加圧ｼﾘﾝﾀﾞ 下降限
+ANL
+JMP @MR1412              ; M_洗浄水1ﾊﾞﾙﾌﾞ開
+MRD
+ANP R48407               ; 洗浄水1ﾊﾞﾙﾌﾞ閉SW
+JMP @MR1414              ; M_洗浄水1ﾊﾞﾙﾌﾞ閉
+MRD
+LDP R48408               ; 洗浄水2ﾊﾞﾙﾌﾞ開SW
+AND R4202                ; ﾉｽﾞﾙﾕﾆｯﾄ2 液受けｼﾘﾝﾀﾞ 上昇端
+AND R4303                ; ﾉｽﾞﾙﾕﾆｯﾄ2上治具昇降ｼﾘﾝﾀﾞ 下降限
+AND R4305                ; ﾉｽﾞﾙﾕﾆｯﾄ2上治具加圧ｼﾘﾝﾀﾞ 下降限
+ANL
+JMP @MR1500              ; M_洗浄水2ﾊﾞﾙﾌﾞ開
+MRD
+ANP R48409               ; 洗浄水2ﾊﾞﾙﾌﾞ閉SW
+JMP @MR1502              ; M_洗浄水2ﾊﾞﾙﾌﾞ閉
+MRD
+LDP R48414               ; 洗浄ｴｱｰ1ﾊﾞﾙﾌﾞ開SW
+AND R4002                ; ﾉｽﾞﾙﾕﾆｯﾄ1 液受けｼﾘﾝﾀﾞ 上昇端
+AND R4103                ; ﾉｽﾞﾙﾕﾆｯﾄ1上治具昇降ｼﾘﾝﾀﾞ 下降限
+AND R4105                ; ﾉｽﾞﾙﾕﾆｯﾄ1上治具加圧ｼﾘﾝﾀﾞ 下降限
+ANL
+JMP @MR1512              ; M_洗浄ｴｱｰ1ﾊﾞﾙﾌﾞ開
+MRD
+ANP R48415               ; 洗浄ｴｱｰ1ﾊﾞﾙﾌﾞ閉SW
+JMP @MR1514              ; M_洗浄ｴｱｰ1ﾊﾞﾙﾌﾞ閉
+MRD
+LDP R48500               ; 洗浄ｴｱｰ2ﾊﾞﾙﾌﾞ開SW
+AND R4202                ; ﾉｽﾞﾙﾕﾆｯﾄ2 液受けｼﾘﾝﾀﾞ 上昇端
+AND R4303                ; ﾉｽﾞﾙﾕﾆｯﾄ2上治具昇降ｼﾘﾝﾀﾞ 下降限
+AND R4305                ; ﾉｽﾞﾙﾕﾆｯﾄ2上治具加圧ｼﾘﾝﾀﾞ 下降限
+ANL
+JMP @MR1600              ; M_洗浄ｴｱｰ2ﾊﾞﾙﾌﾞ開
+MRD
+ANP R48501               ; 洗浄ｴｱｰ2ﾊﾞﾙﾌﾞ閉SW
+JMP @MR1602              ; M_洗浄ｴｱｰ2ﾊﾞﾙﾌﾞ閉
+MRD
+LDP R40011               ; 呼び水SW
+AND R4002                ; ﾉｽﾞﾙﾕﾆｯﾄ1 液受けｼﾘﾝﾀﾞ 上昇端
+AND R4103                ; ﾉｽﾞﾙﾕﾆｯﾄ1上治具昇降ｼﾘﾝﾀﾞ 下降限
+AND R4105                ; ﾉｽﾞﾙﾕﾆｯﾄ1上治具加圧ｼﾘﾝﾀﾞ 下降限
+AND R4202                ; ﾉｽﾞﾙﾕﾆｯﾄ2 液受けｼﾘﾝﾀﾞ 上昇端
+AND R4303                ; ﾉｽﾞﾙﾕﾆｯﾄ2上治具昇降ｼﾘﾝﾀﾞ 下降限
+AND R4305                ; ﾉｽﾞﾙﾕﾆｯﾄ2上治具加圧ｼﾘﾝﾀﾞ 下降限
+ANL
+JMP @MR1700              ; 呼び水動作
+MRD
+ANP R48600               ; LD反転仮置き台上昇SW
+JMP @MR1800              ; M_LD反転仮置き台上昇
+MRD
+ANP R48601               ; LD反転仮置き台下降SW
+JMP @MR1804              ; M_LD反転仮置き台下降
+MRD
+ANP R48602               ; ULD反転仮置き台上昇SW
+JMP @MR1808              ; M_ULD反転仮置き台上昇
+MRD
+ANP R48603               ; ULD反転仮置き台下降SW
+JMP @MR1812              ; M_ULD反転仮置き台下降
+MRD
+LD @MR1303               ; M_ﾒﾝﾃﾓｰﾄﾞ停止条件
+LD R40002                ; SET UP戻SW
+OR R40008                ; ﾒﾝﾃﾓｰﾄﾞOFF
+ANL
+ANL
+JMP @MR1014              ; ENDへ
+MPP
+LD MR4208                ; 給水ﾀﾝｸ_ｵｰﾊﾞｰﾌﾛｰON
+ORB R4212                ; 給水ﾀﾝｸ漏液ｾﾝｻ
+ANL
+SET @MR2000              ; ﾎﾟｰｽﾞ許可
+CON
+JMP @MR1013              ; EMG
+LDB MR1102               ; ﾎﾟﾝﾌﾟON
+ANB MR7200               ; 給水ﾀﾝｸ 給水
+ANB MR7201               ; ﾊﾞｲﾊﾟｽﾊﾞﾙﾌﾞ 開
+ANB MR7202               ; 液供給ﾏﾆﾎｰﾙﾄﾞ1 給水
+ANB MR7203               ; 液供給ﾏﾆﾎｰﾙﾄﾞ2 給水
+ANB MR7204               ; 液供給ﾏﾆﾎｰﾙﾄﾞ3 給水
+ANB MR7205               ; 液供給ﾏﾆﾎｰﾙﾄﾞ4 給水
+ANB MR7206               ; 液供給ﾏﾆﾎｰﾙﾄﾞ1 給気
+ANB MR7207               ; 液供給ﾏﾆﾎｰﾙﾄﾞ2 給気
+ANB MR7208               ; 液供給ﾏﾆﾎｰﾙﾄﾞ3 給気
+ANB MR7209               ; 液供給ﾏﾆﾎｰﾙﾄﾞ4 給気
+AND R50002               ; 手動中
+OUT @MR1303              ; M_ﾒﾝﾃﾓｰﾄﾞ停止条件
+STG @MR1400              ; M_ﾎﾟﾝﾌﾟ回転
+SET MR1102               ; ﾎﾟﾝﾌﾟON
+CON
+JMP @MR1301              ; 手動ﾓｰﾄﾞ開始
+STG @MR1402              ; M_ﾎﾟﾝﾌﾟ停止
+RES MR1102               ; ﾎﾟﾝﾌﾟON
+CON
+JMP @MR1301              ; 手動ﾓｰﾄﾞ開始
+STG @MR1404              ; M_給水ﾊﾞﾙﾌﾞ開
+SET MR7200               ; 給水ﾀﾝｸ 給水
+CON
+JMP @MR1301              ; 手動ﾓｰﾄﾞ開始
+STG @MR1406              ; M_給水ﾊﾞﾙﾌﾞ閉
+RES MR7200               ; 給水ﾀﾝｸ 給水
+CON
+JMP @MR1301              ; 手動ﾓｰﾄﾞ開始
+STG @MR1408              ; M_ﾊﾞｲﾊﾟｽﾊﾞﾙﾌﾞ閉
+SET MR7201               ; ﾊﾞｲﾊﾟｽﾊﾞﾙﾌﾞ 開
+CON
+JMP @MR1301              ; 手動ﾓｰﾄﾞ開始
+STG @MR1410              ; M_ﾊﾞｲﾊﾟｽﾊﾞﾙﾌﾞ開
+RES MR7201               ; ﾊﾞｲﾊﾟｽﾊﾞﾙﾌﾞ 開
+CON
+JMP @MR1301              ; 手動ﾓｰﾄﾞ開始
+STG @MR1412              ; M_洗浄水1ﾊﾞﾙﾌﾞ開
+SET MR7202               ; 液供給ﾏﾆﾎｰﾙﾄﾞ1 給水
+CON
+SET MR7203               ; 液供給ﾏﾆﾎｰﾙﾄﾞ2 給水
+CON
+JMP @MR1301              ; 手動ﾓｰﾄﾞ開始
+STG @MR1414              ; M_洗浄水1ﾊﾞﾙﾌﾞ閉
+RES MR7202               ; 液供給ﾏﾆﾎｰﾙﾄﾞ1 給水
+CON
+RES MR7203               ; 液供給ﾏﾆﾎｰﾙﾄﾞ2 給水
+CON
+JMP @MR1301              ; 手動ﾓｰﾄﾞ開始
+STG @MR1500              ; M_洗浄水2ﾊﾞﾙﾌﾞ開
+SET MR7204               ; 液供給ﾏﾆﾎｰﾙﾄﾞ3 給水
+CON
+SET MR7205               ; 液供給ﾏﾆﾎｰﾙﾄﾞ4 給水
+CON
+JMP @MR1301              ; 手動ﾓｰﾄﾞ開始
+STG @MR1502              ; M_洗浄水2ﾊﾞﾙﾌﾞ閉
+RES MR7204               ; 液供給ﾏﾆﾎｰﾙﾄﾞ3 給水
+CON
+RES MR7205               ; 液供給ﾏﾆﾎｰﾙﾄﾞ4 給水
+CON
+JMP @MR1301              ; 手動ﾓｰﾄﾞ開始
+STG @MR1512              ; M_洗浄ｴｱｰ1ﾊﾞﾙﾌﾞ開
+SET MR7206               ; 液供給ﾏﾆﾎｰﾙﾄﾞ1 給気
+CON
+SET MR7207               ; 液供給ﾏﾆﾎｰﾙﾄﾞ2 給気
+CON
+JMP @MR1301              ; 手動ﾓｰﾄﾞ開始
+STG @MR1514              ; M_洗浄ｴｱｰ1ﾊﾞﾙﾌﾞ閉
+RES MR7206               ; 液供給ﾏﾆﾎｰﾙﾄﾞ1 給気
+CON
+RES MR7207               ; 液供給ﾏﾆﾎｰﾙﾄﾞ2 給気
+CON
+JMP @MR1301              ; 手動ﾓｰﾄﾞ開始
+STG @MR1600              ; M_洗浄ｴｱｰ2ﾊﾞﾙﾌﾞ開
+SET MR7208               ; 液供給ﾏﾆﾎｰﾙﾄﾞ3 給気
+CON
+SET MR7209               ; 液供給ﾏﾆﾎｰﾙﾄﾞ4 給気
+CON
+JMP @MR1301              ; 手動ﾓｰﾄﾞ開始
+STG @MR1602              ; M_洗浄ｴｱｰ2ﾊﾞﾙﾌﾞ閉
+RES MR7208               ; 液供給ﾏﾆﾎｰﾙﾄﾞ3 給気
+CON
+RES MR7209               ; 液供給ﾏﾆﾎｰﾙﾄﾞ4 給気
+CON
+JMP @MR1301              ; 手動ﾓｰﾄﾞ開始
+STG @MR1700              ; 呼び水動作
+SET R40111               ; 呼び水SWﾗﾝﾌﾟ
+CON
+SET @MR4500              ; 呼び水動作SUB開始
+CON
+JMP @MR1701              ; 呼び水動作中
+STG @MR1701              ; 呼び水動作中
+AND @MR4501              ; 呼び水動作SUB完了
+RES R40111               ; 呼び水SWﾗﾝﾌﾟ
+CON
+RES @MR4501              ; 呼び水動作SUB完了
+CON
+JMP @MR1301              ; 手動ﾓｰﾄﾞ開始
+STG @MR1800              ; M_LD反転仮置き台上昇
+SET MR7303               ; 【S】投入側反転仮置台上昇
+CON
+RES MR7302               ; 【S】投入側反転仮置台下降
+CON
+JMP @MR1301              ; 手動ﾓｰﾄﾞ開始
+STG @MR1804              ; M_LD反転仮置き台下降
+RES MR7303               ; 【S】投入側反転仮置台上昇
+CON
+SET MR7302               ; 【S】投入側反転仮置台下降
+CON
+JMP @MR1301              ; 手動ﾓｰﾄﾞ開始
+STG @MR1808              ; M_ULD反転仮置き台上昇
+SET MR7300               ; 【S】取出側反転仮置台上昇
+CON
+RES MR7301               ; 【S】取出側反転仮置台下降
+CON
+JMP @MR1301              ; 手動ﾓｰﾄﾞ開始
+STG @MR1812              ; M_ULD反転仮置き台下降
+RES MR7300               ; 【S】取出側反転仮置台上昇
+CON
+SET MR7301               ; 【S】取出側反転仮置台下降
+CON
+JMP @MR1301              ; 手動ﾓｰﾄﾞ開始
+;<h1/>SubRoutines/ｻﾌﾞﾙｰﾁﾝ
+;[記述方法]
+;・ｻﾌﾞﾙｰﾁﾝは本ﾌﾞｯｸﾏｰｸから下に記述していって下さい
+;・ｻﾌﾞﾙｰﾁﾝは必ずﾌﾞｯｸﾏｰｸを挿入して処理内容を明確にする事
+STG @MR4500              ; 呼び水動作SUB開始
+SET MR7200               ; 給水ﾀﾝｸ 給水
+CON
+AND MR7200               ; 給水ﾀﾝｸ 給水
+JMP @MR4505              ; 給水ﾀﾝｸON
+STG @MR4505              ; 給水ﾀﾝｸON
+MPS
+AND MR502                ; ﾀﾝｸ適量下限
+SET MR1102               ; ﾎﾟﾝﾌﾟON
+CON
+SET MR7201               ; ﾊﾞｲﾊﾟｽﾊﾞﾙﾌﾞ 開
+CON
+AND MR1102               ; ﾎﾟﾝﾌﾟON
+AND MR7201               ; ﾊﾞｲﾊﾟｽﾊﾞﾙﾌﾞ 開
+JMP @MR4506              ; ﾎﾟﾝﾌﾟON
+MPP
+AND MR503                ; ﾀﾝｸ適量上限
+JMP @MR4515              ; 呼び水動作終了
+STG @MR4506              ; ﾎﾟﾝﾌﾟON
+MPS
+AND MR503                ; ﾀﾝｸ適量上限
+RES MR7200               ; 給水ﾀﾝｸ 給水
+CON
+ANB MR7200               ; 給水ﾀﾝｸ 給水
+JMP @MR4507              ; ﾀﾝｸ上限ON
+MPP
+LD MR4208                ; 給水ﾀﾝｸ_ｵｰﾊﾞｰﾌﾛｰON
+ORB R4212                ; 給水ﾀﾝｸ漏液ｾﾝｻ
+ANL
+SET @MR2000              ; ﾎﾟｰｽﾞ許可
+CON
+JMP @MR1013              ; EMG
+STG @MR4507              ; ﾀﾝｸ上限ON
+MPS
+TMR @10 #30              ; ﾀﾝｸ上限安定時間
+CON
+AND @T10                 ; ﾀﾝｸ上限安定時間
+RES MR1102               ; ﾎﾟﾝﾌﾟON
+CON
+RES MR7201               ; ﾊﾞｲﾊﾟｽﾊﾞﾙﾌﾞ 開
+CON
+JMP @MR4515              ; 呼び水動作終了
+MPP
+LD MR4208                ; 給水ﾀﾝｸ_ｵｰﾊﾞｰﾌﾛｰON
+ORB R4212                ; 給水ﾀﾝｸ漏液ｾﾝｻ
+ANL
+SET @MR2000              ; ﾎﾟｰｽﾞ許可
+CON
+JMP @MR1013              ; EMG
+STG @MR4515              ; 呼び水動作終了
+SET @MR4501              ; 呼び水動作SUB完了
+CON
+ENDS
+;<h1/>ﾀﾝｸ関係ｴﾗｰ
+;※発生条件：自動運転中
+;ﾀﾝｸ内洗浄液状態確認
+;
+;Check the status in the cleaning solution tank
+;
+LD R4208                 ; 給水ﾀﾝｸ液ﾚﾍﾞﾙｾﾝｻ ｵｰﾊﾞｰﾌﾛｰ
+TMR @100 #20
+CON
+AND @T100
+OUT MR4208               ; 給水ﾀﾝｸ_ｵｰﾊﾞｰﾌﾛｰON
+LDB R4208                ; 給水ﾀﾝｸ液ﾚﾍﾞﾙｾﾝｻ ｵｰﾊﾞｰﾌﾛｰ
+TMR @101 #20
+CON
+AND @T101
+INV
+OUT MR4308               ; 給水ﾀﾝｸ_ｵｰﾊﾞｰﾌﾛｰOFF
+LD R4209                 ; 給水ﾀﾝｸ液ﾚﾍﾞﾙｾﾝｻ 適量上限
+TMR @102 #20
+CON
+AND @T102
+OUT MR4209               ; 給水ﾀﾝｸ_適量上限ON
+LDB R4209                ; 給水ﾀﾝｸ液ﾚﾍﾞﾙｾﾝｻ 適量上限
+TMR @103 #20
+CON
+AND @T103
+INV
+OUT MR4309               ; 給水ﾀﾝｸ_適量上限OFF
+LD R4210                 ; 給水ﾀﾝｸ液ﾚﾍﾞﾙｾﾝｻ 適量下限
+TMR @104 #20
+CON
+AND @T104
+OUT MR4210               ; 給水ﾀﾝｸ_適量下限ON
+LDB R4210                ; 給水ﾀﾝｸ液ﾚﾍﾞﾙｾﾝｻ 適量下限
+TMR @105 #20
+CON
+AND @T105
+INV
+OUT MR4310               ; 給水ﾀﾝｸ_適量下限OFF
+LD R4211                 ; 給水ﾀﾝｸ液ﾚﾍﾞﾙｾﾝｻ 下限
+TMR @106 #20
+CON
+AND @T106
+OUT MR4211               ; 給水ﾀﾝｸ_下限ON
+LDB R4211                ; 給水ﾀﾝｸ液ﾚﾍﾞﾙｾﾝｻ 下限
+TMR @107 #20
+CON
+AND @T107
+INV
+OUT MR4311               ; 給水ﾀﾝｸ_下限OFF
+LD MR4208                ; 給水ﾀﾝｸ_ｵｰﾊﾞｰﾌﾛｰON
+OUT MR504                ; ﾀﾝｸｵｰﾊﾞｰﾌﾛｰ
+LDB MR4208               ; 給水ﾀﾝｸ_ｵｰﾊﾞｰﾌﾛｰON
+ANB MR4308               ; 給水ﾀﾝｸ_ｵｰﾊﾞｰﾌﾛｰOFF
+MPS
+LD MR4209                ; 給水ﾀﾝｸ_適量上限ON
+AND MR4309               ; 給水ﾀﾝｸ_適量上限OFF
+AND MR4210               ; 給水ﾀﾝｸ_適量下限ON
+AND MR4310               ; 給水ﾀﾝｸ_適量下限OFF
+AND MR4211               ; 給水ﾀﾝｸ_下限ON
+AND MR4311               ; 給水ﾀﾝｸ_下限OFF
+ANL
+OUT MR503                ; ﾀﾝｸ適量上限
+MPP
+LDB MR4209               ; 給水ﾀﾝｸ_適量上限ON
+ANB MR4309               ; 給水ﾀﾝｸ_適量上限OFF
+ANL
+MPS
+LD MR4210                ; 給水ﾀﾝｸ_適量下限ON
+AND MR4310               ; 給水ﾀﾝｸ_適量下限OFF
+AND MR4211               ; 給水ﾀﾝｸ_下限ON
+AND MR4311               ; 給水ﾀﾝｸ_下限OFF
+ANL
+OUT MR502                ; ﾀﾝｸ適量下限
+MPP
+LDB MR4210               ; 給水ﾀﾝｸ_適量下限ON
+ANB MR4310               ; 給水ﾀﾝｸ_適量下限OFF
+ANL
+MPS
+LD MR4211                ; 給水ﾀﾝｸ_下限ON
+AND MR4311               ; 給水ﾀﾝｸ_下限OFF
+ANL
+OUT MR501                ; ﾀﾝｸ小量
+MPP
+LDB MR4211               ; 給水ﾀﾝｸ_下限ON
+ANB MR4311               ; 給水ﾀﾝｸ_下限OFF
+ANL
+OUT MR500                ; ﾀﾝｸ水無し
+END
+ENDH

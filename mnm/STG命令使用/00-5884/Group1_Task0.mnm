@@ -1,0 +1,1861 @@
+DEVICE:53
+;MODULE:Group1_Task0
+;MODULE_TYPE:0
+;SCRIPT_TYPE:
+;OneSystem Main-Module
+;
+;-----------------------------------------
+;ModuleName	:	Group1_Task0
+;ModuleType	:	Main Module
+;Line		:	
+;Cell		:	
+;Function	:	
+;-----------------------------------------
+;<<Task LocalDevice>>
+;/*項目			/*割付ｴﾘｱ				/*備考
+;---------------------------------------------------------------------			
+;Emergency		@MR000～@MR015			Emergency処理時RESET禁止ｴﾘｱ
+;Free			@MR100～@MR915			ﾕｰｻﾞｰﾌﾘｰｴﾘｱ
+;HOME			@MR1000～@MR1515		HOME動作時使用ｴﾘｱ
+;MAINTENANCE		@MR2000～@MR2915		MAINTE動作時使用ｴﾘｱ
+;AUTO(Main1)		@MR3000～@MR3915		AUTO(Main1)動作時使用ｴﾘｱ
+;	(Main2)		@MR4000～@MR4415		AUTO(Main2)動作時使用ｴﾘｱ
+;SubRoutine		@MR4500～@MR6415		ｻﾌﾞﾙｰﾁﾝ共通動作使用ｴﾘｱ
+;----------------------------------------------------------------------
+;<h1/>Device_Init/ﾃﾞﾊﾞｲｽ初期化
+;[内容]
+;・非常停止、優先ｴﾗｰ発生時に初期化したいﾃﾞﾊﾞｲｽを指定して下さい
+;※本Taskで使用するﾛｰｶﾙﾃﾞﾊﾞｲｽなど
+;※STG～JMPにて使用しているﾃﾞﾊﾞｲｽは必須
+LDP R46104               ; _非常停止中　ﾓｰﾄﾞﾌﾗｸﾞ
+ZRES MR16000 MR16005     ; TASK0 終了可  TASK5 終了可
+CON
+ZRES MR200 MR204         ; INDEX原点復帰完了  INDEX 位置決め完了
+CON
+ZRES MR19000 MR19007     ; ﾜｰｸ供給要求(INDEX->RB1)
+CON
+ZRES MR19001 MR19107     ; ﾜｰｸ取出要求(INDEX->RB2)
+CON
+ZRES @MR100 @MR6415      ; Task0 ERROR
+;<h1/>Task_Monitor/ﾀｽｸﾓﾆﾀｰ
+LD CR2002                ; 常時ON
+FLIK #50 #50 @MR000
+LD= DM60000 #0           ; TaskNo /ERROR_DISP
+AND R46208               ; _Group1　ｴﾗｰ発生中
+OUT @MR001               ; TASK0 ERROR
+;ON STG Main1
+;TYPE EM600.U,EM601.U,@MR000.U,@MR3000.U
+;
+;FOR EM600 = EM600 TO 160 STEP 16
+;	IF @MR3000:EM600 <> 0 THEN
+;		BREAK
+;	END IF	
+;NEXT
+;	
+;IF EM600 < 160 THEN
+;	EM601 = (EM600 / 16) * 100 + DMX(@MR3000:EM600) + #3000
+;END IF		
+;		
+;EM600 = EM600 + 16		
+;IF EM600 > 160 THEN		
+;	EM600 = 0	
+;END IF
+LDP @MR000
+NCJ #1000
+;TYPE EM600.U,EM601.U,@MR000.U,@MR3000.U
+;
+;FOR EM600 = EM600 TO 160 STEP 16
+;
+LD CR2002                ; 常時ON
+MOV EM600 EM600          ; Task0 Main1@MR  Task0 Main1@MR
+LABEL #2000
+LD> EM600 #160           ; Task0 Main1@MR
+CJ #2001
+;	IF @MR3000:EM600 <> 0 THEN
+;
+LD CR2002                ; 常時ON
+LDA EM600                ; Task0 Main1@MR
+CON
+EXT
+CON
+STA.L Z12
+LD<> @MR3000:Z12 #0      ; AUTO Main1
+NCJ #2002
+;		BREAK
+;
+LD CR2002                ; 常時ON
+CJ #2003
+;	END IF	
+;
+LABEL #2002
+;NEXT
+;
+LD CR2002                ; 常時ON
+LDA EM600                ; Task0 Main1@MR
+CON
+ADD #16
+CON
+STA EM600                ; Task0 Main1@MR
+LDB CR2009               ; 演算結果が負
+CJ #2000
+LABEL #2003
+LABEL #2001
+;IF EM600 < 160 THEN
+;
+LD< EM600 #160           ; Task0 Main1@MR
+NCJ #2004
+;	EM601 = (EM600 / 16) * 100 + DMX(@MR3000:EM600) + #3000
+;
+LD CR2002                ; 常時ON
+LDA EM600                ; Task0 Main1@MR
+CON
+EXT
+CON
+STA.L Z12
+CON
+LDA @MR3000:Z12          ; AUTO Main1
+CON
+DMX
+CON
+STA @VM0
+CON
+LDA EM600                ; Task0 Main1@MR
+CON
+EXT
+CON
+EXT.L
+CON
+DIV.L +16
+CON
+MUL.L +100
+CON
+STA.L @VM1
+CON
+LDA @VM0
+CON
+EXT
+CON
+ADD.L @VM1
+CON
+ADD.L +3000
+CON
+STA EM601                ; Task0 Main1@MR
+;END IF		
+;
+LABEL #2004
+;EM600 = EM600 + 16		
+;
+LD CR2002                ; 常時ON
+LDA EM600                ; Task0 Main1@MR
+CON
+EXT
+CON
+ADD.L +16
+CON
+STA EM600                ; Task0 Main1@MR
+;IF EM600 > 160 THEN		
+;
+LD> EM600 #160           ; Task0 Main1@MR
+NCJ #2005
+;	EM600 = 0	
+;
+LD CR2002                ; 常時ON
+MOV #0 EM600             ; Task0 Main1@MR
+;END IF
+LABEL #2005
+LABEL #1000
+;
+;ON STG Main2
+;TYPE EM602.U,EM603.U,@MR4000.U
+;
+;FOR EM602 = EM602 TO 80 STEP 16
+;	IF @MR4000:EM602 <> 0 THEN
+;		BREAK
+;	END IF	
+;NEXT	
+;
+;IF EM602 < 80 THEN
+;	EM603 = (EM602 / 16) * 100 + DMX(@MR4000:EM602) + #4000
+;END IF
+;
+;EM602 = EM602 + 16		
+;
+;IF EM602 > 80 THEN
+;	EM602 = 0	
+;END IF
+LDP @MR000
+NCJ #1001
+;TYPE EM602.U,EM603.U,@MR4000.U
+;
+;FOR EM602 = EM602 TO 80 STEP 16
+;
+LD CR2002                ; 常時ON
+MOV EM602 EM602          ; Task0 Main2@MR  Task0 Main2@MR
+LABEL #2006
+LD> EM602 #80            ; Task0 Main2@MR
+CJ #2007
+;	IF @MR4000:EM602 <> 0 THEN
+;
+LD CR2002                ; 常時ON
+LDA EM602                ; Task0 Main2@MR
+CON
+EXT
+CON
+STA.L Z12
+LD<> @MR4000:Z12 #0      ; AUTO Main2
+NCJ #2008
+;		BREAK
+;
+LD CR2002                ; 常時ON
+CJ #2009
+;	END IF	
+;
+LABEL #2008
+;NEXT	
+;
+LD CR2002                ; 常時ON
+LDA EM602                ; Task0 Main2@MR
+CON
+ADD #16
+CON
+STA EM602                ; Task0 Main2@MR
+LDB CR2009               ; 演算結果が負
+CJ #2006
+LABEL #2009
+LABEL #2007
+;IF EM602 < 80 THEN
+;
+LD< EM602 #80            ; Task0 Main2@MR
+NCJ #2010
+;	EM603 = (EM602 / 16) * 100 + DMX(@MR4000:EM602) + #4000
+;
+LD CR2002                ; 常時ON
+LDA EM602                ; Task0 Main2@MR
+CON
+EXT
+CON
+STA.L Z12
+CON
+LDA @MR4000:Z12          ; AUTO Main2
+CON
+DMX
+CON
+STA @VM3
+CON
+LDA EM602                ; Task0 Main2@MR
+CON
+EXT
+CON
+EXT.L
+CON
+DIV.L +16
+CON
+MUL.L +100
+CON
+STA.L @VM4
+CON
+LDA @VM3
+CON
+EXT
+CON
+ADD.L @VM4
+CON
+ADD.L +4000
+CON
+STA EM603                ; Task0 Main2@MR
+;END IF
+;
+LABEL #2010
+;EM602 = EM602 + 16		
+;
+LD CR2002                ; 常時ON
+LDA EM602                ; Task0 Main2@MR
+CON
+EXT
+CON
+ADD.L +16
+CON
+STA EM602                ; Task0 Main2@MR
+;IF EM602 > 80 THEN
+;
+LD> EM602 #80            ; Task0 Main2@MR
+NCJ #2011
+;	EM602 = 0	
+;
+LD CR2002                ; 常時ON
+MOV #0 EM602             ; Task0 Main2@MR
+;END IF
+LABEL #2011
+LABEL #1001
+;
+;ON STG SubRoutine
+;TYPE EM604.U,EM605.U,@MR4500.U
+;	
+;FOR EM604 = EM604 TO 320 STEP 16
+;	IF @MR4500:EM604 <> 0 THEN
+;		BREAK
+;	END IF	
+;NEXT
+;		
+;IF EM604 < 320 THEN
+;	EM605 = (EM604 / 16) * 100 + DMX(@MR4500:EM604) + #4500
+;END IF
+;		
+;EM604 = EM604 + 16	
+;
+;IF EM604 > 320 THEN
+;   EM604 = 0
+;END IF
+LDP @MR000
+NCJ #1002
+;TYPE EM604.U,EM605.U,@MR4500.U
+;
+;FOR EM604 = EM604 TO 320 STEP 16
+;
+LD CR2002                ; 常時ON
+MOV EM604 EM604          ; Task0 Sub@MR  Task0 Sub@MR
+LABEL #2012
+LD> EM604 #320           ; Task0 Sub@MR
+CJ #2013
+;	IF @MR4500:EM604 <> 0 THEN
+;
+LD CR2002                ; 常時ON
+LDA EM604                ; Task0 Sub@MR
+CON
+EXT
+CON
+STA.L Z12
+LD<> @MR4500:Z12 #0      ; INDEX原点復帰Sub Start
+NCJ #2014
+;		BREAK
+;
+LD CR2002                ; 常時ON
+CJ #2015
+;	END IF	
+;
+LABEL #2014
+;NEXT
+;
+LD CR2002                ; 常時ON
+LDA EM604                ; Task0 Sub@MR
+CON
+ADD #16
+CON
+STA EM604                ; Task0 Sub@MR
+LDB CR2009               ; 演算結果が負
+CJ #2012
+LABEL #2015
+LABEL #2013
+;IF EM604 < 320 THEN
+;
+LD< EM604 #320           ; Task0 Sub@MR
+NCJ #2016
+;	EM605 = (EM604 / 16) * 100 + DMX(@MR4500:EM604) + #4500
+;
+LD CR2002                ; 常時ON
+LDA EM604                ; Task0 Sub@MR
+CON
+EXT
+CON
+STA.L Z12
+CON
+LDA @MR4500:Z12          ; INDEX原点復帰Sub Start
+CON
+DMX
+CON
+STA @VM6
+CON
+LDA EM604                ; Task0 Sub@MR
+CON
+EXT
+CON
+EXT.L
+CON
+DIV.L +16
+CON
+MUL.L +100
+CON
+STA.L @VM7
+CON
+LDA @VM6
+CON
+EXT
+CON
+ADD.L @VM7
+CON
+ADD.L +4500
+CON
+STA EM605                ; Task0 Sub@MR
+;END IF
+;
+LABEL #2016
+;EM604 = EM604 + 16	
+;
+LD CR2002                ; 常時ON
+LDA EM604                ; Task0 Sub@MR
+CON
+EXT
+CON
+ADD.L +16
+CON
+STA EM604                ; Task0 Sub@MR
+;IF EM604 > 320 THEN
+;
+LD> EM604 #320           ; Task0 Sub@MR
+NCJ #2017
+;   EM604 = 0
+;
+LD CR2002                ; 常時ON
+MOV #0 EM604             ; Task0 Sub@MR
+;END IF
+LABEL #2017
+LABEL #1002
+;
+;<h1/>Task_Init/ﾀｽｸ初期化
+;[本STG内容]
+;・本Task起動時に必要な初期化処理を記述して下さい
+;・起動Taskの全Init処理終了後、Task_StartのSTGが起動します
+STG LR800                ; _Grp1_Task0_Init.STG
+ENDS
+;<h1/>Condition/条件
+LD LR10000               ; 反転有無切替(ON=有/OFF=無)
+ORB LR10000              ; 反転有無切替(ON=有/OFF=無)
+LD T2000                 ; RB1 Pos1(ﾜｰｸ受取位置)
+OR T2010                 ; RB1 Pos11(待機位置)
+ANL
+ANB MR24608              ; RB2 INDEX(ST1)Pos1 下降位置
+ANB MR24609              ; RB2 INDEX(ST1)Pos2 下降位置
+AND R4705                ; ｲﾝﾃﾞｯｸｽ ｾﾝｻ上下 下降眼
+OUT MR203                ; INDEX 回転I/L OK
+;<h1/>Task_Start/ﾀｽｸ開始
+;[本STG内容]
+;・Task起動後、以下運転ﾓｰﾄﾞに従い、各STGにJMPします
+;【HOME】	→	LR5200
+;【AUTO】	→	LR5400
+;【MAINTE】	→	LR5600
+;・本STGは追記、修正不要です
+STG LR400                ; _Grp1_Task0_Start.STG
+MPS
+AND R46101               ; _原点復帰中　ﾓｰﾄﾞﾌﾗｸﾞ
+JMP LR5200               ; _Grp1_Task0_HOME.STG
+MRD
+AND R46100               ; _自動運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+JMP LR5400               ; _Grp1_Task0_AUTO.STG
+MPP
+AND R46102               ; _ﾒﾝﾃﾅﾝｽ運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+JMP LR5600               ; _Grp1_Task0_MAINTE.STG
+;Cylinder ERROR 監視
+LDP MR005
+ZRES MR4000 MR4900
+CON
+RES R42600               ; _Grp1_Task0_ﾎﾟｰｽﾞ許可
+CON
+RES R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+;<h1/>Task_Finish/ﾀｽｸ終了
+;[本STG内容]
+;・各Taskの終了STGになります
+;・運転ﾓｰﾄﾞに係わらず終了時は本STGを経由して終了して下さい
+;・本STGは追記、修正不要です
+STG LR600                ; _Grp1_Task0_Fin.STG
+RES R41000               ; _Grp1_Task0_起動中ﾌﾗｸﾞ
+CON
+ENDS
+;<h1/>HOME/原点復帰
+;[本STG内容]
+;・STG @MR1000の続きから各Taskの原点復帰動作を記述する
+;・動作終了時は@MR1515にJMPする事
+STG LR5200               ; _Grp1_Task0_HOME.STG
+RES MR100                ; TASK0 原点復帰完了
+CON
+RES MR101                ; TASK1 原点復帰完了
+CON
+RES MR102                ; TASK2 原点復帰完了
+CON
+RES MR103                ; TASK3 原点復帰完了
+CON
+RES MR105                ; TASK5 原点復帰完了
+CON
+JMP @MR1000              ; HOME
+STG @MR1000              ; HOME
+RES MR7302               ; ｲﾝﾃﾞｯｸｽ ｾﾝｻｰ上昇
+CON
+SET MR7303               ; ｲﾝﾃﾞｯｸｽ ｾﾝｻｰ下降
+CON
+MPS
+LDB MR4705               ; ｲﾝﾃﾞｯｸｽ ｾﾝｻ下降Err
+ANB R4704                ; ｲﾝﾃﾞｯｸｽ ｾﾝｻ上下 上昇眼
+AND R4705                ; ｲﾝﾃﾞｯｸｽ ｾﾝｻ上下 下降眼
+ANL
+JMP @MR1200
+MPP
+LD MR4705                ; ｲﾝﾃﾞｯｸｽ ｾﾝｻ下降Err
+AND R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+ANL
+SET @MR1900              ; Main1 HALT許可
+STG @MR1200
+MPS
+ANB R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+RES MR100                ; TASK0 原点復帰完了
+CON
+MPS
+LD MR105                 ; TASK5 原点復帰完了
+ANB MR115                ; 原点復帰中止
+ANL
+MPS
+LD LR10000               ; 反転有無切替(ON=有/OFF=無)
+LD MR101                 ; TASK1 原点復帰完了
+OR MR19005               ; 原点復帰要求(RB1->INDEX)
+ANL
+ANL
+JMP @MR1003
+MPP
+ANB LR10000              ; 反転有無切替(ON=有/OFF=無)
+MPS
+AND MR19005              ; 原点復帰要求(RB1->INDEX)
+JMP @MR1003
+MPP
+LDB R41001               ; _Grp1_Task1_起動中ﾌﾗｸﾞ
+OR MR16001               ; TASK1 終了可
+ANL
+JMP @MR1515              ; HOME END
+MPP
+AND MR115                ; 原点復帰中止
+SET MR100                ; TASK0 原点復帰完了
+CON
+JMP @MR1008
+MPP
+AND R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR1003
+ANB @MR1002              ; HOME中
+SET @MR1002              ; HOME中
+CON
+JMP @MR1004
+STG @MR1004
+MPS
+LD LR10000               ; 反転有無切替(ON=有/OFF=無)
+LD T2000                 ; RB1 Pos1(ﾜｰｸ受取位置)
+OR T2010                 ; RB1 Pos11(待機位置)
+ANL
+LDB LR10000              ; 反転有無切替(ON=有/OFF=無)
+LD T2010                 ; RB1 Pos11(待機位置)
+OR T2013                 ; RB1 Pos14(ﾜｰｸ受渡位置)
+ANL
+ORL
+AND MR12002              ; 不干渉信号(取出機より)
+ANL
+MPS
+AND<> DM35000 #0         ; INDEX位置ﾃﾞｰﾀ
+@DEC DM35000             ; INDEX位置ﾃﾞｰﾀ
+CON
+JMP @MR1010
+MPP
+LD= DM35000 #0           ; INDEX位置ﾃﾞｰﾀ
+ANB @MR1010
+ANL
+DW #5 DM35000            ; INDEX位置ﾃﾞｰﾀ
+CON
+JMP @MR1010
+MPP
+ANB MR12002              ; 不干渉信号(取出機より)
+MCALL MODE_INDI #2
+SET MR100                ; TASK0 原点復帰完了
+CON
+JMP @MR1008
+STG @MR1010
+ANB @MR4700              ; INDEX回転Sub Start
+ANB @MR4701              ; INDEX回転Sub END
+ANB @MR4702              ; INDEX回転Sub中
+SET @MR4700              ; INDEX回転Sub Start
+CON
+JMP @MR1005
+STG @MR1005
+ANB @MR4700              ; INDEX回転Sub Start
+AND @MR4701              ; INDEX回転Sub END
+ANB @MR4702              ; INDEX回転Sub中
+RES @MR4701              ; INDEX回転Sub END
+CON
+JMP @MR1006
+STG @MR1006
+LD MR101                 ; TASK1 原点復帰完了
+OR MR19005               ; 原点復帰要求(RB1->INDEX)
+ANL
+AND MR105                ; TASK5 原点復帰完了
+JMP @MR1100
+STG @MR1100
+MPS
+AND<> DM35000 #0         ; INDEX位置ﾃﾞｰﾀ
+@DEC DM35000             ; INDEX位置ﾃﾞｰﾀ
+CON
+JMP @MR1101
+MPP
+LD= DM35000 #0           ; INDEX位置ﾃﾞｰﾀ
+ANB @MR1101
+ANL
+DW #5 DM35000            ; INDEX位置ﾃﾞｰﾀ
+CON
+JMP @MR1101
+STG @MR1101
+ANB @MR4700              ; INDEX回転Sub Start
+ANB @MR4701              ; INDEX回転Sub END
+ANB @MR4702              ; INDEX回転Sub中
+TMR @7 #5
+CON
+AND @T7
+SET @MR4700              ; INDEX回転Sub Start
+CON
+JMP @MR1007
+STG @MR1007
+ANB @MR4700              ; INDEX回転Sub Start
+AND @MR4701              ; INDEX回転Sub END
+ANB @MR4702              ; INDEX回転Sub中
+RES @MR4701              ; INDEX回転Sub END
+CON
+SET MR100                ; TASK0 原点復帰完了
+CON
+JMP @MR1008
+STG @MR1008
+MPS
+LDB R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+AND MR100                ; TASK0 原点復帰完了
+AND MR101                ; TASK1 原点復帰完了
+AND MR102                ; TASK2 原点復帰完了
+AND MR103                ; TASK3 原点復帰完了
+AND MR104                ; TASK4 原点復帰完了
+AND MR105                ; TASK5 原点復帰完了
+ANL
+JMP @MR1009
+MPP
+AND R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR1009
+JMP @MR1515              ; HOME END
+STG @MR1515              ; HOME END
+ANB @MR001               ; TASK0 ERROR
+MPS
+LDB R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+AND MR16001              ; TASK1 終了可
+AND MR16002              ; TASK2 終了可
+AND MR16003              ; TASK3 終了可
+AND MR16004              ; TASK4 終了可
+AND MR16005              ; TASK5 終了可
+ANL
+SET MR16000              ; TASK0 終了可
+CON
+RES MR100                ; TASK0 原点復帰完了
+CON
+RES MR101                ; TASK1 原点復帰完了
+CON
+RES MR102                ; TASK2 原点復帰完了
+CON
+RES MR103                ; TASK3 原点復帰完了
+CON
+RES MR104                ; TASK4 原点復帰完了
+CON
+RES MR105                ; TASK5 原点復帰完了
+CON
+RES MR115                ; 原点復帰中止
+CON
+JMP @MR1514
+MPP
+AND R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR1514
+ANB R41001               ; _Grp1_Task1_起動中ﾌﾗｸﾞ
+ANB R41002               ; _Grp1_Task2_起動中ﾌﾗｸﾞ
+ANB R41003               ; _Grp1_Task3_起動中ﾌﾗｸﾞ
+ANB R41004               ; _Grp1_Task4_起動中ﾌﾗｸﾞ
+ANB R41005               ; _Grp1_Task5_起動中ﾌﾗｸﾞ
+ZRES MR16000 MR16005     ; TASK0 終了可  TASK5 終了可
+CON
+RES @MR1002              ; HOME中
+CON
+JMP LR600                ; _Grp1_Task0_Fin.STG
+;<h1/>AUTO/自動動作
+STG LR5400               ; _Grp1_Task0_AUTO.STG
+JMP @MR3000              ; AUTO Main1
+;<h1/>Auto-Main1/Autoﾒｲﾝﾙｰﾁﾝ1
+;[本STG内容]
+;・各TaskのAUTO動作を記述して下さい
+;・動作ﾓｰﾄﾞは「AUTOAC」に格納されています(1～32)
+;・@MR3000:AUTO_Main1開始、@MR3001:AUTO_Main1完了、@MR3002:AUTO_Main1動作中
+STG @MR3000              ; AUTO Main1
+SET @MR3002              ; AUTO Main1 Busy
+CON
+JMP @MR3200              ; ﾜｰｸ取出し部ﾜｰｸ確認
+;▼ﾜｰｸ取出し部ﾜｰｸ有無確認
+STG @MR3200              ; ﾜｰｸ取出し部ﾜｰｸ確認
+MPS
+ANB R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+JMP @MR3201
+MPP
+AND R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR3201
+ANB @MR4701              ; INDEX回転Sub END
+ANB @MR4702              ; INDEX回転Sub中
+AND MR3302               ; ｲﾝﾃﾞｯｸｽ　ｾﾝｻ上昇IL(ON=可能)
+ANB R4704                ; ｲﾝﾃﾞｯｸｽ ｾﾝｻ上下 上昇眼
+AND R4705                ; ｲﾝﾃﾞｯｸｽ ｾﾝｻ上下 下降眼
+JMP @MR3202
+STG @MR3202
+SET MR7302               ; ｲﾝﾃﾞｯｸｽ ｾﾝｻｰ上昇
+CON
+RES MR7303               ; ｲﾝﾃﾞｯｸｽ ｾﾝｻｰ下降
+CON
+MPS
+LDB MR4704               ; ｲﾝﾃﾞｯｸｽ ｾﾝｻ上昇Err
+AND R4704                ; ｲﾝﾃﾞｯｸｽ ｾﾝｻ上下 上昇眼
+ANB R4705                ; ｲﾝﾃﾞｯｸｽ ｾﾝｻ上下 下降眼
+ANL
+JMP @MR3203
+MPP
+LD MR4704                ; ｲﾝﾃﾞｯｸｽ ｾﾝｻ上昇Err
+AND R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+ANL
+SET @MR1900              ; Main1 HALT許可
+;		ﾜｰｸ確認(ON:ﾜｰｸ無_OFF:ﾜｰｸ有)
+STG @MR3203
+TMR @20 #3
+CON
+AND @T20
+JMP @MR3204
+STG @MR3204
+MPS
+AND= DM7018 #1           ; 動作ﾓｰﾄﾞ(0=通常/1=ﾜｰｸ無)
+JMP @MR3003
+MPP
+AND= DM7018 #0           ; 動作ﾓｰﾄﾞ(0=通常/1=ﾜｰｸ無)
+MPS
+LD DM35005.0             ; ﾍｯﾄﾞ1休止設定(OFF=休止)
+LDB EM50500.0
+AND R4300                ; INDEX ﾜｰｸ確認1
+LD EM50500.0
+ANB R4300                ; INDEX ﾜｰｸ確認1
+ORL
+ANL
+LDB DM35005.0            ; ﾍｯﾄﾞ1休止設定(OFF=休止)
+AND R4300                ; INDEX ﾜｰｸ確認1
+ORL
+LD DM35005.1             ; ﾍｯﾄﾞ2休止設定(OFF=休止)
+LDB EM50500.1
+AND R4301                ; INDEX ﾜｰｸ確認2
+LD EM50500.1
+ANB R4301                ; INDEX ﾜｰｸ確認2
+ORL
+ANL
+LDB DM35005.1            ; ﾍｯﾄﾞ2休止設定(OFF=休止)
+AND R4301                ; INDEX ﾜｰｸ確認2
+ORL
+OR< DM402 #2             ; RB2 吸着ﾍｯﾄﾞ数設定(1-8)
+ANL
+LD DM35005.2             ; ﾍｯﾄﾞ3休止設定(OFF=休止)
+LDB EM50500.2
+AND R4302                ; INDEX ﾜｰｸ確認3
+LD EM50500.2
+ANB R4302                ; INDEX ﾜｰｸ確認3
+ORL
+ANL
+LDB DM35005.2            ; ﾍｯﾄﾞ3休止設定(OFF=休止)
+AND R4302                ; INDEX ﾜｰｸ確認3
+ORL
+OR< DM402 #3             ; RB2 吸着ﾍｯﾄﾞ数設定(1-8)
+ANL
+LD DM35005.3             ; ﾍｯﾄﾞ4休止設定(OFF=休止)
+LDB EM50500.3
+AND R4303                ; INDEX ﾜｰｸ確認4
+LD EM50500.3
+ANB R4303                ; INDEX ﾜｰｸ確認4
+ORL
+ANL
+LDB DM35005.3            ; ﾍｯﾄﾞ4休止設定(OFF=休止)
+AND R4303                ; INDEX ﾜｰｸ確認4
+ORL
+OR< DM402 #4             ; RB2 吸着ﾍｯﾄﾞ数設定(1-8)
+ANL
+LD DM35005.4             ; ﾍｯﾄﾞ5休止設定(OFF=休止)
+LDB EM50500.4
+AND R4304                ; INDEX ﾜｰｸ確認5
+LD EM50500.4
+ANB R4304                ; INDEX ﾜｰｸ確認5
+ORL
+ANL
+LDB DM35005.4            ; ﾍｯﾄﾞ5休止設定(OFF=休止)
+AND R4304                ; INDEX ﾜｰｸ確認5
+ORL
+OR< DM402 #5             ; RB2 吸着ﾍｯﾄﾞ数設定(1-8)
+ANL
+LD DM35005.5             ; ﾍｯﾄﾞ6休止設定(OFF=休止)
+LDB EM50500.5
+AND R4305                ; INDEX ﾜｰｸ確認6
+LD EM50500.5
+ANB R4305                ; INDEX ﾜｰｸ確認6
+ORL
+ANL
+LDB DM35005.5            ; ﾍｯﾄﾞ6休止設定(OFF=休止)
+AND R4305                ; INDEX ﾜｰｸ確認6
+ORL
+OR< DM402 #6             ; RB2 吸着ﾍｯﾄﾞ数設定(1-8)
+ANL
+LD DM35005.6             ; ﾍｯﾄﾞ7休止設定(OFF=休止)
+LDB EM50500.6
+AND R4306                ; INDEX ﾜｰｸ確認7
+LD EM50500.6
+ANB R4306                ; INDEX ﾜｰｸ確認7
+ORL
+ANL
+LDB DM35005.6            ; ﾍｯﾄﾞ7休止設定(OFF=休止)
+AND R4306                ; INDEX ﾜｰｸ確認7
+ORL
+OR< DM402 #7             ; RB2 吸着ﾍｯﾄﾞ数設定(1-8)
+ANL
+LD DM35005.7             ; ﾍｯﾄﾞ8休止設定(OFF=休止)
+LDB EM50500.7
+AND R4307                ; INDEX ﾜｰｸ確認8
+LD EM50500.7
+ANB R4307                ; INDEX ﾜｰｸ確認8
+ORL
+ANL
+LDB DM35005.7            ; ﾍｯﾄﾞ8休止設定(OFF=休止)
+AND R4307                ; INDEX ﾜｰｸ確認8
+ORL
+OR< DM402 #8             ; RB2 吸着ﾍｯﾄﾞ数設定(1-8)
+ANL
+ANL
+OUT @MR900
+CON
+JMP @MR3003
+MPP
+ANB @MR900
+JMP @MR3208
+;		使用ﾍｯﾄﾞとﾜｰｸ有無不一致異常
+STG @MR3208
+SET @MR1900              ; Main1 HALT許可
+CON
+ANB R39004               ; ｴﾗｰ中
+SET R39004               ; ｴﾗｰ中
+CON
+DW #6000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #36 @DM1              ; ErrorNo /ERROR_DISP
+CON
+DW #0 @DM2               ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task0 ERROR
+CON
+JMP @MR3209
+STG @MR3209
+AND @MR101               ; Task0 ｴﾗｰ完了
+RES @MR101               ; Task0 ｴﾗｰ完了
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+AND @MR105               ; SW1
+DW #0 EM50500            ; INDEX Pos5 ｼﾌﾄﾚｼﾞｽﾀ
+CON
+JMP @MR3204
+;他工程へ作業要求
+STG @MR3003
+MPS
+AND= EM50100 #0          ; INDEX Pos1 ｼﾌﾄﾚｼﾞｽﾀ
+MPS
+ANB LR100                ; _割り込みSW1　ON/OFF状態
+SET MR19000              ; ﾜｰｸ供給要求(INDEX->RB1)
+MPP
+AND LR100                ; _割り込みSW1　ON/OFF状態
+MPS
+AND<> EM50000 #0         ; 反転EV ｼﾌﾄﾃﾞｰﾀ
+SET MR19000              ; ﾜｰｸ供給要求(INDEX->RB1)
+MRD
+AND R4208                ; INDEX 治具確認(ON=治具有)
+MPS
+AND<> EM50500 #0         ; INDEX Pos5 ｼﾌﾄﾚｼﾞｽﾀ
+SET MR19001              ; ﾜｰｸ取出要求(INDEX->RB2)
+MPP
+LD= EM50200 #0           ; INDEX Pos2 ｼﾌﾄﾚｼﾞｽﾀ
+AND= EM50300 #0
+AND= EM50400 #0
+AND= EM50500 #0          ; INDEX Pos5 ｼﾌﾄﾚｼﾞｽﾀ
+ANL
+JMP @MR3300
+MPP
+ANB R4208                ; INDEX 治具確認(ON=治具有)
+JMP @MR3008
+MRD
+AND<> EM50500 #0         ; INDEX Pos5 ｼﾌﾄﾚｼﾞｽﾀ
+MPS
+AND R4208                ; INDEX 治具確認(ON=治具有)
+SET MR19001              ; ﾜｰｸ取出要求(INDEX->RB2)
+MPP
+ANB R4208                ; INDEX 治具確認(ON=治具有)
+JMP @MR3008
+MRD
+MCALL CYCLE_RECORD
+MPP
+ANB @MR3915
+JMP @MR3302
+STG @MR3008
+SET @MR1900              ; Main1 HALT許可
+CON
+ANB R39004               ; ｴﾗｰ中
+SET R39004               ; ｴﾗｰ中
+CON
+DW #1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #29 @DM1              ; ErrorNo /ERROR_DISP
+CON
+DW #4208 @DM2            ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task0 ERROR
+CON
+JMP @MR3009
+STG @MR3009
+AND @MR101               ; Task0 ｴﾗｰ完了
+RES @MR101               ; Task0 ｴﾗｰ完了
+CON
+RES @MR1900              ; Main1 HALT許可
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+AND @MR105               ; SW1
+JMP @MR3003
+STG @MR3302
+MPS
+LDB R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+LD MR19001               ; ﾜｰｸ取出要求(INDEX->RB2)
+LD MR19008               ; ﾜｰｸ取出完了(RB2->INDEX)
+LD R46106                ; _定停止移行中
+LDB R41005               ; _Grp1_Task5_起動中ﾌﾗｸﾞ
+OR MR16005               ; TASK5 終了可
+ANL
+ORL
+ANL
+LDB MR19001              ; ﾜｰｸ取出要求(INDEX->RB2)
+AND= EM50500 #0          ; INDEX Pos5 ｼﾌﾄﾚｼﾞｽﾀ
+ORL
+ANL
+ANL
+JMP @MR3300
+MPP
+AND R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+SET @MR1900              ; Main1 HALT許可
+;ﾜｰｸ確認ｾﾝｻｰ下降
+STG @MR3300
+ANB @MR4701              ; INDEX回転Sub END
+ANB @MR4702              ; INDEX回転Sub中
+AND MR3303               ; ｲﾝﾃﾞｯｸｽ　ｾﾝｻ下降IL(ON=可能)
+JMP @MR3301
+STG @MR3301
+RES MR7302               ; ｲﾝﾃﾞｯｸｽ ｾﾝｻｰ上昇
+CON
+SET MR7303               ; ｲﾝﾃﾞｯｸｽ ｾﾝｻｰ下降
+CON
+MPS
+LDB MR4705               ; ｲﾝﾃﾞｯｸｽ ｾﾝｻ下降Err
+AND R4705                ; ｲﾝﾃﾞｯｸｽ ｾﾝｻ上下 下降眼
+ANL
+MPS
+AND R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+SET @MR1900              ; Main1 HALT許可
+MPP
+LDB R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+ANB R4704                ; ｲﾝﾃﾞｯｸｽ ｾﾝｻ上下 上昇眼
+ANL
+MPS
+LDB LR100                ; _割り込みSW1　ON/OFF状態
+LD LR100                 ; _割り込みSW1　ON/OFF状態
+LD<> EM50000 #0          ; 反転EV ｼﾌﾄﾃﾞｰﾀ
+OR<> EM50100 #0          ; INDEX Pos1 ｼﾌﾄﾚｼﾞｽﾀ
+OR<> EM50200 #0          ; INDEX Pos2 ｼﾌﾄﾚｼﾞｽﾀ
+OR<> EM50300 #0
+OR<> EM50400 #0
+OR<> EM50500 #0          ; INDEX Pos5 ｼﾌﾄﾚｼﾞｽﾀ
+ANL
+ORL
+ANL
+JMP @MR3004
+MPP
+LD LR100                 ; _割り込みSW1　ON/OFF状態
+AND= EM50100 #0          ; INDEX Pos1 ｼﾌﾄﾚｼﾞｽﾀ
+AND= EM50200 #0          ; INDEX Pos2 ｼﾌﾄﾚｼﾞｽﾀ
+AND= EM50300 #0
+AND= EM50400 #0
+AND= EM50500 #0          ; INDEX Pos5 ｼﾌﾄﾚｼﾞｽﾀ
+LDB R41005               ; _Grp1_Task5_起動中ﾌﾗｸﾞ
+OR MR16005               ; TASK5 終了可
+ANL
+ANL
+JMP @MR3915
+MPP
+LD MR4705                ; ｲﾝﾃﾞｯｸｽ ｾﾝｻ下降Err
+AND R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+ANL
+SET @MR1900              ; Main1 HALT許可
+;工程終了確認
+STG @MR3004
+MPS
+ANB R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+MPS
+LDB R46106               ; _定停止移行中
+ANB MR19000              ; ﾜｰｸ供給要求(INDEX->RB1)
+LD MR19004               ; ﾜｰｸ供給完了(RB1->INDEX)
+OR<> EM50100 #0          ; INDEX Pos1 ｼﾌﾄﾚｼﾞｽﾀ
+LD LR100                 ; _割り込みSW1　ON/OFF状態
+AND R4208                ; INDEX 治具確認(ON=治具有)
+ORL
+ANL
+ANB MR19001              ; ﾜｰｸ取出要求(INDEX->RB2)
+LD MR19008               ; ﾜｰｸ取出完了(RB2->INDEX)
+OR= EM50500 #0           ; INDEX Pos5 ｼﾌﾄﾚｼﾞｽﾀ
+ANL
+ANL
+JMP @MR3005
+MPP
+AND R46106               ; _定停止移行中
+MPS
+LDB R41001               ; _Grp1_Task1_起動中ﾌﾗｸﾞ
+OR MR16001               ; TASK1 終了可
+LDB R41005               ; _Grp1_Task5_起動中ﾌﾗｸﾞ
+OR MR16005               ; TASK5 終了可
+ANL
+ANL
+JMP @MR3915
+MPP
+LD R41001                ; _Grp1_Task1_起動中ﾌﾗｸﾞ
+ANB MR16001              ; TASK1 終了可
+AND R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+ANL
+SET @MR1900              ; Main1 HALT許可
+MPP
+AND R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+SET @MR1900              ; Main1 HALT許可
+LD @MR3004
+OR @MR3301
+OR @MR3302
+MPS
+LD MR19000               ; ﾜｰｸ供給要求(INDEX->RB1)
+AND MR19004              ; ﾜｰｸ供給完了(RB1->INDEX)
+ANL
+RES MR19000              ; ﾜｰｸ供給要求(INDEX->RB1)
+MPP
+LD MR19001               ; ﾜｰｸ取出要求(INDEX->RB2)
+AND MR19008              ; ﾜｰｸ取出完了(RB2->INDEX)
+ANL
+RES MR19001              ; ﾜｰｸ取出要求(INDEX->RB2)
+;INDEX回転
+STG @MR3005
+ANB @MR4701              ; INDEX回転Sub END
+ANB @MR4702              ; INDEX回転Sub中
+AND MR3000               ; INDEX起動IL(ON=起動可能)
+AND MR203                ; INDEX 回転I/L OK
+AND T500                 ; INDEX回転間隔
+SET @MR4700              ; INDEX回転Sub Start
+CON
+JMP @MR3006
+STG @MR3006
+AND @MR4701              ; INDEX回転Sub END
+ANB @MR4702              ; INDEX回転Sub中
+RES @MR4701              ; INDEX回転Sub END
+CON
+JMP @MR3100
+;ｼﾌﾄﾚｼﾞｽﾀを100wordｼﾌﾄ
+STG @MR3100
+BMOV EM50100 EM50200 #500; INDEX Pos1 ｼﾌﾄﾚｼﾞｽﾀ  INDEX Pos2 ｼﾌﾄﾚｼﾞｽﾀ
+FMOV #0 EM50100 #100     ; INDEX Pos1 ｼﾌﾄﾚｼﾞｽﾀ
+JMP @MR3914
+;Auto終了処理
+STG @MR3914
+ANB @MR001               ; TASK0 ERROR
+MPS
+ANB R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+MPS
+ANB R46106               ; _定停止移行中
+JMP @MR3000              ; AUTO Main1
+MPP
+AND R46106               ; _定停止移行中
+JMP @MR3915
+MPP
+AND R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR3915
+MPS
+LDB R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+AND MR16001              ; TASK1 終了可
+AND MR16002              ; TASK2 終了可
+AND MR16003              ; TASK3 終了可
+AND MR16004              ; TASK4 終了可
+AND MR16005              ; TASK5 終了可
+ANL
+SET MR16000              ; TASK0 終了可
+CON
+JMP @MR3913
+MPP
+AND R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR3913
+MPS
+LDB R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+ANB R41001               ; _Grp1_Task1_起動中ﾌﾗｸﾞ
+ANB R41002               ; _Grp1_Task2_起動中ﾌﾗｸﾞ
+ANB R41003               ; _Grp1_Task3_起動中ﾌﾗｸﾞ
+ANB R41004               ; _Grp1_Task4_起動中ﾌﾗｸﾞ
+ANB R41005               ; _Grp1_Task5_起動中ﾌﾗｸﾞ
+ANL
+ZRES MR16000 MR16005     ; TASK0 終了可  TASK5 終了可
+CON
+RES @MR3002              ; AUTO Main1 Busy
+CON
+JMP LR600                ; _Grp1_Task0_Fin.STG
+MPP
+AND R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+SET @MR1900              ; Main1 HALT許可
+;<h1/>Auto-Main2/Autoﾒｲﾝﾙｰﾁﾝ2
+;[本STG内容]
+;・@MR4000の起動はMain1にて行う事
+;・@MR4000:AUTO_Main2開始、@MR4001:AUTO_Main2完了、@MR4002:AUTO_Main2動作中
+STG @MR4000              ; AUTO Main2
+SET @MR4002              ; Main2 Busy
+CON
+JMP @MR4003
+STG @MR4003
+JMP @MR4415              ; Main2 END
+STG @MR4415              ; Main2 END
+SET @MR4001              ; Main2 END
+CON
+RES @MR4002              ; Main2 Busy
+CON
+ENDS
+;<h1/>MAINTE/ﾒﾝﾃﾅﾝｽ動作
+;[本STG内容]
+;・各TaskのMAINTE動作を記述して下さい
+;・動作ﾓｰﾄﾞは「MAINTEAC*」に格納されています(1～32)
+;・動作終了時は@MR2915にJMPして下さい
+STG LR5600               ; _Grp1_Task0_MAINTE.STG
+JMP @MR2000              ; Mainte
+STG @MR2000              ; Mainte
+SET @MR2002              ; Mainte中
+CON
+JMP @MR2003
+STG @MR2003
+MPS
+AND R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+SET @MR1900              ; Main1 HALT許可
+MPP
+ANB R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+MPS
+AND= DM4110 #1           ; _Group1　ﾒﾝﾃ動作番号
+JMP @MR2100
+MRD
+AND= DM4110 #29          ; _Group1　ﾒﾝﾃ動作番号
+@DW #2100 DM3008         ; _MainTP　切替ﾍﾟｰｼﾞNo
+CON
+ANP MR23400              ; 単独終了(TP SW)
+JMP @MR2110
+MRD
+AND= DM4110 #30          ; _Group1　ﾒﾝﾃ動作番号
+MPS
+ANB R47800               ; _Group1　ﾒﾝﾃ動作定停止移行中
+@DW #2150 DM3008         ; _MainTP　切替ﾍﾟｰｼﾞNo
+MPP
+LDP R44915               ; Teaching End
+ORP MR23401              ; Teaching End（No）
+ANL
+JMP @MR2110
+MPP
+AND R47800               ; _Group1　ﾒﾝﾃ動作定停止移行中
+JMP @MR2110
+LDB R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+MC
+LD @MR2002               ; Mainte中
+AND= DM3000 #2130        ; _MainTP　表示中ﾍﾟｰｼﾞNo
+MPS
+LDP MR20102              ; TPSW ｾﾝｻｰ上下 上昇
+AND MR3302               ; ｲﾝﾃﾞｯｸｽ　ｾﾝｻ上昇IL(ON=可能)
+ANL
+SET MR7302               ; ｲﾝﾃﾞｯｸｽ ｾﾝｻｰ上昇
+CON
+RES MR7303               ; ｲﾝﾃﾞｯｸｽ ｾﾝｻｰ下降
+MPP
+LDP MR20103              ; TPSW ｾﾝｻｰ上下 下降
+AND MR3303               ; ｲﾝﾃﾞｯｸｽ　ｾﾝｻ下降IL(ON=可能)
+ANL
+RES MR7302               ; ｲﾝﾃﾞｯｸｽ ｾﾝｻｰ上昇
+CON
+SET MR7303               ; ｲﾝﾃﾞｯｸｽ ｾﾝｻｰ下降
+LD @MR2002               ; Mainte中
+AND= DM3000 #2130        ; _MainTP　表示中ﾍﾟｰｼﾞNo
+MPS
+ANB MR200                ; INDEX原点復帰完了
+@SET MR1110              ; INDEX EMG
+MRD
+LD R1110                 ; INDEX EMG
+AND MR203                ; INDEX 回転I/L OK
+ANL
+MPS
+AND MR200                ; INDEX原点復帰完了
+OUT MR202                ; INDEX OK
+MPP
+LDP MR20201              ; TPSW INDEX原点復帰SW
+ANB @MR4500              ; INDEX原点復帰Sub Start
+ANB @MR4502              ; INDEX原点復帰Sub中
+ANB @MR4700              ; INDEX回転Sub Start
+ANB @MR4702              ; INDEX回転Sub中
+ANL
+SET @MR4500              ; INDEX原点復帰Sub Start
+MPP
+LD MR202                 ; INDEX OK
+ANP MR20200              ; TPSW INDEX回転SW
+ANB @MR4500              ; INDEX原点復帰Sub Start
+ANB @MR4502              ; INDEX原点復帰Sub中
+ANB @MR4700              ; INDEX回転Sub Start
+ANB @MR4702              ; INDEX回転Sub中
+ANL
+SET @MR4700              ; INDEX回転Sub Start
+LD @MR2002               ; Mainte中
+MPS
+LDB @MR4500              ; INDEX原点復帰Sub Start
+AND @MR4501              ; INDEX原点復帰Sub END
+ANB @MR4502              ; INDEX原点復帰Sub中
+ANL
+RES @MR4501              ; INDEX原点復帰Sub END
+MPP
+LDB @MR4700              ; INDEX回転Sub Start
+AND @MR4701              ; INDEX回転Sub END
+ANB @MR4702              ; INDEX回転Sub中
+ANL
+RES @MR4701              ; INDEX回転Sub END
+MCR
+;STEP　通常動作
+STG @MR2100
+SET @MR2102              ; STEP
+CON
+JMP @MR2103
+STG @MR2103
+MPS
+MSTRT SELECT_POST #1 #0 #0 @MR1800;selectEND
+MPP
+AND @MR1800              ; selectEND
+JMP @MR2105
+STG @MR2105
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+SET @MR3100
+CON
+SET @MR4000              ; AUTO Main2
+CON
+JMP @MR2106
+STG @MR2106
+AND @MR2107              ; STEP　END
+ANB @MR4002              ; Main2 Busy
+RES @MR2102              ; STEP
+CON
+JMP @MR2108
+;Maintenance　終了
+STG @MR2108
+ANB R39104               ; SELECT_Y_N Interlock
+SET R39104               ; SELECT_Y_N Interlock
+CON
+DW #7 @DM21              ; ScreenNo /SELECT_Y_N
+CON
+DW #0 @DM22              ; Bz_Use /SELECT_Y_N
+CON
+SET @MR300               ; Task0 SELECT_Y_N
+CON
+JMP @MR2109
+STG @MR2109
+AND @MR301               ; Task0 Y/N END
+RES @MR301               ; Task0 Y/N END
+CON
+RES R39104               ; SELECT_Y_N Interlock
+CON
+MPS
+AND @MR306               ; Task0 Y/N
+JMP @MR2000              ; Mainte
+MPP
+ANB @MR306               ; Task0 Y/N
+JMP @MR2110
+STG @MR2110
+MCALL HOLD_REQUEST #1
+JMP @MR2915              ; Mainte END
+STG @MR2915              ; Mainte END
+MPS
+MCALL MODE_INDI #2
+MPP
+ANB @MR001               ; TASK0 ERROR
+MPS
+AND R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+SET @MR1900              ; Main1 HALT許可
+MPP
+LDB R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+AND MR16001              ; TASK1 終了可
+AND MR16002              ; TASK2 終了可
+AND MR16003              ; TASK3 終了可
+AND MR16004              ; TASK4 終了可
+AND MR16005              ; TASK5 終了可
+ANL
+SET MR16000              ; TASK0 終了可
+CON
+JMP @MR2914
+STG @MR2914
+ANB R41001               ; _Grp1_Task1_起動中ﾌﾗｸﾞ
+ANB R41002               ; _Grp1_Task2_起動中ﾌﾗｸﾞ
+ANB R41003               ; _Grp1_Task3_起動中ﾌﾗｸﾞ
+ANB R41004               ; _Grp1_Task4_起動中ﾌﾗｸﾞ
+ANB R41005               ; _Grp1_Task5_起動中ﾌﾗｸﾞ
+ZRES MR16000 MR16005     ; TASK0 終了可  TASK5 終了可
+CON
+RES @MR2002              ; Mainte中
+CON
+JMP LR600                ; _Grp1_Task0_Fin.STG
+;<h1/>ERROR
+;//*Error Sample
+;[使用方法]
+;・@DM1にERROR番号を代入
+;・@DM2にSensor番号を代入(センサ無しエラーの場合は0)
+;・@DM9に復帰SW番号(1～9、0はSW無し)をdegit単位で4桁入力
+;・Task0 ERROR SET(@MR100)でエラー処理開始
+;・エラー復帰でTask0 ERROR END(@MR101)がON
+;・押下復帰SW番号により左から対応した@MR105,@MR106,@MR107,@MR108のいずれかがON
+;・上記ONが成立したらJMPするSTGに対応する処理を記述
+;Error0を左側から1,2,3,4の番号に対応した復帰選択SWを出力する
+;Error Sample *//
+;MyTask Error Process Substance/エラー処理実体
+STG @MR100               ; Task0 ERROR
+ANB R39002               ; ERROR_DISP Busy
+MPS
+ZRES @MR105 @MR108       ; SW1  SW4
+CON
+LDA @DM9                 ; ReturnSW /ERROR_DISP
+CON
+TBCD
+CON
+STA @DM10
+CON
+DISN @DM10 @DM3 #4
+MRD
+DW #0 @DM0               ; TaskNo /ERROR_DISP
+CON
+BMOV @DM0 DM60000 #7     ; TaskNo /ERROR_DISP  TaskNo /ERROR_DISP
+MPP
+SET R39000               ; ERROR_DISP Start
+CON
+SET @MR102               ; Task0 ERROR Busy
+CON
+JMP @MR103
+STG @MR103
+AND R39002               ; ERROR_DISP Busy
+AND= DM60008 @DM1        ; ReturnNo /ERROR_DISP  ErrorNo /ERROR_DISP
+MPS
+AND= DM60007 @DM6        ; ReturnSW /ERROR_DISP
+SET @MR105               ; SW1
+CON
+JMP @MR104
+MRD
+AND= DM60007 @DM5        ; ReturnSW /ERROR_DISP
+SET @MR106               ; SW2
+CON
+JMP @MR104
+MRD
+AND= DM60007 @DM4        ; ReturnSW /ERROR_DISP
+SET @MR107               ; SW3
+CON
+JMP @MR104
+MPP
+AND= DM60007 @DM3        ; ReturnSW /ERROR_DISP
+SET @MR108               ; SW4
+CON
+JMP @MR104
+STG @MR104
+ANB R39002               ; ERROR_DISP Busy
+RES @MR102               ; Task0 ERROR Busy
+CON
+SET @MR101               ; Task0 ｴﾗｰ完了
+CON
+ENDS
+;<h1/>SELECT_ACT
+;//*Select_ACT Sample
+;画面番号33をブザー有りで選択SW番号を左から#5,#10,#0(無し),#34の並びで表示する
+STG @MR4104
+ANB R39204               ; SELECT_ACT Interlock
+SET R39204               ; SELECT_ACT Interlock
+CON
+MPS
+DW #33 @DM31             ; ScreenNo /SELECT_ACT
+CON
+DW #1 @DM32              ; Bz_Use /SELECT_ACT
+CON
+DW #5 @DM33              ; SW1_No /SELECT_ACT
+CON
+DW #10 @DM34             ; SW2_No /SELECT_ACT
+CON
+DW #0 @DM35              ; SW3_No /SELECT_ACT
+CON
+DW #34 @DM36             ; SW4_No /SELECT_ACT
+MPP
+SET @MR200               ; Task0 SELECT_ACT
+CON
+JMP @MR4105
+STG @MR4105
+AND @MR201               ; Task0 SEL_ACT END
+RES @MR201               ; Task0 SEL_ACT END
+CON
+RES R39204               ; SELECT_ACT Interlock
+CON
+MPS
+AND @MR205               ; SW1
+JMP @MR4106
+MRD
+AND @MR206               ; SW2
+JMP @MR4107
+MRD
+AND @MR207               ; SW3
+JMP @MR4108
+MPP
+AND @MR208               ; SW4
+JMP @MR4109
+;Select_ACT Sample *//
+;MyTask Select_ACT Process Substance/SELECT_ACT処理実体
+STG @MR200               ; Task0 SELECT_ACT
+ANB R39202               ; SELECT_ACT Busy
+MPS
+ZRES @MR205 @MR208       ; SW1  SW4
+CON
+DW #0 @DM30              ; TaskNo /SELECT_ACT
+CON
+BMOV @DM30 DM60030 #7    ; TaskNo /SELECT_ACT  TaskNo /SELECT_ACT
+MPP
+SET R39200               ; SELECT_ACT Start
+CON
+SET @MR202               ; Task0 SEL_ACT Busy
+CON
+JMP @MR203
+STG @MR203
+AND R39202               ; SELECT_ACT Busy
+AND<> DM60037 #0         ; SelectSW /SELECT_ACT
+MPS
+AND= DM60037 #1          ; SelectSW /SELECT_ACT
+SET @MR205               ; SW1
+CON
+JMP @MR204
+MRD
+AND= DM60037 #2          ; SelectSW /SELECT_ACT
+SET @MR206               ; SW2
+CON
+JMP @MR204
+MRD
+AND= DM60037 #3          ; SelectSW /SELECT_ACT
+SET @MR207               ; SW3
+CON
+JMP @MR204
+MPP
+AND= DM60037 #4          ; SelectSW /SELECT_ACT
+SET @MR208               ; SW4
+CON
+JMP @MR204
+STG @MR204
+ANB R39202               ; SELECT_ACT Busy
+RES @MR202               ; Task0 SEL_ACT Busy
+CON
+SET @MR201               ; Task0 SEL_ACT END
+CON
+ENDS
+;<h1/>SELECT_Y_N
+;//*Select_Y_N Sample
+STG @MR4203
+ANB R39104               ; SELECT_Y_N Interlock
+SET R39104               ; SELECT_Y_N Interlock
+CON
+DW #7 @DM21              ; ScreenNo /SELECT_Y_N
+CON
+DW #0 @DM22              ; Bz_Use /SELECT_Y_N
+CON
+SET @MR300               ; Task0 SELECT_Y_N
+CON
+JMP @MR4204
+STG @MR4204
+AND @MR301               ; Task0 Y/N END
+RES @MR301               ; Task0 Y/N END
+CON
+RES R39104               ; SELECT_Y_N Interlock
+CON
+MPS
+AND @MR306               ; Task0 Y/N
+JMP @MR4205
+MPP
+ANB @MR306               ; Task0 Y/N
+JMP @MR4206
+;*Select_Y_N Sample//
+;MyTask Select_Y_N Process Substance/SELECT_Y_N処理実体
+STG @MR300               ; Task0 SELECT_Y_N
+ANB R39102               ; SELECT_Y_N Busy
+MPS
+ZRES @MR306 @MR307       ; Task0 Y/N
+CON
+DW #0 @DM20              ; TaskNo /SELECT_Y_N
+CON
+BMOV @DM20 DM60020 #3    ; TaskNo /SELECT_Y_N  TaskNo /SELECT_Y_N
+MPP
+SET R39100               ; SELECT_Y_N Start
+CON
+SET @MR302               ; Task0 Y_N Busy
+CON
+JMP @MR303
+STG @MR303
+AND R39102               ; SELECT_Y_N Busy
+MPS
+AND= DM60023 #1          ; Y_N /SELECT_Y_N
+SET @MR306               ; Task0 Y/N
+CON
+JMP @MR304
+MPP
+AND= DM60023 #2          ; Y_N /SELECT_Y_N
+RES @MR306               ; Task0 Y/N
+CON
+JMP @MR304
+STG @MR304
+ANB R39102               ; SELECT_Y_N Busy
+RES @MR302               ; Task0 Y_N Busy
+CON
+SET @MR301               ; Task0 Y/N END
+CON
+ENDS
+;<h1/>TIMEUP_ERROR
+;//*TIMEUP_ERROR Sample
+;サンプルセンサ:MR5000=ON AND MR5001 = OFF のいずれかが5sタイムアップしたらTIMEUP_ERROR出力
+;エラー復帰後、再度センサ確認
+;TIMEUP_ERROR Sample *//
+;MyTask TIMEUP_ERROR Process Substance/TIMEUP_ERROR処理実体
+STG @MR400               ; Task0 TIMEUP_ERR
+ANB R39302               ; TIMEUP_ERR Busy
+MPS
+DW #0 @DM40              ; TaskNo /TIMEUP_ERR
+CON
+BMOV @DM40 DM60040 #2    ; TaskNo /TIMEUP_ERR  TaskNo /TIMEUP_ERR
+MPP
+SET R39300               ; TIMEUP_ERR Start
+CON
+SET @MR402               ; Task0 TIMEUP Busy
+CON
+JMP @MR403
+STG @MR403
+AND R39302               ; TIMEUP_ERR Busy
+JMP @MR404
+STG @MR404
+ANB R39302               ; TIMEUP_ERR Busy
+RES @MR402               ; Task0 TIMEUP Busy
+CON
+SET @MR401               ; Task0 TIMEUP_END
+CON
+ENDS
+;<h1/>SubRoutines/ｻﾌﾞﾙｰﾁﾝ
+;<h1/> INDEX Home Return Operation / INDEX原点復帰動作
+;・ﾌﾟﾛｸﾞﾗﾑNo.6にて原点復帰を行う
+STG @MR4500              ; INDEX原点復帰Sub Start
+RES MR200                ; INDEX原点復帰完了
+CON
+SET @MR4502              ; INDEX原点復帰Sub中
+CON
+RES MR204                ; INDEX 位置決め完了
+CON
+JMP @MR4503
+STG @MR4503
+SET MR1110               ; INDEX EMG
+CON
+TMH @10 #3
+CON
+AND @T10
+JMP @MR4504
+STG @MR4504
+MPS
+LD R1008                 ; INDEX Alarm1
+AND R1009                ; INDEX Alarm2
+ANL
+JMP @MR4506
+MPP
+LDB R1008                ; INDEX Alarm1
+ORB R1009                ; INDEX Alarm2
+ANL
+SET MR1107               ; INDEX ﾘｾｯﾄ
+CON
+JMP @MR4505
+STG @MR4505
+MPS
+LD R1008                 ; INDEX Alarm1
+AND R1009                ; INDEX Alarm2
+ANL
+RES MR1107               ; INDEX ﾘｾｯﾄ
+CON
+JMP @MR4506
+MPP
+LDB R1008                ; INDEX Alarm1
+ORB R1009                ; INDEX Alarm2
+ANL
+TMH @11 #3
+CON
+AND @T11
+RES MR1107               ; INDEX ﾘｾｯﾄ
+CON
+JMP @MR4600
+STG @MR4600
+SET @MR1900              ; Main1 HALT許可
+CON
+ANB R39004               ; ｴﾗｰ中
+SET R39004               ; ｴﾗｰ中
+CON
+DW #16 @DM1              ; ErrorNo /ERROR_DISP
+CON
+DW #1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+MPS
+ANB R1008                ; INDEX Alarm1
+DW #1008 @DM2            ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task0 ERROR
+CON
+JMP @MR4601
+MPP
+ANB R1009                ; INDEX Alarm2
+DW #1009 @DM2            ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task0 ERROR
+CON
+JMP @MR4601
+STG @MR4601
+AND @MR101               ; Task0 ｴﾗｰ完了
+RES @MR101               ; Task0 ｴﾗｰ完了
+CON
+RES @MR1900              ; Main1 HALT許可
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+AND @MR105               ; SW1
+JMP @MR4503
+STG @MR4506
+AND R1007                ; INDEX 起動入力待ち
+RES MR1112               ; INDEX ﾌﾟﾛｸﾞﾗﾑNo. 0Bit
+CON
+SET MR1113               ; INDEX ﾌﾟﾛｸﾞﾗﾑNo. 1Bit
+CON
+SET MR1114               ; INDEX ﾌﾟﾛｸﾞﾗﾑNo. 2Bit
+CON
+TMH @12 #10
+CON
+AND @T12
+JMP @MR4507
+STG @MR4507
+SET MR1106               ; INDEX 桁指定
+CON
+TMH @13 #10
+CON
+AND @T13
+JMP @MR4508
+STG @MR4508
+AND MR203                ; INDEX 回転I/L OK
+SET MR201                ; INDEX 回転中
+CON
+SET MR1108               ; INDEX ｽﾀｰﾄ
+CON
+ANB R1007                ; INDEX 起動入力待ち
+JMP @MR4509
+STG @MR4509
+RES MR1106               ; INDEX 桁指定
+CON
+RES MR1108               ; INDEX ｽﾀｰﾄ
+CON
+RES MR1112               ; INDEX ﾌﾟﾛｸﾞﾗﾑNo. 0Bit
+CON
+RES MR1113               ; INDEX ﾌﾟﾛｸﾞﾗﾑNo. 1Bit
+CON
+RES MR1114               ; INDEX ﾌﾟﾛｸﾞﾗﾑNo. 2Bit
+CON
+JMP @MR4510
+STG @MR4510
+MPS
+AND R1006                ; INDEX 位置決め完了
+JMP @MR4511
+MPP
+ANB R1006                ; INDEX 位置決め完了
+TMH @14 #1000
+CON
+AND @T14
+RES MR201                ; INDEX 回転中
+CON
+SET @MR4501              ; INDEX原点復帰Sub END
+CON
+RES @MR4502              ; INDEX原点復帰Sub中
+CON
+ENDS
+STG @MR4511
+SET MR1109               ; INDEX ｱﾝｻ
+CON
+JMP @MR4512
+STG @MR4512
+ANB R1006                ; INDEX 位置決め完了
+RES MR1109               ; INDEX ｱﾝｻ
+CON
+RES MR201                ; INDEX 回転中
+CON
+SET MR200                ; INDEX原点復帰完了
+CON
+SET @MR4501              ; INDEX原点復帰Sub END
+CON
+RES @MR4502              ; INDEX原点復帰Sub中
+CON
+SET MR204                ; INDEX 位置決め完了
+CON
+ENDS
+;<h1/> INDEX Operation / INDEX動作
+;・INDEX回転は、ﾌﾟﾛｸﾞﾗﾑNo.0～5にて行う。
+;・各ﾌﾟﾛｸﾞﾗﾑは、6分割指定。
+;・移動完了で、INDEX位置に次の番号を書き込む。
+STG @MR4700              ; INDEX回転Sub Start
+AND MR3000               ; INDEX起動IL(ON=起動可能)
+SET @MR4702              ; INDEX回転Sub中
+CON
+RES MR204                ; INDEX 位置決め完了
+CON
+JMP @MR4703
+STG @MR4703
+SET MR1110               ; INDEX EMG
+CON
+TMH @15 #3
+CON
+AND @T15
+JMP @MR4704
+STG @MR4704
+AND R1007                ; INDEX 起動入力待ち
+MPS
+AND= DM35000 #0          ; INDEX位置ﾃﾞｰﾀ
+SET MR1112               ; INDEX ﾌﾟﾛｸﾞﾗﾑNo. 0Bit
+CON
+RES MR1113               ; INDEX ﾌﾟﾛｸﾞﾗﾑNo. 1Bit
+CON
+RES MR1114               ; INDEX ﾌﾟﾛｸﾞﾗﾑNo. 2Bit
+CON
+JMP @MR4705
+MRD
+AND= DM35000 #1          ; INDEX位置ﾃﾞｰﾀ
+RES MR1112               ; INDEX ﾌﾟﾛｸﾞﾗﾑNo. 0Bit
+CON
+SET MR1113               ; INDEX ﾌﾟﾛｸﾞﾗﾑNo. 1Bit
+CON
+RES MR1114               ; INDEX ﾌﾟﾛｸﾞﾗﾑNo. 2Bit
+CON
+JMP @MR4705
+MRD
+AND= DM35000 #2          ; INDEX位置ﾃﾞｰﾀ
+SET MR1112               ; INDEX ﾌﾟﾛｸﾞﾗﾑNo. 0Bit
+CON
+SET MR1113               ; INDEX ﾌﾟﾛｸﾞﾗﾑNo. 1Bit
+CON
+RES MR1114               ; INDEX ﾌﾟﾛｸﾞﾗﾑNo. 2Bit
+CON
+JMP @MR4705
+MRD
+AND= DM35000 #3          ; INDEX位置ﾃﾞｰﾀ
+RES MR1112               ; INDEX ﾌﾟﾛｸﾞﾗﾑNo. 0Bit
+CON
+RES MR1113               ; INDEX ﾌﾟﾛｸﾞﾗﾑNo. 1Bit
+CON
+SET MR1114               ; INDEX ﾌﾟﾛｸﾞﾗﾑNo. 2Bit
+CON
+JMP @MR4705
+MRD
+AND= DM35000 #4          ; INDEX位置ﾃﾞｰﾀ
+SET MR1112               ; INDEX ﾌﾟﾛｸﾞﾗﾑNo. 0Bit
+CON
+RES MR1113               ; INDEX ﾌﾟﾛｸﾞﾗﾑNo. 1Bit
+CON
+SET MR1114               ; INDEX ﾌﾟﾛｸﾞﾗﾑNo. 2Bit
+CON
+JMP @MR4705
+MPP
+AND= DM35000 #5          ; INDEX位置ﾃﾞｰﾀ
+RES MR1112               ; INDEX ﾌﾟﾛｸﾞﾗﾑNo. 0Bit
+CON
+RES MR1113               ; INDEX ﾌﾟﾛｸﾞﾗﾑNo. 1Bit
+CON
+RES MR1114               ; INDEX ﾌﾟﾛｸﾞﾗﾑNo. 2Bit
+CON
+JMP @MR4705
+STG @MR4705
+TMH @16 #3
+CON
+AND @T16
+SET MR1106               ; INDEX 桁指定
+CON
+JMP @MR4706
+STG @MR4706
+AND MR203                ; INDEX 回転I/L OK
+AND R4705                ; ｲﾝﾃﾞｯｸｽ ｾﾝｻ上下 下降眼
+TMH @17 #3
+CON
+AND @T17
+SET MR201                ; INDEX 回転中
+CON
+SET MR1108               ; INDEX ｽﾀｰﾄ
+CON
+JMP @MR4707
+STG @MR4707
+ANB R1007                ; INDEX 起動入力待ち
+RES MR1108               ; INDEX ｽﾀｰﾄ
+CON
+RES MR1112               ; INDEX ﾌﾟﾛｸﾞﾗﾑNo. 0Bit
+CON
+RES MR1113               ; INDEX ﾌﾟﾛｸﾞﾗﾑNo. 1Bit
+CON
+RES MR1114               ; INDEX ﾌﾟﾛｸﾞﾗﾑNo. 2Bit
+CON
+RES MR1106               ; INDEX 桁指定
+CON
+JMP @MR4708
+STG @MR4708
+AND R1006                ; INDEX 位置決め完了
+JMP @MR4709
+STG @MR4709
+SET MR1109               ; INDEX ｱﾝｻ
+CON
+JMP @MR4710
+STG @MR4710
+ANB R1006                ; INDEX 位置決め完了
+RES MR1109               ; INDEX ｱﾝｻ
+CON
+RES MR201                ; INDEX 回転中
+CON
+MPS
+AND<= DM35000 #5         ; INDEX位置ﾃﾞｰﾀ
+@INC DM35000             ; INDEX位置ﾃﾞｰﾀ
+CON
+JMP @MR4711
+MPP
+AND> DM35000 #5          ; INDEX位置ﾃﾞｰﾀ
+@DW #0 DM35000           ; INDEX位置ﾃﾞｰﾀ
+CON
+JMP @MR4711
+STG @MR4711
+RES @MR4702              ; INDEX回転Sub中
+CON
+SET @MR4701              ; INDEX回転Sub END
+CON
+SET MR204                ; INDEX 位置決め完了
+CON
+ENDS
+;<h1/>HALT
+LD R44200                ; _Grp1 ﾎﾟｰｽﾞ要求
+AND @MR1900              ; Main1 HALT許可
+LD @MR1901               ; Main2 HALT許可
+ORB @MR4002              ; Main2 Busy
+ANL
+TMR @2 #2
+CON
+AND @T2
+@SET R42600              ; _Grp1_Task0_ﾎﾟｰｽﾞ許可
+LD R42600                ; _Grp1_Task0_ﾎﾟｰｽﾞ許可
+ANB @MR001               ; TASK0 ERROR
+ORF @MR001               ; TASK0 ERROR
+RES @MR1900              ; Main1 HALT許可
+CON
+RES @MR1901              ; Main2 HALT許可
+END
+ENDH

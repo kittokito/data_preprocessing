@@ -1,0 +1,1185 @@
+DEVICE:53
+;MODULE:自動MAIN
+;MODULE_TYPE:0
+;SCRIPT_TYPE:
+LDP MR005                ; 起動SW
+AND MR014                ; 全原点
+ANB MR3201               ; 自動起動不可
+AND MR400                ; 全ﾄﾞｱ閉確認
+ANB W2500.1              ; PC→PLC 機種ｴﾗｰ
+AND W2500.2              ; PC→PLC 自動可
+OR MR3200                ; 自動運転中
+AND MR3012               ; 運転準備 完了記憶
+ANB MR3205               ; ｻｲｸﾙ停止完了
+ANB MR3207               ; 自動運転停止完了
+ANB MR209                ; 自動運転 終了完了
+ANB MR104                ; 即停止異常 (原点復帰無)
+ANB MR3202               ; 自動運転 強制終了
+OUT MR3200               ; 自動運転中
+LDB MR212                ; ﾊﾟﾚｯﾄ1 交換要求
+ANB MR213                ; ﾊﾟﾚｯﾄ2 交換要求
+INV
+OUT MR3201               ; 自動起動不可
+LD MR3200                ; 自動運転中
+AND B0C6                 ; 自動運転 終了SW
+TMR #201 #30             ; 自動運転強制終了ﾀｲﾏ
+CON
+AND T201                 ; 自動運転強制終了ﾀｲﾏ
+OUT MR3202               ; 自動運転 強制終了
+;<h1/>ﾊﾟﾚｯﾄ置き位置設定
+LDP MR3200               ; 自動運転中
+ANB LR008                ; ｽﾀｰﾄ位置指定_OFF=無効/ON=有効
+ANB MR206                ; ｻｲｸﾙ停止完了継続中
+DW #1 DM300              ; 自動 X軸ﾊﾟﾚｯﾄ1 現在列
+CON
+DW #1 DM310              ; 自動 Y軸ﾊﾟﾚｯﾄ1 現在列
+CON
+DW #1 DM302              ; 自動 X軸ﾊﾟﾚｯﾄ2 現在列
+CON
+DW #1 DM312              ; 自動 Y軸ﾊﾟﾚｯﾄ2 現在列
+LDB MR3200               ; 自動運転中
+MPS
+ANB R3108                ; ﾊﾟﾚｯﾄ1在荷
+RES MR37900              ; ﾊﾟﾚｯﾄ1整列完了
+CON
+DW #1 DM300              ; 自動 X軸ﾊﾟﾚｯﾄ1 現在列
+CON
+DW #1 DM310              ; 自動 Y軸ﾊﾟﾚｯﾄ1 現在列
+MPP
+ANB R3508                ; ﾊﾟﾚｯﾄ2在荷
+RES MR37902              ; ﾊﾟﾚｯﾄ2整列完了
+CON
+DW #1 DM302              ; 自動 X軸ﾊﾟﾚｯﾄ2 現在列
+CON
+DW #1 DM312              ; 自動 Y軸ﾊﾟﾚｯﾄ2 現在列
+;'自動運転スタート位置設定
+;DM300 = DM304		'ﾊﾟﾚｯﾄ1 X軸ｽﾀｰﾄ位置
+;DM310 = DM314		'ﾊﾟﾚｯﾄ1 Y軸ｽﾀｰﾄ位置
+LDP MR3200               ; 自動運転中
+ANB MR206                ; ｻｲｸﾙ停止完了継続中
+AND LR008                ; ｽﾀｰﾄ位置指定_OFF=無効/ON=有効
+NCJ #1000
+;'自動運転スタート位置設定
+;
+;DM300 = DM304		'ﾊﾟﾚｯﾄ1 X軸ｽﾀｰﾄ位置
+;
+LD CR2002                ; 常時ON
+MOV DM304 DM300          ; TP X軸ﾊﾟﾚｯﾄ1 ｽﾀｰﾄ位置  自動 X軸ﾊﾟﾚｯﾄ1 現在列
+;DM310 = DM314		'ﾊﾟﾚｯﾄ1 Y軸ｽﾀｰﾄ位置
+LD CR2002                ; 常時ON
+MOV DM314 DM310          ; TP Y軸ﾊﾟﾚｯﾄ1 ｽﾀｰﾄ位置  自動 Y軸ﾊﾟﾚｯﾄ1 現在列
+LABEL #1000
+;
+;'自動運転スタート位置設定
+;DM302 = DM306		'ﾊﾟﾚｯﾄ2 X軸ｽﾀｰﾄ位置
+;DM312 = DM316		'ﾊﾟﾚｯﾄ2 Y軸ｽﾀｰﾄ位置
+LDP MR3200               ; 自動運転中
+LDB MR206                ; ｻｲｸﾙ停止完了継続中
+LDB LR010                ; ﾊﾟﾚｯﾄ2OK/NG選択 ON:OK OFF:NG
+AND MR37903              ; ﾊﾟﾚｯﾄ2NG満杯ﾌﾗｸﾞ
+ORL
+ANL
+AND LR008                ; ｽﾀｰﾄ位置指定_OFF=無効/ON=有効
+NCJ #1008
+;'自動運転スタート位置設定
+;
+;DM302 = DM306		'ﾊﾟﾚｯﾄ2 X軸ｽﾀｰﾄ位置
+;
+LD CR2002                ; 常時ON
+MOV DM306 DM302          ; TP X軸ﾊﾟﾚｯﾄ2 ｽﾀｰﾄ位置  自動 X軸ﾊﾟﾚｯﾄ2 現在列
+;DM312 = DM316		'ﾊﾟﾚｯﾄ2 Y軸ｽﾀｰﾄ位置
+LD CR2002                ; 常時ON
+MOV DM316 DM312          ; TP Y軸ﾊﾟﾚｯﾄ2 ｽﾀｰﾄ位置  自動 Y軸ﾊﾟﾚｯﾄ2 現在列
+LABEL #1008
+;
+LD MR37902               ; ﾊﾟﾚｯﾄ2整列完了
+OR MR37903               ; ﾊﾟﾚｯﾄ2NG満杯ﾌﾗｸﾞ
+ANB LR010                ; ﾊﾟﾚｯﾄ2OK/NG選択 ON:OK OFF:NG
+ANPB MR3200              ; 自動運転中
+AND LR008                ; ｽﾀｰﾄ位置指定_OFF=無効/ON=有効
+OUT MR37903              ; ﾊﾟﾚｯﾄ2NG満杯ﾌﾗｸﾞ
+;'ﾊﾟﾚｯﾄ1 自動運転ｽﾀｰﾄ位置ﾘﾐｯﾄ
+;
+;DM304 = LIMIT ( 1, FM9110 , DM304 )
+;DM314 = LIMIT ( 1, FM9116 , DM314 )
+;'IF DM314 = DM310 THEN
+;'DM304 = LIMIT ( DM300, FM9110 , DM304 )	
+;'END IF
+;'IF DM314 > DM310 THEN
+;'DM304 = LIMIT ( 1, FM9110 , DM304 )	
+;'END IF
+;	
+LD LR008                 ; ｽﾀｰﾄ位置指定_OFF=無効/ON=有効
+NCJ #1001
+;'ﾊﾟﾚｯﾄ1 自動運転ｽﾀｰﾄ位置ﾘﾐｯﾄ
+;
+;DM304 = LIMIT ( 1, FM9110 , DM304 )
+;
+LD CR2002                ; 常時ON
+LDA.D #0
+CON
+LIMIT #1 FM9110 DM304 @VM0;ﾊﾟﾚｯﾄﾚｼﾋﾟ(X_列数)  TP X軸ﾊﾟﾚｯﾄ1 ｽﾀｰﾄ位置
+LDA @VM0
+CON
+STA DM304                ; TP X軸ﾊﾟﾚｯﾄ1 ｽﾀｰﾄ位置
+;DM314 = LIMIT ( 1, FM9116 , DM314 )
+;
+LD CR2002                ; 常時ON
+LDA.D #0
+CON
+LIMIT #1 FM9116 DM314 @VM1;ﾊﾟﾚｯﾄﾚｼﾋﾟ(Y_列数)  TP Y軸ﾊﾟﾚｯﾄ1 ｽﾀｰﾄ位置
+LDA @VM1
+CON
+STA DM314                ; TP Y軸ﾊﾟﾚｯﾄ1 ｽﾀｰﾄ位置
+;'IF DM314 = DM310 THEN
+;
+;'DM304 = LIMIT ( DM300, FM9110 , DM304 )	
+;
+;'END IF
+;
+;'IF DM314 > DM310 THEN
+;
+;'DM304 = LIMIT ( 1, FM9110 , DM304 )	
+;
+;'END IF
+;
+LABEL #1001
+;
+;'ﾊﾟﾚｯﾄ2 自動運転ｽﾀｰﾄ位置ﾘﾐｯﾄ
+;
+;DM306 = LIMIT ( 1, FM9110 , DM306 )
+;DM316 = LIMIT ( 1, FM9116 , DM316 )
+;'IF DM316 = DM312 THEN
+;'DM306 = LIMIT ( DM302, FM9110 , DM306 )	
+;'END IF
+;'IF DM316 > DM312 THEN
+;'DM306 = LIMIT ( 1, FM9110 , DM306 )	
+;'END IF
+;	
+LD LR008                 ; ｽﾀｰﾄ位置指定_OFF=無効/ON=有効
+NCJ #1004
+;'ﾊﾟﾚｯﾄ2 自動運転ｽﾀｰﾄ位置ﾘﾐｯﾄ
+;
+;DM306 = LIMIT ( 1, FM9110 , DM306 )
+;
+LD CR2002                ; 常時ON
+LDA.D #0
+CON
+LIMIT #1 FM9110 DM306 @VM2;ﾊﾟﾚｯﾄﾚｼﾋﾟ(X_列数)  TP X軸ﾊﾟﾚｯﾄ2 ｽﾀｰﾄ位置
+LDA @VM2
+CON
+STA DM306                ; TP X軸ﾊﾟﾚｯﾄ2 ｽﾀｰﾄ位置
+;DM316 = LIMIT ( 1, FM9116 , DM316 )
+;
+LD CR2002                ; 常時ON
+LDA.D #0
+CON
+LIMIT #1 FM9116 DM316 @VM3;ﾊﾟﾚｯﾄﾚｼﾋﾟ(Y_列数)  TP Y軸ﾊﾟﾚｯﾄ2 ｽﾀｰﾄ位置
+LDA @VM3
+CON
+STA DM316                ; TP Y軸ﾊﾟﾚｯﾄ2 ｽﾀｰﾄ位置
+;'IF DM316 = DM312 THEN
+;
+;'DM306 = LIMIT ( DM302, FM9110 , DM306 )	
+;
+;'END IF
+;
+;'IF DM316 > DM312 THEN
+;
+;'DM306 = LIMIT ( 1, FM9110 , DM306 )	
+;
+;'END IF
+;
+LABEL #1004
+;
+;'ｽﾀｰﾄ指定位置読込
+;
+;DM304 = DM300
+;DM306 = DM302
+;
+;DM314 = DM310
+;DM316 = DM312
+LDF MR3200               ; 自動運転中
+NCJ #1006
+;'ｽﾀｰﾄ指定位置読込
+;
+;DM304 = DM300
+;
+LD CR2002                ; 常時ON
+MOV DM300 DM304          ; 自動 X軸ﾊﾟﾚｯﾄ1 現在列  TP X軸ﾊﾟﾚｯﾄ1 ｽﾀｰﾄ位置
+;DM306 = DM302
+;
+LD CR2002                ; 常時ON
+MOV DM302 DM306          ; 自動 X軸ﾊﾟﾚｯﾄ2 現在列  TP X軸ﾊﾟﾚｯﾄ2 ｽﾀｰﾄ位置
+;DM314 = DM310
+;
+LD CR2002                ; 常時ON
+MOV DM310 DM314          ; 自動 Y軸ﾊﾟﾚｯﾄ1 現在列  TP Y軸ﾊﾟﾚｯﾄ1 ｽﾀｰﾄ位置
+;DM316 = DM312
+LD CR2002                ; 常時ON
+MOV DM312 DM316          ; 自動 Y軸ﾊﾟﾚｯﾄ2 現在列  TP Y軸ﾊﾟﾚｯﾄ2 ｽﾀｰﾄ位置
+LABEL #1006
+;
+LD MR37900               ; ﾊﾟﾚｯﾄ1整列完了
+AND LR010                ; ﾊﾟﾚｯﾄ2OK/NG選択 ON:OK OFF:NG
+OUT MR3315               ; ﾊﾟﾚｯﾄ2整列
+;<h1/>投入数確認
+;'装置内処理中ﾜｰｸ個数
+;DM3000 = D3300 + D3500 + D3600 + D3700
+LD CR2002                ; 常時ON
+NCJ #1002
+;'装置内処理中ﾜｰｸ個数
+;
+;DM3000 = D3300 + D3500 + D3600 + D3700
+LD CR2002                ; 常時ON
+LDA DM3500               ; 検査ﾜｰｸ在荷
+CON
+EXT
+CON
+STA.L @VM4
+CON
+LDA DM3300               ; 給材搬送 ﾜｰｸ在荷
+CON
+EXT
+CON
+ADD.L @VM4
+CON
+STA.L @VM6
+CON
+LDA DM3600               ; 除材反転 ﾜｰｸ在荷
+CON
+EXT
+CON
+ADD.L @VM6
+CON
+STA.L @VM8
+CON
+LDA DM3700               ; 除材搬送 ﾜｰｸ在荷
+CON
+EXT
+CON
+ADD.L @VM8
+CON
+STA DM3000               ; 装置内処理中ﾜｰｸ個数
+LABEL #1002
+;
+;'ﾊﾟﾚｯﾄ投入個数演算
+;DM3010 = FM9110 * FM9116	'ﾊﾟﾚｯﾄ投入個数
+;DM3012 = FM9110 * (DM310 - 1) + DM300 -1		'ﾊﾟﾚｯﾄ1現在投入個数
+;DM3014 = FM9110 * (DM312 - 1) + DM302 -1		'ﾊﾟﾚｯﾄ2現在投入個数
+LD CR2002                ; 常時ON
+NCJ #1003
+;'ﾊﾟﾚｯﾄ投入個数演算
+;
+;DM3010 = FM9110 * FM9116	'ﾊﾟﾚｯﾄ投入個数
+;
+LD CR2002                ; 常時ON
+LDA FM9116               ; ﾊﾟﾚｯﾄﾚｼﾋﾟ(Y_列数)
+CON
+EXT
+CON
+STA.L @VM10
+CON
+LDA FM9110               ; ﾊﾟﾚｯﾄﾚｼﾋﾟ(X_列数)
+CON
+EXT
+CON
+MUL.L @VM10
+CON
+STA DM3010               ; ﾊﾟﾚｯﾄ 投入個数
+;DM3012 = FM9110 * (DM310 - 1) + DM300 -1		'ﾊﾟﾚｯﾄ1現在投入個数
+;
+LD CR2002                ; 常時ON
+LDA DM310                ; 自動 Y軸ﾊﾟﾚｯﾄ1 現在列
+CON
+EXT
+CON
+SUB.L +1
+CON
+STA.L @VM12
+CON
+LDA FM9110               ; ﾊﾟﾚｯﾄﾚｼﾋﾟ(X_列数)
+CON
+EXT
+CON
+MUL.L @VM12
+CON
+STA.L @VM14
+CON
+LDA DM300                ; 自動 X軸ﾊﾟﾚｯﾄ1 現在列
+CON
+EXT
+CON
+ADD.L @VM14
+CON
+SUB.L +1
+CON
+STA DM3012               ; ﾊﾟﾚｯﾄ1 現在投入個数
+;DM3014 = FM9110 * (DM312 - 1) + DM302 -1		'ﾊﾟﾚｯﾄ2現在投入個数
+LD CR2002                ; 常時ON
+LDA DM312                ; 自動 Y軸ﾊﾟﾚｯﾄ2 現在列
+CON
+EXT
+CON
+SUB.L +1
+CON
+STA.L @VM16
+CON
+LDA FM9110               ; ﾊﾟﾚｯﾄﾚｼﾋﾟ(X_列数)
+CON
+EXT
+CON
+MUL.L @VM16
+CON
+STA.L @VM18
+CON
+LDA DM302                ; 自動 X軸ﾊﾟﾚｯﾄ2 現在列
+CON
+EXT
+CON
+ADD.L @VM18
+CON
+SUB.L +1
+CON
+STA DM3014               ; ﾊﾟﾚｯﾄ2 現在投入個数
+LABEL #1003
+;
+;'ﾊﾟﾚｯﾄ投入残り個数演算
+;DM3002.S = DM3010 - DM3012 - DM3000	'ﾊﾟﾚｯﾄ1残り投入個数
+;DM3004.S = DM3010 - DM3014 - DM3000	'ﾊﾟﾚｯﾄ2残り投入個数
+LD CR2002                ; 常時ON
+NCJ #1005
+;'ﾊﾟﾚｯﾄ投入残り個数演算
+;
+;DM3002.S = DM3010 - DM3012 - DM3000	'ﾊﾟﾚｯﾄ1残り投入個数
+;
+LD CR2002                ; 常時ON
+LDA DM3000               ; 装置内処理中ﾜｰｸ個数
+CON
+EXT
+CON
+STA.L @VM20
+CON
+LDA DM3012               ; ﾊﾟﾚｯﾄ1 現在投入個数
+CON
+EXT
+CON
+STA.L @VM22
+CON
+LDA DM3010               ; ﾊﾟﾚｯﾄ 投入個数
+CON
+EXT
+CON
+SUB.L @VM22
+CON
+SUB.L @VM20
+CON
+STA.S DM3002             ; ﾊﾟﾚｯﾄ1 残り投入個数
+;DM3004.S = DM3010 - DM3014 - DM3000	'ﾊﾟﾚｯﾄ2残り投入個数
+LD CR2002                ; 常時ON
+LDA DM3000               ; 装置内処理中ﾜｰｸ個数
+CON
+EXT
+CON
+STA.L @VM24
+CON
+LDA DM3014               ; ﾊﾟﾚｯﾄ2 現在投入個数
+CON
+EXT
+CON
+STA.L @VM26
+CON
+LDA DM3010               ; ﾊﾟﾚｯﾄ 投入個数
+CON
+EXT
+CON
+SUB.L @VM26
+CON
+SUB.L @VM24
+CON
+STA.S DM3004             ; ﾊﾟﾚｯﾄ2 残り投入個数
+LABEL #1005
+;
+;'整列数指定残り個数演算
+;DM3006.S = DM410 - DM402 - DM3000	'整列数指定残り投入個数
+LD CR2002                ; 常時ON
+NCJ #1007
+;'整列数指定残り個数演算
+;
+;DM3006.S = DM410 - DM402 - DM3000	'整列数指定残り投入個数
+LD CR2002                ; 常時ON
+LDA DM3000               ; 装置内処理中ﾜｰｸ個数
+CON
+EXT
+CON
+STA.L @VM28
+CON
+LDA DM402                ; 現在指定整列数
+CON
+EXT
+CON
+STA.L @VM30
+CON
+LDA DM410                ; 指定整列数
+CON
+EXT
+CON
+SUB.L @VM30
+CON
+SUB.L @VM28
+CON
+STA.S DM3006             ; 整列数指定 残り個数
+LABEL #1007
+;
+LD CR2002                ; 常時ON
+MPS
+LD>= DM3010 DM3012       ; ﾊﾟﾚｯﾄ 投入個数  ﾊﾟﾚｯﾄ1 現在投入個数
+AND R3108                ; ﾊﾟﾚｯﾄ1在荷
+ANB MR37900              ; ﾊﾟﾚｯﾄ1整列完了
+ANB LR004                ; ﾊﾟﾚｯﾄL_OFF=有効/ON=無効
+ANL
+OUT MR3300               ; ﾊﾟﾚｯﾄ1 ﾜｰｸ投入可
+MPP
+LD>= DM3010 DM3014       ; ﾊﾟﾚｯﾄ 投入個数  ﾊﾟﾚｯﾄ2 現在投入個数
+AND R3508                ; ﾊﾟﾚｯﾄ2在荷
+ANB MR37902              ; ﾊﾟﾚｯﾄ2整列完了
+ANB LR005                ; ﾊﾟﾚｯﾄR_OFF=有効/ON=無効
+ANL
+OUT MR3302               ; ﾊﾟﾚｯﾄ2 ﾜｰｸ投入可
+LD CR2002                ; 常時ON
+LD LR010                 ; ﾊﾟﾚｯﾄ2OK/NG選択 ON:OK OFF:NG
+LD MR3300                ; ﾊﾟﾚｯﾄ1 ﾜｰｸ投入可
+AND>.S DM3002 +0         ; ﾊﾟﾚｯﾄ1 残り投入個数
+LD MR3302                ; ﾊﾟﾚｯﾄ2 ﾜｰｸ投入可
+AND>.S DM3004 +0         ; ﾊﾟﾚｯﾄ2 残り投入個数
+ORL
+ANL
+LDB LR010                ; ﾊﾟﾚｯﾄ2OK/NG選択 ON:OK OFF:NG
+AND MR3300               ; ﾊﾟﾚｯﾄ1 ﾜｰｸ投入可
+AND>.S DM3002 +0         ; ﾊﾟﾚｯﾄ1 残り投入個数
+AND MR3302               ; ﾊﾟﾚｯﾄ2 ﾜｰｸ投入可
+AND>.S DM3004 +0         ; ﾊﾟﾚｯﾄ2 残り投入個数
+ORL
+ANL
+LDB LR006                ; 整列数指定_OFF=無効/ON=有効
+LD LR006                 ; 整列数指定_OFF=無効/ON=有効
+AND>.S DM3006 +0         ; 整列数指定 残り個数
+ORL
+ANL
+OUT MR3304               ; 次ﾜｰｸ 投入可
+;<h1/>自動運転 整列完了
+LD MR37210               ; 除材搬送 STEP42
+ORP MR3200               ; 自動運転中
+LD LR010                 ; ﾊﾟﾚｯﾄ2OK/NG選択 ON:OK OFF:NG
+LD MR37900               ; ﾊﾟﾚｯﾄ1整列完了
+AND R3108                ; ﾊﾟﾚｯﾄ1在荷
+ANB R3508                ; ﾊﾟﾚｯﾄ2在荷
+LD MR37902               ; ﾊﾟﾚｯﾄ2整列完了
+AND R3108                ; ﾊﾟﾚｯﾄ1在荷
+AND R3508                ; ﾊﾟﾚｯﾄ2在荷
+ORL
+ANL
+LDB LR010                ; ﾊﾟﾚｯﾄ2OK/NG選択 ON:OK OFF:NG
+LD MR37900               ; ﾊﾟﾚｯﾄ1整列完了
+AND R3108                ; ﾊﾟﾚｯﾄ1在荷
+LD MR37902               ; ﾊﾟﾚｯﾄ2整列完了
+AND R3508                ; ﾊﾟﾚｯﾄ2在荷
+AND MR912
+ORL
+ANL
+ORL
+LD LR006                 ; 整列数指定_OFF=無効/ON=有効
+AND>= DM402 DM410        ; 現在指定整列数  指定整列数
+ORL
+ANL
+OR MR209                 ; 自動運転 終了完了
+ANB B0CA                 ; 整列完了 OK_SW
+ANB T200                 ; 自動運転終了ﾀｲﾏ
+OUT MR209                ; 自動運転 終了完了
+TMR #200 #30             ; 自動運転終了ﾀｲﾏ
+LD MR37210               ; 除材搬送 STEP42
+OUT MR211                ; 助材搬送完了確認
+LD MR209                 ; 自動運転 終了完了
+OR MR214                 ; 停止状態解除
+MPS
+AND LR008                ; ｽﾀｰﾄ位置指定_OFF=無効/ON=有効
+@DW #1 DM304             ; TP X軸ﾊﾟﾚｯﾄ1 ｽﾀｰﾄ位置
+CON
+@DW #1 DM314             ; TP Y軸ﾊﾟﾚｯﾄ1 ｽﾀｰﾄ位置
+CON
+@DW #1 DM306             ; TP X軸ﾊﾟﾚｯﾄ2 ｽﾀｰﾄ位置
+CON
+@DW #1 DM316             ; TP Y軸ﾊﾟﾚｯﾄ2 ｽﾀｰﾄ位置
+MPP
+@DW #0 DM402             ; 現在指定整列数
+CON
+@DW #1 DM300             ; 自動 X軸ﾊﾟﾚｯﾄ1 現在列
+CON
+@DW #1 DM310             ; 自動 Y軸ﾊﾟﾚｯﾄ1 現在列
+CON
+@DW #1 DM302             ; 自動 X軸ﾊﾟﾚｯﾄ2 現在列
+CON
+@DW #1 DM312             ; 自動 Y軸ﾊﾟﾚｯﾄ2 現在列
+LD MR209                 ; 自動運転 終了完了
+OR MR215                 ; 停止状態解除完了
+ORP B0C6                 ; 自動運転 終了SW
+@DW #0 DM402             ; 現在指定整列数
+;停止状態
+LD MR3205                ; ｻｲｸﾙ停止完了
+OR MR206                 ; ｻｲｸﾙ停止完了継続中
+AND MR3012               ; 運転準備 完了記憶
+LDPB R3108               ; ﾊﾟﾚｯﾄ1在荷
+OR LR004                 ; ﾊﾟﾚｯﾄL_OFF=有効/ON=無効
+ANL
+LDPB R3508               ; ﾊﾟﾚｯﾄ2在荷
+LD MR206                 ; ｻｲｸﾙ停止完了継続中
+ANB LR010                ; ﾊﾟﾚｯﾄ2OK/NG選択 ON:OK OFF:NG
+ANB MR912
+ORL
+OR LR005                 ; ﾊﾟﾚｯﾄR_OFF=有効/ON=無効
+ANL
+ANPB MR3200              ; 自動運転中
+ANPB MR214               ; 停止状態解除
+OUT MR206                ; ｻｲｸﾙ停止完了継続中
+;停止状態解除
+LDP B0C6                 ; 自動運転 終了SW
+AND MR206                ; ｻｲｸﾙ停止完了継続中
+OR MR214                 ; 停止状態解除
+ANB MR215                ; 停止状態解除完了
+OUT MR214                ; 停止状態解除
+LD MR214                 ; 停止状態解除
+ANB MR206                ; ｻｲｸﾙ停止完了継続中
+OUT MR215                ; 停止状態解除完了
+;<h1/>ｻｲｸﾙ停止(給材停止・払出停止)
+LDP B0C5                 ; ｻｲｸﾙ停止SW
+LDB LR010                ; ﾊﾟﾚｯﾄ2OK/NG選択 ON:OK OFF:NG
+AND MR37902              ; ﾊﾟﾚｯﾄ2整列完了
+AND R3508                ; ﾊﾟﾚｯﾄ2在荷
+ANB MR912
+ORL
+OR MR3204                ; ｻｲｸﾙ停止中
+AND MR3200               ; 自動運転中
+ANPB B0C6                ; 自動運転 終了SW
+OUT MR3204               ; ｻｲｸﾙ停止中
+LD MR206                 ; ｻｲｸﾙ停止完了継続中
+AND MR37902              ; ﾊﾟﾚｯﾄ2整列完了
+ANB MR3200               ; 自動運転中
+MEP
+OR MR210                 ; NGﾊﾟﾚｯﾄ満杯ｻｲｸﾙ停止完了
+ANB B0CB                 ; 満杯完了 OK_SW
+ANB T202                 ; NG満杯ｻｲｸﾙ停止ﾀｲﾏ
+OUT MR210                ; NGﾊﾟﾚｯﾄ満杯ｻｲｸﾙ停止完了
+TMR #202 #30             ; NG満杯ｻｲｸﾙ停止ﾀｲﾏ
+LD MR3204                ; ｻｲｸﾙ停止中
+AND CR2006               ; 1sｸﾛｯｸﾊﾟﾙｽ
+OR MR206                 ; ｻｲｸﾙ停止完了継続中
+OUT B01C5                ; ｻｲｸﾙ停止PL
+LD MR3204                ; ｻｲｸﾙ停止中
+AND= DM3000 #0           ; 装置内処理中ﾜｰｸ個数
+AND= MR31000 #0          ; 画像 設定切替 STEP00
+AND= MR31200 #0          ; 除材搬送 準備STEP00
+AND= MR31300 #0          ; 検査部 準備STEP00
+AND= MR32000 #0          ; S盤画像読取 STEP00
+AND= MR32100 #0          ; S盤画像読取 STEP16
+AND= MR33000 #0          ; 給材搬送 STEP00
+AND= MR33100 #0          ; 給材搬送 STEP16
+AND= MR33200 #0          ; 給材搬送 STEP32
+AND= MR33300 #0          ; 給材搬送 STEP48
+AND= MR33400 #0          ; 給材搬送 STEP64
+AND= MR34000 #0          ; ﾜｰｸ押込動作 STEP00
+AND= MR34100 #0          ; ﾜｰｸ回収動作 STEP00
+AND= MR34200 #0          ; ﾜｰｸ回収動作 STEP16
+AND= MR34300 #0          ; ﾜｰｸ押込 戻り動作 STEP00
+AND= MR35000 #0          ; 検査STEP00
+AND= MR35200 #0          ; 検査STEP32
+AND= MR36000 #0          ; 除材反転 STEP00 起動条件確認
+AND= MR36100 #0          ; 除材反転 STEP16
+AND= MR37000 #0          ; 除材搬送 STEP00
+AND= MR37100 #0          ; 除材搬送 STEP16
+AND= MR37200 #0          ; 除材搬送 STEP32 ﾊﾟﾚｯﾄ置き
+AND= MR37300 #0          ; 除材搬送 STEP48 NG位置排出
+AND= MR37400 #0          ; 除材搬送 STEP64 除材反転ﾜｰｸ残り
+OUT MR3205               ; ｻｲｸﾙ停止完了
+;<h1/>自動運転停止(給材停止・払出停止)
+LDP B0C6                 ; 自動運転 終了SW
+OR MR3206                ; 自動運転停止中
+AND MR3200               ; 自動運転中
+OUT MR3206               ; 自動運転停止中
+LD MR3206                ; 自動運転停止中
+AND CR2006               ; 1sｸﾛｯｸﾊﾟﾙｽ
+OUT B01C6                ; PL.自動運転終了
+LD MR3206                ; 自動運転停止中
+AND= DM3000 #0           ; 装置内処理中ﾜｰｸ個数
+AND= MR31000 #0          ; 画像 設定切替 STEP00
+AND= MR31200 #0          ; 除材搬送 準備STEP00
+AND= MR31300 #0          ; 検査部 準備STEP00
+AND= MR32000 #0          ; S盤画像読取 STEP00
+AND= MR32100 #0          ; S盤画像読取 STEP16
+AND= MR33000 #0          ; 給材搬送 STEP00
+AND= MR33100 #0          ; 給材搬送 STEP16
+AND= MR33200 #0          ; 給材搬送 STEP32
+AND= MR33300 #0          ; 給材搬送 STEP48
+AND= MR33400 #0          ; 給材搬送 STEP64
+AND= MR34000 #0          ; ﾜｰｸ押込動作 STEP00
+AND= MR34100 #0          ; ﾜｰｸ回収動作 STEP00
+AND= MR34200 #0          ; ﾜｰｸ回収動作 STEP16
+AND= MR34300 #0          ; ﾜｰｸ押込 戻り動作 STEP00
+AND= MR35000 #0          ; 検査STEP00
+AND= MR35200 #0          ; 検査STEP32
+AND= MR36000 #0          ; 除材反転 STEP00 起動条件確認
+AND= MR36100 #0          ; 除材反転 STEP16
+AND= MR37000 #0          ; 除材搬送 STEP00
+AND= MR37100 #0          ; 除材搬送 STEP16
+AND= MR37200 #0          ; 除材搬送 STEP32 ﾊﾟﾚｯﾄ置き
+AND= MR37300 #0          ; 除材搬送 STEP48 NG位置排出
+AND= MR37400 #0          ; 除材搬送 STEP64 除材反転ﾜｰｸ残り
+OUT MR3207               ; 自動運転停止完了
+;<h1/>PAUSE
+LD MR3208                ; PAUSE
+AND MR400                ; 全ﾄﾞｱ閉確認
+LDB MR106                ; ﾎﾟｯﾌﾟｱｯﾌﾟ警報
+ANB MR3210               ; 動作選択確認
+OR MR3210                ; 動作選択確認
+ANL
+ANP MR005                ; 起動SW
+OUT MR3209               ; PAUSE解除
+LDPB B0C3                ; PAUSE_SW
+ANPB B02F9               ; PAUSEﾄﾞｱ開SW
+ANPB R3112               ; STOP_SW
+INV
+LDPB MR106               ; ﾎﾟｯﾌﾟｱｯﾌﾟ警報
+ANPB MR7701              ; ERR71 振動盤上 ﾜｰｸ量
+ANPB MR7703              ; ERR73 給材連続吸着異常
+ANPB MR7704              ; ERR74 給材連続NG排出異常 
+ANPB MR7705              ; ERR75 検査NG品連続排出異常
+INV
+ORL
+OR MR3208                ; PAUSE
+AND MR3200               ; 自動運転中
+ANB MR3209               ; PAUSE解除
+OUT MR3208               ; PAUSE
+LDB MR36001              ; 除材反転 STEP01 
+ANB MR36013              ; 除材反転 STEP13
+ANB MR36102              ; 除材反転 STEP18
+ANB MR36106              ; 除材反転 STEP22
+ANB MR37002              ; 除材搬送 STEP02 除材座標読取
+ANB MR37007              ; 除材搬送 STEP07
+ANB MR37400              ; 除材搬送 STEP64 除材反転ﾜｰｸ残り
+ANB MR37409              ; 除材搬送 STEP73
+ANB MR37300              ; 除材搬送 STEP48 NG位置排出
+ANB MR37409              ; 除材搬送 STEP73
+ANB MR34113              ; ﾜｰｸ回収動作 STEP13
+ANB MR34115              ; ﾜｰｸ回収動作 STEP15
+ANB MR33111              ; 給材搬送 STEP27
+ANB MR33112              ; 給材搬送 STEP28
+INV
+OUT MR3210               ; 動作選択確認
+LD MR3208                ; PAUSE
+AND CR2006               ; 1sｸﾛｯｸﾊﾟﾙｽ
+OR MR202                 ; PAUSEﾄﾞｱ開可
+OUT B01C3                ; PAUSE_PL
+LD MR3208                ; PAUSE
+AND MR1115               ; 給材X軸 全停止
+AND MR1315               ; 給材Y軸 全停止
+AND MR1515               ; 給材Z軸 全停止
+AND MR1715               ; 給材θ軸 全停止
+AND MR6115               ; 除材X軸 全停止
+AND MR6315               ; 除材Y軸 全停止
+AND MR6515               ; 除材Z軸 全停止
+AND MR6715               ; 除材θ軸 全停止
+AND MR6915               ; 検査Z軸 全停止
+AND MR2215               ; ｼﾘﾝﾀﾞ全停止
+OUT MR202                ; PAUSEﾄﾞｱ開可
+LDB MR3208               ; PAUSE
+AND MR404                ; 全ﾄﾞｱ閉ﾛｯｸ中
+OUT MR203                ; 自動歩進可
+LD R3510                 ; ﾄﾞｱ1閉
+AND R3511                ; ﾄﾞｱ2閉
+AND R3512                ; ﾄﾞｱ3閉
+AND R3513                ; ﾄﾞｱ4閉
+AND R3514                ; ﾄﾞｱ5閉
+AND R3515                ; ﾄﾞｱ6閉
+OR LR002                 ; ﾄﾞｱｾﾝｻ OFF=有効 ON=無効
+OUT MR400                ; 全ﾄﾞｱ閉確認
+LD R3500                 ; ﾄﾞｱ閉確認1
+AND R3501                ; ﾄﾞｱ閉確認2
+AND R3502                ; ﾄﾞｱ閉確認3
+AND R3503                ; ﾄﾞｱ閉確認4
+AND R3504                ; ﾄﾞｱ閉確認5
+AND R3505                ; ﾄﾞｱ閉確認6
+OR LR002                 ; ﾄﾞｱｾﾝｻ OFF=有効 ON=無効
+OUT MR402                ; 全ﾄﾞｱﾛｯｸ確認
+LD MR400                 ; 全ﾄﾞｱ閉確認
+AND MR402                ; 全ﾄﾞｱﾛｯｸ確認
+OUT MR404                ; 全ﾄﾞｱ閉ﾛｯｸ中
+LD MR3200                ; 自動運転中
+ANB MR202                ; PAUSEﾄﾞｱ開可
+OR MR3000                ; 運転準備開始
+ANB LR002                ; ﾄﾞｱｾﾝｻ OFF=有効 ON=無効
+OUT R3813                ; ﾄﾞｱﾛｯｸ
+;<h1/>給材X軸移動指令
+LDB MR23004              ; 原点復帰 STEP04
+ANB MR31106              ; 給材搬送 準備STEP06
+ANB MR33105              ; 給材搬送 STEP21
+ANB MR33204              ; 給材搬送 STEP36
+ANB MR33305              ; 給材搬送 STEP53
+ANB MR33405              ; 給材搬送 STEP69
+INV
+ANB MR1101               ; 給材X軸 待機位置
+OUT MR1001               ; 給材X軸 待機位置指令
+LD MR33005               ; 給材搬送 STEP05
+ANB MR1102               ; 給材X軸 取出位置
+OUT MR1002               ; 給材X軸 取出位置指令
+LD MR33010               ; 給材搬送 STEP10
+ANB MR1103               ; 給材X軸 吸着確認位置
+OUT MR1003               ; 給材X軸 吸着確認 位置指令
+LD MR33114               ; 給材搬送 STEP30
+ANB MR1104               ; 給材X軸 検査投入位置
+OUT MR1004               ; 給材X軸 検査投入 位置指令
+LDB MR31102              ; 給材搬送 準備STEP02
+ANB MR33301              ; 給材搬送 STEP49
+INV
+ANB MR1105               ; 給材X軸 返却位置
+OUT MR1005               ; 給材X軸 返却位置指令
+LD MR33401               ; 給材搬送 STEP65
+ANB MR1106               ; 給材X軸 排出位置
+OUT MR1006               ; 給材X軸 排出位置指令
+;<h1/>給材Y軸移動指令
+LDB MR23004              ; 原点復帰 STEP04
+ANB MR31106              ; 給材搬送 準備STEP06
+ANB MR33105              ; 給材搬送 STEP21
+ANB MR33204              ; 給材搬送 STEP36
+ANB MR33305              ; 給材搬送 STEP53
+ANB MR33405              ; 給材搬送 STEP69
+INV
+ANB MR1301               ; 給材Y軸 待機位置
+OUT MR1201               ; 給材Y軸 待機位置指令
+LD MR33005               ; 給材搬送 STEP05
+ANB MR1302               ; 給材Y軸 取出位置
+OUT MR1202               ; 給材Y軸 取出位置指令
+LD MR33010               ; 給材搬送 STEP10
+ANB MR1303               ; 給材Y軸 吸着確認位置
+OUT MR1203               ; 給材Y軸 吸着確認 位置指令
+LD MR33114               ; 給材搬送 STEP30
+ANB MR1304               ; 給材Y軸 検査投入位置
+OUT MR1204               ; 給材Y軸 検査投入 位置指令
+LDB MR31102              ; 給材搬送 準備STEP02
+ANB MR33301              ; 給材搬送 STEP49
+INV
+ANB MR1305               ; 給材Y軸 返却位置
+OUT MR1205               ; 給材Y軸 返却位置指令
+LD MR33401               ; 給材搬送 STEP65
+ANB MR1306               ; 給材Y軸 排出位置
+OUT MR1206               ; 給材Y軸 排出位置指令
+;<h1/>給材Z軸移動指令
+LDB MR23002              ; 原点復帰 STEP02
+ANB MR31101              ; 給材搬送 準備STEP01
+ANB MR31105              ; 給材搬送 準備STEP05
+ANB MR33004              ; 給材搬送 STEP04
+ANB MR33009              ; 給材搬送 STEP09
+ANB MR33104              ; 給材搬送 STEP20
+ANB MR33203              ; 給材搬送 STEP35 ﾜｰｸ押込要求
+ANB MR33300              ; 給材搬送 STEP48
+ANB MR33304              ; 給材搬送 STEP52
+ANB MR33400              ; 給材搬送 STEP64
+ANB MR33404              ; 給材搬送 STEP68
+INV
+ANB MR1501               ; 給材Z軸 待機位置
+OUT MR1401               ; 給材Z軸 待機位置指令
+LD MR33007               ; 給材搬送 STEP07
+ANB MR1502               ; 給材Z軸 取出位置
+OUT MR1402               ; 給材Z軸 取出位置指令
+LD MR33011               ; 給材搬送 STEP11
+ANB MR1503               ; 給材Z軸 吸着確認位置
+OUT MR1403               ; 給材Z軸 吸着確認 位置指令
+LD MR33115               ; 給材搬送 STEP31
+ANB MR1504               ; 給材Z軸 検査投入位置
+OUT MR1404               ; 給材Z軸 検査投入 位置指令
+LDB MR31103              ; 給材搬送 準備STEP03
+ANB MR33302              ; 給材搬送 STEP50
+INV
+ANB MR1505               ; 給材Z軸 返却位置
+OUT MR1405               ; 給材Z軸 返却位置指令
+LD MR33402               ; 給材搬送 STEP66
+ANB MR1506               ; 給材Z軸 排出位置
+OUT MR1406               ; 給材Z軸 排出位置指令
+;<h1/>給材θ軸移動指令
+LDB MR23004              ; 原点復帰 STEP04
+ANB MR31106              ; 給材搬送 準備STEP06
+ANB MR33105              ; 給材搬送 STEP21
+ANB MR33204              ; 給材搬送 STEP36
+ANB MR33305              ; 給材搬送 STEP53
+ANB MR33405              ; 給材搬送 STEP69
+INV
+ANB MR1701               ; 給材θ軸 待機位置
+OUT MR1601               ; 給材θ軸 待機位置指令
+LD MR33005               ; 給材搬送 STEP05
+ANB MR1702               ; 給材θ軸 取出位置
+OUT MR1602               ; 給材θ軸 取出位置指令
+LD MR33010               ; 給材搬送 STEP10
+ANB MR1703               ; 給材θ軸 吸着確認位置
+OUT MR1603               ; 給材θ軸 吸着確認 位置指令
+LD MR33114               ; 給材搬送 STEP30
+ANB MR1704               ; 給材θ軸 検査投入位置
+OUT MR1604               ; 給材θ軸 検査投入 位置指令
+LDB MR31102              ; 給材搬送 準備STEP02
+ANB MR33301              ; 給材搬送 STEP49
+INV
+ANB MR1705               ; 給材θ軸 返却位置
+OUT MR1605               ; 給材θ軸 返却位置指令
+LD MR33401               ; 給材搬送 STEP65
+ANB MR1706               ; 給材θ軸 排出位置
+OUT MR1606               ; 給材θ軸 排出位置指令
+LD MR33015               ; 給材搬送 STEP15
+ANB MR1707               ; 給材θ軸 反転吸着 確認位置
+OUT MR1607               ; 給材θ軸 反転吸着 確認位置指令
+;<h1/>除材X軸移動指令
+LDB MR23004              ; 原点復帰 STEP04
+ANB MR31212              ; 除材搬送 準備STEP12
+ANB MR37208              ; 除材搬送 STEP40
+INV
+ANB MR6101               ; 除材X軸 待機位置
+OUT MR6001               ; 除材X軸 待機位置指令
+LDB MR31207              ; 除材搬送 準備STEP07
+ANB MR37009              ; 除材搬送 STEP09
+INV
+ANB MR6102               ; 除材X軸 除材反転 取出位置
+OUT MR6002               ; 除材X軸 除材反転 取出位置指令
+LD MR37014               ; 除材搬送 STEP14
+ANB MR6103               ; 除材X軸 吸着確認位置
+OUT MR6003               ; 除材X軸 吸着確認 位置指令
+LD MR37201               ; 除材搬送 STEP33
+ANB MR6104               ; 除材X軸 ﾊﾟﾚｯﾄ置位置
+OUT MR6004               ; 除材X軸 ﾊﾟﾚｯﾄ置 位置指令
+LDB MR31202              ; 除材搬送 準備STEP02
+ANB MR37303              ; 除材搬送 STEP51
+ANB MR37411              ; 除材搬送 STEP75
+INV
+ANB MR6105               ; 除材X軸 NG排出位置
+OUT MR6005               ; 除材X軸 NG位置指令
+;<h1/>除材Y軸移動指令
+LDB MR23004              ; 原点復帰 STEP04
+ANB MR31212              ; 除材搬送 準備STEP12
+ANB MR37208              ; 除材搬送 STEP40
+INV
+ANB MR6301               ; 除材Y軸 待機位置
+OUT MR6201               ; 除材Y軸 待機位置指令
+LDB MR31207              ; 除材搬送 準備STEP07
+ANB MR37009              ; 除材搬送 STEP09
+INV
+ANB MR6302               ; 除材Y軸 除材反転 取出位置
+OUT MR6202               ; 除材Y軸 除材反転 取出位置指令
+LD MR37014               ; 除材搬送 STEP14
+ANB MR6303               ; 除材Y軸 吸着確認位置
+OUT MR6203               ; 除材Y軸 吸着確認 位置指令
+LD MR37201               ; 除材搬送 STEP33
+ANB MR6304               ; 除材Y軸 ﾊﾟﾚｯﾄ置位置
+OUT MR6204               ; 除材Y軸 ﾊﾟﾚｯﾄ置 位置指令
+LDB MR31202              ; 除材搬送 準備STEP02
+ANB MR37303              ; 除材搬送 STEP51
+ANB MR37411              ; 除材搬送 STEP75
+INV
+ANB MR6305               ; 除材Y軸 NG位置
+OUT MR6205               ; 除材Y軸 NG位置指令
+;<h1/>除材Z軸移動指令
+LDB MR23002              ; 原点復帰 STEP02
+ANB MR31211              ; 除材搬送 準備STEP11
+ANB MR31201              ; 除材搬送 準備STEP01
+ANB MR31205              ; 除材搬送 準備STEP05
+ANB MR31211              ; 除材搬送 準備STEP11
+ANB MR37008              ; 除材搬送 STEP08
+ANB MR37013              ; 除材搬送 STEP13
+ANB MR37200              ; 除材搬送 STEP32 ﾊﾟﾚｯﾄ置き
+ANB MR37301              ; 除材搬送 STEP49
+ANB MR37207              ; 除材搬送 STEP39
+ANB MR37306              ; 除材搬送 STEP54
+ANB MR37410              ; 除材搬送 STEP74
+ANB MR37414              ; 除材搬送 STEP78
+INV
+ANB MR6501               ; 除材Z軸 待機位置
+OUT MR6401               ; 除材Z軸 待機位置指令
+LDB MR31208              ; 除材搬送 準備STEP08
+ANB MR37011              ; 除材搬送 STEP11
+INV
+ANB MR6502               ; 除材Z軸 除材反転 取出位置
+OUT MR6402               ; 除材Z軸 除材反転 取出位置指令
+LDB MR37104              ; 除材搬送 STEP20
+ANB MR37401              ; 除材搬送 STEP65
+INV
+ANB MR6503               ; 除材Z軸 吸着確認位置
+OUT MR6403               ; 除材Z軸 吸着確認 位置指令
+LD MR37202               ; 除材搬送 STEP34
+ANB MR6504               ; 除材Z軸 ﾊﾟﾚｯﾄ置位置
+OUT MR6404               ; 除材Z軸 ﾊﾟﾚｯﾄ置 位置指令
+LDB MR31203              ; 除材搬送 準備STEP03
+ANB MR37304              ; 除材搬送 STEP52
+ANB MR37412              ; 除材搬送 STEP76
+INV
+ANB MR6505               ; 除材Z軸 NG位置
+OUT MR6405               ; 除材Z軸 NG位置指令
+;<h1/>除θ軸移動指令
+LDB MR23004              ; 原点復帰 STEP04
+ANB MR31212              ; 除材搬送 準備STEP12
+ANB MR37208              ; 除材搬送 STEP40
+INV
+ANB MR6701               ; 除材θ軸 待機位置
+OUT MR6601               ; 除材θ軸 待機位置指令
+LDB MR31207              ; 除材搬送 準備STEP07
+ANB MR37009              ; 除材搬送 STEP09
+INV
+ANB MR6702               ; 除材θ軸 除材反転 取出位置
+OUT MR6602               ; 除材θ軸 除材反転 取出位置指令
+LDB MR37014              ; 除材搬送 STEP14
+ANB MR37401              ; 除材搬送 STEP65
+INV
+ANB MR6703               ; 除材θ軸 吸着確認位置
+OUT MR6603               ; 除材θ軸 吸着確認 位置指令
+LD MR37201               ; 除材搬送 STEP33
+ANB MR6704               ; 除材θ軸 ﾊﾟﾚｯﾄ置位置
+OUT MR6604               ; 除材θ軸 ﾊﾟﾚｯﾄ置 位置指令
+LDB MR31202              ; 除材搬送 準備STEP02
+ANB MR37303              ; 除材搬送 STEP51
+ANB MR37411              ; 除材搬送 STEP75
+INV
+ANB MR6705               ; 除材θ軸 NG位置
+OUT MR6605               ; 除材θ軸 NG位置指令
+LDB MR37108              ; 除材搬送 STEP24
+ANB MR37405              ; 除材搬送 STEP69
+INV
+ANB MR6707               ; 除材θ軸 反転吸着 確認位置
+OUT MR6607               ; 除材θ軸 反転吸着 確認位置指令
+;<h1/>ｴﾗｰ出力
+;ERR60　ﾊﾟﾚｯﾄ1 無し異常
+LDP MR3200               ; 自動運転中
+AND MR3012               ; 運転準備 完了記憶
+LDB LR010                ; ﾊﾟﾚｯﾄ2OK/NG選択 ON:OK OFF:NG
+LD LR010                 ; ﾊﾟﾚｯﾄ2OK/NG選択 ON:OK OFF:NG
+ANB R3508                ; ﾊﾟﾚｯﾄ2在荷
+ORL
+ANL
+ANB R3108                ; ﾊﾟﾚｯﾄ1在荷
+LD MR7600                ; ERR60 ﾊﾟﾚｯﾄ1無し異常
+ANB MR004                ; ﾘｾｯﾄSW
+ORL
+OUT MR7600               ; ERR60 ﾊﾟﾚｯﾄ1無し異常
+;ERR61　ﾊﾟﾚｯﾄ2 無し異常
+LDP MR3200               ; 自動運転中
+AND MR3012               ; 運転準備 完了記憶
+LDB LR010                ; ﾊﾟﾚｯﾄ2OK/NG選択 ON:OK OFF:NG
+LD LR010                 ; ﾊﾟﾚｯﾄ2OK/NG選択 ON:OK OFF:NG
+ANB R3108                ; ﾊﾟﾚｯﾄ1在荷
+ORL
+ANL
+ANB R3508                ; ﾊﾟﾚｯﾄ2在荷
+LD MR7601                ; ERR60 ﾊﾟﾚｯﾄ2無し異常
+ANB MR004                ; ﾘｾｯﾄSW
+ORL
+OUT MR7601               ; ERR60 ﾊﾟﾚｯﾄ2無し異常
+;ERR62　ﾊﾟﾚｯﾄ1未交換
+LD MR37900               ; ﾊﾟﾚｯﾄ1整列完了
+ORP T16                  ; ｳｴｲﾄﾀｲﾏｰ16
+ORP MR3200               ; 自動運転中
+OR MR212                 ; ﾊﾟﾚｯﾄ1 交換要求
+AND R3108                ; ﾊﾟﾚｯﾄ1在荷
+ANB MR206                ; ｻｲｸﾙ停止完了継続中
+OUT MR212                ; ﾊﾟﾚｯﾄ1 交換要求
+LDB MR206                ; ｻｲｸﾙ停止完了継続中
+AND CR2003               ; 常時OFF
+TMH #16 #50              ; ｳｴｲﾄﾀｲﾏｰ16
+LD MR3012                ; 運転準備 完了記憶
+ANP MR005                ; 起動SW
+AND MR212                ; ﾊﾟﾚｯﾄ1 交換要求
+ANB MR3200               ; 自動運転中
+LD MR7602                ; ERR62 ﾊﾟﾚｯﾄ1未交換
+ANB MR004                ; ﾘｾｯﾄSW
+ORL
+OUT MR7602               ; ERR62 ﾊﾟﾚｯﾄ1未交換
+;ERR63　ﾊﾟﾚｯﾄ2未交換
+LD MR37902               ; ﾊﾟﾚｯﾄ2整列完了
+ORP T18                  ; ｳｴｲﾄﾀｲﾏｰ18
+ORP MR3200               ; 自動運転中
+OR MR213                 ; ﾊﾟﾚｯﾄ2 交換要求
+AND R3508                ; ﾊﾟﾚｯﾄ2在荷
+LDB MR206                ; ｻｲｸﾙ停止完了継続中
+LDB LR010                ; ﾊﾟﾚｯﾄ2OK/NG選択 ON:OK OFF:NG
+AND MR37902              ; ﾊﾟﾚｯﾄ2整列完了
+ORL
+ANL
+OUT MR213                ; ﾊﾟﾚｯﾄ2 交換要求
+LDB MR206                ; ｻｲｸﾙ停止完了継続中
+AND CR2003               ; 常時OFF
+TMH #18 #50              ; ｳｴｲﾄﾀｲﾏｰ18
+LD MR3012                ; 運転準備 完了記憶
+ANP MR005                ; 起動SW
+AND MR213                ; ﾊﾟﾚｯﾄ2 交換要求
+ANB MR3200               ; 自動運転中
+LD MR7603                ; ERR63 ﾊﾟﾚｯﾄ2未交換
+ANB MR004                ; ﾘｾｯﾄSW
+ORL
+OUT MR7603               ; ERR63 ﾊﾟﾚｯﾄ2未交換
+;ERR64　ﾄﾞｱ1開
+LDP MR005                ; 起動SW
+AND MR101                ; 自動ﾓｰﾄﾞ
+OR CR2002                ; 常時ON
+ANB MR3208               ; PAUSE
+ANB R3510                ; ﾄﾞｱ1閉
+ANB LR002                ; ﾄﾞｱｾﾝｻ OFF=有効 ON=無効
+LD MR7604                ; ERR64 ﾄﾞｱ1開
+ANB MR004                ; ﾘｾｯﾄSW
+ORL
+OUT MR7604               ; ERR64 ﾄﾞｱ1開
+;ERR65　ﾄﾞｱ2開
+LDP MR005                ; 起動SW
+AND MR101                ; 自動ﾓｰﾄﾞ
+OR CR2002                ; 常時ON
+ANB MR3208               ; PAUSE
+ANB R3511                ; ﾄﾞｱ2閉
+ANB LR002                ; ﾄﾞｱｾﾝｻ OFF=有効 ON=無効
+LD MR7605                ; ERR65 ﾄﾞｱ2開
+ANB MR004                ; ﾘｾｯﾄSW
+ORL
+OUT MR7605               ; ERR65 ﾄﾞｱ2開
+;ERR66　ﾄﾞｱ3開
+LDP MR005                ; 起動SW
+AND MR101                ; 自動ﾓｰﾄﾞ
+OR CR2002                ; 常時ON
+ANB MR3208               ; PAUSE
+ANB R3512                ; ﾄﾞｱ3閉
+ANB LR002                ; ﾄﾞｱｾﾝｻ OFF=有効 ON=無効
+LD MR7606                ; ERR66 ﾄﾞｱ3開
+ANB MR004                ; ﾘｾｯﾄSW
+ORL
+OUT MR7606               ; ERR66 ﾄﾞｱ3開
+;ERR67　ﾄﾞｱ4開
+LDP MR005                ; 起動SW
+AND MR101                ; 自動ﾓｰﾄﾞ
+OR CR2002                ; 常時ON
+ANB MR3208               ; PAUSE
+ANB R3513                ; ﾄﾞｱ4閉
+ANB LR002                ; ﾄﾞｱｾﾝｻ OFF=有効 ON=無効
+LD MR7607                ; ERR67 ﾄﾞｱ4開
+ANB MR004                ; ﾘｾｯﾄSW
+ORL
+OUT MR7607               ; ERR67 ﾄﾞｱ4開
+;ERR68　ﾄﾞｱ5開
+LDP MR005                ; 起動SW
+AND MR101                ; 自動ﾓｰﾄﾞ
+OR CR2002                ; 常時ON
+ANB MR3208               ; PAUSE
+ANB R3514                ; ﾄﾞｱ5閉
+ANB LR002                ; ﾄﾞｱｾﾝｻ OFF=有効 ON=無効
+LD MR7608                ; ERR68 ﾄﾞｱ5開
+ANB MR004                ; ﾘｾｯﾄSW
+ORL
+OUT MR7608               ; ERR68 ﾄﾞｱ5開
+;ERR69　ﾄﾞｱ6開
+LDP MR005                ; 起動SW
+AND MR101                ; 自動ﾓｰﾄﾞ
+OR CR2002                ; 常時ON
+ANB MR3208               ; PAUSE
+ANB R3515                ; ﾄﾞｱ6閉
+ANB LR002                ; ﾄﾞｱｾﾝｻ OFF=有効 ON=無効
+LD MR7609                ; ERR69 ﾄﾞｱ6開
+ANB MR004                ; ﾘｾｯﾄSW
+ORL
+OUT MR7609               ; ERR69 ﾄﾞｱ6開
+;ERR6A　自動運転中ﾊﾟﾚｯﾄ1無し異常
+LDF R3108                ; ﾊﾟﾚｯﾄ1在荷
+AND MR3200               ; 自動運転中
+LD MR7610                ; ERR6A　自動運転中ﾊﾟﾚｯﾄ1無し異常
+ANB MR004                ; ﾘｾｯﾄSW
+ORL
+OUT MR7610               ; ERR6A　自動運転中ﾊﾟﾚｯﾄ1無し異常
+;ERR6B　自動運転中ﾊﾟﾚｯﾄ2無し異常
+LDF R3508                ; ﾊﾟﾚｯﾄ2在荷
+AND MR3200               ; 自動運転中
+LD MR7611                ; ERR6B　自動運転中ﾊﾟﾚｯﾄ2無し異常
+ANB MR004                ; ﾘｾｯﾄSW
+ORL
+OUT MR7611               ; ERR6B　自動運転中ﾊﾟﾚｯﾄ2無し異常
+;ERR78　ﾄﾞｱ1ﾛｯｸｼﾘﾝﾀﾞ異常
+LD CR2002                ; 常時ON
+MPS
+LD R3813                 ; ﾄﾞｱﾛｯｸ
+ANB R3500                ; ﾄﾞｱ閉確認1
+ANL
+TMR #420 #30             ; ﾄﾞｱﾛｯｸ1閉確認
+MPP
+LD T420                  ; ﾄﾞｱﾛｯｸ1閉確認
+LD MR7708                ; ERR78 ﾄﾞｱﾛｯｸ1ｼﾘﾝﾀﾞ異常
+ANB MR004                ; ﾘｾｯﾄSW
+ORL
+ANL
+OUT MR7708               ; ERR78 ﾄﾞｱﾛｯｸ1ｼﾘﾝﾀﾞ異常
+;ERR79 ﾄﾞｱ2ﾛｯｸｼﾘﾝﾀﾞ異常
+LD CR2002                ; 常時ON
+MPS
+LD R3813                 ; ﾄﾞｱﾛｯｸ
+ANB R3501                ; ﾄﾞｱ閉確認2
+ANL
+TMR #421 #30             ; ﾄﾞｱﾛｯｸ2閉確認
+MPP
+LD T421                  ; ﾄﾞｱﾛｯｸ2閉確認
+LD MR7709                ; ERR79 ﾄﾞｱﾛｯｸ2ｼﾘﾝﾀﾞ異常
+ANB MR004                ; ﾘｾｯﾄSW
+ORL
+ANL
+OUT MR7709               ; ERR79 ﾄﾞｱﾛｯｸ2ｼﾘﾝﾀﾞ異常
+;ERR7A ﾄﾞｱ3ﾛｯｸｼﾘﾝﾀﾞ異常
+LD CR2002                ; 常時ON
+MPS
+LD R3813                 ; ﾄﾞｱﾛｯｸ
+ANB R3502                ; ﾄﾞｱ閉確認3
+ANL
+TMR #422 #30             ; ﾄﾞｱﾛｯｸ3閉確認
+MPP
+LD T422                  ; ﾄﾞｱﾛｯｸ3閉確認
+LD MR7710                ; ERR7A ﾄﾞｱﾛｯｸ3ｼﾘﾝﾀﾞ異常
+ANB MR004                ; ﾘｾｯﾄSW
+ORL
+ANL
+OUT MR7710               ; ERR7A ﾄﾞｱﾛｯｸ3ｼﾘﾝﾀﾞ異常
+;ERR7B ﾄﾞｱ4ﾛｯｸｼﾘﾝﾀﾞ異常
+LD CR2002                ; 常時ON
+MPS
+LD R3813                 ; ﾄﾞｱﾛｯｸ
+ANB R3503                ; ﾄﾞｱ閉確認4
+ANL
+TMR #423 #30             ; ﾄﾞｱﾛｯｸ4閉確認
+MPP
+LD T423                  ; ﾄﾞｱﾛｯｸ4閉確認
+LD MR7711                ; ERR7B ﾄﾞｱﾛｯｸ4ｼﾘﾝﾀﾞ異常
+ANB MR004                ; ﾘｾｯﾄSW
+ORL
+ANL
+OUT MR7711               ; ERR7B ﾄﾞｱﾛｯｸ4ｼﾘﾝﾀﾞ異常
+;ERR7C ﾄﾞｱ5ﾛｯｸｼﾘﾝﾀﾞ異常
+LD CR2002                ; 常時ON
+MPS
+LD R3813                 ; ﾄﾞｱﾛｯｸ
+ANB R3504                ; ﾄﾞｱ閉確認5
+ANL
+TMR #424 #30             ; ﾄﾞｱﾛｯｸ5閉確認
+MPP
+LD T424                  ; ﾄﾞｱﾛｯｸ5閉確認
+LD MR7712                ; ERR7C ﾄﾞｱﾛｯｸ5ｼﾘﾝﾀﾞ異常
+ANB MR004                ; ﾘｾｯﾄSW
+ORL
+ANL
+OUT MR7712               ; ERR7C ﾄﾞｱﾛｯｸ5ｼﾘﾝﾀﾞ異常
+;ERR7D ﾄﾞｱ6ﾛｯｸｼﾘﾝﾀﾞ異常
+LD CR2002                ; 常時ON
+MPS
+LD R3813                 ; ﾄﾞｱﾛｯｸ
+ANB R3505                ; ﾄﾞｱ閉確認6
+ANL
+TMR #425 #30             ; ﾄﾞｱﾛｯｸ6閉確認
+MPP
+LD T425                  ; ﾄﾞｱﾛｯｸ6閉確認
+LD MR7713                ; ERR7D ﾄﾞｱﾛｯｸ6ｼﾘﾝﾀﾞ異常
+ANB MR004                ; ﾘｾｯﾄSW
+ORL
+ANL
+OUT MR7713               ; ERR7D ﾄﾞｱﾛｯｸ6ｼﾘﾝﾀﾞ異常
+END
+ENDH

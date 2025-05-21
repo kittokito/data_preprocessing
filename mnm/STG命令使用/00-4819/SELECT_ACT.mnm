@@ -1,0 +1,151 @@
+DEVICE:53
+;MODULE:SELECT_ACT
+;MODULE_TYPE:1
+;OneSystem SupportMacro
+;広丘
+;-----------------------------------------
+;Macro Name 	: 	SELECT_ACT
+;Macro Type	:	Self Holding
+;Function	:	4択画面表示
+;-----------------------------------------
+;
+;Copylight(C) 2011 SEIKO EPSON Corp. All rights reserved.
+;引数：
+;	V0	=	表示ｸﾞﾙｰﾌﾟ番号			#1～8
+;	V1	=	ﾀｽｸ番号					#0～31
+;	V2	=	画面番号				#0～31
+;	V3	=	選択SW1名称番号			#0～100(#0は未表示指定)
+;	V4	=	選択SW2名称番号			#0～100(#0は未表示指定)
+;	V5	=	選択SW3名称番号			#0～100(#0は未表示指定)
+;	V6	=	選択SW4名称番号			#0～100(#0は未表示指定)
+;	V7	=	ﾌﾞｻﾞｰ有無				#0=ﾌﾞｻﾞｰ無し、#1=ﾌﾞｻﾞｰ有り
+;	P9	=	選択肢					#1～#4						(戻り値)
+;	
+;機能：
+;	指定TPに指定画面番号の選択画面を表示し、選択肢番号を戻り値として格納する
+LD R59915                ; _運転ﾓｰﾄﾞ指定
+MOV #0 P9                ; Select_SW
+MEND
+LD R46104                ; _非常停止中　ﾓｰﾄﾞﾌﾗｸﾞ
+ZRES @R000 @R015
+CON
+MEND
+;<h1/>Argumant Range Check/引数範囲ﾁｪｯｸ
+LD< V0 #1                ; Group_No
+OR> V0 #8                ; Group_No
+OR< V1 #0                ; Task_No
+OR> V1 #100              ; Task_No
+LD> V1 #31               ; Task_No
+AND< V1 #100             ; Task_No
+ORL
+OR< V2 #0                ; Screen_No
+OR> V2 #31               ; Screen_No
+OR< V3 #0                ; SelectSw1No
+OR> V3 #98               ; SelectSw1No
+OR< V4 #0                ; SelectSw2No
+OR> V4 #98               ; SelectSw2No
+OR< V5 #0                ; SelectSw3No
+OR> V5 #98               ; SelectSw3No
+OR< V6 #0                ; SelectSw4No
+OR> V6 #98               ; SelectSw4No
+OR< V7 #0                ; Bz_Use
+OR> V7 #1                ; Bz_Use
+SET R40008               ; _ｻﾎﾟｰﾄﾏｸﾛ引数異常発生
+CON
+SET @R015
+;<h1/>Init/初期化
+LD @CR2008
+ORB @R000
+ANB R59915               ; _運転ﾓｰﾄﾞ指定
+MOV #0 P9                ; Select_SW
+MOV #0 @EM0
+;<h1/>Exclusive/排他占有
+;・優先ｴﾗｰ、通常ｴﾗｰ解除待ち
+;・Input系とSelect系は同一排他(画面表示領域が同じなので)解除待ち
+;・排他解除待ち中にPAUSE要求にてHALT実施
+LDB R59915               ; _運転ﾓｰﾄﾞ指定
+ANB R46104               ; _非常停止中　ﾓｰﾄﾞﾌﾗｸﾞ
+ANB R46208               ; _Group1　ｴﾗｰ発生中
+ANB R48008               ; _Group1　画面処理排他
+SET R48008               ; _Group1　画面処理排他
+SET @R000
+CON
+SET @R001
+;<h1/>Select Action Display/選択画面表示
+STG @R001
+MOV V2 DM8172            ; Screen_No  _ACTﾒｯｾｰｼﾞ番号
+MPS
+AND<> V3 #0              ; SelectSw1No
+SET R55008               ; _ACT選択ﾎﾞﾀﾝ表示／非表示
+MRD
+AND= V3 #0               ; SelectSw1No
+RES R55008               ; _ACT選択ﾎﾞﾀﾝ表示／非表示
+MRD
+MOV V3 DM8173            ; SelectSw1No  _ACT選択肢1名称番号
+MRD
+AND<> V4 #0              ; SelectSw2No
+SET R55009               ; _ACT選択ﾎﾞﾀﾝ表示／非表示
+MRD
+AND= V4 #0               ; SelectSw2No
+RES R55009               ; _ACT選択ﾎﾞﾀﾝ表示／非表示
+MRD
+MOV V4 DM8174            ; SelectSw2No  _ACT選択肢2名称番号
+MRD
+AND<> V5 #0              ; SelectSw3No
+SET R55010               ; _ACT選択ﾎﾞﾀﾝ表示／非表示
+MRD
+AND= V5 #0               ; SelectSw3No
+RES R55010               ; _ACT選択ﾎﾞﾀﾝ表示／非表示
+MRD
+MOV V5 DM8175            ; SelectSw3No  _ACT選択肢3名称番号
+MRD
+AND<> V6 #0              ; SelectSw4No
+SET R55011               ; _ACT選択ﾎﾞﾀﾝ表示／非表示
+MRD
+AND= V6 #0               ; SelectSw4No
+RES R55011               ; _ACT選択ﾎﾞﾀﾝ表示／非表示
+MRD
+MOV V6 DM8176            ; SelectSw4No  _ACT選択肢4名称番号
+MRD
+AND= V7 #1               ; Bz_Use
+SET R48210               ; _Group1　ｼｽﾃﾑﾌﾞｻﾞｰ要求3
+MPP
+TMH @0 #5
+CON
+AND @T0
+AND= DM3000 #10          ; _MainTP　表示中ﾍﾟｰｼﾞNo
+SET R53800               ; _ACT画面表示
+CON
+JMP @R002
+;<h1/>Action Choise Waiting/選択待ち
+LD @R002
+ANB R44200               ; Grp1 ﾎﾟｰｽﾞ要求
+AND<> DM8177 #0          ; _ACT復帰選択肢
+MOV DM8177 @EM0          ; _ACT復帰選択肢
+;Error発生中はｴﾗｰ画面表示優先でY/N画面は消去
+;Error解除待ち
+STG @R002
+MPS
+AND R46208               ; _Group1　ｴﾗｰ発生中
+RES R53800               ; _ACT画面表示
+MRD
+ANB R46208               ; _Group1　ｴﾗｰ発生中
+SET R53800               ; _ACT画面表示
+MPP
+AND<> @EM0 #0
+RES R53800               ; _ACT画面表示
+CON
+JMP @R003
+;<h1/>End Process/終了処理
+STG @R003
+AND<> DM3000 #1111       ; _MainTP　表示中ﾍﾟｰｼﾞNo
+FMOV #0 DM8172 #6        ; _ACTﾒｯｾｰｼﾞ番号
+RES R48210               ; _Group1　ｼｽﾃﾑﾌﾞｻﾞｰ要求3
+RES R48008               ; _Group1　画面処理排他
+MOV @EM0 P9              ; Select_SW
+MEND
+RES @R000
+CON
+ENDS
+END
+ENDH

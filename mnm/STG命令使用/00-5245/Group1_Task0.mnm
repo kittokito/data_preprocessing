@@ -1,0 +1,6405 @@
+DEVICE:53
+;MODULE:Group1_Task0
+;MODULE_TYPE:0
+;SCRIPT_TYPE:
+;OneSystem Main-Module
+;
+;-----------------------------------------
+;ModuleName	:	Group1_Task0
+;ModuleType	:	Main Module
+;Line		:	
+;Cell		: 
+;Function	: 
+;-----------------------------------------
+;<<Task LocalDevice>>
+;/*項目			/*割付ｴﾘｱ				/*備考
+;---------------------------------------------------------------------			
+;Emergency		@MR000～@MR015			Emergency処理時RESET禁止ｴﾘｱ
+;Free			@MR100～@MR915			ﾕｰｻﾞｰﾌﾘｰｴﾘｱ
+;HOME			@MR1000～@MR1515		HOME動作時使用ｴﾘｱ
+;MAINTENANCE		@MR2000～@MR2915		MAINTE動作時使用ｴﾘｱ
+;AUTO(Main1)		@MR3000～@MR3915		AUTO(Main1)動作時使用ｴﾘｱ
+;	(Main2)		@MR4000～@MR4415		AUTO(Main2)動作時使用ｴﾘｱ
+;SubRoutine		@MR4500～@MR6415		ｻﾌﾞﾙｰﾁﾝ共通動作使用ｴﾘｱ　※状況により増設してください。
+;----------------------------------------------------------------------
+;<h1/>Device_Init/ﾃﾞﾊﾞｲｽ初期化
+;[内容]
+;・非常停止、優先ｴﾗｰ発生時に初期化したいﾃﾞﾊﾞｲｽを指定して下さい
+;※本Taskで使用するﾛｰｶﾙﾃﾞﾊﾞｲｽなど
+;※STG～JMPにて使用しているﾃﾞﾊﾞｲｽは必須
+LDP R46104               ; _非常停止中　ﾓｰﾄﾞﾌﾗｸﾞ
+ZRES @MR100 @MR6415      ; Task0 ERROR
+;<h1/>Task_Monitor/ﾀｽｸﾓﾆﾀｰ
+LD CR2002                ; 常時ON
+FLIK #50 #50 @MR000
+LD= DM60000 MyTask       ; TaskNo /ERROR_DISP  自ﾀｽｸ番号
+AND R46208               ; _Group1　ｴﾗｰ発生中
+OUT @MR001               ; TASK0 ERROR
+LDB R41200               ; TASK0 PAUSE 要求
+ANB R46208               ; _Group1　ｴﾗｰ発生中
+OUT @MR015               ; Pause&Error無し
+;ON STG Main1
+;TYPE EM600.U,EM601.U,@MR000.U,@MR3000.U
+;
+;FOR EM600 = EM600 TO 160 STEP 16
+;	IF @MR3000:EM600 <> 0 THEN
+;		BREAK
+;	END IF	
+;NEXT
+;	
+;IF EM600 < 160 THEN
+;	EM601 = (EM600 / 16) * 100 + DMX(@MR3000:EM600) + #3000
+;END IF		
+;		
+;EM600 = EM600 + 16		
+;IF EM600 > 160 THEN		
+;	EM600 = 0	
+;END IF
+LDP @MR000
+NCJ #1000
+;TYPE EM600.U,EM601.U,@MR000.U,@MR3000.U
+;
+;FOR EM600 = EM600 TO 160 STEP 16
+;
+LD CR2002                ; 常時ON
+MOV EM600 EM600          ; Task0 Main1@MR  Task0 Main1@MR
+LABEL #2000
+LD> EM600 #160           ; Task0 Main1@MR
+CJ #2001
+;	IF @MR3000:EM600 <> 0 THEN
+;
+LD CR2002                ; 常時ON
+LDA EM600                ; Task0 Main1@MR
+CON
+EXT
+CON
+STA.L Z12
+LD<> @MR3000:Z12 #0      ; AUTO Main1
+NCJ #2002
+;		BREAK
+;
+LD CR2002                ; 常時ON
+CJ #2003
+;	END IF	
+;
+LABEL #2002
+;NEXT
+;
+LD CR2002                ; 常時ON
+LDA EM600                ; Task0 Main1@MR
+CON
+ADD #16
+CON
+STA EM600                ; Task0 Main1@MR
+LDB CR2009               ; 演算結果が負
+CJ #2000
+LABEL #2003
+LABEL #2001
+;IF EM600 < 160 THEN
+;
+LD< EM600 #160           ; Task0 Main1@MR
+NCJ #2004
+;	EM601 = (EM600 / 16) * 100 + DMX(@MR3000:EM600) + #3000
+;
+LD CR2002                ; 常時ON
+LDA EM600                ; Task0 Main1@MR
+CON
+EXT
+CON
+STA.L Z12
+CON
+LDA @MR3000:Z12          ; AUTO Main1
+CON
+DMX
+CON
+STA @VM0
+CON
+LDA EM600                ; Task0 Main1@MR
+CON
+EXT
+CON
+EXT.L
+CON
+DIV.L +16
+CON
+MUL.L +100
+CON
+STA.L @VM1
+CON
+LDA @VM0
+CON
+EXT
+CON
+ADD.L @VM1
+CON
+ADD.L +3000
+CON
+STA EM601                ; Task0 Main1@MR
+;END IF		
+;
+LABEL #2004
+;EM600 = EM600 + 16		
+;
+LD CR2002                ; 常時ON
+LDA EM600                ; Task0 Main1@MR
+CON
+EXT
+CON
+ADD.L +16
+CON
+STA EM600                ; Task0 Main1@MR
+;IF EM600 > 160 THEN		
+;
+LD> EM600 #160           ; Task0 Main1@MR
+NCJ #2005
+;	EM600 = 0	
+;
+LD CR2002                ; 常時ON
+MOV #0 EM600             ; Task0 Main1@MR
+;END IF
+LABEL #2005
+LABEL #1000
+;
+;ON STG Main2
+;TYPE EM602.U,EM603.U,@MR4000.U
+;
+;FOR EM602 = EM602 TO 80 STEP 16
+;	IF @MR4000:EM602 <> 0 THEN
+;		BREAK
+;	END IF	
+;NEXT	
+;
+;IF EM602 < 80 THEN
+;	EM603 = (EM602 / 16) * 100 + DMX(@MR4000:EM602) + #4000
+;END IF
+;
+;EM602 = EM602 + 16		
+;
+;IF EM602 > 80 THEN
+;	EM602 = 0	
+;END IF
+LDP @MR000
+NCJ #1001
+;TYPE EM602.U,EM603.U,@MR4000.U
+;
+;FOR EM602 = EM602 TO 80 STEP 16
+;
+LD CR2002                ; 常時ON
+MOV EM602 EM602          ; Task0 Main2@MR  Task0 Main2@MR
+LABEL #2006
+LD> EM602 #80            ; Task0 Main2@MR
+CJ #2007
+;	IF @MR4000:EM602 <> 0 THEN
+;
+LD CR2002                ; 常時ON
+LDA EM602                ; Task0 Main2@MR
+CON
+EXT
+CON
+STA.L Z12
+LD<> @MR4000:Z12 #0      ; AUTO Main2
+NCJ #2008
+;		BREAK
+;
+LD CR2002                ; 常時ON
+CJ #2009
+;	END IF	
+;
+LABEL #2008
+;NEXT	
+;
+LD CR2002                ; 常時ON
+LDA EM602                ; Task0 Main2@MR
+CON
+ADD #16
+CON
+STA EM602                ; Task0 Main2@MR
+LDB CR2009               ; 演算結果が負
+CJ #2006
+LABEL #2009
+LABEL #2007
+;IF EM602 < 80 THEN
+;
+LD< EM602 #80            ; Task0 Main2@MR
+NCJ #2010
+;	EM603 = (EM602 / 16) * 100 + DMX(@MR4000:EM602) + #4000
+;
+LD CR2002                ; 常時ON
+LDA EM602                ; Task0 Main2@MR
+CON
+EXT
+CON
+STA.L Z12
+CON
+LDA @MR4000:Z12          ; AUTO Main2
+CON
+DMX
+CON
+STA @VM3
+CON
+LDA EM602                ; Task0 Main2@MR
+CON
+EXT
+CON
+EXT.L
+CON
+DIV.L +16
+CON
+MUL.L +100
+CON
+STA.L @VM4
+CON
+LDA @VM3
+CON
+EXT
+CON
+ADD.L @VM4
+CON
+ADD.L +4000
+CON
+STA EM603                ; Task0 Main2@MR
+;END IF
+;
+LABEL #2010
+;EM602 = EM602 + 16		
+;
+LD CR2002                ; 常時ON
+LDA EM602                ; Task0 Main2@MR
+CON
+EXT
+CON
+ADD.L +16
+CON
+STA EM602                ; Task0 Main2@MR
+;IF EM602 > 80 THEN
+;
+LD> EM602 #80            ; Task0 Main2@MR
+NCJ #2011
+;	EM602 = 0	
+;
+LD CR2002                ; 常時ON
+MOV #0 EM602             ; Task0 Main2@MR
+;END IF
+LABEL #2011
+LABEL #1001
+;
+;ON STG SubRoutine
+;TYPE EM604.U,EM605.U,@MR4500.U
+;	
+;FOR EM604 = EM604 TO 320 STEP 16
+;	IF @MR4500:EM604 <> 0 THEN
+;		BREAK
+;	END IF	
+;NEXT
+;		
+;IF EM604 < 320 THEN
+;	EM605 = (EM604 / 16) * 100 + DMX(@MR4500:EM604) + #4500
+;END IF
+;		
+;EM604 = EM604 + 16	
+;
+;IF EM604 > 320 THEN
+;   EM604 = 0
+;END IF
+LDP @MR000
+NCJ #1002
+;TYPE EM604.U,EM605.U,@MR4500.U
+;
+;FOR EM604 = EM604 TO 320 STEP 16
+;
+LD CR2002                ; 常時ON
+MOV EM604 EM604          ; Task0 Sub@MR  Task0 Sub@MR
+LABEL #2012
+LD> EM604 #320           ; Task0 Sub@MR
+CJ #2013
+;	IF @MR4500:EM604 <> 0 THEN
+;
+LD CR2002                ; 常時ON
+LDA EM604                ; Task0 Sub@MR
+CON
+EXT
+CON
+STA.L Z12
+LD<> @MR4500:Z12 #0      ; ①Sub_RB1_MOVE/動作
+NCJ #2014
+;		BREAK
+;
+LD CR2002                ; 常時ON
+CJ #2015
+;	END IF	
+;
+LABEL #2014
+;NEXT
+;
+LD CR2002                ; 常時ON
+LDA EM604                ; Task0 Sub@MR
+CON
+ADD #16
+CON
+STA EM604                ; Task0 Sub@MR
+LDB CR2009               ; 演算結果が負
+CJ #2012
+LABEL #2015
+LABEL #2013
+;IF EM604 < 320 THEN
+;
+LD< EM604 #320           ; Task0 Sub@MR
+NCJ #2016
+;	EM605 = (EM604 / 16) * 100 + DMX(@MR4500:EM604) + #4500
+;
+LD CR2002                ; 常時ON
+LDA EM604                ; Task0 Sub@MR
+CON
+EXT
+CON
+STA.L Z12
+CON
+LDA @MR4500:Z12          ; ①Sub_RB1_MOVE/動作
+CON
+DMX
+CON
+STA @VM6
+CON
+LDA EM604                ; Task0 Sub@MR
+CON
+EXT
+CON
+EXT.L
+CON
+DIV.L +16
+CON
+MUL.L +100
+CON
+STA.L @VM7
+CON
+LDA @VM6
+CON
+EXT
+CON
+ADD.L @VM7
+CON
+ADD.L +4500
+CON
+STA EM605                ; Task0 Sub@MR
+;END IF
+;
+LABEL #2016
+;EM604 = EM604 + 16	
+;
+LD CR2002                ; 常時ON
+LDA EM604                ; Task0 Sub@MR
+CON
+EXT
+CON
+ADD.L +16
+CON
+STA EM604                ; Task0 Sub@MR
+;IF EM604 > 320 THEN
+;
+LD> EM604 #320           ; Task0 Sub@MR
+NCJ #2017
+;   EM604 = 0
+;
+LD CR2002                ; 常時ON
+MOV #0 EM604             ; Task0 Sub@MR
+;END IF
+LABEL #2017
+LABEL #1002
+;
+;<h1/>Task_Init/ﾀｽｸ初期化
+;[本STG内容]
+;・本Task起動時に必要な初期化処理を記述して下さい
+;・起動Taskの全Init処理終了後、Task_StartのSTGが起動します
+STG LR800                ; _Grp1_Task0_Init.STG
+ENDS
+;<h1/>Task_Start/ﾀｽｸ開始
+;[本STG内容]
+;・Task起動後、以下運転ﾓｰﾄﾞに従い、各STGにJMPします
+;【HOME】	→	LR5200
+;【AUTO】	→	LR5400
+;【MAINTE】	→	LR5600
+;・本STGは追記、修正不要です
+STG LR400                ; _Grp1_Task0_Start.STG
+MPS
+AND R46101               ; _原点復帰中　ﾓｰﾄﾞﾌﾗｸﾞ
+JMP LR5200               ; _Grp1_Task0_HOME.STG
+MRD
+AND R46100               ; _自動運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+JMP LR5400               ; _Grp1_Task0_AUTO.STG
+MPP
+AND R46102               ; _ﾒﾝﾃﾅﾝｽ運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+JMP LR5600               ; _Grp1_Task0_MAINTE.STG
+;<h1/>Task_Finish/ﾀｽｸ終了
+;[本STG内容]
+;・各Taskの終了STGになります
+;・運転ﾓｰﾄﾞに係わらず終了時は本STGを経由して終了して下さい
+;・本STGは追記、修正不要です
+STG LR600                ; _Grp1_Task0_Fin.STG
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+ANB @MR001               ; TASK0 ERROR
+ANL
+RES R42600               ; Grp1_Task0_ﾎﾟｰｽﾞ許可
+CON
+RES R41000               ; _Grp1_Task0_起動中ﾌﾗｸﾞ
+CON
+ENDS
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+;<h1/>HOME/原点復帰
+;[本STG内容]
+;・STG @MR1000の続きから各Taskの原点復帰動作を記述する
+;・動作終了時は@MR1515にJMPする事
+STG LR5200               ; _Grp1_Task0_HOME.STG
+JMP @MR1000              ; HOME
+STG @MR1000              ; HOME
+RES MR20000              ; TASK0復帰完了
+CON
+SET @MR1002              ; HOME中
+CON
+JMP @MR1100
+;TASK1復帰待ち
+STG @MR1100
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+TMR @16 #10              ; ｲﾆｼｬﾗｲｽﾞﾘｾｯﾄWAIT
+CON
+AND @T16                 ; ｲﾆｼｬﾗｲｽﾞﾘｾｯﾄWAIT
+AND MR20001              ; TASK1復帰完了
+JMP @MR1101
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+;RB2_搬送ｽﾃｰｼﾞY軸_原点復帰
+STG @MR1101
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+SET @MR4900              ; ④Sub_RB2_HOME
+CON
+JMP @MR1102
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR1102
+AND @MR4901              ; ④Sub_RB2_HOME/完了
+RES @MR4901              ; ④Sub_RB2_HOME/完了
+CON
+JMP @MR1103
+;RB1_搬送ｽﾃｰｼﾞX軸_原点復帰
+STG @MR1103
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+SET @MR4600              ; ②Sub_RB1_HOME
+CON
+JMP @MR1104
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR1104
+AND @MR4601              ; ②Sub_RB1_HOME/完了
+RES @MR4601              ; ②Sub_RB1_HOME/完了
+CON
+JMP @MR1105
+;RB3_ｺﾞﾆｵｽﾃｰｼﾞX方向補正_原点復帰
+STG @MR1105
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+SET @MR5200              ; ⑥Sub_RB3_HOME
+CON
+JMP @MR1106
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+LDP @MR1106
+MSTRT MSG_DISP #1 #2 #0 #0
+STG @MR1106
+AND @MR5201              ; ⑥Sub_RB3_HOME/完了
+RES @MR5201              ; ⑥Sub_RB3_HOME/完了
+CON
+JMP @MR1107
+;RB4_ｺﾞﾆｵｽﾃｰｼﾞY方向補正_原点復帰
+STG @MR1107
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+SET @MR5500              ; ⑧Sub_RB4_HOME
+CON
+JMP @MR1108
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR1108
+AND @MR5501              ; ⑧Sub_RB4_HOME/完了
+RES @MR5501              ; ⑧Sub_RB4_HOME/完了
+CON
+JMP @MR1200
+;RB3_ｺﾞﾆｵｽﾃｰｼﾞY方向補正_移動_基準位置
+STG @MR1200
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+DW #1 EM1304             ; RB3Target Pos
+CON
+SET @MR5100              ; ⑤Sub_RB3_MOVE/動作
+CON
+JMP @MR1201
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR1201
+AND @MR5101              ; ⑤Sub_RB3_MOVE/完了
+RES @MR5101              ; ⑤Sub_RB3_MOVE/完了
+CON
+JMP @MR1202
+;RB4_ｺﾞﾆｵｽﾃｰｼﾞX方向補正_移動_基準位置
+STG @MR1202
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+DW #1 EM1306             ; RB4Target Pos
+CON
+SET @MR5400              ; ⑦Sub_RB4_MOVE/動作
+CON
+JMP @MR1203
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR1203
+AND @MR5401              ; ⑦Sub_RB4_MOVE/完了
+RES @MR5401              ; ⑦Sub_RB4_MOVE/完了
+CON
+JMP @MR1204
+LD @MR1204
+SHOT #50 @MR912          ; ﾒｯｾｰｼﾞ消去
+LD @MR912                ; ﾒｯｾｰｼﾞ消去
+MSTRT MSG_DEL #1 #2
+;RB1_搬送ｽﾃｰｼﾞX軸_移動_ﾜｰｸｾｯﾄ位置
+STG @MR1204
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+DW #1 EM1300             ; RB1Target Pos
+CON
+SET @MR4500              ; ①Sub_RB1_MOVE/動作
+CON
+JMP @MR1205
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR1205
+AND @MR4501              ; ①Sub_RB1_MOVE/完了
+RES @MR4501              ; ①Sub_RB1_MOVE/完了
+CON
+JMP @MR1206
+;RB2_搬送ｽﾃｰｼﾞY軸_移動_ﾜｰｸｾｯﾄ位置
+STG @MR1206
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+DW #1 EM1302             ; RB2Target Pos
+CON
+SET @MR4800              ; ③Sub_RB2_MOVE/動作
+CON
+JMP @MR1207
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR1207
+AND @MR4801              ; ③Sub_RB2_MOVE/完了
+RES @MR4801              ; ③Sub_RB2_MOVE/完了
+CON
+JMP @MR1208
+;ﾜｰｸｸﾗﾝﾌﾟ上昇
+STG @MR1208
+SET MR7201               ; ﾜｰｸｸﾗﾝﾌﾟ上昇
+CON
+RES MR7200               ; ﾜｰｸｸﾗﾝﾌﾟ下降
+CON
+MPS
+LDB MR4003               ; ﾜｰｸｸﾗﾝﾌﾟ手前側 上昇端ERR
+ANB R4002                ; ﾜｰｸｸﾗﾝﾌﾟ手前側 下降端
+AND R4003                ; ﾜｰｸｸﾗﾝﾌﾟ手前側 上昇端
+ANB MR4005               ; ﾜｰｸｸﾗﾝﾌﾟ奥側 上昇端ERR
+ANB R4004                ; ﾜｰｸｸﾗﾝﾌﾟ奥側 下降端
+AND R4005                ; ﾜｰｸｸﾗﾝﾌﾟ奥側 上昇端
+ANL
+JMP @MR1209
+MPP
+LD MR4003                ; ﾜｰｸｸﾗﾝﾌﾟ手前側 上昇端ERR
+OR MR4005                ; ﾜｰｸｸﾗﾝﾌﾟ奥側 上昇端ERR
+AND R41200               ; TASK0 PAUSE 要求
+ANL
+SET @MR1900              ; Main1 HALT許可
+;ﾜｰｸｸﾗﾝﾌﾟ後退
+STG @MR1209
+SET MR7203               ; ﾜｰｸｸﾗﾝﾌﾟ後退
+CON
+RES MR7202               ; ﾜｰｸｸﾗﾝﾌﾟ前進
+CON
+MPS
+LDB MR4007               ; ﾜｰｸｸﾗﾝﾌﾟ手前側 後退端ERR
+ANB R4006                ; ﾜｰｸｸﾗﾝﾌﾟ手前側 前進端
+AND R4007                ; ﾜｰｸｸﾗﾝﾌﾟ手前側 後退端
+ANB MR4009               ; ﾜｰｸｸﾗﾝﾌﾟ奥側 後退端ERR
+ANB R4008                ; ﾜｰｸｸﾗﾝﾌﾟ奥側 前進端
+AND R4009                ; ﾜｰｸｸﾗﾝﾌﾟ奥側 後退端
+ANL
+JMP @MR1300
+MPP
+LD MR4007                ; ﾜｰｸｸﾗﾝﾌﾟ手前側 後退端ERR
+OR MR4009                ; ﾜｰｸｸﾗﾝﾌﾟ奥側 後退端ERR
+AND R41200               ; TASK0 PAUSE 要求
+ANL
+SET @MR1900              ; Main1 HALT許可
+;ﾜｰｸ有無確認
+STG @MR1300
+MPS
+LDB R4012                ; ﾜｰｸ有無検出(遮光ON)
+ANB R4013                ; ﾜｰｸ浮き検出 奥側(ON浮き)
+ANB R4014                ; ﾜｰｸ浮き検出 手前側(ON浮き)
+ANL
+JMP @MR1303
+MPP
+LD R4012                 ; ﾜｰｸ有無検出(遮光ON)
+OR R4013                 ; ﾜｰｸ浮き検出 奥側(ON浮き)
+OR R4014                 ; ﾜｰｸ浮き検出 手前側(ON浮き)
+ANL
+TMR @17 #20              ; WAIT
+CON
+AND @T17                 ; WAIT
+SET MR20100              ; ﾜｰｸ給除材中
+CON
+JMP @MR1301
+;ﾜｰｸ除材要求 ｴﾗｰ100
+LD @MR1301
+ANB R39004               ; ｴﾗｰ中
+MPS
+AND R4012                ; ﾜｰｸ有無検出(遮光ON)
+DW #4012 @DM2            ; SensorNo /ERROR_DISP
+MRD
+AND R4013                ; ﾜｰｸ浮き検出 奥側(ON浮き)
+DW #4013 @DM2            ; SensorNo /ERROR_DISP
+MPP
+AND R4014                ; ﾜｰｸ浮き検出 手前側(ON浮き)
+DW #4014 @DM2            ; SensorNo /ERROR_DISP
+STG @MR1301
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+ANB R39004               ; ｴﾗｰ中
+ANL
+SET R39004               ; ｴﾗｰ中
+CON
+DW $7000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #100 @DM1             ; ErrorNo /ERROR_DISP
+CON
+SET @MR100               ; Task0 ERROR
+CON
+JMP @MR1302
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR1302
+SET @MR1900              ; Main1 HALT許可
+CON
+AND @MR101               ; Task0 ｴﾗｰ完了
+RES @MR101               ; Task0 ｴﾗｰ完了
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+AND @MR105               ; SW1
+RES MR20100              ; ﾜｰｸ給除材中
+CON
+JMP @MR1300
+;終了へ
+STG @MR1303
+JMP @MR1515              ; HOME END
+;HOME END
+STG @MR1515              ; HOME END
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+ANB @MR001               ; TASK0 ERROR
+ANL
+SET MR20000              ; TASK0復帰完了
+CON
+RES @MR1002              ; HOME中
+CON
+JMP LR600                ; _Grp1_Task0_Fin.STG
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+;<h1/>AUTO/自動動作
+STG LR5400               ; _Grp1_Task0_AUTO.STG
+JMP @MR3000              ; AUTO Main1
+;<h1/>Auto-Main1/Autoﾒｲﾝﾙｰﾁﾝ1
+;[本STG内容]
+;・各TaskのAUTO動作を記述して下さい
+;・動作ﾓｰﾄﾞは「AUTOAC」に格納されています(1～32)
+;・@MR3000:AUTO_Main1開始、@MR3001:AUTO_Main1完了、@MR3002:AUTO_Main1動作中
+STG @MR3000              ; AUTO Main1
+MPS
+ANB R47800               ; _Group1　ﾒﾝﾃ動作定停止移行中
+MPS
+ANB R57300               ; Task0 停止要求
+SET @MR3002              ; AUTO Main1 Busy
+CON
+JMP @MR3003
+MPP
+AND R57300               ; Task0 停止要求
+JMP @MR3915              ; AUTO END
+MPP
+AND R47800               ; _Group1　ﾒﾝﾃ動作定停止移行中
+JMP @MR3915              ; AUTO END
+STG @MR3003
+JMP @MR3102
+;<h1/>ﾜｰｸ投入要求
+STG @MR3102
+SET MR20100              ; ﾜｰｸ給除材中
+CON
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+MPS
+LDB R57300               ; Task0 停止要求
+ANB R42002               ; ﾄﾚｻﾋﾞ1中
+ANB R42202               ; 上位ﾄﾚｻﾋﾞ送信中
+ANL
+MPS
+LD R4000                 ; ｽﾀｰﾄSW(ﾜｰｸ投入)
+AND R4001                ; ｴﾘｱｾﾝｻ入力
+ANL
+MPS
+LD MR20103               ; ｽﾍﾟｰｻｰ厚さTP表示
+AND R4012                ; ﾜｰｸ有無検出(遮光ON)
+ANL
+SET MR20110              ; 次ﾜｰｸ投入検知
+MPP
+JMP @MR3103
+MPP
+LDB R4000                ; ｽﾀｰﾄSW(ﾜｰｸ投入)
+AND CR2006               ; 1sｸﾛｯｸﾊﾟﾙｽ
+ANL
+OUT MR7000               ; ｽﾀｰﾄSWﾗﾝﾌﾟ(ﾜｰｸ投入)
+MPP
+AND R57300               ; Task0 停止要求
+RES MR20100              ; ﾜｰｸ給除材中
+CON
+JMP @MR3915              ; AUTO END
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+;ﾜｰｸ有無確認
+STG @MR3103
+MPS
+AND R4012                ; ﾜｰｸ有無検出(遮光ON)
+SET MR000                ; Cycleﾀｲﾑｶｳﾝﾄ
+CON
+SET R47000               ; _処理時間1計測開始
+CON
+DW #0 @DM42              ; 計算結果比較回数
+CON
+ZRES DM12000 DM12435     ; 変位ｾﾝｻ1_水平出し前_1  [水平出し後位置表示用_4]
+CON
+MPS
+AND= DM5010 #1           ; _AUTO動作番号
+JMP @MR3106
+MPP
+AND= DM5010 #2           ; _AUTO動作番号
+JMP @MR3300
+MPP
+ANB R4012                ; ﾜｰｸ有無検出(遮光ON)
+JMP @MR3104
+;ﾜｰｸ投入後未検出 ｴﾗｰ101
+STG @MR3104
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+ANB R39004               ; ｴﾗｰ中
+ANL
+SET R39004               ; ｴﾗｰ中
+CON
+DW $1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #101 @DM1             ; ErrorNo /ERROR_DISP
+CON
+DW #4012 @DM2            ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task0 ERROR
+CON
+JMP @MR3105
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR3105
+SET @MR1900              ; Main1 HALT許可
+CON
+AND @MR101               ; Task0 ｴﾗｰ完了
+RES @MR101               ; Task0 ｴﾗｰ完了
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+AND @MR105               ; SW1
+JMP @MR3102
+;ﾜｰｸ浮き確認
+STG @MR3106
+MPS
+LDB R4013                ; ﾜｰｸ浮き検出 奥側(ON浮き)
+ANB R4014                ; ﾜｰｸ浮き検出 手前側(ON浮き)
+ANL
+JMP @MR3200
+MPP
+LD R4013                 ; ﾜｰｸ浮き検出 奥側(ON浮き)
+OR R4014                 ; ﾜｰｸ浮き検出 手前側(ON浮き)
+ANL
+JMP @MR3107
+;ﾜｰｸ投入後浮き検出 ｴﾗｰ102
+LD @MR3107
+ANB R39004               ; ｴﾗｰ中
+MPS
+AND R4013                ; ﾜｰｸ浮き検出 奥側(ON浮き)
+DW #4013 @DM2            ; SensorNo /ERROR_DISP
+MPP
+AND R4014                ; ﾜｰｸ浮き検出 手前側(ON浮き)
+DW #4014 @DM2            ; SensorNo /ERROR_DISP
+STG @MR3107
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+ANB R39004               ; ｴﾗｰ中
+ANL
+SET R39004               ; ｴﾗｰ中
+CON
+DW $1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #102 @DM1             ; ErrorNo /ERROR_DISP
+CON
+SET @MR100               ; Task0 ERROR
+CON
+JMP @MR3105
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR3108
+SET @MR1900              ; Main1 HALT許可
+CON
+AND @MR101               ; Task0 ｴﾗｰ完了
+RES @MR101               ; Task0 ｴﾗｰ完了
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+AND @MR105               ; SW1
+JMP @MR3102
+;<h1/>ﾏﾄﾘｯｸｽｺｰﾄﾞ読取
+STG @MR3200
+MPS
+AND DM2000.4
+ZRES DM20000 DM20049     ; SR_Tｺｰﾄﾞﾃﾞｰﾀ  SR_予約
+CON
+JMP @MR3300
+MPP
+ANB DM2000.4
+SET MR20200              ; SR_読取開始
+CON
+JMP @MR3201
+STG @MR3201
+AND MR20201              ; SR_読取完了
+RES MR20201              ; SR_読取完了
+CON
+JMP @MR3202
+STG @MR3202
+MPS
+ANB MR20215              ; SR_1SL読取通信異常
+JMP @MR3300
+MPP
+AND MR20215              ; SR_1SL読取通信異常
+JMP @MR3203
+STG @MR3203
+RES MR20215              ; SR_1SL読取通信異常
+CON
+JMP @MR3204
+;ｺｰﾄﾞ読取異常 ｴﾗｰ106
+STG @MR3204
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+ANB R39004               ; ｴﾗｰ中
+ANL
+SET R39004               ; ｴﾗｰ中
+CON
+DW $2300 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #106 @DM1             ; ErrorNo /ERROR_DISP
+CON
+DW #0 @DM2               ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task0 ERROR
+CON
+JMP @MR3205
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR3205
+SET @MR1900              ; Main1 HALT許可
+CON
+AND @MR101               ; Task0 ｴﾗｰ完了
+RES @MR101               ; Task0 ｴﾗｰ完了
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+MPS
+AND @MR105               ; SW1
+JMP @MR3200
+MPP
+AND @MR106               ; SW2
+SET R46107               ; _定停止要求
+CON
+JMP @MR3700
+;<h1/>ﾜｰｸ搬送
+STG @MR3300
+@INC.L DM5020            ; _生産ｶｳﾝﾀ1
+CON
+RES MR20100              ; ﾜｰｸ給除材中
+CON
+JMP @MR3301
+;ﾜｰｸｸﾗﾝﾌﾟ前進
+STG @MR3301
+SET MR7202               ; ﾜｰｸｸﾗﾝﾌﾟ前進
+CON
+RES MR7203               ; ﾜｰｸｸﾗﾝﾌﾟ後退
+CON
+MPS
+LDB MR4006               ; ﾜｰｸｸﾗﾝﾌﾟ手前側 前進端ERR
+AND R4006                ; ﾜｰｸｸﾗﾝﾌﾟ手前側 前進端
+ANB R4007                ; ﾜｰｸｸﾗﾝﾌﾟ手前側 後退端
+ANB MR4008               ; ﾜｰｸｸﾗﾝﾌﾟ奥側 前進端ERR
+AND R4008                ; ﾜｰｸｸﾗﾝﾌﾟ奥側 前進端
+ANB R4009                ; ﾜｰｸｸﾗﾝﾌﾟ奥側 後退端
+ANL
+JMP @MR3302
+MPP
+LD MR4006                ; ﾜｰｸｸﾗﾝﾌﾟ手前側 前進端ERR
+OR MR4008                ; ﾜｰｸｸﾗﾝﾌﾟ奥側 前進端ERR
+AND R41200               ; TASK0 PAUSE 要求
+ANL
+SET @MR1900              ; Main1 HALT許可
+;ﾜｰｸｸﾗﾝﾌﾟ下降
+STG @MR3302
+SET MR7200               ; ﾜｰｸｸﾗﾝﾌﾟ下降
+CON
+RES MR7201               ; ﾜｰｸｸﾗﾝﾌﾟ上昇
+CON
+MPS
+LDB MR4002               ; ﾜｰｸｸﾗﾝﾌﾟ手前側 下降端ERR
+AND R4002                ; ﾜｰｸｸﾗﾝﾌﾟ手前側 下降端
+ANB R4003                ; ﾜｰｸｸﾗﾝﾌﾟ手前側 上昇端
+ANB MR4004               ; ﾜｰｸｸﾗﾝﾌﾟ奥側 下降端ERR
+AND R4004                ; ﾜｰｸｸﾗﾝﾌﾟ奥側 下降端
+ANB R4005                ; ﾜｰｸｸﾗﾝﾌﾟ奥側 上昇端
+ANL
+JMP @MR3303
+MPP
+LD MR4002                ; ﾜｰｸｸﾗﾝﾌﾟ手前側 下降端ERR
+OR MR4004                ; ﾜｰｸｸﾗﾝﾌﾟ奥側 下降端ERR
+AND R41200               ; TASK0 PAUSE 要求
+ANL
+SET @MR1900              ; Main1 HALT許可
+;RB2_搬送ｽﾃｰｼﾞY軸_移動_平坦度測定位置
+STG @MR3303
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+DW #2 EM1302             ; RB2Target Pos
+CON
+SET @MR4800              ; ③Sub_RB2_MOVE/動作
+CON
+JMP @MR3304
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR3304
+AND @MR4801              ; ③Sub_RB2_MOVE/完了
+RES @MR4801              ; ③Sub_RB2_MOVE/完了
+CON
+JMP @MR3305
+;<h1/>ｺﾞﾆｵｽﾃｰｼﾞ基準位置へ
+;RB3_ｺﾞﾆｵｽﾃｰｼﾞY方向補正_移動_基準位置
+STG @MR3305
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+DW #1 EM1304             ; RB3Target Pos
+CON
+SET @MR5100              ; ⑤Sub_RB3_MOVE/動作
+CON
+JMP @MR3306
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR3306
+AND @MR5101              ; ⑤Sub_RB3_MOVE/完了
+RES @MR5101              ; ⑤Sub_RB3_MOVE/完了
+CON
+JMP @MR3307
+;RB4_ｺﾞﾆｵｽﾃｰｼﾞX方向補正_移動_基準位置
+STG @MR3307
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+DW #1 EM1306             ; RB4Target Pos
+CON
+SET @MR5400              ; ⑦Sub_RB4_MOVE/動作
+CON
+JMP @MR3308
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR3308
+AND @MR5401              ; ⑦Sub_RB4_MOVE/完了
+RES R47000               ; _処理時間1計測開始
+CON
+SET R47001               ; _処理時間2計測開始
+CON
+RES @MR5401              ; ⑦Sub_RB4_MOVE/完了
+CON
+JMP @MR3309
+;変位ｾﾝｻ状態
+STG @MR3309
+MPS
+AND DM2000.5
+JMP @MR3600
+MPP
+ANB DM2000.5
+TMR @19 #5               ; ｾﾝｻ安定
+CON
+AND @T19                 ; ｾﾝｻ安定
+JMP @MR3310
+;RB3,4補正位置(演算) ﾃﾞｰﾀｸﾘｱ
+;'平面度規格上下限をDFへ変換
+;
+;DM7200.DF=TOF(DM7002.L)/100
+;DM7204.DF=TOF(DM7004.L)/100
+;
+;SET(CR2002,@M913)
+LD @MR3310
+NCJ #1007
+;'平面度規格上下限をDFへ変換
+;
+;DM7200.DF=TOF(DM7002.L)/100
+;
+LD CR2002                ; 常時ON
+LDA.L DM7002             ; 装置基礎ﾃﾞｰﾀ2
+CON
+FLOAT.L
+CON
+DIV.F +100
+CON
+FTODF
+CON
+STA.DF DM7200            ; 平面度規格上限_DF比較用
+;DM7204.DF=TOF(DM7004.L)/100
+;
+LD CR2002                ; 常時ON
+LDA.L DM7004             ; 基礎装置ﾃﾞｰﾀ3
+CON
+FLOAT.L
+CON
+DIV.F +100
+CON
+FTODF
+CON
+STA.DF DM7204            ; 平面度規格下限_DF比較用
+;SET(CR2002,@M913)
+LD CR2002                ; 常時ON
+SET @MR913               ; 変換完了
+LABEL #1007
+;
+STG @MR3310
+AND @MR913               ; 変換完了
+RES @MR913               ; 変換完了
+CON
+JMP @MR3311
+STG @MR3311
+LOGE #0
+CON
+LDA.L EM11200            ; RB3 P1 POS(LO)
+CON
+STA.L EM11254            ; RB3 P10 POS(LO)
+CON
+LDA.L EM11800            ; RB4 P1 POS(LO)
+CON
+STA.L EM11854            ; RB4 P10 POS(LO)
+CON
+JMP @MR3400
+;<h1/>平坦度測定
+;変位ｾﾝｻ状態確認
+STG @MR3400
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+SET @MR5800              ; ⑩Sub_変位ｾﾝｻ状態確認
+CON
+JMP @MR3401
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR3401
+AND @MR5801              ; ⑩Sub_変位ｾﾝｻ状態確認/完了
+RES @MR5801              ; ⑩Sub_変位ｾﾝｻ状態確認/完了
+CON
+JMP @MR3402
+STG @MR3402
+MPS
+ANB @MR909               ; sub⑩停止選択
+JMP @MR3404
+MPP
+AND @MR909               ; sub⑩停止選択
+JMP @MR3403
+STG @MR3403
+RES @MR909               ; sub⑩停止選択
+CON
+MPS
+ANB R46102               ; _ﾒﾝﾃﾅﾝｽ運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+SET R46107               ; _定停止要求
+CON
+JMP @MR3700
+MPP
+AND R46102               ; _ﾒﾝﾃﾅﾝｽ運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+JMP @MR2106
+;平坦度測定
+STG @MR3404
+SET @MR5900              ; ⑪Sub_平坦度測定
+CON
+JMP @MR3405
+STG @MR3405
+AND @MR5901              ; ⑪Sub_平坦度測定/完了
+RES @MR5901              ; ⑪Sub_平坦度測定/完了
+CON
+JMP @MR3406
+STG @MR3406
+MPS
+ANB @MR906               ; SUB⑪停止選択
+MPS
+ANB R46102               ; _ﾒﾝﾃﾅﾝｽ運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+JMP @MR3500
+MPP
+AND R46102               ; _ﾒﾝﾃﾅﾝｽ運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+JMP @MR2106
+MPP
+AND @MR906               ; SUB⑪停止選択
+JMP @MR3407
+STG @MR3407
+RES @MR906               ; SUB⑪停止選択
+CON
+MPS
+ANB R46102               ; _ﾒﾝﾃﾅﾝｽ運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+SET R46107               ; _定停止要求
+CON
+JMP @MR3700
+MPP
+AND R46102               ; _ﾒﾝﾃﾅﾝｽ運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+JMP @MR2106
+;<h1/>ｺﾞﾆｵｽﾃｰｼﾞ補正位置へ
+;RB3_ｺﾞﾆｵｽﾃｰｼﾞY方向補正_移動_補正位置
+STG @MR3500
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+DW #10 EM1304            ; RB3Target Pos
+CON
+SET @MR5100              ; ⑤Sub_RB3_MOVE/動作
+CON
+JMP @MR3501
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR3501
+AND @MR5101              ; ⑤Sub_RB3_MOVE/完了
+RES @MR5101              ; ⑤Sub_RB3_MOVE/完了
+CON
+JMP @MR3502
+;RB4_ｺﾞﾆｵｽﾃｰｼﾞX方向補正_移動_補正位置
+STG @MR3502
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+DW #10 EM1306            ; RB4Target Pos
+CON
+SET @MR5400              ; ⑦Sub_RB4_MOVE/動作
+CON
+JMP @MR3503
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR3503
+AND @MR5401              ; ⑦Sub_RB4_MOVE/完了
+RES @MR5401              ; ⑦Sub_RB4_MOVE/完了
+CON
+JMP @MR3504
+;算出結果比較
+;※算出結果E～Hの差が規格以内で終了
+STG @MR3504
+SET @MR6100              ; ⑫Sub_計算結果比較
+CON
+JMP @MR3505
+STG @MR3505
+AND @MR6101              ; ⑫Sub_計算結果比較/完了
+RES @MR6101              ; ⑫Sub_計算結果比較/完了
+CON
+JMP @MR3506
+STG @MR3506
+MPS
+LDB @MR907               ; sub⑫再補正
+ANB @MR908               ; sub⑫停止選択
+ANL
+JMP @MR3513
+MRD
+LD @MR908                ; sub⑫停止選択
+ANB @MR907               ; sub⑫再補正
+ANL
+JMP @MR3507
+MPP
+LDB @MR908               ; sub⑫停止選択
+AND @MR907               ; sub⑫再補正
+ANL
+JMP @MR3508
+;停止処理
+STG @MR3507
+RES @MR908               ; sub⑫停止選択
+CON
+MPS
+ANB R46102               ; _ﾒﾝﾃﾅﾝｽ運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+RES R47001               ; _処理時間2計測開始
+CON
+SET R46107               ; _定停止要求
+CON
+JMP @MR3700
+MPP
+AND R46102               ; _ﾒﾝﾃﾅﾝｽ運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+JMP @MR2106
+;ﾘﾄﾗｲ処理
+STG @MR3508
+RES @MR907               ; sub⑫再補正
+CON
+JMP @MR3400
+;通常終了
+STG @MR3513
+MPS
+ANB R46102               ; _ﾒﾝﾃﾅﾝｽ運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+JMP @MR3514
+MPP
+AND R46102               ; _ﾒﾝﾃﾅﾝｽ運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+JMP @MR2106
+;<h1/>最小二乗平面算出
+STG @MR3514
+SET @MR5700              ; ⑨Sub_最小二乗平面算出
+CON
+JMP @MR3515
+STG @MR3515
+AND @MR5701              ; ⑨Sub_最小二乗平面算出/完了
+LOGD #0
+CON
+RES R47001               ; _処理時間2計測開始
+CON
+SET R47002               ; _処理時間3計測開始
+CON
+RES @MR5701              ; ⑨Sub_最小二乗平面算出/完了
+CON
+JMP @MR3600
+;<h1/>Task1へ接触ｾﾝｻ高さ測定要求
+STG @MR3600
+MPS
+AND DM2000.6
+JMP @MR3700
+MPP
+ANB DM2000.6
+SET MR20101              ; Task0→Task1測定要求
+CON
+JMP @MR3601
+STG @MR3601
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+AND MR20102              ; Task1→Task0測定開始
+ANL
+RES MR20101              ; Task0→Task1測定要求
+CON
+JMP @MR3602
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR3602
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+ANB MR20102              ; Task1→Task0測定開始
+ANL
+JMP @MR3700
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+;RB2_搬送ｽﾃｰｼﾞY軸_移動_ﾜｰｸｾｯﾄ位置
+STG @MR3700
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+DW #1 EM1302             ; RB2Target Pos
+CON
+SET @MR5200              ; ⑥Sub_RB3_HOME
+CON
+SET @MR5500              ; ⑧Sub_RB4_HOME
+CON
+SET @MR4800              ; ③Sub_RB2_MOVE/動作
+CON
+JMP @MR3701
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR3701
+AND @MR4801              ; ③Sub_RB2_MOVE/完了
+AND @MR5201              ; ⑥Sub_RB3_HOME/完了
+AND @MR5501              ; ⑧Sub_RB4_HOME/完了
+RES @MR5201              ; ⑥Sub_RB3_HOME/完了
+CON
+RES @MR5501              ; ⑧Sub_RB4_HOME/完了
+CON
+RES @MR4801              ; ③Sub_RB2_MOVE/完了
+CON
+JMP @MR3702
+;ﾜｰｸｸﾗﾝﾌﾟ上昇
+STG @MR3702
+SET MR7201               ; ﾜｰｸｸﾗﾝﾌﾟ上昇
+CON
+RES MR7200               ; ﾜｰｸｸﾗﾝﾌﾟ下降
+CON
+MPS
+LDB MR4003               ; ﾜｰｸｸﾗﾝﾌﾟ手前側 上昇端ERR
+ANB R4002                ; ﾜｰｸｸﾗﾝﾌﾟ手前側 下降端
+AND R4003                ; ﾜｰｸｸﾗﾝﾌﾟ手前側 上昇端
+ANB MR4005               ; ﾜｰｸｸﾗﾝﾌﾟ奥側 上昇端ERR
+ANB R4004                ; ﾜｰｸｸﾗﾝﾌﾟ奥側 下降端
+AND R4005                ; ﾜｰｸｸﾗﾝﾌﾟ奥側 上昇端
+ANL
+JMP @MR3703
+MPP
+LD MR4003                ; ﾜｰｸｸﾗﾝﾌﾟ手前側 上昇端ERR
+OR MR4005                ; ﾜｰｸｸﾗﾝﾌﾟ奥側 上昇端ERR
+AND R41200               ; TASK0 PAUSE 要求
+ANL
+SET @MR1900              ; Main1 HALT許可
+;ﾜｰｸｸﾗﾝﾌﾟ後退
+STG @MR3703
+SET MR7203               ; ﾜｰｸｸﾗﾝﾌﾟ後退
+CON
+RES MR7202               ; ﾜｰｸｸﾗﾝﾌﾟ前進
+CON
+MPS
+LDB MR4007               ; ﾜｰｸｸﾗﾝﾌﾟ手前側 後退端ERR
+ANB R4006                ; ﾜｰｸｸﾗﾝﾌﾟ手前側 前進端
+AND R4007                ; ﾜｰｸｸﾗﾝﾌﾟ手前側 後退端
+ANB MR4009               ; ﾜｰｸｸﾗﾝﾌﾟ奥側 後退端ERR
+ANB R4008                ; ﾜｰｸｸﾗﾝﾌﾟ奥側 前進端
+AND R4009                ; ﾜｰｸｸﾗﾝﾌﾟ奥側 後退端
+ANL
+JMP @MR3704
+MPP
+LD MR4007                ; ﾜｰｸｸﾗﾝﾌﾟ手前側 後退端ERR
+OR MR4009                ; ﾜｰｸｸﾗﾝﾌﾟ奥側 後退端ERR
+AND R41200               ; TASK0 PAUSE 要求
+ANL
+SET @MR1900              ; Main1 HALT許可
+;先頭へ
+LD @MR910                ; CT
+RES @MR910               ; CT
+CON
+RES MR000                ; Cycleﾀｲﾑｶｳﾝﾄ
+STG @MR3704
+@INC.L DM5022            ; _生産ｶｳﾝﾀ2
+CON
+RES R47002               ; _処理時間3計測開始
+CON
+SET @MR910               ; CT
+CON
+MPS
+ANB LR100                ; _割り込みSW1　ON/OFF状態
+JMP @MR3000              ; AUTO Main1
+MPP
+AND LR100                ; _割り込みSW1　ON/OFF状態
+SET R46107               ; _定停止要求
+CON
+JMP @MR3000              ; AUTO Main1
+;<h1/>Auto終了処理
+STG @MR3915              ; AUTO END
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+ANB @MR001               ; TASK0 ERROR
+ANB @MR4002              ; Main2 Busy
+ANL
+RES @MR3002              ; AUTO Main1 Busy
+CON
+JMP LR600                ; _Grp1_Task0_Fin.STG
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+;<h1/>Auto-Main2/Autoﾒｲﾝﾙｰﾁﾝ2
+;[本STG内容]
+;・@MR4000の起動はMain1にて行う事
+;・@MR4000:AUTO_Main2開始、@MR4001:AUTO_Main2完了、@MR4002:AUTO_Main2動作中
+STG @MR4000              ; AUTO Main2
+SET @MR4002              ; Main2 Busy
+CON
+JMP @MR4003
+STG @MR4003
+JMP @MR4415              ; Main2 END
+STG @MR4415              ; Main2 END
+SET @MR4001              ; Main2 END
+CON
+RES @MR4002              ; Main2 Busy
+CON
+ENDS
+;<h1/>MAINTE/ﾒﾝﾃﾅﾝｽ動作
+;[本STG内容]
+;・各TaskのMAINTE動作を記述して下さい
+;・動作ﾓｰﾄﾞは「MAINTEAC*」に格納されています(1～32)
+;・動作終了時は@MR2915にJMPして下さい
+STG LR5600               ; _Grp1_Task0_MAINTE.STG
+JMP @MR2000
+STG @MR2000
+SET @MR2002              ; ﾒﾝﾃ中
+CON
+JMP @MR2003
+STG @MR2003
+MPS
+AND= DM4110 #1           ; _Group1　ﾒﾝﾃ動作番号
+JMP @MR2100
+MRD
+AND= DM4110 #2           ; _Group1　ﾒﾝﾃ動作番号
+JMP @MR2103
+MRD
+AND= DM4110 #3           ; _Group1　ﾒﾝﾃ動作番号
+JMP @MR2106
+MRD
+AND= DM4110 #4           ; _Group1　ﾒﾝﾃ動作番号
+JMP @MR2109
+MPP
+LD<> DM4110 #1           ; _Group1　ﾒﾝﾃ動作番号
+AND<> DM4110 #2          ; _Group1　ﾒﾝﾃ動作番号
+AND<> DM4110 #3          ; _Group1　ﾒﾝﾃ動作番号
+AND<> DM4110 #4          ; _Group1　ﾒﾝﾃ動作番号
+ANL
+JMP @MR2915              ; Mainte END
+;<h1/>ﾒﾝﾃ#1_XYｽﾃｰｼﾞ動作
+STG @MR2100
+JMP @MR2101
+;SELECT_ACT_画面1
+;①[[投入]]ワーク投入動作をします。
+;②[[測定]]測定位置に移動します。
+;③[[ｸﾗﾝﾌﾟ]ワーククランプ動作をします。
+;④[[定停止]]動作を終了します。
+STG @MR2101
+ANB R39204               ; SELECT_ACT Interlock
+SET R39204               ; SELECT_ACT Interlock
+CON
+MPS
+SET @MR1900              ; Main1 HALT許可
+CON
+DW #1 @DM31              ; ScreenNo /SELECT_ACT
+CON
+DW #4 @DM32              ; SW1_No /SELECT_ACT
+CON
+DW #5 @DM33              ; SW2_No /SELECT_ACT
+CON
+DW #6 @DM34              ; SW3_No /SELECT_ACT
+CON
+DW #3 @DM35              ; SW4_No /SELECT_ACT
+CON
+DW #0 @DM36              ; Bz_Use /SELECT_ACT
+MPP
+SET @MR200               ; Task0 SELECT_ACT
+CON
+JMP @MR2102
+STG @MR2102
+SET @MR1900              ; Main1 HALT許可
+CON
+AND @MR201               ; Task0 SEL_ACT END
+RES @MR201               ; Task0 SEL_ACT END
+CON
+RES R39204               ; SELECT_ACT Interlock
+CON
+MPS
+AND @MR205               ; SW1
+DW #1 @DM10              ; ﾒﾝﾃ動作ｺｰﾄﾞ
+CON
+JMP @MR2200
+MRD
+AND @MR206               ; SW2
+DW #2 @DM10              ; ﾒﾝﾃ動作ｺｰﾄﾞ
+CON
+JMP @MR2200
+MRD
+AND @MR207               ; SW3
+DW #3 @DM10              ; ﾒﾝﾃ動作ｺｰﾄﾞ
+CON
+JMP @MR2200
+MPP
+AND @MR208               ; SW4
+DW #0 @DM10              ; ﾒﾝﾃ動作ｺｰﾄﾞ
+CON
+JMP @MR2914              ; ﾒﾝﾃ終了
+;<h1/>ﾒﾝﾃ#2_ｺﾞﾆｵｽﾃｰｼﾞ動作
+STG @MR2103
+JMP @MR2104
+;SELECT_ACT_画面2
+;①[[基準位置]]原点に移動します。
+;④[[定停止]]動作を終了します。
+STG @MR2104
+ANB R39204               ; SELECT_ACT Interlock
+SET R39204               ; SELECT_ACT Interlock
+CON
+MPS
+SET @MR1900              ; Main1 HALT許可
+CON
+DW #2 @DM31              ; ScreenNo /SELECT_ACT
+CON
+DW #7 @DM32              ; SW1_No /SELECT_ACT
+CON
+DW #0 @DM33              ; SW2_No /SELECT_ACT
+CON
+DW #0 @DM34              ; SW3_No /SELECT_ACT
+CON
+DW #3 @DM35              ; SW4_No /SELECT_ACT
+CON
+DW #0 @DM36              ; Bz_Use /SELECT_ACT
+MPP
+SET @MR200               ; Task0 SELECT_ACT
+CON
+JMP @MR2105
+STG @MR2105
+SET @MR1900              ; Main1 HALT許可
+CON
+AND @MR201               ; Task0 SEL_ACT END
+RES @MR201               ; Task0 SEL_ACT END
+CON
+RES R39204               ; SELECT_ACT Interlock
+CON
+MPS
+AND @MR205               ; SW1
+DW #4 @DM10              ; ﾒﾝﾃ動作ｺｰﾄﾞ
+CON
+JMP @MR2200
+MPP
+AND @MR208               ; SW4
+DW #0 @DM10              ; ﾒﾝﾃ動作ｺｰﾄﾞ
+CON
+JMP @MR2914              ; ﾒﾝﾃ終了
+;<h1/>ﾒﾝﾃ#3_測定動作
+STG @MR2106
+JMP @MR2107
+;SELECT_ACT_画面3
+;①[[測定1]]変位ｾﾝｻ測定をします。
+;②[[水平出し]]変位ｾﾝｻ測定結果に合わせてｺﾞﾆｵｽﾃｰｼﾞにて水平出しをします。
+;③[[測定2]]接触ｾﾝｻ測定をします。
+;④[[定停止]]動作を終了します。
+STG @MR2107
+ANB R39204               ; SELECT_ACT Interlock
+SET R39204               ; SELECT_ACT Interlock
+CON
+MPS
+SET @MR1900              ; Main1 HALT許可
+CON
+DW #3 @DM31              ; ScreenNo /SELECT_ACT
+CON
+DW #8 @DM32              ; SW1_No /SELECT_ACT
+CON
+DW #9 @DM33              ; SW2_No /SELECT_ACT
+CON
+DW #10 @DM34             ; SW3_No /SELECT_ACT
+CON
+DW #3 @DM35              ; SW4_No /SELECT_ACT
+CON
+DW #0 @DM36              ; Bz_Use /SELECT_ACT
+MPP
+SET @MR200               ; Task0 SELECT_ACT
+CON
+JMP @MR2108
+STG @MR2108
+SET @MR1900              ; Main1 HALT許可
+CON
+AND @MR201               ; Task0 SEL_ACT END
+RES @MR201               ; Task0 SEL_ACT END
+CON
+RES R39204               ; SELECT_ACT Interlock
+CON
+MPS
+AND @MR205               ; SW1
+DW #5 @DM10              ; ﾒﾝﾃ動作ｺｰﾄﾞ
+CON
+JMP @MR2200
+MRD
+AND @MR206               ; SW2
+DW #6 @DM10              ; ﾒﾝﾃ動作ｺｰﾄﾞ
+CON
+JMP @MR2200
+MRD
+AND @MR207               ; SW3
+DW #7 @DM10              ; ﾒﾝﾃ動作ｺｰﾄﾞ
+CON
+JMP @MR2200
+MPP
+AND @MR208               ; SW4
+DW #0 @DM10              ; ﾒﾝﾃ動作ｺｰﾄﾞ
+CON
+JMP @MR2914              ; ﾒﾝﾃ終了
+;<h1/>ﾒﾝﾃ#4_基準出しﾓｰﾄﾞ
+STG @MR2109
+JMP @MR2110
+;SELECT_ACT_画面4
+;①[[基準出し]]基準治具を用いてゼロ位置を設定します。
+;④[[定停止]]動作を終了します。
+STG @MR2110
+ANB R39204               ; SELECT_ACT Interlock
+SET R39204               ; SELECT_ACT Interlock
+CON
+MPS
+SET @MR1900              ; Main1 HALT許可
+CON
+DW #4 @DM31              ; ScreenNo /SELECT_ACT
+CON
+DW #11 @DM32             ; SW1_No /SELECT_ACT
+CON
+DW #0 @DM33              ; SW2_No /SELECT_ACT
+CON
+DW #0 @DM34              ; SW3_No /SELECT_ACT
+CON
+DW #3 @DM35              ; SW4_No /SELECT_ACT
+CON
+DW #0 @DM36              ; Bz_Use /SELECT_ACT
+MPP
+SET @MR200               ; Task0 SELECT_ACT
+CON
+JMP @MR2111
+STG @MR2111
+SET @MR1900              ; Main1 HALT許可
+CON
+AND @MR201               ; Task0 SEL_ACT END
+RES @MR201               ; Task0 SEL_ACT END
+CON
+RES R39204               ; SELECT_ACT Interlock
+CON
+MPS
+AND @MR205               ; SW1
+DW #8 @DM10              ; ﾒﾝﾃ動作ｺｰﾄﾞ
+CON
+JMP @MR2200
+MPP
+AND @MR208               ; SW4
+DW #0 @DM10              ; ﾒﾝﾃ動作ｺｰﾄﾞ
+CON
+JMP @MR2914              ; ﾒﾝﾃ終了
+;ｽﾃｯﾌﾟor通常　か選択
+STG @MR2200
+MPS
+MSTRT SELECT_POST #1 MyTask #0 @MR2005;自ﾀｽｸ番号
+MPP
+AND @MR2005
+RES @MR2005
+CON
+JMP @MR2202
+LD= @DM10 #1             ; ﾒﾝﾃ動作ｺｰﾄﾞ
+ANB R4010                ; 接触式ｾﾝｻ 下降端
+AND R4011                ; 接触式ｾﾝｻ 上昇端
+AND R4001                ; ｴﾘｱｾﾝｻ入力
+AND R35211               ; RB3原点復帰済
+AND<=.L DM20810 +2000    ; 軸3 現在座標
+AND>=.L DM20810 -2000    ; 軸3 現在座標
+AND R35311               ; RB4原点復帰済
+AND<=.L DM20870 +2000    ; 軸4 現在座標
+AND>=.L DM20870 -200     ; 軸4 現在座標
+OUT @MR800               ; ﾒﾝﾃｺｰﾄﾞ1条件OK
+LD= @DM10 #2             ; ﾒﾝﾃ動作ｺｰﾄﾞ
+ANB R4010                ; 接触式ｾﾝｻ 下降端
+AND R4011                ; 接触式ｾﾝｻ 上昇端
+AND R4001                ; ｴﾘｱｾﾝｻ入力
+AND R35211               ; RB3原点復帰済
+AND<=.L DM20810 +2000    ; 軸3 現在座標
+AND>=.L DM20810 -2000    ; 軸3 現在座標
+AND R35311               ; RB4原点復帰済
+AND<=.L DM20870 +2000    ; 軸4 現在座標
+AND>=.L DM20870 -200     ; 軸4 現在座標
+OUT @MR801               ; ﾒﾝﾃｺｰﾄﾞ2条件OK
+LD= @DM10 #3             ; ﾒﾝﾃ動作ｺｰﾄﾞ
+ANB R4010                ; 接触式ｾﾝｻ 下降端
+AND R4011                ; 接触式ｾﾝｻ 上昇端
+AND R4001                ; ｴﾘｱｾﾝｻ入力
+OUT @MR802               ; ﾒﾝﾃｺｰﾄﾞ3条件OK
+LD= @DM10 #4             ; ﾒﾝﾃ動作ｺｰﾄﾞ
+ANB R4010                ; 接触式ｾﾝｻ 下降端
+AND R4001                ; ｴﾘｱｾﾝｻ入力
+AND R35211               ; RB3原点復帰済
+AND<=.L DM20810 +2000    ; 軸3 現在座標
+AND>=.L DM20810 -2000    ; 軸3 現在座標
+AND R35311               ; RB4原点復帰済
+AND<=.L DM20870 +2000    ; 軸4 現在座標
+AND>=.L DM20870 -2000    ; 軸4 現在座標
+OUT @MR803               ; ﾒﾝﾃｺｰﾄﾞ4条件OK
+LD= @DM10 #5             ; ﾒﾝﾃ動作ｺｰﾄﾞ
+AND=.L DM20690 EM10000   ; 軸1 現在座標  RB1 P1 POS(LO)
+AND=.L DM20750 EM10606   ; 軸2 現在座標  RB2 P2 POS(LO)
+AND R35211               ; RB3原点復帰済
+AND R35311               ; RB4原点復帰済
+AND R4001                ; ｴﾘｱｾﾝｻ入力
+AND R4012                ; ﾜｰｸ有無検出(遮光ON)
+OUT @MR804               ; ﾒﾝﾃｺｰﾄﾞ5条件OK
+LD= @DM10 #6             ; ﾒﾝﾃ動作ｺｰﾄﾞ
+AND=.L DM20690 EM10000   ; 軸1 現在座標  RB1 P1 POS(LO)
+AND=.L DM20750 EM10606   ; 軸2 現在座標  RB2 P2 POS(LO)
+AND R35211               ; RB3原点復帰済
+AND R35311               ; RB4原点復帰済
+AND R4001                ; ｴﾘｱｾﾝｻ入力
+AND R4012                ; ﾜｰｸ有無検出(遮光ON)
+ANB R4010                ; 接触式ｾﾝｻ 下降端
+AND R4011                ; 接触式ｾﾝｻ 上昇端
+OUT @MR805               ; ﾒﾝﾃｺｰﾄﾞ6条件OK
+LD= @DM10 #7             ; ﾒﾝﾃ動作ｺｰﾄﾞ
+AND=.L DM20690 EM10000   ; 軸1 現在座標  RB1 P1 POS(LO)
+AND=.L DM20750 EM10606   ; 軸2 現在座標  RB2 P2 POS(LO)
+AND R35211               ; RB3原点復帰済
+AND R35311               ; RB4原点復帰済
+AND R4001                ; ｴﾘｱｾﾝｻ入力
+AND R4012                ; ﾜｰｸ有無検出(遮光ON)
+ANB DM2000.6
+OUT @MR806               ; ﾒﾝﾃｺｰﾄﾞ7条件OK
+LD= @DM10 #8             ; ﾒﾝﾃ動作ｺｰﾄﾞ
+ANB R4010                ; 接触式ｾﾝｻ 下降端
+AND R4011                ; 接触式ｾﾝｻ 上昇端
+AND R4001                ; ｴﾘｱｾﾝｻ入力
+AND R35211               ; RB3原点復帰済
+AND R35311               ; RB4原点復帰済
+AND=.L DM20690 EM10000   ; 軸1 現在座標  RB1 P1 POS(LO)
+AND=.L DM20750 EM10600   ; 軸2 現在座標  RB2 P1 POS(LO)
+AND R4012                ; ﾜｰｸ有無検出(遮光ON)
+ANB DM2000.6
+OUT @MR807               ; ﾒﾝﾃｺｰﾄﾞ8条件OK
+STG @MR2202
+MPS
+TMR @29 #10              ; time up
+CON
+AND @T29                 ; time up
+JMP @MR2900
+MPP
+ANB @T29                 ; time up
+MPS
+LD= @DM10 #1             ; ﾒﾝﾃ動作ｺｰﾄﾞ
+AND @MR800               ; ﾒﾝﾃｺｰﾄﾞ1条件OK
+ANL
+JMP @MR2300
+MRD
+LD= @DM10 #2             ; ﾒﾝﾃ動作ｺｰﾄﾞ
+AND @MR801               ; ﾒﾝﾃｺｰﾄﾞ2条件OK
+ANL
+JMP @MR2309
+MRD
+LD= @DM10 #3             ; ﾒﾝﾃ動作ｺｰﾄﾞ
+AND @MR802               ; ﾒﾝﾃｺｰﾄﾞ3条件OK
+ANL
+JMP @MR2402
+MRD
+LD= @DM10 #4             ; ﾒﾝﾃ動作ｺｰﾄﾞ
+AND @MR803               ; ﾒﾝﾃｺｰﾄﾞ4条件OK
+ANL
+JMP @MR2410
+MRD
+LD= @DM10 #5             ; ﾒﾝﾃ動作ｺｰﾄﾞ
+AND @MR804               ; ﾒﾝﾃｺｰﾄﾞ5条件OK
+ANL
+JMP @MR2203
+MRD
+LD= @DM10 #6             ; ﾒﾝﾃ動作ｺｰﾄﾞ
+AND @MR805               ; ﾒﾝﾃｺｰﾄﾞ6条件OK
+ANL
+JMP @MR2203
+MRD
+LD= @DM10 #7             ; ﾒﾝﾃ動作ｺｰﾄﾞ
+AND @MR806               ; ﾒﾝﾃｺｰﾄﾞ7条件OK
+ANL
+JMP @MR2603
+MPP
+LD= @DM10 #8             ; ﾒﾝﾃ動作ｺｰﾄﾞ
+AND @MR807               ; ﾒﾝﾃｺｰﾄﾞ8条件OK
+ANL
+JMP @MR2700
+;RB3,4補正位置(演算) ﾃﾞｰﾀｸﾘｱ
+;'平面度規格上下限をDFへ変換
+;
+;DM7200.DF=TOF(DM7002.L)/100
+;DM7204.DF=TOF(DM7004.L)/100
+;
+;SET(CR2002,@M913)
+LD @MR2203
+NCJ #1008
+;'平面度規格上下限をDFへ変換
+;
+;DM7200.DF=TOF(DM7002.L)/100
+;
+LD CR2002                ; 常時ON
+LDA.L DM7002             ; 装置基礎ﾃﾞｰﾀ2
+CON
+FLOAT.L
+CON
+DIV.F +100
+CON
+FTODF
+CON
+STA.DF DM7200            ; 平面度規格上限_DF比較用
+;DM7204.DF=TOF(DM7004.L)/100
+;
+LD CR2002                ; 常時ON
+LDA.L DM7004             ; 基礎装置ﾃﾞｰﾀ3
+CON
+FLOAT.L
+CON
+DIV.F +100
+CON
+FTODF
+CON
+STA.DF DM7204            ; 平面度規格下限_DF比較用
+;SET(CR2002,@M913)
+LD CR2002                ; 常時ON
+SET @MR913               ; 変換完了
+LABEL #1008
+;
+STG @MR2203
+AND @MR913               ; 変換完了
+RES @MR913               ; 変換完了
+CON
+DW #0 @DM42              ; 計算結果比較回数
+CON
+LDA.L EM11200            ; RB3 P1 POS(LO)
+CON
+STA.L EM11254            ; RB3 P10 POS(LO)
+CON
+LDA.L EM11800            ; RB4 P1 POS(LO)
+CON
+STA.L EM11854            ; RB4 P10 POS(LO)
+CON
+JMP @MR2500
+;<h1/>ﾒﾝﾃｺｰﾄﾞ1動作/Maintenance code 1 Operation
+STG @MR2300
+MPS
+LD R35011                ; RB1原点復帰済
+AND R35111               ; RB2原点復帰済
+AND=.L DM20690 EM10000   ; 軸1 現在座標  RB1 P1 POS(LO)
+ANL
+JMP @MR2307
+MPP
+LDB R35011               ; RB1原点復帰済
+ORB R35111               ; RB2原点復帰済
+OR<>.L DM20690 EM10000   ; 軸1 現在座標  RB1 P1 POS(LO)
+ANL
+JMP @MR2301
+;RB2_搬送ｽﾃｰｼﾞY軸_原点復帰
+STG @MR2301
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+SET @MR4900              ; ④Sub_RB2_HOME
+CON
+JMP @MR2302
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR2302
+AND @MR4901              ; ④Sub_RB2_HOME/完了
+RES @MR4901              ; ④Sub_RB2_HOME/完了
+CON
+JMP @MR2303
+;RB1_搬送ｽﾃｰｼﾞX軸_原点復帰
+STG @MR2303
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+SET @MR4600              ; ②Sub_RB1_HOME
+CON
+JMP @MR2304
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR2304
+AND @MR4601              ; ②Sub_RB1_HOME/完了
+RES @MR4601              ; ②Sub_RB1_HOME/完了
+CON
+JMP @MR2305
+;RB1_搬送ｽﾃｰｼﾞX軸_移動_ﾜｰｸｾｯﾄ位置
+STG @MR2305
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+DW #1 EM1300             ; RB1Target Pos
+CON
+SET @MR4500              ; ①Sub_RB1_MOVE/動作
+CON
+JMP @MR2306
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR2306
+AND @MR4501              ; ①Sub_RB1_MOVE/完了
+RES @MR4501              ; ①Sub_RB1_MOVE/完了
+CON
+JMP @MR2307
+;RB2_搬送ｽﾃｰｼﾞY軸_移動_ﾜｰｸｾｯﾄ位置
+STG @MR2307
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+DW #1 EM1302             ; RB2Target Pos
+CON
+SET @MR4800              ; ③Sub_RB2_MOVE/動作
+CON
+JMP @MR2308
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR2308
+AND @MR4801              ; ③Sub_RB2_MOVE/完了
+RES @MR4801              ; ③Sub_RB2_MOVE/完了
+CON
+JMP @MR2101
+;<h1/>ﾒﾝﾃｺｰﾄﾞ2動作/Maintenance code 2 Operation
+STG @MR2309
+MPS
+LD R35011                ; RB1原点復帰済
+AND R35111               ; RB2原点復帰済
+AND=.L DM20690 EM10000   ; 軸1 現在座標  RB1 P1 POS(LO)
+ANL
+JMP @MR2400
+MPP
+LDB R35011               ; RB1原点復帰済
+ORB R35111               ; RB2原点復帰済
+OR<>.L DM20690 EM10000   ; 軸1 現在座標  RB1 P1 POS(LO)
+ANL
+JMP @MR2310
+;RB2_搬送ｽﾃｰｼﾞY軸_原点復帰
+STG @MR2310
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+SET @MR4900              ; ④Sub_RB2_HOME
+CON
+JMP @MR2311
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR2311
+AND @MR4901              ; ④Sub_RB2_HOME/完了
+RES @MR4901              ; ④Sub_RB2_HOME/完了
+CON
+JMP @MR2312
+;RB1_搬送ｽﾃｰｼﾞX軸_原点復帰
+STG @MR2312
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+SET @MR4600              ; ②Sub_RB1_HOME
+CON
+JMP @MR2313
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR2313
+AND @MR4601              ; ②Sub_RB1_HOME/完了
+RES @MR4601              ; ②Sub_RB1_HOME/完了
+CON
+JMP @MR2314
+;RB1_搬送ｽﾃｰｼﾞX軸_移動_ﾜｰｸｾｯﾄ位置
+STG @MR2314
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+DW #1 EM1300             ; RB1Target Pos
+CON
+SET @MR4500              ; ①Sub_RB1_MOVE/動作
+CON
+JMP @MR2315
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR2315
+AND @MR4501              ; ①Sub_RB1_MOVE/完了
+RES @MR4501              ; ①Sub_RB1_MOVE/完了
+CON
+JMP @MR2400
+;RB2_搬送ｽﾃｰｼﾞY軸_移動_平坦度測定位置
+STG @MR2400
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+DW #2 EM1302             ; RB2Target Pos
+CON
+SET @MR4800              ; ③Sub_RB2_MOVE/動作
+CON
+JMP @MR2401
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR2401
+AND @MR4801              ; ③Sub_RB2_MOVE/完了
+RES @MR4801              ; ③Sub_RB2_MOVE/完了
+CON
+JMP @MR2101
+;<h1/>ﾒﾝﾃｺｰﾄﾞ3動作/Maintenance code 3 Operation
+STG @MR2402
+AND R4001                ; ｴﾘｱｾﾝｻ入力
+MPS
+LD R4007                 ; ﾜｰｸｸﾗﾝﾌﾟ手前側 後退端
+AND R4009                ; ﾜｰｸｸﾗﾝﾌﾟ奥側 後退端
+ANL
+MPS
+LD R4003                 ; ﾜｰｸｸﾗﾝﾌﾟ手前側 上昇端
+AND R4005                ; ﾜｰｸｸﾗﾝﾌﾟ奥側 上昇端
+ANL
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR2403
+MPP
+LD R4002                 ; ﾜｰｸｸﾗﾝﾌﾟ手前側 下降端
+AND R4004                ; ﾜｰｸｸﾗﾝﾌﾟ奥側 下降端
+ANL
+JMP @MR2405
+MPP
+LD R4006                 ; ﾜｰｸｸﾗﾝﾌﾟ手前側 前進端
+AND R4008                ; ﾜｰｸｸﾗﾝﾌﾟ奥側 前進端
+ANL
+MPS
+LD R4003                 ; ﾜｰｸｸﾗﾝﾌﾟ手前側 上昇端
+AND R4005                ; ﾜｰｸｸﾗﾝﾌﾟ奥側 上昇端
+ANL
+JMP @MR2404
+MPP
+LD R4002                 ; ﾜｰｸｸﾗﾝﾌﾟ手前側 下降端
+AND R4004                ; ﾜｰｸｸﾗﾝﾌﾟ奥側 下降端
+ANL
+JMP @MR2405
+;ﾜｰｸｸﾗﾝﾌﾟ前進
+STG @MR2403
+SET MR7202               ; ﾜｰｸｸﾗﾝﾌﾟ前進
+CON
+RES MR7203               ; ﾜｰｸｸﾗﾝﾌﾟ後退
+CON
+MPS
+LDB MR4006               ; ﾜｰｸｸﾗﾝﾌﾟ手前側 前進端ERR
+AND R4006                ; ﾜｰｸｸﾗﾝﾌﾟ手前側 前進端
+ANB R4007                ; ﾜｰｸｸﾗﾝﾌﾟ手前側 後退端
+ANB MR4008               ; ﾜｰｸｸﾗﾝﾌﾟ奥側 前進端ERR
+AND R4008                ; ﾜｰｸｸﾗﾝﾌﾟ奥側 前進端
+ANB R4009                ; ﾜｰｸｸﾗﾝﾌﾟ奥側 後退端
+ANL
+JMP @MR2404
+MPP
+LD MR4006                ; ﾜｰｸｸﾗﾝﾌﾟ手前側 前進端ERR
+OR MR4008                ; ﾜｰｸｸﾗﾝﾌﾟ奥側 前進端ERR
+AND R41200               ; TASK0 PAUSE 要求
+ANL
+SET @MR1900              ; Main1 HALT許可
+;ﾜｰｸｸﾗﾝﾌﾟ下降
+STG @MR2404
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+SET MR7200               ; ﾜｰｸｸﾗﾝﾌﾟ下降
+CON
+RES MR7201               ; ﾜｰｸｸﾗﾝﾌﾟ上昇
+CON
+MPS
+LDB MR4002               ; ﾜｰｸｸﾗﾝﾌﾟ手前側 下降端ERR
+AND R4002                ; ﾜｰｸｸﾗﾝﾌﾟ手前側 下降端
+ANB R4003                ; ﾜｰｸｸﾗﾝﾌﾟ手前側 上昇端
+ANB MR4004               ; ﾜｰｸｸﾗﾝﾌﾟ奥側 下降端ERR
+AND R4004                ; ﾜｰｸｸﾗﾝﾌﾟ奥側 下降端
+ANB R4005                ; ﾜｰｸｸﾗﾝﾌﾟ奥側 上昇端
+ANL
+JMP @MR2407
+MPP
+LD MR4002                ; ﾜｰｸｸﾗﾝﾌﾟ手前側 下降端ERR
+OR MR4004                ; ﾜｰｸｸﾗﾝﾌﾟ奥側 下降端ERR
+AND R41200               ; TASK0 PAUSE 要求
+ANL
+SET @MR1900              ; Main1 HALT許可
+;ﾜｰｸｸﾗﾝﾌﾟ上昇
+STG @MR2405
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+SET MR7201               ; ﾜｰｸｸﾗﾝﾌﾟ上昇
+CON
+RES MR7200               ; ﾜｰｸｸﾗﾝﾌﾟ下降
+CON
+MPS
+LDB MR4003               ; ﾜｰｸｸﾗﾝﾌﾟ手前側 上昇端ERR
+ANB R4002                ; ﾜｰｸｸﾗﾝﾌﾟ手前側 下降端
+AND R4003                ; ﾜｰｸｸﾗﾝﾌﾟ手前側 上昇端
+ANB MR4005               ; ﾜｰｸｸﾗﾝﾌﾟ奥側 上昇端ERR
+ANB R4004                ; ﾜｰｸｸﾗﾝﾌﾟ奥側 下降端
+AND R4005                ; ﾜｰｸｸﾗﾝﾌﾟ奥側 上昇端
+ANL
+JMP @MR2406
+MPP
+LD MR4003                ; ﾜｰｸｸﾗﾝﾌﾟ手前側 上昇端ERR
+OR MR4005                ; ﾜｰｸｸﾗﾝﾌﾟ奥側 上昇端ERR
+AND R41200               ; TASK0 PAUSE 要求
+ANL
+SET @MR1900              ; Main1 HALT許可
+;ﾜｰｸｸﾗﾝﾌﾟ後退
+STG @MR2406
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+SET MR7203               ; ﾜｰｸｸﾗﾝﾌﾟ後退
+CON
+RES MR7202               ; ﾜｰｸｸﾗﾝﾌﾟ前進
+CON
+MPS
+LDB MR4007               ; ﾜｰｸｸﾗﾝﾌﾟ手前側 後退端ERR
+ANB R4006                ; ﾜｰｸｸﾗﾝﾌﾟ手前側 前進端
+AND R4007                ; ﾜｰｸｸﾗﾝﾌﾟ手前側 後退端
+ANB MR4009               ; ﾜｰｸｸﾗﾝﾌﾟ奥側 後退端ERR
+ANB R4008                ; ﾜｰｸｸﾗﾝﾌﾟ奥側 前進端
+AND R4009                ; ﾜｰｸｸﾗﾝﾌﾟ奥側 後退端
+ANL
+JMP @MR2407
+MPP
+LD MR4007                ; ﾜｰｸｸﾗﾝﾌﾟ手前側 後退端ERR
+OR MR4009                ; ﾜｰｸｸﾗﾝﾌﾟ奥側 後退端ERR
+AND R41200               ; TASK0 PAUSE 要求
+ANL
+SET @MR1900              ; Main1 HALT許可
+;終了
+STG @MR2407
+JMP @MR2101
+;<h1/>ﾒﾝﾃｺｰﾄﾞ4動作/Maintenance code 4 Operation
+;RB3_ｺﾞﾆｵｽﾃｰｼﾞY方向補正_移動_基準位置
+STG @MR2410
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+DW #1 EM1304             ; RB3Target Pos
+CON
+SET @MR5100              ; ⑤Sub_RB3_MOVE/動作
+CON
+JMP @MR2411
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR2411
+AND @MR5101              ; ⑤Sub_RB3_MOVE/完了
+RES @MR5101              ; ⑤Sub_RB3_MOVE/完了
+CON
+JMP @MR2412
+;RB4_ｺﾞﾆｵｽﾃｰｼﾞX方向補正_移動_基準位置
+STG @MR2412
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+DW #1 EM1306             ; RB4Target Pos
+CON
+SET @MR5400              ; ⑦Sub_RB4_MOVE/動作
+CON
+JMP @MR2413
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR2413
+AND @MR5401              ; ⑦Sub_RB4_MOVE/完了
+RES @MR5401              ; ⑦Sub_RB4_MOVE/完了
+CON
+JMP @MR2103
+;<h1/>ﾒﾝﾃｺｰﾄﾞ5動作/Maintenance code 5 Operation
+;変位ｾﾝｻ状態確認
+STG @MR2500
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+SET @MR5800              ; ⑩Sub_変位ｾﾝｻ状態確認
+CON
+JMP @MR2501
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR2501
+AND @MR5801              ; ⑩Sub_変位ｾﾝｻ状態確認/完了
+RES @MR5801              ; ⑩Sub_変位ｾﾝｻ状態確認/完了
+CON
+JMP @MR2502
+STG @MR2502
+MPS
+LDB @MR909               ; sub⑩停止選択
+LD= @DM10 #5             ; ﾒﾝﾃ動作ｺｰﾄﾞ
+OR= @DM10 #6             ; ﾒﾝﾃ動作ｺｰﾄﾞ
+ANL
+ANL
+JMP @MR2504
+MPP
+AND @MR909               ; sub⑩停止選択
+JMP @MR2503
+STG @MR2503
+RES @MR909               ; sub⑩停止選択
+CON
+JMP @MR2106
+;平坦度測定
+STG @MR2504
+SET @MR5900              ; ⑪Sub_平坦度測定
+CON
+JMP @MR2505
+STG @MR2505
+AND @MR5901              ; ⑪Sub_平坦度測定/完了
+RES @MR5901              ; ⑪Sub_平坦度測定/完了
+CON
+JMP @MR2506
+STG @MR2506
+MPS
+ANB @MR906               ; SUB⑪停止選択
+MPS
+AND= @DM10 #5            ; ﾒﾝﾃ動作ｺｰﾄﾞ
+JMP @MR2106
+MPP
+AND= @DM10 #6            ; ﾒﾝﾃ動作ｺｰﾄﾞ
+JMP @MR2508
+MPP
+AND @MR906               ; SUB⑪停止選択
+JMP @MR2507
+STG @MR2507
+RES @MR906               ; SUB⑪停止選択
+CON
+JMP @MR2106
+;<h1/>ﾒﾝﾃｺｰﾄﾞ6動作/Maintenance code 6 Operation
+;RB3_ｺﾞﾆｵｽﾃｰｼﾞY方向補正_移動_補正位置
+STG @MR2508
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+DW #10 EM1304            ; RB3Target Pos
+CON
+SET @MR5100              ; ⑤Sub_RB3_MOVE/動作
+CON
+JMP @MR2509
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR2509
+AND @MR5101              ; ⑤Sub_RB3_MOVE/完了
+RES @MR5101              ; ⑤Sub_RB3_MOVE/完了
+CON
+JMP @MR2510
+;RB4_ｺﾞﾆｵｽﾃｰｼﾞX方向補正_移動_補正位置
+STG @MR2510
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+DW #10 EM1306            ; RB4Target Pos
+CON
+SET @MR5400              ; ⑦Sub_RB4_MOVE/動作
+CON
+JMP @MR2511
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR2511
+AND @MR5401              ; ⑦Sub_RB4_MOVE/完了
+RES @MR5401              ; ⑦Sub_RB4_MOVE/完了
+CON
+JMP @MR2512
+;算出結果比較
+;※算出結果E～Hの差が規格以内で終了
+STG @MR2512
+SET @MR6100              ; ⑫Sub_計算結果比較
+CON
+JMP @MR2513
+STG @MR2513
+AND @MR6101              ; ⑫Sub_計算結果比較/完了
+RES @MR6101              ; ⑫Sub_計算結果比較/完了
+CON
+JMP @MR2514
+STG @MR2514
+MPS
+LDB @MR907               ; sub⑫再補正
+ANB @MR908               ; sub⑫停止選択
+ANL
+JMP @MR2601
+MRD
+LD @MR907                ; sub⑫再補正
+ANB @MR908               ; sub⑫停止選択
+ANL
+JMP @MR2515
+MPP
+LDB @MR907               ; sub⑫再補正
+AND @MR908               ; sub⑫停止選択
+ANL
+JMP @MR2600
+STG @MR2515
+RES @MR907               ; sub⑫再補正
+CON
+JMP @MR2500
+STG @MR2600
+RES @MR908               ; sub⑫停止選択
+CON
+JMP @MR2106
+;最小二乗平面算出
+STG @MR2601
+SET @MR5700              ; ⑨Sub_最小二乗平面算出
+CON
+JMP @MR2602
+STG @MR2602
+AND @MR5701              ; ⑨Sub_最小二乗平面算出/完了
+RES @MR5701              ; ⑨Sub_最小二乗平面算出/完了
+CON
+JMP @MR2106
+;<h1/>ﾒﾝﾃｺｰﾄﾞ7動作/Maintenance code 7 Operation
+STG @MR2603
+SET MR20106              ; Task0→Task1ﾒﾝﾃ測定要求
+CON
+JMP @MR2604
+STG @MR2604
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+AND MR20107              ; Task1→Task0ﾒﾝﾃ測定開始
+ANL
+RES MR20106              ; Task0→Task1ﾒﾝﾃ測定要求
+CON
+JMP @MR2605
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR2605
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+ANB MR20107              ; Task1→Task0ﾒﾝﾃ測定開始
+ANL
+JMP @MR2106
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+;<h1/>ﾒﾝﾃｺｰﾄﾞ8動作/Maintenance code 8 Operation
+;ﾜｰｸｸﾗﾝﾌﾟ前進
+STG @MR2700
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+SET MR7202               ; ﾜｰｸｸﾗﾝﾌﾟ前進
+CON
+RES MR7203               ; ﾜｰｸｸﾗﾝﾌﾟ後退
+CON
+MPS
+LDB MR4006               ; ﾜｰｸｸﾗﾝﾌﾟ手前側 前進端ERR
+AND R4006                ; ﾜｰｸｸﾗﾝﾌﾟ手前側 前進端
+ANB R4007                ; ﾜｰｸｸﾗﾝﾌﾟ手前側 後退端
+ANB MR4008               ; ﾜｰｸｸﾗﾝﾌﾟ奥側 前進端ERR
+AND R4008                ; ﾜｰｸｸﾗﾝﾌﾟ奥側 前進端
+ANB R4009                ; ﾜｰｸｸﾗﾝﾌﾟ奥側 後退端
+ANL
+JMP @MR2701
+MPP
+LD MR4006                ; ﾜｰｸｸﾗﾝﾌﾟ手前側 前進端ERR
+OR MR4008                ; ﾜｰｸｸﾗﾝﾌﾟ奥側 前進端ERR
+AND R41200               ; TASK0 PAUSE 要求
+ANL
+SET @MR1900              ; Main1 HALT許可
+;ﾜｰｸｸﾗﾝﾌﾟ下降
+STG @MR2701
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+SET MR7200               ; ﾜｰｸｸﾗﾝﾌﾟ下降
+CON
+RES MR7201               ; ﾜｰｸｸﾗﾝﾌﾟ上昇
+CON
+MPS
+LDB MR4002               ; ﾜｰｸｸﾗﾝﾌﾟ手前側 下降端ERR
+AND R4002                ; ﾜｰｸｸﾗﾝﾌﾟ手前側 下降端
+ANB R4003                ; ﾜｰｸｸﾗﾝﾌﾟ手前側 上昇端
+ANB MR4004               ; ﾜｰｸｸﾗﾝﾌﾟ奥側 下降端ERR
+AND R4004                ; ﾜｰｸｸﾗﾝﾌﾟ奥側 下降端
+ANB R4005                ; ﾜｰｸｸﾗﾝﾌﾟ奥側 上昇端
+ANL
+JMP @MR2702
+MPP
+LD MR4002                ; ﾜｰｸｸﾗﾝﾌﾟ手前側 下降端ERR
+OR MR4004                ; ﾜｰｸｸﾗﾝﾌﾟ奥側 下降端ERR
+AND R41200               ; TASK0 PAUSE 要求
+ANL
+SET @MR1900              ; Main1 HALT許可
+;RB2_搬送ｽﾃｰｼﾞY軸_移動_平坦度測定位置
+STG @MR2702
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+DW #2 EM1302             ; RB2Target Pos
+CON
+SET @MR4800              ; ③Sub_RB2_MOVE/動作
+CON
+JMP @MR2703
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR2703
+AND @MR4801              ; ③Sub_RB2_MOVE/完了
+RES @MR4801              ; ③Sub_RB2_MOVE/完了
+CON
+JMP @MR2704
+;変位ｾﾝｻ状態確認
+STG @MR2704
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+SET @MR5800              ; ⑩Sub_変位ｾﾝｻ状態確認
+CON
+JMP @MR2705
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR2705
+AND @MR5801              ; ⑩Sub_変位ｾﾝｻ状態確認/完了
+RES @MR5801              ; ⑩Sub_変位ｾﾝｻ状態確認/完了
+CON
+JMP @MR2706
+STG @MR2706
+MPS
+ANB @MR909               ; sub⑩停止選択
+JMP @MR2708
+MPP
+AND @MR909               ; sub⑩停止選択
+JMP @MR2707
+STG @MR2707
+RES @MR909               ; sub⑩停止選択
+CON
+JMP @MR2110
+;変位ｾﾝｻｾﾞﾛﾘｾｯﾄ
+STG @MR2708
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+MPS
+LD W20B3.0               ; 変位ｾﾝｻ1_Task1_ｾﾞﾛﾘｾｯﾄ実行中
+AND W20E3.0              ; 変位ｾﾝｻ2_Task1_ｾﾞﾛﾘｾｯﾄ実行中
+AND W2113.0              ; 変位ｾﾝｻ3_Task1_ｾﾞﾛﾘｾｯﾄ実行中
+AND W2143.0              ; 変位ｾﾝｻ4_Task1_ｾﾞﾛﾘｾｯﾄ実行中
+ANL
+SET W20CF.4              ; 変位ｾﾝｻ1_Task1_ｾﾞﾛﾘｾｯﾄ解除
+CON
+SET W20FF.4              ; 変位ｾﾝｻ2_Task1_ｾﾞﾛﾘｾｯﾄ解除
+CON
+SET W212F.4              ; 変位ｾﾝｻ3_Task1_ｾﾞﾛﾘｾｯﾄ解除
+CON
+SET W215F.4              ; 変位ｾﾝｻ4_Task1_ｾﾞﾛﾘｾｯﾄ解除
+CON
+JMP @MR2709
+MPP
+LDB W20B3.0              ; 変位ｾﾝｻ1_Task1_ｾﾞﾛﾘｾｯﾄ実行中
+ANB W20E3.0              ; 変位ｾﾝｻ2_Task1_ｾﾞﾛﾘｾｯﾄ実行中
+ANB W2113.0              ; 変位ｾﾝｻ3_Task1_ｾﾞﾛﾘｾｯﾄ実行中
+ANB W2143.0              ; 変位ｾﾝｻ4_Task1_ｾﾞﾛﾘｾｯﾄ実行中
+ANL
+JMP @MR2710
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR2709
+TMR @23 #5               ; ｾﾞﾛﾘｾｯﾄ解除ﾀｲﾏ
+CON
+AND @T23                 ; ｾﾞﾛﾘｾｯﾄ解除ﾀｲﾏ
+RES W20CF.4              ; 変位ｾﾝｻ1_Task1_ｾﾞﾛﾘｾｯﾄ解除
+CON
+RES W20FF.4              ; 変位ｾﾝｻ2_Task1_ｾﾞﾛﾘｾｯﾄ解除
+CON
+RES W212F.4              ; 変位ｾﾝｻ3_Task1_ｾﾞﾛﾘｾｯﾄ解除
+CON
+RES W215F.4              ; 変位ｾﾝｻ4_Task1_ｾﾞﾛﾘｾｯﾄ解除
+CON
+JMP @MR2710
+STG @MR2710
+TMR @24 #10              ; ｾﾞﾛﾘｾｯﾄ安定wait
+CON
+AND @T24                 ; ｾﾞﾛﾘｾｯﾄ安定wait
+SET W20CF.0              ; 変位ｾﾝｻ1_Task1_ｾﾞﾛﾘｾｯﾄ
+CON
+SET W20FF.0              ; 変位ｾﾝｻ2_Task1_ｾﾞﾛﾘｾｯﾄ
+CON
+SET W212F.0              ; 変位ｾﾝｻ3_Task1_ｾﾞﾛﾘｾｯﾄ
+CON
+SET W215F.0              ; 変位ｾﾝｻ4_Task1_ｾﾞﾛﾘｾｯﾄ
+CON
+JMP @MR2711
+STG @MR2711
+TMR @25 #5               ; ｾﾞﾛﾘｾｯﾄﾀｲﾏ
+CON
+AND @T25                 ; ｾﾞﾛﾘｾｯﾄﾀｲﾏ
+RES W20CF.0              ; 変位ｾﾝｻ1_Task1_ｾﾞﾛﾘｾｯﾄ
+CON
+RES W20FF.0              ; 変位ｾﾝｻ2_Task1_ｾﾞﾛﾘｾｯﾄ
+CON
+RES W212F.0              ; 変位ｾﾝｻ3_Task1_ｾﾞﾛﾘｾｯﾄ
+CON
+RES W215F.0              ; 変位ｾﾝｻ4_Task1_ｾﾞﾛﾘｾｯﾄ
+CON
+JMP @MR2712
+STG @MR2712
+MPS
+LD W20B3.0               ; 変位ｾﾝｻ1_Task1_ｾﾞﾛﾘｾｯﾄ実行中
+AND W20E3.0              ; 変位ｾﾝｻ2_Task1_ｾﾞﾛﾘｾｯﾄ実行中
+AND W2113.0              ; 変位ｾﾝｻ3_Task1_ｾﾞﾛﾘｾｯﾄ実行中
+AND W2143.0              ; 変位ｾﾝｻ4_Task1_ｾﾞﾛﾘｾｯﾄ実行中
+ANB W20CF.0              ; 変位ｾﾝｻ1_Task1_ｾﾞﾛﾘｾｯﾄ
+ANB W20FF.0              ; 変位ｾﾝｻ2_Task1_ｾﾞﾛﾘｾｯﾄ
+ANB W212F.0              ; 変位ｾﾝｻ3_Task1_ｾﾞﾛﾘｾｯﾄ
+ANB W215F.0              ; 変位ｾﾝｻ4_Task1_ｾﾞﾛﾘｾｯﾄ
+ANL
+JMP @MR2715
+MPP
+LDB W20B3.0              ; 変位ｾﾝｻ1_Task1_ｾﾞﾛﾘｾｯﾄ実行中
+ORB W20E3.0              ; 変位ｾﾝｻ2_Task1_ｾﾞﾛﾘｾｯﾄ実行中
+ORB W2113.0              ; 変位ｾﾝｻ3_Task1_ｾﾞﾛﾘｾｯﾄ実行中
+ORB W2143.0              ; 変位ｾﾝｻ4_Task1_ｾﾞﾛﾘｾｯﾄ実行中
+ANL
+JMP @MR2713
+STG @MR2713
+ANB R39900               ; RB動作中
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+ANB R39004               ; ｴﾗｰ中
+ANL
+SET R39004               ; ｴﾗｰ中
+CON
+DW $2300 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #107 @DM1             ; ErrorNo /ERROR_DISP
+CON
+DW #0 @DM2               ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task0 ERROR
+CON
+JMP @MR2714
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR2714
+SET @MR1900              ; Main1 HALT許可
+CON
+AND @MR101               ; Task0 ｴﾗｰ完了
+RES @MR101               ; Task0 ｴﾗｰ完了
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+MPS
+AND @MR105               ; SW1
+JMP @MR2708
+MPP
+AND @MR106               ; SW2
+JMP @MR2802
+;接触ｾﾝｻｾﾞﾛﾘｾｯﾄ
+STG @MR2715
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+SET MR20106              ; Task0→Task1ﾒﾝﾃ測定要求
+CON
+JMP @MR2800
+STG @MR2800
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+AND MR20107              ; Task1→Task0ﾒﾝﾃ測定開始
+ANL
+RES MR20106              ; Task0→Task1ﾒﾝﾃ測定要求
+CON
+JMP @MR2801
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR2801
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+ANB MR20107              ; Task1→Task0ﾒﾝﾃ測定開始
+ANL
+JMP @MR2802
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+;RB2_搬送ｽﾃｰｼﾞY軸_移動_ﾜｰｸｾｯﾄ位置
+STG @MR2802
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+DW #1 EM1302             ; RB2Target Pos
+CON
+SET @MR4800              ; ③Sub_RB2_MOVE/動作
+CON
+JMP @MR2803
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR2803
+AND @MR4801              ; ③Sub_RB2_MOVE/完了
+RES @MR4801              ; ③Sub_RB2_MOVE/完了
+CON
+JMP @MR2804
+;ﾜｰｸｸﾗﾝﾌﾟ上昇
+STG @MR2804
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+SET MR7201               ; ﾜｰｸｸﾗﾝﾌﾟ上昇
+CON
+RES MR7200               ; ﾜｰｸｸﾗﾝﾌﾟ下降
+CON
+MPS
+LDB MR4003               ; ﾜｰｸｸﾗﾝﾌﾟ手前側 上昇端ERR
+ANB R4002                ; ﾜｰｸｸﾗﾝﾌﾟ手前側 下降端
+AND R4003                ; ﾜｰｸｸﾗﾝﾌﾟ手前側 上昇端
+ANB MR4005               ; ﾜｰｸｸﾗﾝﾌﾟ奥側 上昇端ERR
+ANB R4004                ; ﾜｰｸｸﾗﾝﾌﾟ奥側 下降端
+AND R4005                ; ﾜｰｸｸﾗﾝﾌﾟ奥側 上昇端
+ANL
+JMP @MR2805
+MPP
+LD MR4003                ; ﾜｰｸｸﾗﾝﾌﾟ手前側 上昇端ERR
+OR MR4005                ; ﾜｰｸｸﾗﾝﾌﾟ奥側 上昇端ERR
+AND R41200               ; TASK0 PAUSE 要求
+ANL
+SET @MR1900              ; Main1 HALT許可
+;ﾜｰｸｸﾗﾝﾌﾟ後退
+STG @MR2805
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+SET MR7203               ; ﾜｰｸｸﾗﾝﾌﾟ後退
+CON
+RES MR7202               ; ﾜｰｸｸﾗﾝﾌﾟ前進
+CON
+MPS
+LDB MR4007               ; ﾜｰｸｸﾗﾝﾌﾟ手前側 後退端ERR
+ANB R4006                ; ﾜｰｸｸﾗﾝﾌﾟ手前側 前進端
+AND R4007                ; ﾜｰｸｸﾗﾝﾌﾟ手前側 後退端
+ANB MR4009               ; ﾜｰｸｸﾗﾝﾌﾟ奥側 後退端ERR
+ANB R4008                ; ﾜｰｸｸﾗﾝﾌﾟ奥側 前進端
+AND R4009                ; ﾜｰｸｸﾗﾝﾌﾟ奥側 後退端
+ANL
+JMP @MR2806
+MPP
+LD MR4007                ; ﾜｰｸｸﾗﾝﾌﾟ手前側 後退端ERR
+OR MR4009                ; ﾜｰｸｸﾗﾝﾌﾟ奥側 後退端ERR
+AND R41200               ; TASK0 PAUSE 要求
+ANL
+SET @MR1900              ; Main1 HALT許可
+;終了
+STG @MR2806
+JMP @MR2110
+;<h1/>Error<52>ﾒﾝﾃﾅﾝｽｲﾝﾀｰﾛｯｸ/
+STG @MR2900
+ANB R39900               ; RB動作中
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+ANB R39004               ; ｴﾗｰ中
+ANL
+SET R39004               ; ｴﾗｰ中
+CON
+DW $3000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #52 @DM1              ; ErrorNo /ERROR_DISP
+CON
+DW #0 @DM2               ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task0 ERROR
+CON
+JMP @MR2901
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR2901
+SET @MR1900              ; Main1 HALT許可
+CON
+AND @MR101               ; Task0 ｴﾗｰ完了
+RES @MR101               ; Task0 ｴﾗｰ完了
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+AND @MR105               ; SW1
+JMP @MR2003
+;Maintenance 終了
+STG @MR2914              ; ﾒﾝﾃ終了
+MCALL MODE_INDI #2
+MCALL HOLD_REQUEST MyGroup;自ｸﾞﾙｰﾌﾟ番号
+JMP @MR2915              ; Mainte END
+STG @MR2915              ; Mainte END
+MPS
+LD R41200                ; TASK0 PAUSE 要求
+ANB @MR001               ; TASK0 ERROR
+ANL
+SET @MR1900              ; Main1 HALT許可
+MPP
+ANB R41200               ; TASK0 PAUSE 要求
+RES @MR2002              ; ﾒﾝﾃ中
+CON
+JMP LR600                ; _Grp1_Task0_Fin.STG
+;<h1/>SubRoutines/ｻﾌﾞﾙｰﾁﾝ
+;[記述方法]
+;・ｻﾌﾞﾙｰﾁﾝは本ﾌﾞｯｸﾏｰｸから下に記述していって下さい
+;・ｻﾌﾞﾙｰﾁﾝは必ずﾌﾞｯｸﾏｰｸを挿入して処理内容を明確にする事
+;<h1/>①Sub_RB1_MOVE/動作
+STG @MR4500              ; ①Sub_RB1_MOVE/動作
+SET @MR4502              ; ①Sub_RB1_MOVE/動作中
+CON
+JMP @MR4503
+;RB1_MOVE_ｱﾗｰﾑﾘｾｯﾄ &ｻｰﾎﾞON  ｱﾗｰﾑﾘｾｯﾄできない場合は、ｻｰﾎﾞOFFしError発生
+STG @MR4503
+MPS
+SET R18000               ; 軸1 軸ｴﾗｰｸﾘｱ
+CON
+SET R18305               ; 軸1 ﾄﾞﾗｲﾊﾞｱﾗｰﾑﾘｾｯﾄ
+CON
+ANB R18400               ; 軸1 軸ｴﾗｰ中
+ANB R18705               ; 軸1 ﾄﾞﾗｲﾊﾞｱﾗｰﾑ
+AND R1000                ; 搬送ｽﾃｰｼﾞX軸ｱﾗｰﾑ
+SET R18113               ; 軸1 ｻｰﾎﾞON
+CON
+RES R18000               ; 軸1 軸ｴﾗｰｸﾘｱ
+CON
+RES R18305               ; 軸1 ﾄﾞﾗｲﾊﾞｱﾗｰﾑﾘｾｯﾄ
+CON
+JMP @MR4504
+MPP
+LD R18400                ; 軸1 軸ｴﾗｰ中
+OR R18705                ; 軸1 ﾄﾞﾗｲﾊﾞｱﾗｰﾑ
+ORB R1000                ; 搬送ｽﾃｰｼﾞX軸ｱﾗｰﾑ
+ANL
+TMR @0 #20               ; RB1ｴﾗｰ
+CON
+AND @T0                  ; RB1ｴﾗｰ
+RES R18113               ; 軸1 ｻｰﾎﾞON
+CON
+RES R18000               ; 軸1 軸ｴﾗｰｸﾘｱ
+CON
+RES R18305               ; 軸1 ﾄﾞﾗｲﾊﾞｱﾗｰﾑﾘｾｯﾄ
+CON
+JMP @MR4700
+STG @MR4504
+MPS
+AND R18513               ; 軸1 ｻｰﾎﾞﾚﾃﾞｨ
+SET R35000               ; RB1 MOVE
+CON
+JMP @MR4505
+MPP
+ANB R18513               ; 軸1 ｻｰﾎﾞﾚﾃﾞｨ
+TMR @1 #20               ; RB1ｻｰﾎﾞﾚﾃﾞｨOFF
+CON
+AND @T1                  ; RB1ｻｰﾎﾞﾚﾃﾞｨOFF
+JMP @MR4700
+STG @MR4505
+AND R35001               ; RB1 MOVE END
+RES R35001               ; RB1 MOVE END
+CON
+JMP @MR4506
+STG @MR4506
+MPS
+ANB R35003               ; RB1 Alarm
+JMP @MR4507
+MPP
+AND R35003               ; RB1 Alarm
+RES R35003               ; RB1 Alarm
+CON
+JMP @MR4700
+;END
+STG @MR4507
+SET @MR4501              ; ①Sub_RB1_MOVE/完了
+CON
+RES @MR4502              ; ①Sub_RB1_MOVE/動作中
+CON
+ENDS
+;<h1/>②Sub_RB1_HOME/RB1_復帰
+STG @MR4600              ; ②Sub_RB1_HOME
+SET @MR4602              ; ②Sub_RB1_HOME/動作中
+CON
+JMP @MR4603
+;RB1_HOME_ｱﾗｰﾑﾘｾｯﾄ &ｻｰﾎﾞON  ｱﾗｰﾑﾘｾｯﾄできない場合は、ｻｰﾎﾞOFFしError発生
+STG @MR4603
+MPS
+LD R46300                ; _Group1　ｴﾘｱｾﾝｻ遮断中
+AND R41200               ; TASK0 PAUSE 要求
+ANL
+SET @MR1900              ; Main1 HALT許可
+MPP
+ANB R46300               ; _Group1　ｴﾘｱｾﾝｻ遮断中
+MPS
+SET R18000               ; 軸1 軸ｴﾗｰｸﾘｱ
+CON
+SET R18305               ; 軸1 ﾄﾞﾗｲﾊﾞｱﾗｰﾑﾘｾｯﾄ
+CON
+AND R1000                ; 搬送ｽﾃｰｼﾞX軸ｱﾗｰﾑ
+ANB R18400               ; 軸1 軸ｴﾗｰ中
+ANB R18705               ; 軸1 ﾄﾞﾗｲﾊﾞｱﾗｰﾑ
+SET R18113               ; 軸1 ｻｰﾎﾞON
+CON
+RES R18000               ; 軸1 軸ｴﾗｰｸﾘｱ
+CON
+RES R18305               ; 軸1 ﾄﾞﾗｲﾊﾞｱﾗｰﾑﾘｾｯﾄ
+CON
+JMP @MR4604
+MPP
+LD R18400                ; 軸1 軸ｴﾗｰ中
+OR R18705                ; 軸1 ﾄﾞﾗｲﾊﾞｱﾗｰﾑ
+ORB R1000                ; 搬送ｽﾃｰｼﾞX軸ｱﾗｰﾑ
+ANL
+TMR @2 #20               ; RB1ｴﾗｰ
+CON
+AND @T2                  ; RB1ｴﾗｰ
+RES R18113               ; 軸1 ｻｰﾎﾞON
+CON
+RES R18000               ; 軸1 軸ｴﾗｰｸﾘｱ
+CON
+RES R18305               ; 軸1 ﾄﾞﾗｲﾊﾞｱﾗｰﾑﾘｾｯﾄ
+CON
+JMP @MR4700
+STG @MR4604
+MPS
+AND R18513               ; 軸1 ｻｰﾎﾞﾚﾃﾞｨ
+MPS
+LD R35011                ; RB1原点復帰済
+AND CR2003               ; 常時OFF
+ANL
+JMP @MR4607
+MPP
+LDB R35011               ; RB1原点復帰済
+OR CR2002                ; 常時ON
+ANL
+SET R35008               ; RB1 HOME
+CON
+JMP @MR4605
+MPP
+ANB R18513               ; 軸1 ｻｰﾎﾞﾚﾃﾞｨ
+TMR @3 #20               ; RB1ｻｰﾎﾞﾚﾃﾞｨOFF
+CON
+AND @T3                  ; RB1ｻｰﾎﾞﾚﾃﾞｨOFF
+JMP @MR4700
+STG @MR4605
+AND R35009               ; RB1 HOME END
+RES R35009               ; RB1 HOME END
+CON
+JMP @MR4606
+STG @MR4606
+MPS
+ANB R35003               ; RB1 Alarm
+JMP @MR4607
+MPP
+AND R35003               ; RB1 Alarm
+RES R35003               ; RB1 Alarm
+CON
+JMP @MR4700
+;END
+STG @MR4607
+SET @MR4601              ; ②Sub_RB1_HOME/完了
+CON
+RES @MR4602              ; ②Sub_RB1_HOME/動作中
+CON
+ENDS
+;Error1 RB1_動作異常
+STG @MR4700
+ANB R39900               ; RB動作中
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+ANB R39004               ; ｴﾗｰ中
+ANL
+SET R39004               ; ｴﾗｰ中
+CON
+MPS
+DW $1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #1 @DM1               ; ErrorNo /ERROR_DISP
+CON
+DW #0 @DM2               ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task0 ERROR
+CON
+JMP @MR4701
+MPP
+SET B3990                ; ｱﾗｰﾑ詳細表示
+CON
+LDA DM20682              ; 軸1 軸ｴﾗｰｺｰﾄﾞ
+CON
+STA DM50310              ; RB ｱﾗｰﾑ表示
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR4701
+SET @MR1900              ; Main1 HALT許可
+CON
+AND @MR101               ; Task0 ｴﾗｰ完了
+RES @MR101               ; Task0 ｴﾗｰ完了
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+AND @MR105               ; SW1
+RES B3990                ; ｱﾗｰﾑ詳細表示
+CON
+DW #0 DM50310            ; RB ｱﾗｰﾑ表示
+CON
+MPS
+AND @MR4602              ; ②Sub_RB1_HOME/動作中
+JMP @MR4603
+MPP
+AND @MR4502              ; ①Sub_RB1_MOVE/動作中
+JMP @MR4503
+;<h1/>③Sub_RB2_MOVE/動作
+STG @MR4800              ; ③Sub_RB2_MOVE/動作
+SET @MR4802              ; ③Sub_RB2_MOVE/動作中
+CON
+JMP @MR4803
+;RB2_MOVE_ｱﾗｰﾑﾘｾｯﾄ &ｻｰﾎﾞON  ｱﾗｰﾑﾘｾｯﾄできない場合は、ｻｰﾎﾞOFFしError発生
+STG @MR4803
+MPS
+LD R46300                ; _Group1　ｴﾘｱｾﾝｻ遮断中
+AND R41200               ; TASK0 PAUSE 要求
+ANL
+SET @MR1900              ; Main1 HALT許可
+MPP
+ANB R46300               ; _Group1　ｴﾘｱｾﾝｻ遮断中
+MPS
+SET R18800               ; 軸2 軸ｴﾗｰｸﾘｱ
+CON
+SET R19105               ; 軸2 ﾄﾞﾗｲﾊﾞｱﾗｰﾑﾘｾｯﾄ
+CON
+AND R1001                ; 搬送ｽﾃｰｼﾞY軸ｱﾗｰﾑ
+ANB R19200               ; 軸2 軸ｴﾗｰ中
+ANB R19505               ; 軸2 ﾄﾞﾗｲﾊﾞｱﾗｰﾑ
+SET R18913               ; 軸2 ｻｰﾎﾞON
+CON
+RES R18800               ; 軸2 軸ｴﾗｰｸﾘｱ
+CON
+RES R19105               ; 軸2 ﾄﾞﾗｲﾊﾞｱﾗｰﾑﾘｾｯﾄ
+CON
+JMP @MR4804
+MPP
+LD R19200                ; 軸2 軸ｴﾗｰ中
+OR R19505                ; 軸2 ﾄﾞﾗｲﾊﾞｱﾗｰﾑ
+ORB R1001                ; 搬送ｽﾃｰｼﾞY軸ｱﾗｰﾑ
+ANL
+TMR @4 #20               ; RB2ｴﾗｰ
+CON
+AND @T4                  ; RB2ｴﾗｰ
+RES R18913               ; 軸2 ｻｰﾎﾞON
+CON
+RES R18800               ; 軸2 軸ｴﾗｰｸﾘｱ
+CON
+RES R19105               ; 軸2 ﾄﾞﾗｲﾊﾞｱﾗｰﾑﾘｾｯﾄ
+CON
+JMP @MR5000
+STG @MR4804
+MPS
+AND R19313               ; 軸2 ｻｰﾎﾞﾚﾃﾞｨ
+SET R35100               ; RB2 MOVE
+CON
+JMP @MR4805
+MPP
+ANB R19313               ; 軸2 ｻｰﾎﾞﾚﾃﾞｨ
+TMR @5 #20               ; RB2ｻｰﾎﾞﾚﾃﾞｨOFF
+CON
+AND @T5                  ; RB2ｻｰﾎﾞﾚﾃﾞｨOFF
+JMP @MR5000
+STG @MR4805
+AND R35101               ; RB2 MOVE END
+RES R35101               ; RB2 MOVE END
+CON
+JMP @MR4806
+STG @MR4806
+MPS
+ANB R35103               ; RB2 Alarm
+JMP @MR4807
+MPP
+AND R35103               ; RB2 Alarm
+RES R35103               ; RB2 Alarm
+CON
+JMP @MR5000
+;END
+STG @MR4807
+SET @MR4801              ; ③Sub_RB2_MOVE/完了
+CON
+RES @MR4802              ; ③Sub_RB2_MOVE/動作中
+CON
+ENDS
+;<h1/>④Sub_RB2_HOME/RB2_復帰
+STG @MR4900              ; ④Sub_RB2_HOME
+SET @MR4902              ; ④Sub_RB2_HOME/動作中
+CON
+JMP @MR4903
+;RB2_HOME_ｱﾗｰﾑﾘｾｯﾄ &ｻｰﾎﾞON  ｱﾗｰﾑﾘｾｯﾄできない場合は、ｻｰﾎﾞOFFしError発生
+STG @MR4903
+MPS
+ANB R46300               ; _Group1　ｴﾘｱｾﾝｻ遮断中
+MPS
+SET R18800               ; 軸2 軸ｴﾗｰｸﾘｱ
+CON
+SET R19105               ; 軸2 ﾄﾞﾗｲﾊﾞｱﾗｰﾑﾘｾｯﾄ
+CON
+AND R1001                ; 搬送ｽﾃｰｼﾞY軸ｱﾗｰﾑ
+ANB R19200               ; 軸2 軸ｴﾗｰ中
+ANB R19505               ; 軸2 ﾄﾞﾗｲﾊﾞｱﾗｰﾑ
+SET R18913               ; 軸2 ｻｰﾎﾞON
+CON
+RES R18800               ; 軸2 軸ｴﾗｰｸﾘｱ
+CON
+RES R19105               ; 軸2 ﾄﾞﾗｲﾊﾞｱﾗｰﾑﾘｾｯﾄ
+CON
+JMP @MR4904
+MPP
+LD R19200                ; 軸2 軸ｴﾗｰ中
+OR R19505                ; 軸2 ﾄﾞﾗｲﾊﾞｱﾗｰﾑ
+ORB R1000                ; 搬送ｽﾃｰｼﾞX軸ｱﾗｰﾑ
+ANL
+TMR @6 #20               ; RB2ｴﾗｰ
+CON
+AND @T6                  ; RB2ｴﾗｰ
+RES R18913               ; 軸2 ｻｰﾎﾞON
+CON
+RES R18800               ; 軸2 軸ｴﾗｰｸﾘｱ
+CON
+RES R19105               ; 軸2 ﾄﾞﾗｲﾊﾞｱﾗｰﾑﾘｾｯﾄ
+CON
+JMP @MR5000
+MPP
+LD R46300                ; _Group1　ｴﾘｱｾﾝｻ遮断中
+AND R41200               ; TASK0 PAUSE 要求
+ANL
+SET @MR1900              ; Main1 HALT許可
+STG @MR4904
+MPS
+AND R19313               ; 軸2 ｻｰﾎﾞﾚﾃﾞｨ
+MPS
+LD R35111                ; RB2原点復帰済
+AND CR2003               ; 常時OFF
+ANL
+JMP @MR4907
+MPP
+LDB R35111               ; RB2原点復帰済
+OR CR2002                ; 常時ON
+ANL
+SET R35108               ; RB2 HOME
+CON
+JMP @MR4905
+MPP
+ANB R19313               ; 軸2 ｻｰﾎﾞﾚﾃﾞｨ
+TMR @7 #20               ; RB2ｻｰﾎﾞﾚﾃﾞｨOFF
+CON
+AND @T7                  ; RB2ｻｰﾎﾞﾚﾃﾞｨOFF
+JMP @MR5000
+STG @MR4905
+AND R35109               ; RB2 HOME END
+RES R35109               ; RB2 HOME END
+CON
+JMP @MR4906
+STG @MR4906
+MPS
+ANB R35103               ; RB2 Alarm
+JMP @MR4907
+MPP
+AND R35103               ; RB2 Alarm
+RES R35103               ; RB2 Alarm
+CON
+JMP @MR5000
+;END
+STG @MR4907
+SET @MR4901              ; ④Sub_RB2_HOME/完了
+CON
+RES @MR4902              ; ④Sub_RB2_HOME/動作中
+CON
+ENDS
+;Error2 RB2_動作異常
+STG @MR5000
+ANB R39900               ; RB動作中
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+ANB R39004               ; ｴﾗｰ中
+ANL
+SET R39004               ; ｴﾗｰ中
+CON
+MPS
+DW $1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #2 @DM1               ; ErrorNo /ERROR_DISP
+CON
+DW #0 @DM2               ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task0 ERROR
+CON
+JMP @MR5001
+MPP
+SET B3990                ; ｱﾗｰﾑ詳細表示
+CON
+LDA DM20742              ; 軸2 軸ｴﾗｰｺｰﾄﾞ
+CON
+STA DM50310              ; RB ｱﾗｰﾑ表示
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR5001
+SET @MR1900              ; Main1 HALT許可
+CON
+AND @MR101               ; Task0 ｴﾗｰ完了
+RES @MR101               ; Task0 ｴﾗｰ完了
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+AND @MR105               ; SW1
+RES B3990                ; ｱﾗｰﾑ詳細表示
+CON
+DW #0 DM50310            ; RB ｱﾗｰﾑ表示
+CON
+MPS
+AND @MR4902              ; ④Sub_RB2_HOME/動作中
+JMP @MR4903
+MPP
+AND @MR4802              ; ③Sub_RB2_MOVE/動作中
+JMP @MR4803
+;<h1/>⑤Sub_RB3_MOVE/動作
+STG @MR5100              ; ⑤Sub_RB3_MOVE/動作
+SET @MR5102              ; ⑤Sub_RB3_MOVE/動作中
+CON
+JMP @MR5103
+;RB3_MOVE_ｱﾗｰﾑﾘｾｯﾄ &ｻｰﾎﾞON  ｱﾗｰﾑﾘｾｯﾄできない場合は、ｻｰﾎﾞOFFしError発生
+STG @MR5103
+MPS
+LD R46300                ; _Group1　ｴﾘｱｾﾝｻ遮断中
+AND R41200               ; TASK0 PAUSE 要求
+ANL
+SET @MR1900              ; Main1 HALT許可
+MPP
+ANB R46300               ; _Group1　ｴﾘｱｾﾝｻ遮断中
+MPS
+SET R19600               ; 軸3 軸ｴﾗｰｸﾘｱ
+CON
+SET R19905               ; 軸3 ﾄﾞﾗｲﾊﾞｱﾗｰﾑﾘｾｯﾄ
+CON
+ANB R20000               ; 軸3 軸ｴﾗｰ中
+ANB R20305               ; 軸3 ﾄﾞﾗｲﾊﾞｱﾗｰﾑ
+SET R19713               ; 軸3 ｻｰﾎﾞON
+CON
+RES R19600               ; 軸3 軸ｴﾗｰｸﾘｱ
+CON
+RES R19905               ; 軸3 ﾄﾞﾗｲﾊﾞｱﾗｰﾑﾘｾｯﾄ
+CON
+JMP @MR5104
+MPP
+LD R20000                ; 軸3 軸ｴﾗｰ中
+OR R20305                ; 軸3 ﾄﾞﾗｲﾊﾞｱﾗｰﾑ
+ANL
+TMR @8 #20               ; RB3ｴﾗｰ
+CON
+AND @T8                  ; RB3ｴﾗｰ
+RES R19713               ; 軸3 ｻｰﾎﾞON
+CON
+RES R19600               ; 軸3 軸ｴﾗｰｸﾘｱ
+CON
+RES R19905               ; 軸3 ﾄﾞﾗｲﾊﾞｱﾗｰﾑﾘｾｯﾄ
+CON
+JMP @MR5300
+STG @MR5104
+MPS
+AND R20113               ; 軸3 ｻｰﾎﾞﾚﾃﾞｨ
+SET R35200               ; RB3 MOVE
+CON
+JMP @MR5105
+MPP
+ANB R20113               ; 軸3 ｻｰﾎﾞﾚﾃﾞｨ
+TMR @9 #20               ; RB3ｻｰﾎﾞﾚﾃﾞｨOFF
+CON
+AND @T9                  ; RB3ｻｰﾎﾞﾚﾃﾞｨOFF
+JMP @MR5300
+STG @MR5105
+AND R35201               ; RB3 MOVE END
+RES R35201               ; RB3 MOVE END
+CON
+JMP @MR5106
+STG @MR5106
+MPS
+ANB R35203               ; RB3 Alarm
+JMP @MR5107
+MPP
+AND R35203               ; RB3 Alarm
+RES R35203               ; RB3 Alarm
+CON
+JMP @MR5300
+;END
+STG @MR5107
+SET @MR5101              ; ⑤Sub_RB3_MOVE/完了
+CON
+RES @MR5102              ; ⑤Sub_RB3_MOVE/動作中
+CON
+ENDS
+;<h1/>⑥Sub_RB3_HOME/RB3_復帰
+STG @MR5200              ; ⑥Sub_RB3_HOME
+SET @MR5202              ; ⑥Sub_RB3_HOME/動作中
+CON
+JMP @MR5203
+;RB3_HOME_ｱﾗｰﾑﾘｾｯﾄ &ｻｰﾎﾞON  ｱﾗｰﾑﾘｾｯﾄできない場合は、ｻｰﾎﾞOFFしError発生
+STG @MR5203
+MPS
+ANB R46300               ; _Group1　ｴﾘｱｾﾝｻ遮断中
+MPS
+SET R19600               ; 軸3 軸ｴﾗｰｸﾘｱ
+CON
+SET R19905               ; 軸3 ﾄﾞﾗｲﾊﾞｱﾗｰﾑﾘｾｯﾄ
+CON
+ANB R20000               ; 軸3 軸ｴﾗｰ中
+ANB R20305               ; 軸3 ﾄﾞﾗｲﾊﾞｱﾗｰﾑ
+SET R19713               ; 軸3 ｻｰﾎﾞON
+CON
+RES R19600               ; 軸3 軸ｴﾗｰｸﾘｱ
+CON
+RES R19905               ; 軸3 ﾄﾞﾗｲﾊﾞｱﾗｰﾑﾘｾｯﾄ
+CON
+JMP @MR5204
+MPP
+LD R20000                ; 軸3 軸ｴﾗｰ中
+OR R20305                ; 軸3 ﾄﾞﾗｲﾊﾞｱﾗｰﾑ
+ANL
+TMR @10 #20              ; RB3ｴﾗｰ
+CON
+AND @T10                 ; RB3ｴﾗｰ
+RES R19713               ; 軸3 ｻｰﾎﾞON
+CON
+RES R19600               ; 軸3 軸ｴﾗｰｸﾘｱ
+CON
+RES R19905               ; 軸3 ﾄﾞﾗｲﾊﾞｱﾗｰﾑﾘｾｯﾄ
+CON
+JMP @MR5300
+MPP
+LD R46300                ; _Group1　ｴﾘｱｾﾝｻ遮断中
+AND R41200               ; TASK0 PAUSE 要求
+ANL
+SET @MR1900              ; Main1 HALT許可
+STG @MR5204
+MPS
+AND R20113               ; 軸3 ｻｰﾎﾞﾚﾃﾞｨ
+MPS
+LD R35211                ; RB3原点復帰済
+AND CR2003               ; 常時OFF
+ANL
+JMP @MR5207
+MPP
+LDB R35211               ; RB3原点復帰済
+OR CR2002                ; 常時ON
+ANL
+SET R35208               ; RB3 HOME
+CON
+JMP @MR5205
+MPP
+ANB R20113               ; 軸3 ｻｰﾎﾞﾚﾃﾞｨ
+TMR @11 #20              ; RB3ｻｰﾎﾞﾚﾃﾞｨOFF
+CON
+AND @T11                 ; RB3ｻｰﾎﾞﾚﾃﾞｨOFF
+JMP @MR5300
+STG @MR5205
+AND R35209               ; RB3 HOME END
+RES R35209               ; RB3 HOME END
+CON
+JMP @MR5206
+STG @MR5206
+MPS
+ANB R35203               ; RB3 Alarm
+JMP @MR5207
+MPP
+AND R35203               ; RB3 Alarm
+RES R35203               ; RB3 Alarm
+CON
+JMP @MR5300
+;END
+STG @MR5207
+SET @MR5201              ; ⑥Sub_RB3_HOME/完了
+CON
+RES @MR5202              ; ⑥Sub_RB3_HOME/動作中
+CON
+ENDS
+;Error3 RB3_動作異常
+STG @MR5300
+ANB R39900               ; RB動作中
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+ANB R39004               ; ｴﾗｰ中
+ANL
+SET R39004               ; ｴﾗｰ中
+CON
+MPS
+DW $1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #3 @DM1               ; ErrorNo /ERROR_DISP
+CON
+DW #0 @DM2               ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task0 ERROR
+CON
+JMP @MR5301
+MPP
+SET B3990                ; ｱﾗｰﾑ詳細表示
+CON
+LDA DM20802              ; 軸3 軸ｴﾗｰｺｰﾄﾞ
+CON
+STA DM50310              ; RB ｱﾗｰﾑ表示
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR5301
+SET @MR1900              ; Main1 HALT許可
+CON
+SET @MR1900              ; Main1 HALT許可
+CON
+AND @MR101               ; Task0 ｴﾗｰ完了
+RES @MR101               ; Task0 ｴﾗｰ完了
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+AND @MR105               ; SW1
+RES B3990                ; ｱﾗｰﾑ詳細表示
+CON
+DW #0 DM50310            ; RB ｱﾗｰﾑ表示
+CON
+MPS
+AND @MR5202              ; ⑥Sub_RB3_HOME/動作中
+JMP @MR5203
+MPP
+AND @MR5102              ; ⑤Sub_RB3_MOVE/動作中
+JMP @MR5103
+;<h1/>⑦Sub_RB4_MOVE/動作
+STG @MR5400              ; ⑦Sub_RB4_MOVE/動作
+SET @MR5402              ; ⑦Sub_RB4_MOVE/動作中
+CON
+JMP @MR5403
+;RB4_MOVE_ｱﾗｰﾑﾘｾｯﾄ &ｻｰﾎﾞON  ｱﾗｰﾑﾘｾｯﾄできない場合は、ｻｰﾎﾞOFFしError発生
+STG @MR5403
+MPS
+LD R46300                ; _Group1　ｴﾘｱｾﾝｻ遮断中
+AND R41200               ; TASK0 PAUSE 要求
+ANL
+SET @MR1900              ; Main1 HALT許可
+MPP
+ANB R46300               ; _Group1　ｴﾘｱｾﾝｻ遮断中
+MPS
+SET R20400               ; 軸4 軸ｴﾗｰｸﾘｱ
+CON
+SET R20705               ; 軸4 ﾄﾞﾗｲﾊﾞｱﾗｰﾑﾘｾｯﾄ
+CON
+ANB R20800               ; 軸4 軸ｴﾗｰ中
+ANB R21105               ; 軸4 ﾄﾞﾗｲﾊﾞｱﾗｰﾑ
+SET R20513               ; 軸4 ｻｰﾎﾞON
+CON
+RES R20400               ; 軸4 軸ｴﾗｰｸﾘｱ
+CON
+RES R20705               ; 軸4 ﾄﾞﾗｲﾊﾞｱﾗｰﾑﾘｾｯﾄ
+CON
+JMP @MR5404
+MPP
+LD R20800                ; 軸4 軸ｴﾗｰ中
+OR R21105                ; 軸4 ﾄﾞﾗｲﾊﾞｱﾗｰﾑ
+ANL
+TMR @12 #20              ; RB4ｴﾗｰ
+CON
+AND @T12                 ; RB4ｴﾗｰ
+RES R20513               ; 軸4 ｻｰﾎﾞON
+CON
+RES R20400               ; 軸4 軸ｴﾗｰｸﾘｱ
+CON
+RES R20705               ; 軸4 ﾄﾞﾗｲﾊﾞｱﾗｰﾑﾘｾｯﾄ
+CON
+JMP @MR5600
+STG @MR5404
+MPS
+AND R20913               ; 軸4 ｻｰﾎﾞﾚﾃﾞｨ
+SET R35300               ; RB4 MOVE
+CON
+JMP @MR5405
+MPP
+ANB R20913               ; 軸4 ｻｰﾎﾞﾚﾃﾞｨ
+TMR @13 #20              ; RB4ｻｰﾎﾞﾚﾃﾞｨOFF
+CON
+AND @T13                 ; RB4ｻｰﾎﾞﾚﾃﾞｨOFF
+JMP @MR5600
+STG @MR5405
+AND R35301               ; RB4 MOVE END
+RES R35301               ; RB4 MOVE END
+CON
+JMP @MR5406
+STG @MR5406
+MPS
+ANB R35303               ; RB4 Alarm
+JMP @MR5407
+MPP
+AND R35303               ; RB4 Alarm
+RES R35303               ; RB4 Alarm
+CON
+JMP @MR5600
+;END
+STG @MR5407
+SET @MR5401              ; ⑦Sub_RB4_MOVE/完了
+CON
+RES @MR5402              ; ⑦Sub_RB4_MOVE/動作中
+CON
+ENDS
+;<h1/>⑧Sub_RB4_HOME/RB4_復帰
+STG @MR5500              ; ⑧Sub_RB4_HOME
+SET @MR5502              ; ⑧Sub_RB4_HOME/動作中
+CON
+JMP @MR5503
+;RB4_HOME_ｱﾗｰﾑﾘｾｯﾄ &ｻｰﾎﾞON  ｱﾗｰﾑﾘｾｯﾄできない場合は、ｻｰﾎﾞOFFしError発生
+STG @MR5503
+MPS
+ANB R46300               ; _Group1　ｴﾘｱｾﾝｻ遮断中
+MPS
+SET R20400               ; 軸4 軸ｴﾗｰｸﾘｱ
+CON
+SET R20705               ; 軸4 ﾄﾞﾗｲﾊﾞｱﾗｰﾑﾘｾｯﾄ
+CON
+ANB R20800               ; 軸4 軸ｴﾗｰ中
+ANB R21105               ; 軸4 ﾄﾞﾗｲﾊﾞｱﾗｰﾑ
+SET R20513               ; 軸4 ｻｰﾎﾞON
+CON
+RES R20400               ; 軸4 軸ｴﾗｰｸﾘｱ
+CON
+RES R20705               ; 軸4 ﾄﾞﾗｲﾊﾞｱﾗｰﾑﾘｾｯﾄ
+CON
+JMP @MR5504
+MPP
+LD R20800                ; 軸4 軸ｴﾗｰ中
+OR R21105                ; 軸4 ﾄﾞﾗｲﾊﾞｱﾗｰﾑ
+ANL
+TMR @14 #20              ; RB4ｴﾗｰ
+CON
+AND @T14                 ; RB4ｴﾗｰ
+RES R20513               ; 軸4 ｻｰﾎﾞON
+CON
+RES R20400               ; 軸4 軸ｴﾗｰｸﾘｱ
+CON
+RES R20705               ; 軸4 ﾄﾞﾗｲﾊﾞｱﾗｰﾑﾘｾｯﾄ
+CON
+JMP @MR5600
+MPP
+LD R46300                ; _Group1　ｴﾘｱｾﾝｻ遮断中
+AND R41200               ; TASK0 PAUSE 要求
+ANL
+SET @MR1900              ; Main1 HALT許可
+STG @MR5504
+MPS
+AND R20913               ; 軸4 ｻｰﾎﾞﾚﾃﾞｨ
+MPS
+LD R35311                ; RB4原点復帰済
+AND CR2003               ; 常時OFF
+ANL
+JMP @MR5507
+MPP
+LDB R35311               ; RB4原点復帰済
+OR CR2002                ; 常時ON
+ANL
+SET R35308               ; RB4 HOME
+CON
+JMP @MR5505
+MPP
+ANB R20913               ; 軸4 ｻｰﾎﾞﾚﾃﾞｨ
+TMR @15 #20              ; RB4ｻｰﾎﾞﾚﾃﾞｨOFF
+CON
+AND @T15                 ; RB4ｻｰﾎﾞﾚﾃﾞｨOFF
+JMP @MR5600
+STG @MR5505
+AND R35309               ; RB4 HOME END
+RES R35309               ; RB4 HOME END
+CON
+JMP @MR5506
+STG @MR5506
+MPS
+ANB R35303               ; RB4 Alarm
+JMP @MR5507
+MPP
+AND R35303               ; RB4 Alarm
+RES R35303               ; RB4 Alarm
+CON
+JMP @MR5600
+;END
+STG @MR5507
+SET @MR5501              ; ⑧Sub_RB4_HOME/完了
+CON
+RES @MR5502              ; ⑧Sub_RB4_HOME/動作中
+CON
+ENDS
+;Error4 RB4_動作異常
+STG @MR5600
+ANB R39900               ; RB動作中
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+ANB R39004               ; ｴﾗｰ中
+ANL
+SET R39004               ; ｴﾗｰ中
+CON
+MPS
+DW $1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #4 @DM1               ; ErrorNo /ERROR_DISP
+CON
+DW #0 @DM2               ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task0 ERROR
+CON
+JMP @MR5601
+MPP
+SET B3990                ; ｱﾗｰﾑ詳細表示
+CON
+LDA DM20862              ; 軸4 軸ｴﾗｰｺｰﾄﾞ
+CON
+STA DM50310              ; RB ｱﾗｰﾑ表示
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR5601
+SET @MR1900              ; Main1 HALT許可
+CON
+SET @MR1900              ; Main1 HALT許可
+CON
+AND @MR101               ; Task0 ｴﾗｰ完了
+RES @MR101               ; Task0 ｴﾗｰ完了
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+AND @MR105               ; SW1
+RES B3990                ; ｱﾗｰﾑ詳細表示
+CON
+DW #0 DM50310            ; RB ｱﾗｰﾑ表示
+CON
+MPS
+AND @MR5502              ; ⑧Sub_RB4_HOME/動作中
+JMP @MR5503
+MPP
+AND @MR5402              ; ⑦Sub_RB4_MOVE/動作中
+JMP @MR5403
+;<h1/>⑨Sub_最小二乗平面算出
+STG @MR5700              ; ⑨Sub_最小二乗平面算出
+SET @MR5702              ; ⑨Sub_最小二乗平面算出/動作中
+CON
+JMP @MR5703
+;最小二乗平面算出(単位μm)
+;'ファイバ同軸変位センサ測定点(NP面測定点)
+;'x,yは固定
+;ArrayX1[0] = -35363
+;ArrayY1[0] = -16849
+;ArrayX1[1] = 12897
+;ArrayY1[1] = -16849
+;ArrayX1[2] = -12897
+;ArrayY1[2] = 16849
+;ArrayX1[3] = 35363
+;ArrayY1[3] = 16849
+;
+;'zは変数
+;ArrayZ1[0] = INTG(EM29220.DF)
+;ArrayZ1[1] = INTG(EM29224.DF)
+;ArrayZ1[2] = INTG(EM29228.DF)
+;ArrayZ1[3] = INTG(EM29232.DF)
+;
+;'接触式変位センサ測定点（スペーサ面測定点）
+;'x,yは固定
+;ArrayX2[0] = -33959
+;ArrayY2[0] = -21000
+;ArrayX2[1] = 7041
+;ArrayY2[1] = -21000
+;ArrayX2[2] = -7041
+;ArrayY2[2] = 21500
+;ArrayX2[3] = 33959
+;ArrayY2[3] = 21500
+;
+;'a,b,cの算出
+;ConstA = 0  '定数Aｸﾘｱ
+;ConstB = 0  '定数Bｸﾘｱ
+;ConstC = 0  '定数Cｸﾘｱ
+;ConstD = 0  '定数Dｸﾘｱ
+;ConstE = 0  '定数Eｸﾘｱ
+;ConstF = 0  '定数Fｸﾘｱ
+;ConstG = 0  '定数Gｸﾘｱ
+;ConstH = 0  '定数Hｸﾘｱ
+;
+;for i=0 to 3
+;	ConstA += ArrayX1[i]^2
+;	ConstB += ArrayY1[i]^2
+;	ConstC += ArrayX1[i] * ArrayY1[i]
+;	ConstD += ArrayX1[i] * ArrayZ1[i]
+;	ConstE += ArrayY1[i] * ArrayZ1[i]
+;	ConstF += ArrayX1[i]
+;	ConstG += ArrayY1[i]
+;	ConstH += ArrayZ1[i]
+;next
+;n = 4
+;'a,b,c の分母だけ演算
+;C_a = ConstA * (ConstG^2 - n * ConstB) - 2 * ConstC * ConstF * ConstG + ConstB * ConstF^2 + n * ConstC^2
+;
+;Result_a = - (ConstC * (ConstG * ConstH - n * ConstE) + ConstF * _
+;(ConstE * ConstG - ConstB * ConstH) + ConstD * (n * ConstB - ConstG^2)) / C_a
+;
+;Result_b = (ConstA * (ConstG * ConstH - n * ConstE) + ConstF * _
+;(-ConstC * ConstH - ConstD * ConstG) + ConstE * ConstF^2 + n * ConstC * ConstD) / C_a
+;
+;Result_c = (ConstA * (ConstE * ConstG - ConstB * ConstH) + ConstC^2 * ConstH - _
+;ConstC * ConstD * ConstG + (ConstB * ConstD - ConstC * ConstE) * ConstF) / C_a
+;
+;'ziの算出
+;'zi = aXi + bYi + c      /平面の方程式 zi(高さ) = aXi(横) + bYi(縦) + c
+;for i=0 to 3
+;	ArrayZ2[i] = Result_a * ArrayX2[i] + Result_b * ArrayY2[i] + Result_c
+;next
+;BMOV(ArrayZ2[0],EM29210.F,4)
+;
+;'ﾄﾚｻﾋﾞ用ﾃﾞｰﾀ書込み
+;DM25026.L=Result_a
+;DM25028.L=Result_b
+;DM25030.L=Result_c
+;
+;SET(CR2002,@m5704)'計算完了
+LD @MR5703
+NCJ #1003
+;'ファイバ同軸変位センサ測定点(NP面測定点)
+;
+;'x,yは固定
+;
+;ArrayX1[0] = -35363
+;
+LD CR2002                ; 常時ON
+MOV.F -35363 ArrayX1
+;ArrayY1[0] = -16849
+;
+LD CR2002                ; 常時ON
+MOV.F -16849 ArrayY1
+;ArrayX1[1] = 12897
+;
+LD CR2002                ; 常時ON
+MOV.F +12897 ArrayX1:#2
+;ArrayY1[1] = -16849
+;
+LD CR2002                ; 常時ON
+MOV.F -16849 ArrayY1:#2
+;ArrayX1[2] = -12897
+;
+LD CR2002                ; 常時ON
+MOV.F -12897 ArrayX1:#4
+;ArrayY1[2] = 16849
+;
+LD CR2002                ; 常時ON
+MOV.F +16849 ArrayY1:#4
+;ArrayX1[3] = 35363
+;
+LD CR2002                ; 常時ON
+MOV.F +35363 ArrayX1:#6
+;ArrayY1[3] = 16849
+;
+LD CR2002                ; 常時ON
+MOV.F +16849 ArrayY1:#6
+;'zは変数
+;
+;ArrayZ1[0] = INTG(EM29220.DF)
+;
+LD CR2002                ; 常時ON
+LDA.DF EM29220           ; NP面測定_変数Z_[0](下位)
+CON
+DINTG.L
+CON
+FLOAT.L
+CON
+STA.F ArrayZ1
+;ArrayZ1[1] = INTG(EM29224.DF)
+;
+LD CR2002                ; 常時ON
+LDA.DF EM29224           ; NP面測定_変数Z_[1](下位)
+CON
+DINTG.L
+CON
+FLOAT.L
+CON
+STA.F ArrayZ1:#2
+;ArrayZ1[2] = INTG(EM29228.DF)
+;
+LD CR2002                ; 常時ON
+LDA.DF EM29228           ; NP面測定_変数Z_[2](下位)
+CON
+DINTG.L
+CON
+FLOAT.L
+CON
+STA.F ArrayZ1:#4
+;ArrayZ1[3] = INTG(EM29232.DF)
+;
+LD CR2002                ; 常時ON
+LDA.DF EM29232           ; NP面測定_変数Z_[3](下位)
+CON
+DINTG.L
+CON
+FLOAT.L
+CON
+STA.F ArrayZ1:#6
+;'接触式変位センサ測定点（スペーサ面測定点）
+;
+;'x,yは固定
+;
+;ArrayX2[0] = -33959
+;
+LD CR2002                ; 常時ON
+MOV.F -33959 ArrayX2
+;ArrayY2[0] = -21000
+;
+LD CR2002                ; 常時ON
+MOV.F -21000 ArrayY2
+;ArrayX2[1] = 7041
+;
+LD CR2002                ; 常時ON
+MOV.F +7041 ArrayX2:#2
+;ArrayY2[1] = -21000
+;
+LD CR2002                ; 常時ON
+MOV.F -21000 ArrayY2:#2
+;ArrayX2[2] = -7041
+;
+LD CR2002                ; 常時ON
+MOV.F -7041 ArrayX2:#4
+;ArrayY2[2] = 21500
+;
+LD CR2002                ; 常時ON
+MOV.F +21500 ArrayY2:#4
+;ArrayX2[3] = 33959
+;
+LD CR2002                ; 常時ON
+MOV.F +33959 ArrayX2:#6
+;ArrayY2[3] = 21500
+;
+LD CR2002                ; 常時ON
+MOV.F +21500 ArrayY2:#6
+;'a,b,cの算出
+;
+;ConstA = 0  '定数Aｸﾘｱ
+;
+LD CR2002                ; 常時ON
+MOV.F +0 ConstA
+;ConstB = 0  '定数Bｸﾘｱ
+;
+LD CR2002                ; 常時ON
+MOV.F +0 ConstB
+;ConstC = 0  '定数Cｸﾘｱ
+;
+LD CR2002                ; 常時ON
+MOV.F +0 ConstC
+;ConstD = 0  '定数Dｸﾘｱ
+;
+LD CR2002                ; 常時ON
+MOV.F +0 ConstD
+;ConstE = 0  '定数Eｸﾘｱ
+;
+LD CR2002                ; 常時ON
+MOV.F +0 ConstE
+;ConstF = 0  '定数Fｸﾘｱ
+;
+LD CR2002                ; 常時ON
+MOV.F +0 ConstF
+;ConstG = 0  '定数Gｸﾘｱ
+;
+LD CR2002                ; 常時ON
+MOV.F +0 ConstG
+;ConstH = 0  '定数Hｸﾘｱ
+;
+LD CR2002                ; 常時ON
+MOV.F +0 ConstH
+;for i=0 to 3
+;
+LD CR2002                ; 常時ON
+MOV #0 i
+LABEL #2018
+LD> i #3
+CJ #2019
+;	ConstA += ArrayX1[i]^2
+;
+LD CR2002                ; 常時ON
+LDA i
+CON
+EXT
+CON
+MUL.L +2
+CON
+STA.L Z12
+LD CR2002                ; 常時ON
+LDA.F +1
+FOR #2
+LD CR2002                ; 常時ON
+MUL.F ArrayX1:Z12
+NEXT
+LD CR2002                ; 常時ON
+ADD.F ConstA
+CON
+STA.F ConstA
+;	ConstB += ArrayY1[i]^2
+;
+LD CR2002                ; 常時ON
+LDA i
+CON
+EXT
+CON
+MUL.L +2
+CON
+STA.L Z12
+LD CR2002                ; 常時ON
+LDA.F +1
+FOR #2
+LD CR2002                ; 常時ON
+MUL.F ArrayY1:Z12
+NEXT
+LD CR2002                ; 常時ON
+ADD.F ConstB
+CON
+STA.F ConstB
+;	ConstC += ArrayX1[i] * ArrayY1[i]
+;
+LD CR2002                ; 常時ON
+LDA i
+CON
+EXT
+CON
+MUL.L +2
+CON
+STA.L Z12
+CON
+LDA i
+CON
+EXT
+CON
+MUL.L +2
+CON
+ADRSET ArrayY1:Z12 @VM9
+LD CR2002                ; 常時ON
+STA.L Z12
+CON
+LDA.F ArrayX1:Z12
+CON
+MUL.F *@VM9
+CON
+ADD.F ConstC
+CON
+STA.F ConstC
+;	ConstD += ArrayX1[i] * ArrayZ1[i]
+;
+LD CR2002                ; 常時ON
+LDA i
+CON
+EXT
+CON
+MUL.L +2
+CON
+STA.L Z12
+CON
+LDA i
+CON
+EXT
+CON
+MUL.L +2
+CON
+ADRSET ArrayZ1:Z12 @VM11
+LD CR2002                ; 常時ON
+STA.L Z12
+CON
+LDA.F ArrayX1:Z12
+CON
+MUL.F *@VM11
+CON
+ADD.F ConstD
+CON
+STA.F ConstD
+;	ConstE += ArrayY1[i] * ArrayZ1[i]
+;
+LD CR2002                ; 常時ON
+LDA i
+CON
+EXT
+CON
+MUL.L +2
+CON
+STA.L Z12
+CON
+LDA i
+CON
+EXT
+CON
+MUL.L +2
+CON
+ADRSET ArrayZ1:Z12 @VM13
+LD CR2002                ; 常時ON
+STA.L Z12
+CON
+LDA.F ArrayY1:Z12
+CON
+MUL.F *@VM13
+CON
+ADD.F ConstE
+CON
+STA.F ConstE
+;	ConstF += ArrayX1[i]
+;
+LD CR2002                ; 常時ON
+LDA i
+CON
+EXT
+CON
+MUL.L +2
+CON
+STA.L Z12
+CON
+LDA.F ConstF
+CON
+ADD.F ArrayX1:Z12
+CON
+STA.F ConstF
+;	ConstG += ArrayY1[i]
+;
+LD CR2002                ; 常時ON
+LDA i
+CON
+EXT
+CON
+MUL.L +2
+CON
+STA.L Z12
+CON
+LDA.F ConstG
+CON
+ADD.F ArrayY1:Z12
+CON
+STA.F ConstG
+;	ConstH += ArrayZ1[i]
+;
+LD CR2002                ; 常時ON
+LDA i
+CON
+EXT
+CON
+MUL.L +2
+CON
+STA.L Z12
+CON
+LDA.F ConstH
+CON
+ADD.F ArrayZ1:Z12
+CON
+STA.F ConstH
+;next
+;
+LD CR2002                ; 常時ON
+INC i
+LDB CR2009               ; 演算結果が負
+CJ #2018
+LABEL #2019
+;n = 4
+;
+LD CR2002                ; 常時ON
+MOV #4 n
+;'a,b,c の分母だけ演算
+;
+;C_a = ConstA * (ConstG^2 - n * ConstB) - 2 * ConstC * ConstF * ConstG + ConstB * ConstF^2 + n * ConstC^2
+;
+LD CR2002                ; 常時ON
+LDA.F +1
+FOR #2
+LD CR2002                ; 常時ON
+MUL.F ConstC
+NEXT
+LD CR2002                ; 常時ON
+STA.F @VM15
+CON
+LDA n
+CON
+FLOAT
+CON
+MUL.F @VM15
+CON
+STA.F @VM17
+LD CR2002                ; 常時ON
+LDA.F +1
+FOR #2
+LD CR2002                ; 常時ON
+MUL.F ConstF
+NEXT
+LD CR2002                ; 常時ON
+MUL.F ConstB
+CON
+STA.F @VM19
+CON
+LDA.F +2
+CON
+MUL.F ConstC
+CON
+MUL.F ConstF
+CON
+MUL.F ConstG
+CON
+STA.F @VM21
+CON
+LDA n
+CON
+FLOAT
+CON
+MUL.F ConstB
+CON
+STA.F @VM23
+LD CR2002                ; 常時ON
+LDA.F +1
+FOR #2
+LD CR2002                ; 常時ON
+MUL.F ConstG
+NEXT
+LD CR2002                ; 常時ON
+SUB.F @VM23
+CON
+MUL.F ConstA
+CON
+SUB.F @VM21
+CON
+ADD.F @VM19
+CON
+ADD.F @VM17
+CON
+STA.F C_a
+;Result_a = - (ConstC * (ConstG * ConstH - n * ConstE) + ConstF * _
+;
+;(ConstE * ConstG - ConstB * ConstH) + ConstD * (n * ConstB - ConstG^2)) / C_a
+;
+LD CR2002                ; 常時ON
+LDA.F +1
+FOR #2
+LD CR2002                ; 常時ON
+MUL.F ConstG
+NEXT
+LD CR2002                ; 常時ON
+STA.F @VM25
+CON
+LDA n
+CON
+FLOAT
+CON
+MUL.F ConstB
+CON
+SUB.F @VM25
+CON
+MUL.F ConstD
+CON
+STA.F @VM27
+CON
+LDA.F ConstB
+CON
+MUL.F ConstH
+CON
+STA.F @VM29
+CON
+LDA.F ConstE
+CON
+MUL.F ConstG
+CON
+SUB.F @VM29
+CON
+MUL.F ConstF
+CON
+STA.F @VM31
+CON
+LDA n
+CON
+FLOAT
+CON
+MUL.F ConstE
+CON
+STA.F @VM33
+CON
+LDA.F ConstG
+CON
+MUL.F ConstH
+CON
+SUB.F @VM33
+CON
+MUL.F ConstC
+CON
+ADD.F @VM31
+CON
+ADD.F @VM27
+CON
+NEG.F
+CON
+DIV.F C_a
+CON
+STA.F Result_a
+;Result_b = (ConstA * (ConstG * ConstH - n * ConstE) + ConstF * _
+;
+;(-ConstC * ConstH - ConstD * ConstG) + ConstE * ConstF^2 + n * ConstC * ConstD) / C_a
+;
+LD CR2002                ; 常時ON
+LDA n
+CON
+FLOAT
+CON
+MUL.F ConstC
+CON
+MUL.F ConstD
+CON
+STA.F @VM35
+LD CR2002                ; 常時ON
+LDA.F +1
+FOR #2
+LD CR2002                ; 常時ON
+MUL.F ConstF
+NEXT
+LD CR2002                ; 常時ON
+MUL.F ConstE
+CON
+STA.F @VM37
+CON
+LDA.F ConstD
+CON
+MUL.F ConstG
+CON
+STA.F @VM39
+CON
+LDA.F ConstC
+CON
+NEG.F
+CON
+MUL.F ConstH
+CON
+SUB.F @VM39
+CON
+MUL.F ConstF
+CON
+STA.F @VM41
+CON
+LDA n
+CON
+FLOAT
+CON
+MUL.F ConstE
+CON
+STA.F @VM43
+CON
+LDA.F ConstG
+CON
+MUL.F ConstH
+CON
+SUB.F @VM43
+CON
+MUL.F ConstA
+CON
+ADD.F @VM41
+CON
+ADD.F @VM37
+CON
+ADD.F @VM35
+CON
+DIV.F C_a
+CON
+STA.F Result_b
+;Result_c = (ConstA * (ConstE * ConstG - ConstB * ConstH) + ConstC^2 * ConstH - _
+;
+;ConstC * ConstD * ConstG + (ConstB * ConstD - ConstC * ConstE) * ConstF) / C_a
+;
+LD CR2002                ; 常時ON
+LDA.F ConstC
+CON
+MUL.F ConstE
+CON
+STA.F @VM45
+CON
+LDA.F ConstB
+CON
+MUL.F ConstD
+CON
+SUB.F @VM45
+CON
+MUL.F ConstF
+CON
+STA.F @VM47
+CON
+LDA.F ConstC
+CON
+MUL.F ConstD
+CON
+MUL.F ConstG
+CON
+STA.F @VM49
+LD CR2002                ; 常時ON
+LDA.F +1
+FOR #2
+LD CR2002                ; 常時ON
+MUL.F ConstC
+NEXT
+LD CR2002                ; 常時ON
+MUL.F ConstH
+CON
+STA.F @VM51
+CON
+LDA.F ConstB
+CON
+MUL.F ConstH
+CON
+STA.F @VM53
+CON
+LDA.F ConstE
+CON
+MUL.F ConstG
+CON
+SUB.F @VM53
+CON
+MUL.F ConstA
+CON
+ADD.F @VM51
+CON
+SUB.F @VM49
+CON
+ADD.F @VM47
+CON
+DIV.F C_a
+CON
+STA.F Result_c
+;'ziの算出
+;
+;'zi = aXi + bYi + c      /平面の方程式 zi(高さ) = aXi(横) + bYi(縦) + c
+;
+;for i=0 to 3
+;
+LD CR2002                ; 常時ON
+MOV #0 i
+LABEL #2020
+LD> i #3
+CJ #2021
+;	ArrayZ2[i] = Result_a * ArrayX2[i] + Result_b * ArrayY2[i] + Result_c
+;
+LD CR2002                ; 常時ON
+LDA i
+CON
+EXT
+CON
+MUL.L +2
+CON
+STA.L Z11
+CON
+LDA i
+CON
+EXT
+CON
+MUL.L +2
+CON
+STA.L Z12
+CON
+LDA.F Result_b
+CON
+MUL.F ArrayY2:Z12
+CON
+STA.F @VM55
+CON
+LDA i
+CON
+EXT
+CON
+MUL.L +2
+CON
+STA.L Z12
+CON
+LDA.F Result_a
+CON
+MUL.F ArrayX2:Z12
+CON
+ADD.F @VM55
+CON
+ADD.F Result_c
+CON
+STA.F ArrayZ2:Z11
+;next
+;
+LD CR2002                ; 常時ON
+INC i
+LDB CR2009               ; 演算結果が負
+CJ #2020
+LABEL #2021
+;BMOV(ArrayZ2[0],EM29210.F,4)
+;
+LD CR2002                ; 常時ON
+BMOV.D ArrayZ2 EM29210 #4; 平均平面_高さ1(下位)
+;'ﾄﾚｻﾋﾞ用ﾃﾞｰﾀ書込み
+;
+;DM25026.L=Result_a
+;
+LD CR2002                ; 常時ON
+LDA.F Result_a
+CON
+INTG.L
+CON
+STA.L DM25026            ; 平均平面算出値a
+;DM25028.L=Result_b
+;
+LD CR2002                ; 常時ON
+LDA.F Result_b
+CON
+INTG.L
+CON
+STA.L DM25028            ; 平均平面算出値b
+;DM25030.L=Result_c
+;
+LD CR2002                ; 常時ON
+LDA.F Result_c
+CON
+INTG.L
+CON
+STA.L DM25030            ; 平均平面算出値c
+;SET(CR2002,@m5704)'計算完了
+LD CR2002                ; 常時ON
+SET @MR5704              ; 計算完了
+LABEL #1003
+;
+STG @MR5703
+AND @MR5704              ; 計算完了
+RES @MR5704              ; 計算完了
+CON
+JMP @MR5715
+;END
+STG @MR5715
+SET @MR5701              ; ⑨Sub_最小二乗平面算出/完了
+CON
+RES @MR5702              ; ⑨Sub_最小二乗平面算出/動作中
+CON
+ENDS
+;<h1/>⑩Sub_変位ｾﾝｻ状態確認
+STG @MR5800              ; ⑩Sub_変位ｾﾝｻ状態確認
+SET @MR5802              ; ⑩Sub_変位ｾﾝｻ状態確認/動作中
+CON
+JMP @MR5803
+;変位ｾﾝｻ状態
+LD W20B0.4               ; 変位ｾﾝｻ1RUN(ON)
+ANB W20B1.0              ; 変位ｾﾝｻ1ERR(正常OFF)
+AND W20B2.2              ; 変位ｾﾝｻ1Light
+AND W20B2.3              ; 変位ｾﾝｻ1測定範囲内ON
+AND W20B2.4              ; 変位ｾﾝｻ1測定状態(正常ON)
+OUT @MR900               ; 変位ｾﾝｻ1正常
+LD W20E0.4               ; 変位ｾﾝｻ2RUN(ON)
+ANB W20E1.0              ; 変位ｾﾝｻ2ERR(正常OFF)
+AND W20E2.2              ; 変位ｾﾝｻ2Light
+AND W20E2.3              ; 変位ｾﾝｻ2測定範囲内ON
+AND W20E2.4              ; 変位ｾﾝｻ2測定状態(正常ON)
+OUT @MR901               ; 変位ｾﾝｻ2正常
+LD W2110.4               ; 変位ｾﾝｻ3RUN(ON)
+ANB W2111.0              ; 変位ｾﾝｻ3ERR(正常OFF)
+AND W2112.2              ; 変位ｾﾝｻ3Light
+AND W2112.3              ; 変位ｾﾝｻ3測定範囲内ON
+AND W2112.4              ; 変位ｾﾝｻ3測定状態(正常ON)
+OUT @MR902               ; 変位ｾﾝｻ3正常
+LD W2140.4               ; 変位ｾﾝｻ4RUN(ON)
+ANB W2141.0              ; 変位ｾﾝｻ4ERR(正常OFF)
+AND W2142.2              ; 変位ｾﾝｻ4Light
+AND W2142.3              ; 変位ｾﾝｻ4測定範囲内ON
+AND W2142.4              ; 変位ｾﾝｻ4測定状態(正常ON)
+OUT @MR903               ; 変位ｾﾝｻ4正常
+STG @MR5803
+MPS
+LD @MR900                ; 変位ｾﾝｻ1正常
+AND @MR901               ; 変位ｾﾝｻ2正常
+AND @MR902               ; 変位ｾﾝｻ3正常
+AND @MR903               ; 変位ｾﾝｻ4正常
+ANL
+JMP @MR5815
+MPP
+LDB @MR900               ; 変位ｾﾝｻ1正常
+ORB @MR901               ; 変位ｾﾝｻ2正常
+ORB @MR902               ; 変位ｾﾝｻ3正常
+ORB @MR903               ; 変位ｾﾝｻ4正常
+ANL
+TMR @22 #5               ; wait
+CON
+AND @T22                 ; wait
+JMP @MR5804
+;変位ｾﾝｻ状態異常
+LD @MR5804
+ANB R39004               ; ｴﾗｰ中
+MPS
+ANB @MR900               ; 変位ｾﾝｻ1正常
+DW #7004 @DM2            ; SensorNo /ERROR_DISP
+MRD
+ANB @MR901               ; 変位ｾﾝｻ2正常
+DW #7005 @DM2            ; SensorNo /ERROR_DISP
+MRD
+ANB @MR902               ; 変位ｾﾝｻ3正常
+DW #7006 @DM2            ; SensorNo /ERROR_DISP
+MPP
+ANB @MR903               ; 変位ｾﾝｻ4正常
+DW #7007 @DM2            ; SensorNo /ERROR_DISP
+STG @MR5804
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+ANB R39004               ; ｴﾗｰ中
+ANL
+SET R39004               ; ｴﾗｰ中
+CON
+DW $7300 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #103 @DM1             ; ErrorNo /ERROR_DISP
+CON
+SET @MR100               ; Task0 ERROR
+CON
+JMP @MR5805
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR5805
+SET @MR1900              ; Main1 HALT許可
+CON
+AND @MR101               ; Task0 ｴﾗｰ完了
+RES @MR101               ; Task0 ｴﾗｰ完了
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+MPS
+AND @MR105               ; SW1
+JMP @MR5806
+MPP
+AND @MR106               ; SW2
+SET @MR909               ; sub⑩停止選択
+CON
+JMP @MR5815
+;ｴﾗｰｸﾘｱ
+STG @MR5806
+MPS
+ANB W20B1.0              ; 変位ｾﾝｻ1ERR(正常OFF)
+SET W20CD.0              ; 変位ｾﾝｻ1ｴﾗｰｸﾘｱ
+MRD
+ANB W20E1.0              ; 変位ｾﾝｻ2ERR(正常OFF)
+SET W20FD.0              ; 変位ｾﾝｻ2ｴﾗｰｸﾘｱ
+MRD
+ANB W2111.0              ; 変位ｾﾝｻ3ERR(正常OFF)
+SET W212D.0              ; 変位ｾﾝｻ3ｴﾗｰｸﾘｱ
+MRD
+ANB W2141.0              ; 変位ｾﾝｻ4ERR(正常OFF)
+SET W215D.0              ; 変位ｾﾝｻ4ｴﾗｰｸﾘｱ
+MPP
+JMP @MR5807
+STG @MR5807
+TMR @18 #10              ; WAIT
+CON
+AND @T18                 ; WAIT
+RES W20CD.0              ; 変位ｾﾝｻ1ｴﾗｰｸﾘｱ
+CON
+RES W20FD.0              ; 変位ｾﾝｻ2ｴﾗｰｸﾘｱ
+CON
+RES W212D.0              ; 変位ｾﾝｻ3ｴﾗｰｸﾘｱ
+CON
+RES W215D.0              ; 変位ｾﾝｻ4ｴﾗｰｸﾘｱ
+CON
+JMP @MR5803
+;END
+STG @MR5815
+SET @MR5801              ; ⑩Sub_変位ｾﾝｻ状態確認/完了
+CON
+RES @MR5802              ; ⑩Sub_変位ｾﾝｻ状態確認/動作中
+CON
+ENDS
+;<h1/>⑪Sub_平坦度測定
+STG @MR5900              ; ⑪Sub_平坦度測定
+SET @MR5902              ; ⑪Sub_平坦度測定/動作中
+CON
+JMP @MR5903
+;変位ｾﾝｻﾃﾞｰﾀ読込み(読み込み値=×10＾-6[mm])
+STG @MR5903
+LDA.L W20BC              ; 変位ｾﾝｻ1_出力ﾃﾞｰﾀ0下位
+CON
+DFLOAT.L
+CON
+STA.DF DM11820           ; NP面測定_変数Z_[0](下位)読込値
+CON
+LDA.L W20EC              ; 変位ｾﾝｻ2_出力ﾃﾞｰﾀ0下位
+CON
+DFLOAT.L
+CON
+STA.DF DM11824           ; NP面測定_変数Z_[1](下位)読込値
+CON
+LDA.L W211C              ; 変位ｾﾝｻ3_出力ﾃﾞｰﾀ0下位
+CON
+DFLOAT.L
+CON
+STA.DF DM11828           ; NP面測定_変数Z_[2](下位)読込値
+CON
+LDA.L W214C              ; 変位ｾﾝｻ4_出力ﾃﾞｰﾀ0下位
+CON
+DFLOAT.L
+CON
+STA.DF DM11832           ; NP面測定_変数Z_[3](下位)読込値
+CON
+JMP @MR5905
+;μm変換
+;ｺﾞﾆｵｽﾃｰｼﾞ送り量算出(μm単位)
+;'ｽﾃｰｼﾞ送り量算出
+;
+;EM29220.DF=((DM11820.DF/1000)+DM7020.L)'μm変換後ｵﾌｾｯﾄ値加算
+;EM29224.DF=((DM11824.DF/1000)+DM7022.L)'μm変換後ｵﾌｾｯﾄ値加算
+;EM29228.DF=(DM11828.DF/1000)+DM7024.L'μm変換後ｵﾌｾｯﾄ値加算
+;EM29232.DF=(DM11832.DF/1000)+DM7026.L'μm変換後ｵﾌｾｯﾄ値加算
+;
+;'NP面TP表示用
+;DM11776.F=FLOAT(EM29220.DF)
+;DM11778.F=FLOAT(EM29224.DF)
+;DM11780.F=FLOAT(EM29228.DF)
+;DM11782.F=FLOAT(EM29232.DF)
+;
+;'計算用定数
+;DM11700.L=12897 '内分点までの距離(短:μm)
+;DM11704.L=35363 '内分点までの距離(長:μm)
+;DM11708.L=48260 'X方向長さ(μm)
+;DM11712.L=16849 'Y方向長さ/2(μm)
+;DM11716.L=24130 'X方向長さ/2(μm)
+;
+;'定数E算出
+;DM11720.DF=((DM11700.L*EM29220.DF)+(DM11704.L*EM29224.DF))/DM11708.L
+;'定数E_TP表示用
+;DM11814.F=FLOAT(DM11720.DF)
+;
+;'定数F算出
+;DM11724.DF=((DM11700.L*EM29232.DF)+(DM11704.L*EM29228.DF))/DM11708.L
+;'定数F_TP表示用
+;DM11816.F=FLOAT(DM11724.DF)
+;
+;'定数G算出
+;DM11728.DF=(EM29220.DF+EM29228.DF)/2
+;'定数G_TP表示用
+;DM11800.F=(FLOAT(EM29220.DF)+FLOAT(EM29228.DF))/2
+;
+;'定数H算出
+;DM11732.DF=(EM29224.DF+EM29232.DF)/2
+;'定数H_TP表示用
+;DM11802.F=(FLOAT(EM29224.DF)+FLOAT(EM29232.DF))/2
+;
+;'定数X算出
+;DM11736.DF=(DM11720.DF-DM11724.DF)
+;'定数X_TP表示用
+;DM11806.F=(DM11814.F-DM11816.F)
+;
+;'定数Y算出
+;DM11740.DF=(DM11728.DF-DM11732.DF)
+;'定数Y_TP表示用
+;DM11804.F=(DM11800.F-DM11802.F)
+;
+;
+;'ﾄﾚｻﾋﾞ用書込み
+;DM25010.F=FLOAT(EM29220.DF) 'NP面1
+;DM25012.F=FLOAT(EM29224.DF) 'NP面2
+;DM25014.F=FLOAT(EM29228.DF) 'NP面3
+;DM25016.F=FLOAT(EM29232.DF) 'NP面4
+;DM25018.F=DM11814.F 'E
+;DM25020.F=DM11816.F 'F
+;DM25022.F=DM11800.F 'G
+;DM25024.F=DM11802.F 'H
+;
+;
+;
+;'α軸(縦)変数算出
+;DM11744.DF=DM11736.DF/TOF(DM11712.L)
+;
+;'α軸(縦)θ算出
+;DM11748.DF=DEG(ATAN(DM11744.DF))
+;
+;'α軸(縦)sec算出
+;DM11752.DF=DM11748.DF*3600
+;
+;'α軸(縦)ｺﾞﾆｵ移動ﾊﾟﾙｽ
+;DM11786.DF=DM11752.DF/(0.000564*3600)
+;
+;'α軸(縦)ｺﾞﾆｵ移動ﾊﾟﾙｽ(整数)
+;DM11794.L=INTG(DM11786.DF)
+;
+;'α軸(縦)ｺﾞﾆｵ算出ﾊﾟﾙｽ表示用
+;DM11810.F=FLOAT(DM11786.DF)
+;
+;
+;
+;'β軸(横)変数算出
+;DM11760.DF=DM11740.DF/TOF(DM11716.L)
+;
+;'β軸(横)θ算出
+;DM11764.DF=DEG(ATAN(DM11760.DF))
+;
+;'β軸(横)sec算出
+;DM11768.DF=DM11764.DF*3600
+;
+;'β軸(横)ｺﾞﾆｵ移動ﾊﾟﾙｽ
+;DM11790.DF=DM11768.DF/(0.000448*3600)
+;
+;'β軸(横)ｺﾞﾆｵ移動ﾊﾟﾙｽ(整数)
+;DM11796.L=INTG(DM11790.DF)
+;
+;'β軸(縦)ｺﾞﾆｵ算出ﾊﾟﾙｽ表示用
+;DM11812.F=FLOAT(DM11790.DF)
+;
+;
+;SET(CR2002,@M904)
+;
+LD @MR5905
+NCJ #1005
+;'ｽﾃｰｼﾞ送り量算出
+;
+;EM29220.DF=((DM11820.DF/1000)+DM7020.L)'μm変換後ｵﾌｾｯﾄ値加算
+;
+LD CR2002                ; 常時ON
+LDA.DF DM11820           ; NP面測定_変数Z_[0](下位)読込値
+CON
+DIV.DF +1000
+CON
+STA.DF @VM57
+CON
+LDA.L DM7020             ; 装置基礎ﾃﾞｰﾀ11 
+CON
+DFLOAT.L
+CON
+ADD.DF @VM57
+CON
+STA.DF EM29220           ; NP面測定_変数Z_[0](下位)
+;EM29224.DF=((DM11824.DF/1000)+DM7022.L)'μm変換後ｵﾌｾｯﾄ値加算
+;
+LD CR2002                ; 常時ON
+LDA.DF DM11824           ; NP面測定_変数Z_[1](下位)読込値
+CON
+DIV.DF +1000
+CON
+STA.DF @VM61
+CON
+LDA.L DM7022             ; 装置基礎ﾃﾞｰﾀ12
+CON
+DFLOAT.L
+CON
+ADD.DF @VM61
+CON
+STA.DF EM29224           ; NP面測定_変数Z_[1](下位)
+;EM29228.DF=(DM11828.DF/1000)+DM7024.L'μm変換後ｵﾌｾｯﾄ値加算
+;
+LD CR2002                ; 常時ON
+LDA.DF DM11828           ; NP面測定_変数Z_[2](下位)読込値
+CON
+DIV.DF +1000
+CON
+STA.DF @VM65
+CON
+LDA.L DM7024             ; 装置基礎ﾃﾞｰﾀ13
+CON
+DFLOAT.L
+CON
+ADD.DF @VM65
+CON
+STA.DF EM29228           ; NP面測定_変数Z_[2](下位)
+;EM29232.DF=(DM11832.DF/1000)+DM7026.L'μm変換後ｵﾌｾｯﾄ値加算
+;
+LD CR2002                ; 常時ON
+LDA.DF DM11832           ; NP面測定_変数Z_[3](下位)読込値
+CON
+DIV.DF +1000
+CON
+STA.DF @VM69
+CON
+LDA.L DM7026             ; 装置基礎ﾃﾞｰﾀ14
+CON
+DFLOAT.L
+CON
+ADD.DF @VM69
+CON
+STA.DF EM29232           ; NP面測定_変数Z_[3](下位)
+;'NP面TP表示用
+;
+;DM11776.F=FLOAT(EM29220.DF)
+;
+LD CR2002                ; 常時ON
+LDA.DF EM29220           ; NP面測定_変数Z_[0](下位)
+CON
+DFTOF
+CON
+STA.F DM11776            ; NP面1_TP表示用
+;DM11778.F=FLOAT(EM29224.DF)
+;
+LD CR2002                ; 常時ON
+LDA.DF EM29224           ; NP面測定_変数Z_[1](下位)
+CON
+DFTOF
+CON
+STA.F DM11778            ; NP面2_TP表示用
+;DM11780.F=FLOAT(EM29228.DF)
+;
+LD CR2002                ; 常時ON
+LDA.DF EM29228           ; NP面測定_変数Z_[2](下位)
+CON
+DFTOF
+CON
+STA.F DM11780            ; NP面3_TP表示用
+;DM11782.F=FLOAT(EM29232.DF)
+;
+LD CR2002                ; 常時ON
+LDA.DF EM29232           ; NP面測定_変数Z_[3](下位)
+CON
+DFTOF
+CON
+STA.F DM11782            ; NP面4_TP表示用
+;'計算用定数
+;
+;DM11700.L=12897 '内分点までの距離(短:μm)
+;
+LD CR2002                ; 常時ON
+MOV.L +12897 DM11700     ; 内分点までの距離(短:μm)
+;DM11704.L=35363 '内分点までの距離(長:μm)
+;
+LD CR2002                ; 常時ON
+MOV.L +35363 DM11704     ; 内分点までの距離(長:μm)
+;DM11708.L=48260 'X方向長さ(μm)
+;
+LD CR2002                ; 常時ON
+MOV.L +48260 DM11708     ; X方向長さ(μm)
+;DM11712.L=16849 'Y方向長さ/2(μm)
+;
+LD CR2002                ; 常時ON
+MOV.L +16849 DM11712     ; Y方向長さ/2(μm)
+;DM11716.L=24130 'X方向長さ/2(μm)
+;
+LD CR2002                ; 常時ON
+MOV.L +24130 DM11716     ; X方向長さ/2(μm)
+;'定数E算出
+;
+;DM11720.DF=((DM11700.L*EM29220.DF)+(DM11704.L*EM29224.DF))/DM11708.L
+;
+LD CR2002                ; 常時ON
+LDA.L DM11704            ; 内分点までの距離(長:μm)
+CON
+DFLOAT.L
+CON
+MUL.DF EM29224           ; NP面測定_変数Z_[1](下位)
+CON
+STA.DF @VM73
+CON
+LDA.L DM11700            ; 内分点までの距離(短:μm)
+CON
+DFLOAT.L
+CON
+MUL.DF EM29220           ; NP面測定_変数Z_[0](下位)
+CON
+ADD.DF @VM73
+CON
+STA.DF @VM77
+CON
+LDA.L DM11708            ; X方向長さ(μm)
+CON
+DFLOAT.L
+CON
+STA.DF @VM81
+CON
+LDA.DF @VM77
+CON
+DIV.DF @VM81
+CON
+STA.DF DM11720           ; 定数E
+;'定数E_TP表示用
+;
+;DM11814.F=FLOAT(DM11720.DF)
+;
+LD CR2002                ; 常時ON
+LDA.DF DM11720           ; 定数E
+CON
+DFTOF
+CON
+STA.F DM11814            ; 定数E_TP表示用
+;'定数F算出
+;
+;DM11724.DF=((DM11700.L*EM29232.DF)+(DM11704.L*EM29228.DF))/DM11708.L
+;
+LD CR2002                ; 常時ON
+LDA.L DM11704            ; 内分点までの距離(長:μm)
+CON
+DFLOAT.L
+CON
+MUL.DF EM29228           ; NP面測定_変数Z_[2](下位)
+CON
+STA.DF @VM85
+CON
+LDA.L DM11700            ; 内分点までの距離(短:μm)
+CON
+DFLOAT.L
+CON
+MUL.DF EM29232           ; NP面測定_変数Z_[3](下位)
+CON
+ADD.DF @VM85
+CON
+STA.DF @VM89
+CON
+LDA.L DM11708            ; X方向長さ(μm)
+CON
+DFLOAT.L
+CON
+STA.DF @VM93
+CON
+LDA.DF @VM89
+CON
+DIV.DF @VM93
+CON
+STA.DF DM11724           ; 定数F
+;'定数F_TP表示用
+;
+;DM11816.F=FLOAT(DM11724.DF)
+;
+LD CR2002                ; 常時ON
+LDA.DF DM11724           ; 定数F
+CON
+DFTOF
+CON
+STA.F DM11816            ; 定数F_TP表示用
+;'定数G算出
+;
+;DM11728.DF=(EM29220.DF+EM29228.DF)/2
+;
+LD CR2002                ; 常時ON
+LDA.DF EM29220           ; NP面測定_変数Z_[0](下位)
+CON
+ADD.DF EM29228           ; NP面測定_変数Z_[2](下位)
+CON
+DIV.DF +2
+CON
+STA.DF DM11728           ; 定数G
+;'定数G_TP表示用
+;
+;DM11800.F=(FLOAT(EM29220.DF)+FLOAT(EM29228.DF))/2
+;
+LD CR2002                ; 常時ON
+LDA.DF EM29228           ; NP面測定_変数Z_[2](下位)
+CON
+DFTOF
+CON
+STA.F @VM97
+CON
+LDA.DF EM29220           ; NP面測定_変数Z_[0](下位)
+CON
+DFTOF
+CON
+ADD.F @VM97
+CON
+DIV.F +2
+CON
+STA.F DM11800            ; 定数G_TP表示用
+;'定数H算出
+;
+;DM11732.DF=(EM29224.DF+EM29232.DF)/2
+;
+LD CR2002                ; 常時ON
+LDA.DF EM29224           ; NP面測定_変数Z_[1](下位)
+CON
+ADD.DF EM29232           ; NP面測定_変数Z_[3](下位)
+CON
+DIV.DF +2
+CON
+STA.DF DM11732           ; 定数H
+;'定数H_TP表示用
+;
+;DM11802.F=(FLOAT(EM29224.DF)+FLOAT(EM29232.DF))/2
+;
+LD CR2002                ; 常時ON
+LDA.DF EM29232           ; NP面測定_変数Z_[3](下位)
+CON
+DFTOF
+CON
+STA.F @VM99
+CON
+LDA.DF EM29224           ; NP面測定_変数Z_[1](下位)
+CON
+DFTOF
+CON
+ADD.F @VM99
+CON
+DIV.F +2
+CON
+STA.F DM11802            ; 定数H_TP表示用
+;'定数X算出
+;
+;DM11736.DF=(DM11720.DF-DM11724.DF)
+;
+LD CR2002                ; 常時ON
+LDA.DF DM11720           ; 定数E
+CON
+SUB.DF DM11724           ; 定数F
+CON
+STA.DF DM11736           ; 定数X
+;'定数X_TP表示用
+;
+;DM11806.F=(DM11814.F-DM11816.F)
+;
+LD CR2002                ; 常時ON
+LDA.F DM11814            ; 定数E_TP表示用
+CON
+SUB.F DM11816            ; 定数F_TP表示用
+CON
+STA.F DM11806            ; 定数X_TP表示用
+;'定数Y算出
+;
+;DM11740.DF=(DM11728.DF-DM11732.DF)
+;
+LD CR2002                ; 常時ON
+LDA.DF DM11728           ; 定数G
+CON
+SUB.DF DM11732           ; 定数H
+CON
+STA.DF DM11740           ; 定数Y
+;'定数Y_TP表示用
+;
+;DM11804.F=(DM11800.F-DM11802.F)
+;
+LD CR2002                ; 常時ON
+LDA.F DM11800            ; 定数G_TP表示用
+CON
+SUB.F DM11802            ; 定数H_TP表示用
+CON
+STA.F DM11804            ; 定数Y_TP表示用
+;'ﾄﾚｻﾋﾞ用書込み
+;
+;DM25010.F=FLOAT(EM29220.DF) 'NP面1
+;
+LD CR2002                ; 常時ON
+LDA.DF EM29220           ; NP面測定_変数Z_[0](下位)
+CON
+DFTOF
+CON
+STA.F DM25010            ; NP面測定結果D(変位ｾﾝｻ1)
+;DM25012.F=FLOAT(EM29224.DF) 'NP面2
+;
+LD CR2002                ; 常時ON
+LDA.DF EM29224           ; NP面測定_変数Z_[1](下位)
+CON
+DFTOF
+CON
+STA.F DM25012            ; NP面測定結果C(変位ｾﾝｻ2)
+;DM25014.F=FLOAT(EM29228.DF) 'NP面3
+;
+LD CR2002                ; 常時ON
+LDA.DF EM29228           ; NP面測定_変数Z_[2](下位)
+CON
+DFTOF
+CON
+STA.F DM25014            ; NP面測定結果B(変位ｾﾝｻ3)
+;DM25016.F=FLOAT(EM29232.DF) 'NP面4
+;
+LD CR2002                ; 常時ON
+LDA.DF EM29232           ; NP面測定_変数Z_[3](下位)
+CON
+DFTOF
+CON
+STA.F DM25016            ; NP面測定結果A(変位ｾﾝｻ4)
+;DM25018.F=DM11814.F 'E
+;
+LD CR2002                ; 常時ON
+MOV.F DM11814 DM25018    ; 定数E_TP表示用  算出結果E
+;DM25020.F=DM11816.F 'F
+;
+LD CR2002                ; 常時ON
+MOV.F DM11816 DM25020    ; 定数F_TP表示用  算出結果F
+;DM25022.F=DM11800.F 'G
+;
+LD CR2002                ; 常時ON
+MOV.F DM11800 DM25022    ; 定数G_TP表示用  算出結果G
+;DM25024.F=DM11802.F 'H
+;
+LD CR2002                ; 常時ON
+MOV.F DM11802 DM25024    ; 定数H_TP表示用  算出結果H
+;'α軸(縦)変数算出
+;
+;DM11744.DF=DM11736.DF/TOF(DM11712.L)
+;
+LD CR2002                ; 常時ON
+LDA.L DM11712            ; Y方向長さ/2(μm)
+CON
+FLOAT.L
+CON
+FTODF
+CON
+STA.DF @VM101
+CON
+LDA.DF DM11736           ; 定数X
+CON
+DIV.DF @VM101
+CON
+STA.DF DM11744           ; α軸変数
+;'α軸(縦)θ算出
+;
+;DM11748.DF=DEG(ATAN(DM11744.DF))
+;
+LD CR2002                ; 常時ON
+LDA.DF DM11744           ; α軸変数
+CON
+ATAN.DF
+CON
+DEG.DF
+CON
+STA.DF DM11748           ; α軸θ
+;'α軸(縦)sec算出
+;
+;DM11752.DF=DM11748.DF*3600
+;
+LD CR2002                ; 常時ON
+LDA.DF DM11748           ; α軸θ
+CON
+MUL.DF +3600
+CON
+STA.DF DM11752           ; α軸sec
+;'α軸(縦)ｺﾞﾆｵ移動ﾊﾟﾙｽ
+;
+;DM11786.DF=DM11752.DF/(0.000564*3600)
+;
+LD CR2002                ; 常時ON
+LDA.DF DM11752           ; α軸sec
+CON
+DIV.DF +2.0304
+CON
+STA.DF DM11786           ; α軸ｺﾞﾆｵ移動ﾊﾟﾙｽ数
+;'α軸(縦)ｺﾞﾆｵ移動ﾊﾟﾙｽ(整数)
+;
+;DM11794.L=INTG(DM11786.DF)
+;
+LD CR2002                ; 常時ON
+LDA.DF DM11786           ; α軸ｺﾞﾆｵ移動ﾊﾟﾙｽ数
+CON
+DINTG.L
+CON
+STA.L DM11794            ; α軸ｺﾞﾆｵ移動ﾊﾟﾙｽ数(整数)
+;'α軸(縦)ｺﾞﾆｵ算出ﾊﾟﾙｽ表示用
+;
+;DM11810.F=FLOAT(DM11786.DF)
+;
+LD CR2002                ; 常時ON
+LDA.DF DM11786           ; α軸ｺﾞﾆｵ移動ﾊﾟﾙｽ数
+CON
+DFTOF
+CON
+STA.F DM11810            ; α軸ｺﾞﾆｵ算出ﾊﾟﾙｽTP表示用
+;'β軸(横)変数算出
+;
+;DM11760.DF=DM11740.DF/TOF(DM11716.L)
+;
+LD CR2002                ; 常時ON
+LDA.L DM11716            ; X方向長さ/2(μm)
+CON
+FLOAT.L
+CON
+FTODF
+CON
+STA.DF @VM105
+CON
+LDA.DF DM11740           ; 定数Y
+CON
+DIV.DF @VM105
+CON
+STA.DF DM11760           ; β軸変数
+;'β軸(横)θ算出
+;
+;DM11764.DF=DEG(ATAN(DM11760.DF))
+;
+LD CR2002                ; 常時ON
+LDA.DF DM11760           ; β軸変数
+CON
+ATAN.DF
+CON
+DEG.DF
+CON
+STA.DF DM11764           ; β軸θ
+;'β軸(横)sec算出
+;
+;DM11768.DF=DM11764.DF*3600
+;
+LD CR2002                ; 常時ON
+LDA.DF DM11764           ; β軸θ
+CON
+MUL.DF +3600
+CON
+STA.DF DM11768           ; β軸sec
+;'β軸(横)ｺﾞﾆｵ移動ﾊﾟﾙｽ
+;
+;DM11790.DF=DM11768.DF/(0.000448*3600)
+;
+LD CR2002                ; 常時ON
+LDA.DF DM11768           ; β軸sec
+CON
+DIV.DF +1.6128
+CON
+STA.DF DM11790           ; β軸ｺﾞﾆｵ移動ﾊﾟﾙｽ数
+;'β軸(横)ｺﾞﾆｵ移動ﾊﾟﾙｽ(整数)
+;
+;DM11796.L=INTG(DM11790.DF)
+;
+LD CR2002                ; 常時ON
+LDA.DF DM11790           ; β軸ｺﾞﾆｵ移動ﾊﾟﾙｽ数
+CON
+DINTG.L
+CON
+STA.L DM11796            ; β軸ｺﾞﾆｵ移動ﾊﾟﾙｽ数(整数)
+;'β軸(縦)ｺﾞﾆｵ算出ﾊﾟﾙｽ表示用
+;
+;DM11812.F=FLOAT(DM11790.DF)
+;
+LD CR2002                ; 常時ON
+LDA.DF DM11790           ; β軸ｺﾞﾆｵ移動ﾊﾟﾙｽ数
+CON
+DFTOF
+CON
+STA.F DM11812            ; β軸ｺﾞﾆｵ算出ﾊﾟﾙｽTP表示用
+;SET(CR2002,@M904)
+;
+LD CR2002                ; 常時ON
+SET @MR904               ; 算出完了
+LABEL #1005
+;
+STG @MR5905
+AND @MR904               ; 算出完了
+RES @MR904               ; 算出完了
+CON
+JMP @MR5906
+LD @MR5906
+MPS
+AND= @DM42 #0            ; 計算結果比較回数
+MPS
+LDA.F DM11776            ; NP面1_TP表示用
+CON
+STA.F DM12000            ; 変位ｾﾝｻ1_水平出し前_1
+CON
+LDA.F DM11778            ; NP面2_TP表示用
+CON
+STA.F DM12002            ; 変位ｾﾝｻ2_水平出し前_1
+CON
+LDA.F DM11780            ; NP面3_TP表示用
+CON
+STA.F DM12004            ; 変位ｾﾝｻ3_水平出し前_1
+CON
+LDA.F DM11782            ; NP面4_TP表示用
+CON
+STA.F DM12006            ; 変位ｾﾝｻ4_水平出し前_1
+MRD
+LDA.F DM11814            ; 定数E_TP表示用
+CON
+STA.F DM12008            ; 定数E詳細用_1
+CON
+LDA.F DM11816            ; 定数F_TP表示用
+CON
+STA.F DM12010            ; 定数F詳細用_1
+CON
+LDA.F DM11800            ; 定数G_TP表示用
+CON
+STA.F DM12012            ; 定数G詳細用_1
+CON
+LDA.F DM11802            ; 定数H_TP表示用
+CON
+STA.F DM12014            ; 定数H詳細用_1
+MRD
+LDA.F DM11806            ; 定数X_TP表示用
+CON
+STA.F DM12016            ; 定数X詳細用_1
+CON
+LDA.F DM11804            ; 定数Y_TP表示用
+CON
+STA.F DM12018            ; 定数Y詳細用_1
+CON
+LDA.F DM11810            ; α軸ｺﾞﾆｵ算出ﾊﾟﾙｽTP表示用
+CON
+STA.F DM12020            ; α軸算出ﾊﾟﾙｽ数_1
+CON
+LDA.F DM11812            ; β軸ｺﾞﾆｵ算出ﾊﾟﾙｽTP表示用
+CON
+STA.F DM12022            ; β軸算出ﾊﾟﾙｽ数_1
+MPP
+LDA.L DM11794            ; α軸ｺﾞﾆｵ移動ﾊﾟﾙｽ数(整数)
+CON
+STA.L DM12024            ; α軸移動ﾊﾟﾙｽ数_1
+CON
+LDA.L DM11796            ; β軸ｺﾞﾆｵ移動ﾊﾟﾙｽ数(整数)
+CON
+STA.L DM12026            ; β軸移動ﾊﾟﾙｽ数_1
+CON
+SET @MR914               ; 水平出しﾃﾞｰﾀ書込み完了
+MRD
+AND= @DM42 #1            ; 計算結果比較回数
+MPS
+LDA.F DM11776            ; NP面1_TP表示用
+CON
+STA.F DM12040            ; 変位ｾﾝｻ1_水平出し前_2
+CON
+LDA.F DM11778            ; NP面2_TP表示用
+CON
+STA.F DM12042            ; 変位ｾﾝｻ2_水平出し前_2
+CON
+LDA.F DM11780            ; NP面3_TP表示用
+CON
+STA.F DM12044            ; 変位ｾﾝｻ3_水平出し前_2
+CON
+LDA.F DM11782            ; NP面4_TP表示用
+CON
+STA.F DM12046            ; 変位ｾﾝｻ4_水平出し前_2
+MRD
+LDA.F DM11814            ; 定数E_TP表示用
+CON
+STA.F DM12048            ; 定数E詳細用_2
+CON
+LDA.F DM11816            ; 定数F_TP表示用
+CON
+STA.F DM12050            ; 定数F詳細用_2
+CON
+LDA.F DM11800            ; 定数G_TP表示用
+CON
+STA.F DM12052            ; 定数G詳細用_2
+CON
+LDA.F DM11802            ; 定数H_TP表示用
+CON
+STA.F DM12054            ; 定数H詳細用_2
+MRD
+LDA.F DM11806            ; 定数X_TP表示用
+CON
+STA.F DM12056            ; 定数X詳細用_2
+CON
+LDA.F DM11804            ; 定数Y_TP表示用
+CON
+STA.F DM12058            ; 定数Y詳細用_2
+CON
+LDA.F DM11810            ; α軸ｺﾞﾆｵ算出ﾊﾟﾙｽTP表示用
+CON
+STA.F DM12060            ; α軸算出ﾊﾟﾙｽ数_2
+CON
+LDA.F DM11812            ; β軸ｺﾞﾆｵ算出ﾊﾟﾙｽTP表示用
+CON
+STA.F DM12062            ; β軸算出ﾊﾟﾙｽ数_2
+MPP
+LDA.L DM11794            ; α軸ｺﾞﾆｵ移動ﾊﾟﾙｽ数(整数)
+CON
+STA.L DM12064            ; α軸移動ﾊﾟﾙｽ数_2
+CON
+LDA.L DM11796            ; β軸ｺﾞﾆｵ移動ﾊﾟﾙｽ数(整数)
+CON
+STA.L DM12066            ; β軸移動ﾊﾟﾙｽ数_2
+CON
+SET @MR914               ; 水平出しﾃﾞｰﾀ書込み完了
+MRD
+AND= @DM42 #2            ; 計算結果比較回数
+MPS
+LDA.F DM11776            ; NP面1_TP表示用
+CON
+STA.F DM12080            ; 変位ｾﾝｻ1_水平出し前_3
+CON
+LDA.F DM11778            ; NP面2_TP表示用
+CON
+STA.F DM12082            ; 変位ｾﾝｻ2_水平出し前_3
+CON
+LDA.F DM11780            ; NP面3_TP表示用
+CON
+STA.F DM12084            ; 変位ｾﾝｻ3_水平出し前_3
+CON
+LDA.F DM11782            ; NP面4_TP表示用
+CON
+STA.F DM12086            ; 変位ｾﾝｻ4_水平出し前_3
+MRD
+LDA.F DM11814            ; 定数E_TP表示用
+CON
+STA.F DM12088            ; 定数E詳細用_3
+CON
+LDA.F DM11816            ; 定数F_TP表示用
+CON
+STA.F DM12090            ; 定数F詳細用_3
+CON
+LDA.F DM11800            ; 定数G_TP表示用
+CON
+STA.F DM12092            ; 定数G詳細用_3
+CON
+LDA.F DM11802            ; 定数H_TP表示用
+CON
+STA.F DM12094            ; 定数H詳細用_3
+MRD
+LDA.F DM11806            ; 定数X_TP表示用
+CON
+STA.F DM12096            ; 定数X詳細用_3
+CON
+LDA.F DM11804            ; 定数Y_TP表示用
+CON
+STA.F DM12098            ; 定数Y詳細用_3
+CON
+LDA.F DM11810            ; α軸ｺﾞﾆｵ算出ﾊﾟﾙｽTP表示用
+CON
+STA.F DM12100            ; α軸算出ﾊﾟﾙｽ数_3
+CON
+LDA.F DM11812            ; β軸ｺﾞﾆｵ算出ﾊﾟﾙｽTP表示用
+CON
+STA.F DM12102            ; β軸算出ﾊﾟﾙｽ数_3
+MPP
+LDA.L DM11794            ; α軸ｺﾞﾆｵ移動ﾊﾟﾙｽ数(整数)
+CON
+STA.L DM12104            ; α軸移動ﾊﾟﾙｽ数_3
+CON
+LDA.L DM11796            ; β軸ｺﾞﾆｵ移動ﾊﾟﾙｽ数(整数)
+CON
+STA.L DM12106            ; β軸移動ﾊﾟﾙｽ数_3
+CON
+SET @MR914               ; 水平出しﾃﾞｰﾀ書込み完了
+MRD
+AND= @DM42 #3            ; 計算結果比較回数
+MPS
+LDA.F DM11776            ; NP面1_TP表示用
+CON
+STA.F DM12120            ; 変位ｾﾝｻ1_水平出し前_4
+CON
+LDA.F DM11778            ; NP面2_TP表示用
+CON
+STA.F DM12122            ; 変位ｾﾝｻ2_水平出し前_4
+CON
+LDA.F DM11780            ; NP面3_TP表示用
+CON
+STA.F DM12124            ; 変位ｾﾝｻ3_水平出し前_4
+CON
+LDA.F DM11782            ; NP面4_TP表示用
+CON
+STA.F DM12126            ; 変位ｾﾝｻ4_水平出し前_4
+MRD
+LDA.F DM11814            ; 定数E_TP表示用
+CON
+STA.F DM12128            ; 定数E詳細用_4
+CON
+LDA.F DM11816            ; 定数F_TP表示用
+CON
+STA.F DM12130            ; 定数F詳細用_4
+CON
+LDA.F DM11800            ; 定数G_TP表示用
+CON
+STA.F DM12132            ; 定数G詳細用_4
+CON
+LDA.F DM11802            ; 定数H_TP表示用
+CON
+STA.F DM12134            ; 定数H詳細用_4
+MRD
+LDA.F DM11806            ; 定数X_TP表示用
+CON
+STA.F DM12136            ; 定数X詳細用_4
+CON
+LDA.F DM11804            ; 定数Y_TP表示用
+CON
+STA.F DM12138            ; 定数Y詳細用_4
+CON
+LDA.F DM11810            ; α軸ｺﾞﾆｵ算出ﾊﾟﾙｽTP表示用
+CON
+STA.F DM12140            ; α軸算出ﾊﾟﾙｽ数_4
+CON
+LDA.F DM11812            ; β軸ｺﾞﾆｵ算出ﾊﾟﾙｽTP表示用
+CON
+STA.F DM12142            ; β軸算出ﾊﾟﾙｽ数_4
+MPP
+LDA.L DM11794            ; α軸ｺﾞﾆｵ移動ﾊﾟﾙｽ数(整数)
+CON
+STA.L DM12144            ; α軸移動ﾊﾟﾙｽ数_4
+CON
+LDA.L DM11796            ; β軸ｺﾞﾆｵ移動ﾊﾟﾙｽ数(整数)
+CON
+STA.L DM12146            ; β軸移動ﾊﾟﾙｽ数_4
+CON
+SET @MR914               ; 水平出しﾃﾞｰﾀ書込み完了
+MRD
+AND= @DM42 #4            ; 計算結果比較回数
+MPS
+LDA.F DM11776            ; NP面1_TP表示用
+CON
+STA.F DM12160            ; 変位ｾﾝｻ1_水平出し前_5
+CON
+LDA.F DM11778            ; NP面2_TP表示用
+CON
+STA.F DM12162            ; 変位ｾﾝｻ2_水平出し前_5
+CON
+LDA.F DM11780            ; NP面3_TP表示用
+CON
+STA.F DM12164            ; 変位ｾﾝｻ3_水平出し前_5
+CON
+LDA.F DM11782            ; NP面4_TP表示用
+CON
+STA.F DM12166            ; 変位ｾﾝｻ4_水平出し前_5
+MRD
+LDA.F DM11814            ; 定数E_TP表示用
+CON
+STA.F DM12168            ; 定数E詳細用_5
+CON
+LDA.F DM11816            ; 定数F_TP表示用
+CON
+STA.F DM12170            ; 定数F詳細用_5
+CON
+LDA.F DM11800            ; 定数G_TP表示用
+CON
+STA.F DM12172            ; 定数G詳細用_5
+CON
+LDA.F DM11802            ; 定数H_TP表示用
+CON
+STA.F DM12174            ; 定数H詳細用_5
+MRD
+LDA.F DM11806            ; 定数X_TP表示用
+CON
+STA.F DM12176            ; 定数X詳細用_5
+CON
+LDA.F DM11804            ; 定数Y_TP表示用
+CON
+STA.F DM12178            ; 定数Y詳細用_5
+CON
+LDA.F DM11810            ; α軸ｺﾞﾆｵ算出ﾊﾟﾙｽTP表示用
+CON
+STA.F DM12180            ; α軸算出ﾊﾟﾙｽ数_5
+CON
+LDA.F DM11812            ; β軸ｺﾞﾆｵ算出ﾊﾟﾙｽTP表示用
+CON
+STA.F DM12182            ; β軸算出ﾊﾟﾙｽ数_5
+MPP
+LDA.L DM11794            ; α軸ｺﾞﾆｵ移動ﾊﾟﾙｽ数(整数)
+CON
+STA.L DM12184            ; α軸移動ﾊﾟﾙｽ数_5
+CON
+LDA.L DM11796            ; β軸ｺﾞﾆｵ移動ﾊﾟﾙｽ数(整数)
+CON
+STA.L DM12186            ; β軸移動ﾊﾟﾙｽ数_5
+CON
+SET @MR914               ; 水平出しﾃﾞｰﾀ書込み完了
+MRD
+AND= @DM42 #5            ; 計算結果比較回数
+MPS
+LDA.F DM11776            ; NP面1_TP表示用
+CON
+STA.F DM12200            ; 変位ｾﾝｻ1_水平出し前_6
+CON
+LDA.F DM11778            ; NP面2_TP表示用
+CON
+STA.F DM12202            ; 変位ｾﾝｻ2_水平出し前_6
+CON
+LDA.F DM11780            ; NP面3_TP表示用
+CON
+STA.F DM12204            ; 変位ｾﾝｻ3_水平出し前_6
+CON
+LDA.F DM11782            ; NP面4_TP表示用
+CON
+STA.F DM12206            ; 変位ｾﾝｻ4_水平出し前_6
+MRD
+LDA.F DM11814            ; 定数E_TP表示用
+CON
+STA.F DM12208            ; 定数E詳細用_6
+CON
+LDA.F DM11816            ; 定数F_TP表示用
+CON
+STA.F DM12210            ; 定数F詳細用_6
+CON
+LDA.F DM11800            ; 定数G_TP表示用
+CON
+STA.F DM12212            ; 定数G詳細用_6
+CON
+LDA.F DM11802            ; 定数H_TP表示用
+CON
+STA.F DM12214            ; 定数H詳細用_6
+MRD
+LDA.F DM11806            ; 定数X_TP表示用
+CON
+STA.F DM12216            ; 定数X詳細用_6
+CON
+LDA.F DM11804            ; 定数Y_TP表示用
+CON
+STA.F DM12218            ; 定数Y詳細用_6
+CON
+LDA.F DM11810            ; α軸ｺﾞﾆｵ算出ﾊﾟﾙｽTP表示用
+CON
+STA.F DM12220            ; α軸算出ﾊﾟﾙｽ数_6
+CON
+LDA.F DM11812            ; β軸ｺﾞﾆｵ算出ﾊﾟﾙｽTP表示用
+CON
+STA.F DM12222            ; β軸算出ﾊﾟﾙｽ数_6
+MPP
+LDA.L DM11794            ; α軸ｺﾞﾆｵ移動ﾊﾟﾙｽ数(整数)
+CON
+STA.L DM12224            ; α軸移動ﾊﾟﾙｽ数_6
+CON
+LDA.L DM11796            ; β軸ｺﾞﾆｵ移動ﾊﾟﾙｽ数(整数)
+CON
+STA.L DM12226            ; β軸移動ﾊﾟﾙｽ数_6
+CON
+SET @MR914               ; 水平出しﾃﾞｰﾀ書込み完了
+MRD
+AND= @DM42 #6            ; 計算結果比較回数
+MPS
+LDA.F DM11776            ; NP面1_TP表示用
+CON
+STA.F DM12240            ; 変位ｾﾝｻ1_水平出し前_7
+CON
+LDA.F DM11778            ; NP面2_TP表示用
+CON
+STA.F DM12242            ; 変位ｾﾝｻ2_水平出し前_7
+CON
+LDA.F DM11780            ; NP面3_TP表示用
+CON
+STA.F DM12244            ; 変位ｾﾝｻ3_水平出し前_7
+CON
+LDA.F DM11782            ; NP面4_TP表示用
+CON
+STA.F DM12246            ; 変位ｾﾝｻ4_水平出し前_7
+MRD
+LDA.F DM11814            ; 定数E_TP表示用
+CON
+STA.F DM12248            ; 定数E詳細用_7
+CON
+LDA.F DM11816            ; 定数F_TP表示用
+CON
+STA.F DM12250            ; 定数F詳細用_7
+CON
+LDA.F DM11800            ; 定数G_TP表示用
+CON
+STA.F DM12252            ; 定数G詳細用_7
+CON
+LDA.F DM11802            ; 定数H_TP表示用
+CON
+STA.F DM12254            ; 定数H詳細用_7
+MRD
+LDA.F DM11806            ; 定数X_TP表示用
+CON
+STA.F DM12256            ; 定数X詳細用_7
+CON
+LDA.F DM11804            ; 定数Y_TP表示用
+CON
+STA.F DM12258            ; 定数Y詳細用_7
+CON
+LDA.F DM11810            ; α軸ｺﾞﾆｵ算出ﾊﾟﾙｽTP表示用
+CON
+STA.F DM12260            ; α軸算出ﾊﾟﾙｽ数_7
+CON
+LDA.F DM11812            ; β軸ｺﾞﾆｵ算出ﾊﾟﾙｽTP表示用
+CON
+STA.F DM12262            ; β軸算出ﾊﾟﾙｽ数_7
+MPP
+LDA.L DM11794            ; α軸ｺﾞﾆｵ移動ﾊﾟﾙｽ数(整数)
+CON
+STA.L DM12264            ; α軸移動ﾊﾟﾙｽ数_7
+CON
+LDA.L DM11796            ; β軸ｺﾞﾆｵ移動ﾊﾟﾙｽ数(整数)
+CON
+STA.L DM12266            ; β軸移動ﾊﾟﾙｽ数_7
+CON
+SET @MR914               ; 水平出しﾃﾞｰﾀ書込み完了
+MRD
+AND= @DM42 #7            ; 計算結果比較回数
+MPS
+LDA.F DM11776            ; NP面1_TP表示用
+CON
+STA.F DM12280            ; 変位ｾﾝｻ1_水平出し前_8
+CON
+LDA.F DM11778            ; NP面2_TP表示用
+CON
+STA.F DM12282            ; 変位ｾﾝｻ2_水平出し前_8
+CON
+LDA.F DM11780            ; NP面3_TP表示用
+CON
+STA.F DM12284            ; 変位ｾﾝｻ3_水平出し前_8
+CON
+LDA.F DM11782            ; NP面4_TP表示用
+CON
+STA.F DM12286            ; 変位ｾﾝｻ4_水平出し前_8
+MRD
+LDA.F DM11814            ; 定数E_TP表示用
+CON
+STA.F DM12288            ; 定数E詳細用_8
+CON
+LDA.F DM11816            ; 定数F_TP表示用
+CON
+STA.F DM12290            ; 定数F詳細用_8
+CON
+LDA.F DM11800            ; 定数G_TP表示用
+CON
+STA.F DM12292            ; 定数G詳細用_8
+CON
+LDA.F DM11802            ; 定数H_TP表示用
+CON
+STA.F DM12294            ; 定数H詳細用_8
+MRD
+LDA.F DM11806            ; 定数X_TP表示用
+CON
+STA.F DM12296            ; 定数X詳細用_8
+CON
+LDA.F DM11804            ; 定数Y_TP表示用
+CON
+STA.F DM12298            ; 定数Y詳細用_8
+CON
+LDA.F DM11810            ; α軸ｺﾞﾆｵ算出ﾊﾟﾙｽTP表示用
+CON
+STA.F DM12300            ; α軸算出ﾊﾟﾙｽ数_8
+CON
+LDA.F DM11812            ; β軸ｺﾞﾆｵ算出ﾊﾟﾙｽTP表示用
+CON
+STA.F DM12302            ; β軸算出ﾊﾟﾙｽ数_8
+MPP
+LDA.L DM11794            ; α軸ｺﾞﾆｵ移動ﾊﾟﾙｽ数(整数)
+CON
+STA.L DM12304            ; α軸移動ﾊﾟﾙｽ数_8
+CON
+LDA.L DM11796            ; β軸ｺﾞﾆｵ移動ﾊﾟﾙｽ数(整数)
+CON
+STA.L DM12306            ; β軸移動ﾊﾟﾙｽ数_8
+CON
+SET @MR914               ; 水平出しﾃﾞｰﾀ書込み完了
+MRD
+AND= @DM42 #8            ; 計算結果比較回数
+MPS
+LDA.F DM11776            ; NP面1_TP表示用
+CON
+STA.F DM12320            ; 変位ｾﾝｻ1_水平出し前_9
+CON
+LDA.F DM11778            ; NP面2_TP表示用
+CON
+STA.F DM12322            ; 変位ｾﾝｻ2_水平出し前_9
+CON
+LDA.F DM11780            ; NP面3_TP表示用
+CON
+STA.F DM12324            ; 変位ｾﾝｻ3_水平出し前_9
+CON
+LDA.F DM11782            ; NP面4_TP表示用
+CON
+STA.F DM12326            ; 変位ｾﾝｻ4_水平出し前_9
+MRD
+LDA.F DM11814            ; 定数E_TP表示用
+CON
+STA.F DM12328            ; 定数E詳細用_9
+CON
+LDA.F DM11816            ; 定数F_TP表示用
+CON
+STA.F DM12330            ; 定数F詳細用_9
+CON
+LDA.F DM11800            ; 定数G_TP表示用
+CON
+STA.F DM12332            ; 定数G詳細用_9
+CON
+LDA.F DM11802            ; 定数H_TP表示用
+CON
+STA.F DM12334            ; 定数H詳細用_9
+MRD
+LDA.F DM11806            ; 定数X_TP表示用
+CON
+STA.F DM12336            ; 定数X詳細用_9
+CON
+LDA.F DM11804            ; 定数Y_TP表示用
+CON
+STA.F DM12338            ; 定数Y詳細用_9
+CON
+LDA.F DM11810            ; α軸ｺﾞﾆｵ算出ﾊﾟﾙｽTP表示用
+CON
+STA.F DM12340            ; α軸算出ﾊﾟﾙｽ数_9
+CON
+LDA.F DM11812            ; β軸ｺﾞﾆｵ算出ﾊﾟﾙｽTP表示用
+CON
+STA.F DM12342            ; β軸算出ﾊﾟﾙｽ数_9
+MPP
+LDA.L DM11794            ; α軸ｺﾞﾆｵ移動ﾊﾟﾙｽ数(整数)
+CON
+STA.L DM12344            ; α軸移動ﾊﾟﾙｽ数_9
+CON
+LDA.L DM11796            ; β軸ｺﾞﾆｵ移動ﾊﾟﾙｽ数(整数)
+CON
+STA.L DM12346            ; β軸移動ﾊﾟﾙｽ数_9
+CON
+SET @MR914               ; 水平出しﾃﾞｰﾀ書込み完了
+MRD
+AND= @DM42 #9            ; 計算結果比較回数
+MPS
+LDA.F DM11776            ; NP面1_TP表示用
+CON
+STA.F DM12360            ; 変位ｾﾝｻ1_水平出し前_10
+CON
+LDA.F DM11778            ; NP面2_TP表示用
+CON
+STA.F DM12362            ; 変位ｾﾝｻ2_水平出し前_10
+CON
+LDA.F DM11780            ; NP面3_TP表示用
+CON
+STA.F DM12364            ; 変位ｾﾝｻ3_水平出し前_10
+CON
+LDA.F DM11782            ; NP面4_TP表示用
+CON
+STA.F DM12366            ; 変位ｾﾝｻ4_水平出し前_10
+MRD
+LDA.F DM11814            ; 定数E_TP表示用
+CON
+STA.F DM12368            ; 定数E詳細用_10
+CON
+LDA.F DM11816            ; 定数F_TP表示用
+CON
+STA.F DM12370            ; 定数F詳細用_10
+CON
+LDA.F DM11800            ; 定数G_TP表示用
+CON
+STA.F DM12372            ; 定数G詳細用_10
+CON
+LDA.F DM11802            ; 定数H_TP表示用
+CON
+STA.F DM12374            ; 定数H詳細用_10
+MRD
+LDA.F DM11806            ; 定数X_TP表示用
+CON
+STA.F DM12376            ; 定数X詳細用_10
+CON
+LDA.F DM11804            ; 定数Y_TP表示用
+CON
+STA.F DM12378            ; 定数Y詳細用_10
+CON
+LDA.F DM11810            ; α軸ｺﾞﾆｵ算出ﾊﾟﾙｽTP表示用
+CON
+STA.F DM12380            ; α軸算出ﾊﾟﾙｽ数_10
+CON
+LDA.F DM11812            ; β軸ｺﾞﾆｵ算出ﾊﾟﾙｽTP表示用
+CON
+STA.F DM12382            ; β軸算出ﾊﾟﾙｽ数_10
+MPP
+LDA.L DM11794            ; α軸ｺﾞﾆｵ移動ﾊﾟﾙｽ数(整数)
+CON
+STA.L DM12384            ; α軸移動ﾊﾟﾙｽ数_10
+CON
+LDA.L DM11796            ; β軸ｺﾞﾆｵ移動ﾊﾟﾙｽ数(整数)
+CON
+STA.L DM12386            ; β軸移動ﾊﾟﾙｽ数_10
+CON
+SET @MR914               ; 水平出しﾃﾞｰﾀ書込み完了
+MPP
+AND> @DM42 #9            ; 計算結果比較回数
+SET @MR914               ; 水平出しﾃﾞｰﾀ書込み完了
+STG @MR5906
+AND @MR914               ; 水平出しﾃﾞｰﾀ書込み完了
+RES @MR914               ; 水平出しﾃﾞｰﾀ書込み完了
+CON
+JMP @MR5908
+STG @MR5908
+MPS
+LD=.L DM11794 +0         ; α軸ｺﾞﾆｵ移動ﾊﾟﾙｽ数(整数)
+AND=.L DM11796 +0        ; β軸ｺﾞﾆｵ移動ﾊﾟﾙｽ数(整数)
+ANL
+JMP @MR5915
+MPP
+LD<>.L DM11794 +0        ; α軸ｺﾞﾆｵ移動ﾊﾟﾙｽ数(整数)
+OR<>.L DM11796 +0        ; β軸ｺﾞﾆｵ移動ﾊﾟﾙｽ数(整数)
+ANL
+MPS
+LD<.L DM11794 +2000      ; α軸ｺﾞﾆｵ移動ﾊﾟﾙｽ数(整数)
+AND>.L DM11794 -2000     ; α軸ｺﾞﾆｵ移動ﾊﾟﾙｽ数(整数)
+AND<.L DM11796 +2000     ; β軸ｺﾞﾆｵ移動ﾊﾟﾙｽ数(整数)
+AND>.L DM11796 -2000     ; β軸ｺﾞﾆｵ移動ﾊﾟﾙｽ数(整数)
+ANL
+JMP @MR5909
+MPP
+LD>=.L DM11794 +2000     ; α軸ｺﾞﾆｵ移動ﾊﾟﾙｽ数(整数)
+OR<=.L DM11794 -2000     ; α軸ｺﾞﾆｵ移動ﾊﾟﾙｽ数(整数)
+OR>=.L DM11796 +2000     ; β軸ｺﾞﾆｵ移動ﾊﾟﾙｽ数(整数)
+OR<=.L DM11796 -2000     ; β軸ｺﾞﾆｵ移動ﾊﾟﾙｽ数(整数)
+ANL
+JMP @MR5911
+;α,β軸移動量書込み
+;'RB3,4のPOS10目標値に書き込み
+;
+;EM11254.L=EM11254.L+DM11794.L
+;EM11854.L=EM11854.L+DM11796.L
+;
+;SET(CR2002,@MR905)
+LD @MR5909
+ANB @MR905               ; 書込み完了
+NCJ #1004
+;'RB3,4のPOS10目標値に書き込み
+;
+;EM11254.L=EM11254.L+DM11794.L
+;
+LD CR2002                ; 常時ON
+LDA.L EM11254            ; RB3 P10 POS(LO)
+CON
+ADD.L DM11794            ; α軸ｺﾞﾆｵ移動ﾊﾟﾙｽ数(整数)
+CON
+STA.L EM11254            ; RB3 P10 POS(LO)
+;EM11854.L=EM11854.L+DM11796.L
+;
+LD CR2002                ; 常時ON
+LDA.L EM11854            ; RB4 P10 POS(LO)
+CON
+ADD.L DM11796            ; β軸ｺﾞﾆｵ移動ﾊﾟﾙｽ数(整数)
+CON
+STA.L EM11854            ; RB4 P10 POS(LO)
+;SET(CR2002,@MR905)
+LD CR2002                ; 常時ON
+SET @MR905               ; 書込み完了
+LABEL #1004
+;
+STG @MR5909
+AND @MR905               ; 書込み完了
+RES @MR905               ; 書込み完了
+CON
+JMP @MR5910
+;ｺﾞﾆｵｽﾃｰｼﾞ角度±2°以上のときは異常(干渉防止)
+STG @MR5910
+MPS
+LD<.L EM11254 +10000     ; RB3 P10 POS(LO)
+AND>.L EM11254 -10000    ; RB3 P10 POS(LO)
+AND<.L EM11854 +10000    ; RB4 P10 POS(LO)
+AND>.L EM11854 -10000    ; RB4 P10 POS(LO)
+ANL
+JMP @MR5915
+MPP
+LD>=.L EM11254 +10000    ; RB3 P10 POS(LO)
+OR>=.L EM11854 +10000    ; RB4 P10 POS(LO)
+OR<=.L EM11254 -10000    ; RB3 P10 POS(LO)
+OR<=.L EM11854 -10000    ; RB4 P10 POS(LO)
+ANL
+JMP @MR5911
+;ｺﾞﾆｵｽﾃｰｼﾞ送り量異常
+STG @MR5911
+ANB R39900               ; RB動作中
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+ANB R39004               ; ｴﾗｰ中
+ANL
+SET R39004               ; ｴﾗｰ中
+CON
+DW $3000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #104 @DM1             ; ErrorNo /ERROR_DISP
+CON
+DW #0 @DM2               ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task0 ERROR
+CON
+JMP @MR5912
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR5912
+SET @MR1900              ; Main1 HALT許可
+CON
+AND @MR101               ; Task0 ｴﾗｰ完了
+RES @MR101               ; Task0 ｴﾗｰ完了
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+AND @MR105               ; SW1
+SET @MR906               ; SUB⑪停止選択
+CON
+JMP @MR5915
+;END
+STG @MR5915
+SET @MR5901              ; ⑪Sub_平坦度測定/完了
+CON
+RES @MR5902              ; ⑪Sub_平坦度測定/動作中
+CON
+ENDS
+;<h1/>⑫Sub_計算結果比較
+STG @MR6100              ; ⑫Sub_計算結果比較
+SET @MR6102              ; ⑫Sub_計算結果比較/動作中
+CON
+JMP @MR6103
+;算出結果比較
+;※算出結果E～Hの差が規格以内で終了
+LDP @MR6103
+MSTRT MSG_DISP #1 #1 #0 #0
+STG @MR6103
+MPS
+LD=.L DM11736 +0         ; 定数X
+AND=.DF DM11740 +0       ; 定数Y
+ANL
+JMP @MR6115
+MPP
+LD<>.L DM11736 +0        ; 定数X
+OR<>.DF DM11740 +0       ; 定数Y
+ANL
+JMP @MR6104
+LD @MR6104
+MPS
+LDA.L W20BC              ; 変位ｾﾝｻ1_出力ﾃﾞｰﾀ0下位
+CON
+FLOAT.L
+CON
+DIV.F +1000
+CON
+STA.F DM11836            ; 水平出し後_NP面測定1
+CON
+LDA.L W20EC              ; 変位ｾﾝｻ2_出力ﾃﾞｰﾀ0下位
+CON
+FLOAT.L
+CON
+DIV.F +1000
+CON
+STA.F DM11838            ; 水平出し後_NP面測定2
+MRD
+LDA.L W211C              ; 変位ｾﾝｻ3_出力ﾃﾞｰﾀ0下位
+CON
+FLOAT.L
+CON
+DIV.F +1000
+CON
+STA.F DM11840            ; 水平出し後_NP面測定3
+CON
+LDA.L W214C              ; 変位ｾﾝｻ4_出力ﾃﾞｰﾀ0下位
+CON
+FLOAT.L
+CON
+DIV.F +1000
+CON
+STA.F DM11842            ; 水平出し後_NP面測定4
+CON
+SET @MR815               ; 水平出し動作後NP面測定完了
+MRD
+AND= @DM42 #0            ; 計算結果比較回数
+MPS
+LDA.L W20BC              ; 変位ｾﾝｻ1_出力ﾃﾞｰﾀ0下位
+CON
+STA.L DM12028            ; 変位ｾﾝｻ1_水平出し後_1
+CON
+LDA.L W20EC              ; 変位ｾﾝｻ2_出力ﾃﾞｰﾀ0下位
+CON
+STA.L DM12030            ; 変位ｾﾝｻ2_水平出し後_1
+CON
+LDA.L W211C              ; 変位ｾﾝｻ3_出力ﾃﾞｰﾀ0下位
+CON
+STA.L DM12032            ; 変位ｾﾝｻ3_水平出し後_1
+CON
+LDA.L W214C              ; 変位ｾﾝｻ4_出力ﾃﾞｰﾀ0下位
+CON
+STA.L DM12034            ; 変位ｾﾝｻ4_水平出し後_1
+MPP
+SET @MR915               ; 水平出し後読取完了
+MRD
+AND= @DM42 #1            ; 計算結果比較回数
+MPS
+LDA.L W20BC              ; 変位ｾﾝｻ1_出力ﾃﾞｰﾀ0下位
+CON
+STA.L DM12068            ; 変位ｾﾝｻ1_水平出し後_2
+CON
+LDA.L W20EC              ; 変位ｾﾝｻ2_出力ﾃﾞｰﾀ0下位
+CON
+STA.L DM12070            ; 変位ｾﾝｻ2_水平出し後_2
+CON
+LDA.L W211C              ; 変位ｾﾝｻ3_出力ﾃﾞｰﾀ0下位
+CON
+STA.L DM12072            ; 変位ｾﾝｻ3_水平出し後_2
+CON
+LDA.L W214C              ; 変位ｾﾝｻ4_出力ﾃﾞｰﾀ0下位
+CON
+STA.L DM12074            ; 変位ｾﾝｻ4_水平出し後_2
+MPP
+SET @MR915               ; 水平出し後読取完了
+MRD
+AND= @DM42 #2            ; 計算結果比較回数
+MPS
+LDA.L W20BC              ; 変位ｾﾝｻ1_出力ﾃﾞｰﾀ0下位
+CON
+STA.L DM12108            ; 変位ｾﾝｻ1_水平出し後_3
+CON
+LDA.L W20EC              ; 変位ｾﾝｻ2_出力ﾃﾞｰﾀ0下位
+CON
+STA.L DM12110            ; 変位ｾﾝｻ2_水平出し後_3
+CON
+LDA.L W211C              ; 変位ｾﾝｻ3_出力ﾃﾞｰﾀ0下位
+CON
+STA.L DM12112            ; 変位ｾﾝｻ3_水平出し後_3
+CON
+LDA.L W214C              ; 変位ｾﾝｻ4_出力ﾃﾞｰﾀ0下位
+CON
+STA.L DM12114            ; 変位ｾﾝｻ4_水平出し後_3
+MPP
+SET @MR915               ; 水平出し後読取完了
+MRD
+AND= @DM42 #3            ; 計算結果比較回数
+MPS
+LDA.L W20BC              ; 変位ｾﾝｻ1_出力ﾃﾞｰﾀ0下位
+CON
+STA.L DM12148            ; 変位ｾﾝｻ1_水平出し後_4
+CON
+LDA.L W20EC              ; 変位ｾﾝｻ2_出力ﾃﾞｰﾀ0下位
+CON
+STA.L DM12150            ; 変位ｾﾝｻ2_水平出し後_4
+CON
+LDA.L W211C              ; 変位ｾﾝｻ3_出力ﾃﾞｰﾀ0下位
+CON
+STA.L DM12152            ; 変位ｾﾝｻ3_水平出し後_4
+CON
+LDA.L W214C              ; 変位ｾﾝｻ4_出力ﾃﾞｰﾀ0下位
+CON
+STA.L DM12154            ; 変位ｾﾝｻ4_水平出し後_4
+MPP
+SET @MR915               ; 水平出し後読取完了
+MRD
+AND= @DM42 #4            ; 計算結果比較回数
+MPS
+LDA.L W20BC              ; 変位ｾﾝｻ1_出力ﾃﾞｰﾀ0下位
+CON
+STA.L DM12188            ; 変位ｾﾝｻ1_水平出し後_5
+CON
+LDA.L W20EC              ; 変位ｾﾝｻ2_出力ﾃﾞｰﾀ0下位
+CON
+STA.L DM12190            ; 変位ｾﾝｻ2_水平出し後_5
+CON
+LDA.L W211C              ; 変位ｾﾝｻ3_出力ﾃﾞｰﾀ0下位
+CON
+STA.L DM12192            ; 変位ｾﾝｻ3_水平出し後_5
+CON
+LDA.L W214C              ; 変位ｾﾝｻ4_出力ﾃﾞｰﾀ0下位
+CON
+STA.L DM12194            ; 変位ｾﾝｻ4_水平出し後_5
+MPP
+SET @MR915               ; 水平出し後読取完了
+MRD
+AND= @DM42 #5            ; 計算結果比較回数
+MPS
+LDA.L W20BC              ; 変位ｾﾝｻ1_出力ﾃﾞｰﾀ0下位
+CON
+STA.L DM12228            ; 変位ｾﾝｻ1_水平出し後_6
+CON
+LDA.L W20EC              ; 変位ｾﾝｻ2_出力ﾃﾞｰﾀ0下位
+CON
+STA.L DM12230            ; 変位ｾﾝｻ2_水平出し後_6
+CON
+LDA.L W211C              ; 変位ｾﾝｻ3_出力ﾃﾞｰﾀ0下位
+CON
+STA.L DM12232            ; 変位ｾﾝｻ3_水平出し後_6
+CON
+LDA.L W214C              ; 変位ｾﾝｻ4_出力ﾃﾞｰﾀ0下位
+CON
+STA.L DM12234            ; 変位ｾﾝｻ4_水平出し後_6
+MPP
+SET @MR915               ; 水平出し後読取完了
+MRD
+AND= @DM42 #6            ; 計算結果比較回数
+MPS
+LDA.L W20BC              ; 変位ｾﾝｻ1_出力ﾃﾞｰﾀ0下位
+CON
+STA.L DM12268            ; 変位ｾﾝｻ1_水平出し後_7
+CON
+LDA.L W20EC              ; 変位ｾﾝｻ2_出力ﾃﾞｰﾀ0下位
+CON
+STA.L DM12270            ; 変位ｾﾝｻ2_水平出し後_7
+CON
+LDA.L W211C              ; 変位ｾﾝｻ3_出力ﾃﾞｰﾀ0下位
+CON
+STA.L DM12272            ; 変位ｾﾝｻ3_水平出し後_7
+CON
+LDA.L W214C              ; 変位ｾﾝｻ4_出力ﾃﾞｰﾀ0下位
+CON
+STA.L DM12274            ; 変位ｾﾝｻ4_水平出し後_7
+MPP
+SET @MR915               ; 水平出し後読取完了
+MRD
+AND= @DM42 #7            ; 計算結果比較回数
+MPS
+LDA.L W20BC              ; 変位ｾﾝｻ1_出力ﾃﾞｰﾀ0下位
+CON
+STA.L DM12308            ; 変位ｾﾝｻ1_水平出し後_8
+CON
+LDA.L W20EC              ; 変位ｾﾝｻ2_出力ﾃﾞｰﾀ0下位
+CON
+STA.L DM12310            ; 変位ｾﾝｻ2_水平出し後_8
+CON
+LDA.L W211C              ; 変位ｾﾝｻ3_出力ﾃﾞｰﾀ0下位
+CON
+STA.L DM12312            ; 変位ｾﾝｻ3_水平出し後_8
+CON
+LDA.L W214C              ; 変位ｾﾝｻ4_出力ﾃﾞｰﾀ0下位
+CON
+STA.L DM12314            ; 変位ｾﾝｻ4_水平出し後_8
+MPP
+SET @MR915               ; 水平出し後読取完了
+MRD
+AND= @DM42 #8            ; 計算結果比較回数
+MPS
+LDA.L W20BC              ; 変位ｾﾝｻ1_出力ﾃﾞｰﾀ0下位
+CON
+STA.L DM12348            ; 変位ｾﾝｻ1_水平出し後_9
+CON
+LDA.L W20EC              ; 変位ｾﾝｻ2_出力ﾃﾞｰﾀ0下位
+CON
+STA.L DM12350            ; 変位ｾﾝｻ2_水平出し後_9
+CON
+LDA.L W211C              ; 変位ｾﾝｻ3_出力ﾃﾞｰﾀ0下位
+CON
+STA.L DM12352            ; 変位ｾﾝｻ3_水平出し後_9
+CON
+LDA.L W214C              ; 変位ｾﾝｻ4_出力ﾃﾞｰﾀ0下位
+CON
+STA.L DM12354            ; 変位ｾﾝｻ4_水平出し後_9
+MPP
+SET @MR915               ; 水平出し後読取完了
+MRD
+AND= @DM42 #9            ; 計算結果比較回数
+MPS
+LDA.L W20BC              ; 変位ｾﾝｻ1_出力ﾃﾞｰﾀ0下位
+CON
+STA.L DM12388            ; 変位ｾﾝｻ1_水平出し後_10
+CON
+LDA.L W20EC              ; 変位ｾﾝｻ2_出力ﾃﾞｰﾀ0下位
+CON
+STA.L DM12390            ; 変位ｾﾝｻ2_水平出し後_10
+CON
+LDA.L W211C              ; 変位ｾﾝｻ3_出力ﾃﾞｰﾀ0下位
+CON
+STA.L DM12392            ; 変位ｾﾝｻ3_水平出し後_10
+CON
+LDA.L W214C              ; 変位ｾﾝｻ4_出力ﾃﾞｰﾀ0下位
+CON
+STA.L DM12394            ; 変位ｾﾝｻ4_水平出し後_10
+MPP
+SET @MR915               ; 水平出し後読取完了
+MPP
+AND> @DM42 #9            ; 計算結果比較回数
+SET @MR915               ; 水平出し後読取完了
+STG @MR6104
+AND @MR815               ; 水平出し動作後NP面測定完了
+AND @MR915               ; 水平出し後読取完了
+TRGD #0
+CON
+RES @MR815               ; 水平出し動作後NP面測定完了
+CON
+RES @MR915               ; 水平出し後読取完了
+CON
+JMP @MR6105
+STG @MR6105
+MPS
+LD<=.DF DM11736 DM7200   ; 定数X  平面度規格上限_DF比較用
+AND>=.DF DM11736 DM7204  ; 定数X  平面度規格下限_DF比較用
+AND<=.DF DM11740 DM7200  ; 定数Y  平面度規格上限_DF比較用
+AND>=.DF DM11740 DM7204  ; 定数Y  平面度規格下限_DF比較用
+ANL
+SET @MR814               ; しきい値判断
+CON
+JMP @MR6115
+MPP
+LD>.DF DM11736 DM7200    ; 定数X  平面度規格上限_DF比較用
+OR>.DF DM11740 DM7200    ; 定数Y  平面度規格上限_DF比較用
+OR<.DF DM11736 DM7204    ; 定数X  平面度規格下限_DF比較用
+OR<.DF DM11740 DM7204    ; 定数Y  平面度規格下限_DF比較用
+ANL
+JMP @MR6106
+STG @MR6106
+MPS
+AND< @DM42 DM7006        ; 計算結果比較回数  装置基礎ﾃﾞｰﾀ4
+@INC @DM42               ; 計算結果比較回数
+CON
+SET @MR907               ; sub⑫再補正
+CON
+JMP @MR6115
+MPP
+AND>= @DM42 DM7006       ; 計算結果比較回数  装置基礎ﾃﾞｰﾀ4
+SET @MR907               ; sub⑫再補正
+CON
+JMP @MR6107
+LD @MR6115
+LD>= @DM42 DM7006        ; 計算結果比較回数  装置基礎ﾃﾞｰﾀ4
+OR @MR814                ; しきい値判断
+LD=.L DM11736 +0         ; 定数X
+AND=.DF DM11740 +0       ; 定数Y
+ORL
+ANL
+SHOT #50 @MR911          ; ﾒｯｾｰｼﾞ消去
+LD @MR911                ; ﾒｯｾｰｼﾞ消去
+RES @MR814               ; しきい値判断
+CON
+MSTRT MSG_DEL #1 #1
+;水平出し動作許容範囲外回数異常
+STG @MR6107
+ANB R39900               ; RB動作中
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+ANB R39004               ; ｴﾗｰ中
+ANL
+SET R39004               ; ｴﾗｰ中
+CON
+DW $2300 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #105 @DM1             ; ErrorNo /ERROR_DISP
+CON
+DW #0 @DM2               ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task0 ERROR
+CON
+JMP @MR6108
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR6108
+SET @MR1900              ; Main1 HALT許可
+CON
+AND @MR101               ; Task0 ｴﾗｰ完了
+RES @MR101               ; Task0 ｴﾗｰ完了
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+MPS
+AND @MR105               ; SW1
+DW #0 @DM42              ; 計算結果比較回数
+CON
+JMP @MR6115
+MPP
+AND @MR106               ; SW2
+RES @MR907               ; sub⑫再補正
+CON
+SET @MR908               ; sub⑫停止選択
+CON
+SHOT #50 @MR911          ; ﾒｯｾｰｼﾞ消去
+CON
+JMP @MR6115
+;END
+STG @MR6115
+SET @MR6101              ; ⑫Sub_計算結果比較/完了
+CON
+RES @MR6102              ; ⑫Sub_計算結果比較/動作中
+CON
+ENDS
+;<h1/>-----------------------------------------------------------
+;<h1/>*ERROR
+;MyTask Error Process Substance/エラー処理実体
+STG @MR100               ; Task0 ERROR
+ANB R39002               ; ERROR_DISP Busy
+MPS
+ZRES @MR105 @MR108       ; SW1  SW4
+CON
+DISN @DM9 @DM3 #4        ; ReturnSW /ERROR_DISP
+MRD
+DW MyTask @DM0           ; 自ﾀｽｸ番号  TaskNo /ERROR_DISP
+CON
+BMOV @DM0 DM60000 #7     ; TaskNo /ERROR_DISP  TaskNo /ERROR_DISP
+MPP
+SET R39000               ; ERROR_DISP Start
+CON
+SET @MR102               ; Task0 ERROR Busy
+CON
+JMP @MR103
+STG @MR103
+AND R39002               ; ERROR_DISP Busy
+AND= DM60008 @DM1        ; ReturnNo /ERROR_DISP  ErrorNo /ERROR_DISP
+MPS
+AND= DM60007 @DM6        ; ReturnSW /ERROR_DISP
+SET @MR105               ; SW1
+CON
+JMP @MR104
+MRD
+AND= DM60007 @DM5        ; ReturnSW /ERROR_DISP
+SET @MR106               ; SW2
+CON
+JMP @MR104
+MRD
+AND= DM60007 @DM4        ; ReturnSW /ERROR_DISP
+SET @MR107               ; SW3
+CON
+JMP @MR104
+MPP
+AND= DM60007 @DM3        ; ReturnSW /ERROR_DISP
+SET @MR108               ; SW4
+CON
+JMP @MR104
+STG @MR104
+ANB R39002               ; ERROR_DISP Busy
+RES @MR102               ; Task0 ERROR Busy
+CON
+SET @MR101               ; Task0 ｴﾗｰ完了
+CON
+ENDS
+;<h1/>*Select_Y_N 
+;MyTask Select_Y_N Process Substance/SELECT_Y_N処理実体
+STG @MR300               ; Task0 SELECT_Y_N
+ANB R39102               ; SELECT_Y_N Busy
+MPS
+ZRES @MR306 @MR307       ; Task0 Y/N
+CON
+DW #0 @DM20              ; TaskNo /SELECT_Y_N
+CON
+BMOV @DM20 DM60020 #3    ; TaskNo /SELECT_Y_N  TaskNo /SELECT_Y_N
+MPP
+SET R39100               ; SELECT_Y_N Start
+CON
+SET @MR302               ; Task0 Y_N Busy
+CON
+JMP @MR303
+STG @MR303
+AND R39102               ; SELECT_Y_N Busy
+MPS
+AND= DM60023 #1          ; Y_N /SELECT_Y_N
+SET @MR306               ; Task0 Y/N
+CON
+JMP @MR304
+MPP
+AND= DM60023 #2          ; Y_N /SELECT_Y_N
+RES @MR306               ; Task0 Y/N
+CON
+JMP @MR304
+STG @MR304
+ANB R39102               ; SELECT_Y_N Busy
+RES @MR302               ; Task0 Y_N Busy
+CON
+SET @MR301               ; Task0 Y/N END
+CON
+ENDS
+;<h1/>*TIMEUP ERROR
+;MyTask TIMEUP_ERROR Process Substance/TIMEUP_ERROR処理実体
+STG @MR400               ; Task0 TIMEUP_ERR
+ANB R39302               ; TIMEUP_ERR Busy
+MPS
+DW #0 @DM40              ; TaskNo /TIMEUP_ERR
+CON
+BMOV @DM40 DM60040 #2    ; TaskNo /TIMEUP_ERR  TaskNo /TIMEUP_ERR
+MPP
+SET R39300               ; TIMEUP_ERR Start
+CON
+SET @MR402               ; Task0 TIMEUP Busy
+CON
+JMP @MR403
+STG @MR403
+AND R39302               ; TIMEUP_ERR Busy
+JMP @MR404
+STG @MR404
+ANB R39302               ; TIMEUP_ERR Busy
+RES @MR402               ; Task0 TIMEUP Busy
+CON
+SET @MR401               ; Task0 TIMEUP_END
+CON
+ENDS
+;<h1/>*Select_ACT 
+;MyTask Select_ACT Process Substance/SELECT_ACT処理実体
+STG @MR200               ; Task0 SELECT_ACT
+ANB R39202               ; SELECT_ACT Busy
+MPS
+ZRES @MR205 @MR208       ; SW1  SW4
+CON
+DW #0 @DM30              ; TaskNo /SELECT_ACT
+CON
+BMOV @DM30 DM60030 #7    ; TaskNo /SELECT_ACT  TaskNo /SELECT_ACT
+MPP
+SET R39200               ; SELECT_ACT Start
+CON
+SET @MR202               ; Task0 SEL_ACT Busy
+CON
+JMP @MR203
+STG @MR203
+AND R39202               ; SELECT_ACT Busy
+AND<> DM60037 #0         ; SelectSW /SELECT_ACT
+MPS
+AND= DM60037 #1          ; SelectSW /SELECT_ACT
+SET @MR205               ; SW1
+CON
+JMP @MR204
+MRD
+AND= DM60037 #2          ; SelectSW /SELECT_ACT
+SET @MR206               ; SW2
+CON
+JMP @MR204
+MRD
+AND= DM60037 #3          ; SelectSW /SELECT_ACT
+SET @MR207               ; SW3
+CON
+JMP @MR204
+MPP
+AND= DM60037 #4          ; SelectSW /SELECT_ACT
+SET @MR208               ; SW4
+CON
+JMP @MR204
+STG @MR204
+ANB R39202               ; SELECT_ACT Busy
+RES @MR202               ; Task0 SEL_ACT Busy
+CON
+SET @MR201               ; Task0 SEL_ACT END
+CON
+ENDS
+;<h1/>※機能Macro呼出し見本- 削除して下さい。-------------------------------------
+;<h1/>※Error:記述見本
+;ERR163 "****Error"
+;<h1/>※SELECT_ACT　:記述見本
+;画面番号33をブザー有りで選択SW番号を左から#5,#10,#0(無し),#34の並びで表示する
+;<h1/>※ SELECT_Y_N　記述見本
+;//*Select_Y_N
+;<h1/>HALT
+LD R41200                ; TASK0 PAUSE 要求
+AND @MR1900              ; Main1 HALT許可
+LD @MR1901               ; Main2 HALT許可
+ORB @MR4002              ; Main2 Busy
+ANL
+TMR @40 #5               ; HALT許可 遅延
+CON
+AND @T40                 ; HALT許可 遅延
+SET R42600               ; Grp1_Task0_ﾎﾟｰｽﾞ許可
+LD R42600                ; Grp1_Task0_ﾎﾟｰｽﾞ許可
+ORB R41200               ; TASK0 PAUSE 要求
+ANB @MR001               ; TASK0 ERROR
+RES @MR1900              ; Main1 HALT許可
+CON
+RES @MR1901              ; Main2 HALT許可
+END
+ENDH

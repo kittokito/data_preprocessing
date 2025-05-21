@@ -1,0 +1,1382 @@
+DEVICE:52
+;MODULE:Main
+;MODULE_TYPE:0
+;************************************
+;天秤通信  /  Balance Communication
+;
+;******** 初期設定  /  Initial Setting **********
+;
+;ﾃﾞｰﾀ格納単位 / Data Storage Unit ：ﾜｰﾄﾞ /  Word               ﾓｰﾄﾞ設定  / Mode Seting     ：ﾚｽﾎﾟﾝｽﾓｰﾄﾞ / Response
+;送信ﾍｯﾀﾞ     / Send Header       ：なし /  None               送信ﾃﾞﾘﾐﾀ / Send Delimiter  ：CR  LF
+;受信ﾍｯﾀﾞ     / Read Header       ：なし /  None               受信ﾃﾞﾘﾐﾀ / Read Delimiter  ：CR  LF
+;受信ﾃﾞｰﾀ長   / Read Data Length  ：512ﾊﾞｲﾄ / 512Byte
+LD CR2008                ; 運転開始時1ｽｷｬﾝON
+MOV $0000 DM10615        ; Port1 ﾃﾞｰﾀ格納単位設定
+MOV $0001 DM10616        ; Port1 ﾓｰﾄﾞ設定
+MOV $0000 DM10617        ; Port1 ﾀｲﾑｱｳﾄﾁｪｯｸ時間設定
+MOV $0000 DM10618        ; Port1 送信ﾍｯﾀﾞ設定
+MOV $0D0A DM10619        ; Port1 送信ﾃﾞﾘﾐﾀ設定
+MOV $0000 DM10620        ; Port1 受信ﾍｯﾀﾞ設定
+MOV $0D0A DM10621        ; Port1 受信ﾃﾞﾘﾐﾀ設定
+SET R32100               ; Port1 通信許可
+;送受信 / Send Read
+;ｺﾏﾝﾄﾞ：Z、T(容器使用の場合)０ｵﾌｾｯﾄ、Q現在の重量
+;Command :Z、T [０］Offset ､ Q Rading Weight
+;ｾﾞﾛoffset
+LD MR6000                ; 天秤ｾﾞﾛ     offset
+MEP
+ORP MR6205               ; 手動ｾﾞﾛoffset
+SET MR6100               ; 天秤offset
+LD R32000                ; Port1 通信可能
+AND MR6100               ; 天秤offset
+@MOV #0 DM1000           ; 受信ﾃﾞｰﾀ
+MOV #1 DM10101           ; Port1 送信ﾃﾞｰﾀ長
+MPS
+AND CR2005               ; 100msｸﾛｯｸﾊﾟﾙｽ
+SMOV "Z" DM10102         ; Port1 送信ﾃﾞｰﾀ1
+MRD
+ANB CR2005               ; 100msｸﾛｯｸﾊﾟﾙｽ
+SMOV "T" DM10102         ; Port1 送信ﾃﾞｰﾀ1
+MRD
+@RES R32101              ; Port1 送信要求
+CON
+SET R32101               ; Port1 送信要求
+MRD
+AND R32002               ; Port1 受信ﾃﾞｰﾀ読出要求
+BMOV DM10359 DM1000 #8   ; Port1 受信ﾃﾞｰﾀ1  受信ﾃﾞｰﾀ
+MPS
+SET R32102               ; Port1 受信ﾃﾞｰﾀ読出完了
+CON
+AND R32001               ; Port1 送信完了
+RES R32101               ; Port1 送信要求
+MRD
+LD= DM1000 $5400         ; 受信ﾃﾞｰﾀ
+OR= DM1000 $5A00         ; 受信ﾃﾞｰﾀ
+ANL
+SET MR6001               ; 天秤ｾﾞﾛoffset完了
+CON
+RES MR6000               ; 天秤ｾﾞﾛ     offset
+CON
+RES MR6100               ; 天秤offset
+MPP
+ANB R32002               ; Port1 受信ﾃﾞｰﾀ読出要求
+RES R32102               ; Port1 受信ﾃﾞｰﾀ読出完了
+MPP
+LD<> DM1000 $5A00        ; 受信ﾃﾞｰﾀ
+AND<> DM1000 $5400       ; 受信ﾃﾞｰﾀ
+ANL
+TMR #29 #80
+CON
+AND T29
+SET MR1509               ; ERROR9(天秤送信異常)
+LDB MR1002               ; 運転中
+ANB MR6000               ; 天秤ｾﾞﾛ     offset
+AND MR6001               ; 天秤ｾﾞﾛoffset完了
+RES MR6001               ; 天秤ｾﾞﾛoffset完了
+;重量読取
+LD R32000                ; Port1 通信可能
+ANB MR6000               ; 天秤ｾﾞﾛ     offset
+ANB MR6100               ; 天秤offset
+MOV #1 DM10101           ; Port1 送信ﾃﾞｰﾀ長
+SMOV "Q" DM10102         ; Port1 送信ﾃﾞｰﾀ1
+MPS
+@RES R32101              ; Port1 送信要求
+CON
+SET R32101               ; Port1 送信要求
+MRD
+AND R32002               ; Port1 受信ﾃﾞｰﾀ読出要求
+BMOV DM10359 DM1020 #8   ; Port1 受信ﾃﾞｰﾀ1  受信ﾃﾞｰﾀ
+BMOV DM1020 DM2070 #8    ; 受信ﾃﾞｰﾀ  TP文字表示
+BSWAP DM2070 #8          ; TP文字表示
+MPS
+LDA DM2071               ; 重量受信
+CON
+SRA #8
+CON
+STA DM2071               ; 重量受信
+MPP
+SET R32102               ; Port1 受信ﾃﾞｰﾀ読出完了
+CON
+AND R32101               ; Port1 送信要求
+RES R32101               ; Port1 送信要求
+MPP
+ANB R32002               ; Port1 受信ﾃﾞｰﾀ読出要求
+RES R32102               ; Port1 受信ﾃﾞｰﾀ読出完了
+LD CR2002                ; 常時ON
+BMOV DM1020 DM1060 #8    ; 受信ﾃﾞｰﾀ
+FMOV #0 DM1066 #2
+SDEL DM1061 DM1040 #0 #1 ; 受信ﾃﾞｰﾀ
+RFASC DM1040 DM1070      ; 受信ﾃﾞｰﾀ  現在重量値ﾊﾞｲﾅﾘ
+;受信
+LD CR2002                ; 常時ON
+LDA DM10358              ; Port1 受信ﾃﾞｰﾀ長
+CON
+DIV #2
+CON
+MPS
+AND= TM1 #0
+STA DM1100               ; 受信データ長
+MPP
+AND= TM1 #0
+ADD #1
+CON
+STA DM1100               ; 受信データ長
+;************************************************************
+;ﾊﾞｰｺｰﾄﾞﾘｰﾀﾞｰ通信 / Bar code Reader Communication
+LD CR2008                ; 運転開始時1ｽｷｬﾝON
+SET R35105               ; Port1 ﾃﾞｰﾀ格納単位設定
+CON
+SET R35100               ; Port1 通信許可
+LD R35002                ; Port1 受信ｴﾗｰ
+OR R35002                ; Port1 受信ｴﾗｰ
+SET MR1502               ; ERROR2(ﾊﾞｰｺｰﾄﾞ受信ｴﾗｰ)
+;*************************************************
+;KDﾄﾞﾗﾑｺｰﾄﾞ読取／照合 / KD Drum Cord Read/Check
+;
+;読取待ち /  Read Whaiting
+LD CR2002                ; 常時ON
+LDF MR1000               ; 自動中
+OR CR2008                ; 運転開始時1ｽｷｬﾝON
+ORF MR1210               ; KD ﾄﾞﾗﾑｺｰﾄﾞ照合OK
+ANL
+RES MR1001               ; AUTO ﾓｰﾄﾞ選択中
+CON
+RES MR1211               ; KD ﾄﾞﾗﾑｺｰﾄﾞ照合NG
+CON
+RES MR1210               ; KD ﾄﾞﾗﾑｺｰﾄﾞ照合OK
+CON
+FMOV #0 DM2010 #5        ; TP_KDﾄﾞﾗﾑ読取ｺｰﾄﾞ
+LD CR2002                ; 常時ON
+ANB MR1000               ; 自動中
+MPS
+AND<> DM2000 DM100       ; 運転機種切替  機種変更
+OUT MR1004               ; 機種変更有
+MOV DM2000 DM100         ; 運転機種切替  機種変更
+MPP
+LDB MR1210               ; KD ﾄﾞﾗﾑｺｰﾄﾞ照合OK
+OR MR1004                ; 機種変更有
+ANL
+RES MR1210               ; KD ﾄﾞﾗﾑｺｰﾄﾞ照合OK
+CON
+SET MR1005               ; KDﾄﾞﾗﾑｺｰﾄﾞ読取待ち
+;読取 / Read
+LD CR2002                ; 常時ON
+AND MR1005               ; KDﾄﾞﾗﾑｺｰﾄﾞ読取待ち
+ANB MR1010               ; 機種登録中
+ANB MR1000               ; 自動中
+AND R35101               ; Port1 受信完了
+BMOV DM13802 DM2200 DM13801;Port1 受信ﾃﾞｰﾀ1  受信ﾃﾞｰﾀ  Port1 受信ﾃﾞｰﾀ長
+BSWAP DM2200 #10         ; 受信ﾃﾞｰﾀ
+BMOV DM2200 DM2010 DM13801;受信ﾃﾞｰﾀ  TP_KDﾄﾞﾗﾑ読取ｺｰﾄﾞ  Port1 受信ﾃﾞｰﾀ長
+MPS
+RES R35101               ; Port1 受信完了
+MPP
+AND= DM4000 #2           ; TP_表示中画面
+SET MR1012               ; KDﾄﾞﾗﾑ照合開始
+CON
+RES MR1005               ; KDﾄﾞﾗﾑｺｰﾄﾞ読取待ち
+;照合 / Check
+LD CR2002                ; 常時ON
+MPS
+AND MR1012               ; KDﾄﾞﾗﾑ照合開始
+BCMP DM2110 DM2010 MR1200 #10;機種選択KDﾄﾞﾗﾑ登録ｺｰﾄﾞ  TP_KDﾄﾞﾗﾑ読取ｺｰﾄﾞ  比較結果1
+MPS
+LD MR1200                ; 比較結果1
+AND MR1201               ; 比較結果2
+AND MR1202               ; 比較結果3
+AND MR1203               ; 比較結果4
+AND MR1204               ; 比較結果5
+OR CR2010                ; 演算結果がｾﾞﾛ
+ANL
+RES MR1211               ; KD ﾄﾞﾗﾑｺｰﾄﾞ照合NG
+CON
+SET MR1210               ; KD ﾄﾞﾗﾑｺｰﾄﾞ照合OK
+MRD
+ANB MR1210               ; KD ﾄﾞﾗﾑｺｰﾄﾞ照合OK
+RES MR1210               ; KD ﾄﾞﾗﾑｺｰﾄﾞ照合OK
+CON
+SET MR1211               ; KD ﾄﾞﾗﾑｺｰﾄﾞ照合NG
+CON
+SET MR1503               ; ERROR3(KDﾄﾞﾗﾑ照合ｴﾗｰ)
+MPP
+RES MR1012               ; KDﾄﾞﾗﾑ照合開始
+MRD
+LD MR1210                ; KD ﾄﾞﾗﾑｺｰﾄﾞ照合OK
+AND R001                 ; STOP SW
+ANL
+TMR #27 #20
+MPP
+AND T27
+RES MR1210               ; KD ﾄﾞﾗﾑｺｰﾄﾞ照合OK
+LD CR2002                ; 常時ON
+AND MR1211               ; KD ﾄﾞﾗﾑｺｰﾄﾞ照合NG
+AND R1015                ; ｴﾗｰﾘｾｯﾄ
+RES MR1211               ; KD ﾄﾞﾗﾑｺｰﾄﾞ照合NG
+;
+;************************************
+;自動開始/停止 / AUTO START/STOP
+;
+;
+LD CR2002                ; 常時ON
+MPS
+LDP R1000                ; TP　STRAT　SW
+ANB MR1000               ; 自動中
+AND MR1210               ; KD ﾄﾞﾗﾑｺｰﾄﾞ照合OK
+ANL
+ALT MR1001               ; AUTO ﾓｰﾄﾞ選択中
+MRD
+LD MR1001                ; AUTO ﾓｰﾄﾞ選択中
+AND R000                 ; START SW
+AND MR1210               ; KD ﾄﾞﾗﾑｺｰﾄﾞ照合OK
+ANL
+SET MR1000               ; 自動中
+MRD
+LD MR1000                ; 自動中
+LD R001                  ; STOP SW
+OR MR1602                ; 重故障
+ANL
+ANL
+MPS
+RES MR1001               ; AUTO ﾓｰﾄﾞ選択中
+CON
+RES MR1003               ; 充填自動運転中
+CON
+RES MR1000               ; 自動中
+MPP
+ZRES MR5000 MR5115
+CON
+ZRES MR6000 MR6115       ; 天秤ｾﾞﾛ     offset
+MRD
+AND MR1602               ; 重故障
+ZRES MR6000 MR6115       ; 天秤ｾﾞﾛ     offset
+MPP
+ANB MR1000               ; 自動中
+RES MR1310               ; 充填箱ｺｰﾄﾞ照合OK
+CON
+RES MR1311               ; 充填機ｺｰﾄﾞ照合NG
+CON
+RES MR1410               ; ｺｰｼｮﾝｺｰﾄﾞ照合OK
+CON
+RES MR1411               ; ｺｰｼｮﾝｺｰﾄﾞ照合NG
+;<h1/>自動運転/AUTO--------------------------------
+LD MR1000                ; 自動中
+AND MR1210               ; KD ﾄﾞﾗﾑｺｰﾄﾞ照合OK
+MEP
+SET MR5000
+LD MR1000                ; 自動中
+OR MR1210                ; KD ﾄﾞﾗﾑｺｰﾄﾞ照合OK
+OUT MR1002               ; 運転中
+; ﾉｽﾞﾙ下限/ワーク有無確認  /Nozuru  Lower/Work check
+; 
+STG MR5000
+AND MR1002               ; 運転中
+MPS
+LD R010                  ; ﾜｰｸ有無ｾﾝｻｰ
+AND R011                 ; ﾉｽﾞﾙ上下ｾﾝｻｰ
+ANB MR1511               ; ERROR11(ﾜｰｸ無しｴﾗｰ)
+ANB MR1512               ; ERROR12(ﾉｽﾞﾙUPｴﾗｰ)
+ANL
+TMR #20 #5
+CON
+AND T20
+JMP MR5001
+MRD
+ANB R010                 ; ﾜｰｸ有無ｾﾝｻｰ
+TMR #21 #5
+CON
+AND T21
+SET MR1511               ; ERROR11(ﾜｰｸ無しｴﾗｰ)
+MPP
+ANB R011                 ; ﾉｽﾞﾙ上下ｾﾝｻｰ
+TMR #22 #5
+CON
+AND T22
+SET MR1512               ; ERROR12(ﾉｽﾞﾙUPｴﾗｰ)
+; 天秤ｾﾞﾛ/offset
+; 
+STG MR5001
+SET MR6000               ; 天秤ｾﾞﾛ     offset
+CON
+JMP MR5002
+STG MR5002
+AND MR6001               ; 天秤ｾﾞﾛoffset完了
+ANB MR6000               ; 天秤ｾﾞﾛ     offset
+RES MR6001               ; 天秤ｾﾞﾛoffset完了
+CON
+JMP MR5003
+STG MR5003
+MPS
+AND<>.F DM1070 +0        ; 現在重量値ﾊﾞｲﾅﾘ
+TMR #26 #40
+CON
+AND T26
+SET MR1507               ; ERROR7 ｾﾞﾛoffset ｴﾗｰ
+MRD
+LD=.F DM1070 +0          ; 現在重量値ﾊﾞｲﾅﾘ
+ANB MR1507               ; ERROR7 ｾﾞﾛoffset ｴﾗｰ
+ANL
+SET MR1003               ; 充填自動運転中
+CON
+JMP MR5004
+MPP
+LD MR1507                ; ERROR7 ｾﾞﾛoffset ｴﾗｰ
+AND R1015                ; ｴﾗｰﾘｾｯﾄ
+ANL
+RES MR1507               ; ERROR7 ｾﾞﾛoffset ｴﾗｰ
+CON
+JMP MR5001
+;充填箱ｺｰﾄﾞ読取/照合 / PourBOX Cord Read/Check
+;
+;読取 / Read
+STG MR5004
+ANB MR1010               ; 機種登録中
+RES MR6003               ; 受信完了
+CON
+RES R35101               ; Port1 受信完了
+CON
+SET MR6010               ; 充填箱読取照合中
+CON
+SET MR6002               ; 充填箱ｺｰﾄﾞ読取待ち
+CON
+JMP MR5005
+STG MR5005
+MPS
+AND MR6002               ; 充填箱ｺｰﾄﾞ読取待ち
+MPS
+AND MR6003               ; 受信完了
+RES MR6002               ; 充填箱ｺｰﾄﾞ読取待ち
+CON
+AND MR1310               ; 充填箱ｺｰﾄﾞ照合OK
+JMP MR5006
+MOV #0 DM0               ; TP_ﾒｯｾｰｼﾞ
+MPP
+@MOV #5 DM0              ; TP_ﾒｯｾｰｼﾞ
+MPP
+AND MR1100               ; 再読取
+MEP
+JMP MR5004
+LD MR6002                ; 充填箱ｺｰﾄﾞ読取待ち
+AND R35101               ; Port1 受信完了
+BMOV DM13802 DM2210 DM13801;Port1 受信ﾃﾞｰﾀ1  受信ﾃﾞｰﾀ  Port1 受信ﾃﾞｰﾀ長
+BSWAP DM2210 #10         ; 受信ﾃﾞｰﾀ
+BMOV DM2210 DM2020 DM13801;受信ﾃﾞｰﾀ  充填箱読取ｺｰﾄﾞ  Port1 受信ﾃﾞｰﾀ長
+MPS
+RES R35101               ; Port1 受信完了
+MPP
+AND= DM4000 #2           ; TP_表示中画面
+SET MR1013               ; 充填箱照合開始
+CON
+SET MR6003               ; 受信完了
+;照合 / Check
+LD CR2008                ; 運転開始時1ｽｷｬﾝON
+FMOV #0 DM2020 #10       ; 充填箱読取ｺｰﾄﾞ
+LD CR2002                ; 常時ON
+AND MR1000               ; 自動中
+AND MR1013               ; 充填箱照合開始
+BCMP DM2120 DM2020 MR1300 #10;機種選択充填箱登録ｺｰﾄﾞ  充填箱読取ｺｰﾄﾞ  照合結果1
+MPS
+LD MR1300                ; 照合結果1
+AND MR1301               ; 照合結果2
+AND MR1302               ; 照合結果3
+AND MR1303               ; 照合結果4
+AND MR1304               ; 照合結果5
+OR CR2010                ; 演算結果がｾﾞﾛ
+ANL
+RES MR1311               ; 充填機ｺｰﾄﾞ照合NG
+CON
+SET MR1310               ; 充填箱ｺｰﾄﾞ照合OK
+MRD
+ANB MR1310               ; 充填箱ｺｰﾄﾞ照合OK
+RES MR1310               ; 充填箱ｺｰﾄﾞ照合OK
+CON
+SET MR1311               ; 充填機ｺｰﾄﾞ照合NG
+MRD
+AND MR1310               ; 充填箱ｺｰﾄﾞ照合OK
+RES MR1013               ; 充填箱照合開始
+CON
+MOV #0 DM0               ; TP_ﾒｯｾｰｼﾞ
+MRD
+AND MR1311               ; 充填機ｺｰﾄﾞ照合NG
+MOV #2 DM0               ; TP_ﾒｯｾｰｼﾞ
+SET MR1504               ; ERROR4(充填箱照合ｴﾗｰ)
+MPP
+LD MR1504                ; ERROR4(充填箱照合ｴﾗｰ)
+AND R1015                ; ｴﾗｰﾘｾｯﾄ
+ANL
+RES MR1013               ; 充填箱照合開始
+CON
+OUT MR1100               ; 再読取
+STG MR5006
+RES MR6003               ; 受信完了
+CON
+RES MR6010               ; 充填箱読取照合中
+CON
+JMP MR5007
+;充填開始/重量読取 Pour Start･Weight Read
+;
+;重量読取 / Weight Read
+STG MR5007
+AND MR1310               ; 充填箱ｺｰﾄﾞ照合OK
+SET MR6200               ; 重量計測中
+CON
+JMP MR5008
+STG MR5008
+JMP MR5009
+LDB MR6000               ; 天秤ｾﾞﾛ     offset
+ANB MR1000               ; 自動中
+RES MR6200               ; 重量計測中
+;充填開始 / Pour Start
+LD CR2002                ; 常時ON
+CAL+.F DM2140 +0.25 DM1080;機種重量  機種重量+25g　上限
+CAL-.F DM2140 +0.25 DM1082;機種重量  機種重量-25g　下限
+STG MR5009
+LDB R006                 ; 重量OK
+OR CR2002                ; 常時ON
+ANL
+ANB MR6208               ; 充填完了
+SET MR6006               ; 充填中
+CON
+JMP MR5010
+STG MR5010
+AND MR6006               ; 充填中
+MPS
+LD R005                  ; Hi
+AND CR2003               ; 常時OFF
+LD R006                  ; 重量OK
+AND CR2003               ; 常時OFF
+ORL
+OR<=.F DM1082 DM1070     ; 機種重量-25g　下限  現在重量値ﾊﾞｲﾅﾘ
+ANB T40                  ; 充填ﾀｲﾑｵｰﾊﾞｰ
+ANB T41
+ANB T42
+ANL
+OUT MR6208               ; 充填完了
+MRD
+AND>.F DM1082 DM1070     ; 機種重量-25g　下限  現在重量値ﾊﾞｲﾅﾘ
+MPS
+TMR #40 DM60             ; 充填ﾀｲﾑｵｰﾊﾞｰ  タイマ設定値
+CON
+AND T40                  ; 充填ﾀｲﾑｵｰﾊﾞｰ
+@SET MR1513              ; ERROR13(充填ﾀｲﾑｵｰﾊﾞｰ)
+CON
+JMP MR5200
+MRD
+ANB R010                 ; ﾜｰｸ有無ｾﾝｻｰ
+TMR #41 #5
+CON
+AND T41
+@SET MR1511              ; ERROR11(ﾜｰｸ無しｴﾗｰ)
+CON
+JMP MR5200
+MPP
+ANB R011                 ; ﾉｽﾞﾙ上下ｾﾝｻｰ
+TMR #42 #5
+CON
+AND T42
+@SET MR1512              ; ERROR12(ﾉｽﾞﾙUPｴﾗｰ)
+CON
+JMP MR5200
+MPP
+AND MR6208               ; 充填完了
+RES MR6006               ; 充填中
+CON
+JMP MR5011
+STG MR5200
+LD MR1511                ; ERROR11(ﾜｰｸ無しｴﾗｰ)
+OR MR1512                ; ERROR12(ﾉｽﾞﾙUPｴﾗｰ)
+OR MR1513                ; ERROR13(充填ﾀｲﾑｵｰﾊﾞｰ)
+ANL
+RES MR6006               ; 充填中
+CON
+JMP MR5201
+STG MR5201
+AND R1015                ; ｴﾗｰﾘｾｯﾄ
+JMP MR5009
+STG MR5011
+TMR #30 #10
+CON
+AND T30
+MPS
+LD R006                  ; 重量OK
+AND>=.F DM1082 DM1070    ; 機種重量-25g　下限  現在重量値ﾊﾞｲﾅﾘ
+LDB R006                 ; 重量OK
+AND<=.F DM1082 DM1070    ; 機種重量-25g　下限  現在重量値ﾊﾞｲﾅﾘ
+ORL
+AND CR2003               ; 常時OFF
+ANL
+SET MR1508               ; ERROR8(重量異常)
+MRD
+LD R006                  ; 重量OK
+AND<=.F DM1082 DM1070    ; 機種重量-25g　下限  現在重量値ﾊﾞｲﾅﾘ
+ANB MR1508               ; ERROR8(重量異常)
+ANL
+TMR #31 #5
+CON
+AND T31
+JMP MR5012
+MPP
+AND CR2002               ; 常時ON
+JMP MR5012
+;ｺｰｼｮﾝｺｰﾄﾞ読取/照合 / Caution Cord Read Check
+;
+;読取 / Reading
+STG MR5012
+ANB MR1010               ; 機種登録中
+RES MR6009               ; ｺｰｼｮﾝｺｰﾄﾞ読取完了
+CON
+RES R35101               ; Port1 受信完了
+CON
+SET MR6011               ; ｺｰｼｮﾝｺｰﾄﾞ読取照合中
+CON
+SET MR6008               ; ｺｰｼｮﾝｺｰﾄﾞ読取待ち
+CON
+JMP MR5013
+STG MR5013
+MPS
+LD MR6008                ; ｺｰｼｮﾝｺｰﾄﾞ読取待ち
+AND MR6009               ; ｺｰｼｮﾝｺｰﾄﾞ読取完了
+ANL
+RES MR6008               ; ｺｰｼｮﾝｺｰﾄﾞ読取待ち
+CON
+AND MR1410               ; ｺｰｼｮﾝｺｰﾄﾞ照合OK
+RES MR6009               ; ｺｰｼｮﾝｺｰﾄﾞ読取完了
+CON
+RES MR6011               ; ｺｰｼｮﾝｺｰﾄﾞ読取照合中
+CON
+JMP MR5014
+MPP
+AND MR1101               ; ｺｰｼｮﾝ再読取
+MEP
+JMP MR5012
+LD MR6008                ; ｺｰｼｮﾝｺｰﾄﾞ読取待ち
+AND R35101               ; Port1 受信完了
+BMOV DM13802 DM2220 DM13801;Port1 受信ﾃﾞｰﾀ1  受信ﾃﾞｰﾀ  Port1 受信ﾃﾞｰﾀ長
+BSWAP DM2220 #10         ; 受信ﾃﾞｰﾀ
+BMOV DM2220 DM2030 DM13801;受信ﾃﾞｰﾀ  ｺｰｼｮﾝ読取ｺｰﾄﾞ  Port1 受信ﾃﾞｰﾀ長
+MPS
+RES R35101               ; Port1 受信完了
+MPP
+AND= DM4000 #2           ; TP_表示中画面
+SET MR1014               ; ｺｰｼｮﾝ照合開始
+CON
+SET MR6009               ; ｺｰｼｮﾝｺｰﾄﾞ読取完了
+;照合 / Check
+LD CR2008                ; 運転開始時1ｽｷｬﾝON
+FMOV #0 DM2030 #10       ; ｺｰｼｮﾝ読取ｺｰﾄﾞ
+LD CR2002                ; 常時ON
+AND MR1000               ; 自動中
+AND MR1014               ; ｺｰｼｮﾝ照合開始
+BCMP DM2130 DM2030 MR1400 #10;機種選択ｺｰｼｮﾝ登録ｺｰﾄﾞ  ｺｰｼｮﾝ読取ｺｰﾄﾞ  照合結果1
+MPS
+LD MR1400                ; 照合結果1
+AND MR1401               ; 照合結果2
+AND MR1402               ; 照合結果3
+AND MR1403               ; 照合結果4
+AND MR1404               ; 照合結果5
+OR CR2010                ; 演算結果がｾﾞﾛ
+ANL
+RES MR1411               ; ｺｰｼｮﾝｺｰﾄﾞ照合NG
+CON
+SET MR1410               ; ｺｰｼｮﾝｺｰﾄﾞ照合OK
+MRD
+ANB MR1410               ; ｺｰｼｮﾝｺｰﾄﾞ照合OK
+RES MR1410               ; ｺｰｼｮﾝｺｰﾄﾞ照合OK
+CON
+SET MR1411               ; ｺｰｼｮﾝｺｰﾄﾞ照合NG
+MRD
+AND MR1410               ; ｺｰｼｮﾝｺｰﾄﾞ照合OK
+RES MR1014               ; ｺｰｼｮﾝ照合開始
+CON
+MOV #0 DM0               ; TP_ﾒｯｾｰｼﾞ
+MRD
+AND MR1411               ; ｺｰｼｮﾝｺｰﾄﾞ照合NG
+MOV #3 DM0               ; TP_ﾒｯｾｰｼﾞ
+SET MR1505               ; ERROR5(ｺｰｼｮﾝ照合ｴﾗｰ)
+MPP
+LD MR1505                ; ERROR5(ｺｰｼｮﾝ照合ｴﾗｰ)
+AND R1015                ; ｴﾗｰﾘｾｯﾄ
+ANL
+RES MR1014               ; ｺｰｼｮﾝ照合開始
+CON
+OUT MR1101               ; ｺｰｼｮﾝ再読取
+;自動終了 / AUTO Finish
+STG MR5014
+AND MR1410               ; ｺｰｼｮﾝｺｰﾄﾞ照合OK
+JMP MR5015
+MOV #8 DM0               ; TP_ﾒｯｾｰｼﾞ
+STG MR5015
+LDB R005                 ; Hi
+ANB R006                 ; 重量OK
+AND R007                 ; Lo
+AND CR2003               ; 常時OFF
+LDB R010                 ; ﾜｰｸ有無ｾﾝｻｰ
+ANB R011                 ; ﾉｽﾞﾙ上下ｾﾝｻｰ
+ORL
+ANL
+RES MR1003               ; 充填自動運転中
+CON
+RES MR1000               ; 自動中
+CON
+JMP MR5100
+STG MR5100
+JMP MR5101
+STG MR5101
+ANB MR1000               ; 自動中
+JMP MR5102
+@FMOV #0 DM2020 #10      ; 充填箱読取ｺｰﾄﾞ
+@FMOV #0 DM2030 #10      ; ｺｰｼｮﾝ読取ｺｰﾄﾞ
+STG MR5102
+ENDS
+LD MR1410                ; ｺｰｼｮﾝｺｰﾄﾞ照合OK
+AND MR1000               ; 自動中
+MOV #8 DM0               ; TP_ﾒｯｾｰｼﾞ
+;<h1/>ﾀｯﾁﾊﾟﾈﾙ
+;************************************
+;ﾀｯﾁﾊﾟﾈﾙ / Touch panel
+;
+LDP R1010                ; 言語切替
+SET LR1010               ; 言語切替
+LDF R1010                ; 言語切替
+RES LR1010               ; 言語切替
+LD LR1010                ; 言語切替
+MOV #1 DM20              ; 言語切替
+LDB LR1010               ; 言語切替
+MOV #2 DM20              ; 言語切替
+LD CR2008                ; 運転開始時1ｽｷｬﾝON
+MOV #1 DM4008            ; TP_切替画面
+LD= DM4000 #1            ; TP_表示中画面
+TMR #10 #20              ; 表示切替待ち
+CON
+AND T10                  ; 表示切替待ち
+MOV #2 DM4008            ; TP_切替画面
+LD MR1600                ; 異常
+MPS
+@MOV #10 DM4008          ; TP_切替画面
+MPP
+AND CR2006               ; 1sｸﾛｯｸﾊﾟﾙｽ
+OUT MR1603               ; TPﾗﾝﾌﾟ
+LDB MR1600               ; 異常
+TMR #23 #5
+CON
+AND T23
+@MOV #2 DM4008           ; TP_切替画面
+LD CR2002                ; 常時ON
+MPS
+ANB MR1000               ; 自動中
+MPS
+ANB MR1001               ; AUTO ﾓｰﾄﾞ選択中
+MOV #0 DM10              ; TP 釦ﾗﾝﾌﾟ状態
+MPP
+AND MR1001               ; AUTO ﾓｰﾄﾞ選択中
+MOV #1 DM10              ; TP 釦ﾗﾝﾌﾟ状態
+MPP
+LD MR1000                ; 自動中
+AND MR1003               ; 充填自動運転中
+ANL
+MOV #2 DM10              ; TP 釦ﾗﾝﾌﾟ状態
+LD CR2002                ; 常時ON
+LDB MR1000               ; 自動中
+OR CR2008                ; 運転開始時1ｽｷｬﾝON
+ANL
+@FMOV #0 DM2020 #10      ; 充填箱読取ｺｰﾄﾞ
+@FMOV #0 DM2030 #10      ; ｺｰｼｮﾝ読取ｺｰﾄﾞ
+LD CR2002                ; 常時ON
+MPS
+LD MR1000                ; 自動中
+AND MR1310               ; 充填箱ｺｰﾄﾞ照合OK
+ANL
+@MOV #0 DM0              ; TP_ﾒｯｾｰｼﾞ
+MRD
+AND MR1005               ; KDﾄﾞﾗﾑｺｰﾄﾞ読取待ち
+@MOV #4 DM0              ; TP_ﾒｯｾｰｼﾞ
+MRD
+ANB MR1000               ; 自動中
+MPS
+AND MR1211               ; KD ﾄﾞﾗﾑｺｰﾄﾞ照合NG
+@MOV #1 DM0              ; TP_ﾒｯｾｰｼﾞ
+MPP
+AND MR1210               ; KD ﾄﾞﾗﾑｺｰﾄﾞ照合OK
+@MOV #7 DM0              ; TP_ﾒｯｾｰｼﾞ
+MRD
+LD MR6002                ; 充填箱ｺｰﾄﾞ読取待ち
+AND CR2003               ; 常時OFF
+ANL
+@MOV #5 DM0              ; TP_ﾒｯｾｰｼﾞ
+MRD
+AND MR6008               ; ｺｰｼｮﾝｺｰﾄﾞ読取待ち
+@MOV #6 DM0              ; TP_ﾒｯｾｰｼﾞ
+MRD
+AND MR1000               ; 自動中
+MEF
+MOV #0 DM0               ; TP_ﾒｯｾｰｼﾞ
+MPP
+AND MR6006               ; 充填中
+@MOV #9 DM0              ; TP_ﾒｯｾｰｼﾞ
+LD CR2002                ; 常時ON
+MPS
+LDB MR1210               ; KD ﾄﾞﾗﾑｺｰﾄﾞ照合OK
+ANB MR1211               ; KD ﾄﾞﾗﾑｺｰﾄﾞ照合NG
+ANL
+MOV #0 DM11              ; KD ﾄﾞﾗﾑｺｰﾄﾞ照合結果TP
+MRD
+AND MR1210               ; KD ﾄﾞﾗﾑｺｰﾄﾞ照合OK
+MOV #1 DM11              ; KD ﾄﾞﾗﾑｺｰﾄﾞ照合結果TP
+MPP
+AND MR1211               ; KD ﾄﾞﾗﾑｺｰﾄﾞ照合NG
+MOV #2 DM11              ; KD ﾄﾞﾗﾑｺｰﾄﾞ照合結果TP
+LD CR2002                ; 常時ON
+MPS
+ANB MR1000               ; 自動中
+MOV #0 DM12              ; 充填ｺｰﾄﾞ照合結果TP
+MPP
+AND MR1000               ; 自動中
+MPS
+AND MR1310               ; 充填箱ｺｰﾄﾞ照合OK
+MOV #1 DM12              ; 充填ｺｰﾄﾞ照合結果TP
+MPP
+AND MR1311               ; 充填機ｺｰﾄﾞ照合NG
+MOV #2 DM12              ; 充填ｺｰﾄﾞ照合結果TP
+LD CR2002                ; 常時ON
+MPS
+ANB MR1000               ; 自動中
+MOV #0 DM13              ; ｺｰｼｮﾝｺｰﾄﾞ照合結果TP
+MPP
+AND MR1000               ; 自動中
+MPS
+AND MR1410               ; ｺｰｼｮﾝｺｰﾄﾞ照合OK
+MOV #1 DM13              ; ｺｰｼｮﾝｺｰﾄﾞ照合結果TP
+MPP
+AND MR1411               ; ｺｰｼｮﾝｺｰﾄﾞ照合NG
+MOV #2 DM13              ; ｺｰｼｮﾝｺｰﾄﾞ照合結果TP
+LD CR2002                ; 常時ON
+MPS
+AND R1002                ; 読取ﾃﾞｰﾀｸﾘｱ
+FMOV #0 DM2100 #10       ; 受信ﾃﾞｰﾀ
+MPP
+AND R1004                ; 機種一覧ｺｰﾄﾞ全部ｸﾘｱ
+FMOV #0 EM100 #100       ; 機種1KDﾄﾞﾗﾑ登録ｺｰﾄﾞ
+FMOV #0 EM200 #100       ; 機種1充填箱登録ｺｰﾄﾞ
+FMOV #0 EM300 #100       ; 機種1ｺｰｼｮﾝ登録ｺｰﾄﾞ
+FMOV #0 EM400 #100       ; 重量登録ﾃﾞｰﾀｰ機種1
+;<h1/>機種登録/切替--------------------------------------------------
+;*************************************
+;機種登録 / Model Regist
+;
+;
+LD= DM4000 #3            ; TP_表示中画面
+ANB MR1000               ; 自動中
+OUT MR1010               ; 機種登録中
+LD MR1010                ; 機種登録中
+AND R35101               ; Port1 受信完了
+BMOV DM13802 DM2100 DM13801;Port1 受信ﾃﾞｰﾀ1  受信ﾃﾞｰﾀ  Port1 受信ﾃﾞｰﾀ長
+BSWAP DM2100 #10         ; 受信ﾃﾞｰﾀ
+RES R35101               ; Port1 受信完了
+;KDﾄﾞﾗﾑｺｰﾄﾞ機種登録 / KD Drum Cord Model Regist
+LD MR1010                ; 機種登録中
+MPS
+AND= DM2001 #1           ; 登録機種切替用
+MPS
+AND MR1006               ; KDﾄﾞﾗﾑｺｰﾄﾞ機種登録
+BMOV DM2100 EM100 #10    ; 受信ﾃﾞｰﾀ  機種1KDﾄﾞﾗﾑ登録ｺｰﾄﾞ
+MPP
+BMOV EM100 DM2250 #10    ; 機種1KDﾄﾞﾗﾑ登録ｺｰﾄﾞ  TP_表示
+MRD
+AND= DM2001 #2           ; 登録機種切替用
+MPS
+AND MR1006               ; KDﾄﾞﾗﾑｺｰﾄﾞ機種登録
+BMOV DM2100 EM110 #10    ; 受信ﾃﾞｰﾀ  機種2KDﾄﾞﾗﾑ登録ｺｰﾄﾞ
+MPP
+BMOV EM110 DM2250 #10    ; 機種2KDﾄﾞﾗﾑ登録ｺｰﾄﾞ  TP_表示
+MRD
+AND= DM2001 #3           ; 登録機種切替用
+MPS
+AND MR1006               ; KDﾄﾞﾗﾑｺｰﾄﾞ機種登録
+BMOV DM2100 EM120 #10    ; 受信ﾃﾞｰﾀ  機種3KDﾄﾞﾗﾑ登録ｺｰﾄﾞ
+MPP
+BMOV EM120 DM2250 #10    ; 機種3KDﾄﾞﾗﾑ登録ｺｰﾄﾞ  TP_表示
+MRD
+AND= DM2001 #4           ; 登録機種切替用
+MPS
+AND MR1006               ; KDﾄﾞﾗﾑｺｰﾄﾞ機種登録
+BMOV DM2100 EM130 #10    ; 受信ﾃﾞｰﾀ  機種4KDﾄﾞﾗﾑ登録ｺｰﾄﾞ
+MPP
+BMOV EM130 DM2250 #10    ; 機種4KDﾄﾞﾗﾑ登録ｺｰﾄﾞ  TP_表示
+MRD
+AND= DM2001 #5           ; 登録機種切替用
+MPS
+AND MR1006               ; KDﾄﾞﾗﾑｺｰﾄﾞ機種登録
+BMOV DM2100 EM140 #10    ; 受信ﾃﾞｰﾀ  機種5KDﾄﾞﾗﾑ登録ｺｰﾄﾞ
+MPP
+BMOV EM140 DM2250 #10    ; 機種5KDﾄﾞﾗﾑ登録ｺｰﾄﾞ  TP_表示
+MRD
+AND= DM2001 #6           ; 登録機種切替用
+MPS
+AND MR1006               ; KDﾄﾞﾗﾑｺｰﾄﾞ機種登録
+BMOV DM2100 EM150 #10    ; 受信ﾃﾞｰﾀ  機種6KDﾄﾞﾗﾑ登録ｺｰﾄﾞ
+MPP
+BMOV EM150 DM2250 #10    ; 機種6KDﾄﾞﾗﾑ登録ｺｰﾄﾞ  TP_表示
+MRD
+AND= DM2001 #7           ; 登録機種切替用
+MPS
+AND MR1006               ; KDﾄﾞﾗﾑｺｰﾄﾞ機種登録
+BMOV DM2100 EM160 #10    ; 受信ﾃﾞｰﾀ  機種7KDﾄﾞﾗﾑ登録ｺｰﾄﾞ
+MPP
+BMOV EM160 DM2250 #10    ; 機種7KDﾄﾞﾗﾑ登録ｺｰﾄﾞ  TP_表示
+MRD
+AND= DM2001 #8           ; 登録機種切替用
+MPS
+AND MR1006               ; KDﾄﾞﾗﾑｺｰﾄﾞ機種登録
+BMOV DM2100 EM170 #10    ; 受信ﾃﾞｰﾀ  機種8KDﾄﾞﾗﾑ登録ｺｰﾄﾞ
+MPP
+BMOV EM170 DM2250 #10    ; 機種8KDﾄﾞﾗﾑ登録ｺｰﾄﾞ  TP_表示
+MRD
+AND= DM2001 #9           ; 登録機種切替用
+MPS
+AND MR1006               ; KDﾄﾞﾗﾑｺｰﾄﾞ機種登録
+BMOV DM2100 EM180 #10    ; 受信ﾃﾞｰﾀ  機種9KDﾄﾞﾗﾑ登録ｺｰﾄﾞ
+MPP
+BMOV EM180 DM2250 #10    ; 機種9KDﾄﾞﾗﾑ登録ｺｰﾄﾞ  TP_表示
+MPP
+AND= DM2001 #10          ; 登録機種切替用
+MPS
+AND MR1006               ; KDﾄﾞﾗﾑｺｰﾄﾞ機種登録
+BMOV DM2100 EM190 #10    ; 受信ﾃﾞｰﾀ  機種10KDﾄﾞﾗﾑ登録ｺｰﾄﾞ
+MPP
+BMOV EM190 DM2250 #10    ; 機種10KDﾄﾞﾗﾑ登録ｺｰﾄﾞ  TP_表示
+;充填箱ｺｰﾄﾞ機種登録 /  PourBOX cord model Regist
+LD MR1010                ; 機種登録中
+MPS
+AND= DM2001 #1           ; 登録機種切替用
+MPS
+AND MR1007               ; 充填箱ｺｰﾄﾞ機種登録
+BMOV DM2100 EM200 #10    ; 受信ﾃﾞｰﾀ  機種1充填箱登録ｺｰﾄﾞ
+MPP
+BMOV EM200 DM2260 #10    ; 機種1充填箱登録ｺｰﾄﾞ  TP_表示
+MRD
+AND= DM2001 #2           ; 登録機種切替用
+MPS
+AND MR1007               ; 充填箱ｺｰﾄﾞ機種登録
+BMOV DM2100 EM210 #10    ; 受信ﾃﾞｰﾀ  機種2充填箱登録ｺｰﾄﾞ
+MPP
+BMOV EM210 DM2260 #10    ; 機種2充填箱登録ｺｰﾄﾞ  TP_表示
+MRD
+AND= DM2001 #3           ; 登録機種切替用
+MPS
+AND MR1007               ; 充填箱ｺｰﾄﾞ機種登録
+BMOV DM2100 EM220 #10    ; 受信ﾃﾞｰﾀ  機種3充填箱登録ｺｰﾄﾞ
+MPP
+BMOV EM220 DM2260 #10    ; 機種3充填箱登録ｺｰﾄﾞ  TP_表示
+MRD
+AND= DM2001 #4           ; 登録機種切替用
+MPS
+AND MR1007               ; 充填箱ｺｰﾄﾞ機種登録
+BMOV DM2100 EM230 #10    ; 受信ﾃﾞｰﾀ  機種4充填箱登録ｺｰﾄﾞ
+MPP
+BMOV EM230 DM2260 #10    ; 機種4充填箱登録ｺｰﾄﾞ  TP_表示
+MRD
+AND= DM2001 #5           ; 登録機種切替用
+MPS
+AND MR1007               ; 充填箱ｺｰﾄﾞ機種登録
+BMOV DM2100 EM240 #10    ; 受信ﾃﾞｰﾀ  機種5充填箱登録ｺｰﾄﾞ
+MPP
+BMOV EM240 DM2260 #10    ; 機種5充填箱登録ｺｰﾄﾞ  TP_表示
+MRD
+AND= DM2001 #6           ; 登録機種切替用
+MPS
+AND MR1007               ; 充填箱ｺｰﾄﾞ機種登録
+BMOV DM2100 EM250 #10    ; 受信ﾃﾞｰﾀ  機種6充填箱登録ｺｰﾄﾞ
+MPP
+BMOV EM250 DM2260 #10    ; 機種6充填箱登録ｺｰﾄﾞ  TP_表示
+MRD
+AND= DM2001 #7           ; 登録機種切替用
+MPS
+AND MR1007               ; 充填箱ｺｰﾄﾞ機種登録
+BMOV DM2100 EM260 #10    ; 受信ﾃﾞｰﾀ  機種7充填箱登録ｺｰﾄﾞ
+MPP
+BMOV EM260 DM2260 #10    ; 機種7充填箱登録ｺｰﾄﾞ  TP_表示
+MRD
+AND= DM2001 #8           ; 登録機種切替用
+MPS
+AND MR1007               ; 充填箱ｺｰﾄﾞ機種登録
+BMOV DM2100 EM270 #10    ; 受信ﾃﾞｰﾀ  機種8充填箱登録ｺｰﾄﾞ
+MPP
+BMOV EM270 DM2260 #10    ; 機種8充填箱登録ｺｰﾄﾞ  TP_表示
+MRD
+AND= DM2001 #9           ; 登録機種切替用
+MPS
+AND MR1007               ; 充填箱ｺｰﾄﾞ機種登録
+BMOV DM2100 EM280 #10    ; 受信ﾃﾞｰﾀ  機種9充填箱登録ｺｰﾄﾞ
+MPP
+BMOV EM280 DM2260 #10    ; 機種9充填箱登録ｺｰﾄﾞ  TP_表示
+MPP
+AND= DM2001 #10          ; 登録機種切替用
+MPS
+AND MR1007               ; 充填箱ｺｰﾄﾞ機種登録
+BMOV DM2100 EM290 #10    ; 受信ﾃﾞｰﾀ  機種10充填箱登録ｺｰﾄﾞ
+MPP
+BMOV EM290 DM2260 #10    ; 機種10充填箱登録ｺｰﾄﾞ  TP_表示
+;ｺｰｼｮﾝｺｰﾄﾞ機種登録 / caution cord Regist
+LD MR1010                ; 機種登録中
+MPS
+AND= DM2001 #1           ; 登録機種切替用
+MPS
+AND MR1008               ; ｺｰｼｮﾝｺｰﾄﾞ機種登録
+BMOV DM2100 EM300 #10    ; 受信ﾃﾞｰﾀ  機種1ｺｰｼｮﾝ登録ｺｰﾄﾞ
+MPP
+BMOV EM300 DM2270 #10    ; 機種1ｺｰｼｮﾝ登録ｺｰﾄﾞ  TP-表示
+MRD
+AND= DM2001 #2           ; 登録機種切替用
+MPS
+AND MR1008               ; ｺｰｼｮﾝｺｰﾄﾞ機種登録
+BMOV DM2100 EM310 #10    ; 受信ﾃﾞｰﾀ  機種2ｺｰｼｮﾝ登録ｺｰﾄﾞ
+MPP
+BMOV EM310 DM2270 #10    ; 機種2ｺｰｼｮﾝ登録ｺｰﾄﾞ  TP-表示
+MRD
+AND= DM2001 #3           ; 登録機種切替用
+MPS
+AND MR1008               ; ｺｰｼｮﾝｺｰﾄﾞ機種登録
+BMOV DM2100 EM320 #10    ; 受信ﾃﾞｰﾀ  機種3ｺｰｼｮﾝ登録ｺｰﾄﾞ
+MPP
+BMOV EM320 DM2270 #10    ; 機種3ｺｰｼｮﾝ登録ｺｰﾄﾞ  TP-表示
+MRD
+AND= DM2001 #4           ; 登録機種切替用
+MPS
+AND MR1008               ; ｺｰｼｮﾝｺｰﾄﾞ機種登録
+BMOV DM2100 EM330 #10    ; 受信ﾃﾞｰﾀ  機種4ｺｰｼｮﾝ登録ｺｰﾄﾞ
+MPP
+BMOV EM330 DM2270 #10    ; 機種4ｺｰｼｮﾝ登録ｺｰﾄﾞ  TP-表示
+MRD
+AND= DM2001 #5           ; 登録機種切替用
+MPS
+AND MR1008               ; ｺｰｼｮﾝｺｰﾄﾞ機種登録
+BMOV DM2100 EM340 #10    ; 受信ﾃﾞｰﾀ  機種5ｺｰｼｮﾝ登録ｺｰﾄﾞ
+MPP
+BMOV EM340 DM2270 #10    ; 機種5ｺｰｼｮﾝ登録ｺｰﾄﾞ  TP-表示
+MRD
+AND= DM2001 #6           ; 登録機種切替用
+MPS
+AND MR1008               ; ｺｰｼｮﾝｺｰﾄﾞ機種登録
+BMOV DM2100 EM350 #10    ; 受信ﾃﾞｰﾀ  機種6ｺｰｼｮﾝ登録ｺｰﾄﾞ
+MPP
+BMOV EM350 DM2270 #10    ; 機種6ｺｰｼｮﾝ登録ｺｰﾄﾞ  TP-表示
+MRD
+AND= DM2001 #7           ; 登録機種切替用
+MPS
+AND MR1008               ; ｺｰｼｮﾝｺｰﾄﾞ機種登録
+BMOV DM2100 EM360 #10    ; 受信ﾃﾞｰﾀ  機種7ｺｰｼｮﾝ登録ｺｰﾄﾞ
+MPP
+BMOV EM360 DM2270 #10    ; 機種7ｺｰｼｮﾝ登録ｺｰﾄﾞ  TP-表示
+MRD
+AND= DM2001 #8           ; 登録機種切替用
+MPS
+AND MR1008               ; ｺｰｼｮﾝｺｰﾄﾞ機種登録
+BMOV DM2100 EM370 #10    ; 受信ﾃﾞｰﾀ  機種8ｺｰｼｮﾝ登録ｺｰﾄﾞ
+MPP
+BMOV EM370 DM2270 #10    ; 機種8ｺｰｼｮﾝ登録ｺｰﾄﾞ  TP-表示
+MRD
+AND= DM2001 #9           ; 登録機種切替用
+MPS
+AND MR1008               ; ｺｰｼｮﾝｺｰﾄﾞ機種登録
+BMOV DM2100 EM380 #10    ; 受信ﾃﾞｰﾀ  機種9ｺｰｼｮﾝ登録ｺｰﾄﾞ
+MPP
+BMOV EM380 DM2270 #10    ; 機種9ｺｰｼｮﾝ登録ｺｰﾄﾞ  TP-表示
+MPP
+AND= DM2001 #10          ; 登録機種切替用
+MPS
+AND MR1008               ; ｺｰｼｮﾝｺｰﾄﾞ機種登録
+BMOV DM2100 EM390 #10    ; 受信ﾃﾞｰﾀ  機種10ｺｰｼｮﾝ登録ｺｰﾄﾞ
+MPP
+BMOV EM390 DM2270 #10    ; 機種10ｺｰｼｮﾝ登録ｺｰﾄﾞ  TP-表示
+LDB MR1010               ; 機種登録中
+MOV #1 DM2001            ; 登録機種切替用
+;重量機種登録
+LD MR1010                ; 機種登録中
+MPS
+AND= DM2001 #1           ; 登録機種切替用
+MPS
+AND MR1009               ; 重量機種登録
+LDA.F DM2280             ; 重量登録ﾃﾞｰﾀｰ入力
+CON
+STA.F EM400              ; 重量登録ﾃﾞｰﾀｰ機種1
+MPP
+MEP
+LDA.F EM400              ; 重量登録ﾃﾞｰﾀｰ機種1
+CON
+STA.F DM2280             ; 重量登録ﾃﾞｰﾀｰ入力
+MRD
+AND= DM2001 #2           ; 登録機種切替用
+MPS
+AND MR1009               ; 重量機種登録
+LDA.F DM2280             ; 重量登録ﾃﾞｰﾀｰ入力
+CON
+STA.F EM410              ; 重量登録ﾃﾞｰﾀｰ機種2
+MPP
+MEP
+LDA.F EM410              ; 重量登録ﾃﾞｰﾀｰ機種2
+CON
+STA.F DM2280             ; 重量登録ﾃﾞｰﾀｰ入力
+MRD
+AND= DM2001 #3           ; 登録機種切替用
+MPS
+AND MR1009               ; 重量機種登録
+LDA.F DM2280             ; 重量登録ﾃﾞｰﾀｰ入力
+CON
+STA.F EM420              ; 重量登録ﾃﾞｰﾀｰ機種3
+MPP
+MEP
+LDA.F EM420              ; 重量登録ﾃﾞｰﾀｰ機種3
+CON
+STA.F DM2280             ; 重量登録ﾃﾞｰﾀｰ入力
+MRD
+AND= DM2001 #4           ; 登録機種切替用
+MPS
+AND MR1009               ; 重量機種登録
+LDA.F DM2280             ; 重量登録ﾃﾞｰﾀｰ入力
+CON
+STA.F EM430              ; 重量登録ﾃﾞｰﾀｰ機種4
+MPP
+MEP
+LDA.F EM430              ; 重量登録ﾃﾞｰﾀｰ機種4
+CON
+STA.F DM2280             ; 重量登録ﾃﾞｰﾀｰ入力
+MRD
+AND= DM2001 #5           ; 登録機種切替用
+MPS
+AND MR1009               ; 重量機種登録
+LDA.F DM2280             ; 重量登録ﾃﾞｰﾀｰ入力
+CON
+STA.F EM440              ; 重量登録ﾃﾞｰﾀｰ機種5
+MPP
+MEP
+LDA.F EM440              ; 重量登録ﾃﾞｰﾀｰ機種5
+CON
+STA.F DM2280             ; 重量登録ﾃﾞｰﾀｰ入力
+MRD
+AND= DM2001 #6           ; 登録機種切替用
+MPS
+AND MR1009               ; 重量機種登録
+LDA.F DM2280             ; 重量登録ﾃﾞｰﾀｰ入力
+CON
+STA.F EM450              ; 重量登録ﾃﾞｰﾀｰ機種6
+MPP
+MEP
+LDA.F EM450              ; 重量登録ﾃﾞｰﾀｰ機種6
+CON
+STA.F DM2280             ; 重量登録ﾃﾞｰﾀｰ入力
+MRD
+AND= DM2001 #7           ; 登録機種切替用
+MPS
+AND MR1009               ; 重量機種登録
+LDA.F DM2280             ; 重量登録ﾃﾞｰﾀｰ入力
+CON
+STA.F EM460              ; 重量登録ﾃﾞｰﾀｰ機種7
+MPP
+MEP
+LDA.F EM460              ; 重量登録ﾃﾞｰﾀｰ機種7
+CON
+STA.F DM2280             ; 重量登録ﾃﾞｰﾀｰ入力
+MRD
+AND= DM2001 #8           ; 登録機種切替用
+MPS
+AND MR1009               ; 重量機種登録
+LDA.F DM2280             ; 重量登録ﾃﾞｰﾀｰ入力
+CON
+STA.F EM470              ; 重量登録ﾃﾞｰﾀｰ機種8
+MPP
+MEP
+LDA.F EM470              ; 重量登録ﾃﾞｰﾀｰ機種8
+CON
+STA.F DM2280             ; 重量登録ﾃﾞｰﾀｰ入力
+MRD
+AND= DM2001 #9           ; 登録機種切替用
+MPS
+AND MR1009               ; 重量機種登録
+LDA.F DM2280             ; 重量登録ﾃﾞｰﾀｰ入力
+CON
+STA.F EM480              ; 重量登録ﾃﾞｰﾀｰ機種9
+MPP
+MEP
+LDA.F EM480              ; 重量登録ﾃﾞｰﾀｰ機種9
+CON
+STA.F DM2280             ; 重量登録ﾃﾞｰﾀｰ入力
+MPP
+AND= DM2001 #10          ; 登録機種切替用
+MPS
+AND MR1009               ; 重量機種登録
+LDA.F DM2280             ; 重量登録ﾃﾞｰﾀｰ入力
+CON
+STA.F EM490              ; 重量登録ﾃﾞｰﾀｰ機種10
+MPP
+MEP
+LDA.F EM490              ; 重量登録ﾃﾞｰﾀｰ機種10
+CON
+STA.F DM2280             ; 重量登録ﾃﾞｰﾀｰ入力
+;************************************
+;機種切替 / Model Change
+;
+;KDﾄﾞﾗﾑ機種切替 / KDdrum model Change
+LD CR2008                ; 運転開始時1ｽｷｬﾝON
+MOV #1 DM2000            ; 運転機種切替
+LD= DM4000 #2            ; TP_表示中画面
+MPS
+AND= DM2000 #1           ; 運転機種切替
+BMOV EM100 DM2110 #10    ; 機種1KDﾄﾞﾗﾑ登録ｺｰﾄﾞ  機種選択KDﾄﾞﾗﾑ登録ｺｰﾄﾞ
+MRD
+AND= DM2000 #2           ; 運転機種切替
+BMOV EM110 DM2110 #10    ; 機種2KDﾄﾞﾗﾑ登録ｺｰﾄﾞ  機種選択KDﾄﾞﾗﾑ登録ｺｰﾄﾞ
+MRD
+AND= DM2000 #3           ; 運転機種切替
+BMOV EM120 DM2110 #10    ; 機種3KDﾄﾞﾗﾑ登録ｺｰﾄﾞ  機種選択KDﾄﾞﾗﾑ登録ｺｰﾄﾞ
+MRD
+AND= DM2000 #4           ; 運転機種切替
+BMOV EM130 DM2110 #10    ; 機種4KDﾄﾞﾗﾑ登録ｺｰﾄﾞ  機種選択KDﾄﾞﾗﾑ登録ｺｰﾄﾞ
+MRD
+AND= DM2000 #5           ; 運転機種切替
+BMOV EM140 DM2110 #10    ; 機種5KDﾄﾞﾗﾑ登録ｺｰﾄﾞ  機種選択KDﾄﾞﾗﾑ登録ｺｰﾄﾞ
+MRD
+AND= DM2000 #6           ; 運転機種切替
+BMOV EM150 DM2110 #10    ; 機種6KDﾄﾞﾗﾑ登録ｺｰﾄﾞ  機種選択KDﾄﾞﾗﾑ登録ｺｰﾄﾞ
+MRD
+AND= DM2000 #7           ; 運転機種切替
+BMOV EM160 DM2110 #10    ; 機種7KDﾄﾞﾗﾑ登録ｺｰﾄﾞ  機種選択KDﾄﾞﾗﾑ登録ｺｰﾄﾞ
+MRD
+AND= DM2000 #8           ; 運転機種切替
+BMOV EM170 DM2110 #10    ; 機種8KDﾄﾞﾗﾑ登録ｺｰﾄﾞ  機種選択KDﾄﾞﾗﾑ登録ｺｰﾄﾞ
+MRD
+AND= DM2000 #9           ; 運転機種切替
+BMOV EM180 DM2110 #10    ; 機種9KDﾄﾞﾗﾑ登録ｺｰﾄﾞ  機種選択KDﾄﾞﾗﾑ登録ｺｰﾄﾞ
+MPP
+AND= DM2000 #10          ; 運転機種切替
+BMOV EM190 DM2110 #10    ; 機種10KDﾄﾞﾗﾑ登録ｺｰﾄﾞ  機種選択KDﾄﾞﾗﾑ登録ｺｰﾄﾞ
+;充填箱機種切替/pour box model change
+LD= DM4000 #2            ; TP_表示中画面
+MPS
+AND= DM2000 #1           ; 運転機種切替
+BMOV EM200 DM2120 #10    ; 機種1充填箱登録ｺｰﾄﾞ  機種選択充填箱登録ｺｰﾄﾞ
+MRD
+AND= DM2000 #2           ; 運転機種切替
+BMOV EM210 DM2120 #10    ; 機種2充填箱登録ｺｰﾄﾞ  機種選択充填箱登録ｺｰﾄﾞ
+MRD
+AND= DM2000 #3           ; 運転機種切替
+BMOV EM220 DM2120 #10    ; 機種3充填箱登録ｺｰﾄﾞ  機種選択充填箱登録ｺｰﾄﾞ
+MRD
+AND= DM2000 #4           ; 運転機種切替
+BMOV EM230 DM2120 #10    ; 機種4充填箱登録ｺｰﾄﾞ  機種選択充填箱登録ｺｰﾄﾞ
+MRD
+AND= DM2000 #5           ; 運転機種切替
+BMOV EM240 DM2120 #10    ; 機種5充填箱登録ｺｰﾄﾞ  機種選択充填箱登録ｺｰﾄﾞ
+MRD
+AND= DM2000 #6           ; 運転機種切替
+BMOV EM250 DM2120 #10    ; 機種6充填箱登録ｺｰﾄﾞ  機種選択充填箱登録ｺｰﾄﾞ
+MRD
+AND= DM2000 #7           ; 運転機種切替
+BMOV EM260 DM2120 #10    ; 機種7充填箱登録ｺｰﾄﾞ  機種選択充填箱登録ｺｰﾄﾞ
+MRD
+AND= DM2000 #8           ; 運転機種切替
+BMOV EM270 DM2120 #10    ; 機種8充填箱登録ｺｰﾄﾞ  機種選択充填箱登録ｺｰﾄﾞ
+MRD
+AND= DM2000 #9           ; 運転機種切替
+BMOV EM280 DM2120 #10    ; 機種9充填箱登録ｺｰﾄﾞ  機種選択充填箱登録ｺｰﾄﾞ
+MPP
+AND= DM2000 #10          ; 運転機種切替
+BMOV EM290 DM2120 #10    ; 機種10充填箱登録ｺｰﾄﾞ  機種選択充填箱登録ｺｰﾄﾞ
+;ｺｰｼｮﾝ機種切替/caution model change
+LD= DM4000 #2            ; TP_表示中画面
+MPS
+AND= DM2000 #1           ; 運転機種切替
+BMOV EM300 DM2130 #10    ; 機種1ｺｰｼｮﾝ登録ｺｰﾄﾞ  機種選択ｺｰｼｮﾝ登録ｺｰﾄﾞ
+MRD
+AND= DM2000 #2           ; 運転機種切替
+BMOV EM310 DM2130 #10    ; 機種2ｺｰｼｮﾝ登録ｺｰﾄﾞ  機種選択ｺｰｼｮﾝ登録ｺｰﾄﾞ
+MRD
+AND= DM2000 #3           ; 運転機種切替
+BMOV EM320 DM2130 #10    ; 機種3ｺｰｼｮﾝ登録ｺｰﾄﾞ  機種選択ｺｰｼｮﾝ登録ｺｰﾄﾞ
+MRD
+AND= DM2000 #4           ; 運転機種切替
+BMOV EM330 DM2130 #10    ; 機種4ｺｰｼｮﾝ登録ｺｰﾄﾞ  機種選択ｺｰｼｮﾝ登録ｺｰﾄﾞ
+MRD
+AND= DM2000 #5           ; 運転機種切替
+BMOV EM340 DM2130 #10    ; 機種5ｺｰｼｮﾝ登録ｺｰﾄﾞ  機種選択ｺｰｼｮﾝ登録ｺｰﾄﾞ
+MRD
+AND= DM2000 #6           ; 運転機種切替
+BMOV EM350 DM2130 #10    ; 機種6ｺｰｼｮﾝ登録ｺｰﾄﾞ  機種選択ｺｰｼｮﾝ登録ｺｰﾄﾞ
+MRD
+AND= DM2000 #7           ; 運転機種切替
+BMOV EM360 DM2130 #10    ; 機種7ｺｰｼｮﾝ登録ｺｰﾄﾞ  機種選択ｺｰｼｮﾝ登録ｺｰﾄﾞ
+MRD
+AND= DM2000 #8           ; 運転機種切替
+BMOV EM370 DM2130 #10    ; 機種8ｺｰｼｮﾝ登録ｺｰﾄﾞ  機種選択ｺｰｼｮﾝ登録ｺｰﾄﾞ
+MRD
+AND= DM2000 #9           ; 運転機種切替
+BMOV EM380 DM2130 #10    ; 機種9ｺｰｼｮﾝ登録ｺｰﾄﾞ  機種選択ｺｰｼｮﾝ登録ｺｰﾄﾞ
+MPP
+AND= DM2000 #10          ; 運転機種切替
+BMOV EM390 DM2130 #10    ; 機種10ｺｰｼｮﾝ登録ｺｰﾄﾞ  機種選択ｺｰｼｮﾝ登録ｺｰﾄﾞ
+;重量機種切替
+LD= DM4000 #2            ; TP_表示中画面
+MPS
+AND= DM2000 #1           ; 運転機種切替
+LDA.F EM400              ; 重量登録ﾃﾞｰﾀｰ機種1
+CON
+STA.F DM2140             ; 機種重量
+MRD
+AND= DM2000 #2           ; 運転機種切替
+LDA.F EM410              ; 重量登録ﾃﾞｰﾀｰ機種2
+CON
+STA.F DM2140             ; 機種重量
+MRD
+AND= DM2000 #3           ; 運転機種切替
+LDA.F EM420              ; 重量登録ﾃﾞｰﾀｰ機種3
+CON
+STA.F DM2140             ; 機種重量
+MRD
+AND= DM2000 #4           ; 運転機種切替
+LDA.F EM430              ; 重量登録ﾃﾞｰﾀｰ機種4
+CON
+STA.F DM2140             ; 機種重量
+MRD
+AND= DM2000 #5           ; 運転機種切替
+LDA.F EM440              ; 重量登録ﾃﾞｰﾀｰ機種5
+CON
+STA.F DM2140             ; 機種重量
+MRD
+AND= DM2000 #6           ; 運転機種切替
+LDA.F EM450              ; 重量登録ﾃﾞｰﾀｰ機種6
+CON
+STA.F DM2140             ; 機種重量
+MRD
+AND= DM2000 #7           ; 運転機種切替
+LDA.F EM460              ; 重量登録ﾃﾞｰﾀｰ機種7
+CON
+STA.F DM2140             ; 機種重量
+MRD
+AND= DM2000 #8           ; 運転機種切替
+LDA.F EM470              ; 重量登録ﾃﾞｰﾀｰ機種8
+CON
+STA.F DM2140             ; 機種重量
+MRD
+AND= DM2000 #9           ; 運転機種切替
+LDA.F EM480              ; 重量登録ﾃﾞｰﾀｰ機種9
+CON
+STA.F DM2140             ; 機種重量
+MPP
+AND= DM2000 #10          ; 運転機種切替
+LDA.F EM490              ; 重量登録ﾃﾞｰﾀｰ機種10
+CON
+STA.F DM2140             ; 機種重量
+;<h1/>ｴﾗｰ--------------------------------------------------------
+;************************************
+;ERROR
+LDB R008                 ; 元圧空気圧低下
+SET MR1506               ; ERROR6(元圧空気圧低下)
+LDB MR1501               ; ERROR1(天秤通信ｴﾗｰ)
+ANB MR1502               ; ERROR2(ﾊﾞｰｺｰﾄﾞ受信ｴﾗｰ)
+ANB MR1503               ; ERROR3(KDﾄﾞﾗﾑ照合ｴﾗｰ)
+ANB MR1504               ; ERROR4(充填箱照合ｴﾗｰ)
+ANB MR1505               ; ERROR5(ｺｰｼｮﾝ照合ｴﾗｰ)
+ANB MR1506               ; ERROR6(元圧空気圧低下)
+ANB MR1507               ; ERROR7 ｾﾞﾛoffset ｴﾗｰ
+ANB MR1508               ; ERROR8(重量異常)
+ANB MR1509               ; ERROR9(天秤送信異常)
+ANB MR1510               ; ERROR10(重量受信ｴﾗｰ)
+ANB MR1511               ; ERROR11(ﾜｰｸ無しｴﾗｰ)
+ANB MR1512               ; ERROR12(ﾉｽﾞﾙUPｴﾗｰ)
+ANB MR1513               ; ERROR13(充填ﾀｲﾑｵｰﾊﾞｰ)
+ANB MR1514               ; ERROR14(予備)
+ANB MR1515               ; ERROR15(予備)
+INV
+OUT MR1600               ; 異常
+LDB MR1501               ; ERROR1(天秤通信ｴﾗｰ)
+ANB MR1502               ; ERROR2(ﾊﾞｰｺｰﾄﾞ受信ｴﾗｰ)
+ANB MR1506               ; ERROR6(元圧空気圧低下)
+ANB MR1508               ; ERROR8(重量異常)
+ANB MR1509               ; ERROR9(天秤送信異常)
+INV
+OUT MR1602               ; 重故障
+LD MR1600                ; 異常
+MEP
+SET MR1601               ; ﾌﾞｻﾞｰ
+LD CR2002                ; 常時ON
+LD R1005                 ; ﾌﾞｻﾞｰ停止
+ORB MR1600               ; 異常
+ANL
+RES MR1601               ; ﾌﾞｻﾞｰ
+LDB MR1600               ; 異常
+MOV #0 DM15              ; TP_ﾃｷｽﾄNo.
+LD MR1501                ; ERROR1(天秤通信ｴﾗｰ)
+MOV #1 DM15              ; TP_ﾃｷｽﾄNo.
+LD MR1502                ; ERROR2(ﾊﾞｰｺｰﾄﾞ受信ｴﾗｰ)
+MOV #2 DM15              ; TP_ﾃｷｽﾄNo.
+LD MR1503                ; ERROR3(KDﾄﾞﾗﾑ照合ｴﾗｰ)
+MOV #3 DM15              ; TP_ﾃｷｽﾄNo.
+LD MR1504                ; ERROR4(充填箱照合ｴﾗｰ)
+MOV #4 DM15              ; TP_ﾃｷｽﾄNo.
+LD MR1505                ; ERROR5(ｺｰｼｮﾝ照合ｴﾗｰ)
+MOV #5 DM15              ; TP_ﾃｷｽﾄNo.
+LD MR1506                ; ERROR6(元圧空気圧低下)
+MOV #6 DM15              ; TP_ﾃｷｽﾄNo.
+LD MR1507                ; ERROR7 ｾﾞﾛoffset ｴﾗｰ
+MOV #7 DM15              ; TP_ﾃｷｽﾄNo.
+LD MR1508                ; ERROR8(重量異常)
+MOV #8 DM15              ; TP_ﾃｷｽﾄNo.
+LD MR1509                ; ERROR9(天秤送信異常)
+MOV #9 DM15              ; TP_ﾃｷｽﾄNo.
+LD MR1510                ; ERROR10(重量受信ｴﾗｰ)
+MOV #10 DM15             ; TP_ﾃｷｽﾄNo.
+LD MR1511                ; ERROR11(ﾜｰｸ無しｴﾗｰ)
+MOV #11 DM15             ; TP_ﾃｷｽﾄNo.
+LD MR1512                ; ERROR12(ﾉｽﾞﾙUPｴﾗｰ)
+MOV #12 DM15             ; TP_ﾃｷｽﾄNo.
+LD MR1513                ; ERROR13(充填ﾀｲﾑｵｰﾊﾞｰ)
+MOV #13 DM15             ; TP_ﾃｷｽﾄNo.
+LD MR1514                ; ERROR14(予備)
+MOV #14 DM15             ; TP_ﾃｷｽﾄNo.
+LD MR1515                ; ERROR15(予備)
+MOV #15 DM15             ; TP_ﾃｷｽﾄNo.
+LD CR2002                ; 常時ON
+MOV #1 DM16              ; TP_ﾃｷｽﾄ開始行
+LD R1001                 ; ERROR ﾘｾｯﾄ
+ANB MR1511               ; ERROR11(ﾜｰｸ無しｴﾗｰ)
+ANB MR1512               ; ERROR12(ﾉｽﾞﾙUPｴﾗｰ)
+ANB MR1513               ; ERROR13(充填ﾀｲﾑｵｰﾊﾞｰ)
+LD MR1511                ; ERROR11(ﾜｰｸ無しｴﾗｰ)
+OR MR1512                ; ERROR12(ﾉｽﾞﾙUPｴﾗｰ)
+OR MR1513                ; ERROR13(充填ﾀｲﾑｵｰﾊﾞｰ)
+AND R002                 ; ｴﾗｰﾘｾｯﾄ ｷｰ
+ORL
+OUT R1015                ; ｴﾗｰﾘｾｯﾄ
+LD R1015                 ; ｴﾗｰﾘｾｯﾄ
+ZRES MR1501 MR1515       ; ERROR1(天秤通信ｴﾗｰ)  ERROR15(予備)
+RES MR1311               ; 充填機ｺｰﾄﾞ照合NG
+CON
+RES MR1411               ; ｺｰｼｮﾝｺｰﾄﾞ照合NG
+;OUT
+LD MR1000                ; 自動中
+AND MR1003               ; 充填自動運転中
+LD MR1001                ; AUTO ﾓｰﾄﾞ選択中
+AND MR1210               ; KD ﾄﾞﾗﾑｺｰﾄﾞ照合OK
+AND CR2006               ; 1sｸﾛｯｸﾊﾟﾙｽ
+ORL
+OUT R500                 ; START LAMP
+LDB MR1000               ; 自動中
+ANB MR1210               ; KD ﾄﾞﾗﾑｺｰﾄﾞ照合OK
+OUT R501                 ; STOP LAMP
+LD CR2003                ; 常時OFF
+OUT R502                 ; 予備
+LD MR6006                ; 充填中
+LD MR6206                ; 手動充填
+ANB MR6006               ; 充填中
+ANB MR1000               ; 自動中
+ORL
+OUT R503                 ; Diaphragm pump
+LD MR1600                ; 異常
+OUT R504                 ; ERROR (RD)
+LD MR1000                ; 自動中
+OR= DM4000 #5            ; TP_表示中画面
+OUT R505                 ; DRIVE (YE)
+LDB MR1000               ; 自動中
+OUT R506                 ; STOP (GN)
+LD MR1601                ; ﾌﾞｻﾞｰ
+OUT R507                 ; BUZZER
+END
+ENDH

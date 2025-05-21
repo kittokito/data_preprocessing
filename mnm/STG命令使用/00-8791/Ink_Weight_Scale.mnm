@@ -1,0 +1,426 @@
+DEVICE:53
+;MODULE:Ink_Weight_Scale
+;MODULE_TYPE:0
+;SCRIPT_TYPE:
+;<h1/>Auto Ink Weight Project - Anton Swampillai (EPI)
+;Scale Communication / Data conversion / Ink weight Judgement
+LD R50010                ; Emergency　Stop
+ZRES @MR000 @MR215
+LDB R37300               ; Port2 通信許可
+DW $0000 DM39215         ; Port2 ﾃﾞｰﾀ格納単位設定
+CON
+DW $0000 DM39216         ; Port2 ﾓｰﾄﾞ設定
+CON
+DW $0000 DM39218         ; Port2 送信ﾍｯﾀﾞ設定
+CON
+DW $0D0A DM39219         ; Port2 送信ﾃﾞﾘﾐﾀ設定
+CON
+DW $0000 DM39220         ; Port2 受信ﾍｯﾀﾞ設定
+CON
+DW $0D0A DM39221         ; Port2 受信ﾃﾞﾘﾐﾀ設定
+CON
+DW #15 DM39222           ; Port2 受信ﾃﾞｰﾀ長設定
+CON
+SET R37300               ; Port2 通信許可
+;Scale Power ON
+LD R37300                ; Port2 通信許可
+AND R37200               ; Port2 通信可能
+ANP MR24000              ; Scale Power ON
+MOV #2 DM38701           ; Port2 送信ﾃﾞｰﾀ長
+MOV $4F4E DM38702        ; Port2 送信ﾃﾞｰﾀ1
+FMOV #0 DM38959 #16      ; Port2 受信ﾃﾞｰﾀ1
+SET R37301               ; Port2 送信要求
+;Scale re-set
+LD R37300                ; Port2 通信許可
+AND R37200               ; Port2 通信可能
+ANP MR24001              ; Scale Re-Set
+MOV #1 DM38701           ; Port2 送信ﾃﾞｰﾀ長
+MOV $5200 DM38702        ; Port2 送信ﾃﾞｰﾀ1
+FMOV #0 DM38958 #16      ; Port2 受信ﾃﾞｰﾀ長
+SET @MR115
+CON
+SET R37301               ; Port2 送信要求
+CON
+SET @MR108
+;Receive ink weight data from scale
+LD R37300                ; Port2 通信許可
+AND R37200               ; Port2 通信可能
+ANP MR24002              ; Scale data read
+MOV #1 DM38701           ; Port2 送信ﾃﾞｰﾀ長
+MOV $5300 DM38702        ; Port2 送信ﾃﾞｰﾀ1
+@FMOV #0 DM38958 #16     ; Port2 受信ﾃﾞｰﾀ長
+@FMOV #0 DM1022 #4       ; Change transfer area -1
+@FMOV #0 DM1031 #4       ; Change completion data
+@DW #0 DM1039            ; Pass/fail display
+CON
+@DW.D #0 DM1037          ; Ink Weight Data
+CON
+SET MR24100              ; Scale read Start Flag
+CON
+SET R37301               ; Port2 送信要求
+;Scale Power off 
+LD R37300                ; Port2 通信許可
+AND R37200               ; Port2 通信可能
+ANP MR24003              ; Scale PWR OFF
+MOV #1 DM38701           ; Port2 送信ﾃﾞｰﾀ長
+MOV $5000 DM38702        ; Port2 送信ﾃﾞｰﾀ1
+SET R37301               ; Port2 送信要求
+;<h1/>RECEIVED TEXT DATA
+;
+LD R37201                ; Port2 送信完了
+RES R37301               ; Port2 送信要求
+LD R37202                ; Port2 受信ﾃﾞｰﾀ読出要求
+BMOV DM38961 DM1022 #4   ; Port2 受信ﾃﾞｰﾀ3  Change transfer area -1
+MPS
+AND= DM38960 $2C2B       ; Port2 受信ﾃﾞｰﾀ2
+MOV $2B30 DM1021         ; Change transfer area -2
+MRD
+MOV $0000 DM1026
+MRD
+SET R37302               ; Port2 受信ﾃﾞｰﾀ読出完了
+MPP
+ANB @MR115
+@SET @MR100
+LDB R37202               ; Port2 受信ﾃﾞｰﾀ読出要求
+RES R37302               ; Port2 受信ﾃﾞｰﾀ読出完了
+;<h1/>AFTER COMMUNICATION ERROR OCCURS
+LD R37202                ; Port2 受信ﾃﾞｰﾀ読出要求
+ANB R50008               ; Error
+OUT MR24014              ; Scale Communication error
+C @1 #20 R37204          ; Port2 通信ｴﾗｰ
+LD MR24014               ; Scale Communication error
+ANB R50008               ; Error
+AND @C1
+TMR @12 #50
+CON
+AND @T12
+RES R37301               ; Port2 送信要求
+CON
+SET R37305               ; Port2 ｼｰｹﾝｽｸﾘｱ
+CON
+SET @MR208
+CON
+@SET @MR202
+STG @MR202
+ANB R50008               ; Error
+AND R37205               ; Port2 ｼｰｹﾝｽｸﾘｱ完了
+AND @MR211
+RES R37305               ; Port2 ｼｰｹﾝｽｸﾘｱ
+CON
+JMP @MR203
+STG @MR203
+RES @MR211
+CON
+ENDS
+;<h1/>AFTER RECEIVE PROCESSING ERROR OCCURS
+LD R37203                ; Port2 処理ｴﾗｰ
+OUT MR24015              ; Scale Receive process error
+;<h1/>Scale Communication Initialization
+;
+LD MR24004               ; Scale Initialyzation
+LD MR24000               ; Scale Power ON
+OR MR24001               ; Scale Re-Set
+OR MR24003               ; Scale PWR OFF
+ANL
+MPS
+AND= DM38959 $0600       ; Port2 受信ﾃﾞｰﾀ1
+RES MR24000              ; Scale Power ON
+CON
+RES MR24006              ; Scale Comm Error
+CON
+RES MR24001              ; Scale Re-Set
+CON
+RES MR24003              ; Scale PWR OFF
+CON
+SET MR24005              ; Scale Com OK
+MPP
+LD= DM38959 $4543        ; Port2 受信ﾃﾞｰﾀ1
+OR<> DM38959 $0600       ; Port2 受信ﾃﾞｰﾀ1
+ANL
+TMR @7 #90
+CON
+AND @T7
+MPS
+ANB LR003                ; bypass offline
+SET MR24006              ; Scale Comm Error
+MPP
+AND LR003                ; bypass offline
+SET MR24005              ; Scale Com OK
+;<h1/>ASCII to Interger Conversion
+STG @MR100
+ANB @MR104
+SET @MR104
+CON
+JMP @MR101
+;'DM1031=VAL(DM1021.T) * 100
+;DM1031=VAL(DM38959.T) * 100
+;@MR103=on
+LDP @MR104
+NCJ #1000
+;'DM1031=VAL(DM1021.T) * 100
+;
+;DM1031=VAL(DM38959.T) * 100
+;
+LD CR2002                ; 常時ON
+MOV.F +0 @VM0
+RFASC DM38959 @VM0       ; Port2 受信ﾃﾞｰﾀ1
+LD CR2002                ; 常時ON
+LDA.F @VM0
+CON
+MUL.F +100
+CON
+INTG
+CON
+STA DM1031               ; Change completion data
+;@MR103=on
+LD CR2002                ; 常時ON
+OUT @MR103
+LABEL #1000
+;
+STG @MR101
+AND @MR103
+RES @MR104
+CON
+RES @MR103
+CON
+JMP @MR102
+STG @MR102
+TMH @1 #2
+CON
+AND @T1
+SET MR24009              ; ASCII conv Complete
+CON
+JMP @MR106
+LD CR2002                ; 常時ON
+AND MR24010              ; ASCII Conv ERROR
+RES @MR103
+CON
+RES @MR104
+;<h1/>Tare Weight Adjustment 
+;1. 1S case - DM571 ,  1S Case - DM572
+;2. 2S case - DM573 ,  2S Case - DM574
+LD CR2002                ; 常時ON
+MPS
+AND MR111                ; Sｻｲｽﾞ
+MOV DM571 DM1035         ; Sｹｰｽ重量上限  ｹｰｽ重量上限
+MOV DM572 DM1036         ; Sｹｰｽ重量下限  ｹｰｽ重量下限
+LDA.D DM1040             ; Judgment USL
+CON
+SUB.S DM575              ; Sｹｰｽ重量上限警告範囲
+CON
+STA.D DM1044             ; UCL
+CON
+LDA.D DM1042             ; Judgment LSL
+CON
+ADD.S DM576              ; Sｹｰｽ重量下限警告範囲
+CON
+STA.D DM1046             ; LCL
+MRD
+AND MR112                ; Lｻｲｽﾞ
+MOV DM573 DM1035         ; Lｹｰｽ重量上限  ｹｰｽ重量上限
+MOV DM574 DM1036         ; Lｹｰｽ重量下限  ｹｰｽ重量下限
+LDA.D DM1040             ; Judgment USL
+CON
+SUB.S DM577              ; Lｹｰｽ重量上限警告範囲
+CON
+STA.D DM1044             ; UCL
+CON
+LDA.D DM1042             ; Judgment LSL
+CON
+ADD.S DM578              ; Lｹｰｽ重量下限警告範囲
+CON
+STA.D DM1046             ; LCL
+MPP
+LDB MR013                ; 天秤判定無効
+ANB MR103                ; Running Dummy I/C
+AND R50001               ; AUTO
+ANL
+MPS
+LD>=.D DM1037 DM1044     ; Ink Weight Data  UCL
+AND<=.D DM1037 DM1040    ; Ink Weight Data  Judgment USL
+ANL
+OUT MR24102              ; Upper Control Limit
+MPP
+LD>=.D DM1037 DM1042     ; Ink Weight Data  Judgment LSL
+AND<=.D DM1037 DM1046    ; Ink Weight Data  LCL
+ANL
+OUT MR24103              ; Lower Control Limit
+LD R50001                ; AUTO
+ANB R20000               ; エラー
+ANP MR24009              ; ASCII conv Complete
+MPS
+AND MR24102              ; Upper Control Limit
+SET MR24104              ; warning error record
+CON
+MOV #102 DM400           ; ﾒｯｾｰｼﾞNo.
+MPP
+AND MR24103              ; Lower Control Limit
+SET MR24104              ; warning error record
+CON
+MOV #103 DM400           ; ﾒｯｾｰｼﾞNo.
+;<h1/>Tare Weight spec. limits
+STG @MR106
+MPS
+LDA.D DM3030             ; 注入量上限1
+CON
+DIV.D #10
+CON
+ADD.S DM1035             ; ｹｰｽ重量上限
+CON
+STA.D DM1040             ; Judgment USL
+MRD
+LDA.D DM3032             ; 注入量下限1
+CON
+DIV.D #10
+CON
+ADD.S DM1036             ; ｹｰｽ重量下限
+CON
+STA.D DM1042             ; Judgment LSL
+MRD
+LDA DM1031               ; Change completion data
+CON
+EXT
+CON
+STA DM1037               ; Ink Weight Data
+MPP
+JMP @MR107
+;<h1/>Judgement
+STG @MR107
+MPS
+LDB MR013                ; 天秤判定無効
+ANB MR103                ; Running Dummy I/C
+ANL
+MPS
+LD>=.D DM1037 DM1042     ; Ink Weight Data  Judgment LSL
+AND<=.D DM1037 DM1040    ; Ink Weight Data  Judgment USL
+ANL
+RES MR24011              ; InkWeight Low
+CON
+RES MR24013              ; InkWeight High
+CON
+SET MR24012              ; InkWeight Good
+CON
+@DW #1 DM1039            ; Pass/fail display
+MRD
+AND<.D DM1037 DM1042     ; Ink Weight Data  Judgment LSL
+RES MR24012              ; InkWeight Good
+CON
+RES MR24013              ; InkWeight High
+CON
+SET MR24011              ; InkWeight Low
+CON
+@DW #2 DM1039            ; Pass/fail display
+MPP
+AND>.D DM1037 DM1040     ; Ink Weight Data  Judgment USL
+RES MR24011              ; InkWeight Low
+CON
+RES MR24012              ; InkWeight Good
+CON
+SET MR24013              ; InkWeight High
+CON
+@DW #2 DM1039            ; Pass/fail display
+MRD
+LD MR013                 ; 天秤判定無効
+OR MR103                 ; Running Dummy I/C
+ANL
+@DW #3 DM1039            ; Pass/fail display
+MPP
+JMP @MR205
+STG @MR205
+ENDS
+;<h1/>Scale Reset and check scale zero
+STG @MR108
+ANB R37302               ; Port2 受信ﾃﾞｰﾀ読出完了
+MPS
+AND= DM38959 $0600       ; Port2 受信ﾃﾞｰﾀ1
+SET MR24005              ; Scale Com OK
+CON
+JMP @MR109
+MPP
+LD= DM38959 $4543        ; Port2 受信ﾃﾞｰﾀ1
+OR<> DM38959 $0600       ; Port2 受信ﾃﾞｰﾀ1
+ANL
+TMR @8 #5
+CON
+AND @T8
+SET MR24006              ; Scale Comm Error
+CON
+SET @MR208
+CON
+JMP @MR200
+STG @MR200
+ANB R50008               ; Error
+AND @MR211
+JMP @MR201
+STG @MR201
+RES MR24006              ; Scale Comm Error
+CON
+RES MR24001              ; Scale Re-Set
+CON
+RES @MR211
+CON
+JMP @MR112
+STG @MR109
+TMR @9 #20
+CON
+AND @T9
+RES MR24001              ; Scale Re-Set
+CON
+SET @MR115
+CON
+SET MR24002              ; Scale data read
+CON
+JMP @MR110
+STG @MR110
+TMR @10 #3
+CON
+AND @T10
+ANB R37302               ; Port2 受信ﾃﾞｰﾀ読出完了
+RES MR24002              ; Scale data read
+CON
+MPS
+SCMP DM38959 "+00000.00" ; Port2 受信ﾃﾞｰﾀ1
+CON
+MPS
+AND CR2010               ; ＝
+JMP @MR111
+MPP
+ANB CR2010               ; ＝
+JMP @MR112
+MPP
+TMR @11 #10
+CON
+AND @T11
+JMP @MR112
+STG @MR111
+RES MR24002              ; Scale data read
+CON
+RES @MR115
+CON
+RES MR24001              ; Scale Re-Set
+CON
+SET MR24101              ; Zero Complete
+CON
+ENDS
+STG @MR112
+SET MR24001              ; Scale Re-Set
+CON
+ENDS
+STG @MR208
+ANB R50008               ; Error
+SET R50008               ; Error
+CON
+SET R51604               ; Err IND3ST4
+CON
+JMP @MR209
+MOV #117 DM400           ; ﾒｯｾｰｼﾞNo.
+STG @MR209
+AND R50008               ; Error
+JMP @MR210
+STG @MR210
+ANB R50008               ; Error
+SET @MR211
+CON
+ENDS
+END
+ENDH

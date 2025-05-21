@@ -1,0 +1,362 @@
+DEVICE:52
+;MODULE:Main
+;MODULE_TYPE:0
+LD R1008                 ; START スイッチ
+OUT MR1008               ; StartSW
+LD CR2008                ; 運転開始時1ｽｷｬﾝON
+SET MR1102               ; 供給圧　大気解放 
+CON
+SET MR1103               ; 検査ノズル　大気解放 
+CON
+DW #0 EM0                ; ﾜｰｸNo.
+CON
+SET @MR100
+STG @MR100
+SET MR100                ; 原点復帰
+CON
+JMP @MR101
+STG @MR101
+AND MR104                ; 原点復帰完了
+RES MR104                ; 原点復帰完了
+CON
+JMP @MR102
+STG @MR102
+DW #500 EM30001          ; (TP)ﾍﾟｰｼﾞ画面切替用No.
+CON
+JMP @MR103
+STG @MR103
+ENDS
+;原点復帰
+STG MR100                ; 原点復帰
+SET @MR202               ; 原点復帰中
+CON
+JMP @MR203
+STG @MR203
+RES MR1100               ; 60kPa　検査圧切替え
+CON
+RES MR1101               ; 20kPa　検査圧切替え
+CON
+SET MR1102               ; 供給圧　大気解放 
+CON
+SET MR1103               ; 検査ノズル　大気解放 
+CON
+RES MR500                ; センサ発光用電源
+CON
+JMP @MR204
+STG @MR204
+JMP @MR205
+STG @MR205
+JMP @MR206
+STG @MR206
+TMR @1 #10               ; wait
+CON
+AND @T1                  ; wait
+JMP @MR210
+STG @MR210
+SET MR104                ; 原点復帰完了
+CON
+RES @MR202               ; 原点復帰中
+CON
+ENDS
+LD @CR2008
+DW #0 EM0                ; ﾜｰｸNo.
+CON
+DW #0 DM310              ; 検査ｴﾗｰ記憶
+CON
+LD<> DM315 #0            ; ﾘｰｸ検査ｴﾗｰ位置記憶
+OR= DM146 #10            ; ｴﾗｰｺｰﾄﾞ
+OR= DM144 #6             ; NGｺｰﾄﾞ
+ANL
+SET MR301                ; NGﾌﾗｸﾞ
+LD>= DM301 #1            ; 判定方法 確認用
+OUT MR307                ; ｴﾗｰ表示 遅延ﾌﾗｸﾞ
+LD MR101                 ; 自動動作中
+AND= DM401 #1            ; 圧力変移ﾃﾞｰﾀ取得 選択(1で有効)
+OUT MR107                ; 全データ取得フラグ
+;<<ワーク確認>>
+;<< Work confirmation >>
+LD CR2002                ; 常時ON
+MOV EM30080 Z1           ; 機種番号
+LD R1005                 ; ユニット前後　前進端
+LD= EM30080 #0           ; 機種番号
+AND R1009                ; 機種判別センサ-1 (手前)
+AND R1010                ; 機種判別センサ-2 (奥)
+LD= EM30080 #1           ; 機種番号
+AND R1009                ; 機種判別センサ-1 (手前)
+ANB R1010                ; 機種判別センサ-2 (奥)
+ORL
+ANL
+OUT MR412                ; 治具条件
+;<<自動動作開始>>
+;<<Automatic operation beginning>>
+LD= EM30000 #500         ; (TP)現在表示中画面No.
+ANB MR101                ; 自動動作中
+ANB MR105                ; ﾐﾆﾏﾉﾒｰﾀｰ ｾﾞﾛﾘｾｯﾄ中
+ANB MR300                ; NG総合
+ANB MR304                ; ｴﾗｰﾌﾗｸﾞ
+AND R1001                ; 60kPa　検査圧
+AND R1002                ; 20kPa　検査圧
+AND MR412                ; 治具条件
+LD MR30000               ; (TP)自動画面表示中
+AND>= EM30098 #1         ; 機種選択
+LD MR30001               ; (TP)手動画面表示中
+AND>= EM30097 #1         ; 手動機種選択
+ORL
+ANL
+ANB LR000                ; (ﾜｰｸ1)検査OK
+OUT MR102                ; 動作開始可
+LD MR102                 ; 動作開始可
+ANP MR1008               ; StartSW
+SET @MR500
+;<<動作モード確認>>
+;<<Operation mode confirmation>>
+STG @MR500
+JMP @MR1000
+STG @MR1000
+TMR @10 #5
+CON
+MPS
+LDB @T10
+ANB MR1008               ; StartSW
+ANL
+FMOV #0 DM144 #3         ; NGｺｰﾄﾞ
+FMOV.S -9999 EM30030 #12 ; (TP)Step1 初期圧
+FMOV.S +0 EM30050 #12    ; (TP)Step1 初期圧判定
+SET MR110                ; 検査中
+CON
+SET MR101                ; 自動動作中
+CON
+JMP @MR1001
+MPP
+AND @T10
+ENDS
+;<<マノメーター電源確認>>
+;<<Manometer power supply confirmation>>
+STG @MR1001
+DW #1 @DM80              ; (GET)通信ﾁｬﾝﾈﾙ番号-1
+CON
+DW #50 @DM81             ; (GET)通信ﾀｲﾑｱｳﾄ-1
+CON
+DW #70 @DM82             ; (GET)ﾃﾞｰﾀ取得時間-1
+CON
+DW #70 @DM83             ; (GET)ﾃﾞｰﾀ取得周期-1
+CON
+TMR @2 #3
+CON
+AND @T2
+JMP @MR1002
+STG @MR1002
+ANF _GET_MT10_L20_1
+JMP @MR1003
+LDP @MR1002
+MSTRT GET_MT10_L20_1 #3 @DM80 @DM85 @MR901 DM145;(GET)通信ﾁｬﾝﾈﾙ番号-1  (GET)受信ﾃﾞｰﾀ格納先  ｴﾗｰﾌﾗｸﾞ  詳細ｴﾗｰｺｰﾄﾞ
+STG @MR1003
+MPS
+ANB @MR901               ; ｴﾗｰﾌﾗｸﾞ
+JMP @MR502
+MPP
+AND @MR901               ; ｴﾗｰﾌﾗｸﾞ
+JMP @MR800
+STG @MR800
+SET MR305                ; マノメーターOFF
+CON
+RES MR110                ; 検査中
+CON
+RES MR101                ; 自動動作中
+CON
+ENDS
+;<<ﾒﾓﾘｰｶｰﾄﾞの空き容量確認>>
+;<<Free space confirmation of memory card>>
+STG @MR502
+MPS
+BLDB DM300 #0            ; ﾒﾓﾘｰｶｰﾄﾞ書き込み
+BORB DM300 #1            ; ﾒﾓﾘｰｶｰﾄﾞ書き込み
+ANB _MEM_FREE_1
+ANL
+JMP @MR503
+MPP
+BLD DM300 #0             ; ﾒﾓﾘｰｶｰﾄﾞ書き込み
+BAND DM300 #1            ; ﾒﾓﾘｰｶｰﾄﾞ書き込み
+ANL
+JMP @MR504
+STG @MR503
+MPS
+ANP @MR503
+MSTRT MEM_FREE_1 DM296 DM298 @MR010 @DM10;ﾒﾓﾘｰｶｰﾄﾞ指定空き容量(下位)  ﾒﾓﾘｰｶｰﾄﾞ空き容量(下位)
+MPP
+ANF _MEM_FREE_1
+MPS
+ANB @MR010
+JMP @MR504
+MPP
+AND @MR010
+JMP @MR900               ; NGﾌﾗｸﾞ
+STG @MR900               ; NGﾌﾗｸﾞ
+MOV @DM10 DM145          ; 詳細ｴﾗｰｺｰﾄﾞ
+SET MR311                ; ﾒﾓﾘｶｰﾄﾞｴﾗｰ
+CON
+RES MR110                ; 検査中
+CON
+RES MR101                ; 自動動作中
+CON
+ENDS
+STG @MR504
+JMP @MR1004
+STG @MR1004
+MPS
+ANB MR304                ; ｴﾗｰﾌﾗｸﾞ
+MDSTRT Inspection
+@INC EM0                 ; ﾜｰｸNo.
+JMP @MR1005
+MPP
+AND MR304                ; ｴﾗｰﾌﾗｸﾞ
+JMP @MR1006
+STG @MR1005
+ANF MR110                ; 検査中
+MDSTOP Inspection
+JMP @MR1006
+LD MR110                 ; 検査中
+ANB MR410                ; 差し待ち
+ANB MR409                ; 抜き待ち
+LDF R1005                ; ユニット前後　前進端
+ORP R1005                ; ユニット前後　前進端
+ANL
+SET MR309                ; ｸﾗﾝﾌﾟｴﾗｰ
+;<<大気開放>>
+;<<Atmospheric open>>
+STG @MR1006
+SET MR100                ; 原点復帰
+CON
+JMP @MR1007
+STG @MR1007
+AND MR104                ; 原点復帰完了
+RES MR104                ; 原点復帰完了
+CON
+JMP @MR1008
+STG @MR1008
+SET MR113                ; ﾃﾞｰﾀ整理中
+CON
+JMP @MR1009
+STG @MR1009
+ANF MR113                ; ﾃﾞｰﾀ整理中
+JMP @MR1010
+STG @MR1010
+MPS
+AND<> DM300 #3           ; ﾒﾓﾘｰｶｰﾄﾞ書き込み
+MDSTRT MemoryCard_Access
+JMP @MR1011
+MPP
+AND= DM300 #3            ; ﾒﾓﾘｰｶｰﾄﾞ書き込み
+JMP @MR1012
+STG @MR1011
+ANF MR114                ; ﾒﾓﾘｶｰﾄﾞ書込み中
+MDSTOP MemoryCard_Access
+JMP @MR1012
+STG @MR1012
+MPS
+ANB MR300                ; NG総合
+JMP @MR1013
+MPP
+AND MR300                ; NG総合
+JMP @MR1014
+STG @MR1013
+OUT MR414                ; 終了ﾌﾞｻﾞｰON
+CON
+RES MR109                ; 検査強制終了
+CON
+RES MR200                ; 検査OK
+CON
+RES MR101                ; 自動動作中
+CON
+ENDS
+STG @MR1014
+RES MR109                ; 検査強制終了
+CON
+RES MR200                ; 検査OK
+CON
+RES MR101                ; 自動動作中
+CON
+ENDS
+;<<NG記憶>>
+;<<NG memory>>
+LD<> DM144 #0            ; NGｺｰﾄﾞ
+OR @MR1001
+MOV DM144 @DM144         ; NGｺｰﾄﾞ  (ﾜｰｸ1)NGｺｰﾄﾞ
+;<<マノメーターゼロリセット>>
+;<<Mini manometer zero resets>>
+LD MR30110               ; (TP)ﾏﾉﾒｰﾀｰｾﾞﾛﾘｾｯﾄﾓｰﾄﾞ
+AND= DM310 #0            ; 検査ｴﾗｰ記憶
+ANB MR101                ; 自動動作中
+ANB MR105                ; ﾐﾆﾏﾉﾒｰﾀｰ ｾﾞﾛﾘｾｯﾄ中
+ANB MR300                ; NG総合
+ANB MR304                ; ｴﾗｰﾌﾗｸﾞ
+ANB R1012                ; エラーリセット スイッチ
+ANP MR1008               ; StartSW
+SET @MR2000
+STG @MR2000
+SET MR105                ; ﾐﾆﾏﾉﾒｰﾀｰ ｾﾞﾛﾘｾｯﾄ中
+CON
+DW #1 @DM100             ; (ZRS)通信ﾁｬﾝﾈﾙ番号-1
+CON
+DW #100 @DM101           ; (ZRS)通信ﾀｲﾑｱｳﾄ-1
+CON
+SET MR2108
+CON
+TMR @21 DM158            ; 大気開放時間  大気開放時間
+CON
+AND @T21                 ; 大気開放時間
+JMP @MR2001
+STG @MR2001
+ANF _ZRS_MT10_L20_1
+JMP @MR2002
+LDP @MR2001
+MSTRT ZRS_MT10_L20_1 #3 @DM100 @DM105 @MR901 DM145;(ZRS)通信ﾁｬﾝﾈﾙ番号-1  (ZRS)受信ﾃﾞｰﾀ格納先  ｴﾗｰﾌﾗｸﾞ  詳細ｴﾗｰｺｰﾄﾞ
+STG @MR2002
+MPS
+ANB @MR901               ; ｴﾗｰﾌﾗｸﾞ
+RES MR105                ; ﾐﾆﾏﾉﾒｰﾀｰ ｾﾞﾛﾘｾｯﾄ中
+CON
+ENDS
+MPP
+AND @MR901               ; ｴﾗｰﾌﾗｸﾞ
+SET MR310                ; 通信ｴﾗｰ
+CON
+ENDS
+LD MR105                 ; ﾐﾆﾏﾉﾒｰﾀｰ ｾﾞﾛﾘｾｯﾄ中
+ANP MR300                ; NG総合
+RES MR105                ; ﾐﾆﾏﾉﾒｰﾀｰ ｾﾞﾛﾘｾｯﾄ中
+CON
+RES MR108                ; ﾐﾆﾏﾉﾒｰﾀｰ  ｾﾞﾛﾘｾｯﾄ
+CON
+RES MR115                ; 大気開放中
+CON
+ZRES @MR2000 @MR2005
+;<<圧力調整>>
+;<<pressure adjust>>
+LDP MR30111              ; (TP)調整ﾓｰﾄﾞ
+ZRES MR2009 MR2112
+CON
+SET MR2008
+LDF MR30111              ; (TP)調整ﾓｰﾄﾞ
+SET @MR2100
+STG @MR2100
+SET MR100                ; 原点復帰
+CON
+JMP @MR2101
+STG @MR2101
+AND MR104                ; 原点復帰完了
+RES MR104                ; 原点復帰完了
+CON
+ENDS
+;<<検査強制終了>>
+;<<Forced ending of inspection>>
+LD _Inspection
+AND MR109                ; 検査強制終了
+RES MR110                ; 検査中
+LDB R1000                ; 元圧空
+TMR @3 #10
+CON
+AND @T3
+SET MR308                ; 元圧ｴﾗｰ
+END
+ENDH

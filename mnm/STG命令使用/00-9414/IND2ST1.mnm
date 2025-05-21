@@ -1,0 +1,1035 @@
+DEVICE:53
+;MODULE:IND2ST1
+;MODULE_TYPE:0
+;***************************************
+; 非常停止
+; Emergency Stop 
+;***************************************
+LD R50010                ; Emergency　Stop
+OR @MR000                ; Emergency STOP
+ZRES @MR001 @MR1715      ; 終了処理
+CON
+OUT @MR000               ; Emergency STOP
+TMR @39 #5
+LD @T39
+MDSTOP IND2ST1
+;RB動作許可ﾌﾗｸﾞ
+;RB Move permission Flag
+;ﾜｰｸ有無ﾌﾗｸﾞ
+;Work Existence Flag
+LDB R5300                ; IND2 ST1 ﾜｰｸ有無検出
+AND R5301                ; IND2 ST1 ﾜｰｸ浮き検出1(供給孔側)
+AND R5302                ; IND2 ST1 ﾜｰｸ浮き検出2(ﾌｨﾙﾑ側)
+OUT @MR010               ; IND2ST1   全ﾜｰｸ無し
+;動作ﾊﾟﾗﾒｰﾀ
+;Operation Parameter
+LDB LR41100              ; AUTO-0 全ﾕﾆｯﾄ動作
+ANB LR41101              ; AUTO-1 IND1 2UT
+ANB LR41102              ; AUTO-2 IND1 3UT
+ANB LR41103              ; AUTO-3 IND1 4UT
+ANB LR41104              ; AUTO-4 IND2 3UT
+ANB LR41105              ; AUTO-5 IND3 3UT
+ANB LR41106              ; AUTO-6
+ANB LR41107              ; AUTO-7
+ANB LR41108              ; AUTO-8
+OUB @MR013               ; IND2 ST1  AUTO Parameter OK
+;***************************************
+; ﾎﾟｰｽﾞ ･ ｴﾗｰ 監視
+; Pause ･ Error Check 
+;***************************************
+LDB R50300               ; Pause
+ANB R51401               ; Err IND2ST1
+ANB R51400               ; Err IND2
+OUT @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+;<h1/>原点復帰動作
+;HOME RETURN OPERATION 
+LD R50003                ; HOME
+ANB R51310               ; IND2 ST2 動作中
+SET R51310               ; IND2 ST2 動作中
+CON
+SET @MR500               ; 原点復帰  開始
+LDB R50003               ; HOME
+ANB R50001               ; AUTO
+ANB R50002               ; STEP
+AND @MR501               ; 原点復帰  終了
+RES R51310               ; IND2 ST2 動作中
+CON
+RES @MR501               ; 原点復帰  終了
+STG @MR500               ; 原点復帰  開始
+SET R50906               ; IND2 ST2  ｻｲｸﾙ動作中
+CON
+JMP @MR503
+STG @MR503
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+JMP @MR515               ; 原点復帰終了処理
+;
+STG @MR515               ; 原点復帰終了処理
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+AND MR601                ; IND2      ｻｲｸﾙ動作中
+RES R50906               ; IND2 ST2  ｻｲｸﾙ動作中
+CON
+SET R51301               ; IND2 ST1   1ｻｲｸﾙ終了
+CON
+SET @MR501               ; 原点復帰  終了
+CON
+ENDS
+;<h1/>自動運転
+;AUTO OPERATION
+LD R50001                ; AUTO
+ANB R51310               ; IND2 ST2 動作中
+DW #0 @DM2
+CON
+SET R51310               ; IND2 ST2 動作中
+CON
+SET @MR1000              ; AUTO開始
+LDB R50003               ; HOME
+ANB R50001               ; AUTO
+ANB R50002               ; STEP
+AND @MR1001              ; AUTO終了
+RES R51310               ; IND2 ST2 動作中
+CON
+RES @MR1001              ; AUTO終了
+; 動作パラメーター確認
+; Operating Parameter Check
+STG @MR1000              ; AUTO開始
+MPS
+AND R51300               ; IND2     動作開始
+SET R50906               ; IND2 ST2  ｻｲｸﾙ動作中
+CON
+MPS
+AND R50210               ; Model OK
+JMP @MR1002
+MPP
+LDB R50210               ; Model OK
+AND R50000               ; HOLD
+ANL
+SET R51301               ; IND2 ST1   1ｻｲｸﾙ終了
+CON
+JMP @MR1414
+MPP
+LDB R51300               ; IND2     動作開始
+AND R50000               ; HOLD
+AND R51308               ; IND2     払出し完了
+ANL
+JMP @MR1414
+STG @MR1002
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+MPS
+AND @MR013               ; IND2 ST1  AUTO Parameter OK
+JMP @MR1008
+MPP
+ANB @MR013               ; IND2 ST1  AUTO Parameter OK
+JMP @MR1412              ; AUTO終了処理
+;動作選択
+STG @MR1008
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+MPS
+JMP @MR1100
+MPP
+LDB MR004                ; 投入部QR無効
+AND R5305                ; IND2 ST2 ﾜｰｸ有無検出
+ANL
+DW #0 @DM0
+CON
+SET @MR1600              ; QR読取
+;AUTO動作開始
+;AUTO Operation Start
+STG @MR1100
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+MPS
+LD @MR010                ; IND2ST1   全ﾜｰｸ無し
+OR LR41104               ; AUTO-4 IND2 3UT
+OR R50002                ; STEP
+ANL
+JMP @MR1104              ; 治具ｸﾗﾝﾌﾟ開き
+MPP
+LDB @MR010               ; IND2ST1   全ﾜｰｸ無し
+ANB LR41104              ; AUTO-4 IND2 3UT
+ANB R50002               ; STEP
+ANL
+SET @MR112               ; Err24 ST1 Err4
+CON
+JMP @MR1101              ; Err2
+;Err2 IND2_ST1  ﾜｰｸ残 / Cartridge remain on IND2_ST1
+LD CR2002                ; 常時ON
+MPS
+ANP @MR1101              ; Err2
+SET @MR004               ; 残ﾜｰｸ処理記憶
+MPP
+LD @MR004                ; 残ﾜｰｸ処理記憶
+ANB R1101                ; ﾗｲﾄｶｰﾃﾝ
+ANL
+RES @MR004               ; 残ﾜｰｸ処理記憶
+STG @MR1101              ; Err2
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+AND @MR115               ; Err24 ST1 Err4解除完了
+JMP @MR1102
+STG @MR1102
+RES @MR115               ; Err24 ST1 Err4解除完了
+CON
+JMP @MR1103
+STG @MR1103
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+MPS
+ANB @MR004               ; 残ﾜｰｸ処理記憶
+JMP @MR1104              ; 治具ｸﾗﾝﾌﾟ開き
+MPP
+AND @MR004               ; 残ﾜｰｸ処理記憶
+SET @MR112               ; Err24 ST1 Err4
+CON
+JMP @MR1101              ; Err2
+;ｸﾗﾝﾌﾟ  開き / Clamp Open
+STG @MR1104              ; 治具ｸﾗﾝﾌﾟ開き
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+RES MR8100               ; IND2 ST1治具1(縦) 閉じ
+CON
+SET MR8101               ; IND2 ST1治具1(縦) 開き
+CON
+RES MR8102               ; IND2 ST1治具2(横) 閉じ
+CON
+SET MR8103               ; IND2 ST1治具2(横) 開き
+CON
+JMP @MR1105
+;自動/手動判別
+;Auto/Manual Check
+STG @MR1105
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+MPS
+ANB LR010                ; Handwork Machine
+MPS
+ANB R50607               ; ﾏﾆｭｱﾙ給材要求
+JMP @MR1200
+MPP
+AND R50607               ; ﾏﾆｭｱﾙ給材要求
+SET @MR208               ; Err201
+CON
+JMP @MR1106
+MPP
+AND LR010                ; Handwork Machine
+RES R50407               ; ｽﾀｰﾄSWﾗﾝﾌﾟ点灯
+CON
+SET R50406               ; ｽﾀｰﾄSWﾗﾝﾌﾟ点滅
+CON
+JMP @MR1208
+;Err201 手動給材要求 / Manual supply request
+STG @MR1106
+AND @MR211               ; Err201解除完了
+RES @MR211               ; Err201解除完了
+CON
+JMP @MR1107
+STG @MR1107
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+MPS
+AND R5305                ; IND2 ST2 ﾜｰｸ有無検出
+SET MR8100               ; IND2 ST1治具1(縦) 閉じ
+CON
+JMP @MR1108
+MPP
+ANB R5305                ; IND2 ST2 ﾜｰｸ有無検出
+RES MR8100               ; IND2 ST1治具1(縦) 閉じ
+CON
+JMP @MR1108
+STG @MR1108
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+MPS
+LD R5306                 ; IND2 ST2 ﾜｰｸ浮き検出1(供給孔側)
+AND R5307                ; IND2 ST2 ﾜｰｸ浮き検出2(ﾌｨﾙﾑ側)
+ANL
+MPS
+AND R5305                ; IND2 ST2 ﾜｰｸ有無検出
+SET R50309               ; 入力ｶｳﾝﾄ
+CON
+JMP @MR1310
+MPP
+ANB R5305                ; IND2 ST2 ﾜｰｸ有無検出
+JMP @MR1310
+MPP
+LDB R5306                ; IND2 ST2 ﾜｰｸ浮き検出1(供給孔側)
+ORB R5307                ; IND2 ST2 ﾜｰｸ浮き検出2(ﾌｨﾙﾑ側)
+ANL
+RES MR8100               ; IND2 ST1治具1(縦) 閉じ
+CON
+SET @MR204               ; Err26 ST1 Err6
+CON
+JMP @MR1109
+STG @MR1109
+AND @MR207               ; Err26 ST1 Err6解除完了
+RES @MR207               ; Err26 ST1 Err6解除完了
+CON
+JMP @MR1107
+;
+STG @MR1200
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+ANB R4014                ; 上流 H/S用 ﾃﾞﾊﾞｯｸ SW
+MPS
+ANB MR014                ; 上流H/S無効
+MPS
+ANB R50000               ; HOLD
+MPS
+AND R5309                ; IND2 ST2 ﾜｰｸｸﾗﾝﾌﾟ開確認
+SET MR9003               ; 4Cellへ　受渡し準備完了
+CON
+AND R5103                ; 4Cellより　受渡し中
+SET @MR005               ; 上流H/S中
+CON
+JMP @MR1201
+MPP
+LD R5310                 ; IND2 ST3 ﾜｰｸ有無検出
+ANB R5103                ; 4Cellより　受渡し中
+AND MR9003               ; 4Cellへ　受渡し準備完了
+ANL
+TMR #21 #9999            ; INDEX2 2ST 待ち時間
+CON
+AND T21                  ; INDEX2 2ST 待ち時間
+RES MR9003               ; 4Cellへ　受渡し準備完了
+CON
+JMP @MR1310
+MPP
+AND R50000               ; HOLD
+RES MR9003               ; 4Cellへ　受渡し準備完了
+CON
+JMP @MR1310
+MPP
+AND MR014                ; 上流H/S無効
+MPS
+ANB R50000               ; HOLD
+JMP @MR1201
+MPP
+AND R50000               ; HOLD
+RES MR9003               ; 4Cellへ　受渡し準備完了
+CON
+JMP @MR1310
+STG @MR1201
+MPS
+ANB MR014                ; 上流H/S無効
+SET MR9006               ; 4Cellへ　受渡し中
+CON
+RES MR9003               ; 4Cellへ　受渡し準備完了
+CON
+JMP @MR1202
+MPP
+AND MR014                ; 上流H/S無効
+MPS
+LDB R50000               ; HOLD
+AND R4014                ; 上流 H/S用 ﾃﾞﾊﾞｯｸ SW
+ANL
+JMP @MR1202
+MPP
+AND R50000               ; HOLD
+RES MR9003               ; 4Cellへ　受渡し準備完了
+CON
+JMP @MR1310
+STG @MR1202
+MPS
+ANB MR014                ; 上流H/S無効
+MPS
+LD R5100                 ; 4Cellより　運転中
+AND R5104                ; 4Cellより　受渡し完了
+ANL
+SET MR9004               ; 4Cellへ　受渡し完了
+CON
+JMP @MR1204
+MPP
+ANB R5100                ; 4Cellより　運転中
+TMR @9 #10
+CON
+AND @T9
+JMP @MR1203
+MPP
+LD MR014                 ; 上流H/S無効
+AND R4014                ; 上流 H/S用 ﾃﾞﾊﾞｯｸ SW
+ANL
+JMP @MR1204
+STG @MR1203
+AND R5100                ; 4Cellより　運転中
+AND R5102                ; 4Cellより　インターロックON
+JMP @MR1204
+STG @MR1204
+ANB R5104                ; 4Cellより　受渡し完了
+ANB R5103                ; 4Cellより　受渡し中
+RES MR9004               ; 4Cellへ　受渡し完了
+CON
+RES MR9006               ; 4Cellへ　受渡し中
+CON
+RES @MR005               ; 上流H/S中
+CON
+JMP @MR1300
+;H/W
+STG @MR1208
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+MPS
+AND>= @DM2 #4
+JMP @MR1210
+MPP
+AND< @DM2 #4
+MPS
+LD MR111                 ; Sｻｲｽﾞ
+AND R5303                ; IND2 ST1 Sｻｲｽﾞ用ｶﾞｲﾄﾞ検出
+LD MR112                 ; Lｻｲｽﾞ
+ANB R5303                ; IND2 ST1 Sｻｲｽﾞ用ｶﾞｲﾄﾞ検出
+ORL
+ANL
+INC @DM2
+CON
+JMP @MR1210
+MPP
+LD MR111                 ; Sｻｲｽﾞ
+ANB R5303                ; IND2 ST1 Sｻｲｽﾞ用ｶﾞｲﾄﾞ検出
+LD MR112                 ; Lｻｲｽﾞ
+AND R5303                ; IND2 ST1 Sｻｲｽﾞ用ｶﾞｲﾄﾞ検出
+ORL
+ANL
+SET @MR308               ; Err222
+CON
+JMP @MR1209
+;Err222 Index2 Sｶﾞｲﾄﾞ治具検出異常 / Index2 S-guide Jig error
+STG @MR1209
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+AND @MR311               ; Err222解除完了
+RES @MR311               ; Err222解除完了
+CON
+JMP @MR1208
+;作業者ｶｰﾄﾘｯｼﾞ投入待ち / Waiting for Case supply by Worker
+STG @MR1210
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+AND R1101                ; ﾗｲﾄｶｰﾃﾝ
+AND R50105               ; ｽﾀｰﾄSW ON
+RES R50406               ; ｽﾀｰﾄSWﾗﾝﾌﾟ点滅
+CON
+SET R50407               ; ｽﾀｰﾄSWﾗﾝﾌﾟ点灯
+CON
+JMP @MR1300
+;ｶｰﾄﾘｯｼﾞ状態確認 / Case status check
+STG @MR1300
+MPS
+LD R5300                 ; IND2 ST1 ﾜｰｸ有無検出
+OR LR010                 ; Handwork Machine
+ANL
+JMP @MR1303              ; 治具ｸﾗﾝﾌﾟ閉じ
+MPP
+LDB R5300                ; IND2 ST1 ﾜｰｸ有無検出
+ANB LR010                ; Handwork Machine
+ANL
+SET @MR204               ; Err26 ST1 Err6
+CON
+JMP @MR1301
+;Err26 IND2_ST2　ﾜｰｸ未検出 / Cartridge no detection IND2_ST2
+STG @MR1301
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+AND @MR207               ; Err26 ST1 Err6解除完了
+RES @MR207               ; Err26 ST1 Err6解除完了
+CON
+MPS
+AND R5300                ; IND2 ST1 ﾜｰｸ有無検出
+JMP @MR1303              ; 治具ｸﾗﾝﾌﾟ閉じ
+MPP
+ANB R5300                ; IND2 ST1 ﾜｰｸ有無検出
+JMP @MR1104              ; 治具ｸﾗﾝﾌﾟ開き
+;ｸﾗﾝﾌﾟ  閉じ / Clamp Close
+STG @MR1303              ; 治具ｸﾗﾝﾌﾟ閉じ
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+RES R50406               ; ｽﾀｰﾄSWﾗﾝﾌﾟ点滅
+CON
+SET R50407               ; ｽﾀｰﾄSWﾗﾝﾌﾟ点灯
+CON
+RES MR8101               ; IND2 ST1治具1(縦) 開き
+CON
+SET MR8100               ; IND2 ST1治具1(縦) 閉じ
+CON
+TMH @11 #20
+CON
+AND @T11
+JMP @MR1304
+STG @MR1304
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+RES MR8103               ; IND2 ST1治具2(横) 開き
+CON
+SET MR8102               ; IND2 ST1治具2(横) 閉じ
+CON
+TMH @10 #40
+CON
+AND @T10
+JMP @MR1306              ; Case Floating Check
+;ｶｰﾄﾘｯｼﾞ浮き検出
+STG @MR1306              ; Case Floating Check
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+MPS
+LD R5301                 ; IND2 ST1 ﾜｰｸ浮き検出1(供給孔側)
+AND R5302                ; IND2 ST1 ﾜｰｸ浮き検出2(ﾌｨﾙﾑ側)
+ANL
+MPS
+AND R5300                ; IND2 ST1 ﾜｰｸ有無検出
+SET R50309               ; 入力ｶｳﾝﾄ
+CON
+JMP @MR1310
+MPP
+ANB R5300                ; IND2 ST1 ﾜｰｸ有無検出
+MPS
+AND LR010                ; Handwork Machine
+JMP @MR1310
+MPP
+ANB LR010                ; Handwork Machine
+RES R50407               ; ｽﾀｰﾄSWﾗﾝﾌﾟ点灯
+CON
+JMP @MR1104              ; 治具ｸﾗﾝﾌﾟ開き
+MPP
+LDB R5301                ; IND2 ST1 ﾜｰｸ浮き検出1(供給孔側)
+ORB R5302                ; IND2 ST1 ﾜｰｸ浮き検出2(ﾌｨﾙﾑ側)
+ANL
+TMR @12 #20
+CON
+AND @T12
+RES MR8100               ; IND2 ST1治具1(縦) 閉じ
+CON
+SET MR8101               ; IND2 ST1治具1(縦) 開き
+CON
+RES MR8102               ; IND2 ST1治具2(横) 閉じ
+CON
+SET MR8103               ; IND2 ST1治具2(横) 開き
+CON
+JMP @MR1307
+;Err25 IND2_ST2　ﾜｰｸ浮き / Cartridge Float on IND2_ST2
+STG @MR1307
+SET @MR200               ; Err25 ST1 Err5
+CON
+RES R50408               ; ｻｲｸﾙ動作中
+CON
+JMP @MR1308
+STG @MR1308
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+AND @MR203               ; Err25 ST1 Err5解除完了
+RES @MR203               ; Err25 ST1 Err5解除完了
+CON
+JMP @MR1104              ; 治具ｸﾗﾝﾌﾟ開き
+;
+STG @MR1310
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+SET MR8100               ; IND2 ST1治具1(縦) 閉じ
+CON
+RES MR8101               ; IND2 ST1治具1(縦) 開き
+CON
+SET MR8102               ; IND2 ST1治具2(横) 閉じ
+CON
+RES MR8103               ; IND2 ST1治具2(横) 開き
+CON
+JMP @MR1412              ; AUTO終了処理
+;AUTO 1ｻｲｸﾙ終了処理
+;AUTO 1Cycle end Operation
+STG @MR1412              ; AUTO終了処理
+AND MR601                ; IND2      ｻｲｸﾙ動作中
+LD @MR1601               ; QR読取完了
+LDB @MR1602              ; QR読取中
+ANB R5305                ; IND2 ST2 ﾜｰｸ有無検出
+ORL
+OR MR004                 ; 投入部QR無効
+ANL
+RES @MR1601              ; QR読取完了
+CON
+SET R51301               ; IND2 ST1   1ｻｲｸﾙ終了
+CON
+JMP @MR1414
+STG @MR1414
+RES R50906               ; IND2 ST2  ｻｲｸﾙ動作中
+CON
+ANB R51300               ; IND2     動作開始
+AND R51307               ; IND2      ｻｲｸﾙ完了
+MPS
+LDB R50000               ; HOLD
+ORB R51308               ; IND2     払出し完了
+ANL
+JMP @MR1000              ; AUTO開始
+MPP
+LD R50000                ; HOLD
+AND R51308               ; IND2     払出し完了
+ANL
+JMP @MR1415              ; AUTO終了処理
+;AUTO 終了処理
+;AUTO Finish Operation
+STG @MR1415              ; AUTO終了処理
+DW #0 @DM2
+CON
+RES R50407               ; ｽﾀｰﾄSWﾗﾝﾌﾟ点灯
+CON
+SET @MR1001              ; AUTO終了
+CON
+ENDS
+;<h1/>ｽﾃｯﾌﾟ運転
+;STEP OERATION
+LD R50002                ; STEP
+ANB R51310               ; IND2 ST2 動作中
+SET R51310               ; IND2 ST2 動作中
+CON
+SET @MR700               ; STEP開始
+LDB R50003               ; HOME
+ANB R50001               ; AUTO
+ANB R50002               ; STEP
+AND @MR701               ; STEP終了
+RES R51310               ; IND2 ST2 動作中
+CON
+RES @MR701               ; STEP終了
+LDB LR40704              ; IND2_ST3 STEP-05
+OUB @MR014               ; STEP Parameter OK
+STG @MR700               ; STEP開始
+AND R51310               ; IND2 ST2 動作中
+MPS
+AND LR40704              ; IND2_ST3 STEP-05
+JMP @MR800
+MPP
+ANB @MR014               ; STEP Parameter OK
+JMP @MR708               ; STEP終了処理
+;STEP-0
+STG @MR800
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+SET @MR1600              ; QR読取
+CON
+JMP @MR801
+STG @MR801
+AND @MR1601              ; QR読取完了
+RES @MR1601              ; QR読取完了
+CON
+JMP @MR708               ; STEP終了処理
+;STEP終了処理
+STG @MR708               ; STEP終了処理
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+SET R50009               ; HOLDRQ
+CON
+JMP @MR709
+STG @MR709
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+AND R50000               ; HOLD
+SET R51301               ; IND2 ST1   1ｻｲｸﾙ終了
+CON
+SET @MR701               ; STEP終了
+CON
+ENDS
+;<h1/>Subroutine
+;<h1/>ST2 QRID読取開始 / QR Reading on Index 2 ST2
+STG @MR1600              ; QR読取
+MPS
+AND MR004                ; 投入部QR無効
+JMP @MR1715              ; 終了処理
+MPP
+ANB MR004                ; 投入部QR無効
+SET @MR1602              ; QR読取中
+CON
+SET MR20300              ; SR1_読取開始
+CON
+JMP @MR1604
+STG @MR1604
+AND MR20301              ; SR1_読取完了
+RES MR20301              ; SR1_読取完了
+CON
+JMP @MR1605
+STG @MR1605
+MPS
+ANB MR20315              ; SR1_1SL読取通信異常
+JMP @MR1608
+MPP
+AND MR20315              ; SR1_1SL読取通信異常
+MPS
+AND> @DM0 #2
+JMP @MR1606
+MPP
+AND<= @DM0 #2
+RES MR20315              ; SR1_1SL読取通信異常
+CON
+@INC @DM0
+CON
+JMP @MR1600              ; QR読取
+;Err SR1通信異常 / SR1 communication error
+STG @MR1606
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+RES MR20315              ; SR1_1SL読取通信異常
+CON
+SET @MR212               ; Err211
+CON
+JMP @MR1607
+STG @MR1607
+AND @MR215               ; Err211解除完了
+RES @MR215               ; Err211解除完了
+CON
+MPS
+ANB R42115               ; ﾘﾄﾗｲ要求
+DW #2 DM3211             ; IND2-ST2 NGﾜｰｸ 0=OK
+CON
+JMP @MR1715              ; 終了処理
+MPP
+AND R42115               ; ﾘﾄﾗｲ要求
+JMP @MR1600              ; QR読取
+;検証用ﾃﾞｰﾀ抽出 / extraction data
+;<h1/>2018-07-19 ChangeQRID
+;New Format :BL,0,T9999YYMDDLLhhmmss00 / Ex:T123418A19MA20180700
+STG @MR1608
+MPS
+ZRES @DM30 @DM39         ; 製造年月日
+CON
+JMP @MR1609
+MRD
+SLEFT DM10400 @DM10 #5   ; SR1_Tｺｰﾄﾞﾃﾞｰﾀ  Tｺｰﾄﾞ
+MRD
+SMID DM10400 @DM13 #5 #2 ; SR1_Tｺｰﾄﾞﾃﾞｰﾀ  年
+MRD
+SMID DM10400 @DM15 #7 #1 ; SR1_Tｺｰﾄﾞﾃﾞｰﾀ  月(1桁)
+MRD
+SMID DM10400 @DM19 #8 #2 ; SR1_Tｺｰﾄﾞﾃﾞｰﾀ  日
+MRD
+SMID DM10400 @DM27 #10 #2; SR1_Tｺｰﾄﾞﾃﾞｰﾀ  ﾛｯﾄNo.末尾2桁
+MRD
+SMID DM10400 @DM21 #12 #2; SR1_Tｺｰﾄﾞﾃﾞｰﾀ  時
+MRD
+SMID DM10400 @DM23 #14 #2; SR1_Tｺｰﾄﾞﾃﾞｰﾀ  分
+MPP
+SMID DM10400 @DM25 #16 #2; SR1_Tｺｰﾄﾞﾃﾞｰﾀ  秒
+STG @MR1609
+MPS
+AND= @DM15 $4100         ; 月(1桁)
+SMOV "10" @DM17          ; 月(2桁)
+MRD
+AND= @DM15 $4200         ; 月(1桁)
+SMOV "11" @DM17          ; 月(2桁)
+MRD
+AND= @DM15 $4300         ; 月(1桁)
+SMOV "12" @DM17          ; 月(2桁)
+MRD
+LD<> @DM15 $4100         ; 月(1桁)
+AND<> @DM15 $4200        ; 月(1桁)
+AND<> @DM15 $4300        ; 月(1桁)
+ANL
+SADD "0" @DM15 @DM17     ; 月(1桁)  月(2桁)
+MRD
+RDASC @DM13 @DM30        ; 年  製造年月日
+MRD
+RDASC @DM17 @DM31        ; 月(2桁)  月
+MRD
+RDASC @DM19 @DM32        ; 日  日
+MRD
+RDASC @DM21 @DM33        ; 時  時
+MRD
+RDASC @DM23 @DM34        ; 分  分
+MRD
+RDASC @DM25 @DM35        ; 秒  秒
+MRD
+SEC @DM30 DM770          ; 製造年月日  投入ｶｰﾄﾘｯｼﾞ製造日時(sec)
+MRD
+SEC CM700 DM772          ; ｶﾚﾝﾀﾞﾀｲﾏ（年）  投入QR読込日時(sec)
+MPP
+JMP @MR1700              ; T-code check
+;Tｺｰﾄﾞ判断 / T-code check
+STG @MR1700              ; T-code check
+MPS
+ANB MR915                ; 仮NAT
+SCMP DM3015 @DM10        ; QRｺｰﾄﾞ2-1  Tｺｰﾄﾞ
+CON
+MPS
+AND CR2010               ; ＝
+JMP @MR1708              ; 製造経過時間確認
+MPP
+ANB CR2010               ; ＝
+JMP @MR1701
+MPP
+AND MR915                ; 仮NAT
+MPS
+LD= DM3015 @DM10         ; QRｺｰﾄﾞ2-1  Tｺｰﾄﾞ
+AND= DM3016 @DM11        ; QRｺｰﾄﾞ2-2  Tｺｰﾄﾞ
+ANL
+JMP @MR1708              ; 製造経過時間確認
+MPP
+LD<> DM3015 @DM10        ; QRｺｰﾄﾞ2-1  Tｺｰﾄﾞ
+OR<> DM3016 @DM11        ; QRｺｰﾄﾞ2-2  Tｺｰﾄﾞ
+ANL
+JMP @MR1701
+;Err212 投入ｶｰﾄﾘｯｼﾞ Tｺｰﾄﾞ異常 / Entrans QR T-code error
+STG @MR1701
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+RES MR8104               ; IND2 ST2治具 閉じ 
+CON
+RES MR8105               ; IND2 ST2治具 開き
+CON
+SET @MR300               ; Err212
+CON
+JMP @MR1702
+STG @MR1702
+AND @MR303               ; Err212解除完了
+RES @MR303               ; Err212解除完了
+CON
+MPS
+AND R5305                ; IND2 ST2 ﾜｰｸ有無検出
+RES MR8105               ; IND2 ST2治具 開き
+CON
+SET MR8104               ; IND2 ST2治具 閉じ 
+CON
+JMP @MR1600              ; QR読取
+MPP
+ANB R5305                ; IND2 ST2 ﾜｰｸ有無検出
+JMP @MR1715              ; 終了処理
+;製造経過時間確認
+STG @MR1708              ; 製造経過時間確認
+MPS
+ANB CR2002               ; 常時ON
+LDA.D DM772              ; 投入QR読込日時(sec)
+CON
+SUB DM770                ; 投入ｶｰﾄﾘｯｼﾞ製造日時(sec)
+CON
+STA.L DM3211             ; IND2-ST2 NGﾜｰｸ 0=OK
+CON
+JMP @MR1709              ; Lot末尾確認
+MPP
+AND CR2002               ; 常時ON
+JMP @MR1709              ; Lot末尾確認
+;Lot末尾確認 / LotNo. check
+STG @MR1709              ; Lot末尾確認
+SCMP DM3062 @DM27        ; LotNo3  ﾛｯﾄNo.末尾2桁
+CON
+MPS
+AND CR2010               ; ＝
+MPS
+AND MR006                ; ON=QRID Maneger Disable
+JMP @MR1715              ; 終了処理
+MPP
+ANB MR006                ; ON=QRID Maneger Disable
+JMP @MR1712
+MPP
+ANB CR2010               ; ＝
+JMP @MR1710
+;Err213 投入ｶｰﾄﾘｯｼﾞ LotNo.末尾異常 / Entrans QR Lot No. error
+STG @MR1710
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+RES MR8104               ; IND2 ST2治具 閉じ 
+CON
+RES MR8105               ; IND2 ST2治具 開き
+CON
+SET @MR304               ; Err213
+CON
+JMP @MR1711
+STG @MR1711
+AND @MR307               ; Err213解除完了
+RES @MR307               ; Err213解除完了
+CON
+MPS
+AND R5305                ; IND2 ST2 ﾜｰｸ有無検出
+RES MR8105               ; IND2 ST2治具 開き
+CON
+SET MR8104               ; IND2 ST2治具 閉じ 
+CON
+JMP @MR1600              ; QR読取
+MPP
+ANB R5305                ; IND2 ST2 ﾜｰｸ有無検出
+JMP @MR1715              ; 終了処理
+;<h1/>QRID照会 / Find QRID from Database
+STG @MR1712
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+SET MR26600              ; Seach QRID to DB
+CON
+JMP @MR1713
+STG @MR1713
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+AND MR26601              ; Finish  Seach QRID to DB
+RES MR26601              ; Finish  Seach QRID to DB
+CON
+MPS
+AND= W1C94 #20
+JMP @MR1715              ; 終了処理
+MPP
+AND<> W1C94 #20
+SET @MR312               ; 投入口ﾜｰｸ除材要求
+CON
+JMP @MR1714
+STG @MR1714
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+AND @MR315               ; Err32 ST1 Err12解除完了
+RES @MR315               ; Err32 ST1 Err12解除完了
+CON
+MPS
+AND= W1C94 #30
+JMP @MR1712
+MPP
+AND<> W1C94 #30
+MPS
+AND R5305                ; IND2 ST2 ﾜｰｸ有無検出
+DW #2 DM3211             ; IND2-ST2 NGﾜｰｸ 0=OK
+CON
+JMP @MR1715              ; 終了処理
+MPP
+ANB R5305                ; IND2 ST2 ﾜｰｸ有無検出
+JMP @MR1715              ; 終了処理
+;終了処理 / End process
+STG @MR1715              ; 終了処理
+RES @MR1602              ; QR読取中
+CON
+SET @MR1601              ; QR読取完了
+CON
+ENDS
+;<h1/>Err
+;Err24 IND2_ST2　ﾜｰｸ残
+;Err24 Cartridge remain on IND2_ST2
+STG @MR112               ; Err24 ST1 Err4
+ANB R50008               ; Error
+SET R50008               ; Error
+CON
+SET R51401               ; Err IND2ST1
+CON
+JMP @MR113               ; 113
+MOV #24 DM400            ; ﾒｯｾｰｼﾞNo.
+STG @MR113               ; 113
+AND R50008               ; Error
+JMP @MR114               ; 114
+STG @MR114               ; 114
+ANB R50008               ; Error
+SET @MR115               ; Err24 ST1 Err4解除完了
+CON
+ENDS
+;Err29 IND2_ST2　ﾜｰｸ浮き 
+;Err29 Cartridge Float on IND2_ST2
+STG @MR200               ; Err25 ST1 Err5
+ANB R50008               ; Error
+SET R50008               ; Error
+CON
+SET R51401               ; Err IND2ST1
+CON
+JMP @MR201               ; 201
+MOV #29 DM400            ; ﾒｯｾｰｼﾞNo.
+STG @MR201               ; 201
+AND R50008               ; Error
+JMP @MR202               ; 202
+STG @MR202               ; 202
+ANB R50008               ; Error
+SET @MR203               ; Err25 ST1 Err5解除完了
+CON
+ENDS
+;Err30 IND2_ST2　ﾜｰｸ未検出 
+;Err30 cartridge no detection IND2_ST2
+STG @MR204               ; Err26 ST1 Err6
+ANB R50008               ; Error
+SET R50008               ; Error
+CON
+SET R51402               ; Err IND2ST2
+CON
+JMP @MR205               ; 205
+MOV #30 DM400            ; ﾒｯｾｰｼﾞNo.
+STG @MR205               ; 205
+AND R50008               ; Error
+JMP @MR206               ; 206
+STG @MR206               ; 206
+ANB R50008               ; Error
+SET @MR207               ; Err26 ST1 Err6解除完了
+CON
+ENDS
+;Err201 手給材要求
+;Err201 Manual Input Request
+STG @MR208               ; Err201
+ANB R50008               ; Error
+SET R50008               ; Error
+CON
+SET R51401               ; Err IND2ST1
+CON
+JMP @MR209               ; 209
+MOV #201 DM400           ; ﾒｯｾｰｼﾞNo.
+STG @MR209               ; 209
+AND R50008               ; Error
+JMP @MR210               ; 210
+STG @MR210               ; 210
+ANB R50008               ; Error
+SET @MR211               ; Err201解除完了
+CON
+ENDS
+;Err211 QR1通信異常
+;Err211 QR1 communication error
+STG @MR212               ; Err211
+ANB R50008               ; Error
+SET R50008               ; Error
+CON
+SET R51401               ; Err IND2ST1
+CON
+JMP @MR213               ; 213
+MOV #211 DM400           ; ﾒｯｾｰｼﾞNo.
+STG @MR213               ; 213
+AND R50008               ; Error
+JMP @MR214               ; 214
+STG @MR214               ; 214
+ANB R50008               ; Error
+SET @MR215               ; Err211解除完了
+CON
+ENDS
+;Err212 投入ｶｰﾄﾘｯｼﾞ Tｺｰﾄﾞ異常
+;Err212 Entrans QR T-code error
+STG @MR300               ; Err212
+ANB R50008               ; Error
+SET R50008               ; Error
+CON
+SET R51401               ; Err IND2ST1
+CON
+JMP @MR301               ; 301
+MOV #212 DM400           ; ﾒｯｾｰｼﾞNo.
+STG @MR301               ; 301
+AND R50008               ; Error
+JMP @MR302               ; 302
+STG @MR302               ; 302
+ANB R50008               ; Error
+SET @MR303               ; Err212解除完了
+CON
+ENDS
+;Err213 投入ｶｰﾄﾘｯｼﾞ LotNo.末尾異常
+;Err213 Entrans QR Lot No. error
+STG @MR304               ; Err213
+ANB R50008               ; Error
+SET R50008               ; Error
+CON
+SET R51401               ; Err IND2ST1
+CON
+JMP @MR305               ; 305
+MOV #213 DM400           ; ﾒｯｾｰｼﾞNo.
+STG @MR305               ; 305
+AND R50008               ; Error
+JMP @MR306               ; 306
+STG @MR306               ; 306
+ANB R50008               ; Error
+SET @MR307               ; Err213解除完了
+CON
+ENDS
+;Err222 Index2 Sｶﾞｲﾄﾞ治具検出異常
+;Err222 Index2 S-guide Jig error
+STG @MR308               ; Err222
+ANB R50008               ; Error
+SET R50008               ; Error
+CON
+SET R51401               ; Err IND2ST1
+CON
+JMP @MR309               ; 309
+MOV #222 DM400           ; ﾒｯｾｰｼﾞNo.
+STG @MR309               ; 309
+AND R50008               ; Error
+JMP @MR310               ; 310
+STG @MR310               ; 310
+ANB R50008               ; Error
+SET R50009               ; HOLDRQ
+CON
+SET @MR311               ; Err222解除完了
+CON
+ENDS
+;Err214 QRID取得異常
+;Err222 QRID Find NG from Database
+STG @MR312               ; 投入口ﾜｰｸ除材要求
+ANB R50008               ; Error
+SET R50008               ; Error
+CON
+SET R51401               ; Err IND2ST1
+CON
+JMP @MR313               ; 313
+MOV #214 DM400           ; ﾒｯｾｰｼﾞNo.
+STG @MR313               ; 313
+AND R50008               ; Error
+JMP @MR314               ; 314
+STG @MR314               ; 314
+ANB R50008               ; Error
+SET @MR315               ; Err32 ST1 Err12解除完了
+CON
+ENDS
+;PACKｾｯﾄ
+;Pack Set
+LD @MR005                ; 上流H/S中
+OUT R51408               ; PACK IND2_ST2
+END
+ENDH

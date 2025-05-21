@@ -1,0 +1,112 @@
+DEVICE:53
+;MODULE:P_MOVE_K_M
+;MODULE_TYPE:1
+LD @CR2008
+ZRES @M0 @M15            ; 転送開始
+FMOV K0 @D0 K10          ; Type No.
+ADRSET UR0 @E0           ; UT No.  Axis Head address
+MPS
+LDA V0                   ; AXIX No.
+CON
+SUB K1
+CON
+MUL K8
+CON
+STA @E4                  ; Axis select offset
+CON
+ADRADD.S @E4 @E0         ; Axis select offset  Axis Head address
+MRD
+LDA V0                   ; AXIX No.
+CON
+SUB K1
+CON
+MUL K128
+CON
+STA Z1
+CON
+ADRSET Y5400:Z1 @E8      ; 軸1 軸ｴﾗｰｸﾘｱ
+ADRSET X5440:Z1 @E10     ; 軸1 軸ｴﾗｰ中
+MRD
+SET *@E0:#2              ; Axis Head address
+MRD
+AND CR2003               ; 常時OFF
+LDA E55                  ; Type No.
+CON
+SUB K1
+CON
+MUL K100
+CON
+ADD V1                   ; POINT No.
+CON
+STA @D0                  ; Type No.
+MRD
+LDA V1                   ; POINT No.
+CON
+STA @D0                  ; Type No.
+MPP
+SET P2                   ; Axis moving
+CON
+SET @M0                  ; 転送開始
+LD CR2003                ; 常時OFF
+RES P2                   ; Axis moving
+CON
+SET P0                   ; ERROR FLG.
+STG @M0                  ; 転送開始
+U_WRPPNT UV0 V0 V1       ; UT No.  AXIX No.  POINT No.
+RES P1                   ; MACRO END
+CON
+SET *@E0:#0              ; Axis Head address
+CON
+JMP @M1                  ; 転送終了
+STG @M1                  ; 転送終了
+AND *@E0:#128            ; Axis Head address
+RES *@E0:#0              ; Axis Head address
+CON
+JMP @M2
+STG @M2
+AND *@E0:#129            ; Axis Head address
+MPS
+LDB *@E8:#2
+LD *@E0:#130             ; Axis Head address
+ORB M28                  ; 仮 NAT
+ANL
+ANL
+RES *@E0:#2              ; Axis Head address
+CON
+JMP @M3
+MPP
+AND *@E8:#2
+JMP @M4
+STG @M3
+RES P2                   ; Axis moving
+CON
+SET P1                   ; MACRO END
+CON
+ENDS
+;一時停止処理
+;Pause process
+STG @M4
+AND *@E10:#2
+JMP @M5
+STG @M5
+AND *@E10:#5
+MPS
+LD *@E10:#4
+ANB *@E0:#129            ; Axis Head address
+ANL
+JMP @M2
+MPP
+LDB *@E10:#4
+AND *@E0:#129            ; Axis Head address
+ANL
+TMR @1 K10
+CON
+AND @T1
+JMP @M6
+STG @M6
+RES *@E0:#2              ; Axis Head address
+CON
+ANB *@E0:#2              ; Axis Head address
+JMP @M0                  ; 転送開始
+END
+ENDH

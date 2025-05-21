@@ -1,0 +1,174 @@
+DEVICE:51
+;MODULE:Panel_Moni
+;MODULE_TYPE:0
+;SCRIPT_TYPE:
+LD CR2008
+MOV #104 DM3001
+LDB R51100               ; Origin Return Finished
+ANB R50003               ; In Origin
+ANB R50002               ; In Manual
+ANB R50108               ; In Error
+MPS
+LDB MR203                ; In Manual motion control
+AND T0
+ANL
+@MOV #100 DM3001
+MPP
+AND MR203                ; In Manual motion control
+@MOV #180 DM3001
+LDB R50004               ; In Motion
+SET R50005               ; In Stop
+LD R50004                ; In Motion
+RES R50005               ; In Stop
+;自動中はﾒｲﾝ画面STATUS部に自動中表示
+;Displays of AUTO, during auto mode operation.
+LD R50001                ; In Auto
+OUT R40007               ; Panel use in auto mode display
+;原点復帰中は専用画面に変わる
+;Single purpose screen is displayed in the course of return home position.
+LDP R50003               ; In Origin
+LD R50003                ; In Origin
+ANF R50108               ; In Error
+ORL
+ANB R51100               ; Origin Return Finished
+@MOV #101 DM3001
+;原点復帰完了で、ﾒｲﾝ画面に変わる
+;MAIN screen is displayed after return home position finish.
+LD T200
+ANB R50108               ; In Error
+ANB R50003               ; In Origin
+AND R51100               ; Origin Return Finished
+@MOV #102 DM3001
+;洗浄結果表示 / Washing 
+LD MR201                 ; Washing result display flag
+MPS
+AND= DM3001 #102
+TMR @0 #7                ; Main display change Countermeasu
+CON
+AND @T0                  ; Main display change Countermeasu
+OUT R49400               ; Washing result display
+MPP
+LD R49401                ; Washing result display end
+ORP R50009               ; In auto 1Cycle motion
+ANL
+RES MR201                ; Washing result display flag
+CON
+ZRES MR48700 MR48705     ; Product1 OK lamp display  Product3 NG lamp display
+LD MR114                 ; 0-point confirmation display flg
+AND= DM3001 #102
+OUT R49402               ; Zero-point confirmation display
+;異常 / Error
+LD T200
+AND R50108               ; In Error
+MOV #110 DM3001
+LDF R50108               ; In Error
+MPS
+RES R40009               ; Error choices SW1
+CON
+RES R40010               ; Error choices SW2
+CON
+MOV #0 DM500             ; Error content display
+MPP
+MOV #0 DM5016
+LD R50901                ; Cylinder Error
+OUT R50200               ; Display Cylinder Err Window
+LD R50902                ; Washing NG Error
+ANB R50103               ; Warning Set
+SET R49301               ; Washing NG choices permit
+LDF R50902               ; Washing NG Error
+RES R49301               ; Washing NG choices permit
+;ｴﾗｰﾀｲﾄﾙ表示 / Error title display
+;DM510 = DM500/16
+;DM511 = DM500-(DM510*16)
+;Z5 = DM510
+;BSET (DM2500:Z5,DM511)
+LD R50108                ; In Error
+NCJ #1000
+;DM510 = DM500/16
+;
+LD CR2002
+LDA DM500                ; Error content display
+CON
+EXT
+CON
+EXT.L
+CON
+DIV.L +16
+CON
+STA DM510                ; Error No. display use(flg adres)
+;DM511 = DM500-(DM510*16)
+;
+LD CR2002
+LDA DM510                ; Error No. display use(flg adres)
+CON
+EXT
+CON
+MUL.L +16
+CON
+STA.L @VM0
+CON
+LDA DM500                ; Error content display
+CON
+EXT
+CON
+SUB.L @VM0
+CON
+STA DM511                ; Error No. display use
+;Z5 = DM510
+;
+LD CR2002
+LDA DM510                ; Error No. display use(flg adres)
+CON
+EXT
+CON
+STA.L Z5
+;BSET (DM2500:Z5,DM511)
+LD CR2002
+BSET DM2500:Z5 DM511     ; ERR 1-16  Error No. display use
+LABEL #1000
+;
+LDB R50108               ; In Error
+ZRES DM2500 DM2531       ; ERR 1-16
+;ﾊﾟﾗﾒｰﾀｰ選択画面 / Parameter selection
+LD R50005                ; In Stop
+MPS
+AND R40000               ; SET UP SW
+@MOV #103 DM3001
+MPP
+OUT R40005               ; SET UP display permit
+LDP R50007               ; In Manual Control
+SET MR203                ; In Manual motion control
+LDP MR203                ; In Manual motion control
+ORP R40004               ; Origin return finish chancel
+RES R51100               ; Origin Return Finished
+LD MR203                 ; In Manual motion control
+AND MR4212               ; Waste fluid tank surface detecti
+DIFU R39915              ; SET UP return
+LD R40002                ; SET UP return SW
+OR R39915                ; SET UP return
+MPS
+AND R51100               ; Origin Return Finished
+@MOV #102 DM3001
+MRD
+ANB R51100               ; Origin Return Finished
+MOV #100 DM3001
+MPP
+RES MR203                ; In Manual motion control
+;ﾊﾟﾈﾙ表示言語選択 / Panel language selection
+;0:Japanese
+;1:English
+;2:Indonesian
+LDP R50208               ; Language Select SW
+DW #0 DM502              ; Language choice No.
+LDP R50209               ; Japanese Select SW
+DW #1 DM502              ; Language choice No.
+LDP R50210               ; Indnesian Select SW
+DW #2 DM502              ; Language choice No.
+;生産ｶｳﾝﾀﾘｾｯﾄ / product counter reset
+LDP R40008               ; Counter reset
+ANB R50009               ; In auto 1Cycle motion
+DW #0 DM470              ; Output counter
+CON
+DW #0 DM471              ; Input counter
+END
+ENDH

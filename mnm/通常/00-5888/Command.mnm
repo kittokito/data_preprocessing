@@ -1,0 +1,1615 @@
+DEVICE:51
+;MODULE:Command
+;MODULE_TYPE:0
+;<h1/>Command 各種固定設定値転送
+LD CR2002                ; 常時ON
+MOV.D #15 @DM0           ; Command操作 真空ﾎﾟﾝﾌﾟ ON安定時間
+MOV.D #80 @DM2           ; 給水・排液ﾀﾝｸ 大気開放 安定時間
+;<h1/>液面ｾﾝｻ ON/OFFﾃﾞｨﾚｲ
+LD R1001                 ; 給水ﾀﾝｸ液面検出 上限検出1
+TMR @10 #10              ; 給水ﾀﾝｸ液面検出 上限1 ON安定
+LD R1002                 ; 給水ﾀﾝｸ液面検出 上限検出2
+TMR @11 #10              ; 給水ﾀﾝｸ液面検出 上限2 ON安定
+LD R1003                 ; 給水ﾀﾝｸ液面検出 下限検出
+TMR @12 #10              ; 給水ﾀﾝｸ液面検出 下限 ON安定
+LD R1005                 ; 排液ﾀﾝｸ液面検出 上限検出
+TMR @13 #10              ; 排液ﾀﾝｸ液面検出 上限 ON安定
+LD R1006                 ; 排液ﾀﾝｸ液面検出 下限検出
+TMR @14 #10              ; 排液ﾀﾝｸ液面検出 下限 ON安定
+LDB R1001                ; 給水ﾀﾝｸ液面検出 上限検出1
+TMR @20 #10              ; 給水ﾀﾝｸ液面検出 上限1 OFF安定
+LDB R1002                ; 給水ﾀﾝｸ液面検出 上限検出2
+TMR @21 #10              ; 給水ﾀﾝｸ液面検出 上限2 OFF安定
+LDB R1003                ; 給水ﾀﾝｸ液面検出 下限検出
+TMR @22 #50              ; 給水ﾀﾝｸ液面検出 下限 OFF安定
+LDB R1005                ; 排液ﾀﾝｸ液面検出 上限検出
+TMR @23 #10              ; 排液ﾀﾝｸ液面検出 上限 OFF安定
+LDB R1006                ; 排液ﾀﾝｸ液面検出 下限検出
+TMR @24 #50              ; 排液ﾀﾝｸ液面検出 下限 OFF安定
+;<h1/>操作ｺﾏﾝﾄﾞ選択
+LD CR2002                ; 常時ON
+AND< #9 DM100            ; 操作ｺﾏﾝﾄﾞ 格納
+MOV #0 DM100             ; 操作ｺﾏﾝﾄﾞ 格納
+LD MR7915                ; 操作ｺﾏﾝﾄﾞ 停止中
+MPS
+ANP B0700                ; 排液 TSW
+MOV #1 DM100             ; 操作ｺﾏﾝﾄﾞ 格納
+MRD
+ANP B0701                ; 排⇒給 TSW
+MOV #2 DM100             ; 操作ｺﾏﾝﾄﾞ 格納
+MRD
+ANP B0702                ; 真空 TSW
+MOV #3 DM100             ; 操作ｺﾏﾝﾄﾞ 格納
+MRD
+ANP B0703                ; 注入 TSW
+MOV #4 DM100             ; 操作ｺﾏﾝﾄﾞ 格納
+MRD
+ANP B0704                ; 循環 TSW
+MOV #5 DM100             ; 操作ｺﾏﾝﾄﾞ 格納
+MRD
+ANP B0705                ; 給水 TSW
+MOV #6 DM100             ; 操作ｺﾏﾝﾄﾞ 格納
+MRD
+ANP B0706                ; 給⇒排 TSW
+MOV #7 DM100             ; 操作ｺﾏﾝﾄﾞ 格納
+MRD
+ANP B0707                ; 大気開放 TSW
+MOV #8 DM100             ; 操作ｺﾏﾝﾄﾞ 格納
+MPP
+ANP B0708                ; 個別全OFF TSW
+MOV #9 DM100             ; 操作ｺﾏﾝﾄﾞ 格納
+;<h1/>ﾀﾝｸ・ﾜｰｸ加圧開放
+;※初期加圧開放は時間で管理する為、開放バルブ開時間は長くする
+LD T0                    ; PLC RUN 安定
+AND MR1000               ; 即時停止 異常なし
+ANB MR3015               ; ﾀﾝｸ・ﾜｰｸ 加圧開放 完了
+OUT MR3000               ; ﾀﾝｸ・ﾜｰｸ 加圧開放 開始
+TMR @0 #200              ; ﾀﾝｸ・ﾜｰｸ 大気開放 大気開放 開
+TMR @1 #200              ; ﾀﾝｸ・ﾜｰｸ開放 流路開
+LD MR3000                ; ﾀﾝｸ・ﾜｰｸ 加圧開放 開始
+MPS
+ANB MR3003               ; F:給水ﾀﾝｸ 大気開放 開 終了
+OUT MR3002               ; F:給水ﾀﾝｸ 大気開放 開
+MPP
+LD @T0                   ; ﾀﾝｸ・ﾜｰｸ 大気開放 大気開放 開
+OR MR3003                ; F:給水ﾀﾝｸ 大気開放 開 終了
+ANL
+OUT MR3003               ; F:給水ﾀﾝｸ 大気開放 開 終了
+LD MR3000                ; ﾀﾝｸ・ﾜｰｸ 加圧開放 開始
+MPS
+ANB MR3005               ; Q:排液ﾀﾝｸ 大気開放 開 終了
+OUT MR3004               ; Q:排液ﾀﾝｸ 大気開放 開
+MPP
+LD @T0                   ; ﾀﾝｸ・ﾜｰｸ 大気開放 大気開放 開
+OR MR3005                ; Q:排液ﾀﾝｸ 大気開放 開 終了
+ANL
+OUT MR3005               ; Q:排液ﾀﾝｸ 大気開放 開 終了
+LD MR3000                ; ﾀﾝｸ・ﾜｰｸ 加圧開放 開始
+MPS
+ANB MR3007               ; G:給水ﾀﾝｸ 出口 開 完了
+OUT MR3006               ; G:給水ﾀﾝｸ 出口 開
+MPP
+LD @T1                   ; ﾀﾝｸ・ﾜｰｸ開放 流路開
+OR MR3007                ; G:給水ﾀﾝｸ 出口 開 完了
+ANL
+OUT MR3007               ; G:給水ﾀﾝｸ 出口 開 完了
+LD MR3000                ; ﾀﾝｸ・ﾜｰｸ 加圧開放 開始
+MPS
+ANB MR3009               ; M:排液ﾀﾝｸ 入口 開 完了
+OUT MR3008               ; M:排液ﾀﾝｸ 入口 開
+MPP
+LD @T1                   ; ﾀﾝｸ・ﾜｰｸ開放 流路開
+OR MR3009                ; M:排液ﾀﾝｸ 入口 開 完了
+ANL
+OUT MR3009               ; M:排液ﾀﾝｸ 入口 開 完了
+LD MR3003                ; F:給水ﾀﾝｸ 大気開放 開 終了
+AND MR3005               ; Q:排液ﾀﾝｸ 大気開放 開 終了
+AND MR3007               ; G:給水ﾀﾝｸ 出口 開 完了
+AND MR3009               ; M:排液ﾀﾝｸ 入口 開 完了
+OR MR3015                ; ﾀﾝｸ・ﾜｰｸ 加圧開放 完了
+AND T0                   ; PLC RUN 安定
+AND MR1000               ; 即時停止 異常なし
+OUT MR3015               ; ﾀﾝｸ・ﾜｰｸ 加圧開放 完了
+;<h1/>全ｴｱｵﾍﾟﾚｰﾄﾊﾞﾙﾌﾞ 閉
+LDB R2000                ; B:排⇒給 給水ﾀﾝｸ側 開
+ANB R2001                ; A:ﾌﾟﾛｾｽﾀﾝｸ 出口 開
+ANB R2002                ; D:給⇒排 給水ﾀﾝｸ加圧 開
+ANB R2003                ; C:給水ﾀﾝｸ 入口 開
+ANB R2004                ; F:給水ﾀﾝｸ 大気開放 開
+ANB R2005                ; E:循環 給水ﾀﾝｸ加圧 開
+OUT MR3100               ; ｴｱｵﾍﾟﾚｰﾄﾊﾞﾙﾌﾞ 閉1
+LDB R2006                ; H:排液 加圧 開
+ANB R2007                ; G:給水ﾀﾝｸ 出口 開
+ANB R2008                ; K:製品ﾎﾟﾝﾌﾟ入口 開
+ANB R2009                ; J:排液真空 大気開放 開
+ANB R2010                ; M:排液ﾀﾝｸ 入口 開
+ANB R2011                ; L:製品ﾎﾟﾝﾌﾟ 出口 開
+OUT MR3101               ; ｴｱｵﾍﾟﾚｰﾄﾊﾞﾙﾌﾞ 閉2
+LDB R2012                ; P:排液ﾀﾝｸ 加圧 開
+ANB R2013                ; N:排液ﾀﾝｸ 真空 開
+ANB R2014                ; R:排液ﾀﾝｸ 出口 開
+ANB R2015                ; Q:排液ﾀﾝｸ 大気開放 開
+ANB R2100                ; 予備
+OUT MR3102               ; ｴｱｵﾍﾟﾚｰﾄﾊﾞﾙﾌﾞ 閉3
+LD MR3100                ; ｴｱｵﾍﾟﾚｰﾄﾊﾞﾙﾌﾞ 閉1
+AND MR3101               ; ｴｱｵﾍﾟﾚｰﾄﾊﾞﾙﾌﾞ 閉2
+AND MR3102               ; ｴｱｵﾍﾟﾚｰﾄﾊﾞﾙﾌﾞ 閉3
+OUT MR3103               ; 全ｴｱｵﾍﾟﾚｰﾄﾊﾞﾙﾌﾞ 閉
+LDB R507                 ; 真空ﾎﾟﾝﾌﾟ ON
+ANB R2101                ; ﾌﾟﾛｾｽﾎﾟﾝﾌﾟ 開
+OUT MR3104               ; 真空・ﾌﾟﾛｾｽﾎﾟﾝﾌﾟ OFF
+LD MR3103                ; 全ｴｱｵﾍﾟﾚｰﾄﾊﾞﾙﾌﾞ 閉
+AND MR3104               ; 真空・ﾌﾟﾛｾｽﾎﾟﾝﾌﾟ OFF
+OUT MR3107               ; 全ｴｱｵﾍﾟﾚｰﾄﾊﾞﾙﾌﾞ・ﾎﾟﾝﾌﾟ 停止
+;<h1/>操作ｺﾏﾝﾄﾞ 共通IL
+LD MR1015                ; 異常なし
+AND MR3015               ; ﾀﾝｸ・ﾜｰｸ 加圧開放 完了
+AND MR3107               ; 全ｴｱｵﾍﾟﾚｰﾄﾊﾞﾙﾌﾞ・ﾎﾟﾝﾌﾟ 停止
+AND MR7915               ; 操作ｺﾏﾝﾄﾞ 停止中
+AND MR10915              ; Manual 停止中
+OUT MR3115               ; 操作ｺﾏﾝﾄﾞ 共通IL
+;<h1/>--- ①排液
+LD= DM100 #1             ; 操作ｺﾏﾝﾄﾞ 格納
+OUT MR3500               ; ①排液 ｵﾝIL1
+LD R1000                 ; 給水ﾀﾝｸ液面検出 ﾘﾐｯﾄ検出
+AND R1004                ; 排液ﾀﾝｸ液面検出 ﾘﾐｯﾄ検出
+ANB R1005                ; 排液ﾀﾝｸ液面検出 上限検出
+LDB R1014                ; d:ﾜｰｸ排液圧力検出(大気圧)
+ORB DM200.1              ; 排液 加圧選択
+ANL
+OUT MR3501               ; ①排液 ｵﾝIL2
+LD CR2002                ; 常時ON
+OUT MR3502               ; ①排液 ｵﾝIL3
+LD MR3115                ; 操作ｺﾏﾝﾄﾞ 共通IL
+OUT MR3503               ; ①排液 ｵﾝIL4
+LD MR3500                ; ①排液 ｵﾝIL1
+AND MR3501               ; ①排液 ｵﾝIL2
+AND MR3502               ; ①排液 ｵﾝIL3
+AND MR3503               ; ①排液 ｵﾝIL4
+ANB MR3507               ; ①排液 ｵﾝ
+OUT MR3504               ; ①排液 ｵﾝIL
+LD MR3507                ; ①排液 ｵﾝ
+OUT MR3505               ; ①排液 ｵﾌIL
+LD MR3715                ; ①排液 終了
+ORB MR1000               ; 即時停止 異常なし
+AND MR3505               ; ①排液 ｵﾌIL
+OUT MR3506               ; ①排液 ｵﾌ
+LDP B0710                ; ｽﾀｰﾄ TSW
+AND MR3504               ; ①排液 ｵﾝIL
+OR MR3507                ; ①排液 ｵﾝ
+ANB MR3506               ; ①排液 ｵﾌ
+OUT MR3507               ; ①排液 ｵﾝ
+LD MR3507                ; ①排液 ｵﾝ
+MPS
+ANB MR3509               ; ①排液 設定転送 完了
+OUT MR3508               ; ①排液 設定転送
+MPS
+AND DM200.0              ; 排液 真空選択
+CAL* DM214 #10 @DM10     ; 排液停止時間(真空)  ①排液 停止時間 下位
+MPP
+AND DM200.1              ; 排液 加圧選択
+CAL* DM224 #10 @DM10     ; 排液停止時間(加圧)  ①排液 停止時間 下位
+MPP
+LD MR3508                ; ①排液 設定転送
+OR MR3509                ; ①排液 設定転送 完了
+ANL
+OUT MR3509               ; ①排液 設定転送 完了
+LD MR3509                ; ①排液 設定転送 完了
+ANB MR3511               ; ①排液 一時停止
+LD CR2003                ; 常時OFF
+LDP MR3509               ; ①排液 設定転送 完了
+UDT @30 @DM10            ; ①排液 停止時間  ①排液 停止時間 下位
+LD MR3509                ; ①排液 設定転送 完了
+MPS
+LDP B0711                ; 停止 TSW
+OR R1005                 ; 排液ﾀﾝｸ液面検出 上限検出
+OR @T30                  ; ①排液 停止時間
+ORB MR1015               ; 異常なし
+OR MR3510                ; ①排液 停止
+ANL
+OUT MR3510               ; ①排液 停止
+MPP
+LDP B0712                ; 一時停止 TSW
+OR MR3511                ; ①排液 一時停止
+ANB MR3510               ; ①排液 停止
+ANPB B0710               ; ｽﾀｰﾄ TSW
+ANL
+OUT MR3511               ; ①排液 一時停止
+LD MR3509                ; ①排液 設定転送 完了
+MPS
+LD MR3510                ; ①排液 停止
+OR MR3511                ; ①排液 一時停止
+ANL
+TMR @31 #5               ; ①排液 停止処理 流路閉待ち
+MPP
+ANB @T31                 ; ①排液 停止処理 流路閉待ち
+OUT MR3515               ; ①排液 動作可
+LD MR3515                ; ①排液 動作可
+AND DM200.0              ; 排液 真空選択
+OUT MR3600               ; ①排液 真空ﾎﾟﾝﾌﾟ ON
+MPS
+ANB MR3601               ; ①排液 真空ﾎﾟﾝﾌﾟ ON 完了
+TMR @32 @DM0             ; ①排液 真空ﾎﾟﾝﾌﾟ ON安定  Command操作 真空ﾎﾟﾝﾌﾟ ON安定時間
+MPP
+LD @T32                  ; ①排液 真空ﾎﾟﾝﾌﾟ ON安定
+AND R507                 ; 真空ﾎﾟﾝﾌﾟ ON
+OR MR3601                ; ①排液 真空ﾎﾟﾝﾌﾟ ON 完了
+ANL
+OUT MR3601               ; ①排液 真空ﾎﾟﾝﾌﾟ ON 完了
+LD MR3515                ; ①排液 動作可
+LD MR3601                ; ①排液 真空ﾎﾟﾝﾌﾟ ON 完了
+OR DM200.1               ; 排液 加圧選択
+ANL
+OUT MR3602               ; ①排液 流路開 移行
+LDB MR3510               ; ①排液 停止
+ANB MR3511               ; ①排液 一時停止
+AND MR3602               ; ①排液 流路開 移行
+AND DM200.0              ; 排液 真空選択
+MPS
+OUT MR3604               ; ①排水 N:排液ﾀﾝｸ 真空 開
+MPP
+LD R2013                 ; N:排液ﾀﾝｸ 真空 開
+OR MR3605                ; ①排水 N:排液ﾀﾝｸ 真空 開 完了
+ANL
+OUT MR3605               ; ①排水 N:排液ﾀﾝｸ 真空 開 完了
+LDB MR3510               ; ①排液 停止
+ANB MR3511               ; ①排液 一時停止
+AND MR3602               ; ①排液 流路開 移行
+AND DM200.1              ; 排液 加圧選択
+MPS
+OUT MR3606               ; ①排液 H:排液 加圧 開
+MPP
+LD R2006                 ; H:排液 加圧 開
+OR MR3607                ; ①排液 H:排液 加圧 開 完了
+ANL
+OUT MR3607               ; ①排液 H:排液 加圧 開 完了
+LD MR3602                ; ①排液 流路開 移行
+AND DM200.1              ; 排液 加圧選択
+MPS
+OUT MR3608               ; ①排液 Q:排液ﾀﾝｸ 大気 開
+MPP
+LD R2015                 ; Q:排液ﾀﾝｸ 大気開放 開
+OR MR3609                ; ①排液 Q:排液ﾀﾝｸ 大気 開 完了
+ANL
+OUT MR3609               ; ①排液 Q:排液ﾀﾝｸ 大気 開 完了
+LD MR3602                ; ①排液 流路開 移行
+MPS
+OUT MR3610               ; ①排液 K:製品ﾎﾟﾝﾌﾟ入口 開
+MPP
+LD R2008                 ; K:製品ﾎﾟﾝﾌﾟ入口 開
+OR MR3611                ; ①排液 K:製品ﾎﾟﾝﾌﾟ入口 開 完了
+ANL
+OUT MR3611               ; ①排液 K:製品ﾎﾟﾝﾌﾟ入口 開 完了
+LD MR3602                ; ①排液 流路開 移行
+MPS
+OUT MR3612               ; ①排液 L:製品ﾎﾟﾝﾌﾟ 出口 開
+MPP
+LD R2011                 ; L:製品ﾎﾟﾝﾌﾟ 出口 開
+OR MR3613                ; ①排液 L:製品ﾎﾟﾝﾌﾟ 出口 開 完了
+ANL
+OUT MR3613               ; ①排液 L:製品ﾎﾟﾝﾌﾟ 出口 開 完了
+LD MR3602                ; ①排液 流路開 移行
+MPS
+OUT MR3614               ; ①排液 M:排液ﾀﾝｸ 入口 開
+MPP
+LD R2010                 ; M:排液ﾀﾝｸ 入口 開
+OR MR3615                ; ①排液 M:排液ﾀﾝｸ 入口 開 完了
+ANL
+OUT MR3615               ; ①排液 M:排液ﾀﾝｸ 入口 開 完了
+LD MR3602                ; ①排液 流路開 移行
+AND DM200.0              ; 排液 真空選択
+MPS
+ANB MR3701               ; ①排液 J:排液真空 大気 開 待ち完
+OUT MR3700               ; ①排液 J:排液真空 大気 開 待ち
+TMR @33 #10              ; ①排液 (J) 開 待ち時間
+MPP
+LD @T33                  ; ①排液 (J) 開 待ち時間
+OR MR3701                ; ①排液 J:排液真空 大気 開 待ち完
+ANL
+OUT MR3701               ; ①排液 J:排液真空 大気 開 待ち完
+LD MR3701                ; ①排液 J:排液真空 大気 開 待ち完
+MPS
+OUT MR3702               ; ①排液 J:排液真空 大気 開
+MPP
+LD R2009                 ; J:排液真空 大気開放 開
+OR MR3703                ; ①排液 J:排液真空 大気 開 完
+ANL
+OUT MR3703               ; ①排液 J:排液真空 大気 開 完
+LD MR3510                ; ①排液 停止
+MPS
+ANB MR3709               ; ①排液 停止 大気開放待ち 完了
+OUT MR3708               ; ①排液 停止 大気開放待ち
+TMR @34 #0               ; ①排液 停止 大気開放待ち時間
+MPP
+LD @T34                  ; ①排液 停止 大気開放待ち時間
+OR MR3709                ; ①排液 停止 大気開放待ち 完了
+ANL
+OUT MR3709               ; ①排液 停止 大気開放待ち 完了
+LD MR3709                ; ①排液 停止 大気開放待ち 完了
+MPS
+ANB MR3713               ; ①排液 Q:排液ﾀﾝｸ 大気 開 終了
+MPS
+OUT MR3712               ; ①排液 Q:排液ﾀﾝｸ 大気 開
+MPP
+LD R1010                 ; b:排液ﾀﾝｸ正圧力検出(大気圧)
+ANB R1011                ; b:排液ﾀﾝｸ正圧力検出(加圧)
+AND R1012                ; c:排液ﾀﾝｸ負圧力検出(未到達)
+ANB R1013                ; c:排液ﾀﾝｸ負圧力検出(到達)
+ANL
+TMR @35 @DM2             ; ①排液 (Q) 開 安定  給水・排液ﾀﾝｸ 大気開放 安定時間
+MPP
+LD @T35                  ; ①排液 (Q) 開 安定
+OR B0C                   ; 排液ﾀﾝｸ 大気圧NG
+OR MR3713                ; ①排液 Q:排液ﾀﾝｸ 大気 開 終了
+ANL
+OUT MR3713               ; ①排液 Q:排液ﾀﾝｸ 大気 開 終了
+LD MR3107                ; 全ｴｱｵﾍﾟﾚｰﾄﾊﾞﾙﾌﾞ・ﾎﾟﾝﾌﾟ 停止
+AND MR3713               ; ①排液 Q:排液ﾀﾝｸ 大気 開 終了
+OUT MR3715               ; ①排液 終了
+;<h1/>--- ②排⇒給
+LD= DM100 #2             ; 操作ｺﾏﾝﾄﾞ 格納
+OUT MR4000               ; ②排⇒給 ｵﾝIL1
+LD R1000                 ; 給水ﾀﾝｸ液面検出 ﾘﾐｯﾄ検出
+ANB R1001                ; 給水ﾀﾝｸ液面検出 上限検出1
+AND R1004                ; 排液ﾀﾝｸ液面検出 ﾘﾐｯﾄ検出
+AND R1006                ; 排液ﾀﾝｸ液面検出 下限検出
+LDB R1011                ; b:排液ﾀﾝｸ正圧力検出(加圧)
+ORB R99915               ; TEMP
+ANL
+OUT MR4001               ; ②排⇒給 ｵﾝIL2
+LDB MR3507               ; ①排液 ｵﾝ
+OUT MR4002               ; ②排⇒給 ｵﾝIL3
+LD MR3115                ; 操作ｺﾏﾝﾄﾞ 共通IL
+OUT MR4003               ; ②排⇒給 ｵﾝIL4
+LD MR4000                ; ②排⇒給 ｵﾝIL1
+AND MR4001               ; ②排⇒給 ｵﾝIL2
+AND MR4002               ; ②排⇒給 ｵﾝIL3
+AND MR4003               ; ②排⇒給 ｵﾝIL4
+ANB MR4007               ; ②排⇒給 ｵﾝ
+OUT MR4004               ; ②排⇒給 ｵﾝIL
+LD MR4007                ; ②排⇒給 ｵﾝ
+OUT MR4005               ; ②排⇒給 ｵﾌIL
+LD MR4215                ; ②排⇒給 終了
+ORB MR1000               ; 即時停止 異常なし
+AND MR4005               ; ②排⇒給 ｵﾌIL
+OUT MR4006               ; ②排⇒給 ｵﾌ
+LDP B0710                ; ｽﾀｰﾄ TSW
+AND MR4004               ; ②排⇒給 ｵﾝIL
+OR MR4007                ; ②排⇒給 ｵﾝ
+ANB MR4006               ; ②排⇒給 ｵﾌ
+OUT MR4007               ; ②排⇒給 ｵﾝ
+LD MR4007                ; ②排⇒給 ｵﾝ
+MPS
+ANB MR4009               ; ②排⇒給 設定転送 完了
+OUT MR4008               ; ②排⇒給 設定転送
+CAL* #9999 #10 @DM20     ; ②排⇒給 停止時間 下位
+MPP
+LD MR4008                ; ②排⇒給 設定転送
+OR MR4009                ; ②排⇒給 設定転送 完了
+ANL
+OUT MR4009               ; ②排⇒給 設定転送 完了
+LD CR2003                ; 常時OFF
+AND MR4009               ; ②排⇒給 設定転送 完了
+ANB MR4011               ; ②排⇒給 一時停止
+LD CR2003                ; 常時OFF
+LDP MR4009               ; ②排⇒給 設定転送 完了
+UDT @40 @DM20            ; ②排⇒給 停止時間  ②排⇒給 停止時間 下位
+LD MR4009                ; ②排⇒給 設定転送 完了
+MPS
+LDP B0711                ; 停止 TSW
+OR R1001                 ; 給水ﾀﾝｸ液面検出 上限検出1
+OR @T24                  ; 排液ﾀﾝｸ液面検出 下限 OFF安定
+OR @T40                  ; ②排⇒給 停止時間
+ORB MR1015               ; 異常なし
+OR MR4010                ; ②排⇒給 停止
+ANL
+OUT MR4010               ; ②排⇒給 停止
+MPP
+LDP B0712                ; 一時停止 TSW
+OR MR4011                ; ②排⇒給 一時停止
+ANB MR4010               ; ②排⇒給 停止
+ANPB B0710               ; ｽﾀｰﾄ TSW
+ANL
+OUT MR4011               ; ②排⇒給 一時停止
+LD MR4009                ; ②排⇒給 設定転送 完了
+ANB MR4010               ; ②排⇒給 停止
+ANB MR4011               ; ②排⇒給 一時停止
+OUT MR4015               ; ②排⇒給 動作可
+LD MR4015                ; ②排⇒給 動作可
+MPS
+OUT MR4100               ; ②排⇒給 B:排⇒給 給水 開
+MPP
+LD R2000                 ; B:排⇒給 給水ﾀﾝｸ側 開
+OR MR4101                ; ②排⇒給 B:排⇒給 給水 開 完了 
+ANL
+OUT MR4101               ; ②排⇒給 B:排⇒給 給水 開 完了 
+LD MR4015                ; ②排⇒給 動作可
+MPS
+OUT MR4102               ; ②排⇒給 C:給水ﾀﾝｸ 入口 開
+MPP
+LD R2003                 ; C:給水ﾀﾝｸ 入口 開
+OR MR4103                ; ②排⇒給 C:給水ﾀﾝｸ 入口 開 完了
+ANL
+OUT MR4103               ; ②排⇒給 C:給水ﾀﾝｸ 入口 開 完了
+LD MR4015                ; ②排⇒給 動作可
+MPS
+OUT MR4104               ; ②排⇒給 F:給水ﾀﾝｸ 大気 開
+MPP
+LD R2004                 ; F:給水ﾀﾝｸ 大気開放 開
+OR MR4105                ; ②排⇒給 F:給水ﾀﾝｸ 大気 開 完了 
+ANL
+OUT MR4105               ; ②排⇒給 F:給水ﾀﾝｸ 大気 開 完了 
+LD MR4015                ; ②排⇒給 動作可
+MPS
+OUT MR4106               ; ②排⇒給 P:排液ﾀﾝｸ 加圧 開
+MPP
+LD R2012                 ; P:排液ﾀﾝｸ 加圧 開
+OR MR4107                ; ②排⇒給 P:排液ﾀﾝｸ 加圧 開 完了
+ANL
+OUT MR4107               ; ②排⇒給 P:排液ﾀﾝｸ 加圧 開 完了
+LD MR4015                ; ②排⇒給 動作可
+MPS
+OUT MR4108               ; ②排⇒給 R:排液ﾀﾝｸ 出口 開
+MPP
+LD R2014                 ; R:排液ﾀﾝｸ 出口 開
+OR MR4109                ; ②排⇒給 R:排液ﾀﾝｸ 出口 開 完了
+ANL
+OUT MR4109               ; ②排⇒給 R:排液ﾀﾝｸ 出口 開 完了
+LD MR4010                ; ②排⇒給 停止
+MPS
+ANB MR4209               ; ②排⇒給 停止 大気開放待ち 完了
+OUT MR4208               ; ②排⇒給 停止 大気開放待ち
+TMR @41 #0               ; ②排⇒給 停止 大気開放待ち時間
+MPP
+LD @T41                  ; ②排⇒給 停止 大気開放待ち時間
+OR MR4209                ; ②排⇒給 停止 大気開放待ち 完了
+ANL
+OUT MR4209               ; ②排⇒給 停止 大気開放待ち 完了
+LD MR4209                ; ②排⇒給 停止 大気開放待ち 完了
+MPS
+ANB MR4211               ; ②排⇒給 F:給水ﾀﾝｸ 大気 開 終了
+MPS
+OUT MR4210               ; ②排⇒給 F:給水ﾀﾝｸ 大気 開
+MPP
+LD R1008                 ; a:給水ﾀﾝｸ圧力検出(大気圧)
+ANB R1009                ; a:給水ﾀﾝｸ圧力検出(加圧)
+ANL
+TMR @42 @DM2             ; ②排⇒給 (F) 開 安定  給水・排液ﾀﾝｸ 大気開放 安定時間
+MPP
+LD @T42                  ; ②排⇒給 (F) 開 安定
+OR B09                   ; 給水ﾀﾝｸ 大気圧NG
+OR MR4211                ; ②排⇒給 F:給水ﾀﾝｸ 大気 開 終了
+ANL
+OUT MR4211               ; ②排⇒給 F:給水ﾀﾝｸ 大気 開 終了
+LD MR4209                ; ②排⇒給 停止 大気開放待ち 完了
+MPS
+ANB MR4213               ; ②排⇒給 Q:排液ﾀﾝｸ 大気 開 終了
+MPS
+OUT MR4212               ; ②排⇒給 Q:排液ﾀﾝｸ 大気 開
+MPP
+LD R1010                 ; b:排液ﾀﾝｸ正圧力検出(大気圧)
+ANB R1011                ; b:排液ﾀﾝｸ正圧力検出(加圧)
+AND R1012                ; c:排液ﾀﾝｸ負圧力検出(未到達)
+ANB R1013                ; c:排液ﾀﾝｸ負圧力検出(到達)
+ANL
+TMR @43 @DM2             ; ②排⇒給 (Q) 開 安定  給水・排液ﾀﾝｸ 大気開放 安定時間
+MPP
+LD @T43                  ; ②排⇒給 (Q) 開 安定
+OR B0C                   ; 排液ﾀﾝｸ 大気圧NG
+OR MR4213                ; ②排⇒給 Q:排液ﾀﾝｸ 大気 開 終了
+ANL
+OUT MR4213               ; ②排⇒給 Q:排液ﾀﾝｸ 大気 開 終了
+LD MR3107                ; 全ｴｱｵﾍﾟﾚｰﾄﾊﾞﾙﾌﾞ・ﾎﾟﾝﾌﾟ 停止
+AND MR4211               ; ②排⇒給 F:給水ﾀﾝｸ 大気 開 終了
+AND MR4213               ; ②排⇒給 Q:排液ﾀﾝｸ 大気 開 終了
+OUT MR4215               ; ②排⇒給 終了
+;<h1/>--- ③真空
+LD= DM100 #3             ; 操作ｺﾏﾝﾄﾞ 格納
+OUT MR4500               ; ③真空 ｵﾝIL1
+LD R1000                 ; 給水ﾀﾝｸ液面検出 ﾘﾐｯﾄ検出
+AND R1004                ; 排液ﾀﾝｸ液面検出 ﾘﾐｯﾄ検出
+ANB R1005                ; 排液ﾀﾝｸ液面検出 上限検出
+ANB R1006                ; 排液ﾀﾝｸ液面検出 下限検出
+ANB R1013                ; c:排液ﾀﾝｸ負圧力検出(到達)
+OUT MR4501               ; ③真空 ｵﾝIL2
+LDB MR3507               ; ①排液 ｵﾝ
+ANB MR4007               ; ②排⇒給 ｵﾝ
+OUT MR4502               ; ③真空 ｵﾝIL3
+LD MR3115                ; 操作ｺﾏﾝﾄﾞ 共通IL
+OUT MR4503               ; ③真空 ｵﾝIL4
+LD MR4500                ; ③真空 ｵﾝIL1
+AND MR4501               ; ③真空 ｵﾝIL2
+AND MR4502               ; ③真空 ｵﾝIL3
+AND MR4503               ; ③真空 ｵﾝIL4
+ANB MR4507               ; ③真空 ｵﾝ
+OUT MR4504               ; ③真空 ｵﾝIL
+LD MR4507                ; ③真空 ｵﾝ
+OUT MR4505               ; ③真空 ｵﾌIL
+LD MR4715                ; ③真空 終了
+ORB MR1000               ; 即時停止 異常なし
+AND MR4505               ; ③真空 ｵﾌIL
+OUT MR4506               ; ③真空 ｵﾌ
+LDP B0710                ; ｽﾀｰﾄ TSW
+AND MR4504               ; ③真空 ｵﾝIL
+OR MR4507                ; ③真空 ｵﾝ
+ANB MR4506               ; ③真空 ｵﾌ
+OUT MR4507               ; ③真空 ｵﾝ
+LD MR4507                ; ③真空 ｵﾝ
+MPS
+ANB MR4509               ; ③真空 設定転送 完了
+OUT MR4508               ; ③真空 設定転送
+CAL* DM414 #10 @DM30     ; 真空停止時間  ③真空 停止時間 下位
+MPP
+LD MR4508                ; ③真空 設定転送
+OR MR4509                ; ③真空 設定転送 完了
+ANL
+OUT MR4509               ; ③真空 設定転送 完了
+LD MR4509                ; ③真空 設定転送 完了
+ANB MR4511               ; ③真空 一時停止
+LD CR2003                ; 常時OFF
+LDP MR4509               ; ③真空 設定転送 完了
+UDT @50 @DM30            ; ③真空 停止時間  ③真空 停止時間 下位
+LD MR4509                ; ③真空 設定転送 完了
+MPS
+LDP B0711                ; 停止 TSW
+OR R1005                 ; 排液ﾀﾝｸ液面検出 上限検出
+OR R1013                 ; c:排液ﾀﾝｸ負圧力検出(到達)
+OR @T50                  ; ③真空 停止時間
+ORB MR1015               ; 異常なし
+OR MR4510                ; ③真空 停止
+ANL
+OUT MR4510               ; ③真空 停止
+MPP
+LDP B0712                ; 一時停止 TSW
+OR MR4511                ; ③真空 一時停止
+ANB MR4510               ; ③真空 停止
+ANPB B0710               ; ｽﾀｰﾄ TSW
+ANL
+OUT MR4511               ; ③真空 一時停止
+LD @T50                  ; ③真空 停止時間
+MPS
+LDB R1012                ; c:排液ﾀﾝｸ負圧力検出(未到達)
+AND R1013                ; c:排液ﾀﾝｸ負圧力検出(到達)
+OR MR4512                ; ③真空 真空圧 OK
+ANB MR4513               ; ③真空 真空圧 NG
+ANL
+OUT MR4512               ; ③真空 真空圧 OK
+MPP
+ANB MR4512               ; ③真空 真空圧 OK
+OUT MR4513               ; ③真空 真空圧 NG
+LD MR4509                ; ③真空 設定転送 完了
+ANB MR4510               ; ③真空 停止
+ANB MR4511               ; ③真空 一時停止
+OUT MR4515               ; ③真空 動作可
+LD MR4515                ; ③真空 動作可
+OUT MR4600               ; ③真空 真空ﾎﾟﾝﾌﾟON
+MPS
+ANB MR4601               ; ③真空 真空ﾎﾟﾝﾌﾟON 完了
+TMR @51 @DM0             ; ③真空 真空ﾎﾟﾝﾌﾟ ON安定  Command操作 真空ﾎﾟﾝﾌﾟ ON安定時間
+MPP
+LD @T51                  ; ③真空 真空ﾎﾟﾝﾌﾟ ON安定
+AND R507                 ; 真空ﾎﾟﾝﾌﾟ ON
+OR MR4601                ; ③真空 真空ﾎﾟﾝﾌﾟON 完了
+ANL
+OUT MR4601               ; ③真空 真空ﾎﾟﾝﾌﾟON 完了
+LD MR4601                ; ③真空 真空ﾎﾟﾝﾌﾟON 完了
+MPS
+OUT MR4602               ; ③真空 L:製品ﾎﾟﾝﾌﾟ 出口 開
+MPP
+LD R2011                 ; L:製品ﾎﾟﾝﾌﾟ 出口 開
+OR MR4603                ; ③真空 L:製品ﾎﾟﾝﾌﾟ 出口 開 完了
+ANL
+OUT MR4603               ; ③真空 L:製品ﾎﾟﾝﾌﾟ 出口 開 完了
+LD MR4601                ; ③真空 真空ﾎﾟﾝﾌﾟON 完了
+MPS
+OUT MR4604               ; ③真空 M:排液ﾀﾝｸ 入口 開
+MPP
+LD R2010                 ; M:排液ﾀﾝｸ 入口 開
+OR MR4605                ; ③真空 M:排液ﾀﾝｸ 入口 開 完了
+ANL
+OUT MR4605               ; ③真空 M:排液ﾀﾝｸ 入口 開 完了
+LD MR4601                ; ③真空 真空ﾎﾟﾝﾌﾟON 完了
+MPS
+OUT MR4606               ; ③真空 N:排液ﾀﾝｸ 真空 開
+MPP
+LD R2013                 ; N:排液ﾀﾝｸ 真空 開
+OR MR4607                ; ③真空 N:排液ﾀﾝｸ 真空 開 完了
+ANL
+OUT MR4607               ; ③真空 N:排液ﾀﾝｸ 真空 開 完了
+LD MR4510                ; ③真空 停止
+MPS
+ANB MR4709               ; ③真空 停止 待ち 完了
+OUT MR4708               ; ③真空 停止 待ち
+TMR @52 #0               ; ③真空 停止 待ち時間
+MPP
+LD @T52                  ; ③真空 停止 待ち時間
+OR MR4709                ; ③真空 停止 待ち 完了
+ANL
+OUT MR4709               ; ③真空 停止 待ち 完了
+LD MR3107                ; 全ｴｱｵﾍﾟﾚｰﾄﾊﾞﾙﾌﾞ・ﾎﾟﾝﾌﾟ 停止
+AND MR4709               ; ③真空 停止 待ち 完了
+OUT MR4715               ; ③真空 終了
+;<h1/>--- ④注入
+LD= DM100 #4             ; 操作ｺﾏﾝﾄﾞ 格納
+OUT MR5000               ; ④注入 ｵﾝIL1
+LD R1000                 ; 給水ﾀﾝｸ液面検出 ﾘﾐｯﾄ検出
+AND R1003                ; 給水ﾀﾝｸ液面検出 下限検出
+AND R1004                ; 排液ﾀﾝｸ液面検出 ﾘﾐｯﾄ検出
+ANB R1005                ; 排液ﾀﾝｸ液面検出 上限検出
+OUT MR5001               ; ④注入 ｵﾝIL2
+LDB MR3507               ; ①排液 ｵﾝ
+ANB MR4007               ; ②排⇒給 ｵﾝ
+ANB MR4507               ; ③真空 ｵﾝ
+OUT MR5002               ; ④注入 ｵﾝIL3
+LD MR3115                ; 操作ｺﾏﾝﾄﾞ 共通IL
+OUT MR5003               ; ④注入 ｵﾝIL4
+LD MR5000                ; ④注入 ｵﾝIL1
+AND MR5001               ; ④注入 ｵﾝIL2
+AND MR5002               ; ④注入 ｵﾝIL3
+AND MR5003               ; ④注入 ｵﾝIL4
+ANB MR5007               ; ④注入 ｵﾝ
+OUT MR5004               ; ④注入 ｵﾝIL
+LD MR5007                ; ④注入 ｵﾝ
+OUT MR5005               ; ④注入 ｵﾌIL
+LD MR5215                ; ④注入 終了
+ORB MR1000               ; 即時停止 異常なし
+AND MR5005               ; ④注入 ｵﾌIL
+OUT MR5006               ; ④注入 ｵﾌ
+LDP B0710                ; ｽﾀｰﾄ TSW
+AND MR5004               ; ④注入 ｵﾝIL
+OR MR5007                ; ④注入 ｵﾝ
+ANB MR5006               ; ④注入 ｵﾌ
+OUT MR5007               ; ④注入 ｵﾝ
+LD MR5007                ; ④注入 ｵﾝ
+MPS
+ANB MR5009               ; ④注入 設定転送 完了
+OUT MR5008               ; ④注入 設定転送
+MPS
+AND DM500.0              ; 注入 ﾎﾟﾝﾌﾟON選択
+CAL* DM514 #10 @DM40     ; 注入停止時間(ON)  ④注入 停止時間 下位
+MPP
+AND DM500.1              ; 注入 ﾎﾟﾝﾌﾟOFF選択
+CAL* DM524 #10 @DM40     ; 注入停止時間(OFF)  ④注入 停止時間 下位
+MPP
+LD MR5008                ; ④注入 設定転送
+OR MR5009                ; ④注入 設定転送 完了
+ANL
+OUT MR5009               ; ④注入 設定転送 完了
+LD MR5009                ; ④注入 設定転送 完了
+ANB MR5011               ; ④注入 一時停止
+LD CR2003                ; 常時OFF
+LDP MR5009               ; ④注入 設定転送 完了
+UDT @60 @DM40            ; ③真空 停止時間  ④注入 停止時間 下位
+LD MR5009                ; ④注入 設定転送 完了
+MPS
+LDP B0711                ; 停止 TSW
+OR @T22                  ; 給水ﾀﾝｸ液面検出 下限 OFF安定
+OR R1005                 ; 排液ﾀﾝｸ液面検出 上限検出
+OR @T60                  ; ③真空 停止時間
+ORB MR1015               ; 異常なし
+OR MR5010                ; ④注入 停止
+ANL
+OUT MR5010               ; ④注入 停止
+MPP
+LDP B0712                ; 一時停止 TSW
+OR MR5011                ; ④注入 一時停止
+ANB MR5010               ; ④注入 停止
+ANPB B0710               ; ｽﾀｰﾄ TSW
+ANL
+OUT MR5011               ; ④注入 一時停止
+LD MR5009                ; ④注入 設定転送 完了
+MPS
+LD MR5010                ; ④注入 停止
+OR MR5011                ; ④注入 一時停止
+ANL
+TMR @61 #5               ; ④注入 停止処理 流路閉待ち
+MPP
+ANB @T61                 ; ④注入 停止処理 流路閉待ち
+OUT MR5015               ; ④注入 動作可
+LD MR5009                ; ④注入 設定転送 完了
+LD MR5011                ; ④注入 一時停止
+OR MR5015                ; ④注入 動作可
+ANL
+AND DM500.0              ; 注入 ﾎﾟﾝﾌﾟON選択
+OUT MR5100               ; ④注入 真空ﾎﾟﾝﾌﾟON
+MPS
+ANB MR5101               ; ④注入 真空ﾎﾟﾝﾌﾟON 完了
+TMR @62 @DM0             ; ④注入 真空ﾎﾟﾝﾌﾟ ON安定  Command操作 真空ﾎﾟﾝﾌﾟ ON安定時間
+MPP
+LD @T62                  ; ④注入 真空ﾎﾟﾝﾌﾟ ON安定
+AND R507                 ; 真空ﾎﾟﾝﾌﾟ ON
+OR MR5101                ; ④注入 真空ﾎﾟﾝﾌﾟON 完了
+ANL
+OUT MR5101               ; ④注入 真空ﾎﾟﾝﾌﾟON 完了
+LD MR5015                ; ④注入 動作可
+LD MR5101                ; ④注入 真空ﾎﾟﾝﾌﾟON 完了
+OR DM500.1               ; 注入 ﾎﾟﾝﾌﾟOFF選択
+ANL
+OUT MR5102               ; ④注入 流路開 移行
+LD MR5102                ; ④注入 流路開 移行
+MPS
+OUT MR5104               ; ④注入 F:給水ﾀﾝｸ 大気 開
+MPP
+LD R2004                 ; F:給水ﾀﾝｸ 大気開放 開
+OR MR5105                ; ④注入 F:給水ﾀﾝｸ 大気 開 完了
+ANL
+OUT MR5105               ; ④注入 F:給水ﾀﾝｸ 大気 開 完了
+LDB MR5010               ; ④注入 停止
+ANB MR5011               ; ④注入 一時停止
+AND MR5102               ; ④注入 流路開 移行
+MPS
+OUT MR5106               ; ④注入 G:給水ﾀﾝｸ 出口 開
+MPP
+LD R2007                 ; G:給水ﾀﾝｸ 出口 開
+OR MR5107                ; ④注入 G:給水ﾀﾝｸ 出口 開 完了
+ANL
+OUT MR5107               ; ④注入 G:給水ﾀﾝｸ 出口 開 完了
+LDB MR5010               ; ④注入 停止
+ANB MR5011               ; ④注入 一時停止
+AND MR5102               ; ④注入 流路開 移行
+MPS
+OUT MR5108               ; ④注入 K:製品ﾎﾟﾝﾌﾟ入口 開
+MPP
+LD R2008                 ; K:製品ﾎﾟﾝﾌﾟ入口 開
+OR MR5109                ; ④注入 K:製品ﾎﾟﾝﾌﾟ入口 開 完了
+ANL
+OUT MR5109               ; ④注入 K:製品ﾎﾟﾝﾌﾟ入口 開 完了
+LDB MR5010               ; ④注入 停止
+ANB MR5011               ; ④注入 一時停止
+AND MR5102               ; ④注入 流路開 移行
+MPS
+OUT MR5110               ; ④注入 L:製品ﾎﾟﾝﾌﾟ 出口 開
+MPP
+LD R2011                 ; L:製品ﾎﾟﾝﾌﾟ 出口 開
+OR MR5111                ; ④注入 L:製品ﾎﾟﾝﾌﾟ 出口 開 完了
+ANL
+OUT MR5111               ; ④注入 L:製品ﾎﾟﾝﾌﾟ 出口 開 完了
+LD MR5102                ; ④注入 流路開 移行
+MPS
+OUT MR5112               ; ④注入 M:排液ﾀﾝｸ 入口 開
+MPP
+LD R2010                 ; M:排液ﾀﾝｸ 入口 開
+OR MR5113                ; ④注入 M:排液ﾀﾝｸ 入口 開 完了
+ANL
+OUT MR5113               ; ④注入 M:排液ﾀﾝｸ 入口 開 完了
+LD DM500.0               ; 注入 ﾎﾟﾝﾌﾟON選択
+ANB MR5115               ; ④注入 排液ﾀﾝｸ 真空圧 未達
+MPS
+LDB MR5114               ; ④注入 排液ﾀﾝｸ 真空圧 到達
+AND R1013                ; c:排液ﾀﾝｸ負圧力検出(到達)
+ANL
+TMH @63 #10              ; ④注入 排液ﾀﾝｸ 真空圧 到達 安定
+MRD
+LD @T63                  ; ④注入 排液ﾀﾝｸ 真空圧 到達 安定
+OR MR5114                ; ④注入 排液ﾀﾝｸ 真空圧 到達
+ANL
+OUT MR5114               ; ④注入 排液ﾀﾝｸ 真空圧 到達
+MRD
+LD R1012                 ; c:排液ﾀﾝｸ負圧力検出(未到達)
+ANB R1013                ; c:排液ﾀﾝｸ負圧力検出(到達)
+ANL
+TMH @64 #10              ; ④注入 排液ﾀﾝｸ 真空圧 未達 安定
+MPP
+LD @T64                  ; ④注入 排液ﾀﾝｸ 真空圧 未達 安定
+OR MR5115                ; ④注入 排液ﾀﾝｸ 真空圧 未達
+ANL
+OUT MR5115               ; ④注入 排液ﾀﾝｸ 真空圧 未達
+;※170302 Nのﾊﾞﾙﾌﾞは真空到達で閉、ある程度真空度が落ちたところで開の制御に変更要望あり。
+LDB MR5010               ; ④注入 停止
+ANB MR5011               ; ④注入 一時停止
+AND MR5102               ; ④注入 流路開 移行
+AND DM500.0              ; 注入 ﾎﾟﾝﾌﾟON選択
+LDB MR5114               ; ④注入 排液ﾀﾝｸ 真空圧 到達
+OR MR5115                ; ④注入 排液ﾀﾝｸ 真空圧 未達
+ANL
+MPS
+OUT MR5200               ; ④注入 N:排液ﾀﾝｸ 真空 開
+MPP
+LD R2013                 ; N:排液ﾀﾝｸ 真空 開
+OR MR5201                ; ④注入 N:排液ﾀﾝｸ 真空 開 完了
+ANL
+OUT MR5201               ; ④注入 N:排液ﾀﾝｸ 真空 開 完了
+LD MR5010                ; ④注入 停止
+MPS
+ANB MR5209               ; ④注入 停止 大気開放待ち 完了
+OUT MR5208               ; ④注入 停止 大気開放待ち
+TMR @65 #0               ; ④注入 停止 大気開放待ち時間
+MPP
+LD @T65                  ; ④注入 停止 大気開放待ち時間
+OR MR5209                ; ④注入 停止 大気開放待ち 完了
+ANL
+OUT MR5209               ; ④注入 停止 大気開放待ち 完了
+LD MR5209                ; ④注入 停止 大気開放待ち 完了
+MPS
+ANB MR5211               ; ④注入 F:給水ﾀﾝｸ 大気 開 終了
+MPS
+OUT MR5210               ; ④注入 F:給水ﾀﾝｸ 大気 開
+MPP
+LD R1008                 ; a:給水ﾀﾝｸ圧力検出(大気圧)
+ANB R1009                ; a:給水ﾀﾝｸ圧力検出(加圧)
+ANL
+TMR @66 @DM2             ; ④注入 (F) 開 安定  給水・排液ﾀﾝｸ 大気開放 安定時間
+MPP
+LD @T66                  ; ④注入 (F) 開 安定
+OR B09                   ; 給水ﾀﾝｸ 大気圧NG
+OR MR5211                ; ④注入 F:給水ﾀﾝｸ 大気 開 終了
+ANL
+OUT MR5211               ; ④注入 F:給水ﾀﾝｸ 大気 開 終了
+LD MR5209                ; ④注入 停止 大気開放待ち 完了
+MPS
+ANB MR5213               ; ④注入 Q:排液ﾀﾝｸ 大気 開 終了
+MPS
+OUT MR5212               ; ④注入 Q:排液ﾀﾝｸ 大気 開
+MPP
+LD R1010                 ; b:排液ﾀﾝｸ正圧力検出(大気圧)
+ANB R1011                ; b:排液ﾀﾝｸ正圧力検出(加圧)
+AND R1012                ; c:排液ﾀﾝｸ負圧力検出(未到達)
+ANB R1013                ; c:排液ﾀﾝｸ負圧力検出(到達)
+ANL
+TMR @67 @DM2             ; ④注入 (F) 開 安定  給水・排液ﾀﾝｸ 大気開放 安定時間
+MPP
+LD @T67                  ; ④注入 (F) 開 安定
+OR B0C                   ; 排液ﾀﾝｸ 大気圧NG
+OR MR5213                ; ④注入 Q:排液ﾀﾝｸ 大気 開 終了
+ANL
+OUT MR5213               ; ④注入 Q:排液ﾀﾝｸ 大気 開 終了
+LD MR3107                ; 全ｴｱｵﾍﾟﾚｰﾄﾊﾞﾙﾌﾞ・ﾎﾟﾝﾌﾟ 停止
+AND MR5211               ; ④注入 F:給水ﾀﾝｸ 大気 開 終了
+AND MR5213               ; ④注入 Q:排液ﾀﾝｸ 大気 開 終了
+OUT MR5215               ; ④注入 終了
+;<h1/>--- ⑤循環
+LD= DM100 #5             ; 操作ｺﾏﾝﾄﾞ 格納
+OUT MR5500               ; ⑤循環 ｵﾝIL1
+LD R1000                 ; 給水ﾀﾝｸ液面検出 ﾘﾐｯﾄ検出
+AND R1003                ; 給水ﾀﾝｸ液面検出 下限検出
+AND R1004                ; 排液ﾀﾝｸ液面検出 ﾘﾐｯﾄ検出
+ANB R1005                ; 排液ﾀﾝｸ液面検出 上限検出
+LDB R1009                ; a:給水ﾀﾝｸ圧力検出(加圧)
+ORB DM600.2              ; 循環 循環(加圧)選択
+ANL
+OUT MR5501               ; ⑤循環 ｵﾝIL2
+LDB MR3507               ; ①排液 ｵﾝ
+ANB MR4007               ; ②排⇒給 ｵﾝ
+ANB MR4507               ; ③真空 ｵﾝ
+ANB MR5007               ; ④注入 ｵﾝ
+OUT MR5502               ; ⑤循環 ｵﾝIL3
+LD MR3115                ; 操作ｺﾏﾝﾄﾞ 共通IL
+OUT MR5503               ; ⑤循環 ｵﾝIL4
+LD MR5500                ; ⑤循環 ｵﾝIL1
+AND MR5501               ; ⑤循環 ｵﾝIL2
+AND MR5502               ; ⑤循環 ｵﾝIL3
+AND MR5503               ; ⑤循環 ｵﾝIL4
+ANB MR5507               ; ⑤循環 ｵﾝ
+OUT MR5504               ; ⑤循環 ｵﾝIL
+LD MR5507                ; ⑤循環 ｵﾝ
+OUT MR5505               ; ⑤循環 ｵﾌIL
+LD MR5715                ; ⑤循環 終了
+ORB MR1000               ; 即時停止 異常なし
+AND MR5505               ; ⑤循環 ｵﾌIL
+OUT MR5506               ; ⑤循環 ｵﾌ
+LDP B0710                ; ｽﾀｰﾄ TSW
+AND MR5504               ; ⑤循環 ｵﾝIL
+OR MR5507                ; ⑤循環 ｵﾝ
+ANB MR5506               ; ⑤循環 ｵﾌ
+OUT MR5507               ; ⑤循環 ｵﾝ
+LD MR5507                ; ⑤循環 ｵﾝ
+MPS
+ANB MR5509               ; ⑤循環 設定転送 完了
+OUT MR5508               ; ⑤循環 設定転送
+MPS
+AND DM600.0              ; 循環 循環選択
+CAL* DM614 #10 @DM50     ; 循環停止時間  ⑤循環 停止時間 下位
+MRD
+AND DM600.1              ; 循環 循環(真空)選択
+CAL* DM624 #10 @DM50     ; 循環停止時間(真空)  ⑤循環 停止時間 下位
+MPP
+AND DM600.2              ; 循環 循環(加圧)選択
+CAL* DM634 #10 @DM50     ; 循環停止時間(加圧)  ⑤循環 停止時間 下位
+MPP
+LD MR5508                ; ⑤循環 設定転送
+OR MR5509                ; ⑤循環 設定転送 完了
+ANL
+OUT MR5509               ; ⑤循環 設定転送 完了
+LD MR5509                ; ⑤循環 設定転送 完了
+ANB MR5511               ; ⑤循環 一時停止
+LD CR2003                ; 常時OFF
+LDP MR5509               ; ⑤循環 設定転送 完了
+UDT @70 @DM50            ; ⑤循環 停止時間  ⑤循環 停止時間 下位
+LD MR5509                ; ⑤循環 設定転送 完了
+MPS
+LDP B0711                ; 停止 TSW
+OR @T22                  ; 給水ﾀﾝｸ液面検出 下限 OFF安定
+OR R1005                 ; 排液ﾀﾝｸ液面検出 上限検出
+OR @T70                  ; ⑤循環 停止時間
+ORB MR1015               ; 異常なし
+OR MR5510                ; ⑤循環 停止
+ANL
+OUT MR5510               ; ⑤循環 停止
+MPP
+LDP B0712                ; 一時停止 TSW
+OR MR5511                ; ⑤循環 一時停止
+ANB MR5510               ; ⑤循環 停止
+ANPB B0710               ; ｽﾀｰﾄ TSW
+ANL
+OUT MR5511               ; ⑤循環 一時停止
+LD MR5509                ; ⑤循環 設定転送 完了
+MPS
+LD MR5510                ; ⑤循環 停止
+OR MR5511                ; ⑤循環 一時停止
+ANL
+TMR @71 #5               ; ⑤循環 流路閉待ち
+MPP
+ANB @T71                 ; ⑤循環 流路閉待ち
+OUT MR5515               ; ⑤循環 動作可
+LD MR5515                ; ⑤循環 動作可
+AND DM600.1              ; 循環 循環(真空)選択
+OUT MR5600               ; ⑤循環 真空ﾎﾟﾝﾌﾟON
+MPS
+ANB MR5601               ; ⑤循環 真空ﾎﾟﾝﾌﾟON 完了
+TMR @72 @DM0             ; ⑤循環 真空ﾎﾟﾝﾌﾟ ON安定  Command操作 真空ﾎﾟﾝﾌﾟ ON安定時間
+MPP
+LD @T72                  ; ⑤循環 真空ﾎﾟﾝﾌﾟ ON安定
+AND R507                 ; 真空ﾎﾟﾝﾌﾟ ON
+OR MR5601                ; ⑤循環 真空ﾎﾟﾝﾌﾟON 完了
+ANL
+OUT MR5601               ; ⑤循環 真空ﾎﾟﾝﾌﾟON 完了
+LD MR5515                ; ⑤循環 動作可
+LD DM600.0               ; 循環 循環選択
+OR MR5601                ; ⑤循環 真空ﾎﾟﾝﾌﾟON 完了
+OR DM600.2               ; 循環 循環(加圧)選択
+ANL
+OUT MR5602               ; ⑤循環 流路開 移行
+LDB MR5510               ; ⑤循環 停止
+ANB MR5511               ; ⑤循環 一時停止
+AND MR5602               ; ⑤循環 流路開 移行
+AND DM600.2              ; 循環 循環(加圧)選択
+MPS
+OUT MR5604               ; ⑤循環 E:循環 給水加圧 開
+MPP
+LD R2005                 ; E:循環 給水ﾀﾝｸ加圧 開
+OR MR5605                ; ⑤循環 E:循環 給水加圧 開 完了
+ANL
+OUT MR5605               ; ⑤循環 E:循環 給水加圧 開 完了
+LD MR5602                ; ⑤循環 流路開 移行
+LD DM600.0               ; 循環 循環選択
+OR DM600.1               ; 循環 循環(真空)選択
+ANL
+MPS
+OUT MR5606               ; ⑤循環 F:給水ﾀﾝｸ 大気 開
+MPP
+LD R2004                 ; F:給水ﾀﾝｸ 大気開放 開
+OR MR5607                ; ⑤循環 F:給水ﾀﾝｸ 大気 開 完了
+ANL
+OUT MR5607               ; ⑤循環 F:給水ﾀﾝｸ 大気 開 完了
+LDB MR5510               ; ⑤循環 停止
+ANB MR5511               ; ⑤循環 一時停止
+AND MR5602               ; ⑤循環 流路開 移行
+MPS
+OUT MR5608               ; ⑤循環 G:給水ﾀﾝｸ 出口 開
+MPP
+LD R2007                 ; G:給水ﾀﾝｸ 出口 開
+OR MR5609                ; ⑤循環 G:給水ﾀﾝｸ 出口 開 完了
+ANL
+OUT MR5609               ; ⑤循環 G:給水ﾀﾝｸ 出口 開 完了
+LDB MR5510               ; ⑤循環 停止
+ANB MR5511               ; ⑤循環 一時停止
+AND MR5602               ; ⑤循環 流路開 移行
+MPS
+OUT MR5610               ; ⑤循環 K:製品ﾎﾟﾝﾌﾟ入口 開
+MPP
+LD R2008                 ; K:製品ﾎﾟﾝﾌﾟ入口 開
+OR MR5611                ; ⑤循環 K:製品ﾎﾟﾝﾌﾟ入口 開 完了
+ANL
+OUT MR5611               ; ⑤循環 K:製品ﾎﾟﾝﾌﾟ入口 開 完了
+LDB MR5510               ; ⑤循環 停止
+ANB MR5511               ; ⑤循環 一時停止
+AND MR5602               ; ⑤循環 流路開 移行
+MPS
+OUT MR5612               ; ⑤循環 L:製品ﾎﾟﾝﾌﾟ 出口 開
+MPP
+LD R2011                 ; L:製品ﾎﾟﾝﾌﾟ 出口 開
+OR MR5613                ; ⑤循環 L:製品ﾎﾟﾝﾌﾟ 出口 開 完了
+ANL
+OUT MR5613               ; ⑤循環 L:製品ﾎﾟﾝﾌﾟ 出口 開 完了
+LD MR5602                ; ⑤循環 流路開 移行
+MPS
+OUT MR5614               ; ⑤循環 M:排液ﾀﾝｸ 入口 開
+MPP
+LD R2010                 ; M:排液ﾀﾝｸ 入口 開
+OR MR5615                ; ⑤循環 M:排液ﾀﾝｸ 入口 開 完了
+ANL
+OUT MR5615               ; ⑤循環 M:排液ﾀﾝｸ 入口 開 完了
+LDB MR5510               ; ⑤循環 停止
+ANB MR5511               ; ⑤循環 一時停止
+AND MR5602               ; ⑤循環 流路開 移行
+AND DM600.1              ; 循環 循環(真空)選択
+MPS
+OUT MR5700               ; ⑤循環 N:排液ﾀﾝｸ 真空 開
+MPP
+LD R2013                 ; N:排液ﾀﾝｸ 真空 開
+OR MR5701                ; ⑤循環 N:排液ﾀﾝｸ 真空 開 完了
+ANL
+OUT MR5701               ; ⑤循環 N:排液ﾀﾝｸ 真空 開 完了
+LD MR5602                ; ⑤循環 流路開 移行
+LD DM600.0               ; 循環 循環選択
+OR DM600.2               ; 循環 循環(加圧)選択
+ANL
+MPS
+OUT MR5702               ; ⑤循環 Q:排液ﾀﾝｸ 大気 開
+MPP
+LD R2015                 ; Q:排液ﾀﾝｸ 大気開放 開
+OR MR5703                ; ⑤循環 Q:排液ﾀﾝｸ 大気 開 完了
+ANL
+OUT MR5703               ; ⑤循環 Q:排液ﾀﾝｸ 大気 開 完了
+LD MR5510                ; ⑤循環 停止
+MPS
+ANB MR5709               ; ⑤循環 停止 大気開放待ち 完了
+OUT MR5708               ; ⑤循環 停止 大気開放待ち
+TMR @73 #0               ; ⑤循環 停止 大気開放待ち時間
+MPP
+LD @T73                  ; ⑤循環 停止 大気開放待ち時間
+OR MR5709                ; ⑤循環 停止 大気開放待ち 完了
+ANL
+OUT MR5709               ; ⑤循環 停止 大気開放待ち 完了
+LD MR5709                ; ⑤循環 停止 大気開放待ち 完了
+MPS
+ANB MR5711               ; ⑤循環 F:給水ﾀﾝｸ 大気 開 終了
+MPS
+OUT MR5710               ; ⑤循環 F:給水ﾀﾝｸ 大気 開
+MPP
+LD R1008                 ; a:給水ﾀﾝｸ圧力検出(大気圧)
+ANB R1009                ; a:給水ﾀﾝｸ圧力検出(加圧)
+ANL
+TMR @74 @DM2             ; ⑤循環 (F) 開 安定  給水・排液ﾀﾝｸ 大気開放 安定時間
+MPP
+LD @T74                  ; ⑤循環 (F) 開 安定
+OR B09                   ; 給水ﾀﾝｸ 大気圧NG
+OR MR5711                ; ⑤循環 F:給水ﾀﾝｸ 大気 開 終了
+ANL
+OUT MR5711               ; ⑤循環 F:給水ﾀﾝｸ 大気 開 終了
+LD MR5709                ; ⑤循環 停止 大気開放待ち 完了
+MPS
+ANB MR5713               ; ⑤循環 Q:排液ﾀﾝｸ 大気 開 終了
+MPS
+OUT MR5712               ; ⑤循環 Q:排液ﾀﾝｸ 大気 開
+MPP
+LD R1010                 ; b:排液ﾀﾝｸ正圧力検出(大気圧)
+ANB R1011                ; b:排液ﾀﾝｸ正圧力検出(加圧)
+AND R1012                ; c:排液ﾀﾝｸ負圧力検出(未到達)
+ANB R1013                ; c:排液ﾀﾝｸ負圧力検出(到達)
+ANL
+TMR @75 @DM2             ; ⑤循環 (Q) 開 安定  給水・排液ﾀﾝｸ 大気開放 安定時間
+MPP
+LD @T75                  ; ⑤循環 (Q) 開 安定
+OR B0C                   ; 排液ﾀﾝｸ 大気圧NG
+OR MR5713                ; ⑤循環 Q:排液ﾀﾝｸ 大気 開 終了
+ANL
+OUT MR5713               ; ⑤循環 Q:排液ﾀﾝｸ 大気 開 終了
+LD MR3107                ; 全ｴｱｵﾍﾟﾚｰﾄﾊﾞﾙﾌﾞ・ﾎﾟﾝﾌﾟ 停止
+AND MR5711               ; ⑤循環 F:給水ﾀﾝｸ 大気 開 終了
+AND MR5713               ; ⑤循環 Q:排液ﾀﾝｸ 大気 開 終了
+OUT MR5715               ; ⑤循環 終了
+;<h1/>--- ⑥給水
+LD= DM100 #6             ; 操作ｺﾏﾝﾄﾞ 格納
+OUT MR6000               ; ⑥給水 ｵﾝIL1
+LD R1000                 ; 給水ﾀﾝｸ液面検出 ﾘﾐｯﾄ検出
+ANB R1001                ; 給水ﾀﾝｸ液面検出 上限検出1
+ANB R1002                ; 給水ﾀﾝｸ液面検出 上限検出2
+AND R1004                ; 排液ﾀﾝｸ液面検出 ﾘﾐｯﾄ検出
+OUT MR6001               ; ⑥給水 ｵﾝIL2
+LDB MR3507               ; ①排液 ｵﾝ
+ANB MR4007               ; ②排⇒給 ｵﾝ
+ANB MR4507               ; ③真空 ｵﾝ
+ANB MR5007               ; ④注入 ｵﾝ
+ANB MR5507               ; ⑤循環 ｵﾝ
+OUT MR6002               ; ⑥給水 ｵﾝIL3
+LD MR3115                ; 操作ｺﾏﾝﾄﾞ 共通IL
+OUT MR6003               ; ⑥給水 ｵﾝIL4
+LD MR6000                ; ⑥給水 ｵﾝIL1
+AND MR6001               ; ⑥給水 ｵﾝIL2
+AND MR6002               ; ⑥給水 ｵﾝIL3
+AND MR6003               ; ⑥給水 ｵﾝIL4
+ANB MR6007               ; ⑥給水 ｵﾝ
+OUT MR6004               ; ⑥給水 ｵﾝIL
+LD MR6007                ; ⑥給水 ｵﾝ
+OUT MR6005               ; ⑥給水 ｵﾌIL
+LD MR6215                ; ⑥給水 終了
+ORB MR1000               ; 即時停止 異常なし
+AND MR6005               ; ⑥給水 ｵﾌIL
+OUT MR6006               ; ⑥給水 ｵﾌ
+LDP B0710                ; ｽﾀｰﾄ TSW
+AND MR6004               ; ⑥給水 ｵﾝIL
+OR MR6007                ; ⑥給水 ｵﾝ
+ANB MR6006               ; ⑥給水 ｵﾌ
+OUT MR6007               ; ⑥給水 ｵﾝ
+LD MR6007                ; ⑥給水 ｵﾝ
+MPS
+ANB MR6009               ; ⑥給水 設定転送 完了
+OUT MR6008               ; ⑥給水 設定転送
+CAL* #9999 #10 @DM60     ; ⑥給水 停止時間 下位
+MPP
+LD MR6008                ; ⑥給水 設定転送
+OR MR6009                ; ⑥給水 設定転送 完了
+ANL
+OUT MR6009               ; ⑥給水 設定転送 完了
+LD CR2003                ; 常時OFF
+AND MR6009               ; ⑥給水 設定転送 完了
+ANB MR6011               ; ⑥給水 一時停止
+LD CR2003                ; 常時OFF
+LDP MR6009               ; ⑥給水 設定転送 完了
+UDT @80 @DM60            ; ⑥給水 停止時間  ⑥給水 停止時間 下位
+LD MR6009                ; ⑥給水 設定転送 完了
+MPS
+LDP B0711                ; 停止 TSW
+OR R1001                 ; 給水ﾀﾝｸ液面検出 上限検出1
+OR @T11                  ; 給水ﾀﾝｸ液面検出 上限2 ON安定
+OR @T80                  ; ⑥給水 停止時間
+ORB MR1015               ; 異常なし
+OR MR6010                ; ⑥給水 停止
+ANL
+OUT MR6010               ; ⑥給水 停止
+MPP
+LDP B0712                ; 一時停止 TSW
+OR MR6011                ; ⑥給水 一時停止
+ANB MR6010               ; ⑥給水 停止
+ANPB B0710               ; ｽﾀｰﾄ TSW
+ANL
+OUT MR6011               ; ⑥給水 一時停止
+LD MR6009                ; ⑥給水 設定転送 完了
+ANB MR6010               ; ⑥給水 停止
+ANB MR6011               ; ⑥給水 一時停止
+OUT MR6015               ; ⑥給水 動作可
+LD MR6015                ; ⑥給水 動作可
+MPS
+OUT MR6100               ; ⑥給水 A:ﾌﾟﾛｾｽﾀﾝｸ 出口 開
+MPP
+LD R2001                 ; A:ﾌﾟﾛｾｽﾀﾝｸ 出口 開
+OR MR6101                ; ⑥給水 A:ﾌﾟﾛｾｽﾀﾝｸ 出口 開 完了
+ANL
+OUT MR6101               ; ⑥給水 A:ﾌﾟﾛｾｽﾀﾝｸ 出口 開 完了
+LD MR6015                ; ⑥給水 動作可
+MPS
+OUT MR6102               ; ⑥給水 C:給水ﾀﾝｸ 入口 開
+MPP
+LD R2003                 ; C:給水ﾀﾝｸ 入口 開
+OR MR6103                ; ⑥給水 C:給水ﾀﾝｸ 入口 開 完了
+ANL
+OUT MR6103               ; ⑥給水 C:給水ﾀﾝｸ 入口 開 完了
+LD MR6015                ; ⑥給水 動作可
+MPS
+OUT MR6104               ; ⑥給水 F:給水ﾀﾝｸ 大気 開
+MPP
+LD R2004                 ; F:給水ﾀﾝｸ 大気開放 開
+OR MR6105                ; ⑥給水 F:給水ﾀﾝｸ 大気 開 完了
+ANL
+OUT MR6105               ; ⑥給水 F:給水ﾀﾝｸ 大気 開 完了
+LD MR6015                ; ⑥給水 動作可
+MPS
+OUT MR6106               ; ⑥給水 ﾌﾟﾛｾｽﾎﾟﾝﾌﾟ ON
+MPP
+LD R2101                 ; ﾌﾟﾛｾｽﾎﾟﾝﾌﾟ 開
+OR MR6107                ; ⑥給水 ﾌﾟﾛｾｽﾎﾟﾝﾌﾟ ON 完了
+ANL
+OUT MR6107               ; ⑥給水 ﾌﾟﾛｾｽﾎﾟﾝﾌﾟ ON 完了
+LD MR6010                ; ⑥給水 停止
+MPS
+ANB MR6209               ; ⑤循環 停止 大気開放待ち 完了
+OUT MR6208               ; ⑥給水 停止 大気開放待ち
+TMR @81 #0               ; ⑤循環 停止 大気開放待ち時間
+MPP
+LD @T81                  ; ⑤循環 停止 大気開放待ち時間
+OR MR6209                ; ⑤循環 停止 大気開放待ち 完了
+ANL
+OUT MR6209               ; ⑤循環 停止 大気開放待ち 完了
+LD MR6209                ; ⑤循環 停止 大気開放待ち 完了
+MPS
+ANB MR6211               ; ⑥給水 F:給水ﾀﾝｸ 大気 開 終了
+MPS
+OUT MR6210               ; ⑥給水 F:給水ﾀﾝｸ 大気 開
+MPP
+LD R1008                 ; a:給水ﾀﾝｸ圧力検出(大気圧)
+ANB R1009                ; a:給水ﾀﾝｸ圧力検出(加圧)
+ANL
+TMR @82 @DM2             ; ⑥給水 (F) 開「安定  給水・排液ﾀﾝｸ 大気開放 安定時間
+MPP
+LD @T82                  ; ⑥給水 (F) 開「安定
+OR B09                   ; 給水ﾀﾝｸ 大気圧NG
+OR MR6211                ; ⑥給水 F:給水ﾀﾝｸ 大気 開 終了
+ANL
+OUT MR6211               ; ⑥給水 F:給水ﾀﾝｸ 大気 開 終了
+LD MR3107                ; 全ｴｱｵﾍﾟﾚｰﾄﾊﾞﾙﾌﾞ・ﾎﾟﾝﾌﾟ 停止
+AND MR6211               ; ⑥給水 F:給水ﾀﾝｸ 大気 開 終了
+OUT MR6215               ; ⑥給水 終了
+;<h1/>--- ⑦給⇒排
+LD= DM100 #7             ; 操作ｺﾏﾝﾄﾞ 格納
+OUT MR6500               ; ⑦給⇒排 ｵﾝIL1
+LD R1000                 ; 給水ﾀﾝｸ液面検出 ﾘﾐｯﾄ検出
+AND R1003                ; 給水ﾀﾝｸ液面検出 下限検出
+AND R1004                ; 排液ﾀﾝｸ液面検出 ﾘﾐｯﾄ検出
+ANB R1005                ; 排液ﾀﾝｸ液面検出 上限検出
+ANB R1009                ; a:給水ﾀﾝｸ圧力検出(加圧)
+OUT MR6501               ; ⑦給⇒排 ｵﾝIL2
+LDB MR3507               ; ①排液 ｵﾝ
+ANB MR4007               ; ②排⇒給 ｵﾝ
+ANB MR4507               ; ③真空 ｵﾝ
+ANB MR5007               ; ④注入 ｵﾝ
+ANB MR5507               ; ⑤循環 ｵﾝ
+ANB MR6007               ; ⑥給水 ｵﾝ
+OUT MR6502               ; ⑦給⇒排 ｵﾝIL3
+LD MR3115                ; 操作ｺﾏﾝﾄﾞ 共通IL
+OUT MR6503               ; ⑦給⇒排 ｵﾝIL4
+LD MR6500                ; ⑦給⇒排 ｵﾝIL1
+AND MR6501               ; ⑦給⇒排 ｵﾝIL2
+AND MR6502               ; ⑦給⇒排 ｵﾝIL3
+AND MR6503               ; ⑦給⇒排 ｵﾝIL4
+ANB MR6507               ; ⑦給⇒排 ｵﾝ
+OUT MR6504               ; ⑦給⇒排 ｵﾝIL
+LD MR6507                ; ⑦給⇒排 ｵﾝ
+OUT MR6505               ; ⑦給⇒排 ｵﾌIL
+LD MR6715                ; ⑦給⇒排 終了
+ORB MR1000               ; 即時停止 異常なし
+AND MR6505               ; ⑦給⇒排 ｵﾌIL
+OUT MR6506               ; ⑦給⇒排 ｵﾌ
+LDP B0710                ; ｽﾀｰﾄ TSW
+AND MR6504               ; ⑦給⇒排 ｵﾝIL
+OR MR6507                ; ⑦給⇒排 ｵﾝ
+ANB MR6506               ; ⑦給⇒排 ｵﾌ
+OUT MR6507               ; ⑦給⇒排 ｵﾝ
+LD MR6507                ; ⑦給⇒排 ｵﾝ
+MPS
+ANB MR6509               ; ⑦給⇒排 設定転送 完了
+OUT MR6508               ; ⑦給⇒排 設定転送
+CAL* #9999 #10 @DM70     ; ⑦給⇒排 停止時間 下位
+MPP
+LD MR6508                ; ⑦給⇒排 設定転送
+OR MR6509                ; ⑦給⇒排 設定転送 完了
+ANL
+OUT MR6509               ; ⑦給⇒排 設定転送 完了
+LD CR2003                ; 常時OFF
+AND MR6509               ; ⑦給⇒排 設定転送 完了
+ANB MR6511               ; ⑦給⇒排 一時停止
+LD CR2003                ; 常時OFF
+LDP MR6509               ; ⑦給⇒排 設定転送 完了
+UDT @90 @DM70            ; ⑦給⇒排 停止時間  ⑦給⇒排 停止時間 下位
+LD MR6509                ; ⑦給⇒排 設定転送 完了
+MPS
+LDP B0711                ; 停止 TSW
+OR @T22                  ; 給水ﾀﾝｸ液面検出 下限 OFF安定
+OR R1005                 ; 排液ﾀﾝｸ液面検出 上限検出
+OR @T90                  ; ⑦給⇒排 停止時間
+ORB MR1015               ; 異常なし
+OR MR6510                ; ⑦給⇒排 停止
+ANL
+OUT MR6510               ; ⑦給⇒排 停止
+MPP
+LDP B0712                ; 一時停止 TSW
+OR MR6511                ; ⑦給⇒排 一時停止
+ANB MR6510               ; ⑦給⇒排 停止
+ANPB B0710               ; ｽﾀｰﾄ TSW
+ANL
+OUT MR6511               ; ⑦給⇒排 一時停止
+LD MR6509                ; ⑦給⇒排 設定転送 完了
+MPS
+LD MR6510                ; ⑦給⇒排 停止
+OR MR6511                ; ⑦給⇒排 一時停止
+ANL
+TMR @91 #5               ; ⑦給⇒排 停止処理 流路閉待ち
+MPP
+ANB @T91                 ; ⑦給⇒排 停止処理 流路閉待ち
+OUT MR6515               ; ⑦給⇒排 動作可
+LDB MR6510               ; ⑦給⇒排 停止
+ANB MR6511               ; ⑦給⇒排 一時停止
+AND MR6515               ; ⑦給⇒排 動作可
+MPS
+OUT MR6600               ; ⑦給⇒排 D:給⇒排 給水加圧 開
+MPP
+LD R2002                 ; D:給⇒排 給水ﾀﾝｸ加圧 開
+OR MR6601                ; ⑦給⇒排 D:給⇒排 給水加圧 開 完
+ANL
+OUT MR6601               ; ⑦給⇒排 D:給⇒排 給水加圧 開 完
+LDB MR6510               ; ⑦給⇒排 停止
+ANB MR6511               ; ⑦給⇒排 一時停止
+AND MR6515               ; ⑦給⇒排 動作可
+MPS
+OUT MR6602               ; ⑦給⇒排 G:給水ﾀﾝｸ 出口 開
+MPP
+LD R2007                 ; G:給水ﾀﾝｸ 出口 開
+OR MR6603                ; ⑦給⇒排 G:給水ﾀﾝｸ 出口 開 完了
+ANL
+OUT MR6603               ; ⑦給⇒排 G:給水ﾀﾝｸ 出口 開 完了
+LDB MR6510               ; ⑦給⇒排 停止
+ANB MR6511               ; ⑦給⇒排 一時停止
+AND MR6515               ; ⑦給⇒排 動作可
+MPS
+OUT MR6604               ; ⑦給⇒排 K:製品ﾎﾟﾝﾌﾟ入口 開
+MPP
+LD R2008                 ; K:製品ﾎﾟﾝﾌﾟ入口 開
+OR MR6605                ; ⑦給⇒排 K:製品ﾎﾟﾝﾌﾟ入口 開 完了
+ANL
+OUT MR6605               ; ⑦給⇒排 K:製品ﾎﾟﾝﾌﾟ入口 開 完了
+LDB MR6510               ; ⑦給⇒排 停止
+ANB MR6511               ; ⑦給⇒排 一時停止
+AND MR6515               ; ⑦給⇒排 動作可
+MPS
+OUT MR6606               ; ⑦給⇒排 L:製品ﾎﾟﾝﾌﾟ 出口 開
+MPP
+LD R2011                 ; L:製品ﾎﾟﾝﾌﾟ 出口 開
+OR MR6607                ; ⑦給⇒排 L:製品ﾎﾟﾝﾌﾟ 出口 開 完
+ANL
+OUT MR6607               ; ⑦給⇒排 L:製品ﾎﾟﾝﾌﾟ 出口 開 完
+LD MR6515                ; ⑦給⇒排 動作可
+MPS
+OUT MR6608               ; ⑦給⇒排 M:排液ﾀﾝｸ 入口 開
+MPP
+LD R2010                 ; M:排液ﾀﾝｸ 入口 開
+OR MR6609                ; ⑦給⇒排 M:排液ﾀﾝｸ 入口 開 完了
+ANL
+OUT MR6609               ; ⑦給⇒排 M:排液ﾀﾝｸ 入口 開 完了
+LD MR6515                ; ⑦給⇒排 動作可
+MPS
+OUT MR6610               ; ⑦給⇒排 Q:排液ﾀﾝｸ 大気 開
+MPP
+LD R2015                 ; Q:排液ﾀﾝｸ 大気開放 開
+OR MR6611                ; ⑦給⇒排 Q:排液ﾀﾝｸ 大気 開 完了
+ANL
+OUT MR6611               ; ⑦給⇒排 Q:排液ﾀﾝｸ 大気 開 完了
+LD MR6510                ; ⑦給⇒排 停止
+MPS
+ANB MR6709               ; ⑦給⇒排 停止 大気開放待ち 完了
+OUT MR6708               ; ⑦給⇒排 停止 大気開放待ち
+TMR @92 #0               ; ⑦給⇒排 停止 大気開放待ち時間
+MPP
+LD @T92                  ; ⑦給⇒排 停止 大気開放待ち時間
+OR MR6709                ; ⑦給⇒排 停止 大気開放待ち 完了
+ANL
+OUT MR6709               ; ⑦給⇒排 停止 大気開放待ち 完了
+LD MR6709                ; ⑦給⇒排 停止 大気開放待ち 完了
+MPS
+ANB MR6711               ; ⑦給⇒排 F:給水ﾀﾝｸ 大気 開 終了
+MPS
+OUT MR6710               ; ⑦給⇒排 F:給水ﾀﾝｸ 大気 開
+MPP
+LD R1008                 ; a:給水ﾀﾝｸ圧力検出(大気圧)
+ANB R1009                ; a:給水ﾀﾝｸ圧力検出(加圧)
+ANL
+TMR @93 #150             ; ⑦給⇒排 (F) 開 安定
+MPP
+LD @T93                  ; ⑦給⇒排 (F) 開 安定
+OR B09                   ; 給水ﾀﾝｸ 大気圧NG
+OR MR6711                ; ⑦給⇒排 F:給水ﾀﾝｸ 大気 開 終了
+ANL
+OUT MR6711               ; ⑦給⇒排 F:給水ﾀﾝｸ 大気 開 終了
+LD MR6709                ; ⑦給⇒排 停止 大気開放待ち 完了
+MPS
+ANB MR6713               ; ⑦給⇒排 Q:排液ﾀﾝｸ 大気 開 終了
+MPS
+OUT MR6712               ; ⑦給⇒排 Q:排液ﾀﾝｸ 大気 開
+MPP
+LD R1010                 ; b:排液ﾀﾝｸ正圧力検出(大気圧)
+ANB R1011                ; b:排液ﾀﾝｸ正圧力検出(加圧)
+AND R1012                ; c:排液ﾀﾝｸ負圧力検出(未到達)
+ANB R1013                ; c:排液ﾀﾝｸ負圧力検出(到達)
+ANL
+TMR @94 #150             ; ⑦給⇒排 Q:排液ﾀﾝｸ 大気 開 安定
+MPP
+LD @T94                  ; ⑦給⇒排 Q:排液ﾀﾝｸ 大気 開 安定
+OR B0C                   ; 排液ﾀﾝｸ 大気圧NG
+OR MR6713                ; ⑦給⇒排 Q:排液ﾀﾝｸ 大気 開 終了
+ANL
+OUT MR6713               ; ⑦給⇒排 Q:排液ﾀﾝｸ 大気 開 終了
+LD MR3107                ; 全ｴｱｵﾍﾟﾚｰﾄﾊﾞﾙﾌﾞ・ﾎﾟﾝﾌﾟ 停止
+AND MR6711               ; ⑦給⇒排 F:給水ﾀﾝｸ 大気 開 終了
+AND MR6713               ; ⑦給⇒排 Q:排液ﾀﾝｸ 大気 開 終了
+OUT MR6715               ; ⑦給⇒排 終了
+;<h1/>--- ⑧大気開放
+LD= DM100 #8             ; 操作ｺﾏﾝﾄﾞ 格納
+OUT MR7000               ; ⑧大気開放 ｵﾝIL1
+LD R1000                 ; 給水ﾀﾝｸ液面検出 ﾘﾐｯﾄ検出
+AND R1004                ; 排液ﾀﾝｸ液面検出 ﾘﾐｯﾄ検出
+OUT MR7001               ; ⑧大気開放 ｵﾝIL2
+LDB MR3507               ; ①排液 ｵﾝ
+ANB MR4007               ; ②排⇒給 ｵﾝ
+ANB MR4507               ; ③真空 ｵﾝ
+ANB MR5007               ; ④注入 ｵﾝ
+ANB MR5507               ; ⑤循環 ｵﾝ
+ANB MR6007               ; ⑥給水 ｵﾝ
+ANB MR6507               ; ⑦給⇒排 ｵﾝ
+OUT MR7002               ; ⑧大気開放 ｵﾝIL3
+LD MR1000                ; 即時停止 異常なし
+AND MR3015               ; ﾀﾝｸ・ﾜｰｸ 加圧開放 完了
+AND MR3107               ; 全ｴｱｵﾍﾟﾚｰﾄﾊﾞﾙﾌﾞ・ﾎﾟﾝﾌﾟ 停止
+AND MR7915               ; 操作ｺﾏﾝﾄﾞ 停止中
+AND MR10915              ; Manual 停止中
+OUT MR7003               ; ⑧大気開放 ｵﾝIL4
+LD MR7000                ; ⑧大気開放 ｵﾝIL1
+AND MR7001               ; ⑧大気開放 ｵﾝIL2
+AND MR7002               ; ⑧大気開放 ｵﾝIL3
+AND MR7003               ; ⑧大気開放 ｵﾝIL4
+ANB MR7007               ; ⑧大気開放 ｵﾝ
+OUT MR7004               ; ⑧大気開放 ｵﾝIL
+LD MR7007                ; ⑧大気開放 ｵﾝ
+OUT MR7005               ; ⑧大気開放 ｵﾌIL
+LD MR7215                ; ⑧大気開放 終了
+ORB MR1000               ; 即時停止 異常なし
+AND MR7005               ; ⑧大気開放 ｵﾌIL
+OUT MR7006               ; ⑧大気開放 ｵﾌ
+LDP B0710                ; ｽﾀｰﾄ TSW
+AND MR7004               ; ⑧大気開放 ｵﾝIL
+OR MR7007                ; ⑧大気開放 ｵﾝ
+ANB MR7006               ; ⑧大気開放 ｵﾌ
+OUT MR7007               ; ⑧大気開放 ｵﾝ
+LD MR7007                ; ⑧大気開放 ｵﾝ
+MPS
+ANB MR7009               ; ⑧大気開放 設定転送 完了
+OUT MR7008               ; ⑧大気開放 設定転送
+CAL* #9999 #10 @DM80     ; ⑧大気開放 停止時間 下位
+MPP
+LD MR7008                ; ⑧大気開放 設定転送
+OR MR7009                ; ⑧大気開放 設定転送 完了
+ANL
+OUT MR7009               ; ⑧大気開放 設定転送 完了
+LD CR2003                ; 常時OFF
+AND MR7009               ; ⑧大気開放 設定転送 完了
+ANB MR7011               ; ⑧大気開放 一時停止
+LD CR2003                ; 常時OFF
+LDP MR7009               ; ⑧大気開放 設定転送 完了
+UDT @100 @DM80           ; ⑧大気開放 停止時間  ⑧大気開放 停止時間 下位
+LD MR7009                ; ⑧大気開放 設定転送 完了
+MPS
+LDP B0711                ; 停止 TSW
+OR @T90                  ; ⑦給⇒排 停止時間
+ORB MR1000               ; 即時停止 異常なし
+OR MR7010                ; ⑧大気開放 停止
+ANL
+OUT MR7010               ; ⑧大気開放 停止
+MPP
+LDP B0712                ; 一時停止 TSW
+OR MR7011                ; ⑧大気開放 一時停止
+ANB MR7010               ; ⑧大気開放 停止
+ANPB B0710               ; ｽﾀｰﾄ TSW
+ANL
+OUT MR7011               ; ⑧大気開放 一時停止
+LD MR7009                ; ⑧大気開放 設定転送 完了
+ANB MR7010               ; ⑧大気開放 停止
+ANB MR7011               ; ⑧大気開放 一時停止
+OUT MR7015               ; ⑧大気開放 動作可
+LD MR7015                ; ⑧大気開放 動作可
+MPS
+ANB MR7101               ; ⑧大気開放 F:給水ﾀﾝｸ 大気 開 終
+OUT MR7100               ; ⑧大気開放 F:給水ﾀﾝｸ 大気 開
+MPS
+LD R1008                 ; a:給水ﾀﾝｸ圧力検出(大気圧)
+ANB R1009                ; a:給水ﾀﾝｸ圧力検出(加圧)
+ANL
+TMR @101 @DM2            ; ⑧大気開放 (F) 開 安定1  給水・排液ﾀﾝｸ 大気開放 安定時間
+MPP
+AND B09                  ; 給水ﾀﾝｸ 大気圧NG
+TMR @102 #200            ; ⑧大気開放 (F) 開 安定2
+MPP
+LD @T101                 ; ⑧大気開放 (F) 開 安定1
+OR @T102                 ; ⑧大気開放 (F) 開 安定2
+OR MR7101                ; ⑧大気開放 F:給水ﾀﾝｸ 大気 開 終
+ANL
+OUT MR7101               ; ⑧大気開放 F:給水ﾀﾝｸ 大気 開 終
+LD MR7015                ; ⑧大気開放 動作可
+MPS
+ANB MR7103               ; ⑧大気開放 Q:排液ﾀﾝｸ 大気 開 終
+OUT MR7102               ; ⑧大気開放 Q:排液ﾀﾝｸ 大気 開
+MPS
+LD R1010                 ; b:排液ﾀﾝｸ正圧力検出(大気圧)
+ANB R1011                ; b:排液ﾀﾝｸ正圧力検出(加圧)
+AND R1012                ; c:排液ﾀﾝｸ負圧力検出(未到達)
+ANB R1013                ; c:排液ﾀﾝｸ負圧力検出(到達)
+ANL
+TMR @103 @DM2            ; ⑧大気開放 (Q) 開 安定1  給水・排液ﾀﾝｸ 大気開放 安定時間
+MPP
+AND B0C                  ; 排液ﾀﾝｸ 大気圧NG
+TMR @104 #200            ; ⑧大気開放 (Q) 開 安定2
+MPP
+LD @T103                 ; ⑧大気開放 (Q) 開 安定1
+OR @T104                 ; ⑧大気開放 (Q) 開 安定2
+OR MR7103                ; ⑧大気開放 Q:排液ﾀﾝｸ 大気 開 終
+ANL
+OUT MR7103               ; ⑧大気開放 Q:排液ﾀﾝｸ 大気 開 終
+LD MR3107                ; 全ｴｱｵﾍﾟﾚｰﾄﾊﾞﾙﾌﾞ・ﾎﾟﾝﾌﾟ 停止
+LD MR7010                ; ⑧大気開放 停止
+LD MR7101                ; ⑧大気開放 F:給水ﾀﾝｸ 大気 開 終
+AND MR7103               ; ⑧大気開放 Q:排液ﾀﾝｸ 大気 開 終
+ORL
+ANL
+OUT MR7215               ; ⑧大気開放 終了
+;<h1/>--- ⑨個別全OFF ※Manualﾌﾗｸﾞが残っている時に使用を想定⇒ManualのMCを切るだけ
+LD= DM100 #9             ; 操作ｺﾏﾝﾄﾞ 格納
+OUT MR7500               ; ⑨個別全OFF ｵﾝIL1
+LDB MR3107               ; 全ｴｱｵﾍﾟﾚｰﾄﾊﾞﾙﾌﾞ・ﾎﾟﾝﾌﾟ 停止
+OUT MR7501               ; ⑨個別全OFF ｵﾝIL2
+LDB MR3507               ; ①排液 ｵﾝ
+ANB MR4007               ; ②排⇒給 ｵﾝ
+ANB MR4507               ; ③真空 ｵﾝ
+ANB MR5007               ; ④注入 ｵﾝ
+ANB MR5507               ; ⑤循環 ｵﾝ
+ANB MR6007               ; ⑥給水 ｵﾝ
+ANB MR6507               ; ⑦給⇒排 ｵﾝ
+ANB MR7007               ; ⑧大気開放 ｵﾝ
+OUT MR7502               ; ⑨個別全OFF ｵﾝIL3
+LD MR3015                ; ﾀﾝｸ・ﾜｰｸ 加圧開放 完了
+AND MR7915               ; 操作ｺﾏﾝﾄﾞ 停止中
+OUT MR7503               ; ⑨個別全OFF ｵﾝIL4
+LD MR7500                ; ⑨個別全OFF ｵﾝIL1
+AND MR7501               ; ⑨個別全OFF ｵﾝIL2
+AND MR7502               ; ⑨個別全OFF ｵﾝIL3
+AND MR7503               ; ⑨個別全OFF ｵﾝIL4
+ANB MR7507               ; ⑨個別全OFF ｵﾝ
+OUT MR7504               ; ⑨個別全OFF ｵﾝIL
+LD MR7507                ; ⑨個別全OFF ｵﾝ
+OUT MR7505               ; ⑨個別全OFF ｵﾌIL
+LD MR3107                ; 全ｴｱｵﾍﾟﾚｰﾄﾊﾞﾙﾌﾞ・ﾎﾟﾝﾌﾟ 停止
+AND MR7505               ; ⑨個別全OFF ｵﾌIL
+OUT MR7506               ; ⑨個別全OFF ｵﾌ
+LDP B0710                ; ｽﾀｰﾄ TSW
+AND MR7504               ; ⑨個別全OFF ｵﾝIL
+OR MR7507                ; ⑨個別全OFF ｵﾝ
+ANB MR7506               ; ⑨個別全OFF ｵﾌ
+OUT MR7507               ; ⑨個別全OFF ｵﾝ
+;<h1/>操作ｺﾏﾝﾄﾞ 停止中ﾌﾗｸﾞ
+LDB MR3510               ; ①排液 停止
+ANB MR4010               ; ②排⇒給 停止
+ANB MR4510               ; ③真空 停止
+ANB MR5010               ; ④注入 停止
+ANB MR5510               ; ⑤循環 停止
+ANB MR6010               ; ⑥給水 停止
+ANB MR6510               ; ⑦給⇒排 停止
+ANB MR7010               ; ⑧大気開放 停止
+OUT MR7900               ; ｺﾏﾝﾄﾞ操作 停止なし
+LDB MR3511               ; ①排液 一時停止
+ANB MR4011               ; ②排⇒給 一時停止
+ANB MR4511               ; ③真空 一時停止
+ANB MR5011               ; ④注入 一時停止
+ANB MR5511               ; ⑤循環 一時停止
+ANB MR6011               ; ⑥給水 一時停止
+ANB MR6511               ; ⑦給⇒排 一時停止
+ANB MR7011               ; ⑧大気開放 一時停止
+OUT MR7901               ; ｺﾏﾝﾄﾞ操作 一時停止なし
+LDB MR3507               ; ①排液 ｵﾝ
+ANB MR4007               ; ②排⇒給 ｵﾝ
+ANB MR4507               ; ③真空 ｵﾝ
+ANB MR5007               ; ④注入 ｵﾝ
+ANB MR5507               ; ⑤循環 ｵﾝ
+ANB MR6007               ; ⑥給水 ｵﾝ
+ANB MR6507               ; ⑦給⇒排 ｵﾝ
+ANB MR7007               ; ⑧大気開放 ｵﾝ
+ANB MR7507               ; ⑨個別全OFF ｵﾝ
+OUT MR7915               ; 操作ｺﾏﾝﾄﾞ 停止中
+;<h1/>ｺﾏﾝﾄﾞ操作 ﾒｯｾｰｼﾞ
+LD= DM0 #10              ; VT 表示中ﾍﾟｰｼﾞNo.
+AND T0                   ; PLC RUN 安定
+AND MR1015               ; 異常なし
+AND MR1315               ; 警報無し
+MC
+LD= DM100 #1             ; 操作ｺﾏﾝﾄﾞ 格納
+MPS
+AND DM200.0              ; 排液 真空選択
+OUT B040                 ; B40:排液(真空ﾓｰﾄﾞ)選択中
+MPP
+AND DM200.1              ; 排液 加圧選択
+OUT B041                 ; B41:排液(加圧ﾓｰﾄﾞ)選択中
+LD= DM100 #4             ; 操作ｺﾏﾝﾄﾞ 格納
+MPS
+AND DM500.0              ; 注入 ﾎﾟﾝﾌﾟON選択
+OUT B042                 ; B42:注入(真空ﾎﾟﾝﾌﾟ有)選択中
+MPP
+AND DM500.1              ; 注入 ﾎﾟﾝﾌﾟOFF選択
+OUT B043                 ; B43:注入(真空ﾎﾟﾝﾌﾟ無)選択中
+LD= DM100 #5             ; 操作ｺﾏﾝﾄﾞ 格納
+MPS
+AND DM600.0              ; 循環 循環選択
+OUT B044                 ; B44:循環(単独ﾓｰﾄﾞ)選択中
+MRD
+AND DM600.1              ; 循環 循環(真空)選択
+OUT B045                 ; B45:循環(真空ﾓｰﾄﾞ)選択中
+MPP
+AND DM600.2              ; 循環 循環(加圧)選択
+OUT B046                 ; B46:循環(加圧ﾓｰﾄﾞ)選択中
+MCR
+END
+ENDH

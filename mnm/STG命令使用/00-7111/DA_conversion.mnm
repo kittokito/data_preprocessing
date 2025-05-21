@@ -1,0 +1,149 @@
+DEVICE:53
+;MODULE:DA_conversion
+;MODULE_TYPE:0
+;高圧回路用
+;電空ﾚｷﾞｭﾚｰﾀｰ(SMC)
+;For high voltage circuits
+;Electro-pneumatic regulator (SMC)
+;■電空ﾚｷﾞｭﾚｰﾀｰ/Electro-pneumatic regulator
+LD R2002                 ; source air detection
+TMR @0 #5
+CON
+AND @T0
+OUT R506                 ; E regulator(high pressure)ON
+;電空ﾚｷﾞｭﾚｰﾀｰ設定値
+;Min：0000h = 0%
+;Max：0FFFh = 100%
+;Electro-regulator setting value
+;Min: 0000h = 0%
+;Max: 0FFFh = 100%
+;例）ITV2030（0.5MPa仕様）で、設定圧力を0.3MPaにする場合：
+;(0.3MPa/0.5MPa)×4095＝2457（DEC）＝999(HEX)
+;データ"999"をマスタPLCより本電空レギュレータに送信することで、0.3MPa
+;の圧力が設定されます。
+;Example) To set the set pressure to 0.3 MPa with ITV 2030 (0.5 MPa specification):
+;(0.3 MPa / 0.5 MPa) × 4095 = 2457 (DEC) = 999 (HEX)
+;By transmitting the data "999" from the master PLC to this electro-pneumatic regulator, 0.3 MPa
+;Pressure is set.
+LD= EM30000 #801         ; (TP)crnt during display scrn No.
+LDA DM6                  ; Manual pressure(SMC)
+CON
+STA @DM0
+LD MR103                 ; Ink flow path leakage inspection
+LD>= EM509 #1            ; MC leak No(1-5)
+AND<= EM509 #2           ; MC leak No(1-5)
+AND MR106                ; mainte_equip. leak chk during
+ORL
+LDA DM710                ; Ink leak chk pressure
+CON
+ADD DM729                ; Ink leak chk pressure correction
+CON
+STA @DM0
+LD MR104                 ; Pneumatic leak check
+LD>= EM509 #3            ; MC leak No(1-5)
+AND<= EM509 #4           ; MC leak No(1-5)
+AND MR106                ; mainte_equip. leak chk during
+ORL
+LDA DM740                ; P leak chk pressure
+CON
+ADD DM759                ; P leak chk pressure correction
+CON
+STA @DM0
+LD MR113                 ; dur electro-pneumatic regulator 
+ANB MR400                ; Atmospheric release circuit init
+MPS
+AND= DM21 #1             ; Electrode correction circuit No.
+MPS
+LDA DM710                ; Ink leak chk pressure
+CON
+ADD DM22                 ; TP Electrode correction val
+CON
+STA @DM0
+MPP
+LDA DM710                ; Ink leak chk pressure
+CON
+STA.S DM23               ; Ev(SMC) value (at correction set
+MPP
+AND= DM21 #2             ; Electrode correction circuit No.
+MPS
+LDA DM740                ; P leak chk pressure
+CON
+ADD DM22                 ; TP Electrode correction val
+CON
+STA @DM0
+MPP
+LDA DM740                ; P leak chk pressure
+CON
+STA.S DM23               ; Ev(SMC) value (at correction set
+LDB MR306                ; auto-run during
+ANB MR307                ; mainte in action
+AND<> EM30000 #801       ; (TP)crnt during display scrn No.
+LD MR113                 ; dur electro-pneumatic regulator 
+AND>= DM21 #3            ; Electrode correction circuit No.
+ORB MR113                ; dur electro-pneumatic regulator 
+ANL
+DW #0 @DM0
+CON
+DW #0 DM10800            ; E regulator(SMC) setting value
+;近似  y=8.058X - 12.793　の使用をやめて、SMCの計算値を使用する様にした
+;
+LD MR305                 ; origin return complete
+ANB MR900                ; severe err：pwr rstr necessary
+MPS
+ANB MR402                ; Open to the atmosphere
+MPS
+LDA @DM0
+CON
+EXT
+CON
+MUL.D #40950000
+CON
+DIV.D #5000
+CON
+DIV.D #10000
+CON
+STA.D @DM1
+MRD
+AND CR2003               ; always off
+EXT
+CON
+MUL.D #8058
+CON
+SUB.D #12793
+CON
+DIV.D #1000
+CON
+STA.D @DM1
+MPP
+LDA @DM1
+CON
+STA DM10800              ; E regulator(SMC) setting value
+MPP
+AND MR402                ; Open to the atmosphere
+DW #0 @DM0
+CON
+DW #0 DM10800            ; E regulator(SMC) setting value
+;近似  y=8.058X - 12.793
+;式算出用
+LD CR2003                ; always off
+ANP R2000                ; start SW
+LDA DM10800              ; E regulator(SMC) setting value
+CON
+ADD #50
+CON
+STA DM10800              ; E regulator(SMC) setting value
+;設定値ｸﾘｱ/Clear set value
+LD CR2002                ; always on
+LD< @DM0 #5
+OR> @DM0 #999
+ORB MR8001               ;  flow valve 2(ON=open)
+ORB MR305                ; origin return complete
+ANL
+DW #0 DM10800            ; E regulator(SMC) setting value
+;電空ﾚｷﾞｭﾚｰﾀｰ現在値表示/Display of electropneumatic regulator current value
+LD CR2002                ; always on
+LDA @DM0
+CON
+STA DM46
+END
+ENDH

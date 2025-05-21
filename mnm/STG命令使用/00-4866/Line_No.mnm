@@ -1,0 +1,406 @@
+DEVICE:53
+;MODULE:Line_No
+;MODULE_TYPE:0
+;SCRIPT_TYPE:
+;初期設定
+;zres(DM3900,DM3909)
+;zres(DM3917,DM3950)
+;Z1=0
+;For Z2 =1 to 7
+;  If LR000:Z2 = 0 then
+;    DM3901:Z1 = Z2
+;    Z1=Z1+1 
+;  end if
+;next
+LDP MR11005              ; 給材P&P   Start
+NCJ #1000
+;zres(DM3900,DM3909)
+;
+LD CR2002                ; 常時ON
+ZRES DM3900 DM3909       ; 投入LNo.  ﾃﾞｰﾀｼﾌﾄ量
+;zres(DM3917,DM3950)
+;
+LD CR2002                ; 常時ON
+ZRES DM3917 DM3950       ; 予約無除材要求No.
+;Z1=0
+;
+LD CR2002                ; 常時ON
+MOV.L +0 Z1
+;For Z2 =1 to 7
+;
+LD CR2002                ; 常時ON
+MOV.L +1 Z2
+LABEL #2000
+LD>.L Z2 +7
+CJ #2001
+;  If LR000:Z2 = 0 then
+;
+LDB LR000:Z2
+NCJ #2002
+;    DM3901:Z1 = Z2
+;
+LD CR2002                ; 常時ON
+MOV Z2 DM3901:Z1         ; 優先1
+;    Z1=Z1+1 
+;
+LD CR2002                ; 常時ON
+LDA.L Z1
+CON
+ADD.L +1
+CON
+STA.L Z1
+;  end if
+;
+LABEL #2002
+;next
+LD CR2002                ; 常時ON
+INC.L Z2
+LDB CR2009
+CJ #2000
+LABEL #2001
+LABEL #1000
+;
+;要求出ているとこ取ってﾃﾞｰﾀｼﾌﾄ
+LD CR2002                ; 常時ON
+PMOV R19001 #0 DM3910 #0 #7;L1給材要求  給材要求有
+PMOV R19101 #0 DM3918 #0 #7;除材要求L1  除材要求有
+;DM3911 = 0
+;Z1=0                         '
+;Do                           '優先順に要求ﾌﾗｸﾞ確認
+;  Z3=DM3901:Z1
+;  Z2=Z1                      '投入時参照段数
+;  Z1=Z1+1
+;  If Z1>7 Then               '優先無いけど要求あった時処理 
+;    DM3911 = DMX(DM3910)+1   '↑ 一番大きいﾌﾗｸﾞ優先
+;    Break                    '↑
+;  End if                     '↑
+;Until R19000:Z3 =1 
+;
+;If DM3911 = 0 Then           'Break無いからｼﾌﾄ
+;  DM3900 = Z3                '投入ﾗｲﾝNo.取得
+;  Z4=Z2+1                    'ﾃﾞｰﾀｼﾌﾄ開始段設定
+;  DM3909=7-Z2                'ﾃﾞｰﾀｼﾌﾄ数設定
+;  WSL(DM3901:Z4,DM3909,1)    'ﾃﾞｰﾀｼﾌﾄ
+;Else                         'Breakだからｼﾌﾄ無し
+;  DM3900 = DM3911
+;  Z3= DM3911
+;End if
+;
+;Z1=0
+;If DM3911 = 0 Then            'Breakだったら予約しない  
+;  Do                         '投入予約最終欄にﾗｲﾝNo.を書込
+;    Z1=Z1+1 
+;  Until DM3901:Z1=0
+;  DM3901:Z1=Z3
+;End if
+;
+;Z1=0
+;Do                           '除材予約最終欄にﾗｲﾝNo.を書込
+;  Z1=Z1+1
+;Until (DM3920:Z1=0) OR (Z1 = 15)
+;DM3920:Z1=Z3
+LDP R19800               ; 投入開始
+AND<> DM3910 #0          ; 給材要求有
+NCJ #1001
+;DM3911 = 0
+;
+LD CR2002                ; 常時ON
+MOV #0 DM3911            ; 予約無給材要求No.
+;Z1=0                         '
+;
+LD CR2002                ; 常時ON
+MOV.L +0 Z1
+;Do                           '優先順に要求ﾌﾗｸﾞ確認
+;
+LABEL #2003
+;  Z3=DM3901:Z1
+;
+LD CR2002                ; 常時ON
+LDA DM3901:Z1            ; 優先1
+CON
+EXT
+CON
+STA.L Z3
+;  Z2=Z1                      '投入時参照段数
+;
+LD CR2002                ; 常時ON
+MOV.L Z1 Z2
+;  Z1=Z1+1
+;
+LD CR2002                ; 常時ON
+LDA.L Z1
+CON
+ADD.L +1
+CON
+STA.L Z1
+;  If Z1>7 Then               '優先無いけど要求あった時処理 
+;
+LD>.L Z1 +7
+NCJ #2004
+;    DM3911 = DMX(DM3910)+1   '↑ 一番大きいﾌﾗｸﾞ優先
+;
+LD CR2002                ; 常時ON
+LDA DM3910               ; 給材要求有
+CON
+DMX
+CON
+EXT
+CON
+ADD.L +1
+CON
+STA DM3911               ; 予約無給材要求No.
+;    Break                    '↑
+;
+LD CR2002                ; 常時ON
+CJ #2005
+;  End if                     '↑
+;
+LABEL #2004
+;Until R19000:Z3 =1 
+;
+LD R19000:Z3
+CJ #2006
+LD CR2002                ; 常時ON
+CJ #2003
+LABEL #2006
+LABEL #2005
+;If DM3911 = 0 Then           'Break無いからｼﾌﾄ
+;
+LD= DM3911 #0            ; 予約無給材要求No.
+NCJ #2007
+;  DM3900 = Z3                '投入ﾗｲﾝNo.取得
+;
+LD CR2002                ; 常時ON
+MOV Z3 DM3900            ; 投入LNo.
+;  Z4=Z2+1                    'ﾃﾞｰﾀｼﾌﾄ開始段設定
+;
+LD CR2002                ; 常時ON
+LDA.L Z2
+CON
+ADD.L +1
+CON
+STA.L Z4
+;  DM3909=7-Z2                'ﾃﾞｰﾀｼﾌﾄ数設定
+;
+LD CR2002                ; 常時ON
+LDA.L +7
+CON
+SUB.L Z2
+CON
+STA DM3909               ; ﾃﾞｰﾀｼﾌﾄ量
+;  WSL(DM3901:Z4,DM3909,1)    'ﾃﾞｰﾀｼﾌﾄ
+;
+LD CR2002                ; 常時ON
+WSL DM3901:Z4 DM3909 #1  ; 優先1  ﾃﾞｰﾀｼﾌﾄ量
+;Else                         'Breakだからｼﾌﾄ無し
+;
+LD CR2002                ; 常時ON
+CJ #2008
+LABEL #2007
+;  DM3900 = DM3911
+;
+LD CR2002                ; 常時ON
+MOV DM3911 DM3900        ; 予約無給材要求No.  投入LNo.
+;  Z3= DM3911
+;
+LD CR2002                ; 常時ON
+LDA DM3911               ; 予約無給材要求No.
+CON
+EXT
+CON
+STA.L Z3
+;End if
+;
+LABEL #2008
+;Z1=0
+;
+LD CR2002                ; 常時ON
+MOV.L +0 Z1
+;If DM3911 = 0 Then            'Breakだったら予約しない  
+;
+LD= DM3911 #0            ; 予約無給材要求No.
+NCJ #2009
+;  Do                         '投入予約最終欄にﾗｲﾝNo.を書込
+;
+LABEL #2010
+;    Z1=Z1+1 
+;
+LD CR2002                ; 常時ON
+LDA.L Z1
+CON
+ADD.L +1
+CON
+STA.L Z1
+;  Until DM3901:Z1=0
+;
+LD= DM3901:Z1 #0         ; 優先1
+CJ #2011
+LD CR2002                ; 常時ON
+CJ #2010
+LABEL #2011
+;  DM3901:Z1=Z3
+;
+LD CR2002                ; 常時ON
+MOV Z3 DM3901:Z1         ; 優先1
+;End if
+;
+LABEL #2009
+;Z1=0
+;
+LD CR2002                ; 常時ON
+MOV.L +0 Z1
+;Do                           '除材予約最終欄にﾗｲﾝNo.を書込
+;
+LABEL #2012
+;  Z1=Z1+1
+;
+LD CR2002                ; 常時ON
+LDA.L Z1
+CON
+ADD.L +1
+CON
+STA.L Z1
+;Until (DM3920:Z1=0) OR (Z1 = 15)
+;
+LD= DM3920:Z1 #0         ; 除材LNo.
+OUT @VB00
+LD=.L Z1 +15
+OR @VB00
+CJ #2013
+LD CR2002                ; 常時ON
+CJ #2012
+LABEL #2013
+;DM3920:Z1=Z3
+LD CR2002                ; 常時ON
+MOV Z3 DM3920:Z1         ; 除材LNo.
+LABEL #1001
+;
+;Z1=0                           '
+;DM3917 = 0
+;Do                             '優先順に要求ﾌﾗｸﾞ確認
+;  Z3=DM3921:Z1
+;  Z2=Z1                        '除材時参照段数
+;  Z1=Z1+1
+;  If Z1 > 8 Then               '優先無いけど要求有った時処理
+;    DM3917 = DMX(DM3918)+1     '↑ 一番大きいﾌﾗｸﾞ優先
+;    Break                      '↑
+;  End if                       '↑
+;Until R19100:Z3 =1              
+;If DM3917 = 0  Then            'Breakないからｼﾌﾄ
+;  DM3920 = Z3                  '除材ﾗｲﾝNo.取得
+;  Z4=Z2+1                      'ﾃﾞｰﾀｼﾌﾄ開始段設定
+;  DM3919=14-Z2                  'ﾃﾞｰﾀｼﾌﾄ数設定
+;  WSL(DM3921:Z4,DM3919,1)      'ﾃﾞｰﾀｼﾌﾄ
+;Else
+;  DM3920 = DM3917              'Breakだからｼﾌﾄ無し
+;End if                         
+; 
+LDP R19900               ; 除材開始
+AND<> DM3918 #0          ; 除材要求有
+NCJ #1002
+;Z1=0                           '
+;
+LD CR2002                ; 常時ON
+MOV.L +0 Z1
+;DM3917 = 0
+;
+LD CR2002                ; 常時ON
+MOV #0 DM3917            ; 予約無除材要求No.
+;Do                             '優先順に要求ﾌﾗｸﾞ確認
+;
+LABEL #2014
+;  Z3=DM3921:Z1
+;
+LD CR2002                ; 常時ON
+LDA DM3921:Z1            ; 優先1
+CON
+EXT
+CON
+STA.L Z3
+;  Z2=Z1                        '除材時参照段数
+;
+LD CR2002                ; 常時ON
+MOV.L Z1 Z2
+;  Z1=Z1+1
+;
+LD CR2002                ; 常時ON
+LDA.L Z1
+CON
+ADD.L +1
+CON
+STA.L Z1
+;  If Z1 > 8 Then               '優先無いけど要求有った時処理
+;
+LD>.L Z1 +8
+NCJ #2015
+;    DM3917 = DMX(DM3918)+1     '↑ 一番大きいﾌﾗｸﾞ優先
+;
+LD CR2002                ; 常時ON
+LDA DM3918               ; 除材要求有
+CON
+DMX
+CON
+EXT
+CON
+ADD.L +1
+CON
+STA DM3917               ; 予約無除材要求No.
+;    Break                      '↑
+;
+LD CR2002                ; 常時ON
+CJ #2016
+;  End if                       '↑
+;
+LABEL #2015
+;Until R19100:Z3 =1              
+;
+LD R19100:Z3
+CJ #2017
+LD CR2002                ; 常時ON
+CJ #2014
+LABEL #2017
+LABEL #2016
+;If DM3917 = 0  Then            'Breakないからｼﾌﾄ
+;
+LD= DM3917 #0            ; 予約無除材要求No.
+NCJ #2018
+;  DM3920 = Z3                  '除材ﾗｲﾝNo.取得
+;
+LD CR2002                ; 常時ON
+MOV Z3 DM3920            ; 除材LNo.
+;  Z4=Z2+1                      'ﾃﾞｰﾀｼﾌﾄ開始段設定
+;
+LD CR2002                ; 常時ON
+LDA.L Z2
+CON
+ADD.L +1
+CON
+STA.L Z4
+;  DM3919=14-Z2                  'ﾃﾞｰﾀｼﾌﾄ数設定
+;
+LD CR2002                ; 常時ON
+LDA.L +14
+CON
+SUB.L Z2
+CON
+STA DM3919               ; ﾃﾞｰﾀｼﾌﾄ量
+;  WSL(DM3921:Z4,DM3919,1)      'ﾃﾞｰﾀｼﾌﾄ
+;
+LD CR2002                ; 常時ON
+WSL DM3921:Z4 DM3919 #1  ; 優先1  ﾃﾞｰﾀｼﾌﾄ量
+;Else
+;
+LD CR2002                ; 常時ON
+CJ #2019
+LABEL #2018
+;  DM3920 = DM3917              'Breakだからｼﾌﾄ無し
+;
+LD CR2002                ; 常時ON
+MOV DM3917 DM3920        ; 予約無除材要求No.  除材LNo.
+;End if                         
+;
+LABEL #2019
+LABEL #1002
+;
+END
+ENDH

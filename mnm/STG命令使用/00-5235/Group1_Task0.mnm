@@ -1,0 +1,9132 @@
+DEVICE:53
+;MODULE:Group1_Task0
+;MODULE_TYPE:0
+;SCRIPT_TYPE:
+;OneSystem Main-Module
+;
+;-----------------------------------------
+;ModuleName	:	Group1_Task0
+;ModuleType	:	Main Module
+;Line		:	
+;Cell		: 
+;Function	: 板押板搬送/アライメント/板押圧トレイ
+;-----------------------------------------
+;<<Task LocalDevice>>
+;/*項目			/*割付ｴﾘｱ				/*備考
+;---------------------------------------------------------------------			
+;Emergency		@MR000～@MR015			Emergency処理時RESET禁止ｴﾘｱ
+;Free			@MR100～@MR915			ﾕｰｻﾞｰﾌﾘｰｴﾘｱ
+;HOME			@MR1000～@MR1515		HOME動作時使用ｴﾘｱ
+;MAINTENANCE		@MR2000～@MR2915		MAINTE動作時使用ｴﾘｱ
+;AUTO(Main1)		@MR3000～@MR3915		AUTO(Main1)動作時使用ｴﾘｱ
+;	(Main2)		@MR4000～@MR4415		AUTO(Main2)動作時使用ｴﾘｱ
+;SubRoutine		@MR4500～@MR6415		ｻﾌﾞﾙｰﾁﾝ共通動作使用ｴﾘｱ　※状況により増設してください。
+;----------------------------------------------------------------------
+;<h1/>Device_Init/ﾃﾞﾊﾞｲｽ初期化
+;[内容]
+;・非常停止、優先ｴﾗｰ発生時に初期化したいﾃﾞﾊﾞｲｽを指定して下さい
+;※本Taskで使用するﾛｰｶﾙﾃﾞﾊﾞｲｽなど
+;※STG～JMPにて使用しているﾃﾞﾊﾞｲｽは必須
+LDP R46104               ; _非常停止中　ﾓｰﾄﾞﾌﾗｸﾞ
+ZRES @MR100 @MR6415      ; Task0 ERROR
+;<h1/>wait
+LD R4213                 ; 板押圧吸着上昇端
+TMH @13 #10              ; R4213安定
+;<h1/>Task_Monitor/ﾀｽｸﾓﾆﾀｰ
+LD CR2002                ; 常時ON
+FLIK #50 #50 @MR000
+LD= DM60000 MyTask       ; TaskNo /ERROR_DISP  自ﾀｽｸ番号
+AND R46208               ; _Group1　ｴﾗｰ発生中
+OUT @MR001               ; TASK0 ERROR
+;ON STG Main1
+;TYPE EM600.U,EM601.U,@MR000.U,@MR3000.U
+;
+;FOR EM600 = EM600 TO 160 STEP 16
+;	IF @MR3000:EM600 <> 0 THEN
+;		BREAK
+;	END IF	
+;NEXT
+;	
+;IF EM600 < 160 THEN
+;	EM601 = (EM600 / 16) * 100 + DMX(@MR3000:EM600) + #3000
+;END IF		
+;		
+;EM600 = EM600 + 16		
+;IF EM600 > 160 THEN		
+;	EM600 = 0	
+;END IF
+LDP @MR000
+NCJ #1000
+;TYPE EM600.U,EM601.U,@MR000.U,@MR3000.U
+;
+;FOR EM600 = EM600 TO 160 STEP 16
+;
+LD CR2002                ; 常時ON
+MOV EM600 EM600          ; Task0 Main1@MR  Task0 Main1@MR
+LABEL #2000
+LD> EM600 #160           ; Task0 Main1@MR
+CJ #2001
+;	IF @MR3000:EM600 <> 0 THEN
+;
+LD CR2002                ; 常時ON
+LDA EM600                ; Task0 Main1@MR
+CON
+EXT
+CON
+STA.L Z12
+LD<> @MR3000:Z12 #0      ; AUTO Main1
+NCJ #2002
+;		BREAK
+;
+LD CR2002                ; 常時ON
+CJ #2003
+;	END IF	
+;
+LABEL #2002
+;NEXT
+;
+LD CR2002                ; 常時ON
+LDA EM600                ; Task0 Main1@MR
+CON
+ADD #16
+CON
+STA EM600                ; Task0 Main1@MR
+LDB CR2009               ; 演算結果が負
+CJ #2000
+LABEL #2003
+LABEL #2001
+;IF EM600 < 160 THEN
+;
+LD< EM600 #160           ; Task0 Main1@MR
+NCJ #2004
+;	EM601 = (EM600 / 16) * 100 + DMX(@MR3000:EM600) + #3000
+;
+;;Warning[1103]: "=": (符号付き32ビット整数型->符号無し16ビット整数型) 代入によりデータが欠落する可能性があります。
+LD CR2002                ; 常時ON
+LDA EM600                ; Task0 Main1@MR
+CON
+EXT
+CON
+STA.L Z12
+CON
+LDA @MR3000:Z12          ; AUTO Main1
+CON
+DMX
+CON
+STA @VM0
+CON
+LDA EM600                ; Task0 Main1@MR
+CON
+EXT
+CON
+EXT.L
+CON
+DIV.L +16
+CON
+MUL.L +100
+CON
+STA.L @VM1
+CON
+LDA @VM0
+CON
+EXT
+CON
+ADD.L @VM1
+CON
+ADD.L +3000
+CON
+STA EM601                ; Task0 Main1@MR
+;END IF		
+;
+LABEL #2004
+;EM600 = EM600 + 16		
+;
+;;Warning[1103]: "=": (符号付き32ビット整数型->符号無し16ビット整数型) 代入によりデータが欠落する可能性があります。
+LD CR2002                ; 常時ON
+LDA EM600                ; Task0 Main1@MR
+CON
+EXT
+CON
+ADD.L +16
+CON
+STA EM600                ; Task0 Main1@MR
+;IF EM600 > 160 THEN		
+;
+LD> EM600 #160           ; Task0 Main1@MR
+NCJ #2005
+;	EM600 = 0	
+;
+LD CR2002                ; 常時ON
+MOV #0 EM600             ; Task0 Main1@MR
+;END IF
+LABEL #2005
+LABEL #1000
+;
+;ON STG Main2
+;TYPE EM602.U,EM603.U,@MR4000.U
+;
+;FOR EM602 = EM602 TO 80 STEP 16
+;	IF @MR4000:EM602 <> 0 THEN
+;		BREAK
+;	END IF	
+;NEXT	
+;
+;IF EM602 < 80 THEN
+;	EM603 = (EM602 / 16) * 100 + DMX(@MR4000:EM602) + #4000
+;END IF
+;
+;EM602 = EM602 + 16		
+;
+;IF EM602 > 80 THEN
+;	EM602 = 0	
+;END IF
+LDP @MR000
+NCJ #1001
+;TYPE EM602.U,EM603.U,@MR4000.U
+;
+;FOR EM602 = EM602 TO 80 STEP 16
+;
+LD CR2002                ; 常時ON
+MOV EM602 EM602          ; Task0 Main2@MR  Task0 Main2@MR
+LABEL #2006
+LD> EM602 #80            ; Task0 Main2@MR
+CJ #2007
+;	IF @MR4000:EM602 <> 0 THEN
+;
+LD CR2002                ; 常時ON
+LDA EM602                ; Task0 Main2@MR
+CON
+EXT
+CON
+STA.L Z12
+LD<> @MR4000:Z12 #0      ; AUTO Main2
+NCJ #2008
+;		BREAK
+;
+LD CR2002                ; 常時ON
+CJ #2009
+;	END IF	
+;
+LABEL #2008
+;NEXT	
+;
+LD CR2002                ; 常時ON
+LDA EM602                ; Task0 Main2@MR
+CON
+ADD #16
+CON
+STA EM602                ; Task0 Main2@MR
+LDB CR2009               ; 演算結果が負
+CJ #2006
+LABEL #2009
+LABEL #2007
+;IF EM602 < 80 THEN
+;
+LD< EM602 #80            ; Task0 Main2@MR
+NCJ #2010
+;	EM603 = (EM602 / 16) * 100 + DMX(@MR4000:EM602) + #4000
+;
+;;Warning[1103]: "=": (符号付き32ビット整数型->符号無し16ビット整数型) 代入によりデータが欠落する可能性があります。
+LD CR2002                ; 常時ON
+LDA EM602                ; Task0 Main2@MR
+CON
+EXT
+CON
+STA.L Z12
+CON
+LDA @MR4000:Z12          ; AUTO Main2
+CON
+DMX
+CON
+STA @VM3
+CON
+LDA EM602                ; Task0 Main2@MR
+CON
+EXT
+CON
+EXT.L
+CON
+DIV.L +16
+CON
+MUL.L +100
+CON
+STA.L @VM4
+CON
+LDA @VM3
+CON
+EXT
+CON
+ADD.L @VM4
+CON
+ADD.L +4000
+CON
+STA EM603                ; Task0 Main2@MR
+;END IF
+;
+LABEL #2010
+;EM602 = EM602 + 16		
+;
+;;Warning[1103]: "=": (符号付き32ビット整数型->符号無し16ビット整数型) 代入によりデータが欠落する可能性があります。
+LD CR2002                ; 常時ON
+LDA EM602                ; Task0 Main2@MR
+CON
+EXT
+CON
+ADD.L +16
+CON
+STA EM602                ; Task0 Main2@MR
+;IF EM602 > 80 THEN
+;
+LD> EM602 #80            ; Task0 Main2@MR
+NCJ #2011
+;	EM602 = 0	
+;
+LD CR2002                ; 常時ON
+MOV #0 EM602             ; Task0 Main2@MR
+;END IF
+LABEL #2011
+LABEL #1001
+;
+;ON STG SubRoutine
+;TYPE EM604.U,EM605.U,@MR4500.U
+;	
+;FOR EM604 = EM604 TO 320 STEP 16
+;	IF @MR4500:EM604 <> 0 THEN
+;		BREAK
+;	END IF	
+;NEXT
+;		
+;IF EM604 < 320 THEN
+;	EM605 = (EM604 / 16) * 100 + DMX(@MR4500:EM604) + #4500
+;END IF
+;		
+;EM604 = EM604 + 16	
+;
+;IF EM604 > 320 THEN
+;   EM604 = 0
+;END IF
+LDP @MR000
+NCJ #1002
+;TYPE EM604.U,EM605.U,@MR4500.U
+;
+;FOR EM604 = EM604 TO 320 STEP 16
+;
+LD CR2002                ; 常時ON
+MOV EM604 EM604          ; Task0 Sub@MR  Task0 Sub@MR
+LABEL #2012
+LD> EM604 #320           ; Task0 Sub@MR
+CJ #2013
+;	IF @MR4500:EM604 <> 0 THEN
+;
+LD CR2002                ; 常時ON
+LDA EM604                ; Task0 Sub@MR
+CON
+EXT
+CON
+STA.L Z12
+LD<> @MR4500:Z12 #0      ; ①SUB_RB3/Move
+NCJ #2014
+;		BREAK
+;
+LD CR2002                ; 常時ON
+CJ #2015
+;	END IF	
+;
+LABEL #2014
+;NEXT
+;
+LD CR2002                ; 常時ON
+LDA EM604                ; Task0 Sub@MR
+CON
+ADD #16
+CON
+STA EM604                ; Task0 Sub@MR
+LDB CR2009               ; 演算結果が負
+CJ #2012
+LABEL #2015
+LABEL #2013
+;IF EM604 < 320 THEN
+;
+LD< EM604 #320           ; Task0 Sub@MR
+NCJ #2016
+;	EM605 = (EM604 / 16) * 100 + DMX(@MR4500:EM604) + #4500
+;
+;;Warning[1103]: "=": (符号付き32ビット整数型->符号無し16ビット整数型) 代入によりデータが欠落する可能性があります。
+LD CR2002                ; 常時ON
+LDA EM604                ; Task0 Sub@MR
+CON
+EXT
+CON
+STA.L Z12
+CON
+LDA @MR4500:Z12          ; ①SUB_RB3/Move
+CON
+DMX
+CON
+STA @VM6
+CON
+LDA EM604                ; Task0 Sub@MR
+CON
+EXT
+CON
+EXT.L
+CON
+DIV.L +16
+CON
+MUL.L +100
+CON
+STA.L @VM7
+CON
+LDA @VM6
+CON
+EXT
+CON
+ADD.L @VM7
+CON
+ADD.L +4500
+CON
+STA EM605                ; Task0 Sub@MR
+;END IF
+;
+LABEL #2016
+;EM604 = EM604 + 16	
+;
+;;Warning[1103]: "=": (符号付き32ビット整数型->符号無し16ビット整数型) 代入によりデータが欠落する可能性があります。
+LD CR2002                ; 常時ON
+LDA EM604                ; Task0 Sub@MR
+CON
+EXT
+CON
+ADD.L +16
+CON
+STA EM604                ; Task0 Sub@MR
+;IF EM604 > 320 THEN
+;
+LD> EM604 #320           ; Task0 Sub@MR
+NCJ #2017
+;   EM604 = 0
+;
+LD CR2002                ; 常時ON
+MOV #0 EM604             ; Task0 Sub@MR
+;END IF
+LABEL #2017
+LABEL #1002
+;
+;<h1/>Task_Init/ﾀｽｸ初期化
+;[本STG内容]
+;・本Task起動時に必要な初期化処理を記述して下さい
+;・起動Taskの全Init処理終了後、Task_StartのSTGが起動します
+STG LR800                ; _Grp1_Task0_Init.STG
+ENDS
+;<h1/>Task_Start/ﾀｽｸ開始
+;[本STG内容]
+;・Task起動後、以下運転ﾓｰﾄﾞに従い、各STGにJMPします
+;【HOME】	→	LR5200
+;【AUTO】	→	LR5400
+;【MAINTE】	→	LR5600
+;・本STGは追記、修正不要です
+STG LR400                ; _Grp1_Task0_Start.STG
+MPS
+AND R46101               ; _原点復帰中　ﾓｰﾄﾞﾌﾗｸﾞ
+JMP LR5200               ; _Grp1_Task0_HOME.STG
+MRD
+AND R46100               ; _自動運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+JMP LR5400               ; _Grp1_Task0_AUTO.STG
+MPP
+AND R46102               ; _ﾒﾝﾃﾅﾝｽ運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+JMP LR5600               ; _Grp1_Task0_MAINTE.STG
+;<h1/>Task_Finish/ﾀｽｸ終了
+;[本STG内容]
+;・各Taskの終了STGになります
+;・運転ﾓｰﾄﾞに係わらず終了時は本STGを経由して終了して下さい
+;・本STGは追記、修正不要です
+STG LR600                ; _Grp1_Task0_Fin.STG
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+ANB @MR001               ; TASK0 ERROR
+ANL
+RES R42600               ; Grp1_Task0_ﾎﾟｰｽﾞ許可
+CON
+RES R41000               ; _Grp1_Task0_起動中ﾌﾗｸﾞ
+CON
+ENDS
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+;<h1/>HOME/原点復帰
+;[本STG内容]
+;・STG @MR1000の続きから各Taskの原点復帰動作を記述する
+;・動作終了時は@MR1515にJMPする事
+STG LR5200               ; _Grp1_Task0_HOME.STG
+JMP @MR1000              ; HOME
+STG @MR1000              ; HOME
+RES MR20000              ; TASK0復帰完了
+CON
+SET @MR1002              ; HOME中
+CON
+JMP @MR1003
+;板押圧吸着上昇
+STG @MR1003
+SET MR7307               ; 板押圧吸着上昇
+CON
+RES MR7306               ; 板押圧吸着下降
+CON
+MPS
+LDB MR4213               ; 板押圧吸着上昇端ERR
+ANB R4212                ; 板押圧吸着下降端
+AND R4213                ; 板押圧吸着上昇端
+AND @T13                 ; R4213安定
+ANL
+JMP @MR1004
+MPP
+LD MR4213                ; 板押圧吸着上昇端ERR
+AND R41200               ; TASK0 PAUSE 要求
+ANL
+SET @MR1900              ; Main1 HALT許可
+;RB7_板押圧搬送PP/原点復帰
+STG @MR1004
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+SET @MR4800              ; ④SUB_RB7/Home
+CON
+JMP @MR1005
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR1005
+AND @MR4801              ; ④SUB_RB7/Home完了
+RES @MR4801              ; ④SUB_RB7/Home完了
+CON
+JMP @MR1006
+;RB7_板押圧搬送PP/待機位置
+STG @MR1006
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+DW #1 EM1312             ; RB7Target Pos
+CON
+SET @MR4700              ; ③SUB_RB7/Move
+CON
+JMP @MR1007
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR1007
+AND @MR4701              ; ③SUB_RB7/Move完了
+RES @MR4701              ; ③SUB_RB7/Move完了
+CON
+JMP @MR1008
+;板押圧搬送PP_板押圧有無確認
+STG @MR1008
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+ANB MR20109              ; 吸着確認中
+ANL
+SET MR20109              ; 吸着確認中
+CON
+SET @MR5300              ; ⑦SUB_搬送PP板押圧無確認
+CON
+JMP @MR1009
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR1009
+AND @MR5301              ; ⑦SUB_搬送PP板押圧無確認完了
+RES MR20109              ; 吸着確認中
+CON
+RES @MR5301              ; ⑦SUB_搬送PP板押圧無確認完了
+CON
+JMP @MR1010
+STG @MR1010
+MPS
+AND= DM20030 #1          ; RB7搬送PP板押圧有無記憶(1=有り)
+JMP @MR1011
+MPP
+AND= DM20030 #0          ; RB7搬送PP板押圧有無記憶(1=有り)
+JMP @MR1013
+;Error 102 板押圧除材要求(RB7板押圧搬送PP)
+STG @MR1011
+ANB R39900               ; RB動作中
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+ANB R39004               ; ｴﾗｰ中
+ANL
+SET R39004               ; ｴﾗｰ中
+CON
+DW $7000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #102 @DM1             ; ErrorNo /ERROR_DISP
+CON
+DW #4606 @DM2            ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task0 ERROR
+CON
+JMP @MR1012
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR1012
+SET @MR1900              ; Main1 HALT許可
+CON
+AND @MR101               ; Task0 ｴﾗｰ完了
+RES @MR101               ; Task0 ｴﾗｰ完了
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+AND @MR105               ; SW1
+JMP @MR1008
+;搬送PP吸着OFF
+STG @MR1013
+SET MR7604               ; 板押圧吸着ﾊﾟｯﾄﾞ吸着OFF
+CON
+RES MR7603               ; 板押圧吸着ﾊﾟｯﾄﾞ吸着ON
+CON
+RES MR7605               ; 板押圧吸着ﾊﾟｯﾄﾞ真空破壊ON
+CON
+JMP @MR1100
+;板押圧ﾁｬｯｸ開
+STG @MR1100
+SET MR7415               ; 板押圧ﾁｬｯｸ開
+CON
+RES MR7414               ; 板押圧ﾁｬｯｸ閉
+CON
+MPS
+LDB MR4311               ; 板押圧ﾁｬｯｸ開ERR
+ANB R4310                ; 板押圧ﾁｬｯｸ閉
+AND R4311                ; 板押圧ﾁｬｯｸ開
+ANL
+JMP @MR1101
+MPP
+LD MR4311                ; 板押圧ﾁｬｯｸ開ERR
+AND R41200               ; TASK0 PAUSE 要求
+ANL
+SET @MR1900              ; Main1 HALT許可
+;板押圧ｱﾗｲﾒﾝﾄ_板押圧有無確認
+STG @MR1101
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+ANB MR20109              ; 吸着確認中
+ANL
+SET MR20109              ; 吸着確認中
+CON
+SET @MR5500              ; ⑧SUB_ｱﾗｲﾒﾝﾄ板押圧無確認
+CON
+JMP @MR1102
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR1102
+AND @MR5501              ; ⑧SUB_ｱﾗｲﾒﾝﾄ板押圧無確認完了
+RES MR20109              ; 吸着確認中
+CON
+RES @MR5501              ; ⑧SUB_ｱﾗｲﾒﾝﾄ板押圧無確認完了
+CON
+JMP @MR1103
+STG @MR1103
+MPS
+AND= DM20031 #1          ; ｱﾗｲﾒﾝﾄ板押圧有無記憶(1=有り)
+SET MR7613               ; 板押圧ｾｯﾄ吸着OFF
+CON
+RES MR7612               ; 板押圧ｾｯﾄ吸着ON
+CON
+RES MR7614               ; 板押圧ｾｯﾄ真空破壊ON
+CON
+JMP @MR1104
+MPP
+AND= DM20031 #0          ; ｱﾗｲﾒﾝﾄ板押圧有無記憶(1=有り)
+JMP @MR1106
+;Error 105 板押圧除材要求(板押圧ｱﾗｲﾒﾝﾄ)
+STG @MR1104
+ANB R39900               ; RB動作中
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+ANB R39004               ; ｴﾗｰ中
+ANL
+SET R39004               ; ｴﾗｰ中
+CON
+DW $7000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #105 @DM1             ; ErrorNo /ERROR_DISP
+CON
+DW #4612 @DM2            ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task0 ERROR
+CON
+JMP @MR1105
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR1105
+SET @MR1900              ; Main1 HALT許可
+CON
+AND @MR101               ; Task0 ｴﾗｰ完了
+RES @MR101               ; Task0 ｴﾗｰ完了
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+AND @MR105               ; SW1
+JMP @MR1101
+;板押圧ｾｯﾄ吸着OFF
+STG @MR1106
+SET MR7613               ; 板押圧ｾｯﾄ吸着OFF
+CON
+RES MR7612               ; 板押圧ｾｯﾄ吸着ON
+CON
+RES MR7614               ; 板押圧ｾｯﾄ真空破壊ON
+CON
+JMP @MR1200
+;板押圧ﾄﾚｲ押え 上昇
+STG @MR1200
+SET MR7201               ; (板押圧ﾄﾚｲ押え 上昇)
+CON
+RES MR7200               ; 板押圧ﾄﾚｲ押え 下降
+CON
+MPS
+LDB MR4101               ; 板押圧ﾄﾚｲ押え左 上昇端ERR
+ANB MR4103               ; 板押圧ﾄﾚｲ押え右 上昇端ERR
+ANB R4100                ; 板押圧ﾄﾚｲ押え左 下降端
+AND R4101                ; 板押圧ﾄﾚｲ押え左 上昇端
+ANB R4102                ; 板押圧ﾄﾚｲ押え右 下降端
+AND R4103                ; 板押圧ﾄﾚｲ押え右 上昇端
+ANL
+JMP @MR1201
+MPP
+LD MR4101                ; 板押圧ﾄﾚｲ押え左 上昇端ERR
+OR MR4103                ; 板押圧ﾄﾚｲ押え右 上昇端ERR
+AND R41200               ; TASK0 PAUSE 要求
+ANL
+SET @MR1900              ; Main1 HALT許可
+;RB3_板押圧トレイ搬送/原点復帰
+STG @MR1201
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+SET @MR4600              ; ②SUB_RB3/Home
+CON
+JMP @MR1202
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR1202
+AND @MR4601              ; ②SUB_RB3/Home完了
+RES @MR4601              ; ②SUB_RB3/Home完了
+CON
+JMP @MR1203
+;RB3_板押圧トレイ搬送/待機位置
+STG @MR1203
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+DW #1 EM1304             ; RB3Target Pos
+CON
+SET @MR4500              ; ①SUB_RB3/Move
+CON
+JMP @MR1204
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR1204
+AND @MR4501              ; ①SUB_RB3/Move完了
+RES @MR4501              ; ①SUB_RB3/Move完了
+CON
+JMP @MR1515              ; HOME END
+;終了
+STG @MR1515              ; HOME END
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+ANB @MR001               ; TASK0 ERROR
+ANL
+SET MR20000              ; TASK0復帰完了
+CON
+RES @MR1002              ; HOME中
+CON
+JMP LR600                ; _Grp1_Task0_Fin.STG
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+;<h1/>AUTO/自動動作
+STG LR5400               ; _Grp1_Task0_AUTO.STG
+MPS
+AND>.L DM20008 DM20044   ; 板押圧取出し番号  板押圧トレイ全数
+DW.L +1 DM20008          ; 板押圧取出し番号
+MPP
+DW.L +0 DM20052          ; 板押圧取り出し連続NG数
+CON
+RES MR20600              ; Task0 ｽﾀｰﾄﾌﾗｸﾞ
+CON
+JMP @MR3000              ; AUTO Main1
+;<h1/>Auto-Main1/Autoﾒｲﾝﾙｰﾁﾝ1
+;[本STG内容]
+;・各TaskのAUTO動作を記述して下さい
+;・動作ﾓｰﾄﾞは「AUTOAC」に格納されています(1～32)
+;・@MR3000:AUTO_Main1開始、@MR3001:AUTO_Main1完了、@MR3002:AUTO_Main1動作中
+STG @MR3000              ; AUTO Main1
+MPS
+ANB R47800               ; _Group1　ﾒﾝﾃ動作定停止移行中
+MPS
+ANB R57300               ; Task0 停止要求
+SET @MR4000              ; AUTO Main2
+CON
+SET @MR3002              ; AUTO Main1 Busy
+CON
+JMP @MR3003
+MPP
+AND R57300               ; Task0 停止要求
+JMP @MR3915              ; AUTO END
+MPP
+AND R47800               ; _Group1　ﾒﾝﾃ動作定停止移行中
+JMP @MR3915              ; AUTO END
+;ﾎﾟｰｽﾞﾁｪｯｸ
+STG @MR3003
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+JMP @MR3004
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+;板押圧ﾄﾚｲ押え 上昇
+STG @MR3004
+SET MR7201               ; (板押圧ﾄﾚｲ押え 上昇)
+CON
+RES MR7200               ; 板押圧ﾄﾚｲ押え 下降
+CON
+MPS
+LDB MR4101               ; 板押圧ﾄﾚｲ押え左 上昇端ERR
+ANB MR4103               ; 板押圧ﾄﾚｲ押え右 上昇端ERR
+ANB R4100                ; 板押圧ﾄﾚｲ押え左 下降端
+AND R4101                ; 板押圧ﾄﾚｲ押え左 上昇端
+ANB R4102                ; 板押圧ﾄﾚｲ押え右 下降端
+AND R4103                ; 板押圧ﾄﾚｲ押え右 上昇端
+ANL
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR3100
+MPP
+LD MR4101                ; 板押圧ﾄﾚｲ押え左 上昇端ERR
+OR MR4103                ; 板押圧ﾄﾚｲ押え右 上昇端ERR
+AND R41200               ; TASK0 PAUSE 要求
+ANL
+SET @MR1900              ; Main1 HALT許可
+;RB3板押圧ﾄﾚｲ搬送 ﾄﾚｲ交換位置移動_POS2 
+STG @MR3100
+DW #2 EM1304             ; RB3Target Pos
+CON
+SET @MR4500              ; ①SUB_RB3/Move
+CON
+JMP @MR3101
+STG @MR3101
+AND @MR4501              ; ①SUB_RB3/Move完了
+RES @MR4501              ; ①SUB_RB3/Move完了
+CON
+MPS
+AND R46100               ; _自動運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+JMP @MR3102
+MPP
+AND R46102               ; _ﾒﾝﾃﾅﾝｽ運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+JMP @MR2301
+;ﾄﾚｲ有無確認
+STG @MR3102
+MPS
+AND R4506                ; 板押圧ﾄﾚｲ有無検出
+JMP @MR3104
+MPP
+ANB R4506                ; 板押圧ﾄﾚｲ有無検出
+TMR @12 #5               ; wait
+CON
+AND @T12                 ; wait
+JMP @MR3103
+;<h1/> 板押圧ﾄﾚｲ給材要求
+STG @MR3103
+MPS
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+MPP
+ANB R41200               ; TASK0 PAUSE 要求
+MPS
+OUT MR20103              ; 板押圧ﾄﾚｲ交換要求
+MPP
+LD R4506                 ; 板押圧ﾄﾚｲ有無検出
+AND R008                 ; ｾｰﾌﾃｨｰｶﾊﾞｰ 確認
+ANL
+MPS
+AND CR2006               ; 1sｸﾛｯｸﾊﾟﾙｽ
+OUT MR2001               ; 板押圧ﾄﾚｲｽﾀｰﾄSWﾗﾝﾌﾟ
+MPP
+ANP R1001                ; 板押圧ﾄﾚｲｽﾀｰﾄSW
+DW.L +1 DM20008          ; 板押圧取出し番号
+CON
+JMP @MR3102
+;ﾄﾚｲ浮き確認
+STG @MR3104
+MPS
+LD R4507                 ; 板押圧ﾄﾚｲ浮き検出(前)ONOK
+AND R4508                ; 板押圧ﾄﾚｲ浮き検出(奥)ONOK
+ANL
+JMP @MR3200
+MPP
+LDB R4507                ; 板押圧ﾄﾚｲ浮き検出(前)ONOK
+ORB R4508                ; 板押圧ﾄﾚｲ浮き検出(奥)ONOK
+ANL
+JMP @MR3105
+;Error 109 板押圧ﾄﾚｲ浮き検出
+LD @MR3105
+ANB R39900               ; RB動作中
+ANB R39004               ; ｴﾗｰ中
+MPS
+ANB R4507                ; 板押圧ﾄﾚｲ浮き検出(前)ONOK
+DW #4507 @DM2            ; SensorNo /ERROR_DISP
+MPP
+ANB R4508                ; 板押圧ﾄﾚｲ浮き検出(奥)ONOK
+DW #4508 @DM2            ; SensorNo /ERROR_DISP
+STG @MR3105
+ANB R39900               ; RB動作中
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+ANB R39004               ; ｴﾗｰ中
+ANL
+SET R39004               ; ｴﾗｰ中
+CON
+DW $7000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #109 @DM1             ; ErrorNo /ERROR_DISP
+CON
+SET @MR100               ; Task0 ERROR
+CON
+JMP @MR3106
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1901              ; Main2 HALT許可
+STG @MR3106
+SET @MR1901              ; Main2 HALT許可
+CON
+AND @MR101               ; Task0 ｴﾗｰ完了
+RES @MR101               ; Task0 ｴﾗｰ完了
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+AND @MR105               ; SW1
+JMP @MR3102
+;<h1/> ﾄﾚｲﾊﾟﾚﾀｲｽﾞ
+STG @MR3200
+JMP @MR3204
+LDP @MR3204
+AND DM2000.6             ; ﾀﾞﾐｰﾄﾚｲ有効
+AND R46100               ; _自動運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+AND>.L DM20008 +42       ; 板押圧取出し番号
+AND<.L DM20008 +211      ; 板押圧取出し番号
+DW.L +211 DM20008        ; 板押圧取出し番号
+;RB3板押圧ﾄﾚｲ搬送 取出し位置移動(算出)_POS10 
+STG @MR3204
+LDA.L DM20008            ; 板押圧取出し番号
+CON
+ADD.L +19
+CON
+STA.S EM1304             ; RB3Target Pos
+CON
+SET @MR4500              ; ①SUB_RB3/Move
+CON
+JMP @MR3205
+STG @MR3205
+AND @MR4501              ; ①SUB_RB3/Move完了
+RES @MR4501              ; ①SUB_RB3/Move完了
+CON
+JMP @MR3206
+;板押圧ﾄﾚｲ押え 下降
+STG @MR3206
+SET MR7200               ; 板押圧ﾄﾚｲ押え 下降
+CON
+RES MR7201               ; (板押圧ﾄﾚｲ押え 上昇)
+CON
+MPS
+LDB MR4100               ; 板押圧ﾄﾚｲ押え左 下降端ERR
+ANB MR4102               ; 板押圧ﾄﾚｲ押え右 下降端ERR
+AND R4100                ; 板押圧ﾄﾚｲ押え左 下降端
+ANB R4101                ; 板押圧ﾄﾚｲ押え左 上昇端
+AND R4102                ; 板押圧ﾄﾚｲ押え右 下降端
+ANB R4103                ; 板押圧ﾄﾚｲ押え右 上昇端
+ANL
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+MPS
+AND R46100               ; _自動運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+JMP @MR3207
+MPP
+AND R46102               ; _ﾒﾝﾃﾅﾝｽ運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+JMP @MR2404
+MPP
+LD MR4100                ; 板押圧ﾄﾚｲ押え左 下降端ERR
+OR MR4102                ; 板押圧ﾄﾚｲ押え右 下降端ERR
+AND R41200               ; TASK0 PAUSE 要求
+ANL
+SET @MR1900              ; Main1 HALT許可
+;MAIN1→2 PP搬送要求ON
+STG @MR3207
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+SET @MR900               ; MAIN1→2 PP搬送要求
+CON
+JMP @MR3301
+;MAIN2→1 PP搬送中待ち
+STG @MR3301
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+MPS
+LD R57300                ; Task0 停止要求
+ANB R41003               ; _Grp1_Task3_起動中ﾌﾗｸﾞ
+ANB @MR4002              ; Main2 Busy
+ANL
+RES @MR900               ; MAIN1→2 PP搬送要求
+CON
+JMP @MR3915              ; AUTO END
+MPP
+LDB R57300               ; Task0 停止要求
+OR R41003                ; _Grp1_Task3_起動中ﾌﾗｸﾞ
+OR @MR4002               ; Main2 Busy
+AND @MR901               ; MAIN2→1 PP搬送中
+ANL
+RES @MR900               ; MAIN1→2 PP搬送要求
+CON
+JMP @MR3302
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR3302
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+MPS
+ANB @MR4002              ; Main2 Busy
+JMP @MR3301
+MPP
+LD @MR4002               ; Main2 Busy
+ANB @MR901               ; MAIN2→1 PP搬送中
+ANL
+JMP @MR3303
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+;板押圧ﾄﾚｲ押え 上昇
+STG @MR3303
+SET MR7201               ; (板押圧ﾄﾚｲ押え 上昇)
+CON
+RES MR7200               ; 板押圧ﾄﾚｲ押え 下降
+CON
+MPS
+LDB MR4101               ; 板押圧ﾄﾚｲ押え左 上昇端ERR
+ANB MR4103               ; 板押圧ﾄﾚｲ押え右 上昇端ERR
+ANB R4100                ; 板押圧ﾄﾚｲ押え左 下降端
+AND R4101                ; 板押圧ﾄﾚｲ押え左 上昇端
+ANB R4102                ; 板押圧ﾄﾚｲ押え右 下降端
+AND R4103                ; 板押圧ﾄﾚｲ押え右 上昇端
+ANL
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR3400
+MPP
+LD MR4101                ; 板押圧ﾄﾚｲ押え左 上昇端ERR
+OR MR4103                ; 板押圧ﾄﾚｲ押え右 上昇端ERR
+AND R41200               ; TASK0 PAUSE 要求
+ANL
+SET @MR1900              ; Main1 HALT許可
+;ﾊﾟﾚﾀｲｽﾞﾁｪｯｸ
+STG @MR3400
+MPS
+AND<=.L DM20008 DM20044  ; 板押圧取出し番号  板押圧トレイ全数
+JMP @MR3200
+MPP
+AND>.L DM20008 DM20044   ; 板押圧取出し番号  板押圧トレイ全数
+JMP @MR3401
+;RB3板押圧ﾄﾚｲ搬送 ﾄﾚｲ交換位置移動_POS2 
+STG @MR3401
+DW #2 EM1304             ; RB3Target Pos
+CON
+SET @MR4500              ; ①SUB_RB3/Move
+CON
+JMP @MR3402
+STG @MR3402
+AND @MR4501              ; ①SUB_RB3/Move完了
+RES @MR4501              ; ①SUB_RB3/Move完了
+CON
+JMP @MR3103
+;<h1/>Auto終了処理
+STG @MR3915              ; AUTO END
+RES @MR3002              ; AUTO Main1 Busy
+CON
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+ANB @MR001               ; TASK0 ERROR
+ANB @MR4002              ; Main2 Busy
+ANL
+ZRES @MR900 @MR915       ; MAIN1→2 PP搬送要求
+CON
+JMP LR600                ; _Grp1_Task0_Fin.STG
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+;<h1/>Auto-Main2/Autoﾒｲﾝﾙｰﾁﾝ2
+;[本STG内容]
+;・@MR4000の起動はMain1にて行う事
+;・@MR4000:AUTO_Main2開始、@MR4001:AUTO_Main2完了、@MR4002:AUTO_Main2動作中
+STG @MR4000              ; AUTO Main2
+@DW.S +0 DM20040         ; 板押し圧投入数(溶着台に)
+CON
+SET @MR4002              ; Main2 Busy
+CON
+JMP @MR4003
+LD<.S DM20040 +0         ; 板押し圧投入数(溶着台に)
+DW.S +0 DM20040          ; 板押し圧投入数(溶着台に)
+;MAIN1→2 PP搬送要求待ち
+STG @MR4003
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+MPS
+ANB @MR3002              ; AUTO Main1 Busy
+JMP @MR4415              ; Main2 END
+MPP
+LD @MR3002               ; AUTO Main1 Busy
+AND @MR900               ; MAIN1→2 PP搬送要求
+ANL
+JMP @MR4004
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1901              ; Main2 HALT許可
+;<h1/> ﾄﾚｲ取出し動作
+;ﾊﾟﾚﾀｲｽﾞ
+STG @MR4004
+JMP @MR4006
+LDP @MR4006
+AND DM2000.6             ; ﾀﾞﾐｰﾄﾚｲ有効
+AND R46100               ; _自動運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+AND>.L DM20008 +42       ; 板押圧取出し番号
+AND<.L DM20008 +211      ; 板押圧取出し番号
+DW.L +211 DM20008        ; 板押圧取出し番号
+;RB7_板押圧搬送PP/取出し位置移動(算出)_POS10 
+STG @MR4006
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+LDA.L DM20008            ; 板押圧取出し番号
+CON
+ADD.L +19
+CON
+STA.S EM1312             ; RB7Target Pos
+CON
+SET @MR4700              ; ③SUB_RB7/Move
+CON
+JMP @MR4007
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1901              ; Main2 HALT許可
+STG @MR4007
+AND @MR4701              ; ③SUB_RB7/Move完了
+RES @MR4701              ; ③SUB_RB7/Move完了
+CON
+MPS
+AND R46100               ; _自動運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+JMP @MR4008
+MPP
+AND R46102               ; _ﾒﾝﾃﾅﾝｽ運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+JMP @MR2504
+;取出し要求待ち
+STG @MR4008
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+MPS
+LD R57300                ; Task0 停止要求
+ANB R41003               ; _Grp1_Task3_起動中ﾌﾗｸﾞ
+ANL
+JMP @MR4415              ; Main2 END
+MPP
+LDB R57300               ; Task0 停止要求
+OR R41003                ; _Grp1_Task3_起動中ﾌﾗｸﾞ
+AND @MR900               ; MAIN1→2 PP搬送要求
+AND MR20600              ; Task0 ｽﾀｰﾄﾌﾗｸﾞ
+LDB DM2000.7             ; 片面溶着有効/無効(ON有効)
+AND<.S DM20040 +2        ; 板押し圧投入数(溶着台に)
+LD DM2000.7              ; 片面溶着有効/無効(ON有効)
+AND<.S DM20040 +1        ; 板押し圧投入数(溶着台に)
+ORL
+ANL
+ANL
+SET @MR901               ; MAIN2→1 PP搬送中
+CON
+JMP @MR4011
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1901              ; Main2 HALT許可
+;板押圧吸着下降
+STG @MR4011
+MPS
+AND DM11055.2
+DW #2 DM20050            ; Ｆｴﾗｰ用
+MPP
+SET MR7306               ; 板押圧吸着下降
+CON
+RES MR7307               ; 板押圧吸着上昇
+CON
+MPS
+LDB MR4212               ; 板押圧吸着下降端ERR
+AND R4212                ; 板押圧吸着下降端
+ANB R4213                ; 板押圧吸着上昇端
+ANL
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR4012
+MPP
+LD MR4212                ; 板押圧吸着下降端ERR
+AND R41200               ; TASK0 PAUSE 要求
+ANL
+SET @MR1901              ; Main2 HALT許可
+;板押圧吸着ﾊﾟｯﾄﾞ吸着ON
+STG @MR4012
+SET MR7603               ; 板押圧吸着ﾊﾟｯﾄﾞ吸着ON
+CON
+RES MR7604               ; 板押圧吸着ﾊﾟｯﾄﾞ吸着OFF
+CON
+RES MR7605               ; 板押圧吸着ﾊﾟｯﾄﾞ真空破壊ON
+CON
+TMR @8 #20               ; タイムアウト
+CON
+LD R4606                 ; 板押圧吸着ﾊﾟｯﾄﾞOUT1
+OR @T8                   ; タイムアウト
+ANL
+TMR @7 #3                ; 安定待ち
+CON
+AND @T7                  ; 安定待ち
+JMP @MR4013
+;板押圧吸着上昇
+STG @MR4013
+SET MR7307               ; 板押圧吸着上昇
+CON
+RES MR7306               ; 板押圧吸着下降
+CON
+MPS
+LDB MR4213               ; 板押圧吸着上昇端ERR
+ANB MR4212               ; 板押圧吸着下降端ERR
+AND R4213                ; 板押圧吸着上昇端
+ANB R4212                ; 板押圧吸着下降端
+AND @T13                 ; R4213安定
+ANL
+JMP @MR4014
+MPP
+LD MR4213                ; 板押圧吸着上昇端ERR
+OR MR4212                ; 板押圧吸着下降端ERR
+AND R41200               ; TASK0 PAUSE 要求
+ANL
+SET @MR1901              ; Main2 HALT許可
+;吸着確認
+STG @MR4014
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+ANB MR20109              ; 吸着確認中
+ANL
+SET MR20109              ; 吸着確認中
+CON
+SET @MR5200              ; ⑦SUB_搬送PP板押圧有確認
+CON
+JMP @MR4015
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1901              ; Main2 HALT許可
+STG @MR4015
+AND @MR5201              ; ⑦SUB_搬送PP板押圧有確認完了
+RES MR20109              ; 吸着確認中
+CON
+RES @MR5201              ; ⑦SUB_搬送PP板押圧有確認完了
+CON
+JMP @MR4100
+STG @MR4100
+MPS
+ANB DM2000.3             ; ﾄﾞﾗｲ運転有効/無効(ON有効)
+MPS
+AND= DM20030 #1          ; RB7搬送PP板押圧有無記憶(1=有り)
+DW.L +0 DM20052          ; 板押圧取り出し連続NG数
+CON
+JMP @MR4113
+MPP
+AND= DM20030 #0          ; RB7搬送PP板押圧有無記憶(1=有り)
+@INC.L DM20052           ; 板押圧取り出し連続NG数
+CON
+MPS
+AND>=.L DM20052 DM7042   ; 板押圧取り出し連続NG数  装置基礎ﾃﾞｰﾀ22
+JMP @MR4101
+MPP
+AND<.L DM20052 DM7042    ; 板押圧取り出し連続NG数  装置基礎ﾃﾞｰﾀ22
+SET @MR902               ; 再取出し
+CON
+JMP @MR4105
+MPP
+AND DM2000.3             ; ﾄﾞﾗｲ運転有効/無効(ON有効)
+JMP @MR4113
+;Error 114 板押圧取出し連続NG
+STG @MR4101
+ANB R39900               ; RB動作中
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+ANB R39004               ; ｴﾗｰ中
+ANL
+SET R39004               ; ｴﾗｰ中
+CON
+DW $6A50 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #114 @DM1             ; ErrorNo /ERROR_DISP
+CON
+DW #4606 @DM2            ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task0 ERROR
+CON
+JMP @MR4102
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1901              ; Main2 HALT許可
+STG @MR4102
+SET @MR1901              ; Main2 HALT許可
+CON
+AND @MR101               ; Task0 ｴﾗｰ完了
+RES @MR101               ; Task0 ｴﾗｰ完了
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+MPS
+AND @MR105               ; SW1
+DW.L +0 DM20052          ; 板押圧取り出し連続NG数
+CON
+SET @MR902               ; 再取出し
+CON
+JMP @MR4105
+MRD
+AND @MR106               ; SW2
+DW.L +0 DM20052          ; 板押圧取り出し連続NG数
+CON
+SET @MR902               ; 再取出し
+CON
+JMP @MR4103
+MPP
+AND @MR107               ; SW3
+DW.L +0 DM20052          ; 板押圧取り出し連続NG数
+CON
+LDA.L DM20044            ; 板押圧トレイ全数
+CON
+STA.L DM20008            ; 板押圧取出し番号
+CON
+DW.L +0 DM20052          ; 板押圧取り出し連続NG数
+CON
+SET @MR902               ; 再取出し
+CON
+JMP @MR4105
+;画面切り替え
+STG @MR4103
+DW #2300 DM3008          ; _MainTP　切替ﾍﾟｰｼﾞNo
+CON
+JMP @MR4104
+;選択終了待ち、後々加算するので減算しておく。
+STG @MR4104
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+AND MR20102              ; TP選択終了SW
+ANL
+@DEC.S DM20008           ; 板押圧取出し番号
+CON
+SET @MR902               ; 再取出し
+CON
+JMP @MR4105
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1901              ; Main2 HALT許可
+;板押圧吸着下降  （持っている可能性を考慮し一度置きに行く)
+STG @MR4105
+SET MR7306               ; 板押圧吸着下降
+CON
+RES MR7307               ; 板押圧吸着上昇
+CON
+MPS
+LDB MR4212               ; 板押圧吸着下降端ERR
+AND R4212                ; 板押圧吸着下降端
+ANB R4213                ; 板押圧吸着上昇端
+ANL
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR4106
+MPP
+LD MR4212                ; 板押圧吸着下降端ERR
+AND R41200               ; TASK0 PAUSE 要求
+ANL
+SET @MR1901              ; Main2 HALT許可
+STG @MR4106
+SET MR7604               ; 板押圧吸着ﾊﾟｯﾄﾞ吸着OFF
+CON
+RES MR7603               ; 板押圧吸着ﾊﾟｯﾄﾞ吸着ON
+CON
+SET MR7605               ; 板押圧吸着ﾊﾟｯﾄﾞ真空破壊ON
+CON
+TMR @20 #20              ; wait
+CON
+AND @T20                 ; wait
+JMP @MR4107
+;板押圧吸着上昇  （次のポイントへ
+STG @MR4107
+SET MR7307               ; 板押圧吸着上昇
+CON
+RES MR7306               ; 板押圧吸着下降
+CON
+MPS
+LDB MR4213               ; 板押圧吸着上昇端ERR
+ANB MR4212               ; 板押圧吸着下降端ERR
+AND R4213                ; 板押圧吸着上昇端
+ANB R4212                ; 板押圧吸着下降端
+AND @T13                 ; R4213安定
+ANL
+JMP @MR4113
+MPP
+LD MR4213                ; 板押圧吸着上昇端ERR
+OR MR4212                ; 板押圧吸着下降端ERR
+AND R41200               ; TASK0 PAUSE 要求
+ANL
+SET @MR1901              ; Main2 HALT許可
+;Error 106 板押圧取出し失敗(RB7板押圧搬送PP)
+;取出し番号加算
+STG @MR4113
+@INC.L DM20008           ; 板押圧取出し番号
+CON
+RES @MR901               ; MAIN2→1 PP搬送中
+CON
+JMP @MR4114
+;MAIN1→2 PP搬送要求OFF待ち
+STG @MR4114
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+ANB @MR900               ; MAIN1→2 PP搬送要求
+ANL
+JMP @MR4115
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1901              ; Main2 HALT許可
+STG @MR4115
+MPS
+ANB @MR902               ; 再取出し
+JMP @MR4200
+MPP
+AND @MR902               ; 再取出し
+RES @MR902               ; 再取出し
+CON
+JMP @MR4003
+;<h1/> ｱﾗｲﾒﾝﾄ動作
+;RB7_板押圧搬送PP 移動 ｱﾗｲﾒﾝﾄ位置
+STG @MR4200
+DW #2 EM1312             ; RB7Target Pos
+CON
+SET @MR4700              ; ③SUB_RB7/Move
+CON
+JMP @MR4201
+STG @MR4201
+AND @MR4701              ; ③SUB_RB7/Move完了
+RES @MR4701              ; ③SUB_RB7/Move完了
+CON
+JMP @MR4202
+;板押圧吸着下降
+STG @MR4202
+MPS
+AND DM11055.2
+DW #3 DM20050            ; Ｆｴﾗｰ用
+MPP
+SET MR7306               ; 板押圧吸着下降
+CON
+RES MR7307               ; 板押圧吸着上昇
+CON
+MPS
+LDB MR4212               ; 板押圧吸着下降端ERR
+ANB MR4213               ; 板押圧吸着上昇端ERR
+AND R4212                ; 板押圧吸着下降端
+ANB R4213                ; 板押圧吸着上昇端
+ANL
+JMP @MR4203
+MPP
+LD MR4212                ; 板押圧吸着下降端ERR
+OR MR4213                ; 板押圧吸着上昇端ERR
+AND R41200               ; TASK0 PAUSE 要求
+ANL
+SET @MR1901              ; Main2 HALT許可
+;アライメント台吸着動作
+STG @MR4203
+RES MR7603               ; 板押圧吸着ﾊﾟｯﾄﾞ吸着ON
+CON
+SET MR7604               ; 板押圧吸着ﾊﾟｯﾄﾞ吸着OFF
+CON
+SET MR7605               ; 板押圧吸着ﾊﾟｯﾄﾞ真空破壊ON
+CON
+SET MR7612               ; 板押圧ｾｯﾄ吸着ON
+CON
+RES MR7613               ; 板押圧ｾｯﾄ吸着OFF
+CON
+RES MR7614               ; 板押圧ｾｯﾄ真空破壊ON
+CON
+TMR @9 #20               ; タイムアウト
+CON
+LD R4612                 ; ｱﾗｲﾒﾝﾄ_板押圧ｾｯﾄOUT1
+OR @T9                   ; タイムアウト
+ANL
+TMR @18 #3               ; 安定待ち
+CON
+AND @T18                 ; 安定待ち
+JMP @MR4204
+;板押圧吸着上昇
+STG @MR4204
+SET MR7307               ; 板押圧吸着上昇
+CON
+RES MR7306               ; 板押圧吸着下降
+CON
+MPS
+LDB MR4213               ; 板押圧吸着上昇端ERR
+AND R4213                ; 板押圧吸着上昇端
+ANB R4212                ; 板押圧吸着下降端
+AND @T13                 ; R4213安定
+ANL
+JMP @MR4205
+MPP
+LD MR4213                ; 板押圧吸着上昇端ERR
+AND R41200               ; TASK0 PAUSE 要求
+ANL
+SET @MR1901              ; Main2 HALT許可
+;板押圧ﾁｬｯｸ閉
+STG @MR4205
+SET MR7414               ; 板押圧ﾁｬｯｸ閉
+CON
+RES MR7415               ; 板押圧ﾁｬｯｸ開
+CON
+MPS
+LDB MR4310               ; 板押圧ﾁｬｯｸ閉ERR
+ANB MR4311               ; 板押圧ﾁｬｯｸ開ERR
+AND R4310                ; 板押圧ﾁｬｯｸ閉
+ANB R4311                ; 板押圧ﾁｬｯｸ開
+ANL
+JMP @MR4206
+MPP
+LD MR4310                ; 板押圧ﾁｬｯｸ閉ERR
+OR MR4311                ; 板押圧ﾁｬｯｸ開ERR
+AND R41200               ; TASK0 PAUSE 要求
+ANL
+SET @MR1901              ; Main2 HALT許可
+;有確認
+STG @MR4206
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+ANB MR20109              ; 吸着確認中
+ANL
+SET MR20109              ; 吸着確認中
+CON
+SET @MR5400              ; ⑧SUB_ｱﾗｲﾒﾝﾄ板押圧有確認
+CON
+JMP @MR4207
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1901              ; Main2 HALT許可
+STG @MR4207
+AND @MR5401              ; ⑧SUB_ｱﾗｲﾒﾝﾄ板押圧有確認完了
+RES MR20109              ; 吸着確認中
+CON
+RES @MR5401              ; ⑧SUB_ｱﾗｲﾒﾝﾄ板押圧有確認完了
+CON
+JMP @MR4208
+STG @MR4208
+MPS
+AND DM2000.3             ; ﾄﾞﾗｲ運転有効/無効(ON有効)
+JMP @MR4212
+MPP
+ANB DM2000.3             ; ﾄﾞﾗｲ運転有効/無効(ON有効)
+MPS
+AND= DM20031 #1          ; ｱﾗｲﾒﾝﾄ板押圧有無記憶(1=有り)
+JMP @MR4212
+MPP
+AND= DM20031 #0          ; ｱﾗｲﾒﾝﾄ板押圧有無記憶(1=有り)
+JMP @MR4209
+;Error 107 板押圧未検出(アライメント)
+STG @MR4209
+SET MR7415               ; 板押圧ﾁｬｯｸ開
+CON
+RES MR7414               ; 板押圧ﾁｬｯｸ閉
+CON
+MPS
+LDB MR4311               ; 板押圧ﾁｬｯｸ開ERR
+AND R4311                ; 板押圧ﾁｬｯｸ開
+ANB R4310                ; 板押圧ﾁｬｯｸ閉
+ANL
+JMP @MR4210
+MPP
+LD MR4311                ; 板押圧ﾁｬｯｸ開ERR
+AND R41200               ; TASK0 PAUSE 要求
+ANL
+SET @MR1901              ; Main2 HALT許可
+STG @MR4210
+ANB R39900               ; RB動作中
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+ANB R39004               ; ｴﾗｰ中
+ANL
+SET R39004               ; ｴﾗｰ中
+CON
+DW $7400 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #107 @DM1             ; ErrorNo /ERROR_DISP
+CON
+DW #4606 @DM2            ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task0 ERROR
+CON
+JMP @MR4211
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1901              ; Main2 HALT許可
+STG @MR4211
+SET @MR1901              ; Main2 HALT許可
+CON
+AND @MR101               ; Task0 ｴﾗｰ完了
+RES @MR101               ; Task0 ｴﾗｰ完了
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+MPS
+AND @MR105               ; SW1
+JMP @MR4205
+MPP
+AND @MR106               ; SW2
+SET MR7613               ; 板押圧ｾｯﾄ吸着OFF
+CON
+RES MR7612               ; 板押圧ｾｯﾄ吸着ON
+CON
+RES MR7614               ; 板押圧ｾｯﾄ真空破壊ON
+CON
+MPS
+AND R46100               ; _自動運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+JMP @MR4004
+MPP
+AND R46102               ; _ﾒﾝﾃﾅﾝｽ運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+JMP @MR2702
+;板押圧吸着下降
+STG @MR4212
+MPS
+AND DM11055.2
+DW #4 DM20050            ; Ｆｴﾗｰ用
+MPP
+SET MR7306               ; 板押圧吸着下降
+CON
+RES MR7307               ; 板押圧吸着上昇
+CON
+MPS
+LDB MR4212               ; 板押圧吸着下降端ERR
+AND R4212                ; 板押圧吸着下降端
+ANB R4213                ; 板押圧吸着上昇端
+ANL
+JMP @MR4213
+MPP
+LD MR4212                ; 板押圧吸着下降端ERR
+AND R41200               ; TASK0 PAUSE 要求
+ANL
+SET @MR1901              ; Main2 HALT許可
+;板押圧吸着ﾊﾟｯﾄﾞ吸着ON
+STG @MR4213
+SET MR7603               ; 板押圧吸着ﾊﾟｯﾄﾞ吸着ON
+CON
+RES MR7604               ; 板押圧吸着ﾊﾟｯﾄﾞ吸着OFF
+CON
+RES MR7605               ; 板押圧吸着ﾊﾟｯﾄﾞ真空破壊ON
+CON
+RES MR7612               ; 板押圧ｾｯﾄ吸着ON
+CON
+SET MR7613               ; 板押圧ｾｯﾄ吸着OFF
+CON
+SET MR7614               ; 板押圧ｾｯﾄ真空破壊ON
+CON
+TMR @10 #15              ; タイムアウト
+CON
+LD R4606                 ; 板押圧吸着ﾊﾟｯﾄﾞOUT1
+OR @T10                  ; タイムアウト
+ANL
+TMR @19 #3               ; 安定待ち
+CON
+AND @T19                 ; 安定待ち
+JMP @MR4214
+;板押圧ﾁｬｯｸ開
+STG @MR4214
+SET MR7415               ; 板押圧ﾁｬｯｸ開
+CON
+RES MR7414               ; 板押圧ﾁｬｯｸ閉
+CON
+MPS
+LDB MR4311               ; 板押圧ﾁｬｯｸ開ERR
+AND R4311                ; 板押圧ﾁｬｯｸ開
+ANB R4310                ; 板押圧ﾁｬｯｸ閉
+ANL
+JMP @MR4215
+MPP
+LD MR4311                ; 板押圧ﾁｬｯｸ開ERR
+AND R41200               ; TASK0 PAUSE 要求
+ANL
+SET @MR1901              ; Main2 HALT許可
+;板押圧吸着上昇
+STG @MR4215
+SET MR7307               ; 板押圧吸着上昇
+CON
+RES MR7306               ; 板押圧吸着下降
+CON
+MPS
+LDB MR4213               ; 板押圧吸着上昇端ERR
+AND R4213                ; 板押圧吸着上昇端
+ANB R4212                ; 板押圧吸着下降端
+AND @T13                 ; R4213安定
+ANL
+JMP @MR4300
+MPP
+LD MR4213                ; 板押圧吸着上昇端ERR
+AND R41200               ; TASK0 PAUSE 要求
+ANL
+SET @MR1901              ; Main2 HALT許可
+;吸着確認
+STG @MR4300
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+ANB MR20109              ; 吸着確認中
+ANL
+SET MR20109              ; 吸着確認中
+CON
+SET @MR5200              ; ⑦SUB_搬送PP板押圧有確認
+CON
+JMP @MR4301
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1901              ; Main2 HALT許可
+STG @MR4301
+AND @MR5201              ; ⑦SUB_搬送PP板押圧有確認完了
+RES MR20109              ; 吸着確認中
+CON
+RES @MR5201              ; ⑦SUB_搬送PP板押圧有確認完了
+CON
+JMP @MR4302
+STG @MR4302
+MPS
+AND DM2000.3             ; ﾄﾞﾗｲ運転有効/無効(ON有効)
+JMP @MR4305
+MPP
+ANB DM2000.3             ; ﾄﾞﾗｲ運転有効/無効(ON有効)
+MPS
+AND= DM20030 #1          ; RB7搬送PP板押圧有無記憶(1=有り)
+JMP @MR4305
+MPP
+AND= DM20030 #0          ; RB7搬送PP板押圧有無記憶(1=有り)
+JMP @MR4303
+;Error 106 板押圧取出し失敗(RB7板押圧搬送PP)
+STG @MR4303
+ANB R39900               ; RB動作中
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+ANB R39004               ; ｴﾗｰ中
+ANL
+SET R39004               ; ｴﾗｰ中
+CON
+DW $7240 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #106 @DM1             ; ErrorNo /ERROR_DISP
+CON
+DW #4606 @DM2            ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task0 ERROR
+CON
+JMP @MR4304
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1901              ; Main2 HALT許可
+STG @MR4304
+SET @MR1901              ; Main2 HALT許可
+CON
+AND @MR101               ; Task0 ｴﾗｰ完了
+RES @MR101               ; Task0 ｴﾗｰ完了
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+MPS
+AND @MR105               ; SW1
+JMP @MR4300
+MRD
+AND @MR106               ; SW2
+SET MR7604               ; 板押圧吸着ﾊﾟｯﾄﾞ吸着OFF
+CON
+RES MR7603               ; 板押圧吸着ﾊﾟｯﾄﾞ吸着ON
+CON
+RES MR7605               ; 板押圧吸着ﾊﾟｯﾄﾞ真空破壊ON
+CON
+JMP @MR4202
+MPP
+AND @MR107               ; SW3
+SET MR7604               ; 板押圧吸着ﾊﾟｯﾄﾞ吸着OFF
+CON
+RES MR7603               ; 板押圧吸着ﾊﾟｯﾄﾞ吸着ON
+CON
+RES MR7605               ; 板押圧吸着ﾊﾟｯﾄﾞ真空破壊ON
+CON
+MPS
+AND R46100               ; _自動運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+JMP @MR4003
+MPP
+AND R46102               ; _ﾒﾝﾃﾅﾝｽ運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+JMP @MR2702
+;無し確認
+STG @MR4305
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+ANB MR20109              ; 吸着確認中
+ANL
+SET MR20109              ; 吸着確認中
+CON
+SET @MR5500              ; ⑧SUB_ｱﾗｲﾒﾝﾄ板押圧無確認
+CON
+JMP @MR4306
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1901              ; Main2 HALT許可
+STG @MR4306
+AND @MR5501              ; ⑧SUB_ｱﾗｲﾒﾝﾄ板押圧無確認完了
+RES MR20109              ; 吸着確認中
+CON
+RES @MR5501              ; ⑧SUB_ｱﾗｲﾒﾝﾄ板押圧無確認完了
+CON
+JMP @MR4307
+STG @MR4307
+MPS
+AND DM2000.3             ; ﾄﾞﾗｲ運転有効/無効(ON有効)
+MPS
+AND R46100               ; _自動運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+JMP @MR4310
+MPP
+AND R46102               ; _ﾒﾝﾃﾅﾝｽ運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+JMP @MR2702
+MPP
+ANB DM2000.3             ; ﾄﾞﾗｲ運転有効/無効(ON有効)
+MPS
+AND= DM20031 #0          ; ｱﾗｲﾒﾝﾄ板押圧有無記憶(1=有り)
+MPS
+AND R46100               ; _自動運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+JMP @MR4310
+MPP
+AND R46102               ; _ﾒﾝﾃﾅﾝｽ運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+JMP @MR2702
+MPP
+AND= DM20031 #1          ; ｱﾗｲﾒﾝﾄ板押圧有無記憶(1=有り)
+JMP @MR4308
+STG @MR4308
+ANB R39900               ; RB動作中
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+ANB R39004               ; ｴﾗｰ中
+ANL
+SET R39004               ; ｴﾗｰ中
+CON
+DW $7400 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #105 @DM1             ; ErrorNo /ERROR_DISP
+CON
+DW #4613 @DM2            ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task0 ERROR
+CON
+JMP @MR4309
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1901              ; Main2 HALT許可
+STG @MR4309
+SET @MR1901              ; Main2 HALT許可
+CON
+AND @MR101               ; Task0 ｴﾗｰ完了
+RES @MR101               ; Task0 ｴﾗｰ完了
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+MPS
+AND @MR105               ; SW1
+JMP @MR4305
+MPP
+AND @MR106               ; SW2
+SET MR7604               ; 板押圧吸着ﾊﾟｯﾄﾞ吸着OFF
+CON
+RES MR7603               ; 板押圧吸着ﾊﾟｯﾄﾞ吸着ON
+CON
+RES MR7605               ; 板押圧吸着ﾊﾟｯﾄﾞ真空破壊ON
+CON
+MPS
+AND R46100               ; _自動運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+JMP @MR4310
+MPP
+AND R46102               ; _ﾒﾝﾃﾅﾝｽ運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+JMP @MR2702
+;<h1/> 溶着台へ給材
+;溶着位置へ移動
+STG @MR4310
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+ANB MR20415              ; TASK1板押圧除材動作有り
+ANL
+DW #3 EM1312             ; RB7Target Pos
+CON
+SET @MR4700              ; ③SUB_RB7/Move
+CON
+JMP @MR4311
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1901              ; Main2 HALT許可
+STG @MR4311
+AND @MR4701              ; ③SUB_RB7/Move完了
+RES @MR4701              ; ③SUB_RB7/Move完了
+CON
+JMP @MR4312
+;TASK1→0 板押圧給材要求待ち
+STG @MR4312
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+MPS
+AND MR20413              ; TASK1→0 PP退避要求
+JMP @MR4313
+MPP
+LDB MR20413              ; TASK1→0 PP退避要求
+AND MR20300              ; TASK1→0 板押圧給材要求
+ANL
+JMP @MR4400
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1901              ; Main2 HALT許可
+;<h1/> PP退避動作
+;PP退避
+STG @MR4313
+DW #1 EM1312             ; RB7Target Pos
+CON
+SET @MR4700              ; ③SUB_RB7/Move
+CON
+JMP @MR4314
+STG @MR4314
+AND @MR4701              ; ③SUB_RB7/Move完了
+SET MR20414              ; TASK0→1 PP退避完了
+CON
+RES @MR4701              ; ③SUB_RB7/Move完了
+CON
+JMP @MR4315
+;TASK1→0 PP退避要求OFF待ち
+STG @MR4315
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+ANB MR20413              ; TASK1→0 PP退避要求
+ANL
+RES MR20414              ; TASK0→1 PP退避完了
+CON
+JMP @MR4310
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1901              ; Main2 HALT許可
+;↑PP退避動作終了
+;<h1/> 吸着台へ給材
+;板押圧吸着下降
+STG @MR4400
+MPS
+AND DM11055.2
+DW #5 DM20050            ; Ｆｴﾗｰ用
+MPP
+SET MR7306               ; 板押圧吸着下降
+CON
+RES MR7307               ; 板押圧吸着上昇
+CON
+MPS
+LDB MR4212               ; 板押圧吸着下降端ERR
+AND R4212                ; 板押圧吸着下降端
+ANB R4213                ; 板押圧吸着上昇端
+ANL
+JMP @MR4401
+MPP
+LD MR4212                ; 板押圧吸着下降端ERR
+AND R41200               ; TASK0 PAUSE 要求
+ANL
+SET @MR1901              ; Main2 HALT許可
+;溶着台吸着ON要求
+STG @MR4401
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+ANB MR20503              ; TASK1→0 溶着台吸着中
+ANL
+JMP @MR4402
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1901              ; Main2 HALT許可
+STG @MR4402
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+JMP @MR4403
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1901              ; Main2 HALT許可
+;板押圧吸着ﾊﾟｯﾄﾞ真空破壊ON
+STG @MR4403
+RES MR7603               ; 板押圧吸着ﾊﾟｯﾄﾞ吸着ON
+CON
+SET MR7604               ; 板押圧吸着ﾊﾟｯﾄﾞ吸着OFF
+CON
+SET MR7605               ; 板押圧吸着ﾊﾟｯﾄﾞ真空破壊ON
+CON
+SET MR7606               ; 溶着台_板押圧有無吸着ON
+CON
+RES MR7607               ; 溶着台_板押圧有無吸着OFF
+CON
+RES MR7608               ; 溶着台_板押圧有無真空破壊ON
+CON
+TMR @11 #5               ; wait
+CON
+AND @T11                 ; wait
+JMP @MR4404
+;板押圧吸着上昇
+STG @MR4404
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+ANB MR20503              ; TASK1→0 溶着台吸着中
+ANL
+SET MR7307               ; 板押圧吸着上昇
+CON
+RES MR7306               ; 板押圧吸着下降
+CON
+MPS
+LDB MR4213               ; 板押圧吸着上昇端ERR
+AND R4213                ; 板押圧吸着上昇端
+ANB R4212                ; 板押圧吸着下降端
+AND @T13                 ; R4213安定
+ANL
+JMP @MR4405
+MPP
+LD MR4213                ; 板押圧吸着上昇端ERR
+AND R41200               ; TASK0 PAUSE 要求
+ANL
+SET @MR1901              ; Main2 HALT許可
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1901              ; Main2 HALT許可
+;受渡し後無確認
+STG @MR4405
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+ANB MR20109              ; 吸着確認中
+ANL
+SET MR20109              ; 吸着確認中
+CON
+SET @MR5300              ; ⑦SUB_搬送PP板押圧無確認
+CON
+JMP @MR4406
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1901              ; Main2 HALT許可
+STG @MR4406
+AND @MR5301              ; ⑦SUB_搬送PP板押圧無確認完了
+RES MR20109              ; 吸着確認中
+CON
+RES @MR5301              ; ⑦SUB_搬送PP板押圧無確認完了
+CON
+JMP @MR4407
+STG @MR4407
+MPS
+AND DM2000.3             ; ﾄﾞﾗｲ運転有効/無効(ON有効)
+SET MR7604               ; 板押圧吸着ﾊﾟｯﾄﾞ吸着OFF
+CON
+RES MR7603               ; 板押圧吸着ﾊﾟｯﾄﾞ吸着ON
+CON
+RES MR7605               ; 板押圧吸着ﾊﾟｯﾄﾞ真空破壊ON
+CON
+MPS
+AND R46100               ; _自動運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+JMP @MR4412
+MPP
+AND R46102               ; _ﾒﾝﾃﾅﾝｽ運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+JMP @MR2804
+MPP
+ANB DM2000.3             ; ﾄﾞﾗｲ運転有効/無効(ON有効)
+MPS
+AND= DM20030 #1          ; RB7搬送PP板押圧有無記憶(1=有り)
+JMP @MR4410
+MPP
+AND= DM20030 #0          ; RB7搬送PP板押圧有無記憶(1=有り)
+SET MR7604               ; 板押圧吸着ﾊﾟｯﾄﾞ吸着OFF
+CON
+RES MR7603               ; 板押圧吸着ﾊﾟｯﾄﾞ吸着ON
+CON
+RES MR7605               ; 板押圧吸着ﾊﾟｯﾄﾞ真空破壊ON
+CON
+MPS
+AND R46100               ; _自動運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+JMP @MR4412
+MPP
+AND R46102               ; _ﾒﾝﾃﾅﾝｽ運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+JMP @MR2804
+;Error 102 板押圧除材要求(RB7搬送PP)
+STG @MR4410
+ANB R39900               ; RB動作中
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+ANB R39004               ; ｴﾗｰ中
+ANL
+SET R39004               ; ｴﾗｰ中
+CON
+DW $4000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #102 @DM1             ; ErrorNo /ERROR_DISP
+CON
+DW #4606 @DM2            ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task0 ERROR
+CON
+JMP @MR4411
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1901              ; Main2 HALT許可
+STG @MR4411
+SET @MR1901              ; Main2 HALT許可
+CON
+AND @MR101               ; Task0 ｴﾗｰ完了
+RES @MR101               ; Task0 ｴﾗｰ完了
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+AND @MR105               ; SW1
+JMP @MR4405
+;TASK0→1 板押圧給材完了ON
+STG @MR4412
+SET MR20301              ; TASK0→1 板押圧給材完了
+CON
+JMP @MR4413
+STG @MR4413
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+ANB MR20300              ; TASK1→0 板押圧給材要求
+ANL
+RES MR20301              ; TASK0→1 板押圧給材完了
+CON
+@INC.S DM20040           ; 板押し圧投入数(溶着台に)
+CON
+JMP @MR4414
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1901              ; Main2 HALT許可
+;<h1/> 先頭へ
+STG @MR4414
+JMP @MR4003
+;終了
+STG @MR4415              ; Main2 END
+SET @MR4001              ; Main2 END
+CON
+RES @MR4002              ; Main2 Busy
+CON
+ENDS
+;<h1/>MAINTE/ﾒﾝﾃﾅﾝｽ動作
+;[本STG内容]
+;・各TaskのMAINTE動作を記述して下さい
+;・動作ﾓｰﾄﾞは「MAINTEAC*」に格納されています(1～32)
+;・動作終了時は@MR2915にJMPして下さい
+STG LR5600               ; _Grp1_Task0_MAINTE.STG
+JMP @MR2000
+STG @MR2000
+SET @MR2002              ; ﾒﾝﾃ中
+CON
+JMP @MR2003
+STG @MR2003
+MPS
+AND= DM4110 #1           ; _Group1　ﾒﾝﾃ動作番号
+JMP @MR2100
+MRD
+AND= DM4110 #2           ; _Group1　ﾒﾝﾃ動作番号
+JMP @MR2103
+MPP
+LD<> DM4110 #1           ; _Group1　ﾒﾝﾃ動作番号
+AND<> DM4110 #2          ; _Group1　ﾒﾝﾃ動作番号
+ANL
+JMP @MR2915              ; Mainte END
+STG @MR2100
+JMP @MR2101
+;板押圧トレイ動作
+;[[ﾄﾚｲｾｯﾄ]]ﾄﾚｲｾｯﾄ位置へ移動します。
+;[[ﾊﾟﾚﾀｲｽﾞ]]ﾊﾟﾚﾀｲｽﾞ位置へ移動します。
+;[[一連]]パレタイズから板押圧の供給まで行います。
+;[[定停止]]動作を終了します。
+STG @MR2101
+ANB R39204               ; SELECT_ACT Interlock
+SET R39204               ; SELECT_ACT Interlock
+CON
+MPS
+SET @MR1900              ; Main1 HALT許可
+CON
+DW #1 @DM31              ; ScreenNo /SELECT_ACT
+CON
+DW #4 @DM32              ; SW1_No /SELECT_ACT
+CON
+DW #5 @DM33              ; SW2_No /SELECT_ACT
+CON
+DW #29 @DM34             ; SW3_No /SELECT_ACT
+CON
+DW #3 @DM35              ; SW4_No /SELECT_ACT
+CON
+DW #0 @DM36              ; Bz_Use /SELECT_ACT
+MPP
+SET @MR200               ; Task0 SELECT_ACT
+CON
+JMP @MR2102
+STG @MR2102
+SET @MR1900              ; Main1 HALT許可
+CON
+AND @MR201               ; Task0 SEL_ACT END
+RES @MR201               ; Task0 SEL_ACT END
+CON
+RES R39204               ; SELECT_ACT Interlock
+CON
+MPS
+AND @MR205               ; SW1
+DW #1 @DM10              ; ﾒﾝﾃ動作ｺｰﾄﾞ
+CON
+JMP @MR2200
+MRD
+AND @MR206               ; SW2
+DW #2 @DM10              ; ﾒﾝﾃ動作ｺｰﾄﾞ
+CON
+JMP @MR2200
+MRD
+AND @MR207               ; SW3
+DW #7 @DM10              ; ﾒﾝﾃ動作ｺｰﾄﾞ
+CON
+JMP @MR2200
+MPP
+AND @MR208               ; SW4
+DW #0 @DM10              ; ﾒﾝﾃ動作ｺｰﾄﾞ
+CON
+JMP @MR2914              ; ﾒﾝﾃ終了
+STG @MR2103
+JMP @MR2104
+;板押圧搬送PP動作
+;[[ﾊﾟﾚﾀｲｽﾞ]]ﾊﾟﾚﾀｲｽﾞ位置へ移動します。
+;[[取出]]板押圧を取出します。
+;[[NextPage]]次のﾍﾟｰｼﾞへ
+;[[定停止]]動作を終了します。
+STG @MR2104
+ANB R39204               ; SELECT_ACT Interlock
+SET R39204               ; SELECT_ACT Interlock
+CON
+MPS
+SET @MR1900              ; Main1 HALT許可
+CON
+DW #2 @DM31              ; ScreenNo /SELECT_ACT
+CON
+DW #5 @DM32              ; SW1_No /SELECT_ACT
+CON
+DW #6 @DM33              ; SW2_No /SELECT_ACT
+CON
+DW #2 @DM34              ; SW3_No /SELECT_ACT
+CON
+DW #3 @DM35              ; SW4_No /SELECT_ACT
+CON
+DW #0 @DM36              ; Bz_Use /SELECT_ACT
+MPP
+SET @MR200               ; Task0 SELECT_ACT
+CON
+JMP @MR2105
+STG @MR2105
+SET @MR1900              ; Main1 HALT許可
+CON
+AND @MR201               ; Task0 SEL_ACT END
+RES @MR201               ; Task0 SEL_ACT END
+CON
+RES R39204               ; SELECT_ACT Interlock
+CON
+MPS
+AND @MR205               ; SW1
+DW #3 @DM10              ; ﾒﾝﾃ動作ｺｰﾄﾞ
+CON
+JMP @MR2200
+MRD
+AND @MR206               ; SW2
+DW #4 @DM10              ; ﾒﾝﾃ動作ｺｰﾄﾞ
+CON
+JMP @MR2200
+MRD
+AND @MR207               ; SW3
+JMP @MR2106
+MPP
+AND @MR208               ; SW4
+DW #0 @DM10              ; ﾒﾝﾃ動作ｺｰﾄﾞ
+CON
+JMP @MR2914              ; ﾒﾝﾃ終了
+;板押圧搬送PP動作
+;[[ｱﾗｲﾒﾝﾄ]]ｱﾗｲﾒﾝﾄ動作します。
+;[[溶着台]]溶着台へ給材します。
+;[[PrevPage]]前のﾍﾟｰｼﾞへ
+;[[定停止]]動作を終了します。
+STG @MR2106
+ANB R39204               ; SELECT_ACT Interlock
+SET R39204               ; SELECT_ACT Interlock
+CON
+MPS
+SET @MR1900              ; Main1 HALT許可
+CON
+DW #3 @DM31              ; ScreenNo /SELECT_ACT
+CON
+DW #7 @DM32              ; SW1_No /SELECT_ACT
+CON
+DW #8 @DM33              ; SW2_No /SELECT_ACT
+CON
+DW #1 @DM34              ; SW3_No /SELECT_ACT
+CON
+DW #3 @DM35              ; SW4_No /SELECT_ACT
+CON
+DW #0 @DM36              ; Bz_Use /SELECT_ACT
+MPP
+SET @MR200               ; Task0 SELECT_ACT
+CON
+JMP @MR2107
+STG @MR2107
+SET @MR1900              ; Main1 HALT許可
+CON
+AND @MR201               ; Task0 SEL_ACT END
+RES @MR201               ; Task0 SEL_ACT END
+CON
+RES R39204               ; SELECT_ACT Interlock
+CON
+MPS
+AND @MR205               ; SW1
+DW #5 @DM10              ; ﾒﾝﾃ動作ｺｰﾄﾞ
+CON
+JMP @MR2200
+MRD
+AND @MR206               ; SW2
+DW #6 @DM10              ; ﾒﾝﾃ動作ｺｰﾄﾞ
+CON
+JMP @MR2200
+MRD
+AND @MR207               ; SW3
+JMP @MR2104
+MPP
+AND @MR208               ; SW4
+DW #0 @DM10              ; ﾒﾝﾃ動作ｺｰﾄﾞ
+CON
+JMP @MR2914              ; ﾒﾝﾃ終了
+;ｽﾃｯﾌﾟor通常　か選択
+STG @MR2200
+MPS
+MSTRT SELECT_POST #1 MyTask #0 @MR2005;自ﾀｽｸ番号
+MPP
+AND @MR2005
+RES @MR2005
+CON
+JMP @MR2202
+LD= @DM10 #1             ; ﾒﾝﾃ動作ｺｰﾄﾞ
+LD R4213                 ; 板押圧吸着上昇端
+ANB R4212                ; 板押圧吸着下降端
+LD>=.L DM11048 +29000    ; RB7 現在位置
+AND DM11055.1
+ORL
+ANL
+AND DM11023.1
+OUT @MR500               ; ﾒﾝﾃｺｰﾄﾞ1条件OK
+LD= @DM10 #2             ; ﾒﾝﾃ動作ｺｰﾄﾞ
+OR= @DM10 #7             ; ﾒﾝﾃ動作ｺｰﾄﾞ
+LD R4213                 ; 板押圧吸着上昇端
+ANB R4212                ; 板押圧吸着下降端
+LD>=.L DM11048 +29000    ; RB7 現在位置
+AND DM11055.1
+ORL
+ANL
+AND DM11023.1
+OUT @MR501               ; ﾒﾝﾃｺｰﾄﾞ2条件OK
+LD= @DM10 #3             ; ﾒﾝﾃ動作ｺｰﾄﾞ
+AND DM11055.1
+OUT @MR502               ; ﾒﾝﾃｺｰﾄﾞ3条件OK
+LD= @DM10 #4             ; ﾒﾝﾃ動作ｺｰﾄﾞ
+AND DM11055.1
+ANB MR7605               ; 板押圧吸着ﾊﾟｯﾄﾞ真空破壊ON
+OUT @MR503               ; ﾒﾝﾃｺｰﾄﾞ4条件OK
+LD= @DM10 #5             ; ﾒﾝﾃ動作ｺｰﾄﾞ
+OR= @DM10 #7             ; ﾒﾝﾃ動作ｺｰﾄﾞ
+ANB R4310                ; 板押圧ﾁｬｯｸ閉
+AND R4311                ; 板押圧ﾁｬｯｸ開
+OUT @MR504               ; ﾒﾝﾃｺｰﾄﾞ5条件OK
+LD= @DM10 #6             ; ﾒﾝﾃ動作ｺｰﾄﾞ
+OR= @DM10 #7             ; ﾒﾝﾃ動作ｺｰﾄﾞ
+ANB R4104                ; 板押圧溶着台 溶着側
+AND R4105                ; 板押圧溶着台 受取側
+AND R4106                ; 板押圧溶着台 上昇端
+ANB R4107                ; 板押圧溶着台 下降端
+OUT @MR505               ; ﾒﾝﾃｺｰﾄﾞ6条件OK
+STG @MR2202
+MPS
+TMR @39 #10              ; ﾒﾝﾃ条件NG
+CON
+AND @T39                 ; ﾒﾝﾃ条件NG
+JMP @MR2810
+MPP
+ANB @T39                 ; ﾒﾝﾃ条件NG
+MPS
+LD= @DM10 #1             ; ﾒﾝﾃ動作ｺｰﾄﾞ
+AND @MR500               ; ﾒﾝﾃｺｰﾄﾞ1条件OK
+ANL
+JMP @MR2300
+MRD
+LD= @DM10 #2             ; ﾒﾝﾃ動作ｺｰﾄﾞ
+AND @MR501               ; ﾒﾝﾃｺｰﾄﾞ2条件OK
+ANL
+JMP @MR2400
+MRD
+LD= @DM10 #3             ; ﾒﾝﾃ動作ｺｰﾄﾞ
+AND @MR502               ; ﾒﾝﾃｺｰﾄﾞ3条件OK
+ANL
+JMP @MR2500
+MRD
+LD= @DM10 #4             ; ﾒﾝﾃ動作ｺｰﾄﾞ
+AND @MR503               ; ﾒﾝﾃｺｰﾄﾞ4条件OK
+ANL
+JMP @MR2600
+MRD
+LD= @DM10 #5             ; ﾒﾝﾃ動作ｺｰﾄﾞ
+AND @MR504               ; ﾒﾝﾃｺｰﾄﾞ5条件OK
+ANL
+JMP @MR2700
+MRD
+LD= @DM10 #6             ; ﾒﾝﾃ動作ｺｰﾄﾞ
+AND @MR505               ; ﾒﾝﾃｺｰﾄﾞ6条件OK
+ANL
+JMP @MR2800
+MPP
+LD= @DM10 #7             ; ﾒﾝﾃ動作ｺｰﾄﾞ
+AND @MR501               ; ﾒﾝﾃｺｰﾄﾞ2条件OK
+AND @MR504               ; ﾒﾝﾃｺｰﾄﾞ5条件OK
+AND @MR505               ; ﾒﾝﾃｺｰﾄﾞ6条件OK
+ANL
+JMP @MR2900
+;<h1/> ﾒﾝﾃｺｰﾄﾞ1動作/Maintenance code 1 Operation
+;交換位置移動
+STG @MR2300
+JMP @MR3004
+STG @MR2301
+JMP @MR2100
+;<h1/> ﾒﾝﾃｺｰﾄﾞ2動作/Maintenance code 2 Operation
+STG @MR2400
+DW #2300 DM3008          ; _MainTP　切替ﾍﾟｰｼﾞNo
+CON
+JMP @MR2401
+STG @MR2401
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+AND MR20102              ; TP選択終了SW
+ANL
+JMP @MR2402
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+;板押圧ﾄﾚｲ押え 上昇
+STG @MR2402
+SET MR7201               ; (板押圧ﾄﾚｲ押え 上昇)
+CON
+RES MR7200               ; 板押圧ﾄﾚｲ押え 下降
+CON
+MPS
+LDB MR4101               ; 板押圧ﾄﾚｲ押え左 上昇端ERR
+ANB MR4103               ; 板押圧ﾄﾚｲ押え右 上昇端ERR
+ANB R4100                ; 板押圧ﾄﾚｲ押え左 下降端
+AND R4101                ; 板押圧ﾄﾚｲ押え左 上昇端
+ANB R4102                ; 板押圧ﾄﾚｲ押え右 下降端
+AND R4103                ; 板押圧ﾄﾚｲ押え右 上昇端
+ANL
+JMP @MR2403
+MPP
+LD MR4101                ; 板押圧ﾄﾚｲ押え左 上昇端ERR
+OR MR4103                ; 板押圧ﾄﾚｲ押え右 上昇端ERR
+AND R41200               ; TASK0 PAUSE 要求
+ANL
+SET @MR1900              ; Main1 HALT許可
+;ﾊﾟﾚﾀｲｽﾞ計算
+STG @MR2403
+JMP @MR3200
+STG @MR2404
+MPS
+AND<> @DM10 #7           ; ﾒﾝﾃ動作ｺｰﾄﾞ
+JMP @MR2100
+MPP
+AND= @DM10 #7            ; ﾒﾝﾃ動作ｺｰﾄﾞ
+JMP @MR2502
+;<h1/> ﾒﾝﾃｺｰﾄﾞ3動作/Maintenance code 3 Operation 
+STG @MR2500
+DW #2300 DM3008          ; _MainTP　切替ﾍﾟｰｼﾞNo
+CON
+JMP @MR2501
+STG @MR2501
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+AND MR20102              ; TP選択終了SW
+ANL
+JMP @MR2502
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+;板押圧吸着上昇
+STG @MR2502
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+SET MR7307               ; 板押圧吸着上昇
+CON
+RES MR7306               ; 板押圧吸着下降
+CON
+MPS
+LDB MR4213               ; 板押圧吸着上昇端ERR
+ANB R4212                ; 板押圧吸着下降端
+AND R4213                ; 板押圧吸着上昇端
+AND @T13                 ; R4213安定
+ANL
+JMP @MR2503
+MPP
+LD MR4213                ; 板押圧吸着上昇端ERR
+AND R41200               ; TASK0 PAUSE 要求
+ANL
+SET @MR1900              ; Main1 HALT許可
+;ﾊﾟﾚﾀｲｽﾞ計算～
+STG @MR2503
+JMP @MR4004
+STG @MR2504
+MPS
+AND<> @DM10 #7           ; ﾒﾝﾃ動作ｺｰﾄﾞ
+JMP @MR2103
+MPP
+AND= @DM10 #7            ; ﾒﾝﾃ動作ｺｰﾄﾞ
+JMP @MR2600
+;<h1/> ﾒﾝﾃｺｰﾄﾞ4動作/Maintenance code 4 Operation
+;板押圧吸着下降
+STG @MR2600
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+SET MR7306               ; 板押圧吸着下降
+CON
+RES MR7307               ; 板押圧吸着上昇
+CON
+MPS
+LDB MR4212               ; 板押圧吸着下降端ERR
+AND R4212                ; 板押圧吸着下降端
+ANB R4213                ; 板押圧吸着上昇端
+ANL
+JMP @MR2601
+MPP
+LD MR4212                ; 板押圧吸着下降端ERR
+AND R41200               ; TASK0 PAUSE 要求
+ANL
+SET @MR1900              ; Main1 HALT許可
+;搬送PP板押圧有無確認
+STG @MR2601
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+ANB MR20109              ; 吸着確認中
+ANL
+SET MR20109              ; 吸着確認中
+CON
+SET @MR5200              ; ⑦SUB_搬送PP板押圧有確認
+CON
+JMP @MR2602
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR2602
+AND @MR5201              ; ⑦SUB_搬送PP板押圧有確認完了
+RES MR20109              ; 吸着確認中
+CON
+RES @MR5201              ; ⑦SUB_搬送PP板押圧有確認完了
+CON
+JMP @MR2603
+STG @MR2603
+MPS
+AND= DM20030 #1          ; RB7搬送PP板押圧有無記憶(1=有り)
+MPS
+AND<> EM1313 #2          ; RB7Now Pos
+JMP @MR2605
+MPP
+AND= EM1313 #2           ; RB7Now Pos
+SET MR7614               ; 板押圧ｾｯﾄ真空破壊ON
+CON
+RES MR7612               ; 板押圧ｾｯﾄ吸着ON
+CON
+SET MR7613               ; 板押圧ｾｯﾄ吸着OFF
+CON
+TMR @5 #5                ; wait
+CON
+AND @T5                  ; wait
+JMP @MR2605
+MPP
+AND= DM20030 #0          ; RB7搬送PP板押圧有無記憶(1=有り)
+JMP @MR2604
+STG @MR2604
+SET MR7604               ; 板押圧吸着ﾊﾟｯﾄﾞ吸着OFF
+CON
+RES MR7603               ; 板押圧吸着ﾊﾟｯﾄﾞ吸着ON
+CON
+RES MR7605               ; 板押圧吸着ﾊﾟｯﾄﾞ真空破壊ON
+CON
+JMP @MR2605
+;板押圧吸着上昇
+STG @MR2605
+SET MR7307               ; 板押圧吸着上昇
+CON
+RES MR7306               ; 板押圧吸着下降
+CON
+MPS
+LDB MR4213               ; 板押圧吸着上昇端ERR
+ANB R4212                ; 板押圧吸着下降端
+AND R4213                ; 板押圧吸着上昇端
+AND @T13                 ; R4213安定
+ANL
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR2606
+MPP
+LD MR4213                ; 板押圧吸着上昇端ERR
+AND R41200               ; TASK0 PAUSE 要求
+ANL
+SET @MR1900              ; Main1 HALT許可
+;搬送PP板押圧有無確認
+STG @MR2606
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+ANB MR20109              ; 吸着確認中
+ANL
+SET MR20109              ; 吸着確認中
+CON
+SET @MR5200              ; ⑦SUB_搬送PP板押圧有確認
+CON
+JMP @MR2607
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR2607
+AND @MR5201              ; ⑦SUB_搬送PP板押圧有確認完了
+RES MR20109              ; 吸着確認中
+CON
+RES @MR5201              ; ⑦SUB_搬送PP板押圧有確認完了
+CON
+JMP @MR2608
+STG @MR2608
+MPS
+AND= DM20030 #1          ; RB7搬送PP板押圧有無記憶(1=有り)
+JMP @MR2611
+MPP
+AND= DM20030 #0          ; RB7搬送PP板押圧有無記憶(1=有り)
+JMP @MR2609
+;Error 106 板押圧取出し失敗(RB7板押圧搬送PP)
+STG @MR2609
+ANB R39900               ; RB動作中
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+ANB R39004               ; ｴﾗｰ中
+ANL
+SET R39004               ; ｴﾗｰ中
+CON
+DW $7240 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #106 @DM1             ; ErrorNo /ERROR_DISP
+CON
+DW #4606 @DM2            ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task0 ERROR
+CON
+JMP @MR2610
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR2610
+SET @MR1900              ; Main1 HALT許可
+CON
+AND @MR101               ; Task0 ｴﾗｰ完了
+RES @MR101               ; Task0 ｴﾗｰ完了
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+MPS
+AND @MR105               ; SW1
+JMP @MR2606
+MRD
+AND @MR106               ; SW2
+SET MR7604               ; 板押圧吸着ﾊﾟｯﾄﾞ吸着OFF
+CON
+RES MR7603               ; 板押圧吸着ﾊﾟｯﾄﾞ吸着ON
+CON
+RES MR7605               ; 板押圧吸着ﾊﾟｯﾄﾞ真空破壊ON
+CON
+JMP @MR2600
+MPP
+AND @MR107               ; SW3
+SET MR7604               ; 板押圧吸着ﾊﾟｯﾄﾞ吸着OFF
+CON
+RES MR7603               ; 板押圧吸着ﾊﾟｯﾄﾞ吸着ON
+CON
+RES MR7605               ; 板押圧吸着ﾊﾟｯﾄﾞ真空破壊ON
+CON
+MPS
+AND<> @DM10 #7           ; ﾒﾝﾃ動作ｺｰﾄﾞ
+JMP @MR2611
+MPP
+AND= @DM10 #7            ; ﾒﾝﾃ動作ｺｰﾄﾞ
+JMP @MR2611
+;終了
+STG @MR2611
+MPS
+AND<> @DM10 #7           ; ﾒﾝﾃ動作ｺｰﾄﾞ
+JMP @MR2103
+MPP
+AND= @DM10 #7            ; ﾒﾝﾃ動作ｺｰﾄﾞ
+JMP @MR2700
+;<h1/> ﾒﾝﾃｺｰﾄﾞ5動作/Maintenance code 5 Operation
+;アライメント
+;板押圧吸着上昇
+STG @MR2700
+SET MR7307               ; 板押圧吸着上昇
+CON
+RES MR7306               ; 板押圧吸着下降
+CON
+MPS
+LDB MR4213               ; 板押圧吸着上昇端ERR
+ANB R4212                ; 板押圧吸着下降端
+AND R4213                ; 板押圧吸着上昇端
+AND @T13                 ; R4213安定
+ANL
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR2701
+MPP
+LD MR4213                ; 板押圧吸着上昇端ERR
+AND R41200               ; TASK0 PAUSE 要求
+ANL
+SET @MR1900              ; Main1 HALT許可
+STG @MR2701
+JMP @MR4200
+;終了
+STG @MR2702
+MPS
+AND<> @DM10 #7           ; ﾒﾝﾃ動作ｺｰﾄﾞ
+JMP @MR2106
+MPP
+AND= @DM10 #7            ; ﾒﾝﾃ動作ｺｰﾄﾞ
+JMP @MR2800
+;<h1/> ﾒﾝﾃｺｰﾄﾞ6動作/Maintenance code 6 Operation
+;溶着台給材
+;板押圧吸着上昇
+STG @MR2800
+SET MR7307               ; 板押圧吸着上昇
+CON
+RES MR7306               ; 板押圧吸着下降
+CON
+MPS
+LDB MR4213               ; 板押圧吸着上昇端ERR
+ANB R4212                ; 板押圧吸着下降端
+AND R4213                ; 板押圧吸着上昇端
+AND @T13                 ; R4213安定
+ANL
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR2801
+MPP
+LD MR4213                ; 板押圧吸着上昇端ERR
+AND R41200               ; TASK0 PAUSE 要求
+ANL
+SET @MR1900              ; Main1 HALT許可
+STG @MR2801
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+DW #3 EM1312             ; RB7Target Pos
+CON
+SET @MR4700              ; ③SUB_RB7/Move
+CON
+JMP @MR2802
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR2802
+AND @MR4701              ; ③SUB_RB7/Move完了
+RES @MR4701              ; ③SUB_RB7/Move完了
+CON
+JMP @MR2803
+;溶着台給材動作
+STG @MR2803
+JMP @MR4400
+;終了
+STG @MR2804
+MPS
+AND<> @DM10 #7           ; ﾒﾝﾃ動作ｺｰﾄﾞ
+JMP @MR2106
+MPP
+AND= @DM10 #7            ; ﾒﾝﾃ動作ｺｰﾄﾞ
+JMP @MR2901
+;<h1/> ﾒﾝﾃｺｰﾄﾞ7動作/Maintenance code 7 Operation
+STG @MR2900
+JMP @MR2400
+STG @MR2901
+DW #1 EM1312             ; RB7Target Pos
+CON
+SET @MR4700              ; ③SUB_RB7/Move
+CON
+JMP @MR2902
+STG @MR2902
+AND @MR4701              ; ③SUB_RB7/Move完了
+RES @MR4701              ; ③SUB_RB7/Move完了
+CON
+JMP @MR2903
+STG @MR2903
+RES MR7606               ; 溶着台_板押圧有無吸着ON
+CON
+SET MR7607               ; 溶着台_板押圧有無吸着OFF
+CON
+RES MR7608               ; 溶着台_板押圧有無真空破壊ON
+CON
+JMP @MR2100
+;<h1/> ﾒﾝﾃﾅﾝｽｲﾝﾀｰﾛｯｸ
+STG @MR2810
+ANB R39900               ; RB動作中
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+ANB R39004               ; ｴﾗｰ中
+ANL
+SET R39004               ; ｴﾗｰ中
+CON
+DW $3000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #52 @DM1              ; ErrorNo /ERROR_DISP
+CON
+DW #0 @DM2               ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task0 ERROR
+CON
+JMP @MR2811
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR2811
+SET @MR1900              ; Main1 HALT許可
+CON
+AND @MR101               ; Task0 ｴﾗｰ完了
+RES @MR101               ; Task0 ｴﾗｰ完了
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+AND @MR105               ; SW1
+JMP @MR2003
+;Maintenance 終了
+STG @MR2914              ; ﾒﾝﾃ終了
+MCALL MODE_INDI #2
+MCALL HOLD_REQUEST MyGroup;自ｸﾞﾙｰﾌﾟ番号
+DW #211 DM3008           ; _MainTP　切替ﾍﾟｰｼﾞNo
+CON
+JMP @MR2915              ; Mainte END
+STG @MR2915              ; Mainte END
+MPS
+LD R41200                ; TASK0 PAUSE 要求
+ANB @MR001               ; TASK0 ERROR
+ANL
+SET @MR1900              ; Main1 HALT許可
+MPP
+ANB R41200               ; TASK0 PAUSE 要求
+RES @MR2002              ; ﾒﾝﾃ中
+CON
+JMP LR600                ; _Grp1_Task0_Fin.STG
+;<h1/>SubRoutines/ｻﾌﾞﾙｰﾁﾝ
+;[記述方法]
+;・ｻﾌﾞﾙｰﾁﾝは本ﾌﾞｯｸﾏｰｸから下に記述していって下さい
+;・ｻﾌﾞﾙｰﾁﾝは必ずﾌﾞｯｸﾏｰｸを挿入して処理内容を明確にする事
+;<h1/> ①SUB_RB3/Move
+STG @MR4500              ; ①SUB_RB3/Move
+SET @MR4502              ; ①SUB_RB3/Move中
+CON
+JMP @MR4503
+;ｱﾗｰﾑﾘｾｯﾄ &ｻｰﾎﾞON　ｱﾗｰﾑﾘｾｯﾄできない場合は、ｻｰﾎﾞOFFしError発生
+STG @MR4503
+MPS
+BSET DM11223 #3          ; RB3 制御信号
+CON
+BANB DM11023 #3          ; RB3 状態信号
+BSET DM11223 #4          ; RB3 制御信号
+CON
+BAND DM11023 #4          ; RB3 状態信号
+BRES DM11223 #3          ; RB3 制御信号
+CON
+JMP @MR4504
+MPP
+TMR @0 #20               ; RB3Moveｴﾗｰ
+CON
+AND @T0                  ; RB3Moveｴﾗｰ
+BRES DM11223 #3          ; RB3 制御信号
+CON
+BRES DM11223 #4          ; RB3 制御信号
+CON
+JMP @MR4614
+STG @MR4504
+SET R35200               ; RB3 MOVE
+CON
+JMP @MR4505
+STG @MR4505
+AND R35201               ; RB3 MOVE END
+RES R35201               ; RB3 MOVE END
+CON
+JMP @MR4506
+STG @MR4506
+MPS
+ANB R35203               ; RB3 Alarm
+JMP @MR4507
+MPP
+AND R35203               ; RB3 Alarm
+RES R35203               ; RB3 Alarm
+CON
+JMP @MR4614
+;END
+STG @MR4507
+SET @MR4501              ; ①SUB_RB3/Move完了
+CON
+RES @MR4502              ; ①SUB_RB3/Move中
+CON
+ENDS
+;<h1/> ②SUB_RB3/Home
+STG @MR4600              ; ②SUB_RB3/Home
+DW #0 EM1305             ; RB3Now Pos
+CON
+SET @MR4602              ; ②SUB_RB3/Home中
+CON
+JMP @MR4603
+;ｱﾗｰﾑﾘｾｯﾄ &ｻｰﾎﾞON　ｱﾗｰﾑﾘｾｯﾄできない場合は、ｻｰﾎﾞOFFしError発生
+STG @MR4603
+MPS
+BSET DM11223 #3          ; RB3 制御信号
+CON
+BANB DM11023 #3          ; RB3 状態信号
+BSET DM11223 #4          ; RB3 制御信号
+CON
+BAND DM11023 #4          ; RB3 状態信号
+BRES DM11223 #3          ; RB3 制御信号
+CON
+JMP @MR4604
+MPP
+TMR @1 #20               ; RB3Homeｴﾗｰ
+CON
+AND @T1                  ; RB3Homeｴﾗｰ
+BRES DM11223 #3          ; RB3 制御信号
+CON
+BRES DM11223 #4          ; RB3 制御信号
+CON
+JMP @MR4614
+STG @MR4604
+MPS
+BAND DM11023 #1          ; RB3 状態信号
+JMP @MR4607
+MPP
+BANB DM11023 #1          ; RB3 状態信号
+SET R35208               ; RB3 HOME
+CON
+JMP @MR4605
+STG @MR4605
+AND R35209               ; RB3 HOME END
+RES R35209               ; RB3 HOME END
+CON
+JMP @MR4606
+STG @MR4606
+MPS
+ANB R35203               ; RB3 Alarm
+JMP @MR4607
+MPP
+AND R35203               ; RB3 Alarm
+RES R35203               ; RB3 Alarm
+CON
+JMP @MR4614
+;END
+STG @MR4607
+SET @MR4601              ; ②SUB_RB3/Home完了
+CON
+RES @MR4602              ; ②SUB_RB3/Home中
+CON
+ENDS
+;Error 3 RB3動作異常
+STG @MR4614
+ANB R39900               ; RB動作中
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+ANB R39004               ; ｴﾗｰ中
+ANL
+SET R39004               ; ｴﾗｰ中
+CON
+MPS
+DW $1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #3 @DM1               ; ErrorNo /ERROR_DISP
+CON
+DW #0 @DM2               ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task0 ERROR
+CON
+JMP @MR4615
+MPP
+SET B3990                ; ｱﾗｰﾑ詳細表示
+CON
+LDA DM11022              ; RB3 ｱﾗｰﾑｺｰﾄﾞ
+CON
+STA DM50310              ; RB ｱﾗｰﾑ表示
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR4615
+SET @MR1900              ; Main1 HALT許可
+CON
+AND @MR101               ; Task0 ｴﾗｰ完了
+RES @MR101               ; Task0 ｴﾗｰ完了
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+AND @MR105               ; SW1
+RES B3990                ; ｱﾗｰﾑ詳細表示
+CON
+DW #0 DM50310            ; RB ｱﾗｰﾑ表示
+CON
+MPS
+AND @MR4602              ; ②SUB_RB3/Home中
+JMP @MR4603
+MPP
+AND @MR4502              ; ①SUB_RB3/Move中
+JMP @MR4503
+;<h1/> ③SUB_RB7/Move
+STG @MR4700              ; ③SUB_RB7/Move
+SET @MR4702              ; ③SUB_RB7/Move中
+CON
+JMP @MR4703
+;ｱﾗｰﾑﾘｾｯﾄ &ｻｰﾎﾞON　ｱﾗｰﾑﾘｾｯﾄできない場合は、ｻｰﾎﾞOFFしError発生
+STG @MR4703
+MPS
+BSET DM11255 #3          ; RB7 制御信号
+CON
+BANB DM11055 #3          ; RB7 状態信号
+BSET DM11255 #4          ; RB7 制御信号
+CON
+BAND DM11055 #4          ; RB7 状態信号
+BRES DM11255 #3          ; RB7 制御信号
+CON
+JMP @MR4704
+MPP
+TMR @2 #20               ; RB7Moveｴﾗｰ
+CON
+AND @T2                  ; RB7Moveｴﾗｰ
+BRES DM11255 #3          ; RB7 制御信号
+CON
+BRES DM11255 #4          ; RB7 制御信号
+CON
+JMP @MR4814
+STG @MR4704
+SET R35600               ; RB7 MOVE
+CON
+JMP @MR4705
+STG @MR4705
+AND R35601               ; RB7 MOVE END
+RES R35601               ; RB7 MOVE END
+CON
+JMP @MR4706
+STG @MR4706
+MPS
+ANB R35603               ; RB7 Alarm
+JMP @MR4707
+MPP
+AND R35603               ; RB7 Alarm
+RES R35603               ; RB7 Alarm
+CON
+JMP @MR4814
+;END
+STG @MR4707
+SET @MR4701              ; ③SUB_RB7/Move完了
+CON
+RES @MR4702              ; ③SUB_RB7/Move中
+CON
+ENDS
+;<h1/> ④SUB_RB7/Home
+STG @MR4800              ; ④SUB_RB7/Home
+DW #0 EM1313             ; RB7Now Pos
+CON
+SET @MR4802              ; ④SUB_RB7/Home中
+CON
+JMP @MR4803
+;ｱﾗｰﾑﾘｾｯﾄ &ｻｰﾎﾞON　ｱﾗｰﾑﾘｾｯﾄできない場合は、ｻｰﾎﾞOFFしError発生
+STG @MR4803
+MPS
+BSET DM11255 #3          ; RB7 制御信号
+CON
+BANB DM11055 #3          ; RB7 状態信号
+BSET DM11255 #4          ; RB7 制御信号
+CON
+BAND DM11055 #4          ; RB7 状態信号
+BRES DM11255 #3          ; RB7 制御信号
+CON
+JMP @MR4804
+MPP
+TMR @3 #20               ; RB7Homeｴﾗｰ
+CON
+AND @T3                  ; RB7Homeｴﾗｰ
+BRES DM11255 #3          ; RB7 制御信号
+CON
+BRES DM11255 #4          ; RB7 制御信号
+CON
+JMP @MR4814
+STG @MR4804
+MPS
+BAND DM11055 #1          ; RB7 状態信号
+JMP @MR4807
+MPP
+BANB DM11055 #1          ; RB7 状態信号
+SET R35608               ; RB7 HOME
+CON
+JMP @MR4805
+STG @MR4805
+AND R35609               ; RB7 HOME END
+RES R35609               ; RB7 HOME END
+CON
+JMP @MR4806
+STG @MR4806
+MPS
+ANB R35603               ; RB7 Alarm
+JMP @MR4807
+MPP
+AND R35603               ; RB7 Alarm
+RES R35603               ; RB7 Alarm
+CON
+JMP @MR4814
+;END
+STG @MR4807
+SET @MR4801              ; ④SUB_RB7/Home完了
+CON
+RES @MR4802              ; ④SUB_RB7/Home中
+CON
+ENDS
+;Error 7 RB7動作異常
+STG @MR4814
+ANB R39900               ; RB動作中
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+ANB R39004               ; ｴﾗｰ中
+ANL
+SET R39004               ; ｴﾗｰ中
+CON
+MPS
+DW $1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #7 @DM1               ; ErrorNo /ERROR_DISP
+CON
+DW #0 @DM2               ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task0 ERROR
+CON
+JMP @MR4815
+MPP
+SET B3990                ; ｱﾗｰﾑ詳細表示
+CON
+LDA DM11054              ; RB7 ｱﾗｰﾑｺｰﾄﾞ
+CON
+STA DM50310              ; RB ｱﾗｰﾑ表示
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+MPS
+ANB R46100               ; _自動運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+SET @MR1900              ; Main1 HALT許可
+MPP
+AND R46100               ; _自動運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+SET @MR1901              ; Main2 HALT許可
+STG @MR4815
+MPS
+ANB R46100               ; _自動運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+SET @MR1900              ; Main1 HALT許可
+MRD
+AND R46100               ; _自動運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+SET @MR1901              ; Main2 HALT許可
+MPP
+AND @MR101               ; Task0 ｴﾗｰ完了
+RES @MR101               ; Task0 ｴﾗｰ完了
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+AND @MR105               ; SW1
+RES B3990                ; ｱﾗｰﾑ詳細表示
+CON
+DW #0 DM50310            ; RB ｱﾗｰﾑ表示
+CON
+MPS
+AND @MR4802              ; ④SUB_RB7/Home中
+JMP @MR4803
+MPP
+AND @MR4702              ; ③SUB_RB7/Move中
+JMP @MR4703
+;<h1/>未使用 ⑤SUB_板押圧ﾊﾟﾚﾀｲｽﾞ(ﾄﾚｲ搬送側)
+STG @MR4900              ; ⑤SUB_板押圧ﾊﾟﾚﾀｲｽﾞ(ﾄﾚｲ側)
+SET @MR4902              ; ⑤SUB_板押圧ﾊﾟﾚﾀｲｽﾞ(ﾄﾚｲ側)中
+CON
+JMP @MR4903
+;ﾊﾟﾚﾀｲｼﾞﾝｸﾞﾊﾟﾗﾒｰﾀｰ/Palletizing parameters
+;P11>P13：ﾊﾟﾚﾀｲｽﾞ値正常
+LD>.L EM14260 EM14272    ; RB3 P11 POS(LO)  RB3 P13 POS(LO)
+OUT @MR600               ; ﾄﾚｲ搬送ﾊﾟﾚﾀｲｽﾞ値正常
+;P11=P12：X方向ﾋﾟｯﾁ変更無し
+LD=.L EM14260 EM14266    ; RB3 P11 POS(LO)  RB3 P12 POS(LO)
+OUT @MR601               ; ﾄﾚｲ搬送X方向ﾋﾟｯﾁ変更無し
+;P11<P12：X方向ﾋﾟｯﾁ増加
+LD<.L EM14260 EM14266    ; RB3 P11 POS(LO)  RB3 P12 POS(LO)
+OUT @MR602               ; ﾄﾚｲ搬送X方向ﾋﾟｯﾁ増加
+;3
+LD>.L EM14260 EM14266    ; RB3 P11 POS(LO)  RB3 P12 POS(LO)
+OUT @MR603               ; ﾄﾚｲ搬送X方向ﾋﾟｯﾁ減少
+;ﾊﾟﾚﾀｲｽﾞ座標ﾁｪｯｸ/palletizing coordinate check
+STG @MR4903
+MPS
+ANB @MR600               ; ﾄﾚｲ搬送ﾊﾟﾚﾀｲｽﾞ値正常
+SET @MR604               ; ⑤SUB_ﾊﾟﾚﾀｲｽﾞ異常
+CON
+JMP @MR4913
+MPP
+AND @MR600               ; ﾄﾚｲ搬送ﾊﾟﾚﾀｲｽﾞ値正常
+JMP @MR4906
+;ﾄﾚｲ搬送Y方向ﾋﾟｯﾁ計算：Y方向ﾋﾟｯﾁ＝(P11-P13)/(ﾄﾚｲ行数-1)
+;DM20002.L=(EM14260.L-EM14272.L)/(DM7034.L-1)
+;SET(CR2002,@MR605)'算出完了
+LD @MR4904
+ANB @MR605               ; ⑤SUB_算出完了
+NCJ #1004
+;DM20002.L=(EM14260.L-EM14272.L)/(DM7034.L-1)
+;
+LD CR2002                ; 常時ON
+LDA.L DM7034             ; 装置基礎ﾃﾞｰﾀ18
+CON
+SUB.L +1
+CON
+STA.L @VM9
+CON
+LDA.L EM14260            ; RB3 P11 POS(LO)
+CON
+SUB.L EM14272            ; RB3 P13 POS(LO)
+CON
+EXT.L
+CON
+DIV.L @VM9
+CON
+STA.L DM20002            ; RB3板押圧ﾄﾚｲ_Y方向ﾋﾟｯﾁ
+;SET(CR2002,@MR605)'算出完了
+LD CR2002                ; 常時ON
+SET @MR605               ; ⑤SUB_算出完了
+LABEL #1004
+;
+STG @MR4904
+AND @MR605               ; ⑤SUB_算出完了
+RES @MR605               ; ⑤SUB_算出完了
+CON
+JMP @MR4905
+;ﾄﾚｲ搬送X方向ﾋﾟｯﾁ計算
+;ﾋﾟｯﾁ変更無し：X方向ﾋﾟｯﾁ＝0
+;ﾋﾟｯﾁ増加：X方向ﾋﾟｯﾁ＝(P12-P11)/(ﾄﾚｲ列数-1)
+;ﾋﾟｯﾁ減少：X方向ﾋﾟｯﾁ＝(P11-P12)/(ﾄﾚｲ列数-1)
+;DM20000.L=0
+;SET(CR2002,@MR605)'算出完了
+LD @MR4905
+AND @MR601               ; ﾄﾚｲ搬送X方向ﾋﾟｯﾁ変更無し
+ANB @MR605               ; ⑤SUB_算出完了
+NCJ #1005
+;DM20000.L=0
+;
+LD CR2002                ; 常時ON
+MOV.L +0 DM20000         ; RB3板押圧ﾄﾚｲ_X方向ﾋﾟｯﾁ
+;SET(CR2002,@MR605)'算出完了
+LD CR2002                ; 常時ON
+SET @MR605               ; ⑤SUB_算出完了
+LABEL #1005
+;
+;DM20000.L=(EM14266.L-EM14260)/(DM7036.L-1)
+;SET(CR2002,@MR605)'算出完了
+LD @MR4905
+AND @MR602               ; ﾄﾚｲ搬送X方向ﾋﾟｯﾁ増加
+ANB @MR605               ; ⑤SUB_算出完了
+NCJ #1006
+;DM20000.L=(EM14266.L-EM14260)/(DM7036.L-1)
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+SUB.L +1
+CON
+STA.L @VM11
+CON
+LDA EM14260              ; RB3 P11 POS(LO)
+CON
+EXT
+CON
+STA.L @VM13
+CON
+LDA.L EM14266            ; RB3 P12 POS(LO)
+CON
+SUB.L @VM13
+CON
+EXT.L
+CON
+DIV.L @VM11
+CON
+STA.L DM20000            ; RB3板押圧ﾄﾚｲ_X方向ﾋﾟｯﾁ
+;SET(CR2002,@MR605)'算出完了
+LD CR2002                ; 常時ON
+SET @MR605               ; ⑤SUB_算出完了
+LABEL #1006
+;
+;DM20000.L=(EM14260.L-EM14266)/(DM7036.L-1)
+;SET(CR2002,@MR605)'算出完了
+LD @MR4905
+AND @MR603               ; ﾄﾚｲ搬送X方向ﾋﾟｯﾁ減少
+ANB @MR605               ; ⑤SUB_算出完了
+NCJ #1007
+;DM20000.L=(EM14260.L-EM14266)/(DM7036.L-1)
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+SUB.L +1
+CON
+STA.L @VM15
+CON
+LDA EM14266              ; RB3 P12 POS(LO)
+CON
+EXT
+CON
+STA.L @VM17
+CON
+LDA.L EM14260            ; RB3 P11 POS(LO)
+CON
+SUB.L @VM17
+CON
+EXT.L
+CON
+DIV.L @VM15
+CON
+STA.L DM20000            ; RB3板押圧ﾄﾚｲ_X方向ﾋﾟｯﾁ
+;SET(CR2002,@MR605)'算出完了
+LD CR2002                ; 常時ON
+SET @MR605               ; ⑤SUB_算出完了
+LABEL #1007
+;
+STG @MR4905
+AND @MR605               ; ⑤SUB_算出完了
+RES @MR605               ; ⑤SUB_算出完了
+CON
+JMP @MR4906
+;板押圧取出し番号確認
+LD CR2002                ; 常時ON
+LDA.L DM7034             ; 装置基礎ﾃﾞｰﾀ18
+CON
+MUL.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+STA.L DM20044            ; 板押圧トレイ全数
+STG @MR4906
+MPS
+AND<=.L DM20008 DM20044  ; 板押圧取出し番号  板押圧トレイ全数
+JMP @MR4907
+MPP
+AND>.L DM20008 DM20044   ; 板押圧取出し番号  板押圧トレイ全数
+SET @MR604               ; ⑤SUB_ﾊﾟﾚﾀｲｽﾞ異常
+CON
+JMP @MR4913
+;POS10_取出し位置算出
+;'取出し位置の算出
+;'ﾊﾟﾚﾀｲｽﾞ基準1(P0_POS11)-Y方向ﾋﾟｯﾁ
+;
+;IF DM20008.L<= DM7036.L THEN
+;EM14254.L=EM14260.L
+;END IF
+;
+;IF DM20008.L>DM7036.L AND DM20008.L<= (DM7036.L*2) THEN
+;EM14254.L=EM14260.L-DM20002.L
+;END IF
+;
+;IF DM20008.L>(DM7036.L*2) AND DM20008.L<=(DM7036.L*3) THEN
+;EM14254.L=EM14260.L-(DM20002.L*2)
+;END IF
+;
+;IF DM20008.L>(DM7036.L*3) AND DM20008.L<=(DM7036.L*4) THEN
+;EM14254.L=EM14260.L-(DM20002.L*3)
+;END IF
+;
+;IF DM20008.L>(DM7036.L*4) AND DM20008.L<=(DM7036.L*5) THEN
+;EM14254.L=EM14260.L-(DM20002.L*4)
+;END IF
+;
+;IF DM20008.L>(DM7036.L*5) AND DM20008.L<=(DM7036.L*6) THEN
+;EM14254.L=EM14260.L-(DM20002.L*5)
+;END IF
+;
+;IF DM20008.L>(DM7036.L*6) AND DM20008.L<=(DM7036.L*7) THEN
+;EM14254.L=EM14260.L-(DM20002.L*6)
+;END IF
+;
+;IF DM20008.L>(DM7036.L*7) AND DM20008.L<=(DM7036.L*8) THEN
+;EM14254.L=EM14260.L-(DM20002.L*7)
+;END IF
+;
+;IF DM20008.L>(DM7036.L*8) AND DM20008.L<=(DM7036.L*9) THEN
+;EM14254.L=EM14260.L-(DM20002.L*8)
+;END IF
+;
+;IF DM20008.L>(DM7036.L*9) AND DM20008.L<=(DM7036.L*10) THEN
+;EM14254.L=EM14260.L-(DM20002.L*9)
+;END IF
+;
+;IF DM20008.L>(DM7036.L*10) AND DM20008.L<=(DM7036.L*11) THEN
+;EM14254.L=EM14260.L-(DM20002.L*10)
+;END IF
+;
+;IF DM20008.L>(DM7036.L*11) AND DM20008.L<=(DM7036.L*12) THEN
+;EM14254.L=EM14260.L-(DM20002.L*11)
+;END IF
+;
+;IF DM20008.L>(DM7036.L*12) AND DM20008.L<=(DM7036.L*13) THEN
+;EM14254.L=EM14260.L-(DM20002.L*12)
+;END IF
+;
+;IF DM20008.L>(DM7036.L*13) AND DM20008.L<=(DM7036.L*14) THEN
+;EM14254.L=EM14260.L-(DM20002.L*13)
+;END IF
+;
+;IF DM20008.L>(DM7036.L*14) AND DM20008.L<=(DM7036.L*15) THEN
+;EM14254.L=EM14260.L-(DM20002.L*14)
+;END IF
+;
+;IF DM20008.L>(DM7036.L*15) AND DM20008.L<=(DM7036.L*16) THEN
+;EM14254.L=EM14260.L-(DM20002.L*15)
+;END IF
+;
+;SET(CR2002,@MR605)
+;
+LD @MR4907
+AND @MR601               ; ﾄﾚｲ搬送X方向ﾋﾟｯﾁ変更無し
+ANB @MR605               ; ⑤SUB_算出完了
+NCJ #1003
+;'取出し位置の算出
+;
+;'ﾊﾟﾚﾀｲｽﾞ基準1(P0_POS11)-Y方向ﾋﾟｯﾁ
+;
+;IF DM20008.L<= DM7036.L THEN
+;
+LD<=.L DM20008 DM7036    ; 板押圧取出し番号  装置基礎ﾃﾞｰﾀ19
+NCJ #2018
+;EM14254.L=EM14260.L
+;
+LD CR2002                ; 常時ON
+MOV.L EM14260 EM14254    ; RB3 P11 POS(LO)  RB3 P10 POS(LO)
+;END IF
+;
+LABEL #2018
+;IF DM20008.L>DM7036.L AND DM20008.L<= (DM7036.L*2) THEN
+;
+LD>.L DM20008 DM7036     ; 板押圧取出し番号  装置基礎ﾃﾞｰﾀ19
+OUT @VB00
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +2
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LDB CR2009               ; 演算結果が負
+AND @VB00
+NCJ #2019
+;EM14254.L=EM14260.L-DM20002.L
+;
+LD CR2002                ; 常時ON
+LDA.L EM14260            ; RB3 P11 POS(LO)
+CON
+SUB.L DM20002            ; RB3板押圧ﾄﾚｲ_Y方向ﾋﾟｯﾁ
+CON
+STA.L EM14254            ; RB3 P10 POS(LO)
+;END IF
+;
+LABEL #2019
+;IF DM20008.L>(DM7036.L*2) AND DM20008.L<=(DM7036.L*3) THEN
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +2
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LD CR2009                ; 演算結果が負
+OUT @VB01
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +3
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LDB CR2009               ; 演算結果が負
+AND @VB01
+NCJ #2020
+;EM14254.L=EM14260.L-(DM20002.L*2)
+;
+LD CR2002                ; 常時ON
+LDA.L DM20002            ; RB3板押圧ﾄﾚｲ_Y方向ﾋﾟｯﾁ
+CON
+MUL.L +2
+CON
+STA.L @VM19
+CON
+LDA.L EM14260            ; RB3 P11 POS(LO)
+CON
+SUB.L @VM19
+CON
+STA.L EM14254            ; RB3 P10 POS(LO)
+;END IF
+;
+LABEL #2020
+;IF DM20008.L>(DM7036.L*3) AND DM20008.L<=(DM7036.L*4) THEN
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +3
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LD CR2009                ; 演算結果が負
+OUT @VB02
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +4
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LDB CR2009               ; 演算結果が負
+AND @VB02
+NCJ #2021
+;EM14254.L=EM14260.L-(DM20002.L*3)
+;
+LD CR2002                ; 常時ON
+LDA.L DM20002            ; RB3板押圧ﾄﾚｲ_Y方向ﾋﾟｯﾁ
+CON
+MUL.L +3
+CON
+STA.L @VM21
+CON
+LDA.L EM14260            ; RB3 P11 POS(LO)
+CON
+SUB.L @VM21
+CON
+STA.L EM14254            ; RB3 P10 POS(LO)
+;END IF
+;
+LABEL #2021
+;IF DM20008.L>(DM7036.L*4) AND DM20008.L<=(DM7036.L*5) THEN
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +4
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LD CR2009                ; 演算結果が負
+OUT @VB03
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +5
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LDB CR2009               ; 演算結果が負
+AND @VB03
+NCJ #2022
+;EM14254.L=EM14260.L-(DM20002.L*4)
+;
+LD CR2002                ; 常時ON
+LDA.L DM20002            ; RB3板押圧ﾄﾚｲ_Y方向ﾋﾟｯﾁ
+CON
+MUL.L +4
+CON
+STA.L @VM23
+CON
+LDA.L EM14260            ; RB3 P11 POS(LO)
+CON
+SUB.L @VM23
+CON
+STA.L EM14254            ; RB3 P10 POS(LO)
+;END IF
+;
+LABEL #2022
+;IF DM20008.L>(DM7036.L*5) AND DM20008.L<=(DM7036.L*6) THEN
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +5
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LD CR2009                ; 演算結果が負
+OUT @VB04
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +6
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LDB CR2009               ; 演算結果が負
+AND @VB04
+NCJ #2023
+;EM14254.L=EM14260.L-(DM20002.L*5)
+;
+LD CR2002                ; 常時ON
+LDA.L DM20002            ; RB3板押圧ﾄﾚｲ_Y方向ﾋﾟｯﾁ
+CON
+MUL.L +5
+CON
+STA.L @VM25
+CON
+LDA.L EM14260            ; RB3 P11 POS(LO)
+CON
+SUB.L @VM25
+CON
+STA.L EM14254            ; RB3 P10 POS(LO)
+;END IF
+;
+LABEL #2023
+;IF DM20008.L>(DM7036.L*6) AND DM20008.L<=(DM7036.L*7) THEN
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +6
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LD CR2009                ; 演算結果が負
+OUT @VB05
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +7
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LDB CR2009               ; 演算結果が負
+AND @VB05
+NCJ #2024
+;EM14254.L=EM14260.L-(DM20002.L*6)
+;
+LD CR2002                ; 常時ON
+LDA.L DM20002            ; RB3板押圧ﾄﾚｲ_Y方向ﾋﾟｯﾁ
+CON
+MUL.L +6
+CON
+STA.L @VM27
+CON
+LDA.L EM14260            ; RB3 P11 POS(LO)
+CON
+SUB.L @VM27
+CON
+STA.L EM14254            ; RB3 P10 POS(LO)
+;END IF
+;
+LABEL #2024
+;IF DM20008.L>(DM7036.L*7) AND DM20008.L<=(DM7036.L*8) THEN
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +7
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LD CR2009                ; 演算結果が負
+OUT @VB06
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +8
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LDB CR2009               ; 演算結果が負
+AND @VB06
+NCJ #2025
+;EM14254.L=EM14260.L-(DM20002.L*7)
+;
+LD CR2002                ; 常時ON
+LDA.L DM20002            ; RB3板押圧ﾄﾚｲ_Y方向ﾋﾟｯﾁ
+CON
+MUL.L +7
+CON
+STA.L @VM29
+CON
+LDA.L EM14260            ; RB3 P11 POS(LO)
+CON
+SUB.L @VM29
+CON
+STA.L EM14254            ; RB3 P10 POS(LO)
+;END IF
+;
+LABEL #2025
+;IF DM20008.L>(DM7036.L*8) AND DM20008.L<=(DM7036.L*9) THEN
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +8
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LD CR2009                ; 演算結果が負
+OUT @VB07
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +9
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LDB CR2009               ; 演算結果が負
+AND @VB07
+NCJ #2026
+;EM14254.L=EM14260.L-(DM20002.L*8)
+;
+LD CR2002                ; 常時ON
+LDA.L DM20002            ; RB3板押圧ﾄﾚｲ_Y方向ﾋﾟｯﾁ
+CON
+MUL.L +8
+CON
+STA.L @VM31
+CON
+LDA.L EM14260            ; RB3 P11 POS(LO)
+CON
+SUB.L @VM31
+CON
+STA.L EM14254            ; RB3 P10 POS(LO)
+;END IF
+;
+LABEL #2026
+;IF DM20008.L>(DM7036.L*9) AND DM20008.L<=(DM7036.L*10) THEN
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +9
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LD CR2009                ; 演算結果が負
+OUT @VB08
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +10
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LDB CR2009               ; 演算結果が負
+AND @VB08
+NCJ #2027
+;EM14254.L=EM14260.L-(DM20002.L*9)
+;
+LD CR2002                ; 常時ON
+LDA.L DM20002            ; RB3板押圧ﾄﾚｲ_Y方向ﾋﾟｯﾁ
+CON
+MUL.L +9
+CON
+STA.L @VM33
+CON
+LDA.L EM14260            ; RB3 P11 POS(LO)
+CON
+SUB.L @VM33
+CON
+STA.L EM14254            ; RB3 P10 POS(LO)
+;END IF
+;
+LABEL #2027
+;IF DM20008.L>(DM7036.L*10) AND DM20008.L<=(DM7036.L*11) THEN
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +10
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LD CR2009                ; 演算結果が負
+OUT @VB09
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +11
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LDB CR2009               ; 演算結果が負
+AND @VB09
+NCJ #2028
+;EM14254.L=EM14260.L-(DM20002.L*10)
+;
+LD CR2002                ; 常時ON
+LDA.L DM20002            ; RB3板押圧ﾄﾚｲ_Y方向ﾋﾟｯﾁ
+CON
+MUL.L +10
+CON
+STA.L @VM35
+CON
+LDA.L EM14260            ; RB3 P11 POS(LO)
+CON
+SUB.L @VM35
+CON
+STA.L EM14254            ; RB3 P10 POS(LO)
+;END IF
+;
+LABEL #2028
+;IF DM20008.L>(DM7036.L*11) AND DM20008.L<=(DM7036.L*12) THEN
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +11
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LD CR2009                ; 演算結果が負
+OUT @VB0A
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +12
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LDB CR2009               ; 演算結果が負
+AND @VB0A
+NCJ #2029
+;EM14254.L=EM14260.L-(DM20002.L*11)
+;
+LD CR2002                ; 常時ON
+LDA.L DM20002            ; RB3板押圧ﾄﾚｲ_Y方向ﾋﾟｯﾁ
+CON
+MUL.L +11
+CON
+STA.L @VM37
+CON
+LDA.L EM14260            ; RB3 P11 POS(LO)
+CON
+SUB.L @VM37
+CON
+STA.L EM14254            ; RB3 P10 POS(LO)
+;END IF
+;
+LABEL #2029
+;IF DM20008.L>(DM7036.L*12) AND DM20008.L<=(DM7036.L*13) THEN
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +12
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LD CR2009                ; 演算結果が負
+OUT @VB0B
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +13
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LDB CR2009               ; 演算結果が負
+AND @VB0B
+NCJ #2030
+;EM14254.L=EM14260.L-(DM20002.L*12)
+;
+LD CR2002                ; 常時ON
+LDA.L DM20002            ; RB3板押圧ﾄﾚｲ_Y方向ﾋﾟｯﾁ
+CON
+MUL.L +12
+CON
+STA.L @VM39
+CON
+LDA.L EM14260            ; RB3 P11 POS(LO)
+CON
+SUB.L @VM39
+CON
+STA.L EM14254            ; RB3 P10 POS(LO)
+;END IF
+;
+LABEL #2030
+;IF DM20008.L>(DM7036.L*13) AND DM20008.L<=(DM7036.L*14) THEN
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +13
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LD CR2009                ; 演算結果が負
+OUT @VB0C
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +14
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LDB CR2009               ; 演算結果が負
+AND @VB0C
+NCJ #2031
+;EM14254.L=EM14260.L-(DM20002.L*13)
+;
+LD CR2002                ; 常時ON
+LDA.L DM20002            ; RB3板押圧ﾄﾚｲ_Y方向ﾋﾟｯﾁ
+CON
+MUL.L +13
+CON
+STA.L @VM41
+CON
+LDA.L EM14260            ; RB3 P11 POS(LO)
+CON
+SUB.L @VM41
+CON
+STA.L EM14254            ; RB3 P10 POS(LO)
+;END IF
+;
+LABEL #2031
+;IF DM20008.L>(DM7036.L*14) AND DM20008.L<=(DM7036.L*15) THEN
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +14
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LD CR2009                ; 演算結果が負
+OUT @VB0D
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +15
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LDB CR2009               ; 演算結果が負
+AND @VB0D
+NCJ #2032
+;EM14254.L=EM14260.L-(DM20002.L*14)
+;
+LD CR2002                ; 常時ON
+LDA.L DM20002            ; RB3板押圧ﾄﾚｲ_Y方向ﾋﾟｯﾁ
+CON
+MUL.L +14
+CON
+STA.L @VM43
+CON
+LDA.L EM14260            ; RB3 P11 POS(LO)
+CON
+SUB.L @VM43
+CON
+STA.L EM14254            ; RB3 P10 POS(LO)
+;END IF
+;
+LABEL #2032
+;IF DM20008.L>(DM7036.L*15) AND DM20008.L<=(DM7036.L*16) THEN
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +15
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LD CR2009                ; 演算結果が負
+OUT @VB0E
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +16
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LDB CR2009               ; 演算結果が負
+AND @VB0E
+NCJ #2033
+;EM14254.L=EM14260.L-(DM20002.L*15)
+;
+LD CR2002                ; 常時ON
+LDA.L DM20002            ; RB3板押圧ﾄﾚｲ_Y方向ﾋﾟｯﾁ
+CON
+MUL.L +15
+CON
+STA.L @VM45
+CON
+LDA.L EM14260            ; RB3 P11 POS(LO)
+CON
+SUB.L @VM45
+CON
+STA.L EM14254            ; RB3 P10 POS(LO)
+;END IF
+;
+LABEL #2033
+;SET(CR2002,@MR605)
+;
+LD CR2002                ; 常時ON
+SET @MR605               ; ⑤SUB_算出完了
+LABEL #1003
+;
+;'取出し位置の算出
+;'ﾊﾟﾚﾀｲｽﾞ基準1(P0_POS11)-Y方向ﾋﾟｯﾁ＋X方向ﾋﾟｯﾁ
+;
+;IF DM20008.L<= DM7036.L THEN
+;EM14254.L=EM14260.L+((DM20008.L-1)*DM20000.L)
+;END IF
+;
+;IF DM20008.L>DM7036.L AND DM20008.L<= (DM7036.L*2) THEN
+;EM14254.L=EM14260.L-DM20002.L+((DM20008.L-(DM7036.L+1))*DM20000.L)
+;END IF
+;
+;IF DM20008.L>(DM7036.L*2) AND DM20008.L<=(DM7036.L*3) THEN
+;EM14254.L=EM14260.L-(DM20002.L*2)+((DM20008.L-((DM7036.L*2)+1))*DM20000.L)
+;END IF
+;
+;IF DM20008.L>(DM7036.L*3) AND DM20008.L<=(DM7036.L*4) THEN
+;EM14254.L=EM14260.L-(DM20002.L*3)+((DM20008.L-((DM7036.L*3)+1))*DM20000.L)
+;END IF
+;
+;IF DM20008.L>(DM7036.L*4) AND DM20008.L<=(DM7036.L*5) THEN
+;EM14254.L=EM14260.L-(DM20002.L*4)+((DM20008.L-((DM7036.L*4)+1))*DM20000.L)
+;END IF
+;
+;IF DM20008.L>(DM7036.L*5) AND DM20008.L<=(DM7036.L*6) THEN
+;EM14254.L=EM14260.L-(DM20002.L*5)+((DM20008.L-((DM7036.L*5)+1))*DM20000.L)
+;END IF
+;
+;IF DM20008.L>(DM7036.L*6) AND DM20008.L<=(DM7036.L*7) THEN
+;EM14254.L=EM14260.L-(DM20002.L*6)+((DM20008.L-((DM7036.L*6)+1))*DM20000.L)
+;END IF
+;
+;IF DM20008.L>(DM7036.L*7) AND DM20008.L<=(DM7036.L*8) THEN
+;EM14254.L=EM14260.L-(DM20002.L*7)+((DM20008.L-((DM7036.L*7)+1))*DM20000.L)
+;END IF
+;
+;IF DM20008.L>(DM7036.L*8) AND DM20008.L<=(DM7036.L*9) THEN
+;EM14254.L=EM14260.L-(DM20002.L*8)+((DM20008.L-((DM7036.L*8)+1))*DM20000.L)
+;END IF
+;
+;IF DM20008.L>(DM7036.L*9) AND DM20008.L<=(DM7036.L*10) THEN
+;EM14254.L=EM14260.L-(DM20002.L*9)+((DM20008.L-((DM7036.L*9)+1))*DM20000.L)
+;END IF
+;
+;IF DM20008.L>(DM7036.L*10) AND DM20008.L<=(DM7036.L*11) THEN
+;EM14254.L=EM14260.L-(DM20002.L*10)+((DM20008.L-((DM7036.L*10)+1))*DM20000.L)
+;END IF
+;
+;IF DM20008.L>(DM7036.L*11) AND DM20008.L<=(DM7036.L*12) THEN
+;EM14254.L=EM14260.L-(DM20002.L*11)+((DM20008.L-((DM7036.L*11)+1))*DM20000.L)
+;END IF
+;
+;IF DM20008.L>(DM7036.L*12) AND DM20008.L<=(DM7036.L*13) THEN
+;EM14254.L=EM14260.L-(DM20002.L*12)+((DM20008.L-((DM7036.L*12)+1))*DM20000.L)
+;END IF
+;
+;IF DM20008.L>(DM7036.L*13) AND DM20008.L<=(DM7036.L*14) THEN
+;EM14254.L=EM14260.L-(DM20002.L*13)+((DM20008.L-((DM7036.L*13)+1))*DM20000.L)
+;END IF
+;
+;IF DM20008.L>(DM7036.L*14) AND DM20008.L<=(DM7036.L*15) THEN
+;EM14254.L=EM14260.L-(DM20002.L*14)+((DM20008.L-((DM7036.L*14)+1))*DM20000.L)
+;END IF
+;
+;IF DM20008.L>(DM7036.L*15) AND DM20008.L<=(DM7036.L*16) THEN
+;EM14254.L=EM14260.L-(DM20002.L*15)+((DM20008.L-((DM7036.L*15)+1))*DM20000.L)
+;END IF
+;
+;SET(CR2002,@MR605)
+;
+LD @MR4907
+AND @MR602               ; ﾄﾚｲ搬送X方向ﾋﾟｯﾁ増加
+ANB @MR605               ; ⑤SUB_算出完了
+NCJ #1009
+;'取出し位置の算出
+;
+;'ﾊﾟﾚﾀｲｽﾞ基準1(P0_POS11)-Y方向ﾋﾟｯﾁ＋X方向ﾋﾟｯﾁ
+;
+;IF DM20008.L<= DM7036.L THEN
+;
+LD<=.L DM20008 DM7036    ; 板押圧取出し番号  装置基礎ﾃﾞｰﾀ19
+NCJ #2034
+;EM14254.L=EM14260.L+((DM20008.L-1)*DM20000.L)
+;
+LD CR2002                ; 常時ON
+LDA.L DM20008            ; 板押圧取出し番号
+CON
+SUB.L +1
+CON
+MUL.L DM20000            ; RB3板押圧ﾄﾚｲ_X方向ﾋﾟｯﾁ
+CON
+ADD.L EM14260            ; RB3 P11 POS(LO)
+CON
+STA.L EM14254            ; RB3 P10 POS(LO)
+;END IF
+;
+LABEL #2034
+;IF DM20008.L>DM7036.L AND DM20008.L<= (DM7036.L*2) THEN
+;
+LD>.L DM20008 DM7036     ; 板押圧取出し番号  装置基礎ﾃﾞｰﾀ19
+OUT @VB0F
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +2
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LDB CR2009               ; 演算結果が負
+AND @VB0F
+NCJ #2035
+;EM14254.L=EM14260.L-DM20002.L+((DM20008.L-(DM7036.L+1))*DM20000.L)
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+ADD.L +1
+CON
+STA.L @VM47
+CON
+LDA.L DM20008            ; 板押圧取出し番号
+CON
+SUB.L @VM47
+CON
+MUL.L DM20000            ; RB3板押圧ﾄﾚｲ_X方向ﾋﾟｯﾁ
+CON
+STA.L @VM49
+CON
+LDA.L EM14260            ; RB3 P11 POS(LO)
+CON
+SUB.L DM20002            ; RB3板押圧ﾄﾚｲ_Y方向ﾋﾟｯﾁ
+CON
+ADD.L @VM49
+CON
+STA.L EM14254            ; RB3 P10 POS(LO)
+;END IF
+;
+LABEL #2035
+;IF DM20008.L>(DM7036.L*2) AND DM20008.L<=(DM7036.L*3) THEN
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +2
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LD CR2009                ; 演算結果が負
+OUT @VB010
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +3
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LDB CR2009               ; 演算結果が負
+AND @VB010
+NCJ #2036
+;EM14254.L=EM14260.L-(DM20002.L*2)+((DM20008.L-((DM7036.L*2)+1))*DM20000.L)
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +2
+CON
+ADD.L +1
+CON
+STA.L @VM51
+CON
+LDA.L DM20008            ; 板押圧取出し番号
+CON
+SUB.L @VM51
+CON
+MUL.L DM20000            ; RB3板押圧ﾄﾚｲ_X方向ﾋﾟｯﾁ
+CON
+STA.L @VM53
+CON
+LDA.L DM20002            ; RB3板押圧ﾄﾚｲ_Y方向ﾋﾟｯﾁ
+CON
+MUL.L +2
+CON
+STA.L @VM55
+CON
+LDA.L EM14260            ; RB3 P11 POS(LO)
+CON
+SUB.L @VM55
+CON
+ADD.L @VM53
+CON
+STA.L EM14254            ; RB3 P10 POS(LO)
+;END IF
+;
+LABEL #2036
+;IF DM20008.L>(DM7036.L*3) AND DM20008.L<=(DM7036.L*4) THEN
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +3
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LD CR2009                ; 演算結果が負
+OUT @VB011
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +4
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LDB CR2009               ; 演算結果が負
+AND @VB011
+NCJ #2037
+;EM14254.L=EM14260.L-(DM20002.L*3)+((DM20008.L-((DM7036.L*3)+1))*DM20000.L)
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +3
+CON
+ADD.L +1
+CON
+STA.L @VM57
+CON
+LDA.L DM20008            ; 板押圧取出し番号
+CON
+SUB.L @VM57
+CON
+MUL.L DM20000            ; RB3板押圧ﾄﾚｲ_X方向ﾋﾟｯﾁ
+CON
+STA.L @VM59
+CON
+LDA.L DM20002            ; RB3板押圧ﾄﾚｲ_Y方向ﾋﾟｯﾁ
+CON
+MUL.L +3
+CON
+STA.L @VM61
+CON
+LDA.L EM14260            ; RB3 P11 POS(LO)
+CON
+SUB.L @VM61
+CON
+ADD.L @VM59
+CON
+STA.L EM14254            ; RB3 P10 POS(LO)
+;END IF
+;
+LABEL #2037
+;IF DM20008.L>(DM7036.L*4) AND DM20008.L<=(DM7036.L*5) THEN
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +4
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LD CR2009                ; 演算結果が負
+OUT @VB012
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +5
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LDB CR2009               ; 演算結果が負
+AND @VB012
+NCJ #2038
+;EM14254.L=EM14260.L-(DM20002.L*4)+((DM20008.L-((DM7036.L*4)+1))*DM20000.L)
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +4
+CON
+ADD.L +1
+CON
+STA.L @VM63
+CON
+LDA.L DM20008            ; 板押圧取出し番号
+CON
+SUB.L @VM63
+CON
+MUL.L DM20000            ; RB3板押圧ﾄﾚｲ_X方向ﾋﾟｯﾁ
+CON
+STA.L @VM65
+CON
+LDA.L DM20002            ; RB3板押圧ﾄﾚｲ_Y方向ﾋﾟｯﾁ
+CON
+MUL.L +4
+CON
+STA.L @VM67
+CON
+LDA.L EM14260            ; RB3 P11 POS(LO)
+CON
+SUB.L @VM67
+CON
+ADD.L @VM65
+CON
+STA.L EM14254            ; RB3 P10 POS(LO)
+;END IF
+;
+LABEL #2038
+;IF DM20008.L>(DM7036.L*5) AND DM20008.L<=(DM7036.L*6) THEN
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +5
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LD CR2009                ; 演算結果が負
+OUT @VB013
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +6
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LDB CR2009               ; 演算結果が負
+AND @VB013
+NCJ #2039
+;EM14254.L=EM14260.L-(DM20002.L*5)+((DM20008.L-((DM7036.L*5)+1))*DM20000.L)
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +5
+CON
+ADD.L +1
+CON
+STA.L @VM69
+CON
+LDA.L DM20008            ; 板押圧取出し番号
+CON
+SUB.L @VM69
+CON
+MUL.L DM20000            ; RB3板押圧ﾄﾚｲ_X方向ﾋﾟｯﾁ
+CON
+STA.L @VM71
+CON
+LDA.L DM20002            ; RB3板押圧ﾄﾚｲ_Y方向ﾋﾟｯﾁ
+CON
+MUL.L +5
+CON
+STA.L @VM73
+CON
+LDA.L EM14260            ; RB3 P11 POS(LO)
+CON
+SUB.L @VM73
+CON
+ADD.L @VM71
+CON
+STA.L EM14254            ; RB3 P10 POS(LO)
+;END IF
+;
+LABEL #2039
+;IF DM20008.L>(DM7036.L*6) AND DM20008.L<=(DM7036.L*7) THEN
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +6
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LD CR2009                ; 演算結果が負
+OUT @VB014
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +7
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LDB CR2009               ; 演算結果が負
+AND @VB014
+NCJ #2040
+;EM14254.L=EM14260.L-(DM20002.L*6)+((DM20008.L-((DM7036.L*6)+1))*DM20000.L)
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +6
+CON
+ADD.L +1
+CON
+STA.L @VM75
+CON
+LDA.L DM20008            ; 板押圧取出し番号
+CON
+SUB.L @VM75
+CON
+MUL.L DM20000            ; RB3板押圧ﾄﾚｲ_X方向ﾋﾟｯﾁ
+CON
+STA.L @VM77
+CON
+LDA.L DM20002            ; RB3板押圧ﾄﾚｲ_Y方向ﾋﾟｯﾁ
+CON
+MUL.L +6
+CON
+STA.L @VM79
+CON
+LDA.L EM14260            ; RB3 P11 POS(LO)
+CON
+SUB.L @VM79
+CON
+ADD.L @VM77
+CON
+STA.L EM14254            ; RB3 P10 POS(LO)
+;END IF
+;
+LABEL #2040
+;IF DM20008.L>(DM7036.L*7) AND DM20008.L<=(DM7036.L*8) THEN
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +7
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LD CR2009                ; 演算結果が負
+OUT @VB015
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +8
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LDB CR2009               ; 演算結果が負
+AND @VB015
+NCJ #2041
+;EM14254.L=EM14260.L-(DM20002.L*7)+((DM20008.L-((DM7036.L*7)+1))*DM20000.L)
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +7
+CON
+ADD.L +1
+CON
+STA.L @VM81
+CON
+LDA.L DM20008            ; 板押圧取出し番号
+CON
+SUB.L @VM81
+CON
+MUL.L DM20000            ; RB3板押圧ﾄﾚｲ_X方向ﾋﾟｯﾁ
+CON
+STA.L @VM83
+CON
+LDA.L DM20002            ; RB3板押圧ﾄﾚｲ_Y方向ﾋﾟｯﾁ
+CON
+MUL.L +7
+CON
+STA.L @VM85
+CON
+LDA.L EM14260            ; RB3 P11 POS(LO)
+CON
+SUB.L @VM85
+CON
+ADD.L @VM83
+CON
+STA.L EM14254            ; RB3 P10 POS(LO)
+;END IF
+;
+LABEL #2041
+;IF DM20008.L>(DM7036.L*8) AND DM20008.L<=(DM7036.L*9) THEN
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +8
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LD CR2009                ; 演算結果が負
+OUT @VB016
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +9
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LDB CR2009               ; 演算結果が負
+AND @VB016
+NCJ #2042
+;EM14254.L=EM14260.L-(DM20002.L*8)+((DM20008.L-((DM7036.L*8)+1))*DM20000.L)
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +8
+CON
+ADD.L +1
+CON
+STA.L @VM87
+CON
+LDA.L DM20008            ; 板押圧取出し番号
+CON
+SUB.L @VM87
+CON
+MUL.L DM20000            ; RB3板押圧ﾄﾚｲ_X方向ﾋﾟｯﾁ
+CON
+STA.L @VM89
+CON
+LDA.L DM20002            ; RB3板押圧ﾄﾚｲ_Y方向ﾋﾟｯﾁ
+CON
+MUL.L +8
+CON
+STA.L @VM91
+CON
+LDA.L EM14260            ; RB3 P11 POS(LO)
+CON
+SUB.L @VM91
+CON
+ADD.L @VM89
+CON
+STA.L EM14254            ; RB3 P10 POS(LO)
+;END IF
+;
+LABEL #2042
+;IF DM20008.L>(DM7036.L*9) AND DM20008.L<=(DM7036.L*10) THEN
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +9
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LD CR2009                ; 演算結果が負
+OUT @VB017
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +10
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LDB CR2009               ; 演算結果が負
+AND @VB017
+NCJ #2043
+;EM14254.L=EM14260.L-(DM20002.L*9)+((DM20008.L-((DM7036.L*9)+1))*DM20000.L)
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +9
+CON
+ADD.L +1
+CON
+STA.L @VM93
+CON
+LDA.L DM20008            ; 板押圧取出し番号
+CON
+SUB.L @VM93
+CON
+MUL.L DM20000            ; RB3板押圧ﾄﾚｲ_X方向ﾋﾟｯﾁ
+CON
+STA.L @VM95
+CON
+LDA.L DM20002            ; RB3板押圧ﾄﾚｲ_Y方向ﾋﾟｯﾁ
+CON
+MUL.L +9
+CON
+STA.L @VM97
+CON
+LDA.L EM14260            ; RB3 P11 POS(LO)
+CON
+SUB.L @VM97
+CON
+ADD.L @VM95
+CON
+STA.L EM14254            ; RB3 P10 POS(LO)
+;END IF
+;
+LABEL #2043
+;IF DM20008.L>(DM7036.L*10) AND DM20008.L<=(DM7036.L*11) THEN
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +10
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LD CR2009                ; 演算結果が負
+OUT @VB018
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +11
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LDB CR2009               ; 演算結果が負
+AND @VB018
+NCJ #2044
+;EM14254.L=EM14260.L-(DM20002.L*10)+((DM20008.L-((DM7036.L*10)+1))*DM20000.L)
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +10
+CON
+ADD.L +1
+CON
+STA.L @VM99
+CON
+LDA.L DM20008            ; 板押圧取出し番号
+CON
+SUB.L @VM99
+CON
+MUL.L DM20000            ; RB3板押圧ﾄﾚｲ_X方向ﾋﾟｯﾁ
+CON
+STA.L @VM101
+CON
+LDA.L DM20002            ; RB3板押圧ﾄﾚｲ_Y方向ﾋﾟｯﾁ
+CON
+MUL.L +10
+CON
+STA.L @VM103
+CON
+LDA.L EM14260            ; RB3 P11 POS(LO)
+CON
+SUB.L @VM103
+CON
+ADD.L @VM101
+CON
+STA.L EM14254            ; RB3 P10 POS(LO)
+;END IF
+;
+LABEL #2044
+;IF DM20008.L>(DM7036.L*11) AND DM20008.L<=(DM7036.L*12) THEN
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +11
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LD CR2009                ; 演算結果が負
+OUT @VB019
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +12
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LDB CR2009               ; 演算結果が負
+AND @VB019
+NCJ #2045
+;EM14254.L=EM14260.L-(DM20002.L*11)+((DM20008.L-((DM7036.L*11)+1))*DM20000.L)
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +11
+CON
+ADD.L +1
+CON
+STA.L @VM105
+CON
+LDA.L DM20008            ; 板押圧取出し番号
+CON
+SUB.L @VM105
+CON
+MUL.L DM20000            ; RB3板押圧ﾄﾚｲ_X方向ﾋﾟｯﾁ
+CON
+STA.L @VM107
+CON
+LDA.L DM20002            ; RB3板押圧ﾄﾚｲ_Y方向ﾋﾟｯﾁ
+CON
+MUL.L +11
+CON
+STA.L @VM109
+CON
+LDA.L EM14260            ; RB3 P11 POS(LO)
+CON
+SUB.L @VM109
+CON
+ADD.L @VM107
+CON
+STA.L EM14254            ; RB3 P10 POS(LO)
+;END IF
+;
+LABEL #2045
+;IF DM20008.L>(DM7036.L*12) AND DM20008.L<=(DM7036.L*13) THEN
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +12
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LD CR2009                ; 演算結果が負
+OUT @VB01A
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +13
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LDB CR2009               ; 演算結果が負
+AND @VB01A
+NCJ #2046
+;EM14254.L=EM14260.L-(DM20002.L*12)+((DM20008.L-((DM7036.L*12)+1))*DM20000.L)
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +12
+CON
+ADD.L +1
+CON
+STA.L @VM111
+CON
+LDA.L DM20008            ; 板押圧取出し番号
+CON
+SUB.L @VM111
+CON
+MUL.L DM20000            ; RB3板押圧ﾄﾚｲ_X方向ﾋﾟｯﾁ
+CON
+STA.L @VM113
+CON
+LDA.L DM20002            ; RB3板押圧ﾄﾚｲ_Y方向ﾋﾟｯﾁ
+CON
+MUL.L +12
+CON
+STA.L @VM115
+CON
+LDA.L EM14260            ; RB3 P11 POS(LO)
+CON
+SUB.L @VM115
+CON
+ADD.L @VM113
+CON
+STA.L EM14254            ; RB3 P10 POS(LO)
+;END IF
+;
+LABEL #2046
+;IF DM20008.L>(DM7036.L*13) AND DM20008.L<=(DM7036.L*14) THEN
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +13
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LD CR2009                ; 演算結果が負
+OUT @VB01B
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +14
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LDB CR2009               ; 演算結果が負
+AND @VB01B
+NCJ #2047
+;EM14254.L=EM14260.L-(DM20002.L*13)+((DM20008.L-((DM7036.L*13)+1))*DM20000.L)
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +13
+CON
+ADD.L +1
+CON
+STA.L @VM117
+CON
+LDA.L DM20008            ; 板押圧取出し番号
+CON
+SUB.L @VM117
+CON
+MUL.L DM20000            ; RB3板押圧ﾄﾚｲ_X方向ﾋﾟｯﾁ
+CON
+STA.L @VM119
+CON
+LDA.L DM20002            ; RB3板押圧ﾄﾚｲ_Y方向ﾋﾟｯﾁ
+CON
+MUL.L +13
+CON
+STA.L @VM121
+CON
+LDA.L EM14260            ; RB3 P11 POS(LO)
+CON
+SUB.L @VM121
+CON
+ADD.L @VM119
+CON
+STA.L EM14254            ; RB3 P10 POS(LO)
+;END IF
+;
+LABEL #2047
+;IF DM20008.L>(DM7036.L*14) AND DM20008.L<=(DM7036.L*15) THEN
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +14
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LD CR2009                ; 演算結果が負
+OUT @VB01C
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +15
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LDB CR2009               ; 演算結果が負
+AND @VB01C
+NCJ #2048
+;EM14254.L=EM14260.L-(DM20002.L*14)+((DM20008.L-((DM7036.L*14)+1))*DM20000.L)
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +14
+CON
+ADD.L +1
+CON
+STA.L @VM123
+CON
+LDA.L DM20008            ; 板押圧取出し番号
+CON
+SUB.L @VM123
+CON
+MUL.L DM20000            ; RB3板押圧ﾄﾚｲ_X方向ﾋﾟｯﾁ
+CON
+STA.L @VM125
+CON
+LDA.L DM20002            ; RB3板押圧ﾄﾚｲ_Y方向ﾋﾟｯﾁ
+CON
+MUL.L +14
+CON
+STA.L @VM127
+CON
+LDA.L EM14260            ; RB3 P11 POS(LO)
+CON
+SUB.L @VM127
+CON
+ADD.L @VM125
+CON
+STA.L EM14254            ; RB3 P10 POS(LO)
+;END IF
+;
+LABEL #2048
+;IF DM20008.L>(DM7036.L*15) AND DM20008.L<=(DM7036.L*16) THEN
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +15
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LD CR2009                ; 演算結果が負
+OUT @VB01D
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +16
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LDB CR2009               ; 演算結果が負
+AND @VB01D
+NCJ #2049
+;EM14254.L=EM14260.L-(DM20002.L*15)+((DM20008.L-((DM7036.L*15)+1))*DM20000.L)
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +15
+CON
+ADD.L +1
+CON
+STA.L @VM129
+CON
+LDA.L DM20008            ; 板押圧取出し番号
+CON
+SUB.L @VM129
+CON
+MUL.L DM20000            ; RB3板押圧ﾄﾚｲ_X方向ﾋﾟｯﾁ
+CON
+STA.L @VM131
+CON
+LDA.L DM20002            ; RB3板押圧ﾄﾚｲ_Y方向ﾋﾟｯﾁ
+CON
+MUL.L +15
+CON
+STA.L @VM133
+CON
+LDA.L EM14260            ; RB3 P11 POS(LO)
+CON
+SUB.L @VM133
+CON
+ADD.L @VM131
+CON
+STA.L EM14254            ; RB3 P10 POS(LO)
+;END IF
+;
+LABEL #2049
+;SET(CR2002,@MR605)
+;
+LD CR2002                ; 常時ON
+SET @MR605               ; ⑤SUB_算出完了
+LABEL #1009
+;
+;'取出し位置の算出
+;'ﾊﾟﾚﾀｲｽﾞ基準1(P0_POS11)-Y方向ﾋﾟｯﾁ-X方向ﾋﾟｯﾁ
+;
+;IF DM20008.L<= DM7036.L THEN
+;EM14254.L=EM14260.L-((DM20008.L-1)*DM20000.L)
+;END IF
+;
+;IF DM20008.L>DM7036.L AND DM20008.L<= (DM7036.L*2) THEN
+;EM14254.L=EM14260.L-DM20002.L-((DM20008.L-(DM7036.L+1))*DM20000.L)
+;END IF
+;
+;IF DM20008.L>(DM7036.L*2) AND DM20008.L<=(DM7036.L*3) THEN
+;EM14254.L=EM14260.L-(DM20002.L*2)-((DM20008.L-((DM7036.L*2)+1))*DM20000.L)
+;END IF
+;
+;IF DM20008.L>(DM7036.L*3) AND DM20008.L<=(DM7036.L*4) THEN
+;EM14254.L=EM14260.L-(DM20002.L*3)-((DM20008.L-((DM7036.L*3)+1))*DM20000.L)
+;END IF
+;
+;IF DM20008.L>(DM7036.L*4) AND DM20008.L<=(DM7036.L*5) THEN
+;EM14254.L=EM14260.L-(DM20002.L*4)-((DM20008.L-((DM7036.L*4)+1))*DM20000.L)
+;END IF
+;
+;IF DM20008.L>(DM7036.L*5) AND DM20008.L<=(DM7036.L*6) THEN
+;EM14254.L=EM14260.L-(DM20002.L*5)-((DM20008.L-((DM7036.L*5)+1))*DM20000.L)
+;END IF
+;
+;IF DM20008.L>(DM7036.L*6) AND DM20008.L<=(DM7036.L*7) THEN
+;EM14254.L=EM14260.L-(DM20002.L*6)-((DM20008.L-((DM7036.L*6)+1))*DM20000.L)
+;END IF
+;
+;IF DM20008.L>(DM7036.L*7) AND DM20008.L<=(DM7036.L*8) THEN
+;EM14254.L=EM14260.L-(DM20002.L*7)-((DM20008.L-((DM7036.L*7)+1))*DM20000.L)
+;END IF
+;
+;IF DM20008.L>(DM7036.L*8) AND DM20008.L<=(DM7036.L*9) THEN
+;EM14254.L=EM14260.L-(DM20002.L*8)-((DM20008.L-((DM7036.L*8)+1))*DM20000.L)
+;END IF
+;
+;IF DM20008.L>(DM7036.L*9) AND DM20008.L<=(DM7036.L*10) THEN
+;EM14254.L=EM14260.L-(DM20002.L*9)-((DM20008.L-((DM7036.L*9)+1))*DM20000.L)
+;END IF
+;
+;IF DM20008.L>(DM7036.L*10) AND DM20008.L<=(DM7036.L*11) THEN
+;EM14254.L=EM14260.L-(DM20002.L*10)-((DM20008.L-((DM7036.L*10)+1))*DM20000.L)
+;END IF
+;
+;IF DM20008.L>(DM7036.L*11) AND DM20008.L<=(DM7036.L*12) THEN
+;EM14254.L=EM14260.L-(DM20002.L*11)-((DM20008.L-((DM7036.L*11)+1))*DM20000.L)
+;END IF
+;
+;IF DM20008.L>(DM7036.L*12) AND DM20008.L<=(DM7036.L*13) THEN
+;EM14254.L=EM14260.L-(DM20002.L*12)-((DM20008.L-((DM7036.L*12)+1))*DM20000.L)
+;END IF
+;
+;IF DM20008.L>(DM7036.L*13) AND DM20008.L<=(DM7036.L*14) THEN
+;EM14254.L=EM14260.L-(DM20002.L*13)-((DM20008.L-((DM7036.L*13)+1))*DM20000.L)
+;END IF
+;
+;IF DM20008.L>(DM7036.L*14) AND DM20008.L<=(DM7036.L*15) THEN
+;EM14254.L=EM14260.L-(DM20002.L*14)-((DM20008.L-((DM7036.L*14)+1))*DM20000.L)
+;END IF
+;
+;IF DM20008.L>(DM7036.L*15) AND DM20008.L<=(DM7036.L*16) THEN
+;EM14254.L=EM14260.L-(DM20002.L*15)-((DM20008.L-((DM7036.L*15)+1))*DM20000.L)
+;END IF
+;
+;SET(CR2002,@MR605)
+;
+LD @MR4907
+AND @MR603               ; ﾄﾚｲ搬送X方向ﾋﾟｯﾁ減少
+ANB @MR605               ; ⑤SUB_算出完了
+NCJ #1008
+;'取出し位置の算出
+;
+;'ﾊﾟﾚﾀｲｽﾞ基準1(P0_POS11)-Y方向ﾋﾟｯﾁ-X方向ﾋﾟｯﾁ
+;
+;IF DM20008.L<= DM7036.L THEN
+;
+LD<=.L DM20008 DM7036    ; 板押圧取出し番号  装置基礎ﾃﾞｰﾀ19
+NCJ #2050
+;EM14254.L=EM14260.L-((DM20008.L-1)*DM20000.L)
+;
+LD CR2002                ; 常時ON
+LDA.L DM20008            ; 板押圧取出し番号
+CON
+SUB.L +1
+CON
+MUL.L DM20000            ; RB3板押圧ﾄﾚｲ_X方向ﾋﾟｯﾁ
+CON
+STA.L @VM135
+CON
+LDA.L EM14260            ; RB3 P11 POS(LO)
+CON
+SUB.L @VM135
+CON
+STA.L EM14254            ; RB3 P10 POS(LO)
+;END IF
+;
+LABEL #2050
+;IF DM20008.L>DM7036.L AND DM20008.L<= (DM7036.L*2) THEN
+;
+LD>.L DM20008 DM7036     ; 板押圧取出し番号  装置基礎ﾃﾞｰﾀ19
+OUT @VB01E
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +2
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LDB CR2009               ; 演算結果が負
+AND @VB01E
+NCJ #2051
+;EM14254.L=EM14260.L-DM20002.L-((DM20008.L-(DM7036.L+1))*DM20000.L)
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+ADD.L +1
+CON
+STA.L @VM137
+CON
+LDA.L DM20008            ; 板押圧取出し番号
+CON
+SUB.L @VM137
+CON
+MUL.L DM20000            ; RB3板押圧ﾄﾚｲ_X方向ﾋﾟｯﾁ
+CON
+STA.L @VM139
+CON
+LDA.L EM14260            ; RB3 P11 POS(LO)
+CON
+SUB.L DM20002            ; RB3板押圧ﾄﾚｲ_Y方向ﾋﾟｯﾁ
+CON
+SUB.L @VM139
+CON
+STA.L EM14254            ; RB3 P10 POS(LO)
+;END IF
+;
+LABEL #2051
+;IF DM20008.L>(DM7036.L*2) AND DM20008.L<=(DM7036.L*3) THEN
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +2
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LD CR2009                ; 演算結果が負
+OUT @VB01F
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +3
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LDB CR2009               ; 演算結果が負
+AND @VB01F
+NCJ #2052
+;EM14254.L=EM14260.L-(DM20002.L*2)-((DM20008.L-((DM7036.L*2)+1))*DM20000.L)
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +2
+CON
+ADD.L +1
+CON
+STA.L @VM141
+CON
+LDA.L DM20008            ; 板押圧取出し番号
+CON
+SUB.L @VM141
+CON
+MUL.L DM20000            ; RB3板押圧ﾄﾚｲ_X方向ﾋﾟｯﾁ
+CON
+STA.L @VM143
+CON
+LDA.L DM20002            ; RB3板押圧ﾄﾚｲ_Y方向ﾋﾟｯﾁ
+CON
+MUL.L +2
+CON
+STA.L @VM145
+CON
+LDA.L EM14260            ; RB3 P11 POS(LO)
+CON
+SUB.L @VM145
+CON
+SUB.L @VM143
+CON
+STA.L EM14254            ; RB3 P10 POS(LO)
+;END IF
+;
+LABEL #2052
+;IF DM20008.L>(DM7036.L*3) AND DM20008.L<=(DM7036.L*4) THEN
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +3
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LD CR2009                ; 演算結果が負
+OUT @VB020
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +4
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LDB CR2009               ; 演算結果が負
+AND @VB020
+NCJ #2053
+;EM14254.L=EM14260.L-(DM20002.L*3)-((DM20008.L-((DM7036.L*3)+1))*DM20000.L)
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +3
+CON
+ADD.L +1
+CON
+STA.L @VM147
+CON
+LDA.L DM20008            ; 板押圧取出し番号
+CON
+SUB.L @VM147
+CON
+MUL.L DM20000            ; RB3板押圧ﾄﾚｲ_X方向ﾋﾟｯﾁ
+CON
+STA.L @VM149
+CON
+LDA.L DM20002            ; RB3板押圧ﾄﾚｲ_Y方向ﾋﾟｯﾁ
+CON
+MUL.L +3
+CON
+STA.L @VM151
+CON
+LDA.L EM14260            ; RB3 P11 POS(LO)
+CON
+SUB.L @VM151
+CON
+SUB.L @VM149
+CON
+STA.L EM14254            ; RB3 P10 POS(LO)
+;END IF
+;
+LABEL #2053
+;IF DM20008.L>(DM7036.L*4) AND DM20008.L<=(DM7036.L*5) THEN
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +4
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LD CR2009                ; 演算結果が負
+OUT @VB021
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +5
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LDB CR2009               ; 演算結果が負
+AND @VB021
+NCJ #2054
+;EM14254.L=EM14260.L-(DM20002.L*4)-((DM20008.L-((DM7036.L*4)+1))*DM20000.L)
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +4
+CON
+ADD.L +1
+CON
+STA.L @VM153
+CON
+LDA.L DM20008            ; 板押圧取出し番号
+CON
+SUB.L @VM153
+CON
+MUL.L DM20000            ; RB3板押圧ﾄﾚｲ_X方向ﾋﾟｯﾁ
+CON
+STA.L @VM155
+CON
+LDA.L DM20002            ; RB3板押圧ﾄﾚｲ_Y方向ﾋﾟｯﾁ
+CON
+MUL.L +4
+CON
+STA.L @VM157
+CON
+LDA.L EM14260            ; RB3 P11 POS(LO)
+CON
+SUB.L @VM157
+CON
+SUB.L @VM155
+CON
+STA.L EM14254            ; RB3 P10 POS(LO)
+;END IF
+;
+LABEL #2054
+;IF DM20008.L>(DM7036.L*5) AND DM20008.L<=(DM7036.L*6) THEN
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +5
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LD CR2009                ; 演算結果が負
+OUT @VB022
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +6
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LDB CR2009               ; 演算結果が負
+AND @VB022
+NCJ #2055
+;EM14254.L=EM14260.L-(DM20002.L*5)-((DM20008.L-((DM7036.L*5)+1))*DM20000.L)
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +5
+CON
+ADD.L +1
+CON
+STA.L @VM159
+CON
+LDA.L DM20008            ; 板押圧取出し番号
+CON
+SUB.L @VM159
+CON
+MUL.L DM20000            ; RB3板押圧ﾄﾚｲ_X方向ﾋﾟｯﾁ
+CON
+STA.L @VM161
+CON
+LDA.L DM20002            ; RB3板押圧ﾄﾚｲ_Y方向ﾋﾟｯﾁ
+CON
+MUL.L +5
+CON
+STA.L @VM163
+CON
+LDA.L EM14260            ; RB3 P11 POS(LO)
+CON
+SUB.L @VM163
+CON
+SUB.L @VM161
+CON
+STA.L EM14254            ; RB3 P10 POS(LO)
+;END IF
+;
+LABEL #2055
+;IF DM20008.L>(DM7036.L*6) AND DM20008.L<=(DM7036.L*7) THEN
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +6
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LD CR2009                ; 演算結果が負
+OUT @VB023
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +7
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LDB CR2009               ; 演算結果が負
+AND @VB023
+NCJ #2056
+;EM14254.L=EM14260.L-(DM20002.L*6)-((DM20008.L-((DM7036.L*6)+1))*DM20000.L)
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +6
+CON
+ADD.L +1
+CON
+STA.L @VM165
+CON
+LDA.L DM20008            ; 板押圧取出し番号
+CON
+SUB.L @VM165
+CON
+MUL.L DM20000            ; RB3板押圧ﾄﾚｲ_X方向ﾋﾟｯﾁ
+CON
+STA.L @VM167
+CON
+LDA.L DM20002            ; RB3板押圧ﾄﾚｲ_Y方向ﾋﾟｯﾁ
+CON
+MUL.L +6
+CON
+STA.L @VM169
+CON
+LDA.L EM14260            ; RB3 P11 POS(LO)
+CON
+SUB.L @VM169
+CON
+SUB.L @VM167
+CON
+STA.L EM14254            ; RB3 P10 POS(LO)
+;END IF
+;
+LABEL #2056
+;IF DM20008.L>(DM7036.L*7) AND DM20008.L<=(DM7036.L*8) THEN
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +7
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LD CR2009                ; 演算結果が負
+OUT @VB024
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +8
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LDB CR2009               ; 演算結果が負
+AND @VB024
+NCJ #2057
+;EM14254.L=EM14260.L-(DM20002.L*7)-((DM20008.L-((DM7036.L*7)+1))*DM20000.L)
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +7
+CON
+ADD.L +1
+CON
+STA.L @VM171
+CON
+LDA.L DM20008            ; 板押圧取出し番号
+CON
+SUB.L @VM171
+CON
+MUL.L DM20000            ; RB3板押圧ﾄﾚｲ_X方向ﾋﾟｯﾁ
+CON
+STA.L @VM173
+CON
+LDA.L DM20002            ; RB3板押圧ﾄﾚｲ_Y方向ﾋﾟｯﾁ
+CON
+MUL.L +7
+CON
+STA.L @VM175
+CON
+LDA.L EM14260            ; RB3 P11 POS(LO)
+CON
+SUB.L @VM175
+CON
+SUB.L @VM173
+CON
+STA.L EM14254            ; RB3 P10 POS(LO)
+;END IF
+;
+LABEL #2057
+;IF DM20008.L>(DM7036.L*8) AND DM20008.L<=(DM7036.L*9) THEN
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +8
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LD CR2009                ; 演算結果が負
+OUT @VB025
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +9
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LDB CR2009               ; 演算結果が負
+AND @VB025
+NCJ #2058
+;EM14254.L=EM14260.L-(DM20002.L*8)-((DM20008.L-((DM7036.L*8)+1))*DM20000.L)
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +8
+CON
+ADD.L +1
+CON
+STA.L @VM177
+CON
+LDA.L DM20008            ; 板押圧取出し番号
+CON
+SUB.L @VM177
+CON
+MUL.L DM20000            ; RB3板押圧ﾄﾚｲ_X方向ﾋﾟｯﾁ
+CON
+STA.L @VM179
+CON
+LDA.L DM20002            ; RB3板押圧ﾄﾚｲ_Y方向ﾋﾟｯﾁ
+CON
+MUL.L +8
+CON
+STA.L @VM181
+CON
+LDA.L EM14260            ; RB3 P11 POS(LO)
+CON
+SUB.L @VM181
+CON
+SUB.L @VM179
+CON
+STA.L EM14254            ; RB3 P10 POS(LO)
+;END IF
+;
+LABEL #2058
+;IF DM20008.L>(DM7036.L*9) AND DM20008.L<=(DM7036.L*10) THEN
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +9
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LD CR2009                ; 演算結果が負
+OUT @VB026
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +10
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LDB CR2009               ; 演算結果が負
+AND @VB026
+NCJ #2059
+;EM14254.L=EM14260.L-(DM20002.L*9)-((DM20008.L-((DM7036.L*9)+1))*DM20000.L)
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +9
+CON
+ADD.L +1
+CON
+STA.L @VM183
+CON
+LDA.L DM20008            ; 板押圧取出し番号
+CON
+SUB.L @VM183
+CON
+MUL.L DM20000            ; RB3板押圧ﾄﾚｲ_X方向ﾋﾟｯﾁ
+CON
+STA.L @VM185
+CON
+LDA.L DM20002            ; RB3板押圧ﾄﾚｲ_Y方向ﾋﾟｯﾁ
+CON
+MUL.L +9
+CON
+STA.L @VM187
+CON
+LDA.L EM14260            ; RB3 P11 POS(LO)
+CON
+SUB.L @VM187
+CON
+SUB.L @VM185
+CON
+STA.L EM14254            ; RB3 P10 POS(LO)
+;END IF
+;
+LABEL #2059
+;IF DM20008.L>(DM7036.L*10) AND DM20008.L<=(DM7036.L*11) THEN
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +10
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LD CR2009                ; 演算結果が負
+OUT @VB027
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +11
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LDB CR2009               ; 演算結果が負
+AND @VB027
+NCJ #2060
+;EM14254.L=EM14260.L-(DM20002.L*10)-((DM20008.L-((DM7036.L*10)+1))*DM20000.L)
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +10
+CON
+ADD.L +1
+CON
+STA.L @VM189
+CON
+LDA.L DM20008            ; 板押圧取出し番号
+CON
+SUB.L @VM189
+CON
+MUL.L DM20000            ; RB3板押圧ﾄﾚｲ_X方向ﾋﾟｯﾁ
+CON
+STA.L @VM191
+CON
+LDA.L DM20002            ; RB3板押圧ﾄﾚｲ_Y方向ﾋﾟｯﾁ
+CON
+MUL.L +10
+CON
+STA.L @VM193
+CON
+LDA.L EM14260            ; RB3 P11 POS(LO)
+CON
+SUB.L @VM193
+CON
+SUB.L @VM191
+CON
+STA.L EM14254            ; RB3 P10 POS(LO)
+;END IF
+;
+LABEL #2060
+;IF DM20008.L>(DM7036.L*11) AND DM20008.L<=(DM7036.L*12) THEN
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +11
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LD CR2009                ; 演算結果が負
+OUT @VB028
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +12
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LDB CR2009               ; 演算結果が負
+AND @VB028
+NCJ #2061
+;EM14254.L=EM14260.L-(DM20002.L*11)-((DM20008.L-((DM7036.L*11)+1))*DM20000.L)
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +11
+CON
+ADD.L +1
+CON
+STA.L @VM195
+CON
+LDA.L DM20008            ; 板押圧取出し番号
+CON
+SUB.L @VM195
+CON
+MUL.L DM20000            ; RB3板押圧ﾄﾚｲ_X方向ﾋﾟｯﾁ
+CON
+STA.L @VM197
+CON
+LDA.L DM20002            ; RB3板押圧ﾄﾚｲ_Y方向ﾋﾟｯﾁ
+CON
+MUL.L +11
+CON
+STA.L @VM199
+CON
+LDA.L EM14260            ; RB3 P11 POS(LO)
+CON
+SUB.L @VM199
+CON
+SUB.L @VM197
+CON
+STA.L EM14254            ; RB3 P10 POS(LO)
+;END IF
+;
+LABEL #2061
+;IF DM20008.L>(DM7036.L*12) AND DM20008.L<=(DM7036.L*13) THEN
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +12
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LD CR2009                ; 演算結果が負
+OUT @VB029
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +13
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LDB CR2009               ; 演算結果が負
+AND @VB029
+NCJ #2062
+;EM14254.L=EM14260.L-(DM20002.L*12)-((DM20008.L-((DM7036.L*12)+1))*DM20000.L)
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +12
+CON
+ADD.L +1
+CON
+STA.L @VM201
+CON
+LDA.L DM20008            ; 板押圧取出し番号
+CON
+SUB.L @VM201
+CON
+MUL.L DM20000            ; RB3板押圧ﾄﾚｲ_X方向ﾋﾟｯﾁ
+CON
+STA.L @VM203
+CON
+LDA.L DM20002            ; RB3板押圧ﾄﾚｲ_Y方向ﾋﾟｯﾁ
+CON
+MUL.L +12
+CON
+STA.L @VM205
+CON
+LDA.L EM14260            ; RB3 P11 POS(LO)
+CON
+SUB.L @VM205
+CON
+SUB.L @VM203
+CON
+STA.L EM14254            ; RB3 P10 POS(LO)
+;END IF
+;
+LABEL #2062
+;IF DM20008.L>(DM7036.L*13) AND DM20008.L<=(DM7036.L*14) THEN
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +13
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LD CR2009                ; 演算結果が負
+OUT @VB02A
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +14
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LDB CR2009               ; 演算結果が負
+AND @VB02A
+NCJ #2063
+;EM14254.L=EM14260.L-(DM20002.L*13)-((DM20008.L-((DM7036.L*13)+1))*DM20000.L)
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +13
+CON
+ADD.L +1
+CON
+STA.L @VM207
+CON
+LDA.L DM20008            ; 板押圧取出し番号
+CON
+SUB.L @VM207
+CON
+MUL.L DM20000            ; RB3板押圧ﾄﾚｲ_X方向ﾋﾟｯﾁ
+CON
+STA.L @VM209
+CON
+LDA.L DM20002            ; RB3板押圧ﾄﾚｲ_Y方向ﾋﾟｯﾁ
+CON
+MUL.L +13
+CON
+STA.L @VM211
+CON
+LDA.L EM14260            ; RB3 P11 POS(LO)
+CON
+SUB.L @VM211
+CON
+SUB.L @VM209
+CON
+STA.L EM14254            ; RB3 P10 POS(LO)
+;END IF
+;
+LABEL #2063
+;IF DM20008.L>(DM7036.L*14) AND DM20008.L<=(DM7036.L*15) THEN
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +14
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LD CR2009                ; 演算結果が負
+OUT @VB02B
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +15
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LDB CR2009               ; 演算結果が負
+AND @VB02B
+NCJ #2064
+;EM14254.L=EM14260.L-(DM20002.L*14)-((DM20008.L-((DM7036.L*14)+1))*DM20000.L)
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +14
+CON
+ADD.L +1
+CON
+STA.L @VM213
+CON
+LDA.L DM20008            ; 板押圧取出し番号
+CON
+SUB.L @VM213
+CON
+MUL.L DM20000            ; RB3板押圧ﾄﾚｲ_X方向ﾋﾟｯﾁ
+CON
+STA.L @VM215
+CON
+LDA.L DM20002            ; RB3板押圧ﾄﾚｲ_Y方向ﾋﾟｯﾁ
+CON
+MUL.L +14
+CON
+STA.L @VM217
+CON
+LDA.L EM14260            ; RB3 P11 POS(LO)
+CON
+SUB.L @VM217
+CON
+SUB.L @VM215
+CON
+STA.L EM14254            ; RB3 P10 POS(LO)
+;END IF
+;
+LABEL #2064
+;IF DM20008.L>(DM7036.L*15) AND DM20008.L<=(DM7036.L*16) THEN
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +15
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LD CR2009                ; 演算結果が負
+OUT @VB02C
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +16
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LDB CR2009               ; 演算結果が負
+AND @VB02C
+NCJ #2065
+;EM14254.L=EM14260.L-(DM20002.L*15)-((DM20008.L-((DM7036.L*15)+1))*DM20000.L)
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +15
+CON
+ADD.L +1
+CON
+STA.L @VM219
+CON
+LDA.L DM20008            ; 板押圧取出し番号
+CON
+SUB.L @VM219
+CON
+MUL.L DM20000            ; RB3板押圧ﾄﾚｲ_X方向ﾋﾟｯﾁ
+CON
+STA.L @VM221
+CON
+LDA.L DM20002            ; RB3板押圧ﾄﾚｲ_Y方向ﾋﾟｯﾁ
+CON
+MUL.L +15
+CON
+STA.L @VM223
+CON
+LDA.L EM14260            ; RB3 P11 POS(LO)
+CON
+SUB.L @VM223
+CON
+SUB.L @VM221
+CON
+STA.L EM14254            ; RB3 P10 POS(LO)
+;END IF
+;
+LABEL #2065
+;SET(CR2002,@MR605)
+;
+LD CR2002                ; 常時ON
+SET @MR605               ; ⑤SUB_算出完了
+LABEL #1008
+;
+STG @MR4907
+AND @MR605               ; ⑤SUB_算出完了
+RES @MR605               ; ⑤SUB_算出完了
+CON
+JMP @MR4915
+;Error<100>ﾊﾟﾚﾀｲｽﾞ異常(RB3板押圧ﾄﾚｲ搬送)
+STG @MR4913
+ANB R39900               ; RB動作中
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+ANB R39004               ; ｴﾗｰ中
+ANL
+SET R39004               ; ｴﾗｰ中
+CON
+DW $3000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #100 @DM1             ; ErrorNo /ERROR_DISP
+CON
+DW #0 @DM2               ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task0 ERROR
+CON
+JMP @MR4914
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1908
+STG @MR4914
+SET @MR1908
+CON
+AND @MR101               ; Task0 ｴﾗｰ完了
+RES @MR101               ; Task0 ｴﾗｰ完了
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+AND @MR105               ; SW1
+JMP @MR4915
+;END
+STG @MR4915
+SET @MR4901              ; ⑤SUB_板押圧ﾊﾟﾚﾀｲｽﾞ(ﾄﾚｲ側)完了
+CON
+RES @MR4902              ; ⑤SUB_板押圧ﾊﾟﾚﾀｲｽﾞ(ﾄﾚｲ側)中
+CON
+ENDS
+;<h1/>未使用 ⑥SUB_板押圧ﾊﾟﾚﾀｲｽﾞ(PP側)
+LDP @MR5100              ; ⑥SUB_板押圧ﾊﾟﾚﾀｲｽﾞ(PP側)
+AND DM2000.6             ; ﾀﾞﾐｰﾄﾚｲ有効
+AND R46100               ; _自動運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+AND> DM20008 #42         ; 板押圧取出し番号
+AND< DM20008 #211        ; 板押圧取出し番号
+DW.L +211 DM20008        ; 板押圧取出し番号
+STG @MR5100              ; ⑥SUB_板押圧ﾊﾟﾚﾀｲｽﾞ(PP側)
+SET @MR5102              ; ⑥SUB_板押圧ﾊﾟﾚﾀｲｽﾞ(PP側)中
+CON
+JMP @MR5103
+;ﾊﾟﾚﾀｲｼﾞﾝｸﾞﾊﾟﾗﾒｰﾀｰ/Palletizing parameters
+;P11>P12：ﾊﾟﾚﾀｲｽﾞ値正常
+LD>.L EM22660 EM22666    ; RB7 P11 POS(LO)  RB7 P12 POS(LO)
+OUT @MR606               ; 搬送PPﾊﾟﾚﾀｲｽﾞ値正常
+;P11=P13：Y方向ﾋﾟｯﾁ変更無し
+LD=.L EM22660 EM22672    ; RB7 P11 POS(LO)  RB7 P13 POS(LO)
+OUT @MR607               ; 搬送PP_Y方向ﾋﾟｯﾁ変更無し
+;P11<P13：Y方向ﾋﾟｯﾁ増加
+LD<.L EM22660 EM22672    ; RB7 P11 POS(LO)  RB7 P13 POS(LO)
+OUT @MR608               ; 搬送PP_Y方向ﾋﾟｯﾁ増加
+;P11>P13：Y方向ﾋﾟｯﾁ減少
+LD>.L EM22660 EM22672    ; RB7 P11 POS(LO)  RB7 P13 POS(LO)
+OUT @MR609               ; 搬送PP_Y方向ﾋﾟｯﾁ減少
+;ﾊﾟﾚﾀｲｽﾞ座標ﾁｪｯｸ/palletizing coordinate check
+STG @MR5103
+MPS
+ANB @MR606               ; 搬送PPﾊﾟﾚﾀｲｽﾞ値正常
+SET @MR610               ; ⑥SUB_ﾊﾟﾚﾀｲｽﾞ異常
+CON
+JMP @MR5113
+MPP
+AND @MR606               ; 搬送PPﾊﾟﾚﾀｲｽﾞ値正常
+JMP @MR5104
+;X方向ﾋﾟｯﾁ計算：X方向ﾋﾟｯﾁ＝(P11-P12)/(ﾄﾚｲ列数-1)
+;DM20004.L=(EM22660.L-EM22666.L)/(DM7036.L-1)
+;SET(CR2002,@MR611)'算出完了
+LD @MR5104
+ANB @MR611               ; ⑥SUB_算出完了
+NCJ #1010
+;DM20004.L=(EM22660.L-EM22666.L)/(DM7036.L-1)
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+SUB.L +1
+CON
+STA.L @VM225
+CON
+LDA.L EM22660            ; RB7 P11 POS(LO)
+CON
+SUB.L EM22666            ; RB7 P12 POS(LO)
+CON
+EXT.L
+CON
+DIV.L @VM225
+CON
+STA.L DM20004            ; RB7板押圧PP_X方向ﾋﾟｯﾁ
+;SET(CR2002,@MR611)'算出完了
+LD CR2002                ; 常時ON
+SET @MR611               ; ⑥SUB_算出完了
+LABEL #1010
+;
+STG @MR5104
+AND @MR611               ; ⑥SUB_算出完了
+RES @MR611               ; ⑥SUB_算出完了
+CON
+JMP @MR5105
+;搬送PP_Y方向ﾋﾟｯﾁ計算
+;ﾋﾟｯﾁ変更無し：Y方向ﾋﾟｯﾁ＝0
+;ﾋﾟｯﾁ増加：Y方向ﾋﾟｯﾁ＝(P13-P11)/(ﾄﾚｲ行数-1)
+;ﾋﾟｯﾁ減少：Y方向ﾋﾟｯﾁ＝(P11-P13)/(ﾄﾚｲ行数-1)
+;DM20006.L=0
+;SET(CR2002,@MR611)'算出完了
+LD @MR5105
+AND @MR607               ; 搬送PP_Y方向ﾋﾟｯﾁ変更無し
+ANB @MR611               ; ⑥SUB_算出完了
+NCJ #1011
+;DM20006.L=0
+;
+LD CR2002                ; 常時ON
+MOV.L +0 DM20006         ; RB7板押圧PP_Y方向ﾋﾟｯﾁ
+;SET(CR2002,@MR611)'算出完了
+LD CR2002                ; 常時ON
+SET @MR611               ; ⑥SUB_算出完了
+LABEL #1011
+;
+;DM20006.L=(EM22672.L-EM22660)/(DM7034.L-1)
+;SET(CR2002,@MR611)'算出完了
+LD @MR5105
+AND @MR608               ; 搬送PP_Y方向ﾋﾟｯﾁ増加
+ANB @MR611               ; ⑥SUB_算出完了
+NCJ #1012
+;DM20006.L=(EM22672.L-EM22660)/(DM7034.L-1)
+;
+LD CR2002                ; 常時ON
+LDA.L DM7034             ; 装置基礎ﾃﾞｰﾀ18
+CON
+SUB.L +1
+CON
+STA.L @VM227
+CON
+LDA EM22660              ; RB7 P11 POS(LO)
+CON
+EXT
+CON
+STA.L @VM229
+CON
+LDA.L EM22672            ; RB7 P13 POS(LO)
+CON
+SUB.L @VM229
+CON
+EXT.L
+CON
+DIV.L @VM227
+CON
+STA.L DM20006            ; RB7板押圧PP_Y方向ﾋﾟｯﾁ
+;SET(CR2002,@MR611)'算出完了
+LD CR2002                ; 常時ON
+SET @MR611               ; ⑥SUB_算出完了
+LABEL #1012
+;
+;DM20006.L=(EM22660.L-EM22672)/(DM7034.L-1)
+;SET(CR2002,@MR611)'算出完了
+LD @MR5105
+AND @MR609               ; 搬送PP_Y方向ﾋﾟｯﾁ減少
+ANB @MR611               ; ⑥SUB_算出完了
+NCJ #1013
+;DM20006.L=(EM22660.L-EM22672)/(DM7034.L-1)
+;
+LD CR2002                ; 常時ON
+LDA.L DM7034             ; 装置基礎ﾃﾞｰﾀ18
+CON
+SUB.L +1
+CON
+STA.L @VM231
+CON
+LDA EM22672              ; RB7 P13 POS(LO)
+CON
+EXT
+CON
+STA.L @VM233
+CON
+LDA.L EM22660            ; RB7 P11 POS(LO)
+CON
+SUB.L @VM233
+CON
+EXT.L
+CON
+DIV.L @VM231
+CON
+STA.L DM20006            ; RB7板押圧PP_Y方向ﾋﾟｯﾁ
+;SET(CR2002,@MR611)'算出完了
+LD CR2002                ; 常時ON
+SET @MR611               ; ⑥SUB_算出完了
+LABEL #1013
+;
+STG @MR5105
+AND @MR611               ; ⑥SUB_算出完了
+RES @MR611               ; ⑥SUB_算出完了
+CON
+JMP @MR5106
+;板押圧取出し番号確認
+STG @MR5106
+MPS
+AND<=.L DM20008 DM20044  ; 板押圧取出し番号  板押圧トレイ全数
+JMP @MR5107
+MPP
+AND>.L DM20008 DM20044   ; 板押圧取出し番号  板押圧トレイ全数
+SET @MR610               ; ⑥SUB_ﾊﾟﾚﾀｲｽﾞ異常
+CON
+JMP @MR5113
+;POS10_取出し位置算出
+;'取出し位置の算出
+;'ﾊﾟﾚﾀｲｽﾞ基準1(P0_POS11)-X方向ﾋﾟｯﾁ
+;
+;IF DM20008.L<=DM7036.L THEN
+; EM22654.L=EM22660.L-(DM20004.L*(DM20008.L-1))
+;END IF
+;
+;IF DM20008.L>DM7036.L AND DM20008.L<=(DM7036.L*2) THEN
+; EM22654.L=EM22660.L-(DM20004.L*(DM20008.L-(DM7036.L+1)))
+;END IF
+;
+;IF DM20008.L>(DM7036.L*2) AND DM20008.L<=(DM7036.L*3) THEN
+; EM22654.L=EM22660.L-(DM20004.L*(DM20008.L-((DM7036.L*2)+1)))
+;END IF
+;
+;IF DM20008.L>(DM7036.L*3) AND DM20008.L<=(DM7036.L*4) THEN
+; EM22654.L=EM22660.L-(DM20004.L*(DM20008.L-((DM7036.L*3)+1)))
+;END IF
+;
+;IF DM20008.L>(DM7036.L*4) AND DM20008.L<=(DM7036.L*5) THEN
+; EM22654.L=EM22660.L-(DM20004.L*(DM20008.L-((DM7036.L*4)+1)))
+;END IF
+;
+;IF DM20008.L>(DM7036.L*5) AND DM20008.L<=(DM7036.L*6) THEN
+; EM22654.L=EM22660.L-(DM20004.L*(DM20008.L-((DM7036.L*5)+1)))
+;END IF
+;
+;IF DM20008.L>(DM7036.L*6) AND DM20008.L<=(DM7036.L*7) THEN
+; EM22654.L=EM22660.L-(DM20004.L*(DM20008.L-((DM7036.L*6)+1)))
+;END IF
+;
+;IF DM20008.L>(DM7036.L*7) AND DM20008.L<=(DM7036.L*8) THEN
+; EM22654.L=EM22660.L-(DM20004.L*(DM20008.L-((DM7036.L*7)+1)))
+;END IF
+;
+;IF DM20008.L>(DM7036.L*8) AND DM20008.L<=(DM7036.L*9) THEN
+; EM22654.L=EM22660.L-(DM20004.L*(DM20008.L-((DM7036.L*8)+1)))
+;END IF
+;
+;IF DM20008.L>(DM7036.L*9) AND DM20008.L<=(DM7036.L*10) THEN
+; EM22654.L=EM22660.L-(DM20004.L*(DM20008.L-((DM7036.L*9)+1)))
+;END IF
+;
+;IF DM20008.L>(DM7036.L*10) AND DM20008.L<=(DM7036.L*11) THEN
+; EM22654.L=EM22660.L-(DM20004.L*(DM20008.L-((DM7036.L*10)+1)))
+;END IF
+;
+;IF DM20008.L>(DM7036.L*11) AND DM20008.L<=(DM7036.L*12) THEN
+; EM22654.L=EM22660.L-(DM20004.L*(DM20008.L-((DM7036.L*11)+1)))
+;END IF
+;
+;IF DM20008.L>(DM7036.L*12) AND DM20008.L<=(DM7036.L*13) THEN
+; EM22654.L=EM22660.L-(DM20004.L*(DM20008.L-((DM7036.L*12)+1)))
+;END IF
+;
+;IF DM20008.L>(DM7036.L*13) AND DM20008.L<=(DM7036.L*14) THEN
+; EM22654.L=EM22660.L-(DM20004.L*(DM20008.L-((DM7036.L*13)+1)))
+;END IF
+;
+;IF DM20008.L>(DM7036.L*14) AND DM20008.L<=(DM7036.L*15) THEN
+; EM22654.L=EM22660.L-(DM20004.L*(DM20008.L-((DM7036.L*14)+1)))
+;END IF
+;
+;IF DM20008.L>(DM7036.L*15) AND DM20008.L<=(DM7036.L*16) THEN
+; EM22654.L=EM22660.L-(DM20004.L*(DM20008.L-((DM7036.L*15)+1)))
+;END IF
+;
+;SET(CR2002,@MR611)
+;
+LD @MR5107
+AND @MR607               ; 搬送PP_Y方向ﾋﾟｯﾁ変更無し
+ANB @MR611               ; ⑥SUB_算出完了
+NCJ #1014
+;'取出し位置の算出
+;
+;'ﾊﾟﾚﾀｲｽﾞ基準1(P0_POS11)-X方向ﾋﾟｯﾁ
+;
+;IF DM20008.L<=DM7036.L THEN
+;
+LD<=.L DM20008 DM7036    ; 板押圧取出し番号  装置基礎ﾃﾞｰﾀ19
+NCJ #2066
+; EM22654.L=EM22660.L-(DM20004.L*(DM20008.L-1))
+;
+LD CR2002                ; 常時ON
+LDA.L DM20008            ; 板押圧取出し番号
+CON
+SUB.L +1
+CON
+MUL.L DM20004            ; RB7板押圧PP_X方向ﾋﾟｯﾁ
+CON
+STA.L @VM235
+CON
+LDA.L EM22660            ; RB7 P11 POS(LO)
+CON
+SUB.L @VM235
+CON
+STA.L EM22654            ; RB7 P10 POS(LO)
+;END IF
+;
+LABEL #2066
+;IF DM20008.L>DM7036.L AND DM20008.L<=(DM7036.L*2) THEN
+;
+LD>.L DM20008 DM7036     ; 板押圧取出し番号  装置基礎ﾃﾞｰﾀ19
+OUT @VB02D
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +2
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LDB CR2009               ; 演算結果が負
+AND @VB02D
+NCJ #2067
+; EM22654.L=EM22660.L-(DM20004.L*(DM20008.L-(DM7036.L+1)))
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+ADD.L +1
+CON
+STA.L @VM237
+CON
+LDA.L DM20008            ; 板押圧取出し番号
+CON
+SUB.L @VM237
+CON
+MUL.L DM20004            ; RB7板押圧PP_X方向ﾋﾟｯﾁ
+CON
+STA.L @VM239
+CON
+LDA.L EM22660            ; RB7 P11 POS(LO)
+CON
+SUB.L @VM239
+CON
+STA.L EM22654            ; RB7 P10 POS(LO)
+;END IF
+;
+LABEL #2067
+;IF DM20008.L>(DM7036.L*2) AND DM20008.L<=(DM7036.L*3) THEN
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +2
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LD CR2009                ; 演算結果が負
+OUT @VB02E
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +3
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LDB CR2009               ; 演算結果が負
+AND @VB02E
+NCJ #2068
+; EM22654.L=EM22660.L-(DM20004.L*(DM20008.L-((DM7036.L*2)+1)))
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +2
+CON
+ADD.L +1
+CON
+STA.L @VM241
+CON
+LDA.L DM20008            ; 板押圧取出し番号
+CON
+SUB.L @VM241
+CON
+MUL.L DM20004            ; RB7板押圧PP_X方向ﾋﾟｯﾁ
+CON
+STA.L @VM243
+CON
+LDA.L EM22660            ; RB7 P11 POS(LO)
+CON
+SUB.L @VM243
+CON
+STA.L EM22654            ; RB7 P10 POS(LO)
+;END IF
+;
+LABEL #2068
+;IF DM20008.L>(DM7036.L*3) AND DM20008.L<=(DM7036.L*4) THEN
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +3
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LD CR2009                ; 演算結果が負
+OUT @VB02F
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +4
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LDB CR2009               ; 演算結果が負
+AND @VB02F
+NCJ #2069
+; EM22654.L=EM22660.L-(DM20004.L*(DM20008.L-((DM7036.L*3)+1)))
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +3
+CON
+ADD.L +1
+CON
+STA.L @VM245
+CON
+LDA.L DM20008            ; 板押圧取出し番号
+CON
+SUB.L @VM245
+CON
+MUL.L DM20004            ; RB7板押圧PP_X方向ﾋﾟｯﾁ
+CON
+STA.L @VM247
+CON
+LDA.L EM22660            ; RB7 P11 POS(LO)
+CON
+SUB.L @VM247
+CON
+STA.L EM22654            ; RB7 P10 POS(LO)
+;END IF
+;
+LABEL #2069
+;IF DM20008.L>(DM7036.L*4) AND DM20008.L<=(DM7036.L*5) THEN
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +4
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LD CR2009                ; 演算結果が負
+OUT @VB030
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +5
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LDB CR2009               ; 演算結果が負
+AND @VB030
+NCJ #2070
+; EM22654.L=EM22660.L-(DM20004.L*(DM20008.L-((DM7036.L*4)+1)))
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +4
+CON
+ADD.L +1
+CON
+STA.L @VM249
+CON
+LDA.L DM20008            ; 板押圧取出し番号
+CON
+SUB.L @VM249
+CON
+MUL.L DM20004            ; RB7板押圧PP_X方向ﾋﾟｯﾁ
+CON
+STA.L @VM251
+CON
+LDA.L EM22660            ; RB7 P11 POS(LO)
+CON
+SUB.L @VM251
+CON
+STA.L EM22654            ; RB7 P10 POS(LO)
+;END IF
+;
+LABEL #2070
+;IF DM20008.L>(DM7036.L*5) AND DM20008.L<=(DM7036.L*6) THEN
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +5
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LD CR2009                ; 演算結果が負
+OUT @VB031
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +6
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LDB CR2009               ; 演算結果が負
+AND @VB031
+NCJ #2071
+; EM22654.L=EM22660.L-(DM20004.L*(DM20008.L-((DM7036.L*5)+1)))
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +5
+CON
+ADD.L +1
+CON
+STA.L @VM253
+CON
+LDA.L DM20008            ; 板押圧取出し番号
+CON
+SUB.L @VM253
+CON
+MUL.L DM20004            ; RB7板押圧PP_X方向ﾋﾟｯﾁ
+CON
+STA.L @VM255
+CON
+LDA.L EM22660            ; RB7 P11 POS(LO)
+CON
+SUB.L @VM255
+CON
+STA.L EM22654            ; RB7 P10 POS(LO)
+;END IF
+;
+LABEL #2071
+;IF DM20008.L>(DM7036.L*6) AND DM20008.L<=(DM7036.L*7) THEN
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +6
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LD CR2009                ; 演算結果が負
+OUT @VB032
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +7
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LDB CR2009               ; 演算結果が負
+AND @VB032
+NCJ #2072
+; EM22654.L=EM22660.L-(DM20004.L*(DM20008.L-((DM7036.L*6)+1)))
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +6
+CON
+ADD.L +1
+CON
+STA.L @VM257
+CON
+LDA.L DM20008            ; 板押圧取出し番号
+CON
+SUB.L @VM257
+CON
+MUL.L DM20004            ; RB7板押圧PP_X方向ﾋﾟｯﾁ
+CON
+STA.L @VM259
+CON
+LDA.L EM22660            ; RB7 P11 POS(LO)
+CON
+SUB.L @VM259
+CON
+STA.L EM22654            ; RB7 P10 POS(LO)
+;END IF
+;
+LABEL #2072
+;IF DM20008.L>(DM7036.L*7) AND DM20008.L<=(DM7036.L*8) THEN
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +7
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LD CR2009                ; 演算結果が負
+OUT @VB033
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +8
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LDB CR2009               ; 演算結果が負
+AND @VB033
+NCJ #2073
+; EM22654.L=EM22660.L-(DM20004.L*(DM20008.L-((DM7036.L*7)+1)))
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +7
+CON
+ADD.L +1
+CON
+STA.L @VM261
+CON
+LDA.L DM20008            ; 板押圧取出し番号
+CON
+SUB.L @VM261
+CON
+MUL.L DM20004            ; RB7板押圧PP_X方向ﾋﾟｯﾁ
+CON
+STA.L @VM263
+CON
+LDA.L EM22660            ; RB7 P11 POS(LO)
+CON
+SUB.L @VM263
+CON
+STA.L EM22654            ; RB7 P10 POS(LO)
+;END IF
+;
+LABEL #2073
+;IF DM20008.L>(DM7036.L*8) AND DM20008.L<=(DM7036.L*9) THEN
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +8
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LD CR2009                ; 演算結果が負
+OUT @VB034
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +9
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LDB CR2009               ; 演算結果が負
+AND @VB034
+NCJ #2074
+; EM22654.L=EM22660.L-(DM20004.L*(DM20008.L-((DM7036.L*8)+1)))
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +8
+CON
+ADD.L +1
+CON
+STA.L @VM265
+CON
+LDA.L DM20008            ; 板押圧取出し番号
+CON
+SUB.L @VM265
+CON
+MUL.L DM20004            ; RB7板押圧PP_X方向ﾋﾟｯﾁ
+CON
+STA.L @VM267
+CON
+LDA.L EM22660            ; RB7 P11 POS(LO)
+CON
+SUB.L @VM267
+CON
+STA.L EM22654            ; RB7 P10 POS(LO)
+;END IF
+;
+LABEL #2074
+;IF DM20008.L>(DM7036.L*9) AND DM20008.L<=(DM7036.L*10) THEN
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +9
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LD CR2009                ; 演算結果が負
+OUT @VB035
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +10
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LDB CR2009               ; 演算結果が負
+AND @VB035
+NCJ #2075
+; EM22654.L=EM22660.L-(DM20004.L*(DM20008.L-((DM7036.L*9)+1)))
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +9
+CON
+ADD.L +1
+CON
+STA.L @VM269
+CON
+LDA.L DM20008            ; 板押圧取出し番号
+CON
+SUB.L @VM269
+CON
+MUL.L DM20004            ; RB7板押圧PP_X方向ﾋﾟｯﾁ
+CON
+STA.L @VM271
+CON
+LDA.L EM22660            ; RB7 P11 POS(LO)
+CON
+SUB.L @VM271
+CON
+STA.L EM22654            ; RB7 P10 POS(LO)
+;END IF
+;
+LABEL #2075
+;IF DM20008.L>(DM7036.L*10) AND DM20008.L<=(DM7036.L*11) THEN
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +10
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LD CR2009                ; 演算結果が負
+OUT @VB036
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +11
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LDB CR2009               ; 演算結果が負
+AND @VB036
+NCJ #2076
+; EM22654.L=EM22660.L-(DM20004.L*(DM20008.L-((DM7036.L*10)+1)))
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +10
+CON
+ADD.L +1
+CON
+STA.L @VM273
+CON
+LDA.L DM20008            ; 板押圧取出し番号
+CON
+SUB.L @VM273
+CON
+MUL.L DM20004            ; RB7板押圧PP_X方向ﾋﾟｯﾁ
+CON
+STA.L @VM275
+CON
+LDA.L EM22660            ; RB7 P11 POS(LO)
+CON
+SUB.L @VM275
+CON
+STA.L EM22654            ; RB7 P10 POS(LO)
+;END IF
+;
+LABEL #2076
+;IF DM20008.L>(DM7036.L*11) AND DM20008.L<=(DM7036.L*12) THEN
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +11
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LD CR2009                ; 演算結果が負
+OUT @VB037
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +12
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LDB CR2009               ; 演算結果が負
+AND @VB037
+NCJ #2077
+; EM22654.L=EM22660.L-(DM20004.L*(DM20008.L-((DM7036.L*11)+1)))
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +11
+CON
+ADD.L +1
+CON
+STA.L @VM277
+CON
+LDA.L DM20008            ; 板押圧取出し番号
+CON
+SUB.L @VM277
+CON
+MUL.L DM20004            ; RB7板押圧PP_X方向ﾋﾟｯﾁ
+CON
+STA.L @VM279
+CON
+LDA.L EM22660            ; RB7 P11 POS(LO)
+CON
+SUB.L @VM279
+CON
+STA.L EM22654            ; RB7 P10 POS(LO)
+;END IF
+;
+LABEL #2077
+;IF DM20008.L>(DM7036.L*12) AND DM20008.L<=(DM7036.L*13) THEN
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +12
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LD CR2009                ; 演算結果が負
+OUT @VB038
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +13
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LDB CR2009               ; 演算結果が負
+AND @VB038
+NCJ #2078
+; EM22654.L=EM22660.L-(DM20004.L*(DM20008.L-((DM7036.L*12)+1)))
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +12
+CON
+ADD.L +1
+CON
+STA.L @VM281
+CON
+LDA.L DM20008            ; 板押圧取出し番号
+CON
+SUB.L @VM281
+CON
+MUL.L DM20004            ; RB7板押圧PP_X方向ﾋﾟｯﾁ
+CON
+STA.L @VM283
+CON
+LDA.L EM22660            ; RB7 P11 POS(LO)
+CON
+SUB.L @VM283
+CON
+STA.L EM22654            ; RB7 P10 POS(LO)
+;END IF
+;
+LABEL #2078
+;IF DM20008.L>(DM7036.L*13) AND DM20008.L<=(DM7036.L*14) THEN
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +13
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LD CR2009                ; 演算結果が負
+OUT @VB039
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +14
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LDB CR2009               ; 演算結果が負
+AND @VB039
+NCJ #2079
+; EM22654.L=EM22660.L-(DM20004.L*(DM20008.L-((DM7036.L*13)+1)))
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +13
+CON
+ADD.L +1
+CON
+STA.L @VM285
+CON
+LDA.L DM20008            ; 板押圧取出し番号
+CON
+SUB.L @VM285
+CON
+MUL.L DM20004            ; RB7板押圧PP_X方向ﾋﾟｯﾁ
+CON
+STA.L @VM287
+CON
+LDA.L EM22660            ; RB7 P11 POS(LO)
+CON
+SUB.L @VM287
+CON
+STA.L EM22654            ; RB7 P10 POS(LO)
+;END IF
+;
+LABEL #2079
+;IF DM20008.L>(DM7036.L*14) AND DM20008.L<=(DM7036.L*15) THEN
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +14
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LD CR2009                ; 演算結果が負
+OUT @VB03A
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +15
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LDB CR2009               ; 演算結果が負
+AND @VB03A
+NCJ #2080
+; EM22654.L=EM22660.L-(DM20004.L*(DM20008.L-((DM7036.L*14)+1)))
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +14
+CON
+ADD.L +1
+CON
+STA.L @VM289
+CON
+LDA.L DM20008            ; 板押圧取出し番号
+CON
+SUB.L @VM289
+CON
+MUL.L DM20004            ; RB7板押圧PP_X方向ﾋﾟｯﾁ
+CON
+STA.L @VM291
+CON
+LDA.L EM22660            ; RB7 P11 POS(LO)
+CON
+SUB.L @VM291
+CON
+STA.L EM22654            ; RB7 P10 POS(LO)
+;END IF
+;
+LABEL #2080
+;IF DM20008.L>(DM7036.L*15) AND DM20008.L<=(DM7036.L*16) THEN
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +15
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LD CR2009                ; 演算結果が負
+OUT @VB03B
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +16
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LDB CR2009               ; 演算結果が負
+AND @VB03B
+NCJ #2081
+; EM22654.L=EM22660.L-(DM20004.L*(DM20008.L-((DM7036.L*15)+1)))
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +15
+CON
+ADD.L +1
+CON
+STA.L @VM293
+CON
+LDA.L DM20008            ; 板押圧取出し番号
+CON
+SUB.L @VM293
+CON
+MUL.L DM20004            ; RB7板押圧PP_X方向ﾋﾟｯﾁ
+CON
+STA.L @VM295
+CON
+LDA.L EM22660            ; RB7 P11 POS(LO)
+CON
+SUB.L @VM295
+CON
+STA.L EM22654            ; RB7 P10 POS(LO)
+;END IF
+;
+LABEL #2081
+;SET(CR2002,@MR611)
+;
+LD CR2002                ; 常時ON
+SET @MR611               ; ⑥SUB_算出完了
+LABEL #1014
+;
+;'取出し位置の算出
+;'ﾊﾟﾚﾀｲｽﾞ基準1(P0_POS11)-X方向ﾋﾟｯﾁ+Y方向ﾋﾟｯﾁ
+;
+;IF DM20008.L<=DM7036.L THEN
+; EM22654.L=EM22660.L-(DM20004.L*(DM20008.L-1))
+;END IF
+;
+;IF DM20008.L>DM7036.L AND DM20008.L<=(DM7036.L*2) THEN
+; EM22654.L=EM22660.L-(DM20004.L*(DM20008.L-(DM7036.L+1)))+DM20006.L
+;END IF
+;
+;IF DM20008.L>(DM7036.L*2) AND DM20008.L<=(DM7036.L*3) THEN
+; EM22654.L=EM22660.L-(DM20004.L*(DM20008.L-((DM7036.L*2)+1)))+(DM20006.L*2)
+;END IF
+;
+;IF DM20008.L>(DM7036.L*3) AND DM20008.L<=(DM7036.L*4) THEN
+; EM22654.L=EM22660.L-(DM20004.L*(DM20008.L-((DM7036.L*3)+1)))+(DM20006.L*3)
+;END IF
+;
+;IF DM20008.L>(DM7036.L*4) AND DM20008.L<=(DM7036.L*5) THEN
+; EM22654.L=EM22660.L-(DM20004.L*(DM20008.L-((DM7036.L*4)+1)))+(DM20006.L*4)
+;END IF
+;
+;IF DM20008.L>(DM7036.L*5) AND DM20008.L<=(DM7036.L*6) THEN
+; EM22654.L=EM22660.L-(DM20004.L*(DM20008.L-((DM7036.L*5)+1)))+(DM20006.L*5)
+;END IF
+;
+;IF DM20008.L>(DM7036.L*6) AND DM20008.L<=(DM7036.L*7) THEN
+; EM22654.L=EM22660.L-(DM20004.L*(DM20008.L-((DM7036.L*6)+1)))+(DM20006.L*6)
+;END IF
+;
+;IF DM20008.L>(DM7036.L*7) AND DM20008.L<=(DM7036.L*8) THEN
+; EM22654.L=EM22660.L-(DM20004.L*(DM20008.L-((DM7036.L*7)+1)))+(DM20006.L*7)
+;END IF
+;
+;IF DM20008.L>(DM7036.L*8) AND DM20008.L<=(DM7036.L*9) THEN
+; EM22654.L=EM22660.L-(DM20004.L*(DM20008.L-((DM7036.L*8)+1)))+(DM20006.L*8)
+;END IF
+;
+;IF DM20008.L>(DM7036.L*9) AND DM20008.L<=(DM7036.L*10) THEN
+; EM22654.L=EM22660.L-(DM20004.L*(DM20008.L-((DM7036.L*9)+1)))+(DM20006.L*9)
+;END IF
+;
+;IF DM20008.L>(DM7036.L*10) AND DM20008.L<=(DM7036.L*11) THEN
+; EM22654.L=EM22660.L-(DM20004.L*(DM20008.L-((DM7036.L*10)+1)))+(DM20006.L*10)
+;END IF
+;
+;IF DM20008.L>(DM7036.L*11) AND DM20008.L<=(DM7036.L*12) THEN
+; EM22654.L=EM22660.L-(DM20004.L*(DM20008.L-((DM7036.L*11)+1)))+(DM20006.L*11)
+;END IF
+;
+;IF DM20008.L>(DM7036.L*12) AND DM20008.L<=(DM7036.L*13) THEN
+; EM22654.L=EM22660.L-(DM20004.L*(DM20008.L-((DM7036.L*12)+1)))+(DM20006.L*12)
+;END IF
+;
+;IF DM20008.L>(DM7036.L*13) AND DM20008.L<=(DM7036.L*14) THEN
+; EM22654.L=EM22660.L-(DM20004.L*(DM20008.L-((DM7036.L*13)+1)))+(DM20006.L*13)
+;END IF
+;
+;IF DM20008.L>(DM7036.L*14) AND DM20008.L<=(DM7036.L*15) THEN
+; EM22654.L=EM22660.L-(DM20004.L*(DM20008.L-((DM7036.L*14)+1)))+(DM20006.L*14)
+;END IF
+;
+;IF DM20008.L>(DM7036.L*15) AND DM20008.L<=(DM7036.L*16) THEN
+; EM22654.L=EM22660.L-(DM20004.L*(DM20008.L-((DM7036.L*15)+1)))+(DM20006.L*15)
+;END IF
+;
+;SET(CR2002,@MR611)
+;
+LD @MR5107
+AND @MR608               ; 搬送PP_Y方向ﾋﾟｯﾁ増加
+ANB @MR611               ; ⑥SUB_算出完了
+NCJ #1017
+;'取出し位置の算出
+;
+;'ﾊﾟﾚﾀｲｽﾞ基準1(P0_POS11)-X方向ﾋﾟｯﾁ+Y方向ﾋﾟｯﾁ
+;
+;IF DM20008.L<=DM7036.L THEN
+;
+LD<=.L DM20008 DM7036    ; 板押圧取出し番号  装置基礎ﾃﾞｰﾀ19
+NCJ #2082
+; EM22654.L=EM22660.L-(DM20004.L*(DM20008.L-1))
+;
+LD CR2002                ; 常時ON
+LDA.L DM20008            ; 板押圧取出し番号
+CON
+SUB.L +1
+CON
+MUL.L DM20004            ; RB7板押圧PP_X方向ﾋﾟｯﾁ
+CON
+STA.L @VM297
+CON
+LDA.L EM22660            ; RB7 P11 POS(LO)
+CON
+SUB.L @VM297
+CON
+STA.L EM22654            ; RB7 P10 POS(LO)
+;END IF
+;
+LABEL #2082
+;IF DM20008.L>DM7036.L AND DM20008.L<=(DM7036.L*2) THEN
+;
+LD>.L DM20008 DM7036     ; 板押圧取出し番号  装置基礎ﾃﾞｰﾀ19
+OUT @VB03C
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +2
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LDB CR2009               ; 演算結果が負
+AND @VB03C
+NCJ #2083
+; EM22654.L=EM22660.L-(DM20004.L*(DM20008.L-(DM7036.L+1)))+DM20006.L
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+ADD.L +1
+CON
+STA.L @VM299
+CON
+LDA.L DM20008            ; 板押圧取出し番号
+CON
+SUB.L @VM299
+CON
+MUL.L DM20004            ; RB7板押圧PP_X方向ﾋﾟｯﾁ
+CON
+STA.L @VM301
+CON
+LDA.L EM22660            ; RB7 P11 POS(LO)
+CON
+SUB.L @VM301
+CON
+ADD.L DM20006            ; RB7板押圧PP_Y方向ﾋﾟｯﾁ
+CON
+STA.L EM22654            ; RB7 P10 POS(LO)
+;END IF
+;
+LABEL #2083
+;IF DM20008.L>(DM7036.L*2) AND DM20008.L<=(DM7036.L*3) THEN
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +2
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LD CR2009                ; 演算結果が負
+OUT @VB03D
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +3
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LDB CR2009               ; 演算結果が負
+AND @VB03D
+NCJ #2084
+; EM22654.L=EM22660.L-(DM20004.L*(DM20008.L-((DM7036.L*2)+1)))+(DM20006.L*2)
+;
+LD CR2002                ; 常時ON
+LDA.L DM20006            ; RB7板押圧PP_Y方向ﾋﾟｯﾁ
+CON
+MUL.L +2
+CON
+STA.L @VM303
+CON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +2
+CON
+ADD.L +1
+CON
+STA.L @VM305
+CON
+LDA.L DM20008            ; 板押圧取出し番号
+CON
+SUB.L @VM305
+CON
+MUL.L DM20004            ; RB7板押圧PP_X方向ﾋﾟｯﾁ
+CON
+STA.L @VM307
+CON
+LDA.L EM22660            ; RB7 P11 POS(LO)
+CON
+SUB.L @VM307
+CON
+ADD.L @VM303
+CON
+STA.L EM22654            ; RB7 P10 POS(LO)
+;END IF
+;
+LABEL #2084
+;IF DM20008.L>(DM7036.L*3) AND DM20008.L<=(DM7036.L*4) THEN
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +3
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LD CR2009                ; 演算結果が負
+OUT @VB03E
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +4
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LDB CR2009               ; 演算結果が負
+AND @VB03E
+NCJ #2085
+; EM22654.L=EM22660.L-(DM20004.L*(DM20008.L-((DM7036.L*3)+1)))+(DM20006.L*3)
+;
+LD CR2002                ; 常時ON
+LDA.L DM20006            ; RB7板押圧PP_Y方向ﾋﾟｯﾁ
+CON
+MUL.L +3
+CON
+STA.L @VM309
+CON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +3
+CON
+ADD.L +1
+CON
+STA.L @VM311
+CON
+LDA.L DM20008            ; 板押圧取出し番号
+CON
+SUB.L @VM311
+CON
+MUL.L DM20004            ; RB7板押圧PP_X方向ﾋﾟｯﾁ
+CON
+STA.L @VM313
+CON
+LDA.L EM22660            ; RB7 P11 POS(LO)
+CON
+SUB.L @VM313
+CON
+ADD.L @VM309
+CON
+STA.L EM22654            ; RB7 P10 POS(LO)
+;END IF
+;
+LABEL #2085
+;IF DM20008.L>(DM7036.L*4) AND DM20008.L<=(DM7036.L*5) THEN
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +4
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LD CR2009                ; 演算結果が負
+OUT @VB03F
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +5
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LDB CR2009               ; 演算結果が負
+AND @VB03F
+NCJ #2086
+; EM22654.L=EM22660.L-(DM20004.L*(DM20008.L-((DM7036.L*4)+1)))+(DM20006.L*4)
+;
+LD CR2002                ; 常時ON
+LDA.L DM20006            ; RB7板押圧PP_Y方向ﾋﾟｯﾁ
+CON
+MUL.L +4
+CON
+STA.L @VM315
+CON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +4
+CON
+ADD.L +1
+CON
+STA.L @VM317
+CON
+LDA.L DM20008            ; 板押圧取出し番号
+CON
+SUB.L @VM317
+CON
+MUL.L DM20004            ; RB7板押圧PP_X方向ﾋﾟｯﾁ
+CON
+STA.L @VM319
+CON
+LDA.L EM22660            ; RB7 P11 POS(LO)
+CON
+SUB.L @VM319
+CON
+ADD.L @VM315
+CON
+STA.L EM22654            ; RB7 P10 POS(LO)
+;END IF
+;
+LABEL #2086
+;IF DM20008.L>(DM7036.L*5) AND DM20008.L<=(DM7036.L*6) THEN
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +5
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LD CR2009                ; 演算結果が負
+OUT @VB040
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +6
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LDB CR2009               ; 演算結果が負
+AND @VB040
+NCJ #2087
+; EM22654.L=EM22660.L-(DM20004.L*(DM20008.L-((DM7036.L*5)+1)))+(DM20006.L*5)
+;
+LD CR2002                ; 常時ON
+LDA.L DM20006            ; RB7板押圧PP_Y方向ﾋﾟｯﾁ
+CON
+MUL.L +5
+CON
+STA.L @VM321
+CON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +5
+CON
+ADD.L +1
+CON
+STA.L @VM323
+CON
+LDA.L DM20008            ; 板押圧取出し番号
+CON
+SUB.L @VM323
+CON
+MUL.L DM20004            ; RB7板押圧PP_X方向ﾋﾟｯﾁ
+CON
+STA.L @VM325
+CON
+LDA.L EM22660            ; RB7 P11 POS(LO)
+CON
+SUB.L @VM325
+CON
+ADD.L @VM321
+CON
+STA.L EM22654            ; RB7 P10 POS(LO)
+;END IF
+;
+LABEL #2087
+;IF DM20008.L>(DM7036.L*6) AND DM20008.L<=(DM7036.L*7) THEN
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +6
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LD CR2009                ; 演算結果が負
+OUT @VB041
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +7
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LDB CR2009               ; 演算結果が負
+AND @VB041
+NCJ #2088
+; EM22654.L=EM22660.L-(DM20004.L*(DM20008.L-((DM7036.L*6)+1)))+(DM20006.L*6)
+;
+LD CR2002                ; 常時ON
+LDA.L DM20006            ; RB7板押圧PP_Y方向ﾋﾟｯﾁ
+CON
+MUL.L +6
+CON
+STA.L @VM327
+CON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +6
+CON
+ADD.L +1
+CON
+STA.L @VM329
+CON
+LDA.L DM20008            ; 板押圧取出し番号
+CON
+SUB.L @VM329
+CON
+MUL.L DM20004            ; RB7板押圧PP_X方向ﾋﾟｯﾁ
+CON
+STA.L @VM331
+CON
+LDA.L EM22660            ; RB7 P11 POS(LO)
+CON
+SUB.L @VM331
+CON
+ADD.L @VM327
+CON
+STA.L EM22654            ; RB7 P10 POS(LO)
+;END IF
+;
+LABEL #2088
+;IF DM20008.L>(DM7036.L*7) AND DM20008.L<=(DM7036.L*8) THEN
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +7
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LD CR2009                ; 演算結果が負
+OUT @VB042
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +8
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LDB CR2009               ; 演算結果が負
+AND @VB042
+NCJ #2089
+; EM22654.L=EM22660.L-(DM20004.L*(DM20008.L-((DM7036.L*7)+1)))+(DM20006.L*7)
+;
+LD CR2002                ; 常時ON
+LDA.L DM20006            ; RB7板押圧PP_Y方向ﾋﾟｯﾁ
+CON
+MUL.L +7
+CON
+STA.L @VM333
+CON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +7
+CON
+ADD.L +1
+CON
+STA.L @VM335
+CON
+LDA.L DM20008            ; 板押圧取出し番号
+CON
+SUB.L @VM335
+CON
+MUL.L DM20004            ; RB7板押圧PP_X方向ﾋﾟｯﾁ
+CON
+STA.L @VM337
+CON
+LDA.L EM22660            ; RB7 P11 POS(LO)
+CON
+SUB.L @VM337
+CON
+ADD.L @VM333
+CON
+STA.L EM22654            ; RB7 P10 POS(LO)
+;END IF
+;
+LABEL #2089
+;IF DM20008.L>(DM7036.L*8) AND DM20008.L<=(DM7036.L*9) THEN
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +8
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LD CR2009                ; 演算結果が負
+OUT @VB043
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +9
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LDB CR2009               ; 演算結果が負
+AND @VB043
+NCJ #2090
+; EM22654.L=EM22660.L-(DM20004.L*(DM20008.L-((DM7036.L*8)+1)))+(DM20006.L*8)
+;
+LD CR2002                ; 常時ON
+LDA.L DM20006            ; RB7板押圧PP_Y方向ﾋﾟｯﾁ
+CON
+MUL.L +8
+CON
+STA.L @VM339
+CON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +8
+CON
+ADD.L +1
+CON
+STA.L @VM341
+CON
+LDA.L DM20008            ; 板押圧取出し番号
+CON
+SUB.L @VM341
+CON
+MUL.L DM20004            ; RB7板押圧PP_X方向ﾋﾟｯﾁ
+CON
+STA.L @VM343
+CON
+LDA.L EM22660            ; RB7 P11 POS(LO)
+CON
+SUB.L @VM343
+CON
+ADD.L @VM339
+CON
+STA.L EM22654            ; RB7 P10 POS(LO)
+;END IF
+;
+LABEL #2090
+;IF DM20008.L>(DM7036.L*9) AND DM20008.L<=(DM7036.L*10) THEN
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +9
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LD CR2009                ; 演算結果が負
+OUT @VB044
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +10
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LDB CR2009               ; 演算結果が負
+AND @VB044
+NCJ #2091
+; EM22654.L=EM22660.L-(DM20004.L*(DM20008.L-((DM7036.L*9)+1)))+(DM20006.L*9)
+;
+LD CR2002                ; 常時ON
+LDA.L DM20006            ; RB7板押圧PP_Y方向ﾋﾟｯﾁ
+CON
+MUL.L +9
+CON
+STA.L @VM345
+CON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +9
+CON
+ADD.L +1
+CON
+STA.L @VM347
+CON
+LDA.L DM20008            ; 板押圧取出し番号
+CON
+SUB.L @VM347
+CON
+MUL.L DM20004            ; RB7板押圧PP_X方向ﾋﾟｯﾁ
+CON
+STA.L @VM349
+CON
+LDA.L EM22660            ; RB7 P11 POS(LO)
+CON
+SUB.L @VM349
+CON
+ADD.L @VM345
+CON
+STA.L EM22654            ; RB7 P10 POS(LO)
+;END IF
+;
+LABEL #2091
+;IF DM20008.L>(DM7036.L*10) AND DM20008.L<=(DM7036.L*11) THEN
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +10
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LD CR2009                ; 演算結果が負
+OUT @VB045
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +11
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LDB CR2009               ; 演算結果が負
+AND @VB045
+NCJ #2092
+; EM22654.L=EM22660.L-(DM20004.L*(DM20008.L-((DM7036.L*10)+1)))+(DM20006.L*10)
+;
+LD CR2002                ; 常時ON
+LDA.L DM20006            ; RB7板押圧PP_Y方向ﾋﾟｯﾁ
+CON
+MUL.L +10
+CON
+STA.L @VM351
+CON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +10
+CON
+ADD.L +1
+CON
+STA.L @VM353
+CON
+LDA.L DM20008            ; 板押圧取出し番号
+CON
+SUB.L @VM353
+CON
+MUL.L DM20004            ; RB7板押圧PP_X方向ﾋﾟｯﾁ
+CON
+STA.L @VM355
+CON
+LDA.L EM22660            ; RB7 P11 POS(LO)
+CON
+SUB.L @VM355
+CON
+ADD.L @VM351
+CON
+STA.L EM22654            ; RB7 P10 POS(LO)
+;END IF
+;
+LABEL #2092
+;IF DM20008.L>(DM7036.L*11) AND DM20008.L<=(DM7036.L*12) THEN
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +11
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LD CR2009                ; 演算結果が負
+OUT @VB046
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +12
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LDB CR2009               ; 演算結果が負
+AND @VB046
+NCJ #2093
+; EM22654.L=EM22660.L-(DM20004.L*(DM20008.L-((DM7036.L*11)+1)))+(DM20006.L*11)
+;
+LD CR2002                ; 常時ON
+LDA.L DM20006            ; RB7板押圧PP_Y方向ﾋﾟｯﾁ
+CON
+MUL.L +11
+CON
+STA.L @VM357
+CON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +11
+CON
+ADD.L +1
+CON
+STA.L @VM359
+CON
+LDA.L DM20008            ; 板押圧取出し番号
+CON
+SUB.L @VM359
+CON
+MUL.L DM20004            ; RB7板押圧PP_X方向ﾋﾟｯﾁ
+CON
+STA.L @VM361
+CON
+LDA.L EM22660            ; RB7 P11 POS(LO)
+CON
+SUB.L @VM361
+CON
+ADD.L @VM357
+CON
+STA.L EM22654            ; RB7 P10 POS(LO)
+;END IF
+;
+LABEL #2093
+;IF DM20008.L>(DM7036.L*12) AND DM20008.L<=(DM7036.L*13) THEN
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +12
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LD CR2009                ; 演算結果が負
+OUT @VB047
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +13
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LDB CR2009               ; 演算結果が負
+AND @VB047
+NCJ #2094
+; EM22654.L=EM22660.L-(DM20004.L*(DM20008.L-((DM7036.L*12)+1)))+(DM20006.L*12)
+;
+LD CR2002                ; 常時ON
+LDA.L DM20006            ; RB7板押圧PP_Y方向ﾋﾟｯﾁ
+CON
+MUL.L +12
+CON
+STA.L @VM363
+CON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +12
+CON
+ADD.L +1
+CON
+STA.L @VM365
+CON
+LDA.L DM20008            ; 板押圧取出し番号
+CON
+SUB.L @VM365
+CON
+MUL.L DM20004            ; RB7板押圧PP_X方向ﾋﾟｯﾁ
+CON
+STA.L @VM367
+CON
+LDA.L EM22660            ; RB7 P11 POS(LO)
+CON
+SUB.L @VM367
+CON
+ADD.L @VM363
+CON
+STA.L EM22654            ; RB7 P10 POS(LO)
+;END IF
+;
+LABEL #2094
+;IF DM20008.L>(DM7036.L*13) AND DM20008.L<=(DM7036.L*14) THEN
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +13
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LD CR2009                ; 演算結果が負
+OUT @VB048
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +14
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LDB CR2009               ; 演算結果が負
+AND @VB048
+NCJ #2095
+; EM22654.L=EM22660.L-(DM20004.L*(DM20008.L-((DM7036.L*13)+1)))+(DM20006.L*13)
+;
+LD CR2002                ; 常時ON
+LDA.L DM20006            ; RB7板押圧PP_Y方向ﾋﾟｯﾁ
+CON
+MUL.L +13
+CON
+STA.L @VM369
+CON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +13
+CON
+ADD.L +1
+CON
+STA.L @VM371
+CON
+LDA.L DM20008            ; 板押圧取出し番号
+CON
+SUB.L @VM371
+CON
+MUL.L DM20004            ; RB7板押圧PP_X方向ﾋﾟｯﾁ
+CON
+STA.L @VM373
+CON
+LDA.L EM22660            ; RB7 P11 POS(LO)
+CON
+SUB.L @VM373
+CON
+ADD.L @VM369
+CON
+STA.L EM22654            ; RB7 P10 POS(LO)
+;END IF
+;
+LABEL #2095
+;IF DM20008.L>(DM7036.L*14) AND DM20008.L<=(DM7036.L*15) THEN
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +14
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LD CR2009                ; 演算結果が負
+OUT @VB049
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +15
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LDB CR2009               ; 演算結果が負
+AND @VB049
+NCJ #2096
+; EM22654.L=EM22660.L-(DM20004.L*(DM20008.L-((DM7036.L*14)+1)))+(DM20006.L*14)
+;
+LD CR2002                ; 常時ON
+LDA.L DM20006            ; RB7板押圧PP_Y方向ﾋﾟｯﾁ
+CON
+MUL.L +14
+CON
+STA.L @VM375
+CON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +14
+CON
+ADD.L +1
+CON
+STA.L @VM377
+CON
+LDA.L DM20008            ; 板押圧取出し番号
+CON
+SUB.L @VM377
+CON
+MUL.L DM20004            ; RB7板押圧PP_X方向ﾋﾟｯﾁ
+CON
+STA.L @VM379
+CON
+LDA.L EM22660            ; RB7 P11 POS(LO)
+CON
+SUB.L @VM379
+CON
+ADD.L @VM375
+CON
+STA.L EM22654            ; RB7 P10 POS(LO)
+;END IF
+;
+LABEL #2096
+;IF DM20008.L>(DM7036.L*15) AND DM20008.L<=(DM7036.L*16) THEN
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +15
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LD CR2009                ; 演算結果が負
+OUT @VB04A
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +16
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LDB CR2009               ; 演算結果が負
+AND @VB04A
+NCJ #2097
+; EM22654.L=EM22660.L-(DM20004.L*(DM20008.L-((DM7036.L*15)+1)))+(DM20006.L*15)
+;
+LD CR2002                ; 常時ON
+LDA.L DM20006            ; RB7板押圧PP_Y方向ﾋﾟｯﾁ
+CON
+MUL.L +15
+CON
+STA.L @VM381
+CON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +15
+CON
+ADD.L +1
+CON
+STA.L @VM383
+CON
+LDA.L DM20008            ; 板押圧取出し番号
+CON
+SUB.L @VM383
+CON
+MUL.L DM20004            ; RB7板押圧PP_X方向ﾋﾟｯﾁ
+CON
+STA.L @VM385
+CON
+LDA.L EM22660            ; RB7 P11 POS(LO)
+CON
+SUB.L @VM385
+CON
+ADD.L @VM381
+CON
+STA.L EM22654            ; RB7 P10 POS(LO)
+;END IF
+;
+LABEL #2097
+;SET(CR2002,@MR611)
+;
+LD CR2002                ; 常時ON
+SET @MR611               ; ⑥SUB_算出完了
+LABEL #1017
+;
+;'取出し位置の算出
+;'ﾊﾟﾚﾀｲｽﾞ基準1(P0_POS11)-X方向ﾋﾟｯﾁ-Y方向ﾋﾟｯﾁ
+;
+;IF DM20008.L<=DM7036.L THEN
+; EM22654.L=EM22660.L-(DM20004.L*(DM20008.L-1))
+;END IF
+;
+;IF DM20008.L>DM7036.L AND DM20008.L<=(DM7036.L*2) THEN
+; EM22654.L=EM22660.L-(DM20004.L*(DM20008.L-(DM7036.L+1)))-DM20006.L
+;END IF
+;
+;IF DM20008.L>(DM7036.L*2) AND DM20008.L<=(DM7036.L*3) THEN
+; EM22654.L=EM22660.L-(DM20004.L*(DM20008.L-((DM7036.L*2)+1)))-(DM20006.L*2)
+;END IF
+;
+;IF DM20008.L>(DM7036.L*3) AND DM20008.L<=(DM7036.L*4) THEN
+; EM22654.L=EM22660.L-(DM20004.L*(DM20008.L-((DM7036.L*3)+1)))-(DM20006.L*3)
+;END IF
+;
+;IF DM20008.L>(DM7036.L*4) AND DM20008.L<=(DM7036.L*5) THEN
+; EM22654.L=EM22660.L-(DM20004.L*(DM20008.L-((DM7036.L*4)+1)))-(DM20006.L*4)
+;END IF
+;
+;IF DM20008.L>(DM7036.L*5) AND DM20008.L<=(DM7036.L*6) THEN
+; EM22654.L=EM22660.L-(DM20004.L*(DM20008.L-((DM7036.L*5)+1)))-(DM20006.L*5)
+;END IF
+;
+;IF DM20008.L>(DM7036.L*6) AND DM20008.L<=(DM7036.L*7) THEN
+; EM22654.L=EM22660.L-(DM20004.L*(DM20008.L-((DM7036.L*6)+1)))-(DM20006.L*6)
+;END IF
+;
+;IF DM20008.L>(DM7036.L*7) AND DM20008.L<=(DM7036.L*8) THEN
+; EM22654.L=EM22660.L-(DM20004.L*(DM20008.L-((DM7036.L*7)+1)))-(DM20006.L*7)
+;END IF
+;
+;IF DM20008.L>(DM7036.L*8) AND DM20008.L<=(DM7036.L*9) THEN
+; EM22654.L=EM22660.L-(DM20004.L*(DM20008.L-((DM7036.L*8)+1)))-(DM20006.L*8)
+;END IF
+;
+;IF DM20008.L>(DM7036.L*9) AND DM20008.L<=(DM7036.L*10) THEN
+; EM22654.L=EM22660.L-(DM20004.L*(DM20008.L-((DM7036.L*9)+1)))-(DM20006.L*9)
+;END IF
+;
+;IF DM20008.L>(DM7036.L*10) AND DM20008.L<=(DM7036.L*11) THEN
+; EM22654.L=EM22660.L-(DM20004.L*(DM20008.L-((DM7036.L*10)+1)))-(DM20006.L*10)
+;END IF
+;
+;IF DM20008.L>(DM7036.L*11) AND DM20008.L<=(DM7036.L*12) THEN
+; EM22654.L=EM22660.L-(DM20004.L*(DM20008.L-((DM7036.L*11)+1)))-(DM20006.L*11)
+;END IF
+;
+;IF DM20008.L>(DM7036.L*12) AND DM20008.L<=(DM7036.L*13) THEN
+; EM22654.L=EM22660.L-(DM20004.L*(DM20008.L-((DM7036.L*12)+1)))-(DM20006.L*12)
+;END IF
+;
+;IF DM20008.L>(DM7036.L*13) AND DM20008.L<=(DM7036.L*14) THEN
+; EM22654.L=EM22660.L-(DM20004.L*(DM20008.L-((DM7036.L*13)+1)))-(DM20006.L*13)
+;END IF
+;
+;IF DM20008.L>(DM7036.L*14) AND DM20008.L<=(DM7036.L*15) THEN
+; EM22654.L=EM22660.L-(DM20004.L*(DM20008.L-((DM7036.L*14)+1)))-(DM20006.L*14)
+;END IF
+;
+;IF DM20008.L>(DM7036.L*15) AND DM20008.L<=(DM7036.L*16) THEN
+; EM22654.L=EM22660.L-(DM20004.L*(DM20008.L-((DM7036.L*15)+1)))-(DM20006.L*15)
+;END IF
+;
+;SET(CR2002,@MR611)
+;
+LD @MR5107
+AND @MR609               ; 搬送PP_Y方向ﾋﾟｯﾁ減少
+ANB @MR611               ; ⑥SUB_算出完了
+NCJ #1015
+;'取出し位置の算出
+;
+;'ﾊﾟﾚﾀｲｽﾞ基準1(P0_POS11)-X方向ﾋﾟｯﾁ-Y方向ﾋﾟｯﾁ
+;
+;IF DM20008.L<=DM7036.L THEN
+;
+LD<=.L DM20008 DM7036    ; 板押圧取出し番号  装置基礎ﾃﾞｰﾀ19
+NCJ #2098
+; EM22654.L=EM22660.L-(DM20004.L*(DM20008.L-1))
+;
+LD CR2002                ; 常時ON
+LDA.L DM20008            ; 板押圧取出し番号
+CON
+SUB.L +1
+CON
+MUL.L DM20004            ; RB7板押圧PP_X方向ﾋﾟｯﾁ
+CON
+STA.L @VM387
+CON
+LDA.L EM22660            ; RB7 P11 POS(LO)
+CON
+SUB.L @VM387
+CON
+STA.L EM22654            ; RB7 P10 POS(LO)
+;END IF
+;
+LABEL #2098
+;IF DM20008.L>DM7036.L AND DM20008.L<=(DM7036.L*2) THEN
+;
+LD>.L DM20008 DM7036     ; 板押圧取出し番号  装置基礎ﾃﾞｰﾀ19
+OUT @VB04B
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +2
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LDB CR2009               ; 演算結果が負
+AND @VB04B
+NCJ #2099
+; EM22654.L=EM22660.L-(DM20004.L*(DM20008.L-(DM7036.L+1)))-DM20006.L
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+ADD.L +1
+CON
+STA.L @VM389
+CON
+LDA.L DM20008            ; 板押圧取出し番号
+CON
+SUB.L @VM389
+CON
+MUL.L DM20004            ; RB7板押圧PP_X方向ﾋﾟｯﾁ
+CON
+STA.L @VM391
+CON
+LDA.L EM22660            ; RB7 P11 POS(LO)
+CON
+SUB.L @VM391
+CON
+SUB.L DM20006            ; RB7板押圧PP_Y方向ﾋﾟｯﾁ
+CON
+STA.L EM22654            ; RB7 P10 POS(LO)
+;END IF
+;
+LABEL #2099
+;IF DM20008.L>(DM7036.L*2) AND DM20008.L<=(DM7036.L*3) THEN
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +2
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LD CR2009                ; 演算結果が負
+OUT @VB04C
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +3
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LDB CR2009               ; 演算結果が負
+AND @VB04C
+NCJ #2100
+; EM22654.L=EM22660.L-(DM20004.L*(DM20008.L-((DM7036.L*2)+1)))-(DM20006.L*2)
+;
+LD CR2002                ; 常時ON
+LDA.L DM20006            ; RB7板押圧PP_Y方向ﾋﾟｯﾁ
+CON
+MUL.L +2
+CON
+STA.L @VM393
+CON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +2
+CON
+ADD.L +1
+CON
+STA.L @VM395
+CON
+LDA.L DM20008            ; 板押圧取出し番号
+CON
+SUB.L @VM395
+CON
+MUL.L DM20004            ; RB7板押圧PP_X方向ﾋﾟｯﾁ
+CON
+STA.L @VM397
+CON
+LDA.L EM22660            ; RB7 P11 POS(LO)
+CON
+SUB.L @VM397
+CON
+SUB.L @VM393
+CON
+STA.L EM22654            ; RB7 P10 POS(LO)
+;END IF
+;
+LABEL #2100
+;IF DM20008.L>(DM7036.L*3) AND DM20008.L<=(DM7036.L*4) THEN
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +3
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LD CR2009                ; 演算結果が負
+OUT @VB04D
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +4
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LDB CR2009               ; 演算結果が負
+AND @VB04D
+NCJ #2101
+; EM22654.L=EM22660.L-(DM20004.L*(DM20008.L-((DM7036.L*3)+1)))-(DM20006.L*3)
+;
+LD CR2002                ; 常時ON
+LDA.L DM20006            ; RB7板押圧PP_Y方向ﾋﾟｯﾁ
+CON
+MUL.L +3
+CON
+STA.L @VM399
+CON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +3
+CON
+ADD.L +1
+CON
+STA.L @VM401
+CON
+LDA.L DM20008            ; 板押圧取出し番号
+CON
+SUB.L @VM401
+CON
+MUL.L DM20004            ; RB7板押圧PP_X方向ﾋﾟｯﾁ
+CON
+STA.L @VM403
+CON
+LDA.L EM22660            ; RB7 P11 POS(LO)
+CON
+SUB.L @VM403
+CON
+SUB.L @VM399
+CON
+STA.L EM22654            ; RB7 P10 POS(LO)
+;END IF
+;
+LABEL #2101
+;IF DM20008.L>(DM7036.L*4) AND DM20008.L<=(DM7036.L*5) THEN
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +4
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LD CR2009                ; 演算結果が負
+OUT @VB04E
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +5
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LDB CR2009               ; 演算結果が負
+AND @VB04E
+NCJ #2102
+; EM22654.L=EM22660.L-(DM20004.L*(DM20008.L-((DM7036.L*4)+1)))-(DM20006.L*4)
+;
+LD CR2002                ; 常時ON
+LDA.L DM20006            ; RB7板押圧PP_Y方向ﾋﾟｯﾁ
+CON
+MUL.L +4
+CON
+STA.L @VM405
+CON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +4
+CON
+ADD.L +1
+CON
+STA.L @VM407
+CON
+LDA.L DM20008            ; 板押圧取出し番号
+CON
+SUB.L @VM407
+CON
+MUL.L DM20004            ; RB7板押圧PP_X方向ﾋﾟｯﾁ
+CON
+STA.L @VM409
+CON
+LDA.L EM22660            ; RB7 P11 POS(LO)
+CON
+SUB.L @VM409
+CON
+SUB.L @VM405
+CON
+STA.L EM22654            ; RB7 P10 POS(LO)
+;END IF
+;
+LABEL #2102
+;IF DM20008.L>(DM7036.L*5) AND DM20008.L<=(DM7036.L*6) THEN
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +5
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LD CR2009                ; 演算結果が負
+OUT @VB04F
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +6
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LDB CR2009               ; 演算結果が負
+AND @VB04F
+NCJ #2103
+; EM22654.L=EM22660.L-(DM20004.L*(DM20008.L-((DM7036.L*5)+1)))-(DM20006.L*5)
+;
+LD CR2002                ; 常時ON
+LDA.L DM20006            ; RB7板押圧PP_Y方向ﾋﾟｯﾁ
+CON
+MUL.L +5
+CON
+STA.L @VM411
+CON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +5
+CON
+ADD.L +1
+CON
+STA.L @VM413
+CON
+LDA.L DM20008            ; 板押圧取出し番号
+CON
+SUB.L @VM413
+CON
+MUL.L DM20004            ; RB7板押圧PP_X方向ﾋﾟｯﾁ
+CON
+STA.L @VM415
+CON
+LDA.L EM22660            ; RB7 P11 POS(LO)
+CON
+SUB.L @VM415
+CON
+SUB.L @VM411
+CON
+STA.L EM22654            ; RB7 P10 POS(LO)
+;END IF
+;
+LABEL #2103
+;IF DM20008.L>(DM7036.L*6) AND DM20008.L<=(DM7036.L*7) THEN
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +6
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LD CR2009                ; 演算結果が負
+OUT @VB050
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +7
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LDB CR2009               ; 演算結果が負
+AND @VB050
+NCJ #2104
+; EM22654.L=EM22660.L-(DM20004.L*(DM20008.L-((DM7036.L*6)+1)))-(DM20006.L*6)
+;
+LD CR2002                ; 常時ON
+LDA.L DM20006            ; RB7板押圧PP_Y方向ﾋﾟｯﾁ
+CON
+MUL.L +6
+CON
+STA.L @VM417
+CON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +6
+CON
+ADD.L +1
+CON
+STA.L @VM419
+CON
+LDA.L DM20008            ; 板押圧取出し番号
+CON
+SUB.L @VM419
+CON
+MUL.L DM20004            ; RB7板押圧PP_X方向ﾋﾟｯﾁ
+CON
+STA.L @VM421
+CON
+LDA.L EM22660            ; RB7 P11 POS(LO)
+CON
+SUB.L @VM421
+CON
+SUB.L @VM417
+CON
+STA.L EM22654            ; RB7 P10 POS(LO)
+;END IF
+;
+LABEL #2104
+;IF DM20008.L>(DM7036.L*7) AND DM20008.L<=(DM7036.L*8) THEN
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +7
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LD CR2009                ; 演算結果が負
+OUT @VB051
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +8
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LDB CR2009               ; 演算結果が負
+AND @VB051
+NCJ #2105
+; EM22654.L=EM22660.L-(DM20004.L*(DM20008.L-((DM7036.L*7)+1)))-(DM20006.L*7)
+;
+LD CR2002                ; 常時ON
+LDA.L DM20006            ; RB7板押圧PP_Y方向ﾋﾟｯﾁ
+CON
+MUL.L +7
+CON
+STA.L @VM423
+CON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +7
+CON
+ADD.L +1
+CON
+STA.L @VM425
+CON
+LDA.L DM20008            ; 板押圧取出し番号
+CON
+SUB.L @VM425
+CON
+MUL.L DM20004            ; RB7板押圧PP_X方向ﾋﾟｯﾁ
+CON
+STA.L @VM427
+CON
+LDA.L EM22660            ; RB7 P11 POS(LO)
+CON
+SUB.L @VM427
+CON
+SUB.L @VM423
+CON
+STA.L EM22654            ; RB7 P10 POS(LO)
+;END IF
+;
+LABEL #2105
+;IF DM20008.L>(DM7036.L*8) AND DM20008.L<=(DM7036.L*9) THEN
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +8
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LD CR2009                ; 演算結果が負
+OUT @VB052
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +9
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LDB CR2009               ; 演算結果が負
+AND @VB052
+NCJ #2106
+; EM22654.L=EM22660.L-(DM20004.L*(DM20008.L-((DM7036.L*8)+1)))-(DM20006.L*8)
+;
+LD CR2002                ; 常時ON
+LDA.L DM20006            ; RB7板押圧PP_Y方向ﾋﾟｯﾁ
+CON
+MUL.L +8
+CON
+STA.L @VM429
+CON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +8
+CON
+ADD.L +1
+CON
+STA.L @VM431
+CON
+LDA.L DM20008            ; 板押圧取出し番号
+CON
+SUB.L @VM431
+CON
+MUL.L DM20004            ; RB7板押圧PP_X方向ﾋﾟｯﾁ
+CON
+STA.L @VM433
+CON
+LDA.L EM22660            ; RB7 P11 POS(LO)
+CON
+SUB.L @VM433
+CON
+SUB.L @VM429
+CON
+STA.L EM22654            ; RB7 P10 POS(LO)
+;END IF
+;
+LABEL #2106
+;IF DM20008.L>(DM7036.L*9) AND DM20008.L<=(DM7036.L*10) THEN
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +9
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LD CR2009                ; 演算結果が負
+OUT @VB053
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +10
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LDB CR2009               ; 演算結果が負
+AND @VB053
+NCJ #2107
+; EM22654.L=EM22660.L-(DM20004.L*(DM20008.L-((DM7036.L*9)+1)))-(DM20006.L*9)
+;
+LD CR2002                ; 常時ON
+LDA.L DM20006            ; RB7板押圧PP_Y方向ﾋﾟｯﾁ
+CON
+MUL.L +9
+CON
+STA.L @VM435
+CON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +9
+CON
+ADD.L +1
+CON
+STA.L @VM437
+CON
+LDA.L DM20008            ; 板押圧取出し番号
+CON
+SUB.L @VM437
+CON
+MUL.L DM20004            ; RB7板押圧PP_X方向ﾋﾟｯﾁ
+CON
+STA.L @VM439
+CON
+LDA.L EM22660            ; RB7 P11 POS(LO)
+CON
+SUB.L @VM439
+CON
+SUB.L @VM435
+CON
+STA.L EM22654            ; RB7 P10 POS(LO)
+;END IF
+;
+LABEL #2107
+;IF DM20008.L>(DM7036.L*10) AND DM20008.L<=(DM7036.L*11) THEN
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +10
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LD CR2009                ; 演算結果が負
+OUT @VB054
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +11
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LDB CR2009               ; 演算結果が負
+AND @VB054
+NCJ #2108
+; EM22654.L=EM22660.L-(DM20004.L*(DM20008.L-((DM7036.L*10)+1)))-(DM20006.L*10)
+;
+LD CR2002                ; 常時ON
+LDA.L DM20006            ; RB7板押圧PP_Y方向ﾋﾟｯﾁ
+CON
+MUL.L +10
+CON
+STA.L @VM441
+CON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +10
+CON
+ADD.L +1
+CON
+STA.L @VM443
+CON
+LDA.L DM20008            ; 板押圧取出し番号
+CON
+SUB.L @VM443
+CON
+MUL.L DM20004            ; RB7板押圧PP_X方向ﾋﾟｯﾁ
+CON
+STA.L @VM445
+CON
+LDA.L EM22660            ; RB7 P11 POS(LO)
+CON
+SUB.L @VM445
+CON
+SUB.L @VM441
+CON
+STA.L EM22654            ; RB7 P10 POS(LO)
+;END IF
+;
+LABEL #2108
+;IF DM20008.L>(DM7036.L*11) AND DM20008.L<=(DM7036.L*12) THEN
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +11
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LD CR2009                ; 演算結果が負
+OUT @VB055
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +12
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LDB CR2009               ; 演算結果が負
+AND @VB055
+NCJ #2109
+; EM22654.L=EM22660.L-(DM20004.L*(DM20008.L-((DM7036.L*11)+1)))-(DM20006.L*11)
+;
+LD CR2002                ; 常時ON
+LDA.L DM20006            ; RB7板押圧PP_Y方向ﾋﾟｯﾁ
+CON
+MUL.L +11
+CON
+STA.L @VM447
+CON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +11
+CON
+ADD.L +1
+CON
+STA.L @VM449
+CON
+LDA.L DM20008            ; 板押圧取出し番号
+CON
+SUB.L @VM449
+CON
+MUL.L DM20004            ; RB7板押圧PP_X方向ﾋﾟｯﾁ
+CON
+STA.L @VM451
+CON
+LDA.L EM22660            ; RB7 P11 POS(LO)
+CON
+SUB.L @VM451
+CON
+SUB.L @VM447
+CON
+STA.L EM22654            ; RB7 P10 POS(LO)
+;END IF
+;
+LABEL #2109
+;IF DM20008.L>(DM7036.L*12) AND DM20008.L<=(DM7036.L*13) THEN
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +12
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LD CR2009                ; 演算結果が負
+OUT @VB056
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +13
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LDB CR2009               ; 演算結果が負
+AND @VB056
+NCJ #2110
+; EM22654.L=EM22660.L-(DM20004.L*(DM20008.L-((DM7036.L*12)+1)))-(DM20006.L*12)
+;
+LD CR2002                ; 常時ON
+LDA.L DM20006            ; RB7板押圧PP_Y方向ﾋﾟｯﾁ
+CON
+MUL.L +12
+CON
+STA.L @VM453
+CON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +12
+CON
+ADD.L +1
+CON
+STA.L @VM455
+CON
+LDA.L DM20008            ; 板押圧取出し番号
+CON
+SUB.L @VM455
+CON
+MUL.L DM20004            ; RB7板押圧PP_X方向ﾋﾟｯﾁ
+CON
+STA.L @VM457
+CON
+LDA.L EM22660            ; RB7 P11 POS(LO)
+CON
+SUB.L @VM457
+CON
+SUB.L @VM453
+CON
+STA.L EM22654            ; RB7 P10 POS(LO)
+;END IF
+;
+LABEL #2110
+;IF DM20008.L>(DM7036.L*13) AND DM20008.L<=(DM7036.L*14) THEN
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +13
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LD CR2009                ; 演算結果が負
+OUT @VB057
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +14
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LDB CR2009               ; 演算結果が負
+AND @VB057
+NCJ #2111
+; EM22654.L=EM22660.L-(DM20004.L*(DM20008.L-((DM7036.L*13)+1)))-(DM20006.L*13)
+;
+LD CR2002                ; 常時ON
+LDA.L DM20006            ; RB7板押圧PP_Y方向ﾋﾟｯﾁ
+CON
+MUL.L +13
+CON
+STA.L @VM459
+CON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +13
+CON
+ADD.L +1
+CON
+STA.L @VM461
+CON
+LDA.L DM20008            ; 板押圧取出し番号
+CON
+SUB.L @VM461
+CON
+MUL.L DM20004            ; RB7板押圧PP_X方向ﾋﾟｯﾁ
+CON
+STA.L @VM463
+CON
+LDA.L EM22660            ; RB7 P11 POS(LO)
+CON
+SUB.L @VM463
+CON
+SUB.L @VM459
+CON
+STA.L EM22654            ; RB7 P10 POS(LO)
+;END IF
+;
+LABEL #2111
+;IF DM20008.L>(DM7036.L*14) AND DM20008.L<=(DM7036.L*15) THEN
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +14
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LD CR2009                ; 演算結果が負
+OUT @VB058
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +15
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LDB CR2009               ; 演算結果が負
+AND @VB058
+NCJ #2112
+; EM22654.L=EM22660.L-(DM20004.L*(DM20008.L-((DM7036.L*14)+1)))-(DM20006.L*14)
+;
+LD CR2002                ; 常時ON
+LDA.L DM20006            ; RB7板押圧PP_Y方向ﾋﾟｯﾁ
+CON
+MUL.L +14
+CON
+STA.L @VM465
+CON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +14
+CON
+ADD.L +1
+CON
+STA.L @VM467
+CON
+LDA.L DM20008            ; 板押圧取出し番号
+CON
+SUB.L @VM467
+CON
+MUL.L DM20004            ; RB7板押圧PP_X方向ﾋﾟｯﾁ
+CON
+STA.L @VM469
+CON
+LDA.L EM22660            ; RB7 P11 POS(LO)
+CON
+SUB.L @VM469
+CON
+SUB.L @VM465
+CON
+STA.L EM22654            ; RB7 P10 POS(LO)
+;END IF
+;
+LABEL #2112
+;IF DM20008.L>(DM7036.L*15) AND DM20008.L<=(DM7036.L*16) THEN
+;
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +15
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LD CR2009                ; 演算結果が負
+OUT @VB059
+LD CR2002                ; 常時ON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +16
+CON
+CMP.L DM20008            ; 板押圧取出し番号
+LDB CR2009               ; 演算結果が負
+AND @VB059
+NCJ #2113
+; EM22654.L=EM22660.L-(DM20004.L*(DM20008.L-((DM7036.L*15)+1)))-(DM20006.L*15)
+;
+LD CR2002                ; 常時ON
+LDA.L DM20006            ; RB7板押圧PP_Y方向ﾋﾟｯﾁ
+CON
+MUL.L +15
+CON
+STA.L @VM471
+CON
+LDA.L DM7036             ; 装置基礎ﾃﾞｰﾀ19
+CON
+MUL.L +15
+CON
+ADD.L +1
+CON
+STA.L @VM473
+CON
+LDA.L DM20008            ; 板押圧取出し番号
+CON
+SUB.L @VM473
+CON
+MUL.L DM20004            ; RB7板押圧PP_X方向ﾋﾟｯﾁ
+CON
+STA.L @VM475
+CON
+LDA.L EM22660            ; RB7 P11 POS(LO)
+CON
+SUB.L @VM475
+CON
+SUB.L @VM471
+CON
+STA.L EM22654            ; RB7 P10 POS(LO)
+;END IF
+;
+LABEL #2113
+;SET(CR2002,@MR611)
+;
+LD CR2002                ; 常時ON
+SET @MR611               ; ⑥SUB_算出完了
+LABEL #1015
+;
+STG @MR5107
+AND @MR611               ; ⑥SUB_算出完了
+RES @MR611               ; ⑥SUB_算出完了
+CON
+JMP @MR5115
+;Error<101>ﾊﾟﾚﾀｲｽﾞ異常(RB7板押圧搬送PP)
+STG @MR5113
+ANB R39900               ; RB動作中
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+ANB R39004               ; ｴﾗｰ中
+ANL
+SET R39004               ; ｴﾗｰ中
+CON
+DW $3000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #101 @DM1             ; ErrorNo /ERROR_DISP
+CON
+DW #0 @DM2               ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task0 ERROR
+CON
+JMP @MR5114
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1908
+STG @MR5114
+SET @MR1908
+CON
+AND @MR101               ; Task0 ｴﾗｰ完了
+RES @MR101               ; Task0 ｴﾗｰ完了
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+AND @MR105               ; SW1
+JMP @MR5115
+;END
+STG @MR5115
+SET @MR5101              ; ⑥SUB_板押圧ﾊﾟﾚﾀｲｽﾞ(PP側)完了
+CON
+RES @MR5102              ; ⑥SUB_板押圧ﾊﾟﾚﾀｲｽﾞ(PP側)中
+CON
+ENDS
+;<h1/> ⑦-1SUB_搬送PP板押圧有確認
+STG @MR5200              ; ⑦SUB_搬送PP板押圧有確認
+SET @MR5202              ; ⑦SUB_搬送PP板押圧有確認中
+CON
+JMP @MR5203
+;搬送PP吸着ON
+STG @MR5203
+SET MR7603               ; 板押圧吸着ﾊﾟｯﾄﾞ吸着ON
+CON
+RES MR7604               ; 板押圧吸着ﾊﾟｯﾄﾞ吸着OFF
+CON
+RES MR7605               ; 板押圧吸着ﾊﾟｯﾄﾞ真空破壊ON
+CON
+JMP @MR5204
+;吸着圧力確認
+LD @MR5204
+TMR @4 #15               ; タイムアウト
+STG @MR5204
+MPS
+AND R4606                ; 板押圧吸着ﾊﾟｯﾄﾞOUT1
+JMP @MR5205
+MPP
+LDB R4606                ; 板押圧吸着ﾊﾟｯﾄﾞOUT1
+AND @T4                  ; タイムアウト
+ANL
+JMP @MR5206
+;有無状態書込み
+STG @MR5205
+DW #1 DM20030            ; RB7搬送PP板押圧有無記憶(1=有り)
+CON
+JMP @MR5215
+STG @MR5206
+DW #0 DM20030            ; RB7搬送PP板押圧有無記憶(1=有り)
+CON
+JMP @MR5215
+;Error 103 吸着圧力異常(RB7板押圧搬送PP)
+STG @MR5207
+ANB R39900               ; RB動作中
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+ANB R39004               ; ｴﾗｰ中
+ANL
+SET R39004               ; ｴﾗｰ中
+CON
+DW $7000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #103 @DM1             ; ErrorNo /ERROR_DISP
+CON
+DW #4606 @DM2            ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task0 ERROR
+CON
+JMP @MR5208
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+MPS
+ANB R46100               ; _自動運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+SET @MR1900              ; Main1 HALT許可
+MPP
+AND R46100               ; _自動運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+SET @MR1901              ; Main2 HALT許可
+STG @MR5208
+MPS
+ANB R46100               ; _自動運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+SET @MR1900              ; Main1 HALT許可
+MRD
+AND R46100               ; _自動運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+SET @MR1901              ; Main2 HALT許可
+MPP
+AND @MR101               ; Task0 ｴﾗｰ完了
+RES @MR101               ; Task0 ｴﾗｰ完了
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+AND @MR105               ; SW1
+JMP @MR5204
+;END
+STG @MR5215
+SET @MR5201              ; ⑦SUB_搬送PP板押圧有確認完了
+CON
+RES @MR5202              ; ⑦SUB_搬送PP板押圧有確認中
+CON
+ENDS
+;<h1/> ⑦-2SUB_搬送PP板押圧無確認
+STG @MR5300              ; ⑦SUB_搬送PP板押圧無確認
+SET @MR5302              ; ⑦SUB_搬送PP板押圧無確認中
+CON
+JMP @MR5303
+;搬送PP吸着ON
+STG @MR5303
+SET MR7603               ; 板押圧吸着ﾊﾟｯﾄﾞ吸着ON
+CON
+RES MR7604               ; 板押圧吸着ﾊﾟｯﾄﾞ吸着OFF
+CON
+RES MR7605               ; 板押圧吸着ﾊﾟｯﾄﾞ真空破壊ON
+CON
+JMP @MR5304
+;吸着圧力確認
+LD @MR5304
+TMR @14 #15              ; タイムアウト
+STG @MR5304
+MPS
+LDB R4607                ; 板押圧吸着ﾊﾟｯﾄﾞOUT2
+AND @T14                 ; タイムアウト
+ANL
+JMP @MR5305
+MPP
+AND R4607                ; 板押圧吸着ﾊﾟｯﾄﾞOUT2
+TMR @15 #5               ; 安定待ち
+CON
+AND @T15                 ; 安定待ち
+JMP @MR5306
+;有無状態書込み
+STG @MR5305
+DW #1 DM20030            ; RB7搬送PP板押圧有無記憶(1=有り)
+CON
+JMP @MR5315
+STG @MR5306
+DW #0 DM20030            ; RB7搬送PP板押圧有無記憶(1=有り)
+CON
+JMP @MR5315
+;Error 103 吸着圧力異常(RB7板押圧搬送PP)
+STG @MR5307
+ANB R39900               ; RB動作中
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+ANB R39004               ; ｴﾗｰ中
+ANL
+SET R39004               ; ｴﾗｰ中
+CON
+DW $7000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #103 @DM1             ; ErrorNo /ERROR_DISP
+CON
+DW #4606 @DM2            ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task0 ERROR
+CON
+JMP @MR5308
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+MPS
+ANB R46100               ; _自動運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+SET @MR1900              ; Main1 HALT許可
+MPP
+AND R46100               ; _自動運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+SET @MR1901              ; Main2 HALT許可
+STG @MR5308
+MPS
+ANB R46100               ; _自動運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+SET @MR1900              ; Main1 HALT許可
+MRD
+AND R46100               ; _自動運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+SET @MR1901              ; Main2 HALT許可
+MPP
+AND @MR101               ; Task0 ｴﾗｰ完了
+RES @MR101               ; Task0 ｴﾗｰ完了
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+AND @MR105               ; SW1
+JMP @MR5304
+;END
+STG @MR5315
+RES MR7603               ; 板押圧吸着ﾊﾟｯﾄﾞ吸着ON
+CON
+SET MR7604               ; 板押圧吸着ﾊﾟｯﾄﾞ吸着OFF
+CON
+RES MR7605               ; 板押圧吸着ﾊﾟｯﾄﾞ真空破壊ON
+CON
+SET @MR5301              ; ⑦SUB_搬送PP板押圧無確認完了
+CON
+RES @MR5302              ; ⑦SUB_搬送PP板押圧無確認中
+CON
+ENDS
+;<h1/> ⑧-1SUB_ｱﾗｲﾒﾝﾄ板押圧有確認
+STG @MR5400              ; ⑧SUB_ｱﾗｲﾒﾝﾄ板押圧有確認
+SET @MR5402              ; ⑧SUB_ｱﾗｲﾒﾝﾄ板押圧有確認中
+CON
+JMP @MR5403
+;ｱﾗｲﾒﾝﾄ吸着ON
+STG @MR5403
+SET MR7612               ; 板押圧ｾｯﾄ吸着ON
+CON
+RES MR7613               ; 板押圧ｾｯﾄ吸着OFF
+CON
+RES MR7614               ; 板押圧ｾｯﾄ真空破壊ON
+CON
+JMP @MR5404
+;吸着圧力確認
+LD @MR5404
+TMR @6 #15               ; タイムアウト
+STG @MR5404
+MPS
+AND R4612                ; ｱﾗｲﾒﾝﾄ_板押圧ｾｯﾄOUT1
+JMP @MR5405
+MPP
+LDB R4612                ; ｱﾗｲﾒﾝﾄ_板押圧ｾｯﾄOUT1
+AND @T6                  ; タイムアウト
+ANL
+JMP @MR5406
+;有無状態書込み
+STG @MR5405
+DW #1 DM20031            ; ｱﾗｲﾒﾝﾄ板押圧有無記憶(1=有り)
+CON
+JMP @MR5415
+STG @MR5406
+DW #0 DM20031            ; ｱﾗｲﾒﾝﾄ板押圧有無記憶(1=有り)
+CON
+JMP @MR5415
+;Error 104 吸着圧力異常(板押圧ｱﾗｲﾒﾝﾄ)
+STG @MR5407
+ANB R39900               ; RB動作中
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+ANB R39004               ; ｴﾗｰ中
+ANL
+SET R39004               ; ｴﾗｰ中
+CON
+DW $7000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #104 @DM1             ; ErrorNo /ERROR_DISP
+CON
+DW #4612 @DM2            ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task0 ERROR
+CON
+JMP @MR5408
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+MPS
+ANB R46100               ; _自動運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+SET @MR1900              ; Main1 HALT許可
+MPP
+AND R46100               ; _自動運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+SET @MR1901              ; Main2 HALT許可
+STG @MR5408
+MPS
+ANB R46100               ; _自動運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+SET @MR1900              ; Main1 HALT許可
+MRD
+AND R46100               ; _自動運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+SET @MR1901              ; Main2 HALT許可
+MPP
+AND @MR101               ; Task0 ｴﾗｰ完了
+RES @MR101               ; Task0 ｴﾗｰ完了
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+AND @MR105               ; SW1
+JMP @MR5404
+;END
+STG @MR5415
+SET @MR5401              ; ⑧SUB_ｱﾗｲﾒﾝﾄ板押圧有確認完了
+CON
+RES @MR5402              ; ⑧SUB_ｱﾗｲﾒﾝﾄ板押圧有確認中
+CON
+ENDS
+;<h1/> ⑧-2SUB_ｱﾗｲﾒﾝﾄ板押圧有無確認
+STG @MR5500              ; ⑧SUB_ｱﾗｲﾒﾝﾄ板押圧無確認
+SET @MR5502              ; ⑧SUB_ｱﾗｲﾒﾝﾄ板押圧無確認中
+CON
+JMP @MR5503
+;ｱﾗｲﾒﾝﾄ吸着ON
+STG @MR5503
+SET MR7612               ; 板押圧ｾｯﾄ吸着ON
+CON
+RES MR7613               ; 板押圧ｾｯﾄ吸着OFF
+CON
+RES MR7614               ; 板押圧ｾｯﾄ真空破壊ON
+CON
+JMP @MR5504
+;吸着圧力確認
+LD @MR5504
+TMR @16 #15              ; タイムアウト
+STG @MR5504
+MPS
+LDB R4613                ; ｱﾗｲﾒﾝﾄ_板押圧ｾｯﾄOUT2
+AND @T16                 ; タイムアウト
+ANL
+JMP @MR5505
+MPP
+AND R4613                ; ｱﾗｲﾒﾝﾄ_板押圧ｾｯﾄOUT2
+TMR @17 #5               ; 安定待ち
+CON
+AND @T17                 ; 安定待ち
+JMP @MR5506
+;有無状態書込み
+STG @MR5505
+DW #1 DM20031            ; ｱﾗｲﾒﾝﾄ板押圧有無記憶(1=有り)
+CON
+JMP @MR5515
+STG @MR5506
+DW #0 DM20031            ; ｱﾗｲﾒﾝﾄ板押圧有無記憶(1=有り)
+CON
+JMP @MR5515
+;Error 104 吸着圧力異常(板押圧ｱﾗｲﾒﾝﾄ)
+STG @MR5507
+ANB R39900               ; RB動作中
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+ANB R39004               ; ｴﾗｰ中
+ANL
+SET R39004               ; ｴﾗｰ中
+CON
+DW $7000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #104 @DM1             ; ErrorNo /ERROR_DISP
+CON
+DW #4612 @DM2            ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task0 ERROR
+CON
+JMP @MR5508
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+MPS
+ANB R46100               ; _自動運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+SET @MR1900              ; Main1 HALT許可
+MPP
+AND R46100               ; _自動運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+SET @MR1901              ; Main2 HALT許可
+STG @MR5508
+MPS
+ANB R46100               ; _自動運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+SET @MR1900              ; Main1 HALT許可
+MRD
+AND R46100               ; _自動運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+SET @MR1901              ; Main2 HALT許可
+MPP
+AND @MR101               ; Task0 ｴﾗｰ完了
+RES @MR101               ; Task0 ｴﾗｰ完了
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+AND @MR105               ; SW1
+JMP @MR5504
+;END
+STG @MR5515
+RES MR7612               ; 板押圧ｾｯﾄ吸着ON
+CON
+SET MR7613               ; 板押圧ｾｯﾄ吸着OFF
+CON
+RES MR7614               ; 板押圧ｾｯﾄ真空破壊ON
+CON
+SET @MR5501              ; ⑧SUB_ｱﾗｲﾒﾝﾄ板押圧無確認完了
+CON
+RES @MR5502              ; ⑧SUB_ｱﾗｲﾒﾝﾄ板押圧無確認中
+CON
+ENDS
+;<h1/>-----------------------------------------------------------
+;<h1/>*ERROR
+;MyTask Error Process Substance/エラー処理実体
+STG @MR100               ; Task0 ERROR
+ANB R39002               ; ERROR_DISP Busy
+MPS
+ZRES @MR105 @MR108       ; SW1  SW4
+CON
+DISN @DM9 @DM3 #4        ; ReturnSW /ERROR_DISP
+MRD
+DW MyTask @DM0           ; 自ﾀｽｸ番号  TaskNo /ERROR_DISP
+CON
+BMOV @DM0 DM60000 #7     ; TaskNo /ERROR_DISP  TaskNo /ERROR_DISP
+MPP
+SET R39000               ; ERROR_DISP Start
+CON
+SET @MR102               ; Task0 ERROR Busy
+CON
+JMP @MR103
+STG @MR103
+AND R39002               ; ERROR_DISP Busy
+AND= DM60008 @DM1        ; ReturnNo /ERROR_DISP  ErrorNo /ERROR_DISP
+MPS
+AND= DM60007 @DM6        ; ReturnSW /ERROR_DISP
+SET @MR105               ; SW1
+CON
+JMP @MR104
+MRD
+AND= DM60007 @DM5        ; ReturnSW /ERROR_DISP
+SET @MR106               ; SW2
+CON
+JMP @MR104
+MRD
+AND= DM60007 @DM4        ; ReturnSW /ERROR_DISP
+SET @MR107               ; SW3
+CON
+JMP @MR104
+MPP
+AND= DM60007 @DM3        ; ReturnSW /ERROR_DISP
+SET @MR108               ; SW4
+CON
+JMP @MR104
+STG @MR104
+ANB R39002               ; ERROR_DISP Busy
+RES @MR102               ; Task0 ERROR Busy
+CON
+SET @MR101               ; Task0 ｴﾗｰ完了
+CON
+ENDS
+;<h1/>*Select_Y_N 
+;MyTask Select_Y_N Process Substance/SELECT_Y_N処理実体
+STG @MR300               ; Task0 SELECT_Y_N
+ANB R39102               ; SELECT_Y_N Busy
+MPS
+ZRES @MR306 @MR307       ; Task0 Y/N
+CON
+DW #0 @DM20              ; TaskNo /SELECT_Y_N
+CON
+BMOV @DM20 DM60020 #3    ; TaskNo /SELECT_Y_N  TaskNo /SELECT_Y_N
+MPP
+SET R39100               ; SELECT_Y_N Start
+CON
+SET @MR302               ; Task0 Y_N Busy
+CON
+JMP @MR303
+STG @MR303
+AND R39102               ; SELECT_Y_N Busy
+MPS
+AND= DM60023 #1          ; Y_N /SELECT_Y_N
+SET @MR306               ; Task0 Y/N
+CON
+JMP @MR304
+MPP
+AND= DM60023 #2          ; Y_N /SELECT_Y_N
+RES @MR306               ; Task0 Y/N
+CON
+JMP @MR304
+STG @MR304
+ANB R39102               ; SELECT_Y_N Busy
+RES @MR302               ; Task0 Y_N Busy
+CON
+SET @MR301               ; Task0 Y/N END
+CON
+ENDS
+;<h1/>*TIMEUP ERROR
+;MyTask TIMEUP_ERROR Process Substance/TIMEUP_ERROR処理実体
+STG @MR400               ; Task0 TIMEUP_ERR
+ANB R39302               ; TIMEUP_ERR Busy
+MPS
+DW #0 @DM40              ; TaskNo /TIMEUP_ERR
+CON
+BMOV @DM40 DM60040 #2    ; TaskNo /TIMEUP_ERR  TaskNo /TIMEUP_ERR
+MPP
+SET R39300               ; TIMEUP_ERR Start
+CON
+SET @MR402               ; Task0 TIMEUP Busy
+CON
+JMP @MR403
+STG @MR403
+AND R39302               ; TIMEUP_ERR Busy
+JMP @MR404
+STG @MR404
+ANB R39302               ; TIMEUP_ERR Busy
+RES @MR402               ; Task0 TIMEUP Busy
+CON
+SET @MR401               ; Task0 TIMEUP_END
+CON
+ENDS
+;<h1/>*Select_ACT 
+;MyTask Select_ACT Process Substance/SELECT_ACT処理実体
+STG @MR200               ; Task0 SELECT_ACT
+ANB R39202               ; SELECT_ACT Busy
+MPS
+ZRES @MR205 @MR208       ; SW1  SW4
+CON
+DW #0 @DM30              ; TaskNo /SELECT_ACT
+CON
+BMOV @DM30 DM60030 #7    ; TaskNo /SELECT_ACT  TaskNo /SELECT_ACT
+MPP
+SET R39200               ; SELECT_ACT Start
+CON
+SET @MR202               ; Task0 SEL_ACT Busy
+CON
+JMP @MR203
+STG @MR203
+AND R39202               ; SELECT_ACT Busy
+AND<> DM60037 #0         ; SelectSW /SELECT_ACT
+MPS
+AND= DM60037 #1          ; SelectSW /SELECT_ACT
+SET @MR205               ; SW1
+CON
+JMP @MR204
+MRD
+AND= DM60037 #2          ; SelectSW /SELECT_ACT
+SET @MR206               ; SW2
+CON
+JMP @MR204
+MRD
+AND= DM60037 #3          ; SelectSW /SELECT_ACT
+SET @MR207               ; SW3
+CON
+JMP @MR204
+MPP
+AND= DM60037 #4          ; SelectSW /SELECT_ACT
+SET @MR208               ; SW4
+CON
+JMP @MR204
+STG @MR204
+ANB R39202               ; SELECT_ACT Busy
+RES @MR202               ; Task0 SEL_ACT Busy
+CON
+SET @MR201               ; Task0 SEL_ACT END
+CON
+ENDS
+;<h1/>※機能Macro呼出し見本- 削除して下さい。-------------------------------------
+;<h1/>※Error:記述見本
+;ERR163 "****Error"
+;<h1/>※SELECT_ACT　:記述見本
+;画面番号33をブザー有りで選択SW番号を左から#5,#10,#0(無し),#34の並びで表示する
+;<h1/>※ SELECT_Y_N　記述見本
+;//*Select_Y_N
+;<h1/>HALT
+LD R41200                ; TASK0 PAUSE 要求
+AND @MR1900              ; Main1 HALT許可
+LD @MR1901               ; Main2 HALT許可
+ORB @MR4002              ; Main2 Busy
+ANL
+TMR @40 #5               ; HALT許可 遅延
+CON
+AND @T40                 ; HALT許可 遅延
+SET R42600               ; Grp1_Task0_ﾎﾟｰｽﾞ許可
+LD R42600                ; Grp1_Task0_ﾎﾟｰｽﾞ許可
+ORB R41200               ; TASK0 PAUSE 要求
+ANB @MR001               ; TASK0 ERROR
+RES @MR1900              ; Main1 HALT許可
+CON
+RES @MR1901              ; Main2 HALT許可
+END
+ENDH

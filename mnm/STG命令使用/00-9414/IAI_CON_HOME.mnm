@@ -1,0 +1,111 @@
+DEVICE:53
+;MODULE:IAI_CON_HOME
+;MODULE_TYPE:1
+;SupportMacro
+;
+;-----------------------------------------
+;Macro Name 	: 	IAI_CON_HOME
+;Macro Type	:	Self Holding
+;Function	:	IAI CON系原点復帰ﾏｸﾛ
+;-----------------------------------------
+;引数：
+;	P0  =   現在位置格納番地		DM番号で指定	P1 = Current Position Address 
+;	P1	=	RB入力先頭番地			DM番号で指定	P2 = Input Leading Address for RB
+;	P2  =	RB出力先頭番地			DM番号で指定	P3 = Output Leading Address for RB
+;	P3  =   完了フラグ
+;	P4  =   完了コード								P4 = Macro Complete Code
+;			#20 	= 正常終了							#20 = No Error
+;			#21 	= RB応答なし						#21 = Non Responce
+;			#22 	= ｽﾃｰﾀｽ異常							#22 = Status Abnormal
+;			#1-16	= RBｱﾗｰﾑ(取説PIOｱﾗｰﾑｺｰﾄﾞ参照)		#1-16 = RB Alarm(Refer the Controller Manual)
+;機能：
+;	ACON/PCON/SCON用原点復帰指令ﾏｸﾛ/ Robot Homimng Macro for Numerical Move Mode
+LD @CR2008
+BRES P2:#7 #11           ; RB_OUT
+CON
+DW #0 P4                 ; C_CODE
+CON
+SET @MR000
+;RBｽﾃｰﾀｽﾓﾆﾀｰ / Status Monitoring
+BLD P1:#7 #3             ; RB_IN
+OUT @MR014
+BLD P1:#7 #4             ; RB_IN
+BANB P1:#7 #8            ; RB_IN
+BANB P1:#7 #10           ; RB_IN
+BAND P1:#7 #14           ; RB_IN
+BANB P1:#7 #15           ; RB_IN
+OUT @MR001
+;ｱﾗｰﾑ処理
+LDP @MR014
+MOV P1:#8 P4             ; RB_IN  C_CODE
+ZRES @MR000 @MR015
+CON
+SET P3                   ; END_FLAG
+;RB状態ﾁｪｯｸ /　Robot Status Check
+STG @MR000
+MPS
+LD @MR001
+BANB P1:#7 #2            ; RB_IN
+ANL
+JMP @MR002
+MPP
+ANB @MR001
+DW #22 P4                ; C_CODE
+CON
+JMP @MR015
+STG @MR002
+BSET P2:#7 #1            ; RB_OUT
+CON
+JMP @MR003
+STG @MR003
+MPS
+BANB P1:#7 #0            ; RB_IN
+BRES P2:#7 #1            ; RB_OUT
+CON
+JMP @MR004
+MPP
+BAND P1:#7 #0            ; RB_IN
+TMR @1 V0                ; TIMEOUT
+CON
+AND @T1
+BRES P2:#7 #1            ; RB_OUT
+CON
+DW #21 P4                ; C_CODE
+CON
+JMP @MR015
+STG @MR004
+MPS
+BLDB P1:#7 #2            ; RB_IN
+BAND P1:#7 #0            ; RB_IN
+ANL
+BRES P2:#7 #1            ; RB_OUT
+CON
+JMP @MR005
+MPP
+BAND P1:#7 #0            ; RB_IN
+TMR @2 V0                ; TIMEOUT
+CON
+AND @T2
+BRES P2:#7 #1            ; RB_OUT
+CON
+DW #21 P4                ; C_CODE
+CON
+JMP @MR015
+STG @MR005
+DW #0 P0                 ; CRT_POS
+CON
+DW #20 P4                ; C_CODE
+CON
+JMP @MR015
+STG @MR015
+SET P3                   ; END_FLAG
+CON
+ENDS
+;終了処理
+LD P5                    ; EMG_FLAG
+ZRES @MR000 @MR015
+LD P3                    ; END_FLAG
+OR P5                    ; EMG_FLAG
+MEND
+END
+ENDH

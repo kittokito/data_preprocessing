@@ -1,0 +1,1278 @@
+DEVICE:53
+;MODULE:UNIT8_COVER_Remove_T
+;MODULE_TYPE:0
+;SCRIPT_TYPE:
+;
+;UNIT8 Remove-Trasfer 2
+;
+;動作FLG
+LD T1008                 ; ﾗｲﾄｶｰﾃﾝ1 OUT1
+AND T1009                ; ﾗｲﾄｶｰﾃﾝ1 OUT2
+OUT M8950                ; ﾗｲﾄｶｰﾃﾝ  遮光無し
+LD M8880                 ; 除材2Z軸原点復帰完了
+OR M8881                 ; 除材2Z軸原点復帰完了
+OR M8990                 ; 除材2Z軸　原点復帰完了
+ANB M103                 ; 原点復帰OK
+OUT M8990                ; 除材2Z軸　原点復帰完了
+LD CR2002                ; 常時ON
+MPS
+DW K0 D8030              ; UT8 Case status
+MPP
+LD>= D8000 K20           ; ﾕﾆｯﾄ8自動運転ｽﾃｯﾌﾟ
+AND<= D8000 K49          ; ﾕﾆｯﾄ8自動運転ｽﾃｯﾌﾟ
+ANL
+DW K1 D8030              ; UT8 Case status
+LD CR2002                ; 常時ON
+MPS
+LD M8017                 ; Remove2   NG処理確認ﾌﾗｸﾞｾｯﾄ1
+OR M8966                 ; Case2     NG処理確認
+ANB M8967                ; NG解除確認
+ANL
+OUT M8966                ; Case2     NG処理確認
+MPP
+LD M8966                 ; Case2     NG処理確認
+LD T1215                 ; 除材2 NG ｽｲｯﾁ
+OR M8950                 ; ﾗｲﾄｶｰﾃﾝ  遮光無し
+ANL
+ANB T1400                ; 除材2_ｹｰｽ検出
+ANL
+TMH K828 K20             ; NG解除確認ﾃﾞｨﾚｲ
+CON
+AND T828                 ; NG解除確認ﾃﾞｨﾚｲ
+OUT M8967                ; NG解除確認
+;■ロボット等機器入力受け
+;ロボット、検査装置など状態、現在位置などをまとめる信号は一旦ここで受ける。
+LD>=.L D130 +30000       ; RCA6_Position Data
+AND R5002                ; RCA6 MOVE
+OR M8812                 ; COVER排出Y 原点復帰中
+BOR D32547 K2            ; RCA6 制御信号
+ANB M8950                ; ﾗｲﾄｶｰﾃﾝ  遮光無し
+BOUT D32547 K2           ; RCA6 制御信号
+;<h1/>装置状態・動作条件
+LD R3703                 ; 除材2Y    ねじ締め領域
+AND T1503                ; 除材2_ﾊﾞｯｸｱｯﾌﾟ　下降限
+AND T1509                ; 除材2_案内板 上昇側限
+AND T1511                ; 除材2_案内板ﾌｯｸ後退限
+OUT M8900                ; ﾕﾆｯﾄ8原点
+LDB B0F0                 ; ﾈｼﾞ締めJig2ID異常
+ANB B0F1                 ; 除材2Y軸異常
+ANB B0F2                 ; UT8異常
+ANB B0F3                 ; UT8異常
+ANB B0F4                 ; UT8異常
+ANB B0F5                 ; UT8異常
+ANB B0F6                 ; UT8異常
+ANB B0F7                 ; UT8異常
+INV
+OUT M8901                ; ﾕﾆｯﾄ8全異常
+LD M8900                 ; ﾕﾆｯﾄ8原点
+ANB M8000                ; ﾕﾆｯﾄ8ｽﾃｯﾌﾟ開始
+ANB R5002                ; RCA6 MOVE
+AND R5004                ; RCA6 SV
+AND R5001                ; RCA6 HEND
+ANB R5015                ; RCA6 EMGS
+ANB R5003                ; RCA6 ALM
+OUT M8902                ; ﾕﾆｯﾄ8起動条件
+LDB M64                  ; 運転準備
+OR M65                   ; 即停止異常(緊急停止)
+OR M8901                 ; ﾕﾆｯﾄ8全異常
+OR T15                   ; 強制停止
+OUT M8903                ; ﾕﾆｯﾄ8起動OFF
+LD M98                   ; 原点復帰開始
+ANB M8904                ; ﾕﾆｯﾄ8原点復帰中
+OR M8904                 ; ﾕﾆｯﾄ8原点復帰中
+ANB M8903                ; ﾕﾆｯﾄ8起動OFF
+ANB M8589                ; ﾕﾆｯﾄ8原点復帰完了確認
+OUT M8904                ; ﾕﾆｯﾄ8原点復帰中
+LD M83                   ; 各工程起動指令
+AND M8902                ; ﾕﾆｯﾄ8起動条件
+OR M8905                 ; ﾕﾆｯﾄ8起動中
+ANB M8903                ; ﾕﾆｯﾄ8起動OFF
+ANB M8399                ; ﾕﾆｯﾄ8動作完了
+OUT M8905                ; ﾕﾆｯﾄ8起動中
+LD CR2003                ; 常時OFF
+OUT M8908                ; ﾕﾆｯﾄ8警報補助
+;Pack処理
+LDB M8802                ; COVER排出Y 移動指示中
+ANB M8812                ; COVER排出Y 原点復帰中
+INV
+OUT M8910                ; UNIT8 Pack
+;□エラー発生　一時停止フラグ
+LD CR2002                ; 常時ON
+MPS
+PMOV.D M8920 K0 D8100 K0 K20;Err460:除材搬送2ｹｰｽ残  UT8ｴﾗｰ判別
+MPP
+AND<> D8100 K0           ; UT8ｴﾗｰ判別
+OUT M8912                ; UNIT8 ｴﾗｰ
+LDB M8901                ; ﾕﾆｯﾄ8全異常
+ANB M160                 ; ALL PAUSE
+ANB M8908                ; ﾕﾆｯﾄ8警報補助
+ANB M8912                ; UNIT8 ｴﾗｰ
+LDB M32                  ; 自動ﾓｰﾄﾞ
+ANB M33                  ; 手動ﾓｰﾄﾞ
+LD M32                   ; 自動ﾓｰﾄﾞ
+AND M8905                ; ﾕﾆｯﾄ8起動中
+ORL
+LD M33                   ; 手動ﾓｰﾄﾞ
+AND M8904                ; ﾕﾆｯﾄ8原点復帰中
+ORL
+ANL
+OUT M8913                ; UNIT8     ｴﾗｰ・PAUSE無し
+;RB interlock
+LDB R5002                ; RCA6 MOVE
+AND R5004                ; RCA6 SV
+ANB R5015                ; RCA6 EMGS
+ANB R5003                ; RCA6 ALM
+ANB M8800                ; COVER排出Y 移動完了
+ANB M8802                ; COVER排出Y 移動指示中
+ANB M8810                ; COVER排出Y 原点復帰完了
+OUT M8959                ; 除材2Y軸 原点復帰可能
+LD R5001                 ; RCA6 HEND
+LD T1505                 ; 除材2_移載ﾁｬｯｸ　上昇限
+LD T1504                 ; 除材2_移載ﾁｬｯｸ　下降限
+AND T1507                ; 除材2_移載ﾁｬｯｸ　開限
+ORL
+ANL
+AND R3112                ; Case搬送Y2 塗布･受渡干渉外
+AND T1509                ; 除材2_案内板 上昇側限
+AND T1503                ; 除材2_ﾊﾞｯｸｱｯﾌﾟ　下降限
+OUT M8960                ; 除材2Y軸 動作可能
+LDF M8905                ; ﾕﾆｯﾄ8起動中
+ZRES M8800 M8859         ; COVER排出Y 移動完了
+;<h1/>■自動回路 
+;
+;運転開始・ステッパ初期化・補助接点へ展開
+LD CR2002                ; 常時ON
+ZRES M8000 M8399         ; ﾕﾆｯﾄ8ｽﾃｯﾌﾟ開始  ﾕﾆｯﾄ8動作完了
+LDB M8905                ; ﾕﾆｯﾄ8起動中
+MOV K0 D8000             ; ﾕﾆｯﾄ8自動運転ｽﾃｯﾌﾟ
+LD M8905                 ; ﾕﾆｯﾄ8起動中
+MOV D8000 Z1             ; ﾕﾆｯﾄ8自動運転ｽﾃｯﾌﾟ
+OUT M8000:Z1             ; ﾕﾆｯﾄ8ｽﾃｯﾌﾟ開始
+;自動運転ステップ開始
+LD M8000                 ; ﾕﾆｯﾄ8ｽﾃｯﾌﾟ開始
+AND M8913                ; UNIT8     ｴﾗｰ・PAUSE無し
+MPS
+ANB M39                  ; 日常点検ﾓｰﾄﾞ
+@INC D8000               ; ﾕﾆｯﾄ8自動運転ｽﾃｯﾌﾟ
+MPP
+LD M39                   ; 日常点検ﾓｰﾄﾞ
+AND M70                  ; 自動起動停止指令(ｻｲｸﾙ停止)
+ANL
+DW K380 D8000            ; ﾕﾆｯﾄ8自動運転ｽﾃｯﾌﾟ
+;運転開始時JIG番号ﾁｪｯｸ
+;Jig No. check when AUTO start.
+LD M8001                 ; JIG ID 確認
+MPS
+LD= D95 E3425            ; COVER-Eject Jig ID  COVER-Eject Jig ID
+AND= D96 E3426           ; COVER-Remove S.A.Plate Jig ID  COVER-Remove S.A.Plate Jig ID
+ANL
+@INC D8000               ; ﾕﾆｯﾄ8自動運転ｽﾃｯﾌﾟ
+MPP
+LD<> D95 E3425           ; COVER-Eject Jig ID  COVER-Eject Jig ID
+OR<> D96 E3426           ; COVER-Remove S.A.Plate Jig ID  COVER-Remove S.A.Plate Jig ID
+ANL
+OUT M8956                ; ﾈｼﾞ締め2 Jig No.異常
+;ﾛｯｸ解除・ﾌｯｸ解除・ﾊﾞｯｸｱｯﾌﾟ下降
+;Lock release & Hook release & Back-up Down
+LD M8002                 ; ﾛｯｸ解除ﾌｯｸ解除ﾊﾞｯｸｱｯﾌﾟ下降
+AND M8950                ; ﾗｲﾄｶｰﾃﾝ  遮光無し
+MPS
+LD M8913                 ; UNIT8     ｴﾗｰ・PAUSE無し
+AND T1509                ; 除材2_案内板 上昇側限
+AND T1511                ; 除材2_案内板ﾌｯｸ後退限
+AND T1503                ; 除材2_ﾊﾞｯｸｱｯﾌﾟ　下降限
+ANL
+@INC D8000               ; ﾕﾆｯﾄ8自動運転ｽﾃｯﾌﾟ
+MPP
+OUT M8752                ; Cover案内板 上昇
+CON
+OUT M8772                ; Cover案内板ﾌｯｸ 後退
+CON
+OUT M8792                ; Coverねじ締めﾊﾞｯｸｱｯﾌﾟ　下降
+;Jig番号ﾁｪｯｸ
+;JIG ID check
+LD M8003                 ; Jig No. ﾁｪｯｸ
+AND M8913                ; UNIT8     ｴﾗｰ・PAUSE無し
+MPS
+LD= D95 E3425            ; COVER-Eject Jig ID  COVER-Eject Jig ID
+AND= D96 E3426           ; COVER-Remove S.A.Plate Jig ID  COVER-Remove S.A.Plate Jig ID
+ANL
+@INC D8000               ; ﾕﾆｯﾄ8自動運転ｽﾃｯﾌﾟ
+MPP
+LD<> D95 E3425           ; COVER-Eject Jig ID  COVER-Eject Jig ID
+OR<> D96 E3426           ; COVER-Remove S.A.Plate Jig ID  COVER-Remove S.A.Plate Jig ID
+ANL
+OUT M8957                ; ﾈｼﾞ締め2 Jig No.異常
+;受け取り待機位置移動
+;Move to Receive waiting point
+LD M8004                 ; 移動先判断
+AND M8913                ; UNIT8     ｴﾗｰ・PAUSE無し
+AND M8950                ; ﾗｲﾄｶｰﾃﾝ  遮光無し
+AND M8960                ; 除材2Y軸 動作可能
+AND R3112                ; Case搬送Y2 塗布･受渡干渉外
+MPS
+ANB T1400                ; 除材2_ｹｰｽ検出
+MPS
+LDB M70                  ; 自動起動停止指令(ｻｲｸﾙ停止)
+ORB M6398                ; ﾕﾆｯﾄ6ｻｲｸﾙ停止
+ANL
+MPS
+LDB M3855                ; 排出2 待機位置移動可能
+AND M6996                ; CASE除材準備完了
+ANL
+DW K6 D8000              ; ﾕﾆｯﾄ8自動運転ｽﾃｯﾌﾟ
+MPP
+AND M3855                ; 排出2 待機位置移動可能
+@INC D8000               ; ﾕﾆｯﾄ8自動運転ｽﾃｯﾌﾟ
+MPP
+LD M70                   ; 自動起動停止指令(ｻｲｸﾙ停止)
+AND M6398                ; ﾕﾆｯﾄ6ｻｲｸﾙ停止
+ANL
+DW K380 D8000            ; ﾕﾆｯﾄ8自動運転ｽﾃｯﾌﾟ
+MPP
+AND T1400                ; 除材2_ｹｰｽ検出
+TMR K873 K5              ; ねじ締め案内板開督促
+LD M8005                 ; RM2_P5 move
+MPS
+DW K5 D8050              ; COVER排出Y軸 移動No.
+CON
+OUT @M4                  ; COVER排出Y軸移動
+MPP
+AND M8800                ; COVER排出Y 移動完了
+RES M8800                ; COVER排出Y 移動完了
+CON
+@INC D8000               ; ﾕﾆｯﾄ8自動運転ｽﾃｯﾌﾟ
+;除材要求待ち
+;Waiting for remove demand
+LD M8006                 ; 進入許可待ち
+AND M8913                ; UNIT8     ｴﾗｰ・PAUSE無し
+MPS
+AND M6996                ; CASE除材準備完了
+DW K10 D8000             ; ﾕﾆｯﾄ8自動運転ｽﾃｯﾌﾟ
+MPP
+ANB M6996                ; CASE除材準備完了
+MPS
+LD M70                   ; 自動起動停止指令(ｻｲｸﾙ停止)
+AND M6398                ; ﾕﾆｯﾄ6ｻｲｸﾙ停止
+ANL
+DW K380 D8000            ; ﾕﾆｯﾄ8自動運転ｽﾃｯﾌﾟ
+MPP
+LDB M70                  ; 自動起動停止指令(ｻｲｸﾙ停止)
+LDB M3855                ; 排出2 待機位置移動可能
+OR B11F0                 ; Case2 Change sw
+ANL
+ANL
+@INC D8000               ; ﾕﾆｯﾄ8自動運転ｽﾃｯﾌﾟ
+;***　嵌合ｷｬﾝｾﾙなのでねじ締め位置へ戻り
+;     Retuen to Screw point (by Assy Cansel)
+LD M8007                 ; ねじ締め位置戻り
+AND M8913                ; UNIT8     ｴﾗｰ・PAUSE無し
+AND M8960                ; 除材2Y軸 動作可能
+AND M8950                ; ﾗｲﾄｶｰﾃﾝ  遮光無し
+@INC D8000               ; ﾕﾆｯﾄ8自動運転ｽﾃｯﾌﾟ
+LD M8008                 ; Y2 P7 move
+MPS
+DW K7 D8050              ; COVER排出Y軸 移動No.
+CON
+OUT @M5                  ; COVER排出Y軸移動
+MPP
+LD M8800                 ; COVER排出Y 移動完了
+ANB B11F0                ; Case2 Change sw
+ANL
+RES M8800                ; COVER排出Y 移動完了
+CON
+DW K3 D8000              ; ﾕﾆｯﾄ8自動運転ｽﾃｯﾌﾟ
+;***
+;Y軸　受取位置移動
+;Move to pick up posotion
+LD M8010                 ; 排出Y　受取位置移動
+AND M8913                ; UNIT8     ｴﾗｰ・PAUSE無し
+AND M8960                ; 除材2Y軸 動作可能
+AND R3112                ; Case搬送Y2 塗布･受渡干渉外
+AND T1505                ; 除材2_移載ﾁｬｯｸ　上昇限
+ANB T1400                ; 除材2_ｹｰｽ検出
+@INC D8000               ; ﾕﾆｯﾄ8自動運転ｽﾃｯﾌﾟ
+LD M8011                 ; Y_P3 move
+MPS
+DW K3 D8050              ; COVER排出Y軸 移動No.
+CON
+OUT @M2                  ; COVER排出Y軸移動
+MPP
+AND M8800                ; COVER排出Y 移動完了
+RES M8800                ; COVER排出Y 移動完了
+CON
+@INC D8000               ; ﾕﾆｯﾄ8自動運転ｽﾃｯﾌﾟ
+;CASE給材要求
+;CASE supply request
+LD M8012                 ; CASE給材完了待ち
+MPS
+AND M8913                ; UNIT8     ｴﾗｰ・PAUSE無し
+MPS
+AND M6984                ; Y2給材完了
+@INC D8000               ; ﾕﾆｯﾄ8自動運転ｽﾃｯﾌﾟ
+MPP
+AND M6985                ; Y2給材異常
+DW K14 D8000             ; ﾕﾆｯﾄ8自動運転ｽﾃｯﾌﾟ
+MPP
+OUT M8984                ; Y2給材要求
+LD M8013                 ; OK end
+AND M8913                ; UNIT8     ｴﾗｰ・PAUSE無し
+ANB M6984                ; Y2給材完了
+DW K20 D8000             ; ﾕﾆｯﾄ8自動運転ｽﾃｯﾌﾟ
+LD M8014                 ; NG end
+AND M8913                ; UNIT8     ｴﾗｰ・PAUSE無し
+ANB M6985                ; Y2給材異常
+AND M8950                ; ﾗｲﾄｶｰﾃﾝ  遮光無し
+AND M8960                ; 除材2Y軸 動作可能
+@INC D8000               ; ﾕﾆｯﾄ8自動運転ｽﾃｯﾌﾟ
+;Y軸　ねじ締め位置移動
+;Move to Screw point
+LD M8015                 ; 排出Y　ねじ締め位置移動
+AND M8913                ; UNIT8     ｴﾗｰ・PAUSE無し
+AND M8960                ; 除材2Y軸 動作可能
+AND M8950                ; ﾗｲﾄｶｰﾃﾝ  遮光無し
+@INC D8000               ; ﾕﾆｯﾄ8自動運転ｽﾃｯﾌﾟ
+LD M8016                 ; Y_P7 move
+MPS
+DW K7 D8050              ; COVER排出Y軸 移動No.
+CON
+OUT @M15                 ; COVER排出Y軸移動
+MPP
+AND M8800                ; COVER排出Y 移動完了
+RES M8800                ; COVER排出Y 移動完了
+CON
+@INC D8000               ; ﾕﾆｯﾄ8自動運転ｽﾃｯﾌﾟ
+LD M8017                 ; Remove2   NG処理確認ﾌﾗｸﾞｾｯﾄ1
+AND M8966                ; Case2     NG処理確認
+@INC D8000               ; ﾕﾆｯﾄ8自動運転ｽﾃｯﾌﾟ
+LD M8018                 ; ﾜｰｸ残ﾁｪｯｸ
+AND M8913                ; UNIT8     ｴﾗｰ・PAUSE無し
+ANB M8966                ; Case2     NG処理確認
+DW K3 D8000              ; ﾕﾆｯﾄ8自動運転ｽﾃｯﾌﾟ
+;Y軸　ﾌｯｸ位置移動
+;Move to Hook point
+LD M8020                 ; 排出Y　ﾌｯｸ位置移動
+AND M8913                ; UNIT8     ｴﾗｰ・PAUSE無し
+AND M8960                ; 除材2Y軸 動作可能
+@INC D8000               ; ﾕﾆｯﾄ8自動運転ｽﾃｯﾌﾟ
+LD M8021                 ; Y_P4 move
+MPS
+DW K4 D8050              ; COVER排出Y軸 移動No.
+CON
+OUT @M3                  ; COVER排出Y軸移動
+MPP
+AND M8800                ; COVER排出Y 移動完了
+RES M8800                ; COVER排出Y 移動完了
+CON
+@INC D8000               ; ﾕﾆｯﾄ8自動運転ｽﾃｯﾌﾟ
+;ﾌｯｸ動作
+;Hook Advance
+LD M8022                 ; 排出Y　ねじ締め待機位置移動
+MPS
+AND T1408                ; 除材2_案内板ﾕﾆｯﾄ 開位置検出
+MPS
+LD M8913                 ; UNIT8     ｴﾗｰ・PAUSE無し
+AND T1510                ; 除材2_案内板ﾌｯｸ前進
+ANL
+DW K24 D8000             ; ﾕﾆｯﾄ8自動運転ｽﾃｯﾌﾟ
+MPP
+OUT M8762                ; Cover案内板ﾌｯｸ 前進
+MPP
+ANB T1408                ; 除材2_案内板ﾕﾆｯﾄ 開位置検出
+TMH K872 K50             ; ねじ締め案内板開督促
+;Y軸　ねじ締め位置移動
+;Move to Screw point
+LD M8024                 ; 排出Y　ねじ締め位置移動
+AND M8913                ; UNIT8     ｴﾗｰ・PAUSE無し
+AND M8960                ; 除材2Y軸 動作可能
+AND M8950                ; ﾗｲﾄｶｰﾃﾝ  遮光無し
+@INC D8000               ; ﾕﾆｯﾄ8自動運転ｽﾃｯﾌﾟ
+LD M8025                 ; Y_P7 move
+OR M8600                 ; RE2Y P7  移動中
+ANB M8601                ; RE2Y P7  動作完了
+OUT M8600                ; RE2Y P7  移動中
+LD M8600                 ; RE2Y P7  移動中
+MPS
+DW K7 D8050              ; COVER排出Y軸 移動No.
+CON
+OUT @M7                  ; COVER排出Y軸移動
+MRD
+AND M8800                ; COVER排出Y 移動完了
+RES M8800                ; COVER排出Y 移動完了
+CON
+OUT M8601                ; RE2Y P7  動作完了
+MRD
+LD>= D130 K48100         ; RCA6_Position Data
+AND M8025                ; Y_P7 move
+ANL
+@INC D8000               ; ﾕﾆｯﾄ8自動運転ｽﾃｯﾌﾟ
+MPP
+OUT M8744                ; Cover案内板 下降
+;CASE確認
+;CASE check
+LD M8026                 ; CASE check
+AND M8913                ; UNIT8     ｴﾗｰ・PAUSE無し
+MPS
+LD T1400                 ; 除材2_ｹｰｽ検出
+AND T1407                ; 除材2_案内板ﾕﾆｯﾄ 閉位置検出
+ANL
+DW K40 D8000             ; ﾕﾆｯﾄ8自動運転ｽﾃｯﾌﾟ
+MPP
+LDB T1400                ; 除材2_ｹｰｽ検出
+ANB M8600                ; RE2Y P7  移動中
+ANL
+TMR K815 K30             ; ｹｰｽ検出時間
+CON
+AND T815                 ; ｹｰｽ検出時間
+DW K30 D8000             ; ﾕﾆｯﾄ8自動運転ｽﾃｯﾌﾟ
+;* Err461:No CASE at COVER Screw point 
+LD M8030                 ; ｴﾗｰ発生
+ANB M71                  ; All Error PAUSE
+DW K461 D148             ; 警報No.
+CON
+SET M8921                ; Err461:ねじ締め位置CASE未検出
+CON
+@INC D8000               ; ﾕﾆｯﾄ8自動運転ｽﾃｯﾌﾟ
+LD M8031                 ; ｴﾗｰ中
+AND M71                  ; All Error PAUSE
+RES B1013                ; Remove_FLG
+CON
+@INC D8000               ; ﾕﾆｯﾄ8自動運転ｽﾃｯﾌﾟ
+LD M8032                 ; ｴﾗｰ解除確認
+ANB M71                  ; All Error PAUSE
+MPS
+ANB B1013                ; Remove_FLG
+DW K26 D8000             ; ﾕﾆｯﾄ8自動運転ｽﾃｯﾌﾟ
+MPP
+AND B1013                ; Remove_FLG
+@INC D8000               ; ﾕﾆｯﾄ8自動運転ｽﾃｯﾌﾟ
+LD M8033                 ; ﾌﾗｸﾞﾘｾｯﾄ
+RES B1013                ; Remove_FLG
+CON
+ANB B1013                ; Remove_FLG
+@INC D8000               ; ﾕﾆｯﾄ8自動運転ｽﾃｯﾌﾟ
+LD M8034                 ; ﾌｯｸ後退
+MPS
+LD M8913                 ; UNIT8     ｴﾗｰ・PAUSE無し
+AND T1511                ; 除材2_案内板ﾌｯｸ後退限
+ANL
+@INC D8000               ; ﾕﾆｯﾄ8自動運転ｽﾃｯﾌﾟ
+MPP
+OUT M8775                ; Cover案内板ﾌｯｸ 後退
+LD M8035                 ; Case確認
+MPS
+ANB T1400                ; 除材2_ｹｰｽ検出
+DW K380 D8000            ; ﾕﾆｯﾄ8自動運転ｽﾃｯﾌﾟ
+MPP
+AND T1400                ; 除材2_ｹｰｽ検出
+@INC D8000               ; ﾕﾆｯﾄ8自動運転ｽﾃｯﾌﾟ
+;* Err465:Case remain at Screw point
+LD M8036                 ; ｴﾗｰ発生
+ANB M71                  ; All Error PAUSE
+DW K460 D148             ; 警報No.
+CON
+SET M8920                ; Err460:除材搬送2ｹｰｽ残
+CON
+@INC D8000               ; ﾕﾆｯﾄ8自動運転ｽﾃｯﾌﾟ
+LD M8037                 ; ｴﾗｰ中
+AND M71                  ; All Error PAUSE
+@INC D8000               ; ﾕﾆｯﾄ8自動運転ｽﾃｯﾌﾟ
+LD M8038                 ; ｴﾗｰ解除確認
+AND T130                 ; ｴﾗｰﾘﾄﾗｲｳｪｲﾄ
+DW K35 D8000             ; ﾕﾆｯﾄ8自動運転ｽﾃｯﾌﾟ
+;***
+;ねじ締めｶﾊﾞｰﾛｯｸ　ﾊﾞｯｸｱｯﾌﾟ上昇
+;PCB Screw-assist-cover lock & Back-up Up
+LD M8040                 ; ﾛｯｸ＆ﾊﾞｯｸｱｯﾌﾟ
+MPS
+LD M8913                 ; UNIT8     ｴﾗｰ・PAUSE無し
+AND T1508                ; 除材2_案内板 下降側限
+AND T1502                ; 除材2_ﾊﾞｯｸｱｯﾌﾟ　上昇限
+AND T822                 ; RESET off delay
+ANL
+@INC D8000               ; ﾕﾆｯﾄ8自動運転ｽﾃｯﾌﾟ
+MPP
+AND T1407                ; 除材2_案内板ﾕﾆｯﾄ 閉位置検出
+MPS
+OUT M8742                ; Cover案内板 下降
+CON
+OUT M8782                ; Coverねじ締めﾊﾞｯｸｱｯﾌﾟ　上昇
+MRD
+TMH K821 K10             ; ﾈｼﾞ締め治具ﾜｰｸ確認時間
+MRD
+ANB T821                 ; ﾈｼﾞ締め治具ﾜｰｸ確認時間
+OUT M8674                ; ｽｸﾘｭｶｳﾝﾀ_RESET
+MPP
+AND T821                 ; ﾈｼﾞ締め治具ﾜｰｸ確認時間
+TMH K822 K10             ; RESET off delay
+;ﾈｼﾞ締め
+;Screw
+LD M8041                 ; ｽｸﾘｭｰｶｳﾝﾄ開始
+MPS
+TMH K831 K10             ; SET ON時間
+CON
+AND T831                 ; SET ON時間
+AND T1415                ; 電動ﾄﾞﾗｲﾊﾞ2_動作中
+@INC D8000               ; ﾕﾆｯﾄ8自動運転ｽﾃｯﾌﾟ
+MPP
+OUT M8670                ; ｽｸﾘｭｶｳﾝﾀ_SET
+LD M8042                 ; ｶｳﾝﾄｱｯﾌﾟ待ち
+AND M8913                ; UNIT8     ｴﾗｰ・PAUSE無し
+MPS
+ANB T1415                ; 電動ﾄﾞﾗｲﾊﾞ2_動作中
+DW K44 D8000             ; ﾕﾆｯﾄ8自動運転ｽﾃｯﾌﾟ
+OUT M8975                ; ねじ締め完了
+MRD
+LD T1415                 ; 電動ﾄﾞﾗｲﾊﾞ2_動作中
+AND T2034                ; 除材2_強制解除
+ANL
+@INC D8000               ; ﾕﾆｯﾄ8自動運転ｽﾃｯﾌﾟ
+MPP
+TMR K870 K600            ; ねじ締め催促
+LD M8975                 ; ねじ締め完了
+OR M8976                 ; ねじ締め完了ﾌﾞｻﾞｰON
+ANB T836                 ; ねじ締め完了ﾌﾞｻﾞｰ時間
+OUT M8976                ; ねじ締め完了ﾌﾞｻﾞｰON
+TMR K836 K10             ; ねじ締め完了ﾌﾞｻﾞｰ時間
+LD M8043                 ; 強制解除
+MPS
+AND M8913                ; UNIT8     ｴﾗｰ・PAUSE無し
+TMH K833 K10             ; RESET ON時間
+CON
+AND T833                 ; RESET ON時間
+@INC D8000               ; ﾕﾆｯﾄ8自動運転ｽﾃｯﾌﾟ
+MPP
+OUT M8672                ; ｽｸﾘｭｶｳﾝﾀ_RESET
+;案内板ﾛｯｸ　解除
+;Guide plate release
+LD M8044                 ; PCB案内板解除
+AND M8913                ; UNIT8     ｴﾗｰ・PAUSE無し
+MPS
+LD T1509                 ; 除材2_案内板 上昇側限
+AND T1503                ; 除材2_ﾊﾞｯｸｱｯﾌﾟ　下降限
+AND T1511                ; 除材2_案内板ﾌｯｸ後退限
+ANL
+@INC D8000               ; ﾕﾆｯﾄ8自動運転ｽﾃｯﾌﾟ
+MRD
+TMH K835 K50
+CON
+AND T835
+OUT M8754                ; Cover案内板 上昇
+CON
+OUT M8793                ; Coverねじ締めﾊﾞｯｸｱｯﾌﾟ　下降
+MPP
+AND T1516                ; 除材2_案内板 上昇側限　速
+OUT M8773                ; Cover案内板ﾌｯｸ 後退
+;作業者ｹｰｽ除材待ち
+;Waiting for Case remove by operator
+LD M8045                 ; 作業者除材待ち
+AND M8913                ; UNIT8     ｴﾗｰ・PAUSE無し
+MPS
+LD M8950                 ; ﾗｲﾄｶｰﾃﾝ  遮光無し
+ANB T1400                ; 除材2_ｹｰｽ検出
+ANB M8600                ; RE2Y P7  移動中
+ANL
+DW K50 D8000             ; ﾕﾆｯﾄ8自動運転ｽﾃｯﾌﾟ
+MPP
+TMR K871 K300            ; 手動取り出し催促
+;ｶﾊﾞｰ開確認
+;Screw cover open check
+LD M8050                 ; ｶﾊﾞｰ開確認
+AND M8913                ; UNIT8     ｴﾗｰ・PAUSE無し
+MPS
+AND T1408                ; 除材2_案内板ﾕﾆｯﾄ 開位置検出
+DW K380 D8000            ; ﾕﾆｯﾄ8自動運転ｽﾃｯﾌﾟ
+MPP
+ANB T1408                ; 除材2_案内板ﾕﾆｯﾄ 開位置検出
+@INC D8000               ; ﾕﾆｯﾄ8自動運転ｽﾃｯﾌﾟ
+;Err463:Cover Screw Cover Close 
+LD M8051                 ; ｴﾗｰ発生
+ANB M71                  ; All Error PAUSE
+DW K463 D148             ; 警報No.
+CON
+SET M8923                ; Err463:COVERねじ締めｶﾊﾞｰ閉
+CON
+@INC D8000               ; ﾕﾆｯﾄ8自動運転ｽﾃｯﾌﾟ
+LD M8052                 ; ｴﾗｰ中
+AND M71                  ; All Error PAUSE
+@INC D8000               ; ﾕﾆｯﾄ8自動運転ｽﾃｯﾌﾟ
+LD M8053                 ; ｴﾗｰ解除確認
+AND T130                 ; ｴﾗｰﾘﾄﾗｲｳｪｲﾄ
+DW K50 D8000             ; ﾕﾆｯﾄ8自動運転ｽﾃｯﾌﾟ
+;■■■
+;サイクル停止条件
+;Cycle end check
+LD M8380                 ; 1ｻｲｸﾙ終了
+MPS
+LDB M70                  ; 自動起動停止指令(ｻｲｸﾙ停止)
+ORB M3398                ; UT3ｻｲｸﾙ停止
+ORB M6398                ; ﾕﾆｯﾄ6ｻｲｸﾙ停止
+ANL
+DW K2 D8000              ; ﾕﾆｯﾄ8自動運転ｽﾃｯﾌﾟ
+MPP
+LD M70                   ; 自動起動停止指令(ｻｲｸﾙ停止)
+AND M3398                ; UT3ｻｲｸﾙ停止
+AND M6398                ; ﾕﾆｯﾄ6ｻｲｸﾙ停止
+ANL
+DW K386 D8000            ; ﾕﾆｯﾄ8自動運転ｽﾃｯﾌﾟ
+;除材1Y軸ｶﾊﾞｰ待機位置移動
+;Move to waiting point
+LD M8386                 ; ねじ締め位置移動
+AND M8913                ; UNIT8     ｴﾗｰ・PAUSE無し
+AND M8960                ; 除材2Y軸 動作可能
+@INC D8000               ; ﾕﾆｯﾄ8自動運転ｽﾃｯﾌﾟ
+LD M8387                 ; Y_P7 move
+MPS
+DW K7 D8050              ; COVER排出Y軸 移動No.
+CON
+OUT @M6                  ; COVER排出Y軸移動
+MPP
+AND M8800                ; COVER排出Y 移動完了
+RES M8800                ; COVER排出Y 移動完了
+CON
+DW K390 D8000            ; ﾕﾆｯﾄ8自動運転ｽﾃｯﾌﾟ
+LD M8390                 ; ｻｲｸﾙ終了へ
+@MOV K398 D8000          ; ﾕﾆｯﾄ8自動運転ｽﾃｯﾌﾟ
+;終了
+;Unit AUTO cycle end
+LD M8398                 ; ﾕﾆｯﾄ8ｻｲｸﾙ停止
+MPS
+LD M70                   ; 自動起動停止指令(ｻｲｸﾙ停止)
+AND M72                  ; 全ﾕﾆｯﾄ停止確認
+ANL
+@MOV K399 D8000          ; ﾕﾆｯﾄ8自動運転ｽﾃｯﾌﾟ
+MPP
+ANB M70                  ; 自動起動停止指令(ｻｲｸﾙ停止)
+DW K0 D8000              ; ﾕﾆｯﾄ8自動運転ｽﾃｯﾌﾟ
+;<h1/>■原点復帰回路
+;
+;運転開始・ステッパ初期化・補助接点へ展開
+LD CR2002                ; 常時ON
+ZRES M8500 M8589         ; ﾕﾆｯﾄ8原点復帰開始  ﾕﾆｯﾄ8原点復帰完了確認
+LDB M8904                ; ﾕﾆｯﾄ8原点復帰中
+MOV K0 D8010             ; ﾕﾆｯﾄ8原点復帰ｽﾃｯﾌﾟ
+LD M8904                 ; ﾕﾆｯﾄ8原点復帰中
+MOV D8010 Z1             ; ﾕﾆｯﾄ8原点復帰ｽﾃｯﾌﾟ
+OUT M8500:Z1             ; ﾕﾆｯﾄ8原点復帰開始
+;原点復帰ステップ開始
+;Origin start
+;ﾈｼﾞ締めﾛﾎﾞｯﾄ原点確認
+;Screw Robot Origin check
+LD M8500                 ; ﾕﾆｯﾄ8原点復帰開始
+AND M8913                ; UNIT8     ｴﾗｰ・PAUSE無し
+AND M6990                ; 移載ﾍｯﾄﾞ原点復帰完了
+AND M3991                ; Cover搬送原点復帰完了
+AND M8950                ; ﾗｲﾄｶｰﾃﾝ  遮光無し
+@INC D8010               ; ﾕﾆｯﾄ8原点復帰ｽﾃｯﾌﾟ
+;ﾛｯｸ解除・ﾌｯｸ解除・ﾊﾞｯｸｱｯﾌﾟ下降
+;Lock release / Hook release / Back-up down
+LD M8501                 ; ﾛｯｸ解除・ﾌｯｸ解除・ﾊﾞｯｸｱｯﾌﾟ下降
+AND M8913                ; UNIT8     ｴﾗｰ・PAUSE無し
+AND M8950                ; ﾗｲﾄｶｰﾃﾝ  遮光無し
+MPS
+LD T1509                 ; 除材2_案内板 上昇側限
+AND T1511                ; 除材2_案内板ﾌｯｸ後退限
+AND T1503                ; 除材2_ﾊﾞｯｸｱｯﾌﾟ　下降限
+ANL
+@INC D8010               ; ﾕﾆｯﾄ8原点復帰ｽﾃｯﾌﾟ
+MRD
+OUT M8755                ; Cover案内板 上昇
+CON
+OUT M8794                ; Coverねじ締めﾊﾞｯｸｱｯﾌﾟ　下降
+MPP
+AND T1516                ; 除材2_案内板 上昇側限　速
+OUT M8774                ; Cover案内板ﾌｯｸ 後退
+;COVER除材Y軸原点復帰
+;COVER-Elect Y axis HOME
+LD M8502                 ; COVER除材Y 原点復帰
+AND M8913                ; UNIT8     ｴﾗｰ・PAUSE無し
+AND M8950                ; ﾗｲﾄｶｰﾃﾝ  遮光無し
+AND M8959                ; 除材2Y軸 原点復帰可能
+@INC D8010               ; ﾕﾆｯﾄ8原点復帰ｽﾃｯﾌﾟ
+LD M8503                 ; RCA6 HOME
+MPS
+OUT @M61                 ; COVER排出Y軸原点復帰
+MPP
+AND M8810                ; COVER排出Y 原点復帰完了
+RES M8810                ; COVER排出Y 原点復帰完了
+CON
+@INC D8010               ; ﾕﾆｯﾄ8原点復帰ｽﾃｯﾌﾟ
+;Y軸　ねじ締め位置移動
+;Move to Screw point
+LD M8504
+AND M8913                ; UNIT8     ｴﾗｰ・PAUSE無し
+AND M8960                ; 除材2Y軸 動作可能
+AND M8950                ; ﾗｲﾄｶｰﾃﾝ  遮光無し
+@INC D8010               ; ﾕﾆｯﾄ8原点復帰ｽﾃｯﾌﾟ
+LD M8505
+MPS
+DW K7 D8050              ; COVER排出Y軸 移動No.
+CON
+OUT @M13                 ; COVER排出Y軸移動
+MPP
+AND M8800                ; COVER排出Y 移動完了
+RES M8800                ; COVER排出Y 移動完了
+CON
+DW K10 D8010             ; ﾕﾆｯﾄ8原点復帰ｽﾃｯﾌﾟ
+;ｹｰｽ残確認
+;Case remain check
+LD M8510                 ; ﾜｰｸ残確認
+AND M8913                ; UNIT8     ｴﾗｰ・PAUSE無し
+MPS
+AND T1420                ; 除材2_ｹｰｽ無し検出
+DW K15 D8010             ; ﾕﾆｯﾄ8原点復帰ｽﾃｯﾌﾟ
+MPP
+AND T1400                ; 除材2_ｹｰｽ検出
+@INC D8010               ; ﾕﾆｯﾄ8原点復帰ｽﾃｯﾌﾟ
+;ｴﾗｰ465:Case残 at Remove2
+;Err465:Case remain Remove2
+LD M8511                 ; ｴﾗｰ発生
+ANB M71                  ; All Error PAUSE
+DW K465 D148             ; 警報No.
+CON
+SET M8925                ; Err465:Case remain Remove2
+CON
+@INC D8010               ; ﾕﾆｯﾄ8原点復帰ｽﾃｯﾌﾟ
+LD M8512                 ; ｴﾗｰ中
+AND M71                  ; All Error PAUSE
+@INC D8010               ; ﾕﾆｯﾄ8原点復帰ｽﾃｯﾌﾟ
+LD M8513                 ; ｴﾗｰ解除確認
+AND T130                 ; ｴﾗｰﾘﾄﾗｲｳｪｲﾄ
+DW K10 D8010             ; ﾕﾆｯﾄ8原点復帰ｽﾃｯﾌﾟ
+;ｽｸﾘｭｶｳﾝﾀﾘｾｯﾄ
+;Screw counter reset
+LD M8515                 ; ｽｸﾘｭｶｳﾝﾀRESET
+MPS
+AND M8913                ; UNIT8     ｴﾗｰ・PAUSE無し
+TMH K834 K10             ; RESET ON時間
+CON
+AND T834                 ; RESET ON時間
+DW K20 D8010             ; ﾕﾆｯﾄ8原点復帰ｽﾃｯﾌﾟ
+MPP
+OUT M8673                ; ｽｸﾘｭｶｳﾝﾀ_RESET
+;ｶﾊﾞｰ開確認
+;Screw cover open check
+LD M8520                 ; ｶﾊﾞｰ開確認
+AND M8913                ; UNIT8     ｴﾗｰ・PAUSE無し
+MPS
+AND T1408                ; 除材2_案内板ﾕﾆｯﾄ 開位置検出
+DW K80 D8010             ; ﾕﾆｯﾄ8原点復帰ｽﾃｯﾌﾟ
+MPP
+ANB T1408                ; 除材2_案内板ﾕﾆｯﾄ 開位置検出
+@INC D8010               ; ﾕﾆｯﾄ8原点復帰ｽﾃｯﾌﾟ
+;Err463:COVER Screw Cover Close 
+LD M8521                 ; ｴﾗｰ発生
+ANB M71                  ; All Error PAUSE
+DW K463 D148             ; 警報No.
+CON
+SET M8923                ; Err463:COVERねじ締めｶﾊﾞｰ閉
+CON
+@INC D8010               ; ﾕﾆｯﾄ8原点復帰ｽﾃｯﾌﾟ
+LD M8522                 ; ｴﾗｰ中
+AND M71                  ; All Error PAUSE
+@INC D8010               ; ﾕﾆｯﾄ8原点復帰ｽﾃｯﾌﾟ
+LD M8523                 ; ｴﾗｰ解除確認
+AND T130                 ; ｴﾗｰﾘﾄﾗｲｳｪｲﾄ
+DW K10 D8010             ; ﾕﾆｯﾄ8原点復帰ｽﾃｯﾌﾟ
+;原点復帰終了
+LD M8580                 ; 原点復帰動作完了
+AND M8900                ; ﾕﾆｯﾄ8原点
+OUT M8588                ; ﾕﾆｯﾄ8原点復帰完了
+LD M8588                 ; ﾕﾆｯﾄ8原点復帰完了
+ANB M98                  ; 原点復帰開始
+@MOV K89 D8010           ; ﾕﾆｯﾄ8原点復帰ｽﾃｯﾌﾟ
+;<h1/>■手動回路 
+;
+LD M33                   ; 手動ﾓｰﾄﾞ
+AND M34                  ; ﾒｲﾝ手動操作可能条件
+ANB M8905                ; ﾕﾆｯﾄ8起動中
+ANB M97                  ; 原点復帰動作中
+MC
+LD M8960                 ; 除材2Y軸 動作可能
+ANB R5002                ; RCA6 MOVE
+ANB M8802                ; COVER排出Y 移動指示中
+ANB M3803                ; Case搬送Y2移動指示有
+AND M8950                ; ﾗｲﾄｶｰﾃﾝ  遮光無し
+TMH K860 K20             ; 手動起動許可ｳｪｲﾄ
+CON
+AND T860                 ; 手動起動許可ｳｪｲﾄ
+OUT M8608                ; 除材2手動Y軸動作可能
+;除材搬送2 Y軸
+;Remove-Transfer 2 Y
+LD CR2002                ; 常時ON
+MPS
+LD B1161                 ; 除材2Y軸　原位置 PB
+AND M8608                ; 除材2手動Y軸動作可能
+LD T1511                 ; 除材2_案内板ﾌｯｸ後退限
+ORB R3701                ; 除材2Y    塗布干渉外
+ANL
+OR M8611                 ; 除材2Y    P1移動
+ANB M8800                ; COVER排出Y 移動完了
+ANL
+OUT M8611                ; 除材2Y    P1移動
+DW K1 D8050              ; COVER排出Y軸 移動No.
+CON
+OUT @M8                  ; COVER排出Y軸移動
+MPP
+ANF M8611                ; 除材2Y    P1移動
+RES M8800                ; COVER排出Y 移動完了
+LD CR2002                ; 常時ON
+MPS
+LD B1163                 ; 除材2Y軸　受取位置 PB
+AND M8608                ; 除材2手動Y軸動作可能
+AND R3112                ; Case搬送Y2 塗布･受渡干渉外
+LD T1511                 ; 除材2_案内板ﾌｯｸ後退限
+ORB R3701                ; 除材2Y    塗布干渉外
+ANL
+OR M8613                 ; 除材2Y    P3移動
+ANB M8800                ; COVER排出Y 移動完了
+ANL
+OUT M8613                ; 除材2Y    P3移動
+DW K3 D8050              ; COVER排出Y軸 移動No.
+CON
+OUT @M10                 ; COVER排出Y軸移動
+MPP
+ANF M8613                ; 除材2Y    P3移動
+RES M8800                ; COVER排出Y 移動完了
+LD CR2002                ; 常時ON
+MPS
+LD B1164                 ; 除材2Y軸　ﾌｯｸ位置 PB
+AND M8608                ; 除材2手動Y軸動作可能
+LD T1511                 ; 除材2_案内板ﾌｯｸ後退限
+OR T1407                 ; 除材2_案内板ﾕﾆｯﾄ 閉位置検出
+ORB R3701                ; 除材2Y    塗布干渉外
+ANL
+OR M8614                 ; 除材2Y    P4移動
+ANB M8800                ; COVER排出Y 移動完了
+ANL
+OUT M8614                ; 除材2Y    P4移動
+DW K4 D8050              ; COVER排出Y軸 移動No.
+CON
+OUT @M11                 ; COVER排出Y軸移動
+MPP
+ANF M8614                ; 除材2Y    P4移動
+RES M8800                ; COVER排出Y 移動完了
+LD CR2002                ; 常時ON
+MPS
+LD B1165                 ; 除材2Y軸　ねじ前待機位置 PB
+AND M8608                ; 除材2手動Y軸動作可能
+OR M8615                 ; 除材2Y    P5移動
+ANB M8800                ; COVER排出Y 移動完了
+ANL
+OUT M8615                ; 除材2Y    P5移動
+DW K5 D8050              ; COVER排出Y軸 移動No.
+CON
+OUT @M12                 ; COVER排出Y軸移動
+MPP
+ANF M8615                ; 除材2Y    P5移動
+RES M8800                ; COVER排出Y 移動完了
+LD CR2002                ; 常時ON
+MPS
+LD B1167                 ; 除材2Y軸　ねじ締め位置 PB
+AND M8608                ; 除材2手動Y軸動作可能
+OR M8617                 ; 除材2Y    P7移動
+ANB M8800                ; COVER排出Y 移動完了
+ANL
+OUT M8617                ; 除材2Y    P7移動
+DW K7 D8050              ; COVER排出Y軸 移動No.
+CON
+OUT @M14                 ; COVER排出Y軸移動
+MPP
+ANF M8617                ; 除材2Y    P7移動
+RES M8800                ; COVER排出Y 移動完了
+;Jog
+LD R5004                 ; RCA6 SV
+AND R5001                ; RCA6 HEND
+ANB R5015                ; RCA6 EMGS
+ANB R5003                ; RCA6 ALM
+ANB M8800                ; COVER排出Y 移動完了
+ANB M8802                ; COVER排出Y 移動指示中
+ANB M8810                ; COVER排出Y 原点復帰完了
+MPS
+AND B2116                ; 除材2Y軸+JOG PB
+BOUT D32547 K8           ; RCA6 制御信号
+MPP
+AND B2117                ; 除材2Y軸-JOG PB
+BOUT D32547 K7           ; RCA6 制御信号
+;除材搬送2 ﾁｬｯｸ
+;Remove-Transfer 2  Chuck
+LDP B1170                ; 除材2 案内板 下降PB
+AND R3703                ; 除材2Y    ねじ締め領域
+OUT M8741                ; Cover案内板 下降
+LDP B1171                ; 除材2 案内板 上昇 PB
+OUT M8751                ; Cover案内板 上昇
+LDP B1172                ; 除材2 案内板ﾌｯｸ 前進PB
+AND R3704                ; 除材2Y    ﾌｯｸ開始可能ｴﾘｱ
+OUT M8761                ; Cover案内板ﾌｯｸ 前進
+LDP B1173                ; 除材2 案内板ﾌｯｸ 後退PB
+OUT M8771                ; Cover案内板ﾌｯｸ 後退
+LDP B1174                ; 除材2_ﾊﾞｯｸｱｯﾌﾟ　上昇PB
+AND R3703                ; 除材2Y    ねじ締め領域
+OUT M8781                ; Coverねじ締めﾊﾞｯｸｱｯﾌﾟ　上昇
+LDP B1175                ; 除材2_ﾊﾞｯｸｱｯﾌﾟ　下降PB
+OUT M8791                ; Coverねじ締めﾊﾞｯｸｱｯﾌﾟ　下降
+;
+LD M33                   ; 手動ﾓｰﾄﾞ
+AND Y20A                 ; 電動ﾄﾞﾗｲﾊﾞ2 電源ON
+ANB T1415                ; 電動ﾄﾞﾗｲﾊﾞ2_動作中
+TMR K856 K5              ; SET delay
+CON
+AND T856                 ; SET delay
+OUT M8675                ; ｽｸﾘｭｶｳﾝﾀ_SET
+MCR
+;Driver power　ドア開で電源OFF防止のため
+LDP B1158                ; ｸｲｯﾁｬ電源ONPB
+ORP B117F                ; 除材CV2 ON PB
+AND M33                  ; 手動ﾓｰﾄﾞ
+AND M129                 ; 非常停止　正常
+AND M130                 ; 外部非常停止正常
+ANB M8905                ; ﾕﾆｯﾄ8起動中
+ANB M97                  ; 原点復帰動作中
+ALT M8660                ; Driver2 power ON
+LDF M33                  ; 手動ﾓｰﾄﾞ
+ORP M97                  ; 原点復帰動作中
+RES M8660                ; Driver2 power ON
+LDF M33                  ; 手動ﾓｰﾄﾞ
+OR M8676                 ; ｽｸﾘｭｶｳﾝﾀ_RESET
+MPS
+ANB T857                 ; Reset delay
+OUT M8676                ; ｽｸﾘｭｶｳﾝﾀ_RESET
+MPP
+TMR K857 K5              ; Reset delay
+;<h1/>出力
+;OUTPUT
+;COVER-Eject Y axis
+LDB @M1                  ; COVER排出Y軸移動
+ANB @M2                  ; COVER排出Y軸移動
+ANB @M3                  ; COVER排出Y軸移動
+ANB @M4                  ; COVER排出Y軸移動
+ANB @M5                  ; COVER排出Y軸移動
+ANB @M6                  ; COVER排出Y軸移動
+ANB @M7                  ; COVER排出Y軸移動
+ANB @M8                  ; COVER排出Y軸移動
+ANB @M9                  ; COVER排出Y軸移動
+ANB @M10                 ; COVER排出Y軸移動
+ANB @M11                 ; COVER排出Y軸移動
+ANB @M12                 ; COVER排出Y軸移動
+ANB @M13                 ; COVER排出Y軸移動
+ANB @M14                 ; COVER排出Y軸移動
+ANB @M15                 ; COVER排出Y軸移動
+INV
+@SET M8804               ; COVER排出Y 移動開始
+OUT M8802                ; COVER排出Y 移動指示中
+;Z1 = (D8050-1) * 4        'ﾃﾞｰﾀ先頭ｲﾝﾃﾞｯｸｽ 1Point 4Data
+;Z2 = Z1 + 2               '速度は2ﾜｰﾄﾞ後
+;D8060.L = E34500.L:Z1     '目標位置ﾃﾞｰﾀｾｯﾄ
+;D8062.D = #3              '位置決め完了幅0.03mm固定
+;D8064.U = E34500.L:Z2     '速度ﾃﾞｰﾀｾｯﾄ
+;SET(M8803)
+;SET(M8805)                'ﾃﾞｰﾀｾｯﾄ完了ﾌﾗｸﾞ
+LDP M8804                ; COVER排出Y 移動開始
+NCJ K1000
+;Z1 = (D8050-1) * 4        'ﾃﾞｰﾀ先頭ｲﾝﾃﾞｯｸｽ 1Point 4Data
+;
+LD CR2002                ; 常時ON
+LDA D8050                ; COVER排出Y軸 移動No.
+CON
+EXT
+CON
+SUB.L +1
+CON
+MUL.L +4
+CON
+STA.L Z1
+;Z2 = Z1 + 2               '速度は2ﾜｰﾄﾞ後
+;
+LD CR2002                ; 常時ON
+LDA.L Z1
+CON
+ADD.L +2
+CON
+STA.L Z2
+;D8060.L = E34500.L:Z1     '目標位置ﾃﾞｰﾀｾｯﾄ
+;
+LD CR2002                ; 常時ON
+MOV.L E34500:Z1 D8060    ; RCA6 P1 Position data  RCA6 目標位置
+;D8062.D = #3              '位置決め完了幅0.03mm固定
+;
+LD CR2002                ; 常時ON
+MOV.D K3 D8062           ; RCA6 位置決め幅
+;D8064.U = E34500.L:Z2     '速度ﾃﾞｰﾀｾｯﾄ
+;
+LD CR2002                ; 常時ON
+MOV E34500:Z2 D8064      ; RCA6 P1 Position data  RCA6 位置決め速度
+;SET(M8803)
+;
+LD CR2002                ; 常時ON
+SET M8803
+;SET(M8805)                'ﾃﾞｰﾀｾｯﾄ完了ﾌﾗｸﾞ
+LD CR2002                ; 常時ON
+SET M8805                ; COVER排出Y Data set 完了
+LABEL K1000
+;
+LD M8805                 ; COVER排出Y Data set 完了
+MSTRT IAI_CON_MOVE_6 D8060 D8062 D8064 D32340 D32540 @M0 @D1 M127 K50 M8803;RCA6 目標位置  RCA6 位置決め幅  RCA6 位置決め速度  RCA6 現在位置  RCA6 目標位置  COVER排出Y軸移動完了  受渡区間通過時間  RBC 非常停止
+RES M8805                ; COVER排出Y Data set 完了
+STG M8804                ; COVER排出Y 移動開始
+AND @M0                  ; COVER排出Y軸移動完了
+ANB _IAI_CON_MOVE_6
+RES @M0                  ; COVER排出Y軸移動完了
+CON
+SET M8800                ; COVER排出Y 移動完了
+CON
+ENDS
+;HOME
+LDB @M61                 ; COVER排出Y軸原点復帰
+ANB @M62                 ; COVER排出Y軸原点復帰
+INV
+@SET M8813               ; COVER排出Y 原点復帰開始
+OUT M8812                ; COVER排出Y 原点復帰中
+LD M8813                 ; COVER排出Y 原点復帰開始
+MSTRT IAI_CON_HOME_6 D32340 D32540 @M60 @D1 M127 K50;RCA6 現在位置  RCA6 目標位置  COVER排出Y軸原点復帰完了  受渡区間通過時間  RBC 非常停止
+STG M8813                ; COVER排出Y 原点復帰開始
+AND _IAI_CON_HOME_6
+JMP M8814
+STG M8814
+AND @M60                 ; COVER排出Y軸原点復帰完了
+JMP M8815                ; COVER排出Y 原点復帰完了待ち
+STG M8815                ; COVER排出Y 原点復帰完了待ち
+ANB _IAI_CON_HOME_6
+RES @M60                 ; COVER排出Y軸原点復帰完了
+CON
+SET M8810                ; COVER排出Y 原点復帰完了
+CON
+ENDS
+;Coverねじ締め案内板
+;Cover Screw-Assist-Plate
+LDP M8741                ; Cover案内板 下降
+ORP M8742                ; Cover案内板 下降
+ORP M8743                ; Cover案内板 下降
+ORP M8744                ; Cover案内板 下降
+OR M8740                 ; Cover案内板 下降補助
+ANPB M8750               ; Cover案内板 上昇補助
+OUT M8740                ; Cover案内板 下降補助
+LDP M8751                ; Cover案内板 上昇
+ORP M8752                ; Cover案内板 上昇
+ORP M8753                ; Cover案内板 上昇
+ORP M8754                ; Cover案内板 上昇
+ORP M8755                ; Cover案内板 上昇
+OR M65                   ; 即停止異常(緊急停止)
+OR M8750                 ; Cover案内板 上昇補助
+ANPB M8740               ; Cover案内板 下降補助
+OUT M8750                ; Cover案内板 上昇補助
+LD M8740                 ; Cover案内板 下降補助
+OUT Y2180                ; 除材2 案内板 下降
+LD M8750                 ; Cover案内板 上昇補助
+OUT Y2181                ; 除材2 案内板 上昇
+;Coverねじ締め案内板　フック
+;Cover Screw-Assist-Plate Hook
+LDP M8761                ; Cover案内板ﾌｯｸ 前進
+ORP M8762                ; Cover案内板ﾌｯｸ 前進
+OR M8760                 ; Cover案内板ﾌｯｸ 前進補助
+ANPB M8770               ; Cover案内板ﾌｯｸ 後退補助
+OUT M8760                ; Cover案内板ﾌｯｸ 前進補助
+LDP M8771                ; Cover案内板ﾌｯｸ 後退
+ORP M8772                ; Cover案内板ﾌｯｸ 後退
+ORP M8773                ; Cover案内板ﾌｯｸ 後退
+ORP M8774                ; Cover案内板ﾌｯｸ 後退
+ORP M8775                ; Cover案内板ﾌｯｸ 後退
+OR M8770                 ; Cover案内板ﾌｯｸ 後退補助
+ANPB M8760               ; Cover案内板ﾌｯｸ 前進補助
+OUT M8770                ; Cover案内板ﾌｯｸ 後退補助
+LD M8760                 ; Cover案内板ﾌｯｸ 前進補助
+OUT Y2182                ; 除材2 案内板ﾌｯｸ 前進
+LD M8770                 ; Cover案内板ﾌｯｸ 後退補助
+OUT Y2183                ; 除材2 案内板ﾌｯｸ 後退
+;Coverねじ締めバックアップ
+;Cover Screw tightin back up
+LDP M8781                ; Coverねじ締めﾊﾞｯｸｱｯﾌﾟ　上昇
+ORP M8782                ; Coverねじ締めﾊﾞｯｸｱｯﾌﾟ　上昇
+OR M8780                 ; Coverねじ締めﾊﾞｯｸｱｯﾌﾟ　上昇補助
+ANPB M8790               ; Coverねじ締めﾊﾞｯｸｱｯﾌﾟ　下降補助
+OUT M8780                ; Coverねじ締めﾊﾞｯｸｱｯﾌﾟ　上昇補助
+LDP M8791                ; Coverねじ締めﾊﾞｯｸｱｯﾌﾟ　下降
+ORP M8792                ; Coverねじ締めﾊﾞｯｸｱｯﾌﾟ　下降
+ORP M8793                ; Coverねじ締めﾊﾞｯｸｱｯﾌﾟ　下降
+ORP M8794                ; Coverねじ締めﾊﾞｯｸｱｯﾌﾟ　下降
+OR M8790                 ; Coverねじ締めﾊﾞｯｸｱｯﾌﾟ　下降補助
+ANPB M8780               ; Coverねじ締めﾊﾞｯｸｱｯﾌﾟ　上昇補助
+OUT M8790                ; Coverねじ締めﾊﾞｯｸｱｯﾌﾟ　下降補助
+LD M8780                 ; Coverねじ締めﾊﾞｯｸｱｯﾌﾟ　上昇補助
+OUT Y2188                ; 除材2_ﾊﾞｯｸｱｯﾌﾟ　上昇
+LD M8790                 ; Coverねじ締めﾊﾞｯｸｱｯﾌﾟ　下降補助
+OUT Y2189                ; 除材2_ﾊﾞｯｸｱｯﾌﾟ　下降
+;電動ﾄﾞﾗｲﾊﾞ電源
+;Ele.Driver Power
+LD M32                   ; 自動ﾓｰﾄﾞ
+ANB M39                  ; 日常点検ﾓｰﾄﾞ
+LD M8905                 ; ﾕﾆｯﾄ8起動中
+OR M8905                 ; ﾕﾆｯﾄ8起動中
+ANL
+OR M8660                 ; Driver2 power ON
+OUT Y20A                 ; 電動ﾄﾞﾗｲﾊﾞ2 電源ON
+;Screw counter 
+LD M8670                 ; ｽｸﾘｭｶｳﾝﾀ_SET
+OR M8671                 ; ｽｸﾘｭｶｳﾝﾀ_SET
+OR M8675                 ; ｽｸﾘｭｶｳﾝﾀ_SET
+OUT Y208                 ; ｽｸﾘｭｶｳﾝﾀ2_SET
+LD M8672                 ; ｽｸﾘｭｶｳﾝﾀ_RESET
+OR M8673                 ; ｽｸﾘｭｶｳﾝﾀ_RESET
+OR M8674                 ; ｽｸﾘｭｶｳﾝﾀ_RESET
+OR M8676                 ; ｽｸﾘｭｶｳﾝﾀ_RESET
+OR M8679
+OUT Y209                 ; ｽｸﾘｭｶｳﾝﾀ2_RESET
+;<h1/>異常検出
+;
+LD CR2002                ; 常時ON
+MPS
+LD M8956                 ; ﾈｼﾞ締め2 Jig No.異常
+OR M8957                 ; ﾈｼﾞ締め2 Jig No.異常
+LDB B05F0                ; ﾈｼﾞ締台2_Jig番号異常 BZ停止
+ORB M123                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B0F0                 ; ﾈｼﾞ締めJig2ID異常
+ORL
+ANL
+OUT B0F0                 ; ﾈｼﾞ締めJig2ID異常
+MPP
+LD M122                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B05F0                 ; ﾈｼﾞ締台2_Jig番号異常 BZ停止
+AND B0F0                 ; ﾈｼﾞ締めJig2ID異常
+ANL
+OUT B05F0                ; ﾈｼﾞ締台2_Jig番号異常 BZ停止
+LD M515                  ; RCA6　起動
+AND R5003                ; RCA6 ALM
+TMR K800 K100            ; RCM6ｴﾗｰ
+LD CR2002                ; 常時ON
+MPS
+LD M64                   ; 運転準備
+AND R5003                ; RCA6 ALM
+OR T800                  ; RCM6ｴﾗｰ
+LDB B05F1                ; 除材2Y軸異常 BZ停止
+ORB M123                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B0F1                 ; 除材2Y軸異常
+ORL
+ANL
+OUT B0F1                 ; 除材2Y軸異常
+MPP
+LD M122                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B05F1                 ; 除材2Y軸異常 BZ停止
+AND B0F1                 ; 除材2Y軸異常
+ANL
+OUT B05F1                ; 除材2Y軸異常 BZ停止
+LD CR2002                ; 常時ON
+MPS
+LD CR2003                ; 常時OFF
+LDB B05F2                ; UT8異常 BZ停止
+ORB M123                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B0F2                 ; UT8異常
+ORL
+ANL
+OUT B0F2                 ; UT8異常
+MPP
+LD M122                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B05F2                 ; UT8異常 BZ停止
+AND B0F2                 ; UT8異常
+ANL
+OUT B05F2                ; UT8異常 BZ停止
+LD CR2002                ; 常時ON
+MPS
+LD CR2003                ; 常時OFF
+LDB B05F3                ; UT8異常 BZ停止
+ORB M123                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B0F3                 ; UT8異常
+ORL
+ANL
+OUT B0F3                 ; UT8異常
+MPP
+LD M122                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B05F3                 ; UT8異常 BZ停止
+AND B0F3                 ; UT8異常
+ANL
+OUT B05F3                ; UT8異常 BZ停止
+LD CR2002                ; 常時ON
+MPS
+LD CR2003                ; 常時OFF
+LDB B05F4                ; 除材2ﾜｰｸ行方不明 BZ停止
+ORB M123                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B0F4                 ; UT8異常
+ORL
+ANL
+OUT B0F4                 ; UT8異常
+MPP
+LD M122                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B05F4                 ; 除材2ﾜｰｸ行方不明 BZ停止
+AND B0F4                 ; UT8異常
+ANL
+OUT B05F4                ; 除材2ﾜｰｸ行方不明 BZ停止
+LD CR2002                ; 常時ON
+MPS
+LD CR2003                ; 常時OFF
+LDB B05F5                ; ﾕﾆｯﾄ8_異常6 BZ停止
+ORB M123                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B0F5                 ; UT8異常
+ORL
+ANL
+OUT B0F5                 ; UT8異常
+MPP
+LD M122                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B05F5                 ; ﾕﾆｯﾄ8_異常6 BZ停止
+AND B0F5                 ; UT8異常
+ANL
+OUT B05F5                ; ﾕﾆｯﾄ8_異常6 BZ停止
+LD CR2002                ; 常時ON
+MPS
+LD CR2003                ; 常時OFF
+LDB B05F6                ; UT8異常 BZ停止
+ORB M123                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B0F6                 ; UT8異常
+ORL
+ANL
+OUT B0F6                 ; UT8異常
+MPP
+LD M122                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B05F6                 ; UT8異常 BZ停止
+AND B0F6                 ; UT8異常
+ANL
+OUT B05F6                ; UT8異常 BZ停止
+LD CR2002                ; 常時ON
+MPS
+LD CR2003                ; 常時OFF
+LDB B05F7                ; UT8異常 BZ停止
+ORB M123                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B0F7                 ; UT8異常
+ORL
+ANL
+OUT B0F7                 ; UT8異常
+MPP
+LD M122                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B05F7                 ; UT8異常 BZ停止
+AND B0F7                 ; UT8異常
+ANL
+OUT B05F7                ; UT8異常 BZ停止
+;異常ﾌﾞｻﾞｰまとめ
+LD B0F0                  ; ﾈｼﾞ締めJig2ID異常
+ANB B05F0                ; ﾈｼﾞ締台2_Jig番号異常 BZ停止
+LD B0F1                  ; 除材2Y軸異常
+ANB B05F1                ; 除材2Y軸異常 BZ停止
+ORL
+LD B0F2                  ; UT8異常
+ANB B05F2                ; UT8異常 BZ停止
+ORL
+LD B0F3                  ; UT8異常
+ANB B05F3                ; UT8異常 BZ停止
+ORL
+LD B0F4                  ; UT8異常
+ANB B05F4                ; 除材2ﾜｰｸ行方不明 BZ停止
+ORL
+LD B0F5                  ; UT8異常
+ANB B05F5                ; ﾕﾆｯﾄ8_異常6 BZ停止
+ORL
+LD B0F6                  ; UT8異常
+ANB B05F6                ; UT8異常 BZ停止
+ORL
+LD B0F7                  ; UT8異常
+ANB B05F7                ; UT8異常 BZ停止
+ORL
+OUT M8909                ; ﾕﾆｯﾄ8異常BZ補助
+END
+ENDH

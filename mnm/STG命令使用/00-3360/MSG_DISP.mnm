@@ -1,0 +1,123 @@
+DEVICE:53
+;MODULE:MSG_DISP
+;MODULE_TYPE:1
+;OneSystem SupportMacro
+;
+;-----------------------------------------
+;Macro Name 	: 	MSG_DISP
+;Macro Type	:	Self Holding
+;Function	:	ﾒｯｾｰｼﾞ画面要求
+;-----------------------------------------
+;
+;Copylight(C) 2011 SEIKO EPSON Corp. All rights reserved.
+;引数：
+;	V0	=	表示ｸﾞﾙｰﾌﾟ番号		#1～8		
+;	V1	=	ﾒｯｾｰｼﾞ番号			#0～31
+;	V2	=	ﾌﾞｻﾞｰ有無			#0:ﾌﾞｻﾞｰ無し、#1:ﾌﾞｻﾞｰ有り
+;	V3	=	赤ﾗﾝﾌﾟ点滅			#0:ﾗﾝﾌﾟ点滅無し、#1:ﾗﾝﾌﾟ点滅有り
+;	
+;機能：
+;	指定ｸﾞﾙｰﾌﾟTPに指定ﾒｯｾｰｼﾞ番号の画面表示する
+LD R59915                ; _運転ﾓｰﾄﾞ指定
+LDA V0                   ; Group_No
+CON
+SUB #1
+CON
+MUL #2
+CON
+STA Z8
+CON
+BSET.D DM9016:Z8 V1      ; _MSG_DISP1表示状態  Message_No
+CON
+MEND
+;<h1/>Argumant Range Check/引数範囲ﾁｪｯｸ
+LD< V0 #1                ; Group_No
+OR> V0 #8                ; Group_No
+OR< V1 #0                ; Message_No
+OR> V1 #31               ; Message_No
+OR< V2 #0                ; Bz_Use
+OR> V2 #1                ; Bz_Use
+OR< V3 #0                ; R_Lamp_ON
+OR> V3 #1                ; R_Lamp_ON
+SET R40008               ; _ｻﾎﾟｰﾄﾏｸﾛ引数異常発生
+CON
+SET @R015                ; ﾏｸﾛ異常発生
+;<h1/>Init/初期化
+LD @CR2008
+ANB R59915               ; _運転ﾓｰﾄﾞ指定
+LDA V1                   ; Message_No
+CON
+ADD #1
+CON
+STA @EM0                 ; 警告番号ｼﾌﾄ
+;<h1/>Exclusive/排他占有
+LDB R59915               ; _運転ﾓｰﾄﾞ指定
+ANB R46104               ; _非常停止中　ﾓｰﾄﾞﾌﾗｸﾞ
+LDA V0                   ; Group_No
+CON
+SUB #1
+CON
+STA Z10
+CON
+ANB R48108:Z10           ; _Group1　MSG排他
+ANB R53500:Z10           ; _MSG画面表示
+ANB R53508:Z10           ; _MSG画面消去
+SET R48108:Z10           ; _Group1　MSG排他
+CON
+SET @R001                ; MSG_DISP表示
+;<h1/>Message Display/ﾒｯｾｰｼﾞ表示
+STG @R001                ; MSG_DISP表示
+MPS
+LDA V0                   ; Group_No
+CON
+SUB #1
+CON
+STA Z10
+MRD
+LDA V0                   ; Group_No
+CON
+SUB #1
+CON
+MUL #4
+CON
+STA Z9
+MRD
+MOV @EM0 DM8140:Z10      ; 警告番号ｼﾌﾄ  _MSGﾒｯｾｰｼﾞ番号
+MRD
+AND= V2 #1               ; Bz_Use
+SET R48209:Z9            ; _Group1　ｼｽﾃﾑﾌﾞｻﾞｰ要求2
+MRD
+AND= V3 #1               ; R_Lamp_ON
+SET R48409:Z9            ; _Group1　ﾗﾝﾌﾟ赤点滅要求2
+MPP
+TMH @0 #5                ; 表示ﾃﾞｨﾚｲ
+CON
+AND @T0                  ; 表示ﾃﾞｨﾚｲ
+SET R53500:Z10           ; _MSG画面表示
+JMP @R002                ; Msg_Chkｾｯﾄ
+;<h1/>Status Device Set/Msg_Chkｾｯﾄ
+STG @R002                ; Msg_Chkｾｯﾄ
+MPS
+LDA V0                   ; Group_No
+CON
+SUB #1
+CON
+MUL #2
+CON
+STA Z8
+CON
+BSET.D DM9016:Z8 V1      ; _MSG_DISP1表示状態  Message_No
+MRD
+LDA V0                   ; Group_No
+CON
+SUB #1
+CON
+STA Z10
+CON
+RES R48108:Z10           ; _Group1　MSG排他
+MRD
+ENDS
+MPP
+MEND
+END
+ENDH

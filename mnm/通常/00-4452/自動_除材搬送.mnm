@@ -1,0 +1,1318 @@
+DEVICE:53
+;MODULE:自動_除材搬送
+;MODULE_TYPE:0
+;SCRIPT_TYPE:
+LDB MR3200               ; 自動運転中
+RES MR37800              ; 検査NGﾌﾗｸﾞ
+CON
+DW #0 DM3700             ; 除材搬送 ﾜｰｸ在荷
+CON
+DW #0 DM3702             ; 反転検査記憶
+CON
+DW #0 DM3710             ; 除材反転 取出確認 ﾘﾄﾗｲ回数
+CON
+DW #0 DM3714             ; 検査NG排出連続回数
+CON
+DW #0 MR37000            ; 除材搬送 STEP00
+CON
+DW #0 MR37100            ; 除材搬送 STEP16
+CON
+DW #0 MR37200            ; 除材搬送 STEP32 ﾊﾟﾚｯﾄ置き
+CON
+DW #0 MR37300            ; 除材搬送 STEP48 NG位置排出
+CON
+DW #0 MR37400            ; 除材搬送 STEP64 除材反転ﾜｰｸ残り
+LD MR36500               ; 除材反転 取出要求(除材搬送へ)
+AND= MR37000 #0          ; 除材搬送 STEP00
+AND= MR37100 #0          ; 除材搬送 STEP16
+AND= MR37200 #0          ; 除材搬送 STEP32 ﾊﾟﾚｯﾄ置き
+AND= MR37300 #0          ; 除材搬送 STEP48 NG位置排出
+AND= MR37400 #0          ; 除材搬送 STEP64 除材反転ﾜｰｸ残り
+SET MR37000              ; 除材搬送 STEP00
+;<h1/>STEP先頭
+STG MR37000              ; 除材搬送 STEP00
+AND MR203                ; 自動歩進可
+ANB MR113                ; ｽﾃｯﾌﾟPLS
+ANB MR36500              ; 除材反転 取出要求(除材搬送へ)
+MPS
+AND R3908                ; 除材 真空吸着
+JMP MR37001              ; 除材搬送 STEP01 
+MPP
+LDB R3908                ; 除材 真空吸着
+AND MR2606               ; 除材画像 Cmd_ready
+ANL
+DW #0 W313E              ; XG-8000/7000[21]InDat(0132)
+CON
+JMP MR37003              ; 除材搬送 STEP03
+STG MR37001              ; 除材搬送 STEP01 
+AND MR203                ; 自動歩進可
+ANB MR113                ; ｽﾃｯﾌﾟPLS
+SET MR36500              ; 除材反転 取出要求(除材搬送へ)
+CON
+JMP MR37300              ; 除材搬送 STEP48 NG位置排出
+;ｳｨﾝﾄﾞｳ選択､ﾎﾟｰｽﾞ解除待ち用(M37002)
+STG MR37002              ; 除材搬送 STEP02 除材座標読取
+AND MR203                ; 自動歩進可
+ANB MR113                ; ｽﾃｯﾌﾟPLS
+AND MR2606               ; 除材画像 Cmd_ready
+DW #0 W313E              ; XG-8000/7000[21]InDat(0132)
+CON
+JMP MR37003              ; 除材搬送 STEP03
+;反転部ﾜｰｸ有無･ｱﾗｲﾒﾝﾄ
+STG MR37003              ; 除材搬送 STEP03
+AND MR203                ; 自動歩進可
+ANB MR113                ; ｽﾃｯﾌﾟPLS
+AND MR2703               ; 除材ｶﾒﾗ 除材反転 読取完了
+JMP MR37004              ; 除材搬送 STEP04
+STG MR37004              ; 除材搬送 STEP04
+AND MR203                ; 自動歩進可
+ANB MR113                ; ｽﾃｯﾌﾟPLS
+ANB MR2703               ; 除材ｶﾒﾗ 除材反転 読取完了
+JMP MR37005              ; 除材搬送 STEP05
+;反転部ﾜｰｸ有無判定
+;W313E(1:ﾜｰｸ無 2:ﾜｰｸ有)
+STG MR37005              ; 除材搬送 STEP05
+MPS
+AND= W313E #2            ; XG-8000/7000[21]InDat(0132)
+DW #0 DM3710             ; 除材反転 取出確認 ﾘﾄﾗｲ回数
+CON
+JMP MR37008              ; 除材搬送 STEP08
+MPP
+AND= W313E #1            ; XG-8000/7000[21]InDat(0132)
+MPS
+AND>= DM3710 DM76        ; 除材反転 取出確認 ﾘﾄﾗｲ回数  反転取出確認ﾘﾄﾗｲ回数設定
+JMP MR37006              ; 除材搬送 STEP06
+MPP
+LD< DM3710 DM76          ; 除材反転 取出確認 ﾘﾄﾗｲ回数  反転取出確認ﾘﾄﾗｲ回数設定
+AND MR2606               ; 除材画像 Cmd_ready
+ANL
+DW #0 W313E              ; XG-8000/7000[21]InDat(0132)
+CON
+INC DM3710               ; 除材反転 取出確認 ﾘﾄﾗｲ回数
+CON
+JMP MR37003              ; 除材搬送 STEP03
+;反転ﾜｰｸ確認NG､処理選択
+STG MR37006              ; 除材搬送 STEP06
+OUT MR37515              ; ｸﾞﾛｰﾊﾞﾙ ｳｨﾝﾄﾞｳ#20 表示
+CON
+AND MR400                ; 全ﾄﾞｱ閉確認
+MPS
+ANP B02F0                ; 再判定SW
+DW #0 DM3710             ; 除材反転 取出確認 ﾘﾄﾗｲ回数
+CON
+JMP MR37002              ; 除材搬送 STEP02 除材座標読取
+MPP
+LD B02F1                 ; 動作ｷｬﾝｾﾙSW
+ANB MR36500              ; 除材反転 取出要求(除材搬送へ)
+ANL
+RES MR36500              ; 除材反転 取出要求(除材搬送へ)
+CON
+SET MR37500              ; 除材反転 動作可
+CON
+DW #0 DM3710             ; 除材反転 取出確認 ﾘﾄﾗｲ回数
+CON
+JMP MR37007              ; 除材搬送 STEP07
+;ｳｨﾝﾄﾞｳ選択､ﾎﾟｰｽﾞ解除待ち用(M37005)
+STG MR37007              ; 除材搬送 STEP07
+AND MR203                ; 自動歩進可
+ANB MR113                ; ｽﾃｯﾌﾟPLS
+DW #0 DM3600             ; 除材反転 ﾜｰｸ在荷
+CON
+ENDS
+;反転ﾜｰｸ確認OK､取出処理
+STG MR37008              ; 除材搬送 STEP08
+AND MR203                ; 自動歩進可
+ANB MR113                ; ｽﾃｯﾌﾟPLS
+AND MR6501               ; 除材Z軸 待機位置
+ANB R3908                ; 除材 真空吸着
+JMP MR37009              ; 除材搬送 STEP09
+STG MR37009              ; 除材搬送 STEP09
+AND MR203                ; 自動歩進可
+ANB MR113                ; ｽﾃｯﾌﾟPLS
+AND MR6102               ; 除材X軸 除材反転 取出位置
+AND MR6302               ; 除材Y軸 除材反転 取出位置
+AND MR6702               ; 除材θ軸 除材反転 取出位置
+JMP MR37010              ; 除材搬送 STEP10
+STG MR37010              ; 除材搬送 STEP10
+AND MR203                ; 自動歩進可
+ANB MR113                ; ｽﾃｯﾌﾟPLS
+LD FM9577.0              ; ﾜｰｸﾚｼﾋﾟ吸着ﾀｲﾐﾝｸﾞ ON=上/OFF=下
+AND R3908                ; 除材 真空吸着
+LDB FM9577.0             ; ﾜｰｸﾚｼﾋﾟ吸着ﾀｲﾐﾝｸﾞ ON=上/OFF=下
+ANB R3908                ; 除材 真空吸着
+ORL
+ANL
+JMP MR37011              ; 除材搬送 STEP11
+STG MR37011              ; 除材搬送 STEP11
+AND MR203                ; 自動歩進可
+ANB MR113                ; ｽﾃｯﾌﾟPLS
+AND MR6502               ; 除材Z軸 除材反転 取出位置
+JMP MR37012              ; 除材搬送 STEP12
+STG MR37012              ; 除材搬送 STEP12
+AND MR203                ; 自動歩進可
+ANB MR113                ; ｽﾃｯﾌﾟPLS
+AND R3908                ; 除材 真空吸着
+ANB R3903                ; 除材反転 ﾜｰｸ吸着
+TMH #70 DM9010           ; 除材真空吸着ﾀｲﾏ  除材真空吸着ﾀｲﾏ
+CON
+AND T70                  ; 除材真空吸着ﾀｲﾏ
+DW #0 DM3600             ; 除材反転 ﾜｰｸ在荷
+CON
+DW #1 DM3700             ; 除材搬送 ﾜｰｸ在荷
+CON
+JMP MR37013              ; 除材搬送 STEP13
+STG MR37013              ; 除材搬送 STEP13
+AND MR203                ; 自動歩進可
+ANB MR113                ; ｽﾃｯﾌﾟPLS
+AND MR6501               ; 除材Z軸 待機位置
+JMP MR37014              ; 除材搬送 STEP14
+STG MR37014              ; 除材搬送 STEP14
+AND MR203                ; 自動歩進可
+ANB MR113                ; ｽﾃｯﾌﾟPLS
+AND MR6103               ; 除材X軸 吸着確認位置
+AND MR6303               ; 除材Y軸 吸着確認位置
+AND MR6703               ; 除材θ軸 吸着確認位置
+JMP MR37015              ; 除材搬送 STEP15
+STG MR37015              ; 除材搬送 STEP15
+AND MR203                ; 自動歩進可
+ANB MR113                ; ｽﾃｯﾌﾟPLS
+AND MR2606               ; 除材画像 Cmd_ready
+DW #0 W313E              ; XG-8000/7000[21]InDat(0132)
+CON
+JMP MR37100              ; 除材搬送 STEP16
+;取出後反転部ﾜｰｸ確認
+STG MR37100              ; 除材搬送 STEP16
+AND MR203                ; 自動歩進可
+ANB MR113                ; ｽﾃｯﾌﾟPLS
+AND MR2703               ; 除材ｶﾒﾗ 除材反転 読取完了
+JMP MR37101              ; 除材搬送 STEP17
+STG MR37101              ; 除材搬送 STEP17
+AND MR203                ; 自動歩進可
+ANB MR113                ; ｽﾃｯﾌﾟPLS
+ANB MR2703               ; 除材ｶﾒﾗ 除材反転 読取完了
+JMP MR37102              ; 除材搬送 STEP18
+;ﾜｰｸ有無判定 W313E(1:ﾜｰｸ無 2:ﾜｰｸ有)
+;ﾜｰｸ有の場合は両ﾜｰｸ有無確認
+;※ﾜｰｸ検出異常対策追加(取出有の場合は2回ﾘﾄﾗｲ､ﾘﾄﾗｲ後も有の場合は排出処理実行)
+STG MR37102              ; 除材搬送 STEP18
+MPS
+AND= W313E #1            ; XG-8000/7000[21]InDat(0132)
+DW #0 DM3712             ; 吸着確認 ﾘﾄﾗｲ回数
+CON
+DW #0 DM3716             ; 反転取出ﾜｰｸ有確認ﾘﾄﾗｲ
+CON
+JMP MR37103              ; 除材搬送 STEP19
+MPP
+AND= W313E #2            ; XG-8000/7000[21]InDat(0132)
+MPS
+AND>= DM3716 #2          ; 反転取出ﾜｰｸ有確認ﾘﾄﾗｲ
+JMP MR37400              ; 除材搬送 STEP64 除材反転ﾜｰｸ残り
+MPP
+AND< DM3716 #2           ; 反転取出ﾜｰｸ有確認ﾘﾄﾗｲ
+JMP MR37112              ; 除材搬送 STEP28
+STG MR37112              ; 除材搬送 STEP28
+AND MR2606               ; 除材画像 Cmd_ready
+INC DM3716               ; 反転取出ﾜｰｸ有確認ﾘﾄﾗｲ
+CON
+JMP MR37015              ; 除材搬送 STEP15
+STG MR37103              ; 除材搬送 STEP19
+AND MR203                ; 自動歩進可
+ANB MR113                ; ｽﾃｯﾌﾟPLS
+LD= DM3610 #2            ; 除材反転ﾜｰｸ NGﾌﾗｸﾞ
+OR= DM3610 #1            ; 除材反転ﾜｰｸ NGﾌﾗｸﾞ
+ANL
+MPS
+AND= DM3610 #1           ; 除材反転ﾜｰｸ NGﾌﾗｸﾞ
+SET MR37800              ; 検査NGﾌﾗｸﾞ
+MPP
+SET MR37500              ; 除材反転 動作可
+CON
+JMP MR37104              ; 除材搬送 STEP20
+;吸着確認Z移動
+STG MR37104              ; 除材搬送 STEP20
+AND MR203                ; 自動歩進可
+ANB MR113                ; ｽﾃｯﾌﾟPLS
+AND MR6503               ; 除材Z軸 吸着確認位置
+AND MR2606               ; 除材画像 Cmd_ready
+DW #0 W3140              ; XG-8000/7000[21]InDat(0136)
+CON
+JMP MR37105              ; 除材搬送 STEP21
+;反転取出後､吸着確認
+STG MR37105              ; 除材搬送 STEP21
+AND MR203                ; 自動歩進可
+ANB MR113                ; ｽﾃｯﾌﾟPLS
+AND MR2704               ; 除材ｶﾒﾗ 吸着確認完了
+JMP MR37106              ; 除材搬送 STEP22
+STG MR37106              ; 除材搬送 STEP22
+AND MR203                ; 自動歩進可
+ANB MR113                ; ｽﾃｯﾌﾟPLS
+ANB MR2704               ; 除材ｶﾒﾗ 吸着確認完了
+JMP MR37107              ; 除材搬送 STEP23
+;除材吸着判定
+;W3140 (1:ﾜｰｸ無 2:ﾜｰｸ有)
+STG MR37107              ; 除材搬送 STEP23
+AND MR203                ; 自動歩進可
+ANB MR113                ; ｽﾃｯﾌﾟPLS
+MPS
+AND= W3140 #1            ; XG-8000/7000[21]InDat(0136)
+DW #1 DM3702             ; 反転検査記憶
+CON
+JMP MR37108              ; 除材搬送 STEP24
+MPP
+AND= W3140 #2            ; XG-8000/7000[21]InDat(0136)
+MPS
+ANB MR37800              ; 検査NGﾌﾗｸﾞ
+DW #0 DM3714             ; 検査NG排出連続回数
+CON
+JMP MR37200              ; 除材搬送 STEP32 ﾊﾟﾚｯﾄ置き
+MPP
+AND MR37800              ; 検査NGﾌﾗｸﾞ
+INC DM3714               ; 検査NG排出連続回数
+CON
+MPS
+AND LR010                ; ﾊﾟﾚｯﾄ2OK/NG選択 ON:OK OFF:NG
+JMP MR37300              ; 除材搬送 STEP48 NG位置排出
+MPP
+ANB LR010                ; ﾊﾟﾚｯﾄ2OK/NG選択 ON:OK OFF:NG
+JMP MR37200              ; 除材搬送 STEP32 ﾊﾟﾚｯﾄ置き
+;ﾜｰｸ無し判定θ回転
+STG MR37108              ; 除材搬送 STEP24
+AND MR203                ; 自動歩進可
+ANB MR113                ; ｽﾃｯﾌﾟPLS
+AND MR6707               ; 除材θ軸 反転吸着 確認位置
+AND MR2606               ; 除材画像 Cmd_ready
+DW #0 W3140              ; XG-8000/7000[21]InDat(0136)
+CON
+JMP MR37109              ; 除材搬送 STEP25
+;吸着確認
+STG MR37109              ; 除材搬送 STEP25
+AND MR203                ; 自動歩進可
+ANB MR113                ; ｽﾃｯﾌﾟPLS
+AND MR2704               ; 除材ｶﾒﾗ 吸着確認完了
+JMP MR37110              ; 除材搬送 STEP26
+STG MR37110              ; 除材搬送 STEP26
+AND MR203                ; 自動歩進可
+ANB MR113                ; ｽﾃｯﾌﾟPLS
+ANB MR2704               ; 除材ｶﾒﾗ 吸着確認完了
+JMP MR37111              ; 除材搬送 STEP27
+;除材吸着判定
+;W3140 (1:ﾜｰｸ無 2:ﾜｰｸ有)
+STG MR37111              ; 除材搬送 STEP27
+AND MR203                ; 自動歩進可
+ANB MR113                ; ｽﾃｯﾌﾟPLS
+MPS
+AND= W3140 #1            ; XG-8000/7000[21]InDat(0136)
+JMP MR37300              ; 除材搬送 STEP48 NG位置排出
+MPP
+AND= W3140 #2            ; XG-8000/7000[21]InDat(0136)
+MPS
+ANB MR37800              ; 検査NGﾌﾗｸﾞ
+JMP MR37200              ; 除材搬送 STEP32 ﾊﾟﾚｯﾄ置き
+MPP
+AND MR37800              ; 検査NGﾌﾗｸﾞ
+MPS
+AND LR010                ; ﾊﾟﾚｯﾄ2OK/NG選択 ON:OK OFF:NG
+JMP MR37300              ; 除材搬送 STEP48 NG位置排出
+MPP
+ANB LR010                ; ﾊﾟﾚｯﾄ2OK/NG選択 ON:OK OFF:NG
+JMP MR37200              ; 除材搬送 STEP32 ﾊﾟﾚｯﾄ置き
+;<h1/>ﾊﾟﾚｯﾄ置き
+STG MR37200              ; 除材搬送 STEP32 ﾊﾟﾚｯﾄ置き
+AND MR203                ; 自動歩進可
+ANB MR113                ; ｽﾃｯﾌﾟPLS
+AND MR6501               ; 除材Z軸 待機位置
+LD MR3300                ; ﾊﾟﾚｯﾄ1 ﾜｰｸ投入可
+ANB MR3315               ; ﾊﾟﾚｯﾄ2整列
+LD MR3302                ; ﾊﾟﾚｯﾄ2 ﾜｰｸ投入可
+AND MR3315               ; ﾊﾟﾚｯﾄ2整列
+ORL
+ANL
+JMP MR37201              ; 除材搬送 STEP33
+STG MR37201              ; 除材搬送 STEP33
+AND MR203                ; 自動歩進可
+ANB MR113                ; ｽﾃｯﾌﾟPLS
+AND MR6104               ; 除材X軸 ﾊﾟﾚｯﾄ置位置
+AND MR6304               ; 除材Y軸 ﾊﾟﾚｯﾄ置位置
+AND MR6704               ; 除材θ軸 ﾊﾟﾚｯﾄ置位置
+AND W2500.8              ; PC→PLC ﾃﾞｰﾀ移動2ACK
+JMP MR37202              ; 除材搬送 STEP34
+STG MR37202              ; 除材搬送 STEP34
+AND MR203                ; 自動歩進可
+ANB MR113                ; ｽﾃｯﾌﾟPLS
+AND MR6504               ; 除材Z軸 ﾊﾟﾚｯﾄ置位置
+JMP MR37203              ; 除材搬送 STEP35
+STG MR37203              ; 除材搬送 STEP35
+AND MR203                ; 自動歩進可
+ANB MR113                ; ｽﾃｯﾌﾟPLS
+ANB R3908                ; 除材 真空吸着
+TMH #72 DM9012           ; 除材吸着解放ﾀｲﾏ  除材吸着解放ﾀｲﾏ
+CON
+AND T72                  ; 除材吸着解放ﾀｲﾏ
+JMP MR37204              ; 除材搬送 STEP36
+STG MR37204              ; 除材搬送 STEP36
+AND MR203                ; 自動歩進可
+ANB MR113                ; ｽﾃｯﾌﾟPLS
+AND R3908                ; 除材 真空吸着
+TMH #73 #15              ; 除材真空吸着ﾀｲﾏ
+CON
+AND T73                  ; 除材真空吸着ﾀｲﾏ
+JMP MR37205              ; 除材搬送 STEP37
+STG MR37205              ; 除材搬送 STEP37
+AND MR203                ; 自動歩進可
+ANB MR113                ; ｽﾃｯﾌﾟPLS
+ANB R3908                ; 除材 真空吸着
+TMH #74 DM9012           ; 除材吸着解放ﾀｲﾏ  除材吸着解放ﾀｲﾏ
+CON
+AND T74                  ; 除材吸着解放ﾀｲﾏ
+JMP MR37206              ; 除材搬送 STEP38
+STG MR37206              ; 除材搬送 STEP38
+AND MR203                ; 自動歩進可
+ANB MR113                ; ｽﾃｯﾌﾟPLS
+AND W2500.5              ; PC→PLC ﾊﾟﾚｯﾄ確定ACK
+DW #0 DM3702             ; 反転検査記憶
+CON
+JMP MR37207              ; 除材搬送 STEP39
+;OK品整列ｶｳﾝﾀ+1(D424)
+;NG品整列ｶｳﾝﾀ+1(D428)
+STG MR37207              ; 除材搬送 STEP39
+AND MR203                ; 自動歩進可
+ANB MR113                ; ｽﾃｯﾌﾟPLS
+AND MR6501               ; 除材Z軸 待機位置
+ANB W2500.5              ; PC→PLC ﾊﾟﾚｯﾄ確定ACK
+MPS
+ANB MR37800              ; 検査NGﾌﾗｸﾞ
+@INC.D DM424             ; OK品整列数
+CON
+@INC DM402               ; 現在指定整列数
+CON
+DW #0 DM3700             ; 除材搬送 ﾜｰｸ在荷
+CON
+JMP MR37208              ; 除材搬送 STEP40
+MPP
+AND MR37800              ; 検査NGﾌﾗｸﾞ
+@INC.D DM428             ; NG品整列数
+CON
+DW #0 DM3700             ; 除材搬送 ﾜｰｸ在荷
+CON
+JMP MR37208              ; 除材搬送 STEP40
+STG MR37208              ; 除材搬送 STEP40
+AND MR203                ; 自動歩進可
+ANB MR113                ; ｽﾃｯﾌﾟPLS
+AND MR6101               ; 除材X軸 待機位置
+AND MR6301               ; 除材Y軸 待機位置
+AND MR6701               ; 除材θ軸 待機位置
+JMP MR37209              ; 除材搬送 STEP41
+STG MR37209              ; 除材搬送 STEP41
+AND MR203                ; 自動歩進可
+ANB MR113                ; ｽﾃｯﾌﾟPLS
+RES MR37800              ; 検査NGﾌﾗｸﾞ
+CON
+JMP MR37210              ; 除材搬送 STEP42
+STG MR37210              ; 除材搬送 STEP42
+AND MR203                ; 自動歩進可
+ANB MR113                ; ｽﾃｯﾌﾟPLS
+AND MR211                ; 助材搬送完了確認
+ENDS
+;<h1/>NG位置排出
+;ｳｨﾝﾄﾞｳ選択､ﾎﾟｰｽﾞ解除待ち用(M37300)
+STG MR37300              ; 除材搬送 STEP48 NG位置排出
+AND MR203                ; 自動歩進可
+ANB MR113                ; ｽﾃｯﾌﾟPLS
+JMP MR37301              ; 除材搬送 STEP49
+STG MR37301              ; 除材搬送 STEP49
+AND MR203                ; 自動歩進可
+ANB MR113                ; ｽﾃｯﾌﾟPLS
+AND MR6501               ; 除材Z軸 待機位置
+JMP MR37303              ; 除材搬送 STEP51
+STG MR37303              ; 除材搬送 STEP51
+AND MR203                ; 自動歩進可
+ANB MR113                ; ｽﾃｯﾌﾟPLS
+AND MR6105               ; 除材X軸 NG排出位置
+AND MR6305               ; 除材Y軸 NG位置
+AND MR6705               ; 除材θ軸 NG位置
+JMP MR37304              ; 除材搬送 STEP52
+STG MR37304              ; 除材搬送 STEP52
+AND MR203                ; 自動歩進可
+ANB MR113                ; ｽﾃｯﾌﾟPLS
+AND MR6505               ; 除材Z軸 NG位置
+JMP MR37305              ; 除材搬送 STEP53
+;NG廃棄数､ｶｳﾝﾄ+1(D422)
+STG MR37305              ; 除材搬送 STEP53
+AND MR203                ; 自動歩進可
+ANB MR113                ; ｽﾃｯﾌﾟPLS
+ANB R3908                ; 除材 真空吸着
+TMH #75 DM9012           ; 除材吸着解放ﾀｲﾏ  除材吸着解放ﾀｲﾏ
+CON
+AND T75                  ; 除材吸着解放ﾀｲﾏ
+RES MR37800              ; 検査NGﾌﾗｸﾞ
+CON
+@INC.D DM432             ; NG品廃棄数
+CON
+DW #0 DM3700             ; 除材搬送 ﾜｰｸ在荷
+CON
+JMP MR37306              ; 除材搬送 STEP54
+STG MR37306              ; 除材搬送 STEP54
+AND MR203                ; 自動歩進可
+ANB MR113                ; ｽﾃｯﾌﾟPLS
+AND MR6501               ; 除材Z軸 待機位置
+ENDS
+;<h1/>除材反転より除材搬送取出後にﾜｰｸ残りの場合に確認
+;ｳｨﾝﾄﾞｳ選択､ﾎﾟｰｽﾞ解除待ち用(M37400)
+STG MR37400              ; 除材搬送 STEP64 除材反転ﾜｰｸ残り
+AND MR203                ; 自動歩進可
+ANB MR113                ; ｽﾃｯﾌﾟPLS
+DW #0 DM3716             ; 反転取出ﾜｰｸ有確認ﾘﾄﾗｲ
+CON
+JMP MR37401              ; 除材搬送 STEP65
+STG MR37401              ; 除材搬送 STEP65
+AND MR203                ; 自動歩進可
+ANB MR113                ; ｽﾃｯﾌﾟPLS
+AND MR6503               ; 除材Z軸 吸着確認位置
+AND MR6703               ; 除材θ軸 吸着確認位置
+AND MR2606               ; 除材画像 Cmd_ready
+DW #0 W3140              ; XG-8000/7000[21]InDat(0136)
+CON
+JMP MR37402              ; 除材搬送 STEP66
+;吸着確認検査
+STG MR37402              ; 除材搬送 STEP66
+AND MR203                ; 自動歩進可
+ANB MR113                ; ｽﾃｯﾌﾟPLS
+AND MR2704               ; 除材ｶﾒﾗ 吸着確認完了
+JMP MR37403              ; 除材搬送 STEP67
+STG MR37403              ; 除材搬送 STEP67
+AND MR203                ; 自動歩進可
+ANB MR113                ; ｽﾃｯﾌﾟPLS
+ANB MR2704               ; 除材ｶﾒﾗ 吸着確認完了
+JMP MR37404              ; 除材搬送 STEP68
+;検査結果判定
+;(1:吸着無 2:吸着有)
+STG MR37404              ; 除材搬送 STEP68
+AND MR203                ; 自動歩進可
+ANB MR113                ; ｽﾃｯﾌﾟPLS
+MPS
+LD= W3140 #1             ; XG-8000/7000[21]InDat(0136)
+AND MR2606               ; 除材画像 Cmd_ready
+ANL
+JMP MR37405              ; 除材搬送 STEP69
+MPP
+AND= W3140 #2            ; XG-8000/7000[21]InDat(0136)
+JMP MR37410              ; 除材搬送 STEP74
+STG MR37405              ; 除材搬送 STEP69
+AND MR203                ; 自動歩進可
+ANB MR113                ; ｽﾃｯﾌﾟPLS
+AND MR6707               ; 除材θ軸 反転吸着 確認位置
+DW #0 W3140              ; XG-8000/7000[21]InDat(0136)
+CON
+JMP MR37406              ; 除材搬送 STEP70
+STG MR37406              ; 除材搬送 STEP70
+AND MR203                ; 自動歩進可
+ANB MR113                ; ｽﾃｯﾌﾟPLS
+AND MR2704               ; 除材ｶﾒﾗ 吸着確認完了
+JMP MR37407              ; 除材搬送 STEP71
+STG MR37407              ; 除材搬送 STEP71
+AND MR203                ; 自動歩進可
+ANB MR113                ; ｽﾃｯﾌﾟPLS
+ANB MR2704               ; 除材ｶﾒﾗ 吸着確認完了
+JMP MR37408              ; 除材搬送 STEP72
+;検査結果判定
+;(1:吸着無 2:吸着有)
+;無しの場合は反転取出ﾘﾄﾗｲでｶｳﾝﾄUPで動作選択
+STG MR37408              ; 除材搬送 STEP72
+MPS
+AND= W3140 #1            ; XG-8000/7000[21]InDat(0136)
+MPS
+AND>= DM3712 DM77        ; 吸着確認 ﾘﾄﾗｲ回数  除材吸着確認ﾘﾄﾗｲ回数設定
+OUT MR37514              ; ｸﾞﾛｰﾊﾞﾙ ｳｨﾝﾄﾞｳ#25 表示
+CON
+AND MR400                ; 全ﾄﾞｱ閉確認
+MPS
+ANP B02E0                ; 画像ﾘﾄﾗｲSW
+JMP MR37400              ; 除材搬送 STEP64 除材反転ﾜｰｸ残り
+MRD
+ANP B02E1                ; 取出ﾘﾄﾗｲSW
+JMP MR37002              ; 除材搬送 STEP02 除材座標読取
+MPP
+ANP B02E2                ; 動作ｽｷｯﾌﾟSW
+DW #0 DM3700             ; 除材搬送 ﾜｰｸ在荷
+CON
+JMP MR37409              ; 除材搬送 STEP73
+MPP
+LD< DM3712 DM77          ; 吸着確認 ﾘﾄﾗｲ回数  除材吸着確認ﾘﾄﾗｲ回数設定
+AND MR2606               ; 除材画像 Cmd_ready
+ANL
+DW #0 W313E              ; XG-8000/7000[21]InDat(0132)
+CON
+@INC DM3712              ; 吸着確認 ﾘﾄﾗｲ回数
+CON
+JMP MR37003              ; 除材搬送 STEP03
+MPP
+AND= W3140 #2            ; XG-8000/7000[21]InDat(0136)
+DW #0 DM3712             ; 吸着確認 ﾘﾄﾗｲ回数
+CON
+JMP MR37410              ; 除材搬送 STEP74
+;ｳｨﾝﾄﾞｳ選択､ﾎﾟｰｽﾞ解除待ち用(M37409)
+STG MR37409              ; 除材搬送 STEP73
+AND MR203                ; 自動歩進可
+ANB MR113                ; ｽﾃｯﾌﾟPLS
+RES MR36500              ; 除材反転 取出要求(除材搬送へ)
+CON
+SET MR37500              ; 除材反転 動作可
+CON
+ENDS
+;NG排出動作
+STG MR37410              ; 除材搬送 STEP74
+AND MR203                ; 自動歩進可
+ANB MR113                ; ｽﾃｯﾌﾟPLS
+AND MR6501               ; 除材Z軸 待機位置
+JMP MR37411              ; 除材搬送 STEP75
+STG MR37411              ; 除材搬送 STEP75
+AND MR203                ; 自動歩進可
+ANB MR113                ; ｽﾃｯﾌﾟPLS
+AND MR6105               ; 除材X軸 NG排出位置
+AND MR6305               ; 除材Y軸 NG位置
+AND MR6705               ; 除材θ軸 NG位置
+JMP MR37412              ; 除材搬送 STEP76
+STG MR37412              ; 除材搬送 STEP76
+AND MR203                ; 自動歩進可
+ANB MR113                ; ｽﾃｯﾌﾟPLS
+AND MR6505               ; 除材Z軸 NG位置
+JMP MR37413              ; 除材搬送 STEP77
+STG MR37413              ; 除材搬送 STEP77
+AND MR203                ; 自動歩進可
+ANB MR113                ; ｽﾃｯﾌﾟPLS
+ANB R3908                ; 除材 真空吸着
+TMH #76 DM9012           ; 除材吸着解放ﾀｲﾏ  除材吸着解放ﾀｲﾏ
+CON
+AND T76                  ; 除材吸着解放ﾀｲﾏ
+@INC.D DM432             ; NG品廃棄数
+CON
+DW #0 DM3700             ; 除材搬送 ﾜｰｸ在荷
+CON
+JMP MR37414              ; 除材搬送 STEP78
+STG MR37414              ; 除材搬送 STEP78
+AND MR203                ; 自動歩進可
+ANB MR113                ; ｽﾃｯﾌﾟPLS
+AND MR6501               ; 除材Z軸 待機位置
+AND MR2606               ; 除材画像 Cmd_ready
+DW #0 W313E              ; XG-8000/7000[21]InDat(0132)
+CON
+DW #1 DM3610             ; 除材反転ﾜｰｸ NGﾌﾗｸﾞ
+CON
+SET MR37800              ; 検査NGﾌﾗｸﾞ
+CON
+JMP MR37003              ; 除材搬送 STEP03
+;STEP完了
+LDP MR3200               ; 自動運転中
+SET MR37500              ; 除材反転 動作可
+LD MR36002               ; 除材反転 STEP02 受取ﾗﾌｶﾞｲﾄﾞ上昇
+ORB MR3200               ; 自動運転中
+RES MR37500              ; 除材反転 動作可
+;<h1/>ﾊﾟﾚｯﾄ1､2 XY列計算
+LDP MR37207              ; 除材搬送 STEP39
+ANB MR37900              ; ﾊﾟﾚｯﾄ1整列完了
+ANB MR3315               ; ﾊﾟﾚｯﾄ2整列
+ANB MR37800              ; 検査NGﾌﾗｸﾞ
+MPS
+AND<= DM300 FM9110       ; 自動 X軸ﾊﾟﾚｯﾄ1 現在列  ﾊﾟﾚｯﾄﾚｼﾋﾟ(X_列数)
+INC DM300                ; 自動 X軸ﾊﾟﾚｯﾄ1 現在列
+MPP
+AND> DM300 FM9110        ; 自動 X軸ﾊﾟﾚｯﾄ1 現在列  ﾊﾟﾚｯﾄﾚｼﾋﾟ(X_列数)
+DW #1 DM300              ; 自動 X軸ﾊﾟﾚｯﾄ1 現在列
+MPS
+AND<= DM310 FM9116       ; 自動 Y軸ﾊﾟﾚｯﾄ1 現在列  ﾊﾟﾚｯﾄﾚｼﾋﾟ(Y_列数)
+INC DM310                ; 自動 Y軸ﾊﾟﾚｯﾄ1 現在列
+MPP
+AND> DM310 FM9116        ; 自動 Y軸ﾊﾟﾚｯﾄ1 現在列  ﾊﾟﾚｯﾄﾚｼﾋﾟ(Y_列数)
+SET MR37900              ; ﾊﾟﾚｯﾄ1整列完了
+CON
+DW #1 DM310              ; 自動 Y軸ﾊﾟﾚｯﾄ1 現在列
+LDP MR37207              ; 除材搬送 STEP39
+ANB MR37902              ; ﾊﾟﾚｯﾄ2整列完了
+LD MR3315                ; ﾊﾟﾚｯﾄ2整列
+LD MR37800               ; 検査NGﾌﾗｸﾞ
+ANB LR010                ; ﾊﾟﾚｯﾄ2OK/NG選択 ON:OK OFF:NG
+ORL
+ANL
+MPS
+AND<= DM302 FM9110       ; 自動 X軸ﾊﾟﾚｯﾄ2 現在列  ﾊﾟﾚｯﾄﾚｼﾋﾟ(X_列数)
+INC DM302                ; 自動 X軸ﾊﾟﾚｯﾄ2 現在列
+MPP
+AND> DM302 FM9110        ; 自動 X軸ﾊﾟﾚｯﾄ2 現在列  ﾊﾟﾚｯﾄﾚｼﾋﾟ(X_列数)
+DW #1 DM302              ; 自動 X軸ﾊﾟﾚｯﾄ2 現在列
+MPS
+AND<= DM312 FM9116       ; 自動 Y軸ﾊﾟﾚｯﾄ2 現在列  ﾊﾟﾚｯﾄﾚｼﾋﾟ(Y_列数)
+INC DM312                ; 自動 Y軸ﾊﾟﾚｯﾄ2 現在列
+MPP
+AND> DM312 FM9116        ; 自動 Y軸ﾊﾟﾚｯﾄ2 現在列  ﾊﾟﾚｯﾄﾚｼﾋﾟ(Y_列数)
+SET MR37902              ; ﾊﾟﾚｯﾄ2整列完了
+CON
+DW #1 DM312              ; 自動 Y軸ﾊﾟﾚｯﾄ2 現在列
+LDP B02E0                ; 画像ﾘﾄﾗｲSW
+ORP B02E1                ; 取出ﾘﾄﾗｲSW
+ORP B02E2                ; 動作ｽｷｯﾌﾟSW
+ORB MR3200               ; 自動運転中
+DW #0 DM3712             ; 吸着確認 ﾘﾄﾗｲ回数
+;<h1/>ﾊﾟﾚｯﾄ枠位置・枠番号演算
+;'ﾊﾟﾚｯﾄ1X軸 投入枠計算
+;
+;DM324 = DM300		'現在列を枠番号に代入
+;DM326 = DM300		'現在列を枠位置に代入
+;
+;DM330= ASC(#1)	'枠位置ASCII(1固定)を代入
+LD= FM9126 #0            ; ﾊﾟﾚｯﾄﾚｼﾋﾟ XｵﾌｾｯﾄA周期
+NCJ #1000
+;'ﾊﾟﾚｯﾄ1X軸 投入枠計算
+;
+;DM324 = DM300		'現在列を枠番号に代入
+;
+LD CR2002                ; 常時ON
+MOV DM300 DM324          ; 自動 X軸ﾊﾟﾚｯﾄ1 現在列  自動 X軸ﾊﾟﾚｯﾄ1 枠番号
+;DM326 = DM300		'現在列を枠位置に代入
+;
+LD CR2002                ; 常時ON
+MOV DM300 DM326          ; 自動 X軸ﾊﾟﾚｯﾄ1 現在列  自動 X軸ﾊﾟﾚｯﾄ1 枠位置
+;DM330= ASC(#1)	'枠位置ASCII(1固定)を代入
+LD CR2002                ; 常時ON
+LDA #1
+CON
+ASC
+CON
+STA DM330                ; 自動 X軸ﾊﾟﾚｯﾄ1 枠位置ASCII
+LABEL #1000
+;
+;'ﾊﾟﾚｯﾄ1X軸 投入枠計算
+;
+;DM320 = DM300 / FM9126	'現在列/ﾊﾟﾚｯﾄｵﾌｾｯﾄA周期 商
+;DM322 = DM300 MOD FM9126	'現在列/ﾊﾟﾚｯﾄｵﾌｾｯﾄA周期 余り
+;
+;'枠番号計算
+;IF DM322 <> 0 THEN
+; DM324 = DM320 + 1	'枠番号代入
+; DM326 = DM322		'枠位置代入
+;ELSE
+; DM324 = DM320		'枠番号代入
+; DM326 = FM9126		'枠位置代入
+;END IF
+;
+;DM330= ASC(DM326)	'枠位置ASCIIを代入
+LD<> FM9126 #0           ; ﾊﾟﾚｯﾄﾚｼﾋﾟ XｵﾌｾｯﾄA周期
+NCJ #1001
+;'ﾊﾟﾚｯﾄ1X軸 投入枠計算
+;
+;DM320 = DM300 / FM9126	'現在列/ﾊﾟﾚｯﾄｵﾌｾｯﾄA周期 商
+;
+LD CR2002                ; 常時ON
+LDA FM9126               ; ﾊﾟﾚｯﾄﾚｼﾋﾟ XｵﾌｾｯﾄA周期
+CON
+EXT
+CON
+STA.L @VM0
+CON
+LDA DM300                ; 自動 X軸ﾊﾟﾚｯﾄ1 現在列
+CON
+EXT
+CON
+EXT.L
+CON
+DIV.L @VM0
+CON
+STA DM320                ; 自動 X軸ﾊﾟﾚｯﾄ1 計算ｴﾘｱ商
+;DM322 = DM300 MOD FM9126	'現在列/ﾊﾟﾚｯﾄｵﾌｾｯﾄA周期 余り
+;
+LD CR2002                ; 常時ON
+LDA FM9126               ; ﾊﾟﾚｯﾄﾚｼﾋﾟ XｵﾌｾｯﾄA周期
+CON
+EXT
+CON
+STA.L @VM2
+CON
+LDA DM300                ; 自動 X軸ﾊﾟﾚｯﾄ1 現在列
+CON
+EXT
+CON
+EXT.L
+CON
+DIV.L @VM2
+CON
+LDA.L TM2
+CON
+STA DM322                ; 自動 X軸ﾊﾟﾚｯﾄ1 計算ｴﾘｱ余り
+;'枠番号計算
+;
+;IF DM322 <> 0 THEN
+;
+LD<> DM322 #0            ; 自動 X軸ﾊﾟﾚｯﾄ1 計算ｴﾘｱ余り
+NCJ #2000
+; DM324 = DM320 + 1	'枠番号代入
+;
+LD CR2002                ; 常時ON
+LDA DM320                ; 自動 X軸ﾊﾟﾚｯﾄ1 計算ｴﾘｱ商
+CON
+EXT
+CON
+ADD.L +1
+CON
+STA DM324                ; 自動 X軸ﾊﾟﾚｯﾄ1 枠番号
+; DM326 = DM322		'枠位置代入
+;
+LD CR2002                ; 常時ON
+MOV DM322 DM326          ; 自動 X軸ﾊﾟﾚｯﾄ1 計算ｴﾘｱ余り  自動 X軸ﾊﾟﾚｯﾄ1 枠位置
+;ELSE
+;
+LD CR2002                ; 常時ON
+CJ #2001
+LABEL #2000
+; DM324 = DM320		'枠番号代入
+;
+LD CR2002                ; 常時ON
+MOV DM320 DM324          ; 自動 X軸ﾊﾟﾚｯﾄ1 計算ｴﾘｱ商  自動 X軸ﾊﾟﾚｯﾄ1 枠番号
+; DM326 = FM9126		'枠位置代入
+;
+LD CR2002                ; 常時ON
+MOV FM9126 DM326         ; ﾊﾟﾚｯﾄﾚｼﾋﾟ XｵﾌｾｯﾄA周期  自動 X軸ﾊﾟﾚｯﾄ1 枠位置
+;END IF
+;
+LABEL #2001
+;DM330= ASC(DM326)	'枠位置ASCIIを代入
+LD CR2002                ; 常時ON
+LDA DM326                ; 自動 X軸ﾊﾟﾚｯﾄ1 枠位置
+CON
+ASC
+CON
+STA DM330                ; 自動 X軸ﾊﾟﾚｯﾄ1 枠位置ASCII
+LABEL #1001
+;
+;'ﾊﾟﾚｯﾄ1Y軸 投入枠計算
+;
+;DM344 = DM310		'現在列を枠番号に代入
+;DM348= ASC(DM344)	'現在列を枠位置に代入
+;DM350= ASC(#1)		'枠位置ASCII(1固定)を代入
+LD= FM9136 #0            ; ﾊﾟﾚｯﾄﾚｼﾋﾟYｵﾌｾｯﾄA周期
+NCJ #1002
+;'ﾊﾟﾚｯﾄ1Y軸 投入枠計算
+;
+;DM344 = DM310		'現在列を枠番号に代入
+;
+LD CR2002                ; 常時ON
+MOV DM310 DM344          ; 自動 Y軸ﾊﾟﾚｯﾄ1 現在列  自動 Y軸ﾊﾟﾚｯﾄ1 枠番号
+;DM348= ASC(DM344)	'現在列を枠位置に代入
+;
+LD CR2002                ; 常時ON
+LDA DM344                ; 自動 Y軸ﾊﾟﾚｯﾄ1 枠番号
+CON
+ASC
+CON
+STA DM348                ; 自動 Y軸ﾊﾟﾚｯﾄ1 枠番号ASCII
+;DM350= ASC(#1)		'枠位置ASCII(1固定)を代入
+LD CR2002                ; 常時ON
+LDA #1
+CON
+ASC
+CON
+STA DM350                ; 自動 Y軸ﾊﾟﾚｯﾄ1 枠位置ASCII
+LABEL #1002
+;
+;'ﾊﾟﾚｯﾄ1Y軸 投入枠計算
+;
+;DM340 = DM310 / FM9136	'現在列/ﾊﾟﾚｯﾄｵﾌｾｯﾄA周期 商
+;DM342 = DM310 MOD FM9136	'現在列/ﾊﾟﾚｯﾄｵﾌｾｯﾄA周期 余り
+;
+;'枠番号計算
+;IF DM342 <> 0 THEN
+; DM344 = DM340 + 1	'枠番号代入
+; DM346 = DM342		'枠位置代入
+;ELSE
+; DM344 = DM340		'枠番号代入
+; DM346 = FM9136		'枠位置代入
+;END IF
+;
+;DM348= ASC(DM344)	'枠番号ASCIIを代入
+;
+;DM350= ASC(DM346)	'枠位置ASCIIを代入
+LD<> FM9136 #0           ; ﾊﾟﾚｯﾄﾚｼﾋﾟYｵﾌｾｯﾄA周期
+NCJ #1003
+;'ﾊﾟﾚｯﾄ1Y軸 投入枠計算
+;
+;DM340 = DM310 / FM9136	'現在列/ﾊﾟﾚｯﾄｵﾌｾｯﾄA周期 商
+;
+LD CR2002                ; 常時ON
+LDA FM9136               ; ﾊﾟﾚｯﾄﾚｼﾋﾟYｵﾌｾｯﾄA周期
+CON
+EXT
+CON
+STA.L @VM4
+CON
+LDA DM310                ; 自動 Y軸ﾊﾟﾚｯﾄ1 現在列
+CON
+EXT
+CON
+EXT.L
+CON
+DIV.L @VM4
+CON
+STA DM340                ; 自動 Y軸ﾊﾟﾚｯﾄ1 計算ｴﾘｱ商
+;DM342 = DM310 MOD FM9136	'現在列/ﾊﾟﾚｯﾄｵﾌｾｯﾄA周期 余り
+;
+LD CR2002                ; 常時ON
+LDA FM9136               ; ﾊﾟﾚｯﾄﾚｼﾋﾟYｵﾌｾｯﾄA周期
+CON
+EXT
+CON
+STA.L @VM6
+CON
+LDA DM310                ; 自動 Y軸ﾊﾟﾚｯﾄ1 現在列
+CON
+EXT
+CON
+EXT.L
+CON
+DIV.L @VM6
+CON
+LDA.L TM2
+CON
+STA DM342                ; 自動 Y軸ﾊﾟﾚｯﾄ1 計算ｴﾘｱ余り
+;'枠番号計算
+;
+;IF DM342 <> 0 THEN
+;
+LD<> DM342 #0            ; 自動 Y軸ﾊﾟﾚｯﾄ1 計算ｴﾘｱ余り
+NCJ #2002
+; DM344 = DM340 + 1	'枠番号代入
+;
+LD CR2002                ; 常時ON
+LDA DM340                ; 自動 Y軸ﾊﾟﾚｯﾄ1 計算ｴﾘｱ商
+CON
+EXT
+CON
+ADD.L +1
+CON
+STA DM344                ; 自動 Y軸ﾊﾟﾚｯﾄ1 枠番号
+; DM346 = DM342		'枠位置代入
+;
+LD CR2002                ; 常時ON
+MOV DM342 DM346          ; 自動 Y軸ﾊﾟﾚｯﾄ1 計算ｴﾘｱ余り  自動 Y軸ﾊﾟﾚｯﾄ1 枠位置
+;ELSE
+;
+LD CR2002                ; 常時ON
+CJ #2003
+LABEL #2002
+; DM344 = DM340		'枠番号代入
+;
+LD CR2002                ; 常時ON
+MOV DM340 DM344          ; 自動 Y軸ﾊﾟﾚｯﾄ1 計算ｴﾘｱ商  自動 Y軸ﾊﾟﾚｯﾄ1 枠番号
+; DM346 = FM9136		'枠位置代入
+;
+LD CR2002                ; 常時ON
+MOV FM9136 DM346         ; ﾊﾟﾚｯﾄﾚｼﾋﾟYｵﾌｾｯﾄA周期  自動 Y軸ﾊﾟﾚｯﾄ1 枠位置
+;END IF
+;
+LABEL #2003
+;DM348= ASC(DM344)	'枠番号ASCIIを代入
+;
+LD CR2002                ; 常時ON
+LDA DM344                ; 自動 Y軸ﾊﾟﾚｯﾄ1 枠番号
+CON
+ASC
+CON
+STA DM348                ; 自動 Y軸ﾊﾟﾚｯﾄ1 枠番号ASCII
+;DM350= ASC(DM346)	'枠位置ASCIIを代入
+LD CR2002                ; 常時ON
+LDA DM346                ; 自動 Y軸ﾊﾟﾚｯﾄ1 枠位置
+CON
+ASC
+CON
+STA DM350                ; 自動 Y軸ﾊﾟﾚｯﾄ1 枠位置ASCII
+LABEL #1003
+;
+;'ﾊﾟﾚｯﾄ2X軸 投入枠計算
+;
+;DM364 = DM302		'現在列を枠番号に代入
+;DM366 = DM302		'現在列を枠位置に代入
+;
+;DM370= ASC(#1)	'枠位置ASCII(1固定)を代入
+LD= FM9126 #0            ; ﾊﾟﾚｯﾄﾚｼﾋﾟ XｵﾌｾｯﾄA周期
+NCJ #1004
+;'ﾊﾟﾚｯﾄ2X軸 投入枠計算
+;
+;DM364 = DM302		'現在列を枠番号に代入
+;
+LD CR2002                ; 常時ON
+MOV DM302 DM364          ; 自動 X軸ﾊﾟﾚｯﾄ2 現在列  自動 X軸ﾊﾟﾚｯﾄ2 枠番号
+;DM366 = DM302		'現在列を枠位置に代入
+;
+LD CR2002                ; 常時ON
+MOV DM302 DM366          ; 自動 X軸ﾊﾟﾚｯﾄ2 現在列  自動 X軸ﾊﾟﾚｯﾄ2 枠位置
+;DM370= ASC(#1)	'枠位置ASCII(1固定)を代入
+LD CR2002                ; 常時ON
+LDA #1
+CON
+ASC
+CON
+STA DM370                ; 自動 X軸ﾊﾟﾚｯﾄ2 枠位置ASCII
+LABEL #1004
+;
+;'ﾊﾟﾚｯﾄ2X軸 投入枠計算
+;
+;DM360 = DM302 / FM9126	'現在列/ﾊﾟﾚｯﾄｵﾌｾｯﾄA周期 商
+;DM362 = DM302 MOD FM9126	'現在列/ﾊﾟﾚｯﾄｵﾌｾｯﾄA周期 余り
+;
+;'枠番号計算
+;IF DM362 <> 0 THEN
+; DM364 = DM360 + 1	'枠番号代入
+; DM366 = DM362		'枠位置代入
+;ELSE
+; DM364 = DM360		'枠番号代入
+; DM366 = FM9126		'枠位置代入
+;END IF
+;
+;DM370= ASC(DM366)	'枠位置ASCIIを代入
+LD<> FM9126 #0           ; ﾊﾟﾚｯﾄﾚｼﾋﾟ XｵﾌｾｯﾄA周期
+NCJ #1005
+;'ﾊﾟﾚｯﾄ2X軸 投入枠計算
+;
+;DM360 = DM302 / FM9126	'現在列/ﾊﾟﾚｯﾄｵﾌｾｯﾄA周期 商
+;
+LD CR2002                ; 常時ON
+LDA FM9126               ; ﾊﾟﾚｯﾄﾚｼﾋﾟ XｵﾌｾｯﾄA周期
+CON
+EXT
+CON
+STA.L @VM8
+CON
+LDA DM302                ; 自動 X軸ﾊﾟﾚｯﾄ2 現在列
+CON
+EXT
+CON
+EXT.L
+CON
+DIV.L @VM8
+CON
+STA DM360                ; 自動 X軸ﾊﾟﾚｯﾄ2 計算ｴﾘｱ商
+;DM362 = DM302 MOD FM9126	'現在列/ﾊﾟﾚｯﾄｵﾌｾｯﾄA周期 余り
+;
+LD CR2002                ; 常時ON
+LDA FM9126               ; ﾊﾟﾚｯﾄﾚｼﾋﾟ XｵﾌｾｯﾄA周期
+CON
+EXT
+CON
+STA.L @VM10
+CON
+LDA DM302                ; 自動 X軸ﾊﾟﾚｯﾄ2 現在列
+CON
+EXT
+CON
+EXT.L
+CON
+DIV.L @VM10
+CON
+LDA.L TM2
+CON
+STA DM362                ; 自動 X軸ﾊﾟﾚｯﾄ2 計算ｴﾘｱ余り
+;'枠番号計算
+;
+;IF DM362 <> 0 THEN
+;
+LD<> DM362 #0            ; 自動 X軸ﾊﾟﾚｯﾄ2 計算ｴﾘｱ余り
+NCJ #2004
+; DM364 = DM360 + 1	'枠番号代入
+;
+LD CR2002                ; 常時ON
+LDA DM360                ; 自動 X軸ﾊﾟﾚｯﾄ2 計算ｴﾘｱ商
+CON
+EXT
+CON
+ADD.L +1
+CON
+STA DM364                ; 自動 X軸ﾊﾟﾚｯﾄ2 枠番号
+; DM366 = DM362		'枠位置代入
+;
+LD CR2002                ; 常時ON
+MOV DM362 DM366          ; 自動 X軸ﾊﾟﾚｯﾄ2 計算ｴﾘｱ余り  自動 X軸ﾊﾟﾚｯﾄ2 枠位置
+;ELSE
+;
+LD CR2002                ; 常時ON
+CJ #2005
+LABEL #2004
+; DM364 = DM360		'枠番号代入
+;
+LD CR2002                ; 常時ON
+MOV DM360 DM364          ; 自動 X軸ﾊﾟﾚｯﾄ2 計算ｴﾘｱ商  自動 X軸ﾊﾟﾚｯﾄ2 枠番号
+; DM366 = FM9126		'枠位置代入
+;
+LD CR2002                ; 常時ON
+MOV FM9126 DM366         ; ﾊﾟﾚｯﾄﾚｼﾋﾟ XｵﾌｾｯﾄA周期  自動 X軸ﾊﾟﾚｯﾄ2 枠位置
+;END IF
+;
+LABEL #2005
+;DM370= ASC(DM366)	'枠位置ASCIIを代入
+LD CR2002                ; 常時ON
+LDA DM366                ; 自動 X軸ﾊﾟﾚｯﾄ2 枠位置
+CON
+ASC
+CON
+STA DM370                ; 自動 X軸ﾊﾟﾚｯﾄ2 枠位置ASCII
+LABEL #1005
+;
+;'ﾊﾟﾚｯﾄ2Y軸 投入枠計算
+;
+;DM384 = DM312		'現在列を枠番号に代入
+;DM388= ASC(DM384)	'現在列を枠位置に代入
+;DM390= ASC(#1)		'枠位置ASCII(1固定)を代入
+LD= FM9136 #0            ; ﾊﾟﾚｯﾄﾚｼﾋﾟYｵﾌｾｯﾄA周期
+NCJ #1006
+;'ﾊﾟﾚｯﾄ2Y軸 投入枠計算
+;
+;DM384 = DM312		'現在列を枠番号に代入
+;
+LD CR2002                ; 常時ON
+MOV DM312 DM384          ; 自動 Y軸ﾊﾟﾚｯﾄ2 現在列  自動 Y軸ﾊﾟﾚｯﾄ2 枠番号
+;DM388= ASC(DM384)	'現在列を枠位置に代入
+;
+LD CR2002                ; 常時ON
+LDA DM384                ; 自動 Y軸ﾊﾟﾚｯﾄ2 枠番号
+CON
+ASC
+CON
+STA DM388                ; 自動 Y軸ﾊﾟﾚｯﾄ2 枠番号ASCII
+;DM390= ASC(#1)		'枠位置ASCII(1固定)を代入
+LD CR2002                ; 常時ON
+LDA #1
+CON
+ASC
+CON
+STA DM390                ; 自動 Y軸ﾊﾟﾚｯﾄ2 枠位置ASCII
+LABEL #1006
+;
+;'ﾊﾟﾚｯﾄ2Y軸 投入枠計算
+;
+;DM380 = DM312 / FM9136	'現在列/ﾊﾟﾚｯﾄｵﾌｾｯﾄA周期 商
+;DM382 = DM312 MOD FM9136	'現在列/ﾊﾟﾚｯﾄｵﾌｾｯﾄA周期 余り
+;
+;'枠番号計算
+;IF DM382 <> 0 THEN
+; DM384 = DM380 + 1	'枠番号代入
+; DM386 = DM382		'枠位置代入
+;ELSE
+; DM384 = DM380		'枠番号代入
+; DM386 = FM9136		'枠位置代入
+;END IF
+;
+;DM388= ASC(DM384)	'枠番号ASCIIを代入
+;
+;DM390= ASC(DM386)	'枠位置ASCIIを代入
+LD<> FM9136 #0           ; ﾊﾟﾚｯﾄﾚｼﾋﾟYｵﾌｾｯﾄA周期
+NCJ #1007
+;'ﾊﾟﾚｯﾄ2Y軸 投入枠計算
+;
+;DM380 = DM312 / FM9136	'現在列/ﾊﾟﾚｯﾄｵﾌｾｯﾄA周期 商
+;
+LD CR2002                ; 常時ON
+LDA FM9136               ; ﾊﾟﾚｯﾄﾚｼﾋﾟYｵﾌｾｯﾄA周期
+CON
+EXT
+CON
+STA.L @VM12
+CON
+LDA DM312                ; 自動 Y軸ﾊﾟﾚｯﾄ2 現在列
+CON
+EXT
+CON
+EXT.L
+CON
+DIV.L @VM12
+CON
+STA DM380                ; 自動 Y軸ﾊﾟﾚｯﾄ2 計算ｴﾘｱ商
+;DM382 = DM312 MOD FM9136	'現在列/ﾊﾟﾚｯﾄｵﾌｾｯﾄA周期 余り
+;
+LD CR2002                ; 常時ON
+LDA FM9136               ; ﾊﾟﾚｯﾄﾚｼﾋﾟYｵﾌｾｯﾄA周期
+CON
+EXT
+CON
+STA.L @VM14
+CON
+LDA DM312                ; 自動 Y軸ﾊﾟﾚｯﾄ2 現在列
+CON
+EXT
+CON
+EXT.L
+CON
+DIV.L @VM14
+CON
+LDA.L TM2
+CON
+STA DM382                ; 自動 Y軸ﾊﾟﾚｯﾄ2 計算ｴﾘｱ余り
+;'枠番号計算
+;
+;IF DM382 <> 0 THEN
+;
+LD<> DM382 #0            ; 自動 Y軸ﾊﾟﾚｯﾄ2 計算ｴﾘｱ余り
+NCJ #2006
+; DM384 = DM380 + 1	'枠番号代入
+;
+LD CR2002                ; 常時ON
+LDA DM380                ; 自動 Y軸ﾊﾟﾚｯﾄ2 計算ｴﾘｱ商
+CON
+EXT
+CON
+ADD.L +1
+CON
+STA DM384                ; 自動 Y軸ﾊﾟﾚｯﾄ2 枠番号
+; DM386 = DM382		'枠位置代入
+;
+LD CR2002                ; 常時ON
+MOV DM382 DM386          ; 自動 Y軸ﾊﾟﾚｯﾄ2 計算ｴﾘｱ余り  自動 Y軸ﾊﾟﾚｯﾄ2 枠位置
+;ELSE
+;
+LD CR2002                ; 常時ON
+CJ #2007
+LABEL #2006
+; DM384 = DM380		'枠番号代入
+;
+LD CR2002                ; 常時ON
+MOV DM380 DM384          ; 自動 Y軸ﾊﾟﾚｯﾄ2 計算ｴﾘｱ商  自動 Y軸ﾊﾟﾚｯﾄ2 枠番号
+; DM386 = FM9136		'枠位置代入
+;
+LD CR2002                ; 常時ON
+MOV FM9136 DM386         ; ﾊﾟﾚｯﾄﾚｼﾋﾟYｵﾌｾｯﾄA周期  自動 Y軸ﾊﾟﾚｯﾄ2 枠位置
+;END IF
+;
+LABEL #2007
+;DM388= ASC(DM384)	'枠番号ASCIIを代入
+;
+LD CR2002                ; 常時ON
+LDA DM384                ; 自動 Y軸ﾊﾟﾚｯﾄ2 枠番号
+CON
+ASC
+CON
+STA DM388                ; 自動 Y軸ﾊﾟﾚｯﾄ2 枠番号ASCII
+;DM390= ASC(DM386)	'枠位置ASCIIを代入
+LD CR2002                ; 常時ON
+LDA DM386                ; 自動 Y軸ﾊﾟﾚｯﾄ2 枠位置
+CON
+ASC
+CON
+STA DM390                ; 自動 Y軸ﾊﾟﾚｯﾄ2 枠位置ASCII
+LABEL #1007
+;
+;<h1/>ﾊﾟﾚｯﾄ1 X軸 枠番号ASCII変換・書込
+LD= DM324 #1             ; 自動 X軸ﾊﾟﾚｯﾄ1 枠番号
+MOV $0041 DM328          ; 自動 X軸ﾊﾟﾚｯﾄ1 枠番号ASCII
+LD= DM324 #2             ; 自動 X軸ﾊﾟﾚｯﾄ1 枠番号
+MOV $0042 DM328          ; 自動 X軸ﾊﾟﾚｯﾄ1 枠番号ASCII
+LD= DM324 #3             ; 自動 X軸ﾊﾟﾚｯﾄ1 枠番号
+MOV $0043 DM328          ; 自動 X軸ﾊﾟﾚｯﾄ1 枠番号ASCII
+LD= DM324 #4             ; 自動 X軸ﾊﾟﾚｯﾄ1 枠番号
+MOV $0044 DM328          ; 自動 X軸ﾊﾟﾚｯﾄ1 枠番号ASCII
+LD= DM324 #5             ; 自動 X軸ﾊﾟﾚｯﾄ1 枠番号
+MOV $0045 DM328          ; 自動 X軸ﾊﾟﾚｯﾄ1 枠番号ASCII
+LD= DM324 #6             ; 自動 X軸ﾊﾟﾚｯﾄ1 枠番号
+MOV $0046 DM328          ; 自動 X軸ﾊﾟﾚｯﾄ1 枠番号ASCII
+LD= DM324 #7             ; 自動 X軸ﾊﾟﾚｯﾄ1 枠番号
+MOV $0047 DM328          ; 自動 X軸ﾊﾟﾚｯﾄ1 枠番号ASCII
+LD= DM324 #8             ; 自動 X軸ﾊﾟﾚｯﾄ1 枠番号
+MOV $0048 DM328          ; 自動 X軸ﾊﾟﾚｯﾄ1 枠番号ASCII
+LD= DM324 #9             ; 自動 X軸ﾊﾟﾚｯﾄ1 枠番号
+MOV $0049 DM328          ; 自動 X軸ﾊﾟﾚｯﾄ1 枠番号ASCII
+LD= DM324 #10            ; 自動 X軸ﾊﾟﾚｯﾄ1 枠番号
+MOV $004A DM328          ; 自動 X軸ﾊﾟﾚｯﾄ1 枠番号ASCII
+LD= DM324 #11            ; 自動 X軸ﾊﾟﾚｯﾄ1 枠番号
+MOV $004B DM328          ; 自動 X軸ﾊﾟﾚｯﾄ1 枠番号ASCII
+LD= DM324 #12            ; 自動 X軸ﾊﾟﾚｯﾄ1 枠番号
+MOV $004C DM328          ; 自動 X軸ﾊﾟﾚｯﾄ1 枠番号ASCII
+LD= DM324 #13            ; 自動 X軸ﾊﾟﾚｯﾄ1 枠番号
+MOV $004D DM328          ; 自動 X軸ﾊﾟﾚｯﾄ1 枠番号ASCII
+LD= DM324 #14            ; 自動 X軸ﾊﾟﾚｯﾄ1 枠番号
+MOV $004E DM328          ; 自動 X軸ﾊﾟﾚｯﾄ1 枠番号ASCII
+LD= DM324 #15            ; 自動 X軸ﾊﾟﾚｯﾄ1 枠番号
+MOV $004F DM328          ; 自動 X軸ﾊﾟﾚｯﾄ1 枠番号ASCII
+LD= DM324 #16            ; 自動 X軸ﾊﾟﾚｯﾄ1 枠番号
+MOV $0050 DM328          ; 自動 X軸ﾊﾟﾚｯﾄ1 枠番号ASCII
+LD= DM324 #17            ; 自動 X軸ﾊﾟﾚｯﾄ1 枠番号
+MOV $0051 DM328          ; 自動 X軸ﾊﾟﾚｯﾄ1 枠番号ASCII
+LD= DM324 #18            ; 自動 X軸ﾊﾟﾚｯﾄ1 枠番号
+MOV $0052 DM328          ; 自動 X軸ﾊﾟﾚｯﾄ1 枠番号ASCII
+LD= DM324 #19            ; 自動 X軸ﾊﾟﾚｯﾄ1 枠番号
+MOV $0053 DM328          ; 自動 X軸ﾊﾟﾚｯﾄ1 枠番号ASCII
+LD= DM324 #20            ; 自動 X軸ﾊﾟﾚｯﾄ1 枠番号
+MOV $0054 DM328          ; 自動 X軸ﾊﾟﾚｯﾄ1 枠番号ASCII
+LD= DM324 #21            ; 自動 X軸ﾊﾟﾚｯﾄ1 枠番号
+MOV $0055 DM328          ; 自動 X軸ﾊﾟﾚｯﾄ1 枠番号ASCII
+LD= DM324 #22            ; 自動 X軸ﾊﾟﾚｯﾄ1 枠番号
+MOV $0056 DM328          ; 自動 X軸ﾊﾟﾚｯﾄ1 枠番号ASCII
+LD= DM324 #23            ; 自動 X軸ﾊﾟﾚｯﾄ1 枠番号
+MOV $0057 DM328          ; 自動 X軸ﾊﾟﾚｯﾄ1 枠番号ASCII
+LD= DM324 #24            ; 自動 X軸ﾊﾟﾚｯﾄ1 枠番号
+MOV $0058 DM328          ; 自動 X軸ﾊﾟﾚｯﾄ1 枠番号ASCII
+LD= DM324 #25            ; 自動 X軸ﾊﾟﾚｯﾄ1 枠番号
+MOV $0059 DM328          ; 自動 X軸ﾊﾟﾚｯﾄ1 枠番号ASCII
+LD= DM324 #26            ; 自動 X軸ﾊﾟﾚｯﾄ1 枠番号
+MOV $005A DM328          ; 自動 X軸ﾊﾟﾚｯﾄ1 枠番号ASCII
+LD= DM324 #0             ; 自動 X軸ﾊﾟﾚｯﾄ1 枠番号
+OR> DM324 #26            ; 自動 X軸ﾊﾟﾚｯﾄ1 枠番号
+MOV $002A DM328          ; 自動 X軸ﾊﾟﾚｯﾄ1 枠番号ASCII
+;<h1/>ﾊﾟﾚｯﾄ2 X軸 枠番号ASCII変換・書込
+LD= DM364 #1             ; 自動 X軸ﾊﾟﾚｯﾄ2 枠番号
+MOV $0041 DM368          ; 自動 X軸ﾊﾟﾚｯﾄ2 枠番号ASCII
+LD= DM364 #2             ; 自動 X軸ﾊﾟﾚｯﾄ2 枠番号
+MOV $0042 DM368          ; 自動 X軸ﾊﾟﾚｯﾄ2 枠番号ASCII
+LD= DM364 #3             ; 自動 X軸ﾊﾟﾚｯﾄ2 枠番号
+MOV $0043 DM368          ; 自動 X軸ﾊﾟﾚｯﾄ2 枠番号ASCII
+LD= DM364 #4             ; 自動 X軸ﾊﾟﾚｯﾄ2 枠番号
+MOV $0044 DM368          ; 自動 X軸ﾊﾟﾚｯﾄ2 枠番号ASCII
+LD= DM364 #5             ; 自動 X軸ﾊﾟﾚｯﾄ2 枠番号
+MOV $0045 DM368          ; 自動 X軸ﾊﾟﾚｯﾄ2 枠番号ASCII
+LD= DM364 #6             ; 自動 X軸ﾊﾟﾚｯﾄ2 枠番号
+MOV $0046 DM368          ; 自動 X軸ﾊﾟﾚｯﾄ2 枠番号ASCII
+LD= DM364 #7             ; 自動 X軸ﾊﾟﾚｯﾄ2 枠番号
+MOV $0047 DM368          ; 自動 X軸ﾊﾟﾚｯﾄ2 枠番号ASCII
+LD= DM364 #8             ; 自動 X軸ﾊﾟﾚｯﾄ2 枠番号
+MOV $0048 DM368          ; 自動 X軸ﾊﾟﾚｯﾄ2 枠番号ASCII
+LD= DM364 #9             ; 自動 X軸ﾊﾟﾚｯﾄ2 枠番号
+MOV $0049 DM368          ; 自動 X軸ﾊﾟﾚｯﾄ2 枠番号ASCII
+LD= DM364 #10            ; 自動 X軸ﾊﾟﾚｯﾄ2 枠番号
+MOV $004A DM368          ; 自動 X軸ﾊﾟﾚｯﾄ2 枠番号ASCII
+LD= DM364 #11            ; 自動 X軸ﾊﾟﾚｯﾄ2 枠番号
+MOV $004B DM368          ; 自動 X軸ﾊﾟﾚｯﾄ2 枠番号ASCII
+LD= DM364 #12            ; 自動 X軸ﾊﾟﾚｯﾄ2 枠番号
+MOV $004C DM368          ; 自動 X軸ﾊﾟﾚｯﾄ2 枠番号ASCII
+LD= DM364 #13            ; 自動 X軸ﾊﾟﾚｯﾄ2 枠番号
+MOV $004D DM368          ; 自動 X軸ﾊﾟﾚｯﾄ2 枠番号ASCII
+LD= DM364 #14            ; 自動 X軸ﾊﾟﾚｯﾄ2 枠番号
+MOV $004E DM368          ; 自動 X軸ﾊﾟﾚｯﾄ2 枠番号ASCII
+LD= DM364 #15            ; 自動 X軸ﾊﾟﾚｯﾄ2 枠番号
+MOV $004F DM368          ; 自動 X軸ﾊﾟﾚｯﾄ2 枠番号ASCII
+LD= DM364 #16            ; 自動 X軸ﾊﾟﾚｯﾄ2 枠番号
+MOV $0050 DM368          ; 自動 X軸ﾊﾟﾚｯﾄ2 枠番号ASCII
+LD= DM364 #17            ; 自動 X軸ﾊﾟﾚｯﾄ2 枠番号
+MOV $0051 DM368          ; 自動 X軸ﾊﾟﾚｯﾄ2 枠番号ASCII
+LD= DM364 #18            ; 自動 X軸ﾊﾟﾚｯﾄ2 枠番号
+MOV $0052 DM368          ; 自動 X軸ﾊﾟﾚｯﾄ2 枠番号ASCII
+LD= DM364 #19            ; 自動 X軸ﾊﾟﾚｯﾄ2 枠番号
+MOV $0053 DM368          ; 自動 X軸ﾊﾟﾚｯﾄ2 枠番号ASCII
+LD= DM364 #20            ; 自動 X軸ﾊﾟﾚｯﾄ2 枠番号
+MOV $0054 DM368          ; 自動 X軸ﾊﾟﾚｯﾄ2 枠番号ASCII
+LD= DM364 #21            ; 自動 X軸ﾊﾟﾚｯﾄ2 枠番号
+MOV $0055 DM368          ; 自動 X軸ﾊﾟﾚｯﾄ2 枠番号ASCII
+LD= DM364 #22            ; 自動 X軸ﾊﾟﾚｯﾄ2 枠番号
+MOV $0056 DM368          ; 自動 X軸ﾊﾟﾚｯﾄ2 枠番号ASCII
+LD= DM364 #23            ; 自動 X軸ﾊﾟﾚｯﾄ2 枠番号
+MOV $0057 DM368          ; 自動 X軸ﾊﾟﾚｯﾄ2 枠番号ASCII
+LD= DM364 #24            ; 自動 X軸ﾊﾟﾚｯﾄ2 枠番号
+MOV $0058 DM368          ; 自動 X軸ﾊﾟﾚｯﾄ2 枠番号ASCII
+LD= DM364 #25            ; 自動 X軸ﾊﾟﾚｯﾄ2 枠番号
+MOV $0059 DM368          ; 自動 X軸ﾊﾟﾚｯﾄ2 枠番号ASCII
+LD= DM364 #26            ; 自動 X軸ﾊﾟﾚｯﾄ2 枠番号
+MOV $005A DM368          ; 自動 X軸ﾊﾟﾚｯﾄ2 枠番号ASCII
+LD= DM364 #0             ; 自動 X軸ﾊﾟﾚｯﾄ2 枠番号
+OR> DM364 #26            ; 自動 X軸ﾊﾟﾚｯﾄ2 枠番号
+MOV $002A DM368          ; 自動 X軸ﾊﾟﾚｯﾄ2 枠番号ASCII
+;ERR75 検査NG品連続排出異常
+LD>= DM3714 DM71         ; 検査NG排出連続回数  除材NG排出連続回数設定
+AND MR101                ; 自動ﾓｰﾄﾞ
+OUT MR7705               ; ERR75 検査NG品連続排出異常
+LD MR004                 ; ﾘｾｯﾄSW
+AND MR7705               ; ERR75 検査NG品連続排出異常
+DW #0 DM3714             ; 検査NG排出連続回数
+END
+ENDH

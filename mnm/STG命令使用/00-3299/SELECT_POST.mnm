@@ -1,0 +1,260 @@
+DEVICE:53
+;MODULE:SELECT_POST
+;MODULE_TYPE:1
+;OneSystem SupportMacro
+;
+;-----------------------------------------
+;Macro Name 	: 	SELECT_POST
+;Macro Type	:	Self Holding
+;Function	:	Post有効／無効選択表示
+;-----------------------------------------
+;
+;Copylight(C) 2011 SEIKO EPSON Corp. All rights reserved.
+;引数：
+;	V0	=	表示ｸﾞﾙｰﾌﾟ番号			#1～8
+;	V1	=	ﾀｽｸ番号					#0～#31
+;	V2	=	ﾌﾞｻﾞｰ有無				#1=ﾌﾞｻﾞｰON、#0:ﾌﾞｻﾞｰOFF
+;	P9	=	完了ﾘﾚｰ					ﾏｸﾛ完了時ON
+;	
+;機能：
+;	指定TPに選択画面を表示して、選択肢によりPost有効／無効を設定する(MAINTEﾓｰﾄﾞ限定)
+LD Run_Mode              ; _運転ﾓｰﾄﾞ指定
+SET P9                   ; Fin_Relay
+CON
+MEND
+LD TRAPDO                ; _非常停止中　ﾓｰﾄﾞﾌﾗｸﾞ
+ZRES @R000 @R015
+CON
+MEND
+;<h1/>Argumant Range Check/引数範囲ﾁｪｯｸ
+LD< V0 #1                ; Group_No
+OR> V0 #8                ; Group_No
+OR< V1 #0                ; Task_No
+OR> V1 #100              ; Task_No
+LD> V1 #31               ; Task_No
+AND< V1 #100             ; Task_No
+ORL
+SET MacroDown            ; _ｻﾎﾟｰﾄﾏｸﾛ引数異常発生
+CON
+SET @R015
+;<h1/>Init/初期化
+LD @CR2008
+ORB @R000
+ANB Run_Mode             ; _運転ﾓｰﾄﾞ指定
+MPS
+ANB MAINTEDO             ; _ﾒﾝﾃﾅﾝｽ運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+SET P9                   ; Fin_Relay
+CON
+MEND
+MPP
+AND MAINTEDO             ; _ﾒﾝﾃﾅﾝｽ運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+RES P9                   ; Fin_Relay
+;<h1/>Pause Request/ﾎﾟｰｽﾞ要求
+;・ﾏｸﾛ実行中にPAUSE要求にてHALT実施
+LDB Run_Mode             ; _運転ﾓｰﾄﾞ指定
+AND<> V1 #100            ; Task_No
+MPS
+LDA V0                   ; Group_No
+CON
+SUB #1
+CON
+MUL #32
+CON
+ADD V1                   ; Task_No
+CON
+STA Z9
+MRD
+LDA V0                   ; Group_No
+CON
+SUB #1
+CON
+STA Z10
+MPP
+AND PAUSE1:Z10           ; _Grp1 ﾎﾟｰｽﾞ要求
+SET HALT1:Z9             ; _Grp1_Task0_ﾎﾟｰｽﾞ許可
+;<h1/>Exclusive/排他占有
+;・優先ｴﾗｰ、通常ｴﾗｰ解除待ち
+;・Input系とSelect系は同一排他(画面表示領域が同じなので)解除待ち
+;・排他解除待ち中にPAUSE要求にてHALT実施
+LDB Run_Mode             ; _運転ﾓｰﾄﾞ指定
+LDA V0                   ; Group_No
+CON
+SUB #1
+CON
+STA Z10
+CON
+ANB TRAPDO               ; _非常停止中　ﾓｰﾄﾞﾌﾗｸﾞ
+ANB ERROR1:Z10           ; _Group1　ｴﾗｰ発生中
+ANB SYSEXC_DSP1:Z10      ; _Group1　画面処理排他
+SET SYSEXC_DSP1:Z10      ; _Group1　画面処理排他
+SET @R000
+CON
+SET @R001
+;<h1/>Select Action Display/選択画面表示
+STG @R001
+MPS
+LDA V0                   ; Group_No
+CON
+SUB #1
+CON
+MUL #6
+CON
+STA Z8
+MRD
+LDA V0                   ; Group_No
+CON
+SUB #1
+CON
+MUL #4
+CON
+STA Z9
+MRD
+LDA V0                   ; Group_No
+CON
+SUB #1
+CON
+STA Z10
+MRD
+LDA V0                   ; Group_No
+CON
+SUB #1
+CON
+MUL #20
+CON
+STA Z7
+MRD
+MOV #99 KtoV_ACT1_MSG:Z8 ; _ACTﾒｯｾｰｼﾞ番号
+MRD
+SET KtoV_ACT1_DSP1:Z9    ; _ACT選択ﾎﾞﾀﾝ表示／非表示
+MRD
+MOV #99 KtoV_ACT1_SW1:Z8 ; _ACT選択肢1名称番号
+MRD
+RES KtoV_ACT1_DSP2:Z9    ; _ACT選択ﾎﾞﾀﾝ表示／非表示
+MRD
+MOV #0 KtoV_ACT1_SW2:Z8  ; _ACT選択肢2名称番号
+MRD
+RES KtoV_ACT1_DSP3:Z9    ; _ACT選択ﾎﾞﾀﾝ表示／非表示
+MRD
+MOV #0 KtoV_ACT1_SW3:Z8  ; _ACT選択肢3名称番号
+MRD
+SET KtoV_ACT1_DSP4:Z9    ; _ACT選択ﾎﾞﾀﾝ表示／非表示
+MRD
+MOV #100 KtoV_ACT1_SW4:Z8; _ACT選択肢4名称番号
+MRD
+AND= V2 #1               ; Bz_Use
+SET SYS_Bz1_RQ3:Z9       ; _Group1　ｼｽﾃﾑﾌﾞｻﾞｰ要求3
+MPP
+TMH @0 #5
+CON
+AND @T0
+AND= DM3000:Z7 #10       ; _MainTP　表示中ﾍﾟｰｼﾞNo
+SET KtoV_ACT1_OPN:Z10    ; _ACT画面表示
+CON
+JMP @R002
+;<h1/>Action Choise Waiting/選択待ち
+STG @R002
+MPS
+LDA V0                   ; Group_No
+CON
+SUB #1
+CON
+MUL #6
+CON
+STA Z8
+MRD
+LDA V0                   ; Group_No
+CON
+SUB #1
+CON
+STA Z10
+MRD
+LDA V0                   ; Group_No
+CON
+SUB #1
+CON
+MUL #4
+CON
+STA Z7
+MPP
+ANB PAUSE1:Z10           ; _Grp1 ﾎﾟｰｽﾞ要求
+MPS
+AND= VtoK_ACT1_Ret:Z8 #0 ; _ACT復帰選択肢
+MPS
+AND ERROR1:Z10           ; _Group1　ｴﾗｰ発生中
+RES KtoV_ACT1_OPN:Z10    ; _ACT画面表示
+MPP
+ANB ERROR1:Z10           ; _Group1　ｴﾗｰ発生中
+SET KtoV_ACT1_OPN:Z10    ; _ACT画面表示
+MPP
+AND<> VtoK_ACT1_Ret:Z8 #0; _ACT復帰選択肢
+MPS
+AND= VtoK_ACT1_Ret:Z8 #1 ; _ACT復帰選択肢
+RES Post1_Invalid:Z8     ; _Group1 Post無効宣言
+MRD
+AND= VtoK_ACT1_Ret:Z8 #4 ; _ACT復帰選択肢
+SET Post1_Invalid:Z8     ; _Group1 Post無効宣言
+MPP
+RES KtoV_ACT1_OPN:Z10    ; _ACT画面表示
+CON
+JMP @R003
+;<h1/>End Process/終了処理
+STG @R003
+MPS
+LDA V0                   ; Group_No
+CON
+SUB #1
+CON
+MUL #20
+CON
+STA Z10
+MRD
+LDA V0                   ; Group_No
+CON
+SUB #1
+CON
+MUL #6
+CON
+STA Z8
+MRD
+LDA V0                   ; Group_No
+CON
+SUB #1
+CON
+MUL #4
+CON
+STA Z9
+MRD
+LDA V0                   ; Group_No
+CON
+SUB #1
+CON
+MUL #32
+CON
+ADD V1                   ; Task_No
+CON
+STA Z7
+MPP
+AND<> DM3000:Z10 #1111   ; _MainTP　表示中ﾍﾟｰｼﾞNo
+FMOV #0 KtoV_ACT1_MSG:Z8 #6;_ACTﾒｯｾｰｼﾞ番号
+MPS
+RES SYS_Bz1_RQ3:Z9       ; _Group1　ｼｽﾃﾑﾌﾞｻﾞｰ要求3
+CON
+RES HALT1:Z7             ; _Grp1_Task0_ﾎﾟｰｽﾞ許可
+MRD
+LDA V0                   ; Group_No
+CON
+SUB #1
+CON
+STA Z10
+CON
+RES SYSEXC_DSP1:Z10      ; _Group1　画面処理排他
+MRD
+SET P9                   ; Fin_Relay
+MRD
+MEND
+MPP
+RES @R000
+CON
+ENDS
+END
+ENDH

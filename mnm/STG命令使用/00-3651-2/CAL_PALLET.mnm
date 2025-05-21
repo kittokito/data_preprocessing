@@ -1,0 +1,293 @@
+DEVICE:53
+;MODULE:CAL_PALLET
+;MODULE_TYPE:1
+;SCRIPT_TYPE:
+;------------------------------------------------------------
+;Macro Name 	: 	CAL_PALLET
+;Macro Type	:	Subroutine
+;Function	:	ﾊﾟﾚﾀｲｽﾞ演算
+;------------------------------------------------------------
+;引数：
+;	P0	=	X/Y座標1(基準)			X軸座標(2word) & Y軸座標(2word) (32ﾋﾞｯﾄ符号付きﾃﾞｰﾀ x 2)
+;	P1	=	X/Y座標2(優先)			X軸座標(2word) & Y軸座標(2word) (32ﾋﾞｯﾄ符号付きﾃﾞｰﾀ x 2)
+;	P2	=	X/Y座標3				X軸座標(2word) & Y軸座標(2word) (32ﾋﾞｯﾄ符号付きﾃﾞｰﾀ x 2)
+;	V0	=	優先方向分割数			#1～#10
+;	V1	=	非優先方向分割数		#1～#10
+;	P7	=	X軸座標ﾃｰﾌﾞﾙ			ﾊﾟﾚﾀｲｼﾞﾝｸﾞ後のX軸ﾃﾞｰﾀを1ﾎﾟｲﾝﾄ目からﾃﾞﾊﾞｲｽ(P0)へ書き込む(32ﾋﾞｯﾄ符号付きﾃﾞｰﾀ)
+;	P8	=	Y軸座標ﾃｰﾌﾞﾙ			ﾊﾟﾚﾀｲｼﾞﾝｸﾞ後のY軸ﾃﾞｰﾀを1ﾎﾟｲﾝﾄ目からﾃﾞﾊﾞｲｽ(P1)へ書き込む(32ﾋﾞｯﾄ符号付きﾃﾞｰﾀ)
+;	P9	=	完了ｺｰﾄﾞ
+;	
+;完了ｺｰﾄﾞ：
+;	#20：正常終了
+;	#21：ﾊﾟﾗﾒｰﾀ異常
+;	
+;機能：
+;	・基準座標(P0),優先座標(P1),非優先座標(P2)の座標系からﾊﾟﾚﾀｲｽﾞﾃﾞｰﾀを生成する
+;	・基準座標(P0)→優先座標方向(P1)→非優先座標方向(P2)の順番で座標を出力する
+;Type @DM10 - @DM14.U
+;Type @DM0.L, @DM2.L, @DM4.L, @DM6.L
+;
+;If (1 < V0) And (V0 <= 10) And (1 < V1) And (V1 <= 10) Then
+;  
+;  P9 = #20
+;  
+;  '初期値設定
+;  @DM12.U = V0 - 1
+;  @DM13.U = V1 - 1
+;  @DM14.U = 0
+;  
+;  For @DM11.U = 0 To @DM13.U								'非優先方向ﾙｰﾌﾟ
+;    
+;    For @DM10.U = 0 To @DM12.U								'優先方向ﾙｰﾌﾟ
+;      
+;      @DM0.L = ((P1.L:#0 - P0.L:#0) * @DM10.U) / @DM12.U	'優先軸方向のX軸ｵﾌｾｯﾄ演算
+;      @DM2.L = ((P2.L:#0 - P0.L:#0) * @DM11.U) / @DM13.U	'非優先軸方向のX軸ｵﾌｾｯﾄ演算
+;      @DM4.L = ((P1.L:#2 - P0.L:#2) * @DM10.U) / @DM12.U	'優先軸方向のY軸ｵﾌｾｯﾄ演算
+;      @DM6.L = ((P2.L:#2 - P0.L:#2) * @DM11.U) / @DM13.U	'非優先軸方向のY軸ｵﾌｾｯﾄ演算
+;      
+;      P7.L:@DM14.U = @DM0.L + @DM2.L + P0.L:#0				'X軸座標
+;      P8.L:@DM14.U = @DM4.L + @DM6.L + P0.L:#2				'Y軸座標
+;      
+;      @DM14.U += 2
+;      
+;    Next
+;    
+;  Next
+;  
+;Else
+;  
+;  '引数値異常(V0 or V1)
+;  P9 = #21
+;  
+;End If
+;Type @DM10 - @DM14.U
+;
+;Type @DM0.L, @DM2.L, @DM4.L, @DM6.L
+;
+;If (1 < V0) And (V0 <= 10) And (1 < V1) And (V1 <= 10) Then
+;
+LD> V0 #1                ; IN_DivNum1
+OUT @VB00
+LD<= V0 #10              ; IN_DivNum1
+AND @VB00
+OUT @VB01
+LD> V1 #1                ; IN_DivNum2
+AND @VB01
+OUT @VB02
+LD<= V1 #10              ; IN_DivNum2
+AND @VB02
+NCJ #2000
+;  P9 = #20
+;
+LD CR2002                ; 常時ON
+MOV #20 P9               ; C_Code
+;  '初期値設定
+;
+;  @DM12.U = V0 - 1
+;
+LD CR2002                ; 常時ON
+LDA V0                   ; IN_DivNum1
+CON
+EXT
+CON
+SUB.L +1
+CON
+STA @DM12
+;  @DM13.U = V1 - 1
+;
+LD CR2002                ; 常時ON
+LDA V1                   ; IN_DivNum2
+CON
+EXT
+CON
+SUB.L +1
+CON
+STA @DM13
+;  @DM14.U = 0
+;
+LD CR2002                ; 常時ON
+MOV #0 @DM14
+;  For @DM11.U = 0 To @DM13.U								'非優先方向ﾙｰﾌﾟ
+;
+LD CR2002                ; 常時ON
+MOV #0 @DM11
+LABEL #2001
+LD> @DM11 @DM13
+CJ #2002
+;    For @DM10.U = 0 To @DM12.U								'優先方向ﾙｰﾌﾟ
+;
+LD CR2002                ; 常時ON
+MOV #0 @DM10
+LABEL #2003
+LD> @DM10 @DM12
+CJ #2004
+;      @DM0.L = ((P1.L:#0 - P0.L:#0) * @DM10.U) / @DM12.U	'優先軸方向のX軸ｵﾌｾｯﾄ演算
+;
+LD CR2002                ; 常時ON
+LDA @DM12
+CON
+EXT
+CON
+STA.L @VM0
+CON
+LDA.L P1                 ; IN_X2/Y2
+CON
+SUB.L P0                 ; IN_X1/Y1
+CON
+STA.L @VM2
+CON
+LDA @DM10
+CON
+EXT
+CON
+MUL.L @VM2
+CON
+DIV.L @VM0
+CON
+STA.L @DM0
+;      @DM2.L = ((P2.L:#0 - P0.L:#0) * @DM11.U) / @DM13.U	'非優先軸方向のX軸ｵﾌｾｯﾄ演算
+;
+LD CR2002                ; 常時ON
+LDA @DM13
+CON
+EXT
+CON
+STA.L @VM4
+CON
+LDA.L P2                 ; IN_X3/Y3
+CON
+SUB.L P0                 ; IN_X1/Y1
+CON
+STA.L @VM6
+CON
+LDA @DM11
+CON
+EXT
+CON
+MUL.L @VM6
+CON
+DIV.L @VM4
+CON
+STA.L @DM2
+;      @DM4.L = ((P1.L:#2 - P0.L:#2) * @DM10.U) / @DM12.U	'優先軸方向のY軸ｵﾌｾｯﾄ演算
+;
+LD CR2002                ; 常時ON
+LDA @DM12
+CON
+EXT
+CON
+STA.L @VM8
+CON
+LDA.L P1:#2              ; IN_X2/Y2
+CON
+SUB.L P0:#2              ; IN_X1/Y1
+CON
+STA.L @VM10
+CON
+LDA @DM10
+CON
+EXT
+CON
+MUL.L @VM10
+CON
+DIV.L @VM8
+CON
+STA.L @DM4
+;      @DM6.L = ((P2.L:#2 - P0.L:#2) * @DM11.U) / @DM13.U	'非優先軸方向のY軸ｵﾌｾｯﾄ演算
+;
+LD CR2002                ; 常時ON
+LDA @DM13
+CON
+EXT
+CON
+STA.L @VM12
+CON
+LDA.L P2:#2              ; IN_X3/Y3
+CON
+SUB.L P0:#2              ; IN_X1/Y1
+CON
+STA.L @VM14
+CON
+LDA @DM11
+CON
+EXT
+CON
+MUL.L @VM14
+CON
+DIV.L @VM12
+CON
+STA.L @DM6
+;      P7.L:@DM14.U = @DM0.L + @DM2.L + P0.L:#0				'X軸座標
+;
+LD CR2002                ; 常時ON
+LDA @DM14
+CON
+EXT
+CON
+STA.L Z11
+CON
+LDA.L @DM0
+CON
+ADD.L @DM2
+CON
+ADD.L P0                 ; IN_X1/Y1
+CON
+STA.L @VM16
+CON
+MOV.L @VM16 P7:Z11       ; OUT_X_Data
+;      P8.L:@DM14.U = @DM4.L + @DM6.L + P0.L:#2				'Y軸座標
+;
+LD CR2002                ; 常時ON
+LDA @DM14
+CON
+EXT
+CON
+STA.L Z11
+CON
+LDA.L @DM4
+CON
+ADD.L @DM6
+CON
+ADD.L P0:#2              ; IN_X1/Y1
+CON
+STA.L @VM18
+CON
+MOV.L @VM18 P8:Z11       ; OUT_Y_Data
+;      @DM14.U += 2
+;
+LD CR2002                ; 常時ON
+LDA @DM14
+CON
+ADD #2
+CON
+STA @DM14
+;    Next
+;
+LD CR2002                ; 常時ON
+INC @DM10
+LDB CR2009               ; 演算結果が負
+CJ #2003
+LABEL #2004
+;  Next
+;
+LD CR2002                ; 常時ON
+INC @DM11
+LDB CR2009               ; 演算結果が負
+CJ #2001
+LABEL #2002
+;Else
+;
+LD CR2002                ; 常時ON
+CJ #2005
+LABEL #2000
+;  '引数値異常(V0 or V1)
+;
+;  P9 = #21
+;
+LD CR2002                ; 常時ON
+MOV #21 P9               ; C_Code
+;End If
+LABEL #2005
+;
+END
+ENDH

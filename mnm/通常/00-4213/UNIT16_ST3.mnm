@@ -1,0 +1,1598 @@
+DEVICE:53
+;MODULE:UNIT16_ST3
+;MODULE_TYPE:0
+;SCRIPT_TYPE:
+;<h1/>□_入力受け
+;関連する入力受け(ｾﾝｻのﾃﾞｨﾚｲﾀｲﾏ等)を必要があれば作成する。
+;通常は入力ﾕﾆｯﾄに入力時定数(ﾃﾞｨﾚｲ)があるので直接使用しても問題は無い。
+LD M123                  ; 安全扉正常
+OR M39                   ; ｴﾘｱｾﾝｻｰ解除ﾓｰﾄﾞ
+TMR K1601 K5             ; 装置扉閉確認
+;ｺﾝﾀｸﾄﾍｯﾄﾞID
+LD X1268                 ; 電特ST3_ﾍｯﾄﾞID_1
+OUT D8606.0
+LD X1269                 ; 電特ST3_ﾍｯﾄﾞID_2
+OUT D8606.1
+LD X126A                 ; 電特ST3_ﾍｯﾄﾞID_3
+OUT D8606.2
+;ﾊﾟﾚｯﾄID
+LD X126C                 ; 電特ST3_ﾊﾟﾚｯﾄID_1
+OUT D8607.0
+LD X126D                 ; 電特ST3_ﾊﾟﾚｯﾄID_2
+OUT D8607.1
+LD X126E                 ; 電特ST3_ﾊﾟﾚｯﾄID_3
+OUT D8607.2
+;ＩＤ保持
+LD M71                   ; 自動運転開始BZ
+AND L1600                ; FBTST3_有効状態
+LD M8912                 ; 電特ST3_ID保持ﾄﾘｶﾞ
+ANB M8910                ; 電特ST3_無効中
+ORL
+AND M71                  ; 自動運転開始BZ
+OUT M8912                ; 電特ST3_ID保持ﾄﾘｶﾞ
+;____ｺﾝﾀｸﾄﾍｯﾄﾞＩＤ保持
+;※PC送信用は生ﾃﾞｰﾀに変更
+LD L1600                 ; FBTST3_有効状態
+MPS
+TMR K1606 K5             ; ST3_ｺﾝﾀｸﾄﾍｯﾄﾞID_更新_DLY
+MPP
+AND T1606                ; ST3_ｺﾝﾀｸﾄﾍｯﾄﾞID_更新_DLY
+@MOV D8606 D8600         ; FBTST3_ｺﾝﾀｸﾄﾍｯﾄﾞID_Copy  FBTST3_ｺﾝﾀｸﾄﾍｯﾄﾞID
+LD CR2002                ; 常時ON
+MOV D8606 W012A          ; FBTST3_ｺﾝﾀｸﾄﾍｯﾄﾞID_Copy  FBT検査ｽﾃｰｼﾞ#3ﾃｽﾄﾍｯﾄﾞID
+LDB L1600                ; FBTST3_有効状態
+MOV K0 D8600             ; FBTST3_ｺﾝﾀｸﾄﾍｯﾄﾞID
+;____ﾊﾟﾚｯﾄＩＤ保持
+LD L1600                 ; FBTST3_有効状態
+LD M8621                 ; RB5_ﾜｰｸ受取り位置(ID確認位置)
+OR T1607                 ; ST3_ﾊﾟﾚｯﾄID_更新_DLY
+ANL
+TMR K1607 K5             ; ST3_ﾊﾟﾚｯﾄID_更新_DLY
+@MOV D8607 D8601         ; FBTST3_ﾊﾟﾚｯﾄID_ｾﾝｻ状態  FBTST3_ﾊﾟﾚｯﾄID
+LD CR2002                ; 常時ON
+MOV D8601 W0126          ; FBTST3_ﾊﾟﾚｯﾄID  FBT検査ｽﾃｰｼﾞ#3ﾊﾟﾚｯﾄ治具ID
+LDB L1600                ; FBTST3_有効状態
+MOV K0 D8601             ; FBTST3_ﾊﾟﾚｯﾄID
+;<h1/>__ST有効/無効選択
+;段取り状態中ﾌﾗｸﾞの追加
+;自動中は段取り状態中に、ST上のﾜｰｸ無、RBﾊﾝﾄﾞﾜｰｸ無し、供給部ﾜｰｸ無しにて無効状態OKとなる
+LDB X1302                ; ST3_有効/無効選択_SW
+ANB B126A                ; ST3電特検査_有効/無効_Tpb
+INV
+OUT M8904                ; ST3電特検査_有効/無効SW
+LD M71                   ; 自動運転開始BZ
+LDB M3102                ; ﾊﾝﾄﾞ1_FBT検査品
+ANB M3113                ; ﾊﾝﾄﾞ1_FBTST3再検品
+OR M3103                 ; ﾊﾝﾄﾞ1_検査完了品(排出ﾜｰｸ)
+ANL
+LDB M3152                ; ﾊﾝﾄﾞ2_FBT検査品
+ANB M3163                ; ﾊﾝﾄﾞ2_FBTST3再検品
+OR M3153                 ; ﾊﾝﾄﾞ2_検査完了品(排出ﾜｰｸ)
+ANL
+AND= D8701 K0            ; 3ST_ﾜｰｸ有無記憶
+LDB M8985                ; U16起動中
+LD M8501                 ; U16-1_S1_ﾜｰｸ供給待ち
+ANB M2964                ; 【搬送】搬送→FBT_ST3搬送開始
+ORL
+ANL
+ANB M3234                ; ﾊﾝﾄﾞ1_FBTST3給材中ﾌﾗｸﾞ
+ANB M3235                ; ﾊﾝﾄﾞ2_FBTST3給材中ﾌﾗｸﾞ
+OUT M8907                ; 電特ST3_自動中無効条件OK
+LDB M71                  ; 自動運転開始BZ
+OR M8907                 ; 電特ST3_自動中無効条件OK
+OUT M8908                ; 電特ST3_無効OK条件
+LD M8909                 ; 電特ST3_無効予約(自動運転)
+ANB M8910                ; 電特ST3_無効中
+ANP M8904                ; ST3電特検査_有効/無効SW
+ANB W04.2                ; FBTｽﾃｰｼﾞ#3 無効予約要求
+OUT M8911                ; 電特ST3_予約ｷｬﾝｾﾙ
+LDP M8904                ; ST3電特検査_有効/無効SW
+ANB W04.2                ; FBTｽﾃｰｼﾞ#3 無効予約要求
+ORP W04.2                ; FBTｽﾃｰｼﾞ#3 無効予約要求
+AND L1600                ; FBTST3_有効状態
+AND M71                  ; 自動運転開始BZ
+ANB M8909                ; 電特ST3_無効予約(自動運転)
+LD M8909                 ; 電特ST3_無効予約(自動運転)
+ANB M8910                ; 電特ST3_無効中
+ANB M8911                ; 電特ST3_予約ｷｬﾝｾﾙ
+ORL
+OUT M8909                ; 電特ST3_無効予約(自動運転)
+LD M8909                 ; 電特ST3_無効予約(自動運転)
+AND M8908                ; 電特ST3_無効OK条件
+LDP M8904                ; ST3電特検査_有効/無効SW
+ANB W04.2                ; FBTｽﾃｰｼﾞ#3 無効予約要求
+ORP W04.2                ; FBTｽﾃｰｼﾞ#3 無効予約要求
+ANB M41                  ; ﾕﾆｯﾄ_起動中
+ORL
+LDB B0202                ; B202_515)FBTST3_ﾃｽﾄﾍｯﾄﾞID_不
+ANB B0203                ; B203_516)FBTST3_ﾊﾟﾚｯﾄID_不一
+INV
+MEP
+ORL
+LDB M300                 ; PC通信正常
+ANB M3                   ; OFFLINE_MODE
+ORL
+LD M8910                 ; 電特ST3_無効中
+ANB L1600                ; FBTST3_有効状態
+ORL
+OUT M8910                ; 電特ST3_無効中
+;<h1/>__ST_有効処理
+LDP M8904                ; ST3電特検査_有効/無効SW
+LD<> D8606 K0            ; FBTST3_ｺﾝﾀｸﾄﾍｯﾄﾞID_Copy
+AND<> D8607 K0           ; FBTST3_ﾊﾟﾚｯﾄID_ｾﾝｻ状態
+AND M8621                ; RB5_ﾜｰｸ受取り位置(ID確認位置)
+LD M35                   ; 空運転ﾓｰﾄﾞ
+AND= D8606 K0            ; FBTST3_ｺﾝﾀｸﾄﾍｯﾄﾞID_Copy
+AND= D8607 K0            ; FBTST3_ﾊﾟﾚｯﾄID_ｾﾝｻ状態
+ORL
+ANL
+ANB L1600                ; FBTST3_有効状態
+LD M8915                 ; ST3有効要求
+ANB M8917                ; ST有効OK
+ANB M8918                ; ST有効化NG
+ORL
+LD M300                  ; PC通信正常
+OR M3                    ; OFFLINE_MODE
+ANL
+OUT M8915                ; ST3有効要求
+LD M8915                 ; ST3有効要求
+ANB M3                   ; OFFLINE_MODE
+ANB M9                   ; ﾁｪｯｶｰﾁｪｯｸ有効ﾓｰﾄﾞOFF(step2でOFF)
+OUT W0104.2              ; ﾁｪｯｶｰ#3確認要求
+LD M8915                 ; ST3有効要求
+LD W0104.2               ; ﾁｪｯｶｰ#3確認要求
+OR M3                    ; OFFLINE_MODE
+OR M9                    ; ﾁｪｯｶｰﾁｪｯｸ有効ﾓｰﾄﾞOFF(step2でOFF)
+ANL
+OR M8916                 ; ST有効確認要求
+AND M8915                ; ST3有効要求
+OUT M8916                ; ST有効確認要求
+;有効化ok
+LD M8916                 ; ST有効確認要求
+LD W07.2                 ; ﾁｪｯｶｰ#3確認完了
+ANB W04.2                ; FBTｽﾃｰｼﾞ#3 無効予約要求
+OR M3                    ; OFFLINE_MODE
+OR M9                    ; ﾁｪｯｶｰﾁｪｯｸ有効ﾓｰﾄﾞOFF(step2でOFF)
+ANL
+OR M8917                 ; ST有効OK
+AND M8915                ; ST3有効要求
+OUT M8917                ; ST有効OK
+LD M8917                 ; ST有効OK
+LD L1600                 ; FBTST3_有効状態
+ANB M8910                ; 電特ST3_無効中
+ANB M8918                ; ST有効化NG
+ORL
+OUT L1600                ; FBTST3_有効状態
+;有効化不可
+LD M8916                 ; ST有効確認要求
+ANB M3                   ; OFFLINE_MODE
+ANB M9                   ; ﾁｪｯｶｰﾁｪｯｸ有効ﾓｰﾄﾞOFF(step2でOFF)
+AND W07.2                ; ﾁｪｯｶｰ#3確認完了
+AND W04.2                ; FBTｽﾃｰｼﾞ#3 無効予約要求
+OR M8918                 ; ST有効化NG
+AND M8915                ; ST3有効要求
+OUT M8918                ; ST有効化NG
+;JIG_ID一致確認
+LD L1600                 ; FBTST3_有効状態
+MPS
+LD= D8600 D1717          ; FBTST3_ｺﾝﾀｸﾄﾍｯﾄﾞID  ﾊﾝﾄﾞ1_FBT検査ﾃｽﾄﾍｯﾄﾞID
+AND= D8601 D1716         ; FBTST3_ﾊﾟﾚｯﾄID  ﾊﾝﾄﾞ1_FBT検査ﾊﾟﾚｯﾄID
+LD M35                   ; 空運転ﾓｰﾄﾞ
+AND= D8600 K0            ; FBTST3_ｺﾝﾀｸﾄﾍｯﾄﾞID
+AND= D8601 K0            ; FBTST3_ﾊﾟﾚｯﾄID
+ORL
+ANL
+OUT M8901                ; 電特ST3-搬送ﾊﾝﾄﾞ1ID一致ﾌﾗｸﾞ
+MPP
+LD= D8600 D1817          ; FBTST3_ｺﾝﾀｸﾄﾍｯﾄﾞID  ﾊﾝﾄﾞ2_FBT検査ﾃｽﾄﾍｯﾄﾞID
+AND= D8601 D1816         ; FBTST3_ﾊﾟﾚｯﾄID  ﾊﾝﾄﾞ2_FBT検査ﾊﾟﾚｯﾄID
+LD M35                   ; 空運転ﾓｰﾄﾞ
+AND= D8600 K0            ; FBTST3_ｺﾝﾀｸﾄﾍｯﾄﾞID
+AND= D8601 K0            ; FBTST3_ﾊﾟﾚｯﾄID
+ORL
+ANL
+OUT M8902                ; 電特ST3-搬送ﾊﾝﾄﾞ2ID一致ﾌﾗｸﾞ
+;<h1/>__ロボット等機器入力受け
+;<h1/>□_装置状態・動作条件
+;ﾕﾆｯﾄまとめ
+LD M8570                 ; U16-1原点
+AND M8730                ; U16-3原点
+OUT M8980                ; 電特ST3U16原点
+;□ 非常停止
+LDB M8571                ; U16-1即停止異常
+ANB M8731                ; U16-3全異常
+INV
+OUT M8981                ; U16即停止異常
+;□ 起動条件
+LD CR2003                ; 常時OFF
+OUT M8982                ; U16起動条件
+;□ 起動OFF
+LDB M50                  ; 運転準備
+LD M60                   ; ｴﾗｰ発生
+OR M52                   ; ｻｲｸﾙ停止異常(ｻｲｸﾙ停止)
+AND M8984                ; U16原点復帰中
+ORL
+OR T15                   ; 強制停止
+OUT M8983                ; U16起動OFF
+;□ 原点復帰
+LD M82                   ; 原点復帰開始
+ANB M8984                ; U16原点復帰中
+OR M8984                 ; U16原点復帰中
+ANB M8983                ; U16起動OFF
+ANB M8991                ; U16ｴﾗｰ発生
+ANB M8797                ; STEPEND
+OUT M8984                ; U16原点復帰中
+;□ 起動中
+LDB M8574                ; U16-1起動中
+ANB M8734                ; U16-3(電特検査SUB)起動中
+INV
+OUT M8985                ; U16起動中
+;□ ｻｲｸﾙ停止異常
+LDB M8575                ; U16-1ｻｲｸﾙ停止異常
+ANB M8735                ; U16-3ｻｲｸﾙ停止異常
+INV
+OUT M8986                ; U16ｻｲｸﾙ停止異常
+;□ 払出停止異常
+LDB CR2003               ; 常時OFF
+INV
+OUT M8987                ; U16払出停止異常
+;□ 警報補助
+LDB CR2003               ; 常時OFF
+INV
+OUT M8988                ; U16警報補助
+;□ 機器準備確認
+LD X114C                 ; 3st(RB5)ｻｰﾎﾞ状態_SV
+ANB X1149                ; 3st(RB5)運転ﾓｰﾄﾞ_RMDS
+AND X114D                ; 3st(RB5)非常停止_*EMGS
+AND X114E                ; 3st(RB5)ｱﾗｰﾑ_*ALM
+OUT M8990                ; U16機器準備完了
+;□ ｴﾗｰ発生　一時停止
+LDB M8576                ; U16-1ｴﾗｰ発生
+ANB M8736                ; U16-3ｴﾗｰ発生
+INV
+OUT M8991                ; U16ｴﾗｰ発生
+;□ 動作中ﾕﾆｯﾄ無し
+LD M8577                 ; U16-1動作無し
+AND M8737                ; U16-3動作無し
+OUT M8992                ; U16動作無し確認
+;□ 払出しﾜｰｸ無し
+LDB M3102                ; ﾊﾝﾄﾞ1_FBT検査品
+ANB M3113                ; ﾊﾝﾄﾞ1_FBTST3再検品
+ANB M3152                ; ﾊﾝﾄﾞ2_FBT検査品
+ANB M3163                ; ﾊﾝﾄﾞ2_FBTST3再検品
+ANB X1260                ; 電特ST3部ﾜｰｸ確認(ON_有)
+AND M8621                ; RB5_ﾜｰｸ受取り位置(ID確認位置)
+AND M36                  ; 払出ﾓｰﾄﾞ
+TMR K1614 K10
+LD T1614
+OUT M8993                ; U16ﾜｰｸ無し
+;□ ｽﾃｯﾌﾟ起動
+LD M30                   ; 自動ﾓｰﾄﾞ
+OR M31                   ; 手動ﾓｰﾄﾞ
+AND T1601                ; 装置扉閉確認
+ANB M130                 ; 一時停止
+ANB M51                  ; 即停止異常(緊急停止)
+ANB M52                  ; ｻｲｸﾙ停止異常(ｻｲｸﾙ停止)
+ANB M57                  ; 全ﾕﾆｯﾄ払出完了
+ANB M59                  ; 払出停止異常まとめ
+ANB M60                  ; ｴﾗｰ発生
+OUT M8979                ; U16ｽﾃｯﾌﾟ動作
+;<h1/>□_自動回路
+;<h1/>◇_状態・動作条件(補助)
+LD M8621                 ; RB5_ﾜｰｸ受取り位置(ID確認位置)
+ANB X1260                ; 電特ST3部ﾜｰｸ確認(ON_有)
+AND= D8701 K0            ; 3ST_ﾜｰｸ有無記憶
+OUT M8570                ; U16-1原点
+LDB B0200                ; B200_513)ST3検査RB(RBC5)異常
+ANB B0202                ; B202_515)FBTST3_ﾃｽﾄﾍｯﾄﾞID_不
+ANB B0203                ; B203_516)FBTST3_ﾊﾟﾚｯﾄID_不一
+ANB B0204                ; B204_517)FBTST3_ﾜｰｸ受取異常
+ANB B0205                ; B205_518)FBTST3_ﾜｰｸ受渡し異常
+ANB B0206                ; B206_519)FBTST3ﾜｰｸ検知OFF異常
+INV
+OUT M8571                ; U16-1即停止異常
+LD M8570                 ; U16-1原点
+ANB M8574                ; U16-1起動中
+AND M8979                ; U16ｽﾃｯﾌﾟ動作
+LD M8901                 ; 電特ST3-搬送ﾊﾝﾄﾞ1ID一致ﾌﾗｸﾞ
+OR M8902                 ; 電特ST3-搬送ﾊﾝﾄﾞ2ID一致ﾌﾗｸﾞ
+ANL
+ANB M8908                ; 電特ST3_無効OK条件
+OUT M8572                ; U16-1起動条件
+LDB M50                  ; 運転準備
+ORB L1600                ; FBTST3_有効状態
+OR M8986                 ; U16ｻｲｸﾙ停止異常
+OR T15                   ; 強制停止
+OUT M8573                ; U16-1起動OFF
+LD M73                   ; 各工程起動指令
+AND M8572                ; U16-1起動条件
+OR M8574                 ; U16-1起動中
+ANB M8573                ; U16-1起動OFF
+ANB M8563                ; U16-1ｻｲｸﾙ終了
+OUT M8574                ; U16-1起動中
+;ﾕﾆｯﾄ1-1 ｻｲｸﾙ停止異常
+LDB CR2003               ; 常時OFF
+INV
+OUT M8575                ; U16-1ｻｲｸﾙ停止異常
+;ﾕﾆｯﾄ1-1 ｴﾗｰ発生まとめ
+LDB B0201                ; B201_514)ST3ﾜｰｸ浮き検知異常
+ANB B0326                ; B326_807)ST3ﾜｰｸ除去要求
+ANB B032A                ; B32A_811)FBTST3検査中
+ANB B0332                ; B332_819)ST3_RB5_MANUAL MODE
+INV
+OUT M8576                ; U16-1ｴﾗｰ発生
+;ﾕﾆｯﾄ1-1 停止判定
+LD= D8500 D8505          ; U16-1自動運転ｽﾃｯﾌﾟ  U16-1動作中判定
+ORB M8574                ; U16-1起動中
+TMR K1610 K20
+LD CR2002                ; 常時ON
+MOV D8500 D8505          ; U16-1自動運転ｽﾃｯﾌﾟ  U16-1動作中判定
+LD T1610
+OUT M8577                ; U16-1動作無し
+;□
+;□　ﾕﾆｯﾄ1-1 自動運転ステップ開始
+;□
+LD CR2002                ; 常時ON
+FMOV K0 M8500 K4         ; U16-1_S0
+LDB M8574                ; U16-1起動中
+MOV K0 D8500             ; U16-1自動運転ｽﾃｯﾌﾟ
+LD M8574                 ; U16-1起動中
+MOV D8500 Z1             ; U16-1自動運転ｽﾃｯﾌﾟ
+SET M8500:Z1             ; U16-1_S0
+;ﾜｰｸ有無判定等
+LD M8500                 ; U16-1_S0
+AND T1601                ; 装置扉閉確認
+AND M8979                ; U16ｽﾃｯﾌﾟ動作
+INC D8500                ; U16-1自動運転ｽﾃｯﾌﾟ
+LD M8501                 ; U16-1_S1_ﾜｰｸ供給待ち
+MPS
+ANB M8993                ; U16ﾜｰｸ無し
+MPS
+AND M2964                ; 【搬送】搬送→FBT_ST3搬送開始
+INC D8500                ; U16-1自動運転ｽﾃｯﾌﾟ
+MPP
+LD M8901                 ; 電特ST3-搬送ﾊﾝﾄﾞ1ID一致ﾌﾗｸﾞ
+OR M8902                 ; 電特ST3-搬送ﾊﾝﾄﾞ2ID一致ﾌﾗｸﾞ
+ANB X1260                ; 電特ST3部ﾜｰｸ確認(ON_有)
+ANL
+OUT M8920                ; 電特ST3→搬送ﾜｰｸ供給要求
+MPP
+AND M8993                ; U16ﾜｰｸ無し
+MOV K63 D8500            ; U16-1自動運転ｽﾃｯﾌﾟ
+LD M8502                 ; U16-1_S2
+LD M2968                 ; 【搬送】搬送→FBT_ST3搬送完了
+OR M8922                 ; 電特ST3→搬送ﾜｰｸ受取り完了
+ANL
+MPS
+LDB M2964                ; 【搬送】搬送→FBT_ST3搬送開始
+ANB M2968                ; 【搬送】搬送→FBT_ST3搬送完了
+ANL
+INC D8500                ; U16-1自動運転ｽﾃｯﾌﾟ
+MPP
+OUT M8922                ; 電特ST3→搬送ﾜｰｸ受取り完了
+LD M8503                 ; U16-1_S3
+AND T1601                ; 装置扉閉確認
+AND M8979                ; U16ｽﾃｯﾌﾟ動作
+AND= D8701 K1            ; 3ST_ﾜｰｸ有無記憶
+MPS
+LD X1260                 ; 電特ST3部ﾜｰｸ確認(ON_有)
+OR M35                   ; 空運転ﾓｰﾄﾞ
+ANL
+INC D8500                ; U16-1自動運転ｽﾃｯﾌﾟ
+MPP
+LDB X1260                ; 電特ST3部ﾜｰｸ確認(ON_有)
+ANB M35                  ; 空運転ﾓｰﾄﾞ
+ANL
+MOV K60 D8500            ; U16-1自動運転ｽﾃｯﾌﾟ
+LD M8560                 ; U16-1_S60_電特ST3_ﾜｰｸ受取異常
+AND B0204                ; B204_517)FBTST3_ﾜｰｸ受取異常
+MOV K63 D8500            ; U16-1自動運転ｽﾃｯﾌﾟ
+;　　Z軸上昇確認
+LD M8504                 ; U16-1_S4_搬送RB上昇確認
+MPS
+LD L309                  ; 搬送高さ移動完了(HIGH)
+OR L308                  ; 搬送高さ移動完了(MIDLE)
+ANL
+INC D8500                ; U16-1自動運転ｽﾃｯﾌﾟ
+MPP
+@INC D8520               ; 電特ST3投入回数
+;　　浮き確認位置まで移動
+LD M8505                 ; U16-1_S5_
+AND M8602                ; RB5位置決め条件
+MPS
+MOV D8540 D8530          ; ﾜｰｸ浮き確認位置指令Pos  RB5_指令Pos
+MPP
+AND= D8540 D8530         ; ﾜｰｸ浮き確認位置指令Pos  RB5_指令Pos
+INC D8500                ; U16-1自動運転ｽﾃｯﾌﾟ
+LD M8506                 ; U16-1_S6_浮き確認位置移動指令
+AND M8604                ; RB5位置決め起動指令
+INC D8500                ; U16-1自動運転ｽﾃｯﾌﾟ
+LD M8507                 ; U16-1_S7
+ANB M8604                ; RB5位置決め起動指令
+AND M8622                ; RB5_ﾜｰｸ浮き確認位置
+AND M8979                ; U16ｽﾃｯﾌﾟ動作
+INC D8500                ; U16-1自動運転ｽﾃｯﾌﾟ
+MOV K0 D8550             ; ﾜｰｸ浮きﾘｾｯﾄｶｳﾝﾄ
+LDB M8508                ; U16-1_S8_ﾜｰｸ浮き確認
+ANB M8526                ; U16-1_S26_ﾜｰｸ浮き確認
+INV
+AND M8979                ; U16ｽﾃｯﾌﾟ動作
+TMH K1620 K30            ; 浮き確認時間
+LD M8508                 ; U16-1_S8_ﾜｰｸ浮き確認
+AND M8979                ; U16ｽﾃｯﾌﾟ動作
+AND T1620                ; 浮き確認時間
+MPS
+AND X1261                ; 電特ST3_ﾜｰｸ浮き確認(ON_有)
+MOV K10 D8500            ; U16-1自動運転ｽﾃｯﾌﾟ
+MPP
+ANB X1261                ; 電特ST3_ﾜｰｸ浮き確認(ON_有)
+INC D8500                ; U16-1自動運転ｽﾃｯﾌﾟ
+LD M8509                 ; U16-1_S9_浮き検知異常
+ANPB M8509               ; U16-1_S9_浮き検知異常
+AND T1601                ; 装置扉閉確認
+AND M8979                ; U16ｽﾃｯﾌﾟ動作
+ANB B0201                ; B201_514)ST3ﾜｰｸ浮き検知異常
+@INC D8550               ; ﾜｰｸ浮きﾘｾｯﾄｶｳﾝﾄ
+MPS
+AND>= K2 D8550           ; ﾜｰｸ浮きﾘｾｯﾄｶｳﾝﾄ
+MOV K8 D8500             ; U16-1自動運転ｽﾃｯﾌﾟ
+MPP
+AND< K2 D8550            ; ﾜｰｸ浮きﾘｾｯﾄｶｳﾝﾄ
+MOV K50 D8500            ; U16-1自動運転ｽﾃｯﾌﾟ
+LD M8510                 ; U16-1_S10_
+AND M8979                ; U16ｽﾃｯﾌﾟ動作
+AND M8602                ; RB5位置決め条件
+MPS
+MOV D8541 D8530          ; ｺﾈｸﾀ挿入開始位置指令Pos  RB5_指令Pos
+MPP
+AND= D8541 D8530         ; ｺﾈｸﾀ挿入開始位置指令Pos  RB5_指令Pos
+INC D8500                ; U16-1自動運転ｽﾃｯﾌﾟ
+LD M8511                 ; U16-1_S11_ﾌﾟﾛｰﾌﾞｱﾌﾟﾛｰﾁ移動指令
+AND M8604                ; RB5位置決め起動指令
+INC D8500                ; U16-1自動運転ｽﾃｯﾌﾟ
+LD M8512                 ; U16-1_S12_
+ANB M8604                ; RB5位置決め起動指令
+AND M8623                ; RB5_ｺﾈｸﾀ挿入開始位置
+AND M8979                ; U16ｽﾃｯﾌﾟ動作
+INC D8500                ; U16-1自動運転ｽﾃｯﾌﾟ
+LD M8513                 ; U16-1_S13
+AND M8979                ; U16ｽﾃｯﾌﾟ動作
+AND M8602                ; RB5位置決め条件
+MPS
+MOV D8542 D8530          ; ｺﾈｸﾀ挿入押込み量※1指令Pos  RB5_指令Pos
+MPP
+AND= D8542 D8530         ; ｺﾈｸﾀ挿入押込み量※1指令Pos  RB5_指令Pos
+INC D8500                ; U16-1自動運転ｽﾃｯﾌﾟ
+LD M8514                 ; U16-1_S14_ｺﾈｸﾀ押込み位置移動指令
+AND M8604                ; RB5位置決め起動指令
+INC D8500                ; U16-1自動運転ｽﾃｯﾌﾟ
+LD M8515                 ; U16-1_S15
+ANB M8604                ; RB5位置決め起動指令
+AND M8624                ; RB5_ｺﾈｸﾀ挿入押込み完了位置
+AND M8979                ; U16ｽﾃｯﾌﾟ動作
+INC D8500                ; U16-1自動運転ｽﾃｯﾌﾟ
+;<h1/>__S16_電特検査処理開始
+LD M8516                 ; U16-1_S16_
+AND T1601                ; 装置扉閉確認
+AND M8979                ; U16ｽﾃｯﾌﾟ動作
+AND M8732                ; U16-3起動条件
+INC D8500                ; U16-1自動運転ｽﾃｯﾌﾟ
+LD M8517                 ; U16-1_S17電特検査SUB開始ﾌﾗｸﾞ
+AND M8734                ; U16-3(電特検査SUB)起動中
+INC D8500                ; U16-1自動運転ｽﾃｯﾌﾟ
+LD M8518                 ; U16-1_S18
+ANB M8734                ; U16-3(電特検査SUB)起動中
+AND T1601                ; 装置扉閉確認
+AND M8979                ; U16ｽﾃｯﾌﾟ動作
+INC D8500                ; U16-1自動運転ｽﾃｯﾌﾟ
+LD M8519                 ; U16-1_S19
+AND T1601                ; 装置扉閉確認
+AND M8979                ; U16ｽﾃｯﾌﾟ動作
+INC D8500                ; U16-1自動運転ｽﾃｯﾌﾟ
+;検査完了
+LD M8520                 ; U16-1_S20_
+AND M8979                ; U16ｽﾃｯﾌﾟ動作
+AND M8602                ; RB5位置決め条件
+MPS
+MOV D8543 D8530          ; ｺﾈｸﾀ抜き位置Pos  RB5_指令Pos
+MPP
+AND= D8543 D8530         ; ｺﾈｸﾀ抜き位置Pos  RB5_指令Pos
+INC D8500                ; U16-1自動運転ｽﾃｯﾌﾟ
+LD M8521                 ; U16-1_S21_ｺﾈｸﾀ抜き位置移動指令
+AND M8604                ; RB5位置決め起動指令
+INC D8500                ; U16-1自動運転ｽﾃｯﾌﾟ
+LD M8522                 ; U16-1_S22
+ANB M8604                ; RB5位置決め起動指令
+AND M8625                ; RB5_ｺﾈｸﾀ抜き位置
+AND M8979                ; U16ｽﾃｯﾌﾟ動作
+INC D8500                ; U16-1自動運転ｽﾃｯﾌﾟ
+LD M8523                 ; U16-1_S23
+AND M8979                ; U16ｽﾃｯﾌﾟ動作
+AND M8602                ; RB5位置決め条件
+MPS
+MOV D8540 D8530          ; ﾜｰｸ浮き確認位置指令Pos  RB5_指令Pos
+MPP
+AND= D8540 D8530         ; ﾜｰｸ浮き確認位置指令Pos  RB5_指令Pos
+INC D8500                ; U16-1自動運転ｽﾃｯﾌﾟ
+LD M8524                 ; U16-1_S24_浮き確認位置移動指令
+AND M8604                ; RB5位置決め起動指令
+INC D8500                ; U16-1自動運転ｽﾃｯﾌﾟ
+LD M8525                 ; U16-1_S25
+ANB M8604                ; RB5位置決め起動指令
+AND M8622                ; RB5_ﾜｰｸ浮き確認位置
+AND M8979                ; U16ｽﾃｯﾌﾟ動作
+INC D8500                ; U16-1自動運転ｽﾃｯﾌﾟ
+MOV K0 D8550             ; ﾜｰｸ浮きﾘｾｯﾄｶｳﾝﾄ
+LD M8526                 ; U16-1_S26_ﾜｰｸ浮き確認
+AND M8979                ; U16ｽﾃｯﾌﾟ動作
+AND T1620                ; 浮き確認時間
+MPS
+AND X1261                ; 電特ST3_ﾜｰｸ浮き確認(ON_有)
+MOV K28 D8500            ; U16-1自動運転ｽﾃｯﾌﾟ
+MPP
+ANB X1261                ; 電特ST3_ﾜｰｸ浮き確認(ON_有)
+INC D8500                ; U16-1自動運転ｽﾃｯﾌﾟ
+LD M8527                 ; U16-1_S27_後退時ﾜｰｸ浮き検知
+ANPB M8527               ; U16-1_S27_後退時ﾜｰｸ浮き検知
+AND T1601                ; 装置扉閉確認
+AND M8979                ; U16ｽﾃｯﾌﾟ動作
+ANB B0201                ; B201_514)ST3ﾜｰｸ浮き検知異常
+@INC D8550               ; ﾜｰｸ浮きﾘｾｯﾄｶｳﾝﾄ
+MPS
+AND>= K3 D8550           ; ﾜｰｸ浮きﾘｾｯﾄｶｳﾝﾄ
+MOV K26 D8500            ; U16-1自動運転ｽﾃｯﾌﾟ
+MPP
+AND< K3 D8550            ; ﾜｰｸ浮きﾘｾｯﾄｶｳﾝﾄ
+MOV K50 D8500            ; U16-1自動運転ｽﾃｯﾌﾟ
+LD M8528                 ; U16-1_S28
+INC D8500                ; U16-1自動運転ｽﾃｯﾌﾟ
+LD M8529                 ; U16-1_S29
+INC D8500                ; U16-1自動運転ｽﾃｯﾌﾟ
+LD M8530                 ; U16-1_S30
+AND M8979                ; U16ｽﾃｯﾌﾟ動作
+AND M8602                ; RB5位置決め条件
+MPS
+MOV K1 D8530             ; RB5_指令Pos
+MPP
+AND= K1 D8530            ; RB5_指令Pos
+INC D8500                ; U16-1自動運転ｽﾃｯﾌﾟ
+LD M8531                 ; U16-1_S31_ﾜｰｸ受取り位置移動指令
+AND M8604                ; RB5位置決め起動指令
+INC D8500                ; U16-1自動運転ｽﾃｯﾌﾟ
+LD M8532                 ; U16-1_S32
+ANB M8604                ; RB5位置決め起動指令
+AND M8621                ; RB5_ﾜｰｸ受取り位置(ID確認位置)
+AND M8979                ; U16ｽﾃｯﾌﾟ動作
+INC D8500                ; U16-1自動運転ｽﾃｯﾌﾟ
+LD M8533                 ; U16-1_S33
+MOV K40 D8500            ; U16-1自動運転ｽﾃｯﾌﾟ
+;<h1/>__S40_ﾜｰｸ除材要求
+LD M8540                 ; U16-1_S40
+MPS
+AND M2976                ; 【搬送】FBTST3除材開始
+INC D8500                ; U16-1自動運転ｽﾃｯﾌﾟ
+MPP
+LDB M1304                ; 供給ｽﾗｲﾀﾞ上投入可能ﾜｰｸ有
+LD M3100                 ; ﾊﾝﾄﾞ1_ﾜｰｸ有
+ANB M3103                ; ﾊﾝﾄﾞ1_検査完了品(排出ﾜｰｸ)
+ORL
+LD M3150                 ; ﾊﾝﾄﾞ2_ﾜｰｸ有
+ANB M3153                ; ﾊﾝﾄﾞ2_検査完了品(排出ﾜｰｸ)
+ORL
+OR M6909                 ; 電特ST1_無効予約(自動運転)
+OR M7909                 ; 電特ST2_無効予約(自動運転)
+OR M8909                 ; 電特ST3_無効予約(自動運転)
+ANL
+OUT M8921                ; 電特ST3→搬送1除材要求
+LD M8541                 ; U16-1_S41
+LD M2979                 ; 【搬送】FBTST3除材完了
+OR M8923                 ; 電特ST3→搬送除材完了受取
+ANL
+MPS
+LDB M2976                ; 【搬送】FBTST3除材開始
+ANB M2979                ; 【搬送】FBTST3除材完了
+ANL
+INC D8500                ; U16-1自動運転ｽﾃｯﾌﾟ
+MPP
+OUT M8923                ; 電特ST3→搬送除材完了受取
+LD M8542                 ; U16-1_S42
+AND T1601                ; 装置扉閉確認
+AND M8979                ; U16ｽﾃｯﾌﾟ動作
+AND= D8701 K0            ; 3ST_ﾜｰｸ有無記憶
+LD L309                  ; 搬送高さ移動完了(HIGH)
+OR L308                  ; 搬送高さ移動完了(MIDLE)
+OR L307                  ; ﾜｰｸ入替高さ移動完了(LOW)
+ANL
+MPS
+ANB X1260                ; 電特ST3部ﾜｰｸ確認(ON_有)
+INC D8500                ; U16-1自動運転ｽﾃｯﾌﾟ
+MPP
+AND X1260                ; 電特ST3部ﾜｰｸ確認(ON_有)
+OUT M8930                ; 電特_ST3_ﾜｰｸ受渡し異常
+LD M8543                 ; U16-1_S43
+AND T1601                ; 装置扉閉確認
+AND M8979                ; U16ｽﾃｯﾌﾟ動作
+INC D8500                ; U16-1自動運転ｽﾃｯﾌﾟ
+LD M8544                 ; U16-1_S44
+AND T1601                ; 装置扉閉確認
+AND M8979                ; U16ｽﾃｯﾌﾟ動作
+MOV K63 D8500            ; U16-1自動運転ｽﾃｯﾌﾟ
+;<h1/>_S50_浮き検出ﾜｰｸ排出
+LD M8550                 ; U16-1_S50
+AND M8979                ; U16ｽﾃｯﾌﾟ動作
+LD L308                  ; 搬送高さ移動完了(MIDLE)
+OR L309                  ; 搬送高さ移動完了(HIGH)
+ANL
+AND M8602                ; RB5位置決め条件
+MPS
+MOV K1 D8530             ; RB5_指令Pos
+MPP
+AND= K1 D8530            ; RB5_指令Pos
+INC D8500                ; U16-1自動運転ｽﾃｯﾌﾟ
+LD M8551                 ; U16-1_S51
+AND M8604                ; RB5位置決め起動指令
+INC D8500                ; U16-1自動運転ｽﾃｯﾌﾟ
+LD M8552                 ; U16-1_S52
+ANB M8604                ; RB5位置決め起動指令
+AND M8621                ; RB5_ﾜｰｸ受取り位置(ID確認位置)
+AND M8979                ; U16ｽﾃｯﾌﾟ動作
+INC D8500                ; U16-1自動運転ｽﾃｯﾌﾟ
+LD M8553                 ; U16-1_S53
+ANPB M8553               ; U16-1_S53
+AND M8979                ; U16ｽﾃｯﾌﾟ動作
+ANB B0326                ; B326_807)ST3ﾜｰｸ除去要求
+ANB X1260                ; 電特ST3部ﾜｰｸ確認(ON_有)
+INC D8500                ; U16-1自動運転ｽﾃｯﾌﾟ
+LD M8554                 ; U16-1_S54
+MPS
+LD M8630                 ; ST3_ﾜｰｸﾃﾞｰﾀ削除指令
+LD W01.13                ; ｲﾝﾃﾞｯｸｽﾃﾞｰﾀｸﾘｱ完了
+OR M3                    ; OFFLINE_MODE
+ANL
+ANL
+MOV K63 D8500            ; U16-1自動運転ｽﾃｯﾌﾟ
+MRD
+LDB W0101.13             ; ｲﾝﾃﾞｯｸｽﾃﾞｰﾀｸﾘｱ要求
+OR M8630                 ; ST3_ﾜｰｸﾃﾞｰﾀ削除指令
+ANL
+OUT M8630                ; ST3_ﾜｰｸﾃﾞｰﾀ削除指令
+@MOV K6 W0148            ; ﾃﾞｰﾀｸﾘｱｲﾝﾃﾞｯｸｽNo
+MPP
+FMOV K0 D8700 K100       ; 3ST_INDEX NO.
+LD M8555                 ; U16-1_S55
+AND M8979                ; U16ｽﾃｯﾌﾟ動作
+INC D8500                ; U16-1自動運転ｽﾃｯﾌﾟ
+LD M8556                 ; U16-1_S56
+AND M8979                ; U16ｽﾃｯﾌﾟ動作
+INC D8500                ; U16-1自動運転ｽﾃｯﾌﾟ
+LD M8557                 ; U16-1_S57
+AND M8979                ; U16ｽﾃｯﾌﾟ動作
+INC D8500                ; U16-1自動運転ｽﾃｯﾌﾟ
+LD M8558                 ; U16-1_S58
+AND M8979                ; U16ｽﾃｯﾌﾟ動作
+INC D8500                ; U16-1自動運転ｽﾃｯﾌﾟ
+LD M8559                 ; U16-1_S59
+AND M8979                ; U16ｽﾃｯﾌﾟ動作
+MOV K63 D8500            ; U16-1自動運転ｽﾃｯﾌﾟ
+;<h1/>◇_電特検査SUB状態・動作条件(補助)
+LD CR2002                ; 常時ON
+OUT M8730                ; U16-3原点
+LDB CR2003               ; 常時OFF
+INV
+OUT M8731                ; U16-3全異常
+LD M8730                 ; U16-3原点
+ANB M8734                ; U16-3(電特検査SUB)起動中
+AND M8979                ; U16ｽﾃｯﾌﾟ動作
+AND M300                 ; PC通信正常
+ANB W03.2                ; FBT検査ｽﾃｰｼﾞ状態#3
+ANB W0103.2              ; FBT検査開始要求#3
+OUT M8732                ; U16-3起動条件
+LDB M50                  ; 運転準備
+OR M8986                 ; U16ｻｲｸﾙ停止異常
+OR T15                   ; 強制停止
+OUT M8733                ; U16-3起動OFF
+LD M8517                 ; U16-1_S17電特検査SUB開始ﾌﾗｸﾞ
+AND M8732                ; U16-3起動条件
+OR M8734                 ; U16-3(電特検査SUB)起動中
+ANB M8733                ; U16-3起動OFF
+ANB M8723                ; U16-3ｻｲｸﾙ終了
+OUT M8734                ; U16-3(電特検査SUB)起動中
+;tp表示
+LD CR2002                ; 常時ON
+DW K0 D8900              ; 電特検査_ｽﾃｰﾀｽ表示
+LD M8734                 ; U16-3(電特検査SUB)起動中
+DW K1 D8900              ; 電特検査_ｽﾃｰﾀｽ表示
+LD= D8704 K1             ; 3ST_電特検査結果(1=OK_2=NG)
+DW K2 D8900              ; 電特検査_ｽﾃｰﾀｽ表示
+LD= D8704 K2             ; 3ST_電特検査結果(1=OK_2=NG)
+DW K3 D8900              ; 電特検査_ｽﾃｰﾀｽ表示
+LDB L1600                ; FBTST3_有効状態
+DW K4 D8900              ; 電特検査_ｽﾃｰﾀｽ表示
+;ﾕﾆｯﾄ1-3ｻｲｸﾙ停止異常
+LDB CR2003               ; 常時OFF
+INV
+OUT M8735                ; U16-3ｻｲｸﾙ停止異常
+;ﾕﾆｯﾄ1-3ｴﾗｰ発生まとめ
+LDB CR2003               ; 常時OFF
+INV
+OUT M8736                ; U16-3ｴﾗｰ発生
+;ﾕﾆｯﾄ1-3停止判定
+LD= D8502 D8507          ; U16-3自動運転ｽﾃｯﾌﾟ  U16-3動作中判定
+TMR K1612 K20            ; 停止ﾀｲﾏ
+LD CR2002                ; 常時ON
+MOV D8502 D8507          ; U16-3自動運転ｽﾃｯﾌﾟ  U16-3動作中判定
+LD T1612                 ; 停止ﾀｲﾏ
+ORB M8734                ; U16-3(電特検査SUB)起動中
+OUT M8737                ; U16-3動作無し
+;□
+;□　ﾕﾆｯﾄ1-3自動運転ステップ開始
+;□
+LD CR2002                ; 常時ON
+FMOV K0 M8660 K4         ; U16-3_S0
+LDB M8734                ; U16-3(電特検査SUB)起動中
+MOV K0 D8502             ; U16-3自動運転ｽﾃｯﾌﾟ
+LD M8734                 ; U16-3(電特検査SUB)起動中
+MOV D8502 Z1             ; U16-3自動運転ｽﾃｯﾌﾟ
+SET M8660:Z1             ; U16-3_S0
+;<h1/>__S0_
+LD M8660                 ; U16-3_S0
+MPS
+LD T1601                 ; 装置扉閉確認
+AND M8979                ; U16ｽﾃｯﾌﾟ動作
+ANB M35                  ; 空運転ﾓｰﾄﾞ
+ANB M3                   ; OFFLINE_MODE
+ANL
+INC D8502                ; U16-3自動運転ｽﾃｯﾌﾟ
+MPP
+LD M35                   ; 空運転ﾓｰﾄﾞ
+OR M3                    ; OFFLINE_MODE
+ANL
+MPS
+AND T1630                ; FBT検査時間(仮)
+INC D8502                ; U16-3自動運転ｽﾃｯﾌﾟ
+MPP
+TMR K1630 K450           ; FBT検査時間(仮)
+LD M8661                 ; U16-3_S1_電特検査ｽﾀｰﾄ要求
+AND W0103.2              ; FBT検査開始要求#3
+LD W03.2                 ; FBT検査ｽﾃｰｼﾞ状態#3
+ANB W03.10               ; FBT検査結果#3
+OR M3                    ; OFFLINE_MODE
+OR M35                   ; 空運転ﾓｰﾄﾞ
+ANL
+INC D8502                ; U16-3自動運転ｽﾃｯﾌﾟ
+LD M8662                 ; U16-3_S2
+LDB W03.2                ; FBT検査ｽﾃｰｼﾞ状態#3
+OR M3                    ; OFFLINE_MODE
+ANL
+INC D8502                ; U16-3自動運転ｽﾃｯﾌﾟ
+LD M8663                 ; U16-3_S3
+MPS
+AND<> D8704 K0           ; 3ST_電特検査結果(1=OK_2=NG)
+INC D8502                ; U16-3自動運転ｽﾃｯﾌﾟ
+MRD
+LDB M35                  ; 空運転ﾓｰﾄﾞ
+ANB M3                   ; OFFLINE_MODE
+ANL
+MPS
+AND W03.10               ; FBT検査結果#3
+MOV K1 D8704             ; 3ST_電特検査結果(1=OK_2=NG)
+MPP
+ANB W03.10               ; FBT検査結果#3
+MOV K2 D8704             ; 3ST_電特検査結果(1=OK_2=NG)
+MPP
+LD M3                    ; OFFLINE_MODE
+OR M35                   ; 空運転ﾓｰﾄﾞ
+ANL
+MPS
+ANB B1038                ; FBTST2_強制NG_TEST
+MOV K1 D8704             ; 3ST_電特検査結果(1=OK_2=NG)
+MPP
+AND B1038                ; FBTST2_強制NG_TEST
+MOV K2 D8704             ; 3ST_電特検査結果(1=OK_2=NG)
+LD M8664                 ; U16-3_S4
+INC D8502                ; U16-3自動運転ｽﾃｯﾌﾟ
+LD M8665                 ; U16-3_S5
+INC D8502                ; U16-3自動運転ｽﾃｯﾌﾟ
+LD M8666                 ; U16-3_S6
+INC D8502                ; U16-3自動運転ｽﾃｯﾌﾟ
+LD M8667                 ; U16-3_S7
+INC D8502                ; U16-3自動運転ｽﾃｯﾌﾟ
+LD M8668                 ; U16-3_S8
+INC D8502                ; U16-3自動運転ｽﾃｯﾌﾟ
+LD M8669                 ; U16-3_S9
+AND T1601                ; 装置扉閉確認
+AND M8979                ; U16ｽﾃｯﾌﾟ動作
+MOV K63 D8502            ; U16-3自動運転ｽﾃｯﾌﾟ
+;ｻｲｸﾙ停止処理
+LD M56                   ; 自動起動停止指令(ｻｲｸﾙ停止)
+AND CR2003               ; 常時OFF
+MOV K62 D8502            ; U16-3自動運転ｽﾃｯﾌﾟ
+;ｻｲｸﾙ終了
+LD M8722                 ; U16-3_S62
+OR CR2003                ; 常時OFF
+@MOV K63 D8502           ; U16-3自動運転ｽﾃｯﾌﾟ
+;<h1/>□_原点復帰回路
+LD CR2002                ; 常時ON
+FMOV K0 M8750 K3         ; STEP0
+LDB M8984                ; U16原点復帰中
+MOV K0 D8510             ; U16原点復帰ｽﾃｯﾌﾟ
+LD M8984                 ; U16原点復帰中
+MOV D8510 Z1             ; U16原点復帰ｽﾃｯﾌﾟ
+SET M8750:Z1             ; STEP0
+;原点復帰ｻｲｸﾙ監視
+LD M8984                 ; U16原点復帰中
+TMR K1600 K200
+;原点復帰ステップ開始
+LD M8750                 ; STEP0
+MPS
+LD T1601                 ; 装置扉閉確認
+AND M8979                ; U16ｽﾃｯﾌﾟ動作
+ANL
+@INC D8510               ; U16原点復帰ｽﾃｯﾌﾟ
+MPP
+MOV K0 D8520             ; 電特ST3投入回数
+LD M8751                 ; STEP1
+AND L309                 ; 搬送高さ移動完了(HIGH)
+AND M8979                ; U16ｽﾃｯﾌﾟ動作
+@INC D8510               ; U16原点復帰ｽﾃｯﾌﾟ
+LD M8752                 ; STEP2_検査ST原点復帰指令
+AND X114A                ; 3st(RB5)原点確定_HEND
+AND M8979                ; U16ｽﾃｯﾌﾟ動作
+@INC D8510               ; U16原点復帰ｽﾃｯﾌﾟ
+LD M8753                 ; STEP3
+AND M8979                ; U16ｽﾃｯﾌﾟ動作
+AND M8602                ; RB5位置決め条件
+MPS
+MOV K1 D8530             ; RB5_指令Pos
+MPP
+AND= K1 D8530            ; RB5_指令Pos
+INC D8510                ; U16原点復帰ｽﾃｯﾌﾟ
+LD M8754                 ; STEP4_待機位置移動指令
+AND M8604                ; RB5位置決め起動指令
+INC D8510                ; U16原点復帰ｽﾃｯﾌﾟ
+LD M8755                 ; STEP5_
+ANB M8604                ; RB5位置決め起動指令
+AND M8621                ; RB5_ﾜｰｸ受取り位置(ID確認位置)
+AND M8979                ; U16ｽﾃｯﾌﾟ動作
+INC D8510                ; U16原点復帰ｽﾃｯﾌﾟ
+LD M8756                 ; STEP6_
+AND M8979                ; U16ｽﾃｯﾌﾟ動作
+@INC D8510               ; U16原点復帰ｽﾃｯﾌﾟ
+;　　ﾜｰｸ有無ﾁｪｯｸ
+LD M8757                 ; STEP7
+AND T1601                ; 装置扉閉確認
+AND M8979                ; U16ｽﾃｯﾌﾟ動作
+MPS
+ANB X1260                ; 電特ST3部ﾜｰｸ確認(ON_有)
+@MOV K10 D8510           ; U16原点復帰ｽﾃｯﾌﾟ
+MPP
+AND X1260                ; 電特ST3部ﾜｰｸ確認(ON_有)
+@INC D8510               ; U16原点復帰ｽﾃｯﾌﾟ
+;　　ﾜｰｸ除去要求
+LD M8758                 ; STEP8_ORGﾜｰｸ除去要求
+AND T1601                ; 装置扉閉確認
+AND M8979                ; U16ｽﾃｯﾌﾟ動作
+AND B0326                ; B326_807)ST3ﾜｰｸ除去要求
+@MOV K46 D8510           ; U16原点復帰ｽﾃｯﾌﾟ
+;　　
+LD M8759                 ; STEP9
+AND T1601                ; 装置扉閉確認
+AND M8979                ; U16ｽﾃｯﾌﾟ動作
+@INC D8510               ; U16原点復帰ｽﾃｯﾌﾟ
+LD M8760                 ; STEP10
+MPS
+AND M8980                ; 電特ST3U16原点
+@MOV K46 D8510           ; U16原点復帰ｽﾃｯﾌﾟ
+MPP
+FMOV K0 D8700 K100       ; 3ST_INDEX NO.
+LD M8796                 ; STEP46
+ANB M82                  ; 原点復帰開始
+@MOV K47 D8510           ; U16原点復帰ｽﾃｯﾌﾟ
+;<h1/>□_手動回路
+LD M31                   ; 手動ﾓｰﾄﾞ
+AND M120                 ; 圧空正常
+AND M121                 ; 非常停止正常
+LD M123                  ; 安全扉正常
+OR M37                   ; ｲﾝﾀｰﾛｯｸ解除ﾓｰﾄﾞ
+OR M39                   ; ｴﾘｱｾﾝｻｰ解除ﾓｰﾄﾞ
+ANL
+ANB M8985                ; U16起動中
+ANB M8984                ; U16原点復帰中
+LDB W03.2                ; FBT検査ｽﾃｰｼﾞ状態#3
+OR M3                    ; OFFLINE_MODE
+ANL
+MC
+LD M8602                 ; RB5位置決め条件
+LD L307                  ; ﾜｰｸ入替高さ移動完了(LOW)
+OR L308                  ; 搬送高さ移動完了(MIDLE)
+OR L309                  ; 搬送高さ移動完了(HIGH)
+ANL
+ANB M8830                ; RB5_ﾜｰｸ受取り位置移動指令
+ANB M8831                ; RB5_ﾜｰｸ浮き確認位置移動指令
+ANB M8832                ; RB5_ｺﾈｸﾀ挿入開始位置移動指令
+ANB M8833                ; RB5_ｺﾈｸﾀ挿入押込み完了位置移動指
+ANB M8834                ; RB5_ｺﾈｸﾀ抜き位置移動指令
+OUT M8820                ; RB5_ﾜｰｸ受取り位置移動OK
+OUT M8821                ; RB5_ﾜｰｸ浮き確認位置移動OK
+OUT M8822                ; RB5_ｺﾈｸﾀ挿入開始位置移動OK
+OUT M8823                ; RB5_ｺﾈｸﾀ挿入押込み完了位置移動OK
+OUT M8824                ; RB5_ｺﾈｸﾀ抜き位置移動OK
+LDP B1270                ; RB5_ﾜｰｸ受取り位置Tpsw
+AND M8820                ; RB5_ﾜｰｸ受取り位置移動OK
+OR M8830                 ; RB5_ﾜｰｸ受取り位置移動指令
+ANB M8607                ; RB5_位置決め完了
+OUT M8830                ; RB5_ﾜｰｸ受取り位置移動指令
+@MOV K1 D8530            ; RB5_指令Pos
+LDP B1271                ; RB5_ﾜｰｸ浮き確認位置Tpsw
+AND M8821                ; RB5_ﾜｰｸ浮き確認位置移動OK
+OR M8831                 ; RB5_ﾜｰｸ浮き確認位置移動指令
+ANB M8607                ; RB5_位置決め完了
+OUT M8831                ; RB5_ﾜｰｸ浮き確認位置移動指令
+@MOV D8540 D8530         ; ﾜｰｸ浮き確認位置指令Pos  RB5_指令Pos
+LDP B1272                ; RB5_ｺﾈｸﾀ挿入開始位置Tpsw
+AND M8822                ; RB5_ｺﾈｸﾀ挿入開始位置移動OK
+OR M8832                 ; RB5_ｺﾈｸﾀ挿入開始位置移動指令
+ANB M8607                ; RB5_位置決め完了
+OUT M8832                ; RB5_ｺﾈｸﾀ挿入開始位置移動指令
+@MOV D8541 D8530         ; ｺﾈｸﾀ挿入開始位置指令Pos  RB5_指令Pos
+LDP B1273                ; RB5_ｺﾈｸﾀ挿入押込み完了位置Tpsw
+AND M8823                ; RB5_ｺﾈｸﾀ挿入押込み完了位置移動OK
+OR M8833                 ; RB5_ｺﾈｸﾀ挿入押込み完了位置移動指
+ANB M8607                ; RB5_位置決め完了
+OUT M8833                ; RB5_ｺﾈｸﾀ挿入押込み完了位置移動指
+@MOV D8542 D8530         ; ｺﾈｸﾀ挿入押込み量※1指令Pos  RB5_指令Pos
+LDP B1274                ; RB5_ｺﾈｸﾀ抜き位置Tpsw
+AND M8824                ; RB5_ｺﾈｸﾀ抜き位置移動OK
+OR M8834                 ; RB5_ｺﾈｸﾀ抜き位置移動指令
+ANB M8607                ; RB5_位置決め完了
+OUT M8834                ; RB5_ｺﾈｸﾀ抜き位置移動指令
+@MOV D8543 D8530         ; ｺﾈｸﾀ抜き位置Pos  RB5_指令Pos
+MCR
+LDP B1266                ; SWBox_ﾊﾟﾚｯﾄ前後ﾓｰﾄﾞsw
+ANB M8970                ; SwBoxMode_電特ﾊﾟﾚｯﾄ前後Flag
+LDPB B1266               ; SWBox_ﾊﾟﾚｯﾄ前後ﾓｰﾄﾞsw
+AND M8970                ; SwBoxMode_電特ﾊﾟﾚｯﾄ前後Flag
+ANB M6312                ; SwBoxMode_LeakﾁｬﾝﾊﾞｰFlag
+ANB M8971                ; SwBoxMode_電特ｸﾗﾝﾌﾟ&ﾊﾟﾚｯﾄFlag
+ORL
+AND= D50 K201            ; TpM-K_表示中ページNo.
+AND M31                  ; 手動ﾓｰﾄﾞ
+ANB M81                  ; 原点復帰動作中
+AND M50                  ; 運転準備
+OUT M8970                ; SwBoxMode_電特ﾊﾟﾚｯﾄ前後Flag
+LDP B1267                ; SWBox_ｸﾗﾝﾌﾟ&ﾊﾟﾚｯﾄﾓｰﾄﾞsw
+ANB M8971                ; SwBoxMode_電特ｸﾗﾝﾌﾟ&ﾊﾟﾚｯﾄFlag
+LDPB B1267               ; SWBox_ｸﾗﾝﾌﾟ&ﾊﾟﾚｯﾄﾓｰﾄﾞsw
+AND M8971                ; SwBoxMode_電特ｸﾗﾝﾌﾟ&ﾊﾟﾚｯﾄFlag
+ANB M8970                ; SwBoxMode_電特ﾊﾟﾚｯﾄ前後Flag
+ANB M6312                ; SwBoxMode_LeakﾁｬﾝﾊﾞｰFlag
+ORL
+AND= D50 K201            ; TpM-K_表示中ページNo.
+AND M31                  ; 手動ﾓｰﾄﾞ
+ANB M81                  ; 原点復帰動作中
+AND M50                  ; 運転準備
+OUT M8971                ; SwBoxMode_電特ｸﾗﾝﾌﾟ&ﾊﾟﾚｯﾄFlag
+;<h1/>▽_検査ｽﾃｰｼﾞRB移動ｻﾌﾞﾙｰﾁﾝ
+;　　移動POS
+LD X114A                 ; 3st(RB5)原点確定_HEND
+AND X114B                ; 3st(RB5)位置決め完了_PEND
+MPS
+AND X1140                ; 3st(RB5)完了Pos_PM1
+OUT D8534.0
+MRD
+AND X1141                ; 3st(RB5)完了Pos_PM2
+OUT D8534.1
+MRD
+AND X1142                ; 3st(RB5)完了Pos_PM4
+OUT D8534.2
+MRD
+AND X1143                ; 3st(RB5)完了Pos_PM8
+OUT D8534.3
+MRD
+AND X1144                ; 3st(RB5)完了Pos_PM16
+OUT D8534.4
+MRD
+AND X1145                ; 3st(RB5)完了Pos_PM32
+OUT D8534.5
+MRD
+AND X1146                ; 3st(RB5)完了Pos_PM64
+OUT D8534.6
+MRD
+AND X1147                ; 3st(RB5)完了Pos_PM128
+OUT D8534.7
+MPP
+INV
+MOV K0 D8534             ; RB5_完了Pos
+;'RB3 POS MANUAL JIG SETTING
+;IF D500 < K1 THEN
+;   D500 = K1
+;END IF
+;D8540 = D500 + 10 		   '浮き確認位置
+;D8541 = (D500 - K1)*3 + 51 'ｺﾈｸﾀ挿入開始
+;D8542 = (D500 - K1)*3 + 52 'ｺﾈｸﾀ挿入完了位置
+;D8543 = (D500 - K1)*3 + 53 'ｺﾈｸﾀ挿入完了位置
+LD M31                   ; 手動ﾓｰﾄﾞ
+NCJ K1000
+;'RB3 POS MANUAL JIG SETTING
+;
+;IF D500 < K1 THEN
+;
+LD< D500 K1              ; 手動_JIG_NO.指定
+NCJ K2000
+;   D500 = K1
+;
+LD CR2002                ; 常時ON
+MOV K1 D500              ; 手動_JIG_NO.指定
+;END IF
+;
+LABEL K2000
+;D8540 = D500 + 10 		   '浮き確認位置
+;
+LD CR2002                ; 常時ON
+LDA D500                 ; 手動_JIG_NO.指定
+CON
+EXT
+CON
+ADD.L +10
+CON
+STA D8540                ; ﾜｰｸ浮き確認位置指令Pos
+;D8541 = (D500 - K1)*3 + 51 'ｺﾈｸﾀ挿入開始
+;
+LD CR2002                ; 常時ON
+LDA D500                 ; 手動_JIG_NO.指定
+CON
+EXT
+CON
+SUB.L +1
+CON
+MUL.L +3
+CON
+ADD.L +51
+CON
+STA D8541                ; ｺﾈｸﾀ挿入開始位置指令Pos
+;D8542 = (D500 - K1)*3 + 52 'ｺﾈｸﾀ挿入完了位置
+;
+LD CR2002                ; 常時ON
+LDA D500                 ; 手動_JIG_NO.指定
+CON
+EXT
+CON
+SUB.L +1
+CON
+MUL.L +3
+CON
+ADD.L +52
+CON
+STA D8542                ; ｺﾈｸﾀ挿入押込み量※1指令Pos
+;D8543 = (D500 - K1)*3 + 53 'ｺﾈｸﾀ挿入完了位置
+LD CR2002                ; 常時ON
+LDA D500                 ; 手動_JIG_NO.指定
+CON
+EXT
+CON
+SUB.L +1
+CON
+MUL.L +3
+CON
+ADD.L +53
+CON
+STA D8543                ; ｺﾈｸﾀ抜き位置Pos
+LABEL K1000
+;
+;'RB3 POS AUTO JIG SETTING
+;D8540 = D8718 + 10 			'浮き確認位置
+;D8541 = (D8718 - K1)*3 + 51	'ｺﾈｸﾀ挿入開始
+;D8542 = (D8718 - K1)*3 + 52 'ｺﾈｸﾀ挿入完了位置
+;D8543 = (D8718 - K1)*3 + 53 'ｺﾈｸﾀ挿入完了位置
+LD M30                   ; 自動ﾓｰﾄﾞ
+NCJ K1001
+;'RB3 POS AUTO JIG SETTING
+;
+;D8540 = D8718 + 10 			'浮き確認位置
+;
+LD CR2002                ; 常時ON
+LDA D8718                ; 3ST_FBT検査RBNo.
+CON
+EXT
+CON
+ADD.L +10
+CON
+STA D8540                ; ﾜｰｸ浮き確認位置指令Pos
+;D8541 = (D8718 - K1)*3 + 51	'ｺﾈｸﾀ挿入開始
+;
+LD CR2002                ; 常時ON
+LDA D8718                ; 3ST_FBT検査RBNo.
+CON
+EXT
+CON
+SUB.L +1
+CON
+MUL.L +3
+CON
+ADD.L +51
+CON
+STA D8541                ; ｺﾈｸﾀ挿入開始位置指令Pos
+;D8542 = (D8718 - K1)*3 + 52 'ｺﾈｸﾀ挿入完了位置
+;
+LD CR2002                ; 常時ON
+LDA D8718                ; 3ST_FBT検査RBNo.
+CON
+EXT
+CON
+SUB.L +1
+CON
+MUL.L +3
+CON
+ADD.L +52
+CON
+STA D8542                ; ｺﾈｸﾀ挿入押込み量※1指令Pos
+;D8543 = (D8718 - K1)*3 + 53 'ｺﾈｸﾀ挿入完了位置
+LD CR2002                ; 常時ON
+LDA D8718                ; 3ST_FBT検査RBNo.
+CON
+EXT
+CON
+SUB.L +1
+CON
+MUL.L +3
+CON
+ADD.L +53
+CON
+STA D8543                ; ｺﾈｸﾀ抜き位置Pos
+LABEL K1001
+;
+LD= K1 D8534             ; RB5_完了Pos
+AND<> K0 D8534           ; RB5_完了Pos
+OUT M8621                ; RB5_ﾜｰｸ受取り位置(ID確認位置)
+LD= D8540 D8534          ; ﾜｰｸ浮き確認位置指令Pos  RB5_完了Pos
+AND<> K0 D8534           ; RB5_完了Pos
+OUT M8622                ; RB5_ﾜｰｸ浮き確認位置
+LD= D8541 D8534          ; ｺﾈｸﾀ挿入開始位置指令Pos  RB5_完了Pos
+AND<> K0 D8534           ; RB5_完了Pos
+OUT M8623                ; RB5_ｺﾈｸﾀ挿入開始位置
+LD= D8542 D8534          ; ｺﾈｸﾀ挿入押込み量※1指令Pos  RB5_完了Pos
+AND<> K0 D8534           ; RB5_完了Pos
+OUT M8624                ; RB5_ｺﾈｸﾀ挿入押込み完了位置
+LD= D8543 D8534          ; ｺﾈｸﾀ抜き位置Pos  RB5_完了Pos
+AND<> K0 D8534           ; RB5_完了Pos
+OUT M8625                ; RB5_ｺﾈｸﾀ抜き位置
+;	検査ｽﾗｲﾀﾞ位置決め処理
+LD X114C                 ; 3st(RB5)ｻｰﾎﾞ状態_SV
+ANB X1149                ; 3st(RB5)運転ﾓｰﾄﾞ_RMDS
+LD X114A                 ; 3st(RB5)原点確定_HEND
+OR CR2002                ; 常時ON
+ANL
+AND X114D                ; 3st(RB5)非常停止_*EMGS
+AND X114E                ; 3st(RB5)ｱﾗｰﾑ_*ALM
+OUT M8600                ; RB5状態OK
+LD M50                   ; 運転準備
+ANB M51                  ; 即停止異常(緊急停止)
+AND M8600                ; RB5状態OK
+ANB M8604                ; RB5位置決め起動指令
+OUT M8602                ; RB5位置決め条件
+LDB M8506                ; U16-1_S6_浮き確認位置移動指令
+ANB M8511                ; U16-1_S11_ﾌﾟﾛｰﾌﾞｱﾌﾟﾛｰﾁ移動指令
+ANB M8514                ; U16-1_S14_ｺﾈｸﾀ押込み位置移動指令
+ANB M8521                ; U16-1_S21_ｺﾈｸﾀ抜き位置移動指令
+ANB M8524                ; U16-1_S24_浮き確認位置移動指令
+ANB M8531                ; U16-1_S31_ﾜｰｸ受取り位置移動指令
+ANB M8551                ; U16-1_S51
+ANB M8754                ; STEP4_待機位置移動指令
+INV
+LDB M8830                ; RB5_ﾜｰｸ受取り位置移動指令
+ANB M8831                ; RB5_ﾜｰｸ浮き確認位置移動指令
+ANB M8832                ; RB5_ｺﾈｸﾀ挿入開始位置移動指令
+ANB M8833                ; RB5_ｺﾈｸﾀ挿入押込み完了位置移動指
+ANB M8834                ; RB5_ｺﾈｸﾀ抜き位置移動指令
+INV
+ORL
+OUT M8603                ; 位置決め起動指令(まとめ)
+LD M8603                 ; 位置決め起動指令(まとめ)
+AND M8602                ; RB5位置決め条件
+OR M8604                 ; RB5位置決め起動指令
+AND M50                  ; 運転準備
+ANB M8608                ; RB5_位置決め動作完了
+AND X114D                ; 3st(RB5)非常停止_*EMGS
+AND X114E                ; 3st(RB5)ｱﾗｰﾑ_*ALM
+OUT M8604                ; RB5位置決め起動指令
+LD M8604                 ; RB5位置決め起動指令
+@MOV D8530 D8532         ; RB5_指令Pos  RB5_ｺﾝﾄﾛｰﾗｰ指令POS
+TMH K1640 K5             ; RB5ﾃﾞｰﾀ転送ﾃﾞｨﾚｲ
+LD T1640                 ; RB5ﾃﾞｰﾀ転送ﾃﾞｨﾚｲ
+OR M8605                 ; RB5_位置決めｽﾀｰﾄ指令
+AND M8604                ; RB5位置決め起動指令
+ANB T1641                ; 位置決め再ｽﾀｰﾄ指令
+OUT M8605                ; RB5_位置決めｽﾀｰﾄ指令
+LD M8605                 ; RB5_位置決めｽﾀｰﾄ指令
+AND Y214D                ; 3st(RB5)ｽﾀｰﾄ_CSTR
+ANB X114B                ; 3st(RB5)位置決め完了_PEND
+OR M8606                 ; RB5_位置決め起動確認
+AND M8605                ; RB5_位置決めｽﾀｰﾄ指令
+OUT M8606                ; RB5_位置決め起動確認
+LD M8606                 ; RB5_位置決め起動確認
+ANB Y214D                ; 3st(RB5)ｽﾀｰﾄ_CSTR
+AND X114B                ; 3st(RB5)位置決め完了_PEND
+AND= D8532 D8534         ; RB5_ｺﾝﾄﾛｰﾗｰ指令POS  RB5_完了Pos
+OR M8607                 ; RB5_位置決め完了
+AND M8605                ; RB5_位置決めｽﾀｰﾄ指令
+OUT M8607                ; RB5_位置決め完了
+LD M8606                 ; RB5_位置決め起動確認
+ANB Y214D                ; 3st(RB5)ｽﾀｰﾄ_CSTR
+AND X114B                ; 3st(RB5)位置決め完了_PEND
+AND<> D8532 D8534        ; RB5_ｺﾝﾄﾛｰﾗｰ指令POS  RB5_完了Pos
+TMR K1641 K50            ; 位置決め再ｽﾀｰﾄ指令
+LD M8607                 ; RB5_位置決め完了
+ANPB M8607               ; RB5_位置決め完了
+OUT M8608                ; RB5_位置決め動作完了
+;<h1/>□_出力回路
+;ソレノイドバルブ出力
+;<h1/>____▼_検査ｽﾗｲﾀﾞ出力
+LD CR2002                ; 常時ON
+MPS
+AND D8532.0
+OUT Y2140                ; 3st(RB5)指令pos_PC1
+MRD
+AND D8532.1
+OUT Y2141                ; 3st(RB5)指令pos_PC2
+MRD
+AND D8532.2
+OUT Y2142                ; 3st(RB5)指令pos_PC4
+MRD
+AND D8532.3
+OUT Y2143                ; 3st(RB5)指令pos_PC8
+MRD
+AND D8532.4
+OUT Y2144                ; 3st(RB5)指令pos_PC16
+MRD
+AND D8532.5
+OUT Y2145                ; 3st(RB5)指令pos_PC32
+MRD
+AND D8532.6
+OUT Y2146                ; 3st(RB5)指令pos_PC64
+MPP
+AND D8532.7
+OUT Y2147                ; 3st(RB5)指令pos_PC128
+LD B126F                 ; ﾏﾆｭｱﾙﾓｰﾄﾞ切替SW(1：ﾏﾆｭｱﾙ)
+OUT Y214A                ; 3st(RB5)運転ﾓｰﾄﾞ_RMOD
+LD<> D50 K203            ; TpM-K_表示中ページNo.
+RES B126F                ; ﾏﾆｭｱﾙﾓｰﾄﾞ切替SW(1：ﾏﾆｭｱﾙ)
+LD M8752                 ; STEP2_検査ST原点復帰指令
+ANB X114A                ; 3st(RB5)原点確定_HEND
+OUT Y214B                ; 3st(RB5)原点復帰_HOME
+LD M123                  ; 安全扉正常
+OUT Y214C                ; 3st(RB5)一時停止_*STP
+LD M8605                 ; RB5_位置決めｽﾀｰﾄ指令
+ANB M8606                ; RB5_位置決め起動確認
+OUT Y214D                ; 3st(RB5)ｽﾀｰﾄ_CSTR
+LD M16                   ; ﾘｾｯﾄPB
+ANB X114E                ; 3st(RB5)ｱﾗｰﾑ_*ALM
+OUT Y214E                ; 3st(RB5)ﾘｾｯﾄ_RES
+LD T70                   ; Readyﾃﾞｨﾚｲ(1s)
+ANB B0322                ; B322_803)ﾊﾝﾄﾞﾜｰｸ除材要求
+OUT Y214F                ; 3st(RB5)ｻｰﾎﾞON_SON
+;■その他制御出力
+LD M8661                 ; U16-3_S1_電特検査ｽﾀｰﾄ要求
+OUT W0103.2              ; FBT検査開始要求#3
+LD L1600                 ; FBTST3_有効状態
+OUT W0103.10             ; FBT検査ｽﾃｰｼﾞ有効/無効#3
+LD L1600                 ; FBTST3_有効状態
+ANB M8909                ; 電特ST3_無効予約(自動運転)
+LD M8909                 ; 電特ST3_無効予約(自動運転)
+AND CR2006               ; 1sｸﾛｯｸﾊﾟﾙｽ
+ORL
+LD M8916                 ; ST有効確認要求
+AND CR2005               ; 100msｸﾛｯｸﾊﾟﾙｽ
+ORL
+OUT Y2312                ; ST3_有効/無効表示
+OUT B176A                ; RB5_ﾜｰｸ受取り位置TpPL
+;□□　　パネル表示　　□□
+LD M8970                 ; SwBoxMode_電特ﾊﾟﾚｯﾄ前後Flag
+OUT B1766
+LD M8971                 ; SwBoxMode_電特ｸﾗﾝﾌﾟ&ﾊﾟﾚｯﾄFlag
+OUT B1767
+LD M8830                 ; RB5_ﾜｰｸ受取り位置移動指令
+AND CR2006               ; 1sｸﾛｯｸﾊﾟﾙｽ
+OR M8621                 ; RB5_ﾜｰｸ受取り位置(ID確認位置)
+OUT B1770
+LD M8831                 ; RB5_ﾜｰｸ浮き確認位置移動指令
+AND CR2006               ; 1sｸﾛｯｸﾊﾟﾙｽ
+OR M8622                 ; RB5_ﾜｰｸ浮き確認位置
+OUT B1771
+LD M8832                 ; RB5_ｺﾈｸﾀ挿入開始位置移動指令
+AND CR2006               ; 1sｸﾛｯｸﾊﾟﾙｽ
+OR M8623                 ; RB5_ｺﾈｸﾀ挿入開始位置
+OUT B1772
+LD M8833                 ; RB5_ｺﾈｸﾀ挿入押込み完了位置移動指
+AND CR2006               ; 1sｸﾛｯｸﾊﾟﾙｽ
+OR M8624                 ; RB5_ｺﾈｸﾀ挿入押込み完了位置
+OUT B1773
+LD M8834                 ; RB5_ｺﾈｸﾀ抜き位置移動指令
+AND CR2006               ; 1sｸﾛｯｸﾊﾟﾙｽ
+OR M8625                 ; RB5_ｺﾈｸﾀ抜き位置
+OUT B1774
+;<h1/>□_異常検出
+LDB X114E                ; 3st(RB5)ｱﾗｰﾑ_*ALM
+AND T72                  ; Readyﾃﾞｨﾚｲ(3s)
+LD CR2003                ; 常時OFF
+ANB B0700                ; B200_513)Bz停止
+ORB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B0200                ; B200_513)ST3検査RB(RBC5)異常
+ORL
+OUT B0200                ; B200_513)ST3検査RB(RBC5)異常
+LDP B0200                ; B200_513)ST3検査RB(RBC5)異常
+AND< D13510 K64          ; FIFO_DATA_VALUE
+MOV K513 D13500          ; ALM_WRITE_CODE(複合)
+FIFOW D13500 D13510      ; ALM_WRITE_CODE(複合)  FIFO_DATA_VALUE
+LD M110                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B0700                 ; B200_513)Bz停止
+AND B0200                ; B200_513)ST3検査RB(RBC5)異常
+OUT B0700                ; B200_513)Bz停止
+;　　
+LDP M8509                ; U16-1_S9_浮き検知異常
+ORP M8527                ; U16-1_S27_後退時ﾜｰｸ浮き検知
+LD CR2003                ; 常時OFF
+ANB B0701                ; B201_514)Bz停止
+ORB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B0201                ; B201_514)ST3ﾜｰｸ浮き検知異常
+ORL
+OUT B0201                ; B201_514)ST3ﾜｰｸ浮き検知異常
+LDP B0201                ; B201_514)ST3ﾜｰｸ浮き検知異常
+AND< D13510 K64          ; FIFO_DATA_VALUE
+MOV K514 D13500          ; ALM_WRITE_CODE(複合)
+FIFOW D13500 D13510      ; ALM_WRITE_CODE(複合)  FIFO_DATA_VALUE
+LD M110                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B0701                 ; B201_514)Bz停止
+AND B0201                ; B201_514)ST3ﾜｰｸ浮き検知異常
+OUT B0701                ; B201_514)Bz停止
+;
+LD T1606                 ; ST3_ｺﾝﾀｸﾄﾍｯﾄﾞID_更新_DLY
+AND L1600                ; FBTST3_有効状態
+AND<> D8600 D8606        ; FBTST3_ｺﾝﾀｸﾄﾍｯﾄﾞID  FBTST3_ｺﾝﾀｸﾄﾍｯﾄﾞID_Copy
+LD CR2003                ; 常時OFF
+ANB B0702                ; B202_515)Bz停止
+ORB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B0202                ; B202_515)FBTST3_ﾃｽﾄﾍｯﾄﾞID_不
+ORL
+OUT B0202                ; B202_515)FBTST3_ﾃｽﾄﾍｯﾄﾞID_不
+LDP B0202                ; B202_515)FBTST3_ﾃｽﾄﾍｯﾄﾞID_不
+AND< D13510 K64          ; FIFO_DATA_VALUE
+MOV K1515 D13500         ; ALM_WRITE_CODE(複合)
+FIFOW D13500 D13510      ; ALM_WRITE_CODE(複合)  FIFO_DATA_VALUE
+LD M110                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B0702                 ; B202_515)Bz停止
+AND B0202                ; B202_515)FBTST3_ﾃｽﾄﾍｯﾄﾞID_不
+OUT B0702                ; B202_515)Bz停止
+;
+LD T1607                 ; ST3_ﾊﾟﾚｯﾄID_更新_DLY
+AND L1600                ; FBTST3_有効状態
+AND<> D8601 D8607        ; FBTST3_ﾊﾟﾚｯﾄID  FBTST3_ﾊﾟﾚｯﾄID_ｾﾝｻ状態
+AND M8621                ; RB5_ﾜｰｸ受取り位置(ID確認位置)
+LD CR2003                ; 常時OFF
+ANB B0703                ; B203_516)Bz停止
+ORB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B0203                ; B203_516)FBTST3_ﾊﾟﾚｯﾄID_不一
+ORL
+OUT B0203                ; B203_516)FBTST3_ﾊﾟﾚｯﾄID_不一
+LDP B0203                ; B203_516)FBTST3_ﾊﾟﾚｯﾄID_不一
+AND< D13510 K64          ; FIFO_DATA_VALUE
+MOV K1516 D13500         ; ALM_WRITE_CODE(複合)
+FIFOW D13500 D13510      ; ALM_WRITE_CODE(複合)  FIFO_DATA_VALUE
+LD M110                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B0703                 ; B203_516)Bz停止
+AND B0203                ; B203_516)FBTST3_ﾊﾟﾚｯﾄID_不一
+OUT B0703                ; B203_516)Bz停止
+;
+LD M8560                 ; U16-1_S60_電特ST3_ﾜｰｸ受取異常
+LD CR2003                ; 常時OFF
+ANB B0704                ; B204_517)Bz停止
+ORB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B0204                ; B204_517)FBTST3_ﾜｰｸ受取異常
+ORL
+OUT B0204                ; B204_517)FBTST3_ﾜｰｸ受取異常
+LDP B0204                ; B204_517)FBTST3_ﾜｰｸ受取異常
+AND< D13510 K64          ; FIFO_DATA_VALUE
+MOV K1517 D13500         ; ALM_WRITE_CODE(複合)
+FIFOW D13500 D13510      ; ALM_WRITE_CODE(複合)  FIFO_DATA_VALUE
+LD M110                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B0704                 ; B204_517)Bz停止
+AND B0204                ; B204_517)FBTST3_ﾜｰｸ受取異常
+OUT B0704                ; B204_517)Bz停止
+;
+LD M8930                 ; 電特_ST3_ﾜｰｸ受渡し異常
+LD CR2003                ; 常時OFF
+ANB B0705                ; B205_518)Bz停止
+ORB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B0205                ; B205_518)FBTST3_ﾜｰｸ受渡し異常
+ORL
+OUT B0205                ; B205_518)FBTST3_ﾜｰｸ受渡し異常
+LDP B0205                ; B205_518)FBTST3_ﾜｰｸ受渡し異常
+AND< D13510 K64          ; FIFO_DATA_VALUE
+MOV K1518 D13500         ; ALM_WRITE_CODE(複合)
+FIFOW D13500 D13510      ; ALM_WRITE_CODE(複合)  FIFO_DATA_VALUE
+LD M110                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B0705                 ; B205_518)Bz停止
+AND B0205                ; B205_518)FBTST3_ﾜｰｸ受渡し異常
+OUT B0705                ; B205_518)Bz停止
+;
+LD D8701.0
+ANB X1260                ; 電特ST3部ﾜｰｸ確認(ON_有)
+LDB D8701.0
+AND X1260                ; 電特ST3部ﾜｰｸ確認(ON_有)
+ORL
+AND M8621                ; RB5_ﾜｰｸ受取り位置(ID確認位置)
+ANB M2964                ; 【搬送】搬送→FBT_ST3搬送開始
+ANB M2968                ; 【搬送】搬送→FBT_ST3搬送完了
+ANB M2976                ; 【搬送】FBTST3除材開始
+ANB M2979                ; 【搬送】FBTST3除材完了
+ANB M8553                ; U16-1_S53
+ANB M8554                ; U16-1_S54
+AND M71                  ; 自動運転開始BZ
+LD CR2003                ; 常時OFF
+ANB B0706                ; B206_519)Bz停止
+ORB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B0206                ; B206_519)FBTST3ﾜｰｸ検知OFF異常
+ORL
+OUT B0206                ; B206_519)FBTST3ﾜｰｸ検知OFF異常
+LDP B0206                ; B206_519)FBTST3ﾜｰｸ検知OFF異常
+AND< D13510 K64          ; FIFO_DATA_VALUE
+MOV K1519 D13500         ; ALM_WRITE_CODE(複合)
+FIFOW D13500 D13510      ; ALM_WRITE_CODE(複合)  FIFO_DATA_VALUE
+LD M110                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B0706                 ; B206_519)Bz停止
+AND B0205                ; B205_518)FBTST3_ﾜｰｸ受渡し異常
+OUT B0706                ; B206_519)Bz停止
+;　　
+LD M8758                 ; STEP8_ORGﾜｰｸ除去要求
+ORP M8553                ; U16-1_S53
+LD CR2003                ; 常時OFF
+ANB B0826                ; B326_807)Bz停止
+ORB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+OR X1260                 ; 電特ST3部ﾜｰｸ確認(ON_有)
+AND B0326                ; B326_807)ST3ﾜｰｸ除去要求
+ORL
+OUT B0326                ; B326_807)ST3ﾜｰｸ除去要求
+LDP B0326                ; B326_807)ST3ﾜｰｸ除去要求
+AND< D13510 K64          ; FIFO_DATA_VALUE
+MOV K807 D13500          ; ALM_WRITE_CODE(複合)
+FIFOW D13500 D13510      ; ALM_WRITE_CODE(複合)  FIFO_DATA_VALUE
+LD M110                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B0826                 ; B326_807)Bz停止
+AND B0326                ; B326_807)ST3ﾜｰｸ除去要求
+OUT B0826                ; B326_807)Bz停止
+LD W03.2                 ; FBT検査ｽﾃｰｼﾞ状態#3
+AND M31                  ; 手動ﾓｰﾄﾞ
+ANP M17                  ; 原点復帰PB
+LD CR2003                ; 常時OFF
+ANB B0828                ; B328_809)Bz停止
+ORB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B032A                ; B32A_811)FBTST3検査中
+ORL
+OUT B032A                ; B32A_811)FBTST3検査中
+LDP B032A                ; B32A_811)FBTST3検査中
+AND< D13510 K64          ; FIFO_DATA_VALUE
+MOV K811 D13500          ; ALM_WRITE_CODE(複合)
+FIFOW D13500 D13510      ; ALM_WRITE_CODE(複合)  FIFO_DATA_VALUE
+LD M110                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B082A                 ; B32A_811)Bz停止
+AND B032A                ; B32A_811)FBTST3検査中
+OUT B082A                ; B32A_811)Bz停止
+LD X1149                 ; 3st(RB5)運転ﾓｰﾄﾞ_RMDS
+ANB B126F                ; ﾏﾆｭｱﾙﾓｰﾄﾞ切替SW(1：ﾏﾆｭｱﾙ)
+OUT B0332                ; B332_819)ST3_RB5_MANUAL MODE
+LDP B0332                ; B332_819)ST3_RB5_MANUAL MODE
+AND< D13510 K64          ; FIFO_DATA_VALUE
+MOV K819 D13500          ; ALM_WRITE_CODE(複合)
+FIFOW D13500 D13510      ; ALM_WRITE_CODE(複合)  FIFO_DATA_VALUE
+LD M110                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B0832                 ; B332_819)Bz停止
+AND B0332                ; B332_819)ST3_RB5_MANUAL MODE
+OUT B0832                ; B332_819)Bz停止
+;異常ﾌﾞｻﾞｰまとめ
+LDB B0200                ; B200_513)ST3検査RB(RBC5)異常
+OR B0700                 ; B200_513)Bz停止
+LDB B0201                ; B201_514)ST3ﾜｰｸ浮き検知異常
+OR B0701                 ; B201_514)Bz停止
+ANL
+LDB B0202                ; B202_515)FBTST3_ﾃｽﾄﾍｯﾄﾞID_不
+OR B0702                 ; B202_515)Bz停止
+ANL
+LDB B0203                ; B203_516)FBTST3_ﾊﾟﾚｯﾄID_不一
+OR B0703                 ; B203_516)Bz停止
+ANL
+LDB B0204                ; B204_517)FBTST3_ﾜｰｸ受取異常
+OR B0704                 ; B204_517)Bz停止
+ANL
+LDB B0205                ; B205_518)FBTST3_ﾜｰｸ受渡し異常
+OR B0705                 ; B205_518)Bz停止
+ANL
+LDB B0206                ; B206_519)FBTST3ﾜｰｸ検知OFF異常
+OR B0706                 ; B206_519)Bz停止
+ANL
+LDB B0207                ; B207_520)
+OR B0707                 ; B207_520)Bz停止
+ANL
+LDB B0208                ; B208_521)
+OR B0708                 ; B208_521)Bz停止
+ANL
+LDB B0209                ; B209_522)
+OR B0709                 ; B209_522)Bz停止
+ANL
+LDB B020A                ; B20A_523)
+OR B070A                 ; B20A_523)Bz停止
+ANL
+LDB B020B                ; B20B_524)
+OR B070B                 ; B20B_524)Bz停止
+ANL
+LDB B020C                ; B20C_525)
+OR B070C                 ; B20C_525)Bz停止
+ANL
+LDB B020D                ; B20D_526)
+OR B070D                 ; B20D_526)Bz停止
+ANL
+LDB B020E                ; B20E_527)
+OR B070E                 ; B20E_527)Bz停止
+ANL
+LDB B020F                ; B20F_528)
+OR B070F                 ; B20F_528)Bz停止
+ANL
+LDB B0210                ; B210_529)
+OR B0710                 ; B210_529)Bz停止
+ANL
+LDB B0211                ; B211_530)
+OR B0711                 ; B211_530)Bz停止
+ANL
+LDB B0212                ; B212_531)
+OR B0712                 ; B212_531)Bz停止
+ANL
+LDB B0213                ; B213_532)
+OR B0713                 ; B213_532)Bz停止
+ANL
+LDB B0174                ; B174_373)
+OR B0674                 ; B174_373)Bz停止
+ANL
+LDB B0175                ; B175_374)
+OR B0675                 ; B175_374)Bz停止
+ANL
+LDB B0176                ; B176_375)
+OR B0676                 ; B176_375)Bz停止
+ANL
+LDB B0177                ; B177_376)
+OR B0677                 ; B177_376)Bz停止
+ANL
+LDB B0178                ; B178_377)
+OR B0678                 ; B178_377)Bz停止
+ANL
+LDB B0179                ; B179_378)
+OR B0679                 ; B179_378)Bz停止
+ANL
+LDB B017A                ; B17A_379)
+OR B067A                 ; B17A_379)Bz停止
+ANL
+LDB B017B                ; B17B_380)
+OR B067B                 ; B17B_380)Bz停止
+ANL
+LDB B017C                ; B17C_381)
+OR B067C                 ; B17C_381)Bz停止
+ANL
+LDB B017D                ; B17D_382)
+OR B067D                 ; B17D_382)Bz停止
+ANL
+LDB B017E                ; B17E_383)
+OR B067E                 ; B17E_383)Bz停止
+ANL
+LDB B017F                ; B17F_384)
+OR B067F                 ; B17F_384)Bz停止
+ANL
+LDB B0326                ; B326_807)ST3ﾜｰｸ除去要求
+OR B0826                 ; B326_807)Bz停止
+ANL
+LDB B032A                ; B32A_811)FBTST3検査中
+OR B082A                 ; B32A_811)Bz停止
+ANL
+LDB B0332                ; B332_819)ST3_RB5_MANUAL MODE
+OR B0832                 ; B332_819)Bz停止
+ANL
+INV
+OUT M8989                ; U16異常BZ補助
+END
+ENDH

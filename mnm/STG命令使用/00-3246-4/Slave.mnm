@@ -1,0 +1,62 @@
+DEVICE:53
+;MODULE:Slave
+;MODULE_TYPE:0
+LD R50000                ; 非常停止停止(復帰不可ｴﾗｰ)
+ZRES @MR000 @MR215       ; 一時停止　解除
+;一時停止
+;ﾒｲﾝPLCより一時停止信号Onで一時停止
+;
+;PAUSE
+;It will be PAUSE if pause signal from the main PLC.
+;It is restart the start signal from the main PLC.
+;
+LDB MR3100               ; Unit1_BUSY
+OR MR3102                ; Unit1_HALT
+LDB MR3200               ; Unit2_BUSY
+OR MR3202                ; Unit2_HALT
+ANL
+LDB MR3300               ; Tank_BUSY
+OR MR3302                ; TANK_HALT
+ANL
+ORB T200                 ; 起動遅延
+OUT R50006               ; ﾎﾟｰｽﾞ可能状態
+LD MR3005                ; 装置ﾎﾟｰｽﾞ
+OUT R50008               ; 一時停止要求中
+LD R50008                ; 一時停止要求中
+AND R50006               ; ﾎﾟｰｽﾞ可能状態
+OR R50009                ; 一時停止中
+ANB @MR000               ; 一時停止　解除
+OUT R50009               ; 一時停止中
+LD R50009                ; 一時停止中
+LD B200A                 ; ﾒｲﾝよりPAUSE許可
+OR R50014                ; 異常発生　 ｴﾗｰﾘｾｯﾄSWON
+ANL
+RES MR3004               ; 洗浄機ﾎﾟｰｽﾞON
+LD R50009                ; 一時停止中
+LD MR3001                ; START
+LDB MR3004               ; 洗浄機ﾎﾟｰｽﾞON
+ANB B2009                ; ﾒｲﾝよりPAUSE要求
+ORL
+ANL
+RES MR3000               ; HALT要求ON
+CON
+RES MR3004               ; 洗浄機ﾎﾟｰｽﾞON
+CON
+RES MR3102               ; Unit1_HALT
+CON
+RES MR3202               ; Unit2_HALT
+CON
+RES MR3302               ; TANK_HALT
+CON
+SET MR3007               ; ﾎﾟｰｽﾞ解除
+LDB MR3000               ; HALT要求ON
+ANB MR3004               ; 洗浄機ﾎﾟｰｽﾞON
+ANB MR3102               ; Unit1_HALT
+ANB MR3202               ; Unit2_HALT
+ANB MR3302               ; TANK_HALT
+AND MR3007               ; ﾎﾟｰｽﾞ解除
+RES MR3007               ; ﾎﾟｰｽﾞ解除
+CON
+OUT @MR000               ; 一時停止　解除
+END
+ENDH

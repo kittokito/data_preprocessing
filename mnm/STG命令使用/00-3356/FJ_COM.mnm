@@ -1,0 +1,1470 @@
+DEVICE:53
+;MODULE:FJ_COM
+;MODULE_TYPE:0
+;SCRIPT_TYPE:
+;FJ-350との通信
+LDP R46104               ; _非常停止中　ﾓｰﾄﾞﾌﾗｸﾞ
+ZRES @DM0 @DM599         ; 通信設定先頭
+CON
+ZRES @R100 @R515
+;<h1/>通信 MAIN
+;ｺﾏﾝﾄﾞ番号説明
+;EM1921
+;#0		ｸﾞﾙｰﾌﾟ番号切替
+;#1		ｼｰﾝ番号切替
+;#2		計測値初期化
+;#3		ﾃﾞｨﾚｸﾄﾘ名設定
+;#4		計測実行
+;#5		X 結果読込		
+;#6		Y 結果読込	
+;#7		Θ 結果読込
+;#8		結果読込
+;#9		結果読込
+STG R37100               ; FJ通信START
+DW #0 @DM9               ; 結果書込み先
+CON
+ZRES @DM0 @DM399         ; 通信設定先頭
+CON
+SET R37102               ; FJ通信中
+CON
+JMP @R100
+STG @R100
+LDA EM1921               ; FJ通信ｺｰﾄﾞ番号
+CON
+STA @DM50                ; 通信ｺｰﾄﾞ
+CON
+JMP @R101
+STG @R101
+MPS
+AND= #0 @DM50            ; 通信ｺｰﾄﾞ
+SMOV "SG 0" @DM10        ; 送信内容
+JMP @R200                ; 汎用通信
+MRD
+AND= #1 @DM50            ; 通信ｺｰﾄﾞ
+MPS
+AND= EM1908 #2           ; 画像検査STEP番号
+SMOV "S 1" @DM10         ; 送信内容
+MRD
+AND= EM1908 #9           ; 画像検査STEP番号
+SMOV "S 2" @DM10         ; 送信内容
+MRD
+AND= EM1908 #16          ; 画像検査STEP番号
+SMOV "S 3" @DM10         ; 送信内容
+MRD
+AND= EM1908 #23          ; 画像検査STEP番号
+SMOV "S 4" @DM10         ; 送信内容
+MPP
+JMP @R200                ; 汎用通信
+MRD
+AND= #2 @DM50            ; 通信ｺｰﾄﾞ
+SMOV "CLRMEAS" @DM10     ; 送信内容
+JMP @R200                ; 汎用通信
+MRD
+AND= #3 @DM50            ; 通信ｺｰﾄﾞ
+MPS
+AND CR2002               ; 常時ON
+SMOV "UD 1 direct LOTNO$=""\000""" @DM10;送信内容
+MPP
+JMP @R200                ; 汎用通信
+MRD
+AND= #4 @DM50            ; 通信ｺｰﾄﾞ
+SMOV "M" @DM10           ; 送信内容
+JMP @R200                ; 汎用通信
+MRD
+AND= #5 @DM50            ; 通信ｺｰﾄﾞ
+SMOV "UD 5 5" @DM10      ; 送信内容
+JMP @R200                ; 汎用通信
+MRD
+AND= #6 @DM50            ; 通信ｺｰﾄﾞ
+SMOV "UD 5 6" @DM10      ; 送信内容
+JMP @R200                ; 汎用通信
+MRD
+AND= #7 @DM50            ; 通信ｺｰﾄﾞ
+SMOV "UD 5 7" @DM10      ; 送信内容
+JMP @R200                ; 汎用通信
+MRD
+AND= #8 @DM50            ; 通信ｺｰﾄﾞ
+SMOV "UD 2 5" @DM10      ; 送信内容
+JMP @R200                ; 汎用通信
+MPP
+AND= #9 @DM50            ; 通信ｺｰﾄﾞ
+SMOV "UD 2 6" @DM10      ; 送信内容
+JMP @R200                ; 汎用通信
+;<h1/>汎用通信
+STG @R200                ; 汎用通信
+ANB @R502                ; 通信中
+SET @R500                ; 通信ｽﾀｰﾄ
+CON
+JMP @R201
+STG @R201
+AND @R501                ; 通信完了
+MPS
+ANB @R503                ; 通信異常
+ZRES R37104 R37115       ; 通信NG  計測値結果読込NG2
+CON
+RES @R501                ; 通信完了
+CON
+RES @R204                ; 変換完了
+CON
+JMP @R203                ; ﾚｽﾎﾟﾝｽ変換
+MPP
+AND @R503                ; 通信異常
+RES @R501                ; 通信完了
+CON
+JMP @R202
+STG @R202
+SET R37103               ; FJ通信異常
+CON
+SET R37104               ; 通信NG
+CON
+RES @R503                ; 通信異常
+CON
+JMP @R215                ; 終了処理
+;@DM300.T = CPSASC (@DM200.T)		'CIP文字列変換
+;'判断
+;
+;'IF(EM1908.U=6)OR(EM1908.U=14)OR(EM1908.U=22)OR(EM1908.U=30)  THEN	'
+;
+;	IF @DM300.T = "OK" THEN	'
+;		@DM51 = #20
+;	END IF
+;
+;	IF @DM300.T = "ER" THEN	'ｴﾗｰの時
+;		@DM51 = #21
+;	END IF
+;
+;	IF @DM300.T = "1.0000" THEN	'結果読込OK
+;		@DM51 = #22
+;	END IF
+;
+;	IF @DM300.T = "-9999.0000" THEN	'結果読込NG
+;		@DM51 = #23
+;	END IF
+;
+;'END IF	
+;
+;	'以下ｴﾗｰ詳細読み込み時のﾚｽﾎﾟﾝｽ
+;
+;
+;IF(EM1908.U=7)OR(EM1908.U=14)OR(EM1908.U=21)OR(EM1908.U=28)  THEN	'
+;
+;	IF @DM300.T = "1.0000" THEN	'ｴﾗｰ詳細1
+;		@DM51 = #41
+;	END IF
+;
+;	IF @DM300.T = "2.0000" THEN	'ｴﾗｰ詳細1
+;		@DM51 = #42
+;	END IF
+;
+;	IF @DM300.T = "3.0000" THEN	'ｴﾗｰ詳細1
+;		@DM51 = #43
+;	END IF
+;
+;	IF @DM300.T = "4.0000" THEN	'ｴﾗｰ詳細1
+;		@DM51 = #44
+;	END IF
+;
+;
+;	IF @DM300.T = "5.0000" THEN	'ｴﾗｰ詳細1
+;		@DM51 = #45
+;	END IF
+;
+;
+;	IF @DM300.T = "6.0000" THEN	'ｴﾗｰ詳細1
+;		@DM51 = #46
+;	END IF
+;
+;	IF @DM300.T = "7.0000" THEN	'ｴﾗｰ詳細1
+;		@DM51 = #47
+;	END IF
+;
+;	IF @DM300.T = "8.0000" THEN	'ｴﾗｰ詳細1
+;		@DM51 = #48
+;	END IF
+;
+;	IF @DM300.T = "9.0000" THEN	'ｴﾗｰ詳細1
+;		@DM51 = #49
+;	END IF
+;
+;	IF @DM300.T = "10.0000" THEN	'ｴﾗｰ詳細1
+;		@DM51 = #50
+;	END IF
+;
+;
+;	IF @DM300.T = "11.0000" THEN	'ｴﾗｰ詳細1
+;		@DM51 = #51
+;	END IF
+;
+;	IF @DM300.T = "12.0000" THEN	'ｴﾗｰ詳細1
+;		@DM51 = #52
+;	END IF
+;
+;	IF @DM300.T = "13.0000" THEN	'ｴﾗｰ詳細1
+;		@DM51 = #53
+;	END IF
+;
+;
+;	IF @DM300.T = "14.0000" THEN	'ｴﾗｰ詳細1
+;		@DM51 = #54
+;	END IF
+;
+;	IF @DM300.T = "15.0000" THEN	'ｴﾗｰ詳細1
+;		@DM51 = #55
+;	END IF
+;
+;	IF @DM300.T = "16.0000" THEN	'ｴﾗｰ詳細1
+;		@DM51 = #56
+;	END IF
+;
+;
+;	IF @DM300.T = "17.0000" THEN	'ｴﾗｰ詳細1
+;		@DM51 = #57
+;	END IF
+;
+;	IF @DM300.T = "18.0000" THEN	'ｴﾗｰ詳細1
+;		@DM51 = #58
+;	END IF
+;
+;
+;	IF @DM300.T = "19.0000" THEN	'ｴﾗｰ詳細1
+;		@DM51 = #59
+;	END IF
+;
+;
+;	IF @DM300.T = "20.0000" THEN	'ｴﾗｰ詳細1
+;		@DM51 = #60
+;	END IF
+;
+;	IF @DM300.T = "21.0000" THEN	'ｴﾗｰ詳細1
+;		@DM51 = #61
+;	END IF
+;
+;	IF @DM300.T = "22.0000" THEN	'ｴﾗｰ詳細1
+;		@DM51 = #62
+;	END IF
+;
+;	IF @DM300.T = "23.0000" THEN	'ｴﾗｰ詳細1
+;		@DM51 = #63
+;	END IF
+;
+;
+;	IF @DM300.T = "24.0000" THEN	'ｴﾗｰ詳細1
+;		@DM51 = #64
+;	END IF
+;
+;	IF @DM300.T = "25.0000" THEN	'ｴﾗｰ詳細1
+;		@DM51 = #65
+;	END IF
+;
+;
+;	IF @DM300.T = "26.0000" THEN	'ｴﾗｰ詳細1
+;		@DM51 = #66
+;	END IF
+;
+;
+;	IF @DM300.T = "27.0000" THEN	'ｴﾗｰ詳細1
+;		@DM51 = #67
+;	END IF
+;
+;	IF @DM300.T = "28.0000" THEN	'ｴﾗｰ詳細1
+;		@DM51 = #68
+;	END IF
+;
+;	IF @DM300.T = "29.0000" THEN	'ｴﾗｰ詳細1
+;		@DM51 = #69
+;	END IF
+;
+;	IF @DM300.T = "30.0000" THEN	'ｴﾗｰ詳細1
+;		@DM51 = #70
+;	END IF
+;
+;	IF @DM300.T = "31.0000" THEN	'ｴﾗｰ詳細1
+;		@DM51 = #71
+;	END IF
+;
+;END IF	
+;
+;
+;
+;
+;
+;IF @DM300.T = "0.0000" THEN	'ｴﾗｰ詳細1
+;	@DM51 = #40
+;END IF
+;
+;
+;
+;
+;'変換完了
+;SET (@R204)
+LD @R203                 ; ﾚｽﾎﾟﾝｽ変換
+NCJ #1001
+;@DM300.T = CPSASC (@DM200.T)		'CIP文字列変換
+;
+LD CR2002                ; 常時ON
+ADRSET VM2 VM0
+MOV #0 VM2
+MOV.D VM0 @VM0
+LD CR2002                ; 常時ON
+CPSASC @DM200 *@VM0      ; 受信ﾃﾞｰﾀ先頭
+LD CR2002                ; 常時ON
+SMOV *@VM0 @DM300
+;'判断
+;
+;'IF(EM1908.U=6)OR(EM1908.U=14)OR(EM1908.U=22)OR(EM1908.U=30)  THEN	'
+;
+;	IF @DM300.T = "OK" THEN	'
+;
+LD CR2002                ; 常時ON
+ADRSET VM2 VM0
+MOV #0 VM2
+MOV.D VM0 @VM2
+SMOV "OK" *@VM2
+LD CR2002                ; 常時ON
+SCMP @DM300 *@VM2
+LD CR2010                ; 演算結果がｾﾞﾛ
+NCJ #2000
+;		@DM51 = #20
+;
+LD CR2002                ; 常時ON
+MOV #20 @DM51
+;	END IF
+;
+LABEL #2000
+;	IF @DM300.T = "ER" THEN	'ｴﾗｰの時
+;
+LD CR2002                ; 常時ON
+ADRSET VM2 VM0
+MOV #0 VM2
+MOV.D VM0 @VM4
+SMOV "ER" *@VM4
+LD CR2002                ; 常時ON
+SCMP @DM300 *@VM4
+LD CR2010                ; 演算結果がｾﾞﾛ
+NCJ #2001
+;		@DM51 = #21
+;
+LD CR2002                ; 常時ON
+MOV #21 @DM51
+;	END IF
+;
+LABEL #2001
+;	IF @DM300.T = "1.0000" THEN	'結果読込OK
+;
+LD CR2002                ; 常時ON
+ADRSET VM2 VM0
+MOV #0 VM2
+MOV.D VM0 @VM6
+SMOV "1.0000" *@VM6
+LD CR2002                ; 常時ON
+SCMP @DM300 *@VM6
+LD CR2010                ; 演算結果がｾﾞﾛ
+NCJ #2002
+;		@DM51 = #22
+;
+LD CR2002                ; 常時ON
+MOV #22 @DM51
+;	END IF
+;
+LABEL #2002
+;	IF @DM300.T = "-9999.0000" THEN	'結果読込NG
+;
+LD CR2002                ; 常時ON
+ADRSET VM2 VM0
+MOV #0 VM2
+MOV.D VM0 @VM8
+SMOV "-9999.0000" *@VM8
+LD CR2002                ; 常時ON
+SCMP @DM300 *@VM8
+LD CR2010                ; 演算結果がｾﾞﾛ
+NCJ #2003
+;		@DM51 = #23
+;
+LD CR2002                ; 常時ON
+MOV #23 @DM51
+;	END IF
+;
+LABEL #2003
+;'END IF	
+;
+;	'以下ｴﾗｰ詳細読み込み時のﾚｽﾎﾟﾝｽ
+;
+;IF(EM1908.U=7)OR(EM1908.U=14)OR(EM1908.U=21)OR(EM1908.U=28)  THEN	'
+;
+LD= EM1908 #7            ; 画像検査STEP番号
+OUT @VB00
+LD= EM1908 #14           ; 画像検査STEP番号
+OR @VB00
+OUT @VB01
+LD= EM1908 #21           ; 画像検査STEP番号
+OR @VB01
+OUT @VB02
+LD= EM1908 #28           ; 画像検査STEP番号
+OR @VB02
+NCJ #2004
+;	IF @DM300.T = "1.0000" THEN	'ｴﾗｰ詳細1
+;
+LD CR2002                ; 常時ON
+ADRSET VM2 VM0
+MOV #0 VM2
+MOV.D VM0 @VM10
+SMOV "1.0000" *@VM10
+LD CR2002                ; 常時ON
+SCMP @DM300 *@VM10
+LD CR2010                ; 演算結果がｾﾞﾛ
+NCJ #2005
+;		@DM51 = #41
+;
+LD CR2002                ; 常時ON
+MOV #41 @DM51
+;	END IF
+;
+LABEL #2005
+;	IF @DM300.T = "2.0000" THEN	'ｴﾗｰ詳細1
+;
+LD CR2002                ; 常時ON
+ADRSET VM2 VM0
+MOV #0 VM2
+MOV.D VM0 @VM12
+SMOV "2.0000" *@VM12
+LD CR2002                ; 常時ON
+SCMP @DM300 *@VM12
+LD CR2010                ; 演算結果がｾﾞﾛ
+NCJ #2006
+;		@DM51 = #42
+;
+LD CR2002                ; 常時ON
+MOV #42 @DM51
+;	END IF
+;
+LABEL #2006
+;	IF @DM300.T = "3.0000" THEN	'ｴﾗｰ詳細1
+;
+LD CR2002                ; 常時ON
+ADRSET VM2 VM0
+MOV #0 VM2
+MOV.D VM0 @VM14
+SMOV "3.0000" *@VM14
+LD CR2002                ; 常時ON
+SCMP @DM300 *@VM14
+LD CR2010                ; 演算結果がｾﾞﾛ
+NCJ #2007
+;		@DM51 = #43
+;
+LD CR2002                ; 常時ON
+MOV #43 @DM51
+;	END IF
+;
+LABEL #2007
+;	IF @DM300.T = "4.0000" THEN	'ｴﾗｰ詳細1
+;
+LD CR2002                ; 常時ON
+ADRSET VM2 VM0
+MOV #0 VM2
+MOV.D VM0 @VM16
+SMOV "4.0000" *@VM16
+LD CR2002                ; 常時ON
+SCMP @DM300 *@VM16
+LD CR2010                ; 演算結果がｾﾞﾛ
+NCJ #2008
+;		@DM51 = #44
+;
+LD CR2002                ; 常時ON
+MOV #44 @DM51
+;	END IF
+;
+LABEL #2008
+;	IF @DM300.T = "5.0000" THEN	'ｴﾗｰ詳細1
+;
+LD CR2002                ; 常時ON
+ADRSET VM2 VM0
+MOV #0 VM2
+MOV.D VM0 @VM18
+SMOV "5.0000" *@VM18
+LD CR2002                ; 常時ON
+SCMP @DM300 *@VM18
+LD CR2010                ; 演算結果がｾﾞﾛ
+NCJ #2009
+;		@DM51 = #45
+;
+LD CR2002                ; 常時ON
+MOV #45 @DM51
+;	END IF
+;
+LABEL #2009
+;	IF @DM300.T = "6.0000" THEN	'ｴﾗｰ詳細1
+;
+LD CR2002                ; 常時ON
+ADRSET VM2 VM0
+MOV #0 VM2
+MOV.D VM0 @VM20
+SMOV "6.0000" *@VM20
+LD CR2002                ; 常時ON
+SCMP @DM300 *@VM20
+LD CR2010                ; 演算結果がｾﾞﾛ
+NCJ #2010
+;		@DM51 = #46
+;
+LD CR2002                ; 常時ON
+MOV #46 @DM51
+;	END IF
+;
+LABEL #2010
+;	IF @DM300.T = "7.0000" THEN	'ｴﾗｰ詳細1
+;
+LD CR2002                ; 常時ON
+ADRSET VM2 VM0
+MOV #0 VM2
+MOV.D VM0 @VM22
+SMOV "7.0000" *@VM22
+LD CR2002                ; 常時ON
+SCMP @DM300 *@VM22
+LD CR2010                ; 演算結果がｾﾞﾛ
+NCJ #2011
+;		@DM51 = #47
+;
+LD CR2002                ; 常時ON
+MOV #47 @DM51
+;	END IF
+;
+LABEL #2011
+;	IF @DM300.T = "8.0000" THEN	'ｴﾗｰ詳細1
+;
+LD CR2002                ; 常時ON
+ADRSET VM2 VM0
+MOV #0 VM2
+MOV.D VM0 @VM24
+SMOV "8.0000" *@VM24
+LD CR2002                ; 常時ON
+SCMP @DM300 *@VM24
+LD CR2010                ; 演算結果がｾﾞﾛ
+NCJ #2012
+;		@DM51 = #48
+;
+LD CR2002                ; 常時ON
+MOV #48 @DM51
+;	END IF
+;
+LABEL #2012
+;	IF @DM300.T = "9.0000" THEN	'ｴﾗｰ詳細1
+;
+LD CR2002                ; 常時ON
+ADRSET VM2 VM0
+MOV #0 VM2
+MOV.D VM0 @VM26
+SMOV "9.0000" *@VM26
+LD CR2002                ; 常時ON
+SCMP @DM300 *@VM26
+LD CR2010                ; 演算結果がｾﾞﾛ
+NCJ #2013
+;		@DM51 = #49
+;
+LD CR2002                ; 常時ON
+MOV #49 @DM51
+;	END IF
+;
+LABEL #2013
+;	IF @DM300.T = "10.0000" THEN	'ｴﾗｰ詳細1
+;
+LD CR2002                ; 常時ON
+ADRSET VM2 VM0
+MOV #0 VM2
+MOV.D VM0 @VM28
+SMOV "10.0000" *@VM28
+LD CR2002                ; 常時ON
+SCMP @DM300 *@VM28
+LD CR2010                ; 演算結果がｾﾞﾛ
+NCJ #2014
+;		@DM51 = #50
+;
+LD CR2002                ; 常時ON
+MOV #50 @DM51
+;	END IF
+;
+LABEL #2014
+;	IF @DM300.T = "11.0000" THEN	'ｴﾗｰ詳細1
+;
+LD CR2002                ; 常時ON
+ADRSET VM2 VM0
+MOV #0 VM2
+MOV.D VM0 @VM30
+SMOV "11.0000" *@VM30
+LD CR2002                ; 常時ON
+SCMP @DM300 *@VM30
+LD CR2010                ; 演算結果がｾﾞﾛ
+NCJ #2015
+;		@DM51 = #51
+;
+LD CR2002                ; 常時ON
+MOV #51 @DM51
+;	END IF
+;
+LABEL #2015
+;	IF @DM300.T = "12.0000" THEN	'ｴﾗｰ詳細1
+;
+LD CR2002                ; 常時ON
+ADRSET VM2 VM0
+MOV #0 VM2
+MOV.D VM0 @VM32
+SMOV "12.0000" *@VM32
+LD CR2002                ; 常時ON
+SCMP @DM300 *@VM32
+LD CR2010                ; 演算結果がｾﾞﾛ
+NCJ #2016
+;		@DM51 = #52
+;
+LD CR2002                ; 常時ON
+MOV #52 @DM51
+;	END IF
+;
+LABEL #2016
+;	IF @DM300.T = "13.0000" THEN	'ｴﾗｰ詳細1
+;
+LD CR2002                ; 常時ON
+ADRSET VM2 VM0
+MOV #0 VM2
+MOV.D VM0 @VM34
+SMOV "13.0000" *@VM34
+LD CR2002                ; 常時ON
+SCMP @DM300 *@VM34
+LD CR2010                ; 演算結果がｾﾞﾛ
+NCJ #2017
+;		@DM51 = #53
+;
+LD CR2002                ; 常時ON
+MOV #53 @DM51
+;	END IF
+;
+LABEL #2017
+;	IF @DM300.T = "14.0000" THEN	'ｴﾗｰ詳細1
+;
+LD CR2002                ; 常時ON
+ADRSET VM2 VM0
+MOV #0 VM2
+MOV.D VM0 @VM36
+SMOV "14.0000" *@VM36
+LD CR2002                ; 常時ON
+SCMP @DM300 *@VM36
+LD CR2010                ; 演算結果がｾﾞﾛ
+NCJ #2018
+;		@DM51 = #54
+;
+LD CR2002                ; 常時ON
+MOV #54 @DM51
+;	END IF
+;
+LABEL #2018
+;	IF @DM300.T = "15.0000" THEN	'ｴﾗｰ詳細1
+;
+LD CR2002                ; 常時ON
+ADRSET VM2 VM0
+MOV #0 VM2
+MOV.D VM0 @VM38
+SMOV "15.0000" *@VM38
+LD CR2002                ; 常時ON
+SCMP @DM300 *@VM38
+LD CR2010                ; 演算結果がｾﾞﾛ
+NCJ #2019
+;		@DM51 = #55
+;
+LD CR2002                ; 常時ON
+MOV #55 @DM51
+;	END IF
+;
+LABEL #2019
+;	IF @DM300.T = "16.0000" THEN	'ｴﾗｰ詳細1
+;
+LD CR2002                ; 常時ON
+ADRSET VM2 VM0
+MOV #0 VM2
+MOV.D VM0 @VM40
+SMOV "16.0000" *@VM40
+LD CR2002                ; 常時ON
+SCMP @DM300 *@VM40
+LD CR2010                ; 演算結果がｾﾞﾛ
+NCJ #2020
+;		@DM51 = #56
+;
+LD CR2002                ; 常時ON
+MOV #56 @DM51
+;	END IF
+;
+LABEL #2020
+;	IF @DM300.T = "17.0000" THEN	'ｴﾗｰ詳細1
+;
+LD CR2002                ; 常時ON
+ADRSET VM2 VM0
+MOV #0 VM2
+MOV.D VM0 @VM42
+SMOV "17.0000" *@VM42
+LD CR2002                ; 常時ON
+SCMP @DM300 *@VM42
+LD CR2010                ; 演算結果がｾﾞﾛ
+NCJ #2021
+;		@DM51 = #57
+;
+LD CR2002                ; 常時ON
+MOV #57 @DM51
+;	END IF
+;
+LABEL #2021
+;	IF @DM300.T = "18.0000" THEN	'ｴﾗｰ詳細1
+;
+LD CR2002                ; 常時ON
+ADRSET VM2 VM0
+MOV #0 VM2
+MOV.D VM0 @VM44
+SMOV "18.0000" *@VM44
+LD CR2002                ; 常時ON
+SCMP @DM300 *@VM44
+LD CR2010                ; 演算結果がｾﾞﾛ
+NCJ #2022
+;		@DM51 = #58
+;
+LD CR2002                ; 常時ON
+MOV #58 @DM51
+;	END IF
+;
+LABEL #2022
+;	IF @DM300.T = "19.0000" THEN	'ｴﾗｰ詳細1
+;
+LD CR2002                ; 常時ON
+ADRSET VM2 VM0
+MOV #0 VM2
+MOV.D VM0 @VM46
+SMOV "19.0000" *@VM46
+LD CR2002                ; 常時ON
+SCMP @DM300 *@VM46
+LD CR2010                ; 演算結果がｾﾞﾛ
+NCJ #2023
+;		@DM51 = #59
+;
+LD CR2002                ; 常時ON
+MOV #59 @DM51
+;	END IF
+;
+LABEL #2023
+;	IF @DM300.T = "20.0000" THEN	'ｴﾗｰ詳細1
+;
+LD CR2002                ; 常時ON
+ADRSET VM2 VM0
+MOV #0 VM2
+MOV.D VM0 @VM48
+SMOV "20.0000" *@VM48
+LD CR2002                ; 常時ON
+SCMP @DM300 *@VM48
+LD CR2010                ; 演算結果がｾﾞﾛ
+NCJ #2024
+;		@DM51 = #60
+;
+LD CR2002                ; 常時ON
+MOV #60 @DM51
+;	END IF
+;
+LABEL #2024
+;	IF @DM300.T = "21.0000" THEN	'ｴﾗｰ詳細1
+;
+LD CR2002                ; 常時ON
+ADRSET VM2 VM0
+MOV #0 VM2
+MOV.D VM0 @VM50
+SMOV "21.0000" *@VM50
+LD CR2002                ; 常時ON
+SCMP @DM300 *@VM50
+LD CR2010                ; 演算結果がｾﾞﾛ
+NCJ #2025
+;		@DM51 = #61
+;
+LD CR2002                ; 常時ON
+MOV #61 @DM51
+;	END IF
+;
+LABEL #2025
+;	IF @DM300.T = "22.0000" THEN	'ｴﾗｰ詳細1
+;
+LD CR2002                ; 常時ON
+ADRSET VM2 VM0
+MOV #0 VM2
+MOV.D VM0 @VM52
+SMOV "22.0000" *@VM52
+LD CR2002                ; 常時ON
+SCMP @DM300 *@VM52
+LD CR2010                ; 演算結果がｾﾞﾛ
+NCJ #2026
+;		@DM51 = #62
+;
+LD CR2002                ; 常時ON
+MOV #62 @DM51
+;	END IF
+;
+LABEL #2026
+;	IF @DM300.T = "23.0000" THEN	'ｴﾗｰ詳細1
+;
+LD CR2002                ; 常時ON
+ADRSET VM2 VM0
+MOV #0 VM2
+MOV.D VM0 @VM54
+SMOV "23.0000" *@VM54
+LD CR2002                ; 常時ON
+SCMP @DM300 *@VM54
+LD CR2010                ; 演算結果がｾﾞﾛ
+NCJ #2027
+;		@DM51 = #63
+;
+LD CR2002                ; 常時ON
+MOV #63 @DM51
+;	END IF
+;
+LABEL #2027
+;	IF @DM300.T = "24.0000" THEN	'ｴﾗｰ詳細1
+;
+LD CR2002                ; 常時ON
+ADRSET VM2 VM0
+MOV #0 VM2
+MOV.D VM0 @VM56
+SMOV "24.0000" *@VM56
+LD CR2002                ; 常時ON
+SCMP @DM300 *@VM56
+LD CR2010                ; 演算結果がｾﾞﾛ
+NCJ #2028
+;		@DM51 = #64
+;
+LD CR2002                ; 常時ON
+MOV #64 @DM51
+;	END IF
+;
+LABEL #2028
+;	IF @DM300.T = "25.0000" THEN	'ｴﾗｰ詳細1
+;
+LD CR2002                ; 常時ON
+ADRSET VM2 VM0
+MOV #0 VM2
+MOV.D VM0 @VM58
+SMOV "25.0000" *@VM58
+LD CR2002                ; 常時ON
+SCMP @DM300 *@VM58
+LD CR2010                ; 演算結果がｾﾞﾛ
+NCJ #2029
+;		@DM51 = #65
+;
+LD CR2002                ; 常時ON
+MOV #65 @DM51
+;	END IF
+;
+LABEL #2029
+;	IF @DM300.T = "26.0000" THEN	'ｴﾗｰ詳細1
+;
+LD CR2002                ; 常時ON
+ADRSET VM2 VM0
+MOV #0 VM2
+MOV.D VM0 @VM60
+SMOV "26.0000" *@VM60
+LD CR2002                ; 常時ON
+SCMP @DM300 *@VM60
+LD CR2010                ; 演算結果がｾﾞﾛ
+NCJ #2030
+;		@DM51 = #66
+;
+LD CR2002                ; 常時ON
+MOV #66 @DM51
+;	END IF
+;
+LABEL #2030
+;	IF @DM300.T = "27.0000" THEN	'ｴﾗｰ詳細1
+;
+LD CR2002                ; 常時ON
+ADRSET VM2 VM0
+MOV #0 VM2
+MOV.D VM0 @VM62
+SMOV "27.0000" *@VM62
+LD CR2002                ; 常時ON
+SCMP @DM300 *@VM62
+LD CR2010                ; 演算結果がｾﾞﾛ
+NCJ #2031
+;		@DM51 = #67
+;
+LD CR2002                ; 常時ON
+MOV #67 @DM51
+;	END IF
+;
+LABEL #2031
+;	IF @DM300.T = "28.0000" THEN	'ｴﾗｰ詳細1
+;
+LD CR2002                ; 常時ON
+ADRSET VM2 VM0
+MOV #0 VM2
+MOV.D VM0 @VM64
+SMOV "28.0000" *@VM64
+LD CR2002                ; 常時ON
+SCMP @DM300 *@VM64
+LD CR2010                ; 演算結果がｾﾞﾛ
+NCJ #2032
+;		@DM51 = #68
+;
+LD CR2002                ; 常時ON
+MOV #68 @DM51
+;	END IF
+;
+LABEL #2032
+;	IF @DM300.T = "29.0000" THEN	'ｴﾗｰ詳細1
+;
+LD CR2002                ; 常時ON
+ADRSET VM2 VM0
+MOV #0 VM2
+MOV.D VM0 @VM66
+SMOV "29.0000" *@VM66
+LD CR2002                ; 常時ON
+SCMP @DM300 *@VM66
+LD CR2010                ; 演算結果がｾﾞﾛ
+NCJ #2033
+;		@DM51 = #69
+;
+LD CR2002                ; 常時ON
+MOV #69 @DM51
+;	END IF
+;
+LABEL #2033
+;	IF @DM300.T = "30.0000" THEN	'ｴﾗｰ詳細1
+;
+LD CR2002                ; 常時ON
+ADRSET VM2 VM0
+MOV #0 VM2
+MOV.D VM0 @VM68
+SMOV "30.0000" *@VM68
+LD CR2002                ; 常時ON
+SCMP @DM300 *@VM68
+LD CR2010                ; 演算結果がｾﾞﾛ
+NCJ #2034
+;		@DM51 = #70
+;
+LD CR2002                ; 常時ON
+MOV #70 @DM51
+;	END IF
+;
+LABEL #2034
+;	IF @DM300.T = "31.0000" THEN	'ｴﾗｰ詳細1
+;
+LD CR2002                ; 常時ON
+ADRSET VM2 VM0
+MOV #0 VM2
+MOV.D VM0 @VM70
+SMOV "31.0000" *@VM70
+LD CR2002                ; 常時ON
+SCMP @DM300 *@VM70
+LD CR2010                ; 演算結果がｾﾞﾛ
+NCJ #2035
+;		@DM51 = #71
+;
+LD CR2002                ; 常時ON
+MOV #71 @DM51
+;	END IF
+;
+LABEL #2035
+;END IF	
+;
+LABEL #2004
+;IF @DM300.T = "0.0000" THEN	'ｴﾗｰ詳細1
+;
+LD CR2002                ; 常時ON
+ADRSET VM2 VM0
+MOV #0 VM2
+MOV.D VM0 @VM72
+SMOV "0.0000" *@VM72
+LD CR2002                ; 常時ON
+SCMP @DM300 *@VM72
+LD CR2010                ; 演算結果がｾﾞﾛ
+NCJ #2036
+;	@DM51 = #40
+;
+LD CR2002                ; 常時ON
+MOV #40 @DM51
+;END IF
+;
+LABEL #2036
+;'変換完了
+;
+;SET (@R204)
+LD CR2002                ; 常時ON
+SET @R204                ; 変換完了
+LABEL #1001
+;
+STG @R203                ; ﾚｽﾎﾟﾝｽ変換
+AND @R204                ; 変換完了
+MPS
+AND= @DM51 #20
+RES @R204                ; 変換完了
+CON
+JMP @R215                ; 終了処理
+MRD
+AND= @DM51 #21
+MPS
+AND= #0 @DM50            ; 通信ｺｰﾄﾞ
+SET R37103               ; FJ通信異常
+CON
+SET R37106               ; ｼｰﾝ切替NG
+CON
+RES @R204                ; 変換完了
+CON
+JMP @R215                ; 終了処理
+MRD
+AND= #1 @DM50            ; 通信ｺｰﾄﾞ
+SET R37103               ; FJ通信異常
+CON
+SET R37107               ; ｸﾞﾙｰﾌﾟ切替NG
+CON
+RES @R204                ; 変換完了
+CON
+JMP @R215                ; 終了処理
+MRD
+AND= #2 @DM50            ; 通信ｺｰﾄﾞ
+SET R37103               ; FJ通信異常
+CON
+SET R37108               ; 計測値初期化NG
+CON
+RES @R204                ; 変換完了
+CON
+JMP @R215                ; 終了処理
+MRD
+AND= #3 @DM50            ; 通信ｺｰﾄﾞ
+SET R37103               ; FJ通信異常
+CON
+SET R37109               ; ﾃﾞｨﾚｸﾄﾘ設定NG
+CON
+RES @R204                ; 変換完了
+CON
+JMP @R215                ; 終了処理
+MRD
+AND= #4 @DM50            ; 通信ｺｰﾄﾞ
+SET R37103               ; FJ通信異常
+CON
+SET R37110               ; 計測実行NG
+CON
+RES @R204                ; 変換完了
+CON
+JMP @R215                ; 終了処理
+MRD
+AND= #5 @DM50            ; 通信ｺｰﾄﾞ
+SET R37103               ; FJ通信異常
+CON
+SET R37111               ; X 結果読込NG
+CON
+RES @R204                ; 変換完了
+CON
+JMP @R215                ; 終了処理
+MRD
+AND= #6 @DM50            ; 通信ｺｰﾄﾞ
+SET R37103               ; FJ通信異常
+CON
+SET R37112               ; Y 結果読込NG
+CON
+RES @R204                ; 変換完了
+CON
+JMP @R215                ; 終了処理
+MRD
+AND= #7 @DM50            ; 通信ｺｰﾄﾞ
+SET R37103               ; FJ通信異常
+CON
+SET R37113               ; Θ 結果読込NG
+CON
+RES @R204                ; 変換完了
+CON
+JMP @R215                ; 終了処理
+MRD
+AND= #8 @DM50            ; 通信ｺｰﾄﾞ
+SET R37103               ; FJ通信異常
+CON
+SET R37114               ; 計測値結果読込NG1
+CON
+RES @R204                ; 変換完了
+CON
+JMP @R215                ; 終了処理
+MPP
+AND= #9 @DM50            ; 通信ｺｰﾄﾞ
+SET R37103               ; FJ通信異常
+CON
+SET R37115               ; 計測値結果読込NG2
+CON
+RES @R204                ; 変換完了
+CON
+JMP @R215                ; 終了処理
+MRD
+AND= @DM51 #22
+RES @R204                ; 変換完了
+CON
+JMP @R208                ; 結果格納
+MRD
+AND= @DM51 #23
+RES @R204                ; 変換完了
+CON
+JMP @R208                ; 結果格納
+MRD
+LD>= @DM51 #40
+AND< @DM51 #80
+ANL
+RES @R204                ; 変換完了
+CON
+JMP @R208                ; 結果格納
+MRD
+AND= EM1908 #6           ; 画像検査STEP番号
+@BMOV @DM300 @DM400 #5   ; 結果ｺｰﾄﾞ
+@RFASC @DM400 DM7000     ; 結果ｺｰﾄﾞ  装置基礎ﾃﾞｰﾀ1
+LDA.F DM7000             ; 装置基礎ﾃﾞｰﾀ1
+CON
+INTG.L
+CON
+STA.L DM7000             ; 装置基礎ﾃﾞｰﾀ1
+MRD
+AND= EM1908 #7           ; 画像検査STEP番号
+@BMOV @DM300 @DM410 #5
+@RFASC @DM410 DM7008     ; 装置基礎ﾃﾞｰﾀ5
+LDA.F DM7008             ; 装置基礎ﾃﾞｰﾀ5
+CON
+INTG.L
+CON
+STA.L DM7008             ; 装置基礎ﾃﾞｰﾀ5
+MRD
+AND= EM1908 #13          ; 画像検査STEP番号
+@BMOV @DM300 @DM420 #5
+@RFASC @DM420 DM7002     ; 装置基礎ﾃﾞｰﾀ2
+LDA.F DM7002             ; 装置基礎ﾃﾞｰﾀ2
+CON
+INTG.L
+CON
+STA.L DM7002             ; 装置基礎ﾃﾞｰﾀ2
+MRD
+AND= EM1908 #14          ; 画像検査STEP番号
+@BMOV @DM300 @DM430 #5
+@RFASC @DM430 DM7010     ; 装置基礎ﾃﾞｰﾀ6
+LDA.F DM7010             ; 装置基礎ﾃﾞｰﾀ6
+CON
+INTG.L
+CON
+STA.L DM7010             ; 装置基礎ﾃﾞｰﾀ6
+MRD
+AND= EM1908 #20          ; 画像検査STEP番号
+@BMOV @DM300 @DM440 #5
+@RFASC @DM440 DM7004     ; 装置基礎ﾃﾞｰﾀ3
+LDA.F DM7004             ; 装置基礎ﾃﾞｰﾀ3
+CON
+INTG.L
+CON
+STA.L DM7004             ; 装置基礎ﾃﾞｰﾀ3
+MRD
+AND= EM1908 #21          ; 画像検査STEP番号
+@BMOV @DM300 @DM450 #5
+@RFASC @DM450 DM7012     ; 装置基礎ﾃﾞｰﾀ7
+LDA.F DM7012             ; 装置基礎ﾃﾞｰﾀ7
+CON
+INTG.L
+CON
+STA.L DM7012             ; 装置基礎ﾃﾞｰﾀ7
+MRD
+AND= EM1908 #27          ; 画像検査STEP番号
+@BMOV @DM300 @DM460 #5
+@RFASC @DM460 DM7006     ; 装置基礎ﾃﾞｰﾀ4
+LDA.F DM7006             ; 装置基礎ﾃﾞｰﾀ4
+CON
+INTG.L
+CON
+STA.L DM7006             ; 装置基礎ﾃﾞｰﾀ4
+MPP
+AND= EM1908 #28          ; 画像検査STEP番号
+@BMOV @DM300 @DM470 #5
+@RFASC @DM470 DM7014     ; 装置基礎ﾃﾞｰﾀ8
+LDA.F DM7014             ; 装置基礎ﾃﾞｰﾀ8
+CON
+INTG.L
+CON
+STA.L DM7014             ; 装置基礎ﾃﾞｰﾀ8
+STG @R208                ; 結果格納
+MPS
+AND= EM1908 #6           ; 画像検査STEP番号
+LDA @DM51
+CON
+FLOAT
+CON
+STA.F DM5360             ; _ﾃﾞｰﾀ収集　ﾕｰｻﾞｰ4_1(左上1検査)
+CON
+JMP @R209
+MRD
+AND= EM1908 #7           ; 画像検査STEP番号
+LDA @DM51
+CON
+FLOAT
+CON
+STA.F DM5362             ; _ﾃﾞｰﾀ収集　ﾕｰｻﾞｰ4_2(左上1NGｺｰﾄﾞ)
+CON
+JMP @R209
+MRD
+AND= EM1908 #13          ; 画像検査STEP番号
+LDA @DM51
+CON
+FLOAT
+CON
+STA.F DM5364             ; _ﾃﾞｰﾀ収集　ﾕｰｻﾞｰ4_3(左上2検査)
+CON
+JMP @R209
+MRD
+AND= EM1908 #14          ; 画像検査STEP番号
+LDA @DM51
+CON
+FLOAT
+CON
+STA.F DM5366             ; _ﾃﾞｰﾀ収集　ﾕｰｻﾞｰ4_4(左上2NGｺｰﾄﾞ)
+CON
+JMP @R209
+MRD
+AND= EM1908 #20          ; 画像検査STEP番号
+LDA @DM51
+CON
+FLOAT
+CON
+STA.F DM5368             ; _ﾃﾞｰﾀ収集　ﾕｰｻﾞｰ4_5(左下2検査)
+CON
+JMP @R209
+MRD
+AND= EM1908 #21          ; 画像検査STEP番号
+LDA @DM51
+CON
+FLOAT
+CON
+STA.F DM5370             ; _ﾃﾞｰﾀ収集　ﾕｰｻﾞｰ4_6(左下2NGｺｰﾄﾞ)
+CON
+JMP @R209
+MRD
+AND= EM1908 #27          ; 画像検査STEP番号
+LDA @DM51
+CON
+FLOAT
+CON
+STA.F DM5372             ; _ﾃﾞｰﾀ収集　ﾕｰｻﾞｰ4_7(左下1検査)
+CON
+JMP @R209
+MPP
+AND= EM1908 #28          ; 画像検査STEP番号
+LDA @DM51
+CON
+FLOAT
+CON
+STA.F DM5374             ; _ﾃﾞｰﾀ収集　ﾕｰｻﾞｰ4_8(左下1NGｺｰﾄﾞ)
+CON
+JMP @R209
+STG @R209
+@INC @DM9                ; 結果書込み先
+CON
+JMP @R215                ; 終了処理
+STG @R215                ; 終了処理
+SET R37101               ; 通信完了
+CON
+RES R37102               ; FJ通信中
+CON
+ENDS
+;<h1/>通信START
+;'通信の為に以下の設定を行う
+;@DM0 = 192	' IPアドレス1バイト目
+;@DM1 = 168	' IPアドレス2バイト目
+;@DM2 = 0	' IPアドレス3バイト目
+;@DM3 = 81	' IPアドレス4バイト目
+;@DM4 = $32	' サービスコード
+;@DM5 = $64	' クラスID
+;@DM6 = $01	' インスタンスID
+;@DM7 = $01	' アトリビュートID
+LD CR2002                ; 常時ON
+NCJ #1000
+;'通信の為に以下の設定を行う
+;
+;@DM0 = 192	' IPアドレス1バイト目
+;
+LD CR2002                ; 常時ON
+MOV #192 @DM0            ; 通信設定先頭
+;@DM1 = 168	' IPアドレス2バイト目
+;
+LD CR2002                ; 常時ON
+MOV #168 @DM1
+;@DM2 = 0	' IPアドレス3バイト目
+;
+LD CR2002                ; 常時ON
+MOV #0 @DM2
+;@DM3 = 81	' IPアドレス4バイト目
+;
+LD CR2002                ; 常時ON
+MOV #81 @DM3
+;@DM4 = $32	' サービスコード
+;
+LD CR2002                ; 常時ON
+MOV $0032 @DM4
+;@DM5 = $64	' クラスID
+;
+LD CR2002                ; 常時ON
+MOV $0064 @DM5
+;@DM6 = $01	' インスタンスID
+;
+LD CR2002                ; 常時ON
+MOV $0001 @DM6
+;@DM7 = $01	' アトリビュートID
+LD CR2002                ; 常時ON
+MOV $0001 @DM7
+LABEL #1000
+;
+STG @R500                ; 通信ｽﾀｰﾄ
+SET @R502                ; 通信中
+CON
+JMP @R504
+STG @R504
+U_MSGTO #0 @DM0          ; 通信設定先頭
+RCPSASC @DM10 @DM100 @DM100;送信内容  送信ﾃﾞｰﾀ先頭  送信ﾃﾞｰﾀ先頭
+U_MSGSND #0 @DM100       ; 送信ﾃﾞｰﾀ先頭
+SET R30700               ; ﾒｯｾｰｼﾞ通信実行要求
+CON
+JMP @R505
+STG @R505
+MPS
+AND R31700               ; ﾒｯｾｰｼﾞ通信完了
+MPS
+ANB R31701               ; ﾒｯｾｰｼﾞ通信失敗
+@U_MSGRCV #0 @DM200      ; 受信ﾃﾞｰﾀ先頭
+RES R30700               ; ﾒｯｾｰｼﾞ通信実行要求
+CON
+JMP @R515
+MPP
+AND R31701               ; ﾒｯｾｰｼﾞ通信失敗
+SET @R503                ; 通信異常
+CON
+RES R30700               ; ﾒｯｾｰｼﾞ通信実行要求
+CON
+JMP @R515
+MPP
+ANB R31700               ; ﾒｯｾｰｼﾞ通信完了
+TMR @0 #30               ; 通信ﾀｲﾑｱｯﾌﾟ
+CON
+AND @T0                  ; 通信ﾀｲﾑｱｯﾌﾟ
+SET @R503                ; 通信異常
+CON
+RES R30700               ; ﾒｯｾｰｼﾞ通信実行要求
+CON
+JMP @R515
+STG @R515
+RES @R502                ; 通信中
+CON
+SET @R501                ; 通信完了
+CON
+ENDS
+;<h1/>パネルランプ
+LD= EM1908 #2            ; 画像検査STEP番号
+AND R37102               ; FJ通信中
+AND R100                 ; 0.5s ｸﾛｯｸ
+OUT MR22801              ; 検査UT画像ｼｰﾝ切替中
+LD= EM1908 #4            ; 画像検査STEP番号
+AND R37102               ; FJ通信中
+AND R100                 ; 0.5s ｸﾛｯｸ
+OUT MR22803              ; 検査UT画像ｸﾘｱ中
+LD= EM1908 #5            ; 画像検査STEP番号
+AND R37102               ; FJ通信中
+AND R100                 ; 0.5s ｸﾛｯｸ
+OUT MR22805              ; 検査UT画像撮像中
+;<h1/>画像検査動作種別NO 
+LD CR2002                ; 常時ON
+MOV #10 EM2100           ; 画像検査動作種別No1
+MOV #1 EM2101            ; 画像検査動作種別No2
+MOV #1 EM2102            ; 画像検査動作種別No3
+MOV #1 EM2103            ; 画像検査動作種別No4
+MOV #1 EM2104            ; 画像検査動作種別No5
+MOV #11 EM2105           ; 画像検査動作種別No6
+MOV #1 EM2106            ; 画像検査動作種別No7
+MOV #1 EM2107            ; 画像検査動作種別No8
+MOV #1 EM2108            ; 画像検査動作種別No9
+MOV #1 EM2109            ; 画像検査動作種別No10
+MOV #1 EM2110            ; 画像検査動作種別No11
+MOV #1 EM2111            ; 画像検査動作種別No12
+MOV #12 EM2112           ; 画像検査動作種別No13
+MOV #1 EM2113            ; 画像検査動作種別No14
+MOV #1 EM2114            ; 画像検査動作種別No15
+MOV #1 EM2115            ; 画像検査動作種別No16
+MOV #1 EM2116            ; 画像検査動作種別No17
+MOV #1 EM2117            ; 画像検査動作種別No18
+MOV #1 EM2118            ; 画像検査動作種別No19
+MOV #13 EM2119           ; 画像検査動作種別No20
+MOV #1 EM2120            ; 画像検査動作種別No21
+MOV #1 EM2121            ; 画像検査動作種別No22
+MOV #1 EM2122            ; 画像検査動作種別No23
+MOV #1 EM2123            ; 画像検査動作種別No24
+MOV #13 EM2124           ; 画像検査動作種別No25
+MOV #1 EM2125            ; 画像検査動作種別No26
+MOV #15 EM2126           ; 画像検査動作種別No27
+MOV #1 EM2127            ; 画像検査動作種別No28
+MOV #1 EM2128            ; 画像検査動作種別No29
+MOV #0 EM2129            ; 画像検査動作種別No30
+MOV #0 EM2130            ; 画像検査動作種別No31
+MOV #0 EM2131            ; 画像検査動作種別No32
+MOV #0 EM2132            ; 画像検査動作種別No33
+MOV #0 EM2133            ; 画像検査動作種別No34
+MOV #0 EM2134            ; 画像検査動作種別No35
+MOV #0 EM2135            ; 画像検査動作種別No36
+MOV #0 EM2136            ; 画像検査動作種別No37
+MOV #0 EM2137            ; 画像検査動作種別No38
+MOV #0 EM2138            ; 画像検査動作種別No39
+MOV #0 EM2139            ; 画像検査動作種別No40
+MOV #0 EM2140            ; 画像検査動作種別No41
+MOV #0 EM2141            ; 画像検査動作種別No42
+MOV #0 EM2142            ; 画像検査動作種別No43
+MOV #0 EM2143            ; 画像検査動作種別No44
+MOV #0 EM2144            ; 画像検査動作種別No45
+MOV #0 EM2145            ; 画像検査動作種別No46
+MOV #0 EM2146            ; 画像検査動作種別No47
+MOV #0 EM2147            ; 画像検査動作種別No48
+MOV #0 EM2148            ; 画像検査動作種別No49
+MOV #0 EM2149            ; 画像検査動作種別No50
+;<h1/>画像検査作業内容
+LD CR2002                ; 常時ON
+MOV #9999 EM2150         ; 画像検査作業内容No1
+MOV #0 EM2151            ; 画像検査作業内容No2
+MOV #1 EM2152            ; 画像検査作業内容No3
+MOV #2 EM2153            ; 画像検査作業内容No4
+MOV #4 EM2154            ; 画像検査作業内容No5
+MOV #9999 EM2155         ; 画像検査作業内容No6
+MOV #8 EM2156            ; 画像検査作業内容No7
+MOV #9 EM2157            ; 画像検査作業内容No8
+MOV #0 EM2158            ; 画像検査作業内容No9
+MOV #1 EM2159            ; 画像検査作業内容No10
+MOV #2 EM2160            ; 画像検査作業内容No11
+MOV #4 EM2161            ; 画像検査作業内容No12
+MOV #9999 EM2162         ; 画像検査作業内容No13
+MOV #8 EM2163            ; 画像検査作業内容No14
+MOV #9 EM2164            ; 画像検査作業内容No15
+MOV #0 EM2165            ; 画像検査作業内容No16
+MOV #1 EM2166            ; 画像検査作業内容No17
+MOV #2 EM2167            ; 画像検査作業内容No18
+MOV #4 EM2168            ; 画像検査作業内容No19
+MOV #9999 EM2169         ; 画像検査作業内容No20
+MOV #8 EM2170            ; 画像検査作業内容No21
+MOV #9 EM2171            ; 画像検査作業内容No22
+MOV #0 EM2172            ; 画像検査作業内容No23
+MOV #1 EM2173            ; 画像検査作業内容No24
+MOV #2 EM2174            ; 画像検査作業内容No25
+MOV #4 EM2175            ; 画像検査作業内容No26
+MOV #9999 EM2176         ; 画像検査作業内容No27
+MOV #8 EM2177            ; 画像検査作業内容No28
+MOV #9 EM2178            ; 画像検査作業内容No29
+MOV #0 EM2179            ; 画像検査作業内容No30
+MOV #0 EM2180            ; 画像検査作業内容No31
+MOV #0 EM2181            ; 画像検査作業内容No32
+MOV #0 EM2182            ; 画像検査作業内容No33
+MOV #0 EM2183            ; 画像検査作業内容No34
+MOV #0 EM2184            ; 画像検査作業内容No35
+MOV #0 EM2185            ; 画像検査作業内容No36
+MOV #0 EM2186            ; 画像検査作業内容No37
+MOV #0 EM2187            ; 画像検査作業内容No38
+MOV #0 EM2188            ; 画像検査作業内容No39
+MOV #0 EM2189            ; 画像検査作業内容No40
+MOV #0 EM2190            ; 画像検査作業内容No41
+MOV #0 EM2191            ; 画像検査作業内容No42
+MOV #0 EM2192            ; 画像検査作業内容No43
+MOV #0 EM2193            ; 画像検査作業内容No44
+MOV #0 EM2194            ; 画像検査作業内容No45
+MOV #0 EM2195            ; 画像検査作業内容No46
+MOV #0 EM2196            ; 画像検査作業内容No47
+MOV #0 EM2197            ; 画像検査作業内容No48
+MOV #0 EM2198            ; 画像検査作業内容No49
+MOV #0 EM2199            ; 画像検査作業内容No50
+END
+ENDH

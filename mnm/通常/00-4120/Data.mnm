@@ -1,0 +1,111 @@
+DEVICE:51
+;MODULE:Data
+;MODULE_TYPE:0
+;<h1/>Coating RB
+;動作No.確認
+;Operation No. check
+LD CR2002                ; 常時ON
+PMOV D100 K0 Y205 K0 K6  ; RB　指示動作No.  RB IN 5  Program No.1
+MOV K0 D110              ; RB　受付動作No.
+PMOV X109 K0 D110 K0 K6  ; RB OUT 9  動作No.1  RB　受付動作No.
+LD CR2002                ; 常時ON
+LDA E55                  ; Type No.
+CON
+MPS
+AND M1603                ; B面加工
+ADD K32
+MPP
+STA D102                 ; 1側塗布指示Prog.No.
+CON
+ADD K16
+CON
+STA D104                 ; 2側塗布指示Prog.No.
+;<h1/>Palette ID
+LD CR2002                ; 常時ON
+MPS
+PMOV X11A K0 D90 K0 K4   ; ﾊﾟﾚｯﾄID 1  Palette ID
+MPP
+LD= D90 E55              ; Palette ID  Type No.
+AND<> E55 K15            ; Type No.
+ANL
+OUT M300                 ; ﾊﾟﾚｯﾄID OK
+;<h1/>Current Time data
+LD CR2002                ; 常時ON
+SEC CM700 D400           ; ｶﾚﾝﾀﾞﾀｲﾏ（年）  現在時刻secﾃﾞｰﾀ
+;<h1/>Daily check Flg check
+;Discharge timer
+;Sealing timer
+LD>= D110 K1             ; RB　受付動作No.
+AND<= D110 K14           ; RB　受付動作No.
+LD>= D110 K17            ; RB　受付動作No.
+AND<= D110 K30           ; RB　受付動作No.
+ORL
+LD>= D110 K33            ; RB　受付動作No.
+AND<= D110 K46           ; RB　受付動作No.
+ORL
+LD>= D110 K49            ; RB　受付動作No.
+AND<= D110 K63           ; RB　受付動作No.
+ORL
+OR= D110 K63             ; RB　受付動作No.
+AND X103                 ; RB OUT 3  BUSY
+OUT @M0                  ; RB 吐出有動作中
+LDB Y20E                 ; RB IN 14 吐出無(ﾄﾚｰｽﾓｰﾄﾞ)
+LDB M25                  ; 吐出無し
+AND Y20F                 ; RB IN 15 手動:吐出ﾊﾞﾙﾌﾞON
+OR @M0                   ; RB 吐出有動作中
+ANL
+OUT @M1                  ; 吐出動作有り
+LD CR2002                ; 常時ON
+MPS
+CAL* E1010 K60 D402      ; 塗布幅点検時間(min)  日常点検記憶RESET間隔(sec)
+MPP
+LDP M40                  ; Dispence Daily check OK
+OR @M1                   ; 吐出動作有り
+OR= D402 K0              ; 日常点検記憶RESET間隔(sec)
+ANL
+CAL+.D D400 D402 D410    ; 現在時刻secﾃﾞｰﾀ  日常点検記憶RESET間隔(sec)  日常点検記憶RESET予定
+LD CR2002                ; 常時ON
+MPS
+CAL* E1012 K60 D404      ; 捨打ち実施時間(min)  捨て打ち間隔(sec)
+MPP
+AND @M1                  ; 吐出動作有り
+CAL+.D D400 D404 D412    ; 現在時刻secﾃﾞｰﾀ  捨て打ち間隔(sec)  捨て打ち予定時間
+LD CR2002                ; 常時ON
+CAL* E1014 K60 D406      ; ﾉｽﾞﾙ封止待機時間(min)  ﾉｽﾞﾙ封止待機時間(sec)
+MPS
+LD @M1                   ; 吐出動作有り
+LD= D110 K15             ; RB　受付動作No.
+AND X105                 ; RB OUT 5  待機位置
+ORL
+OR= E1014 K0             ; ﾉｽﾞﾙ封止待機時間(min)
+OR M25                   ; 吐出無し
+ANL
+CAL+.D D400 D406 D414    ; 現在時刻secﾃﾞｰﾀ  ﾉｽﾞﾙ封止待機時間(sec)  ﾉｽﾞﾙ封止待機時刻(sec)
+MRD
+LD<> E1014 K0            ; ﾉｽﾞﾙ封止待機時間(min)
+ANB M25                  ; 吐出無し
+ANL
+CAL-.D D414 K20 D416     ; ﾉｽﾞﾙ封止待機時刻(sec)  ﾉｽﾞﾙ封止警告時刻(sec)
+MPP
+LD= E1014 K0             ; ﾉｽﾞﾙ封止待機時間(min)
+OR M25                   ; 吐出無し
+ANL
+MOV.D D414 D416          ; ﾉｽﾞﾙ封止待機時刻(sec)  ﾉｽﾞﾙ封止警告時刻(sec)
+;<h1/>Interval time　　etc.
+LD CR2002                ; 常時ON
+MOV.D E1016 D1084        ; 計量吐出時間(sec)  計量吐出時間(sec)
+MOV.D E1024 D1088        ; 計量前吐出時間(日常点検)  計量前吐出時間(sec)
+MOV.D E1018 D1086        ; 待機時捨出し時間  待機時捨出し時間
+MOV.D E1026 D1090        ; 封止時捨出し時間  封止時捨出し時間
+MOV.D E1028 D1096        ; 吐出開始後変化確認時間  吐出開始後変化確認時間
+MOV.D E1030 D1098        ; 吐出終了後変化確認時間  吐出終了後変化確認時間
+MOV.D E1034 D1080        ; 加圧安定化時間【×0.1s】  加圧安定化時間【×0.1s】
+;<h1/>Silicon Pusher
+;動作No.確認
+;Operation No. check
+LD CR2002                ; 常時ON
+PMOV D120 K0 Y210 K0 K4  ; 材料ﾌﾟｯｼｬ　動作指示No.  材料ﾌﾟｯｼｬ PC1
+MOV K0 D122              ; 材料ﾌﾟｯｼｬ　受付動作No.
+PMOV X130 K0 D122 K0 K4  ; 材料ﾌﾟｯｼｬ PM1  材料ﾌﾟｯｼｬ　受付動作No.
+END
+ENDH

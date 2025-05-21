@@ -1,0 +1,296 @@
+DEVICE:53
+;MODULE:UNIT25_PC
+;MODULE_TYPE:0
+;<h1/>□□　　入力受け　　□□
+;関連する入力受け(ｾﾝｻのﾃﾞｨﾚｲﾀｲﾏ等)を必要があれば作成する。
+;通常は入力ﾕﾆｯﾄに入力時定数(ﾃﾞｨﾚｲ)があるので直接使用しても問題は無い。
+;<h1/>□□　　PC確認
+;■PC→PLC
+LD W00.0                 ; PC動作中
+TMR K2500 K30            ; PC正常確認ﾀｲﾏ
+LDB W00.0                ; PC動作中
+TMR K2501 K30            ; PC正常確認ﾀｲﾏ
+LDB T2500                ; PC正常確認ﾀｲﾏ
+ANB T2501                ; PC正常確認ﾀｲﾏ
+OR M3                    ; OFFLINE_MODE
+OUT M300                 ; PC通信正常
+;　　ｱﾗｰﾑｺｰﾄﾞ送信
+LD<> D200 K0             ; ｱﾗｰﾑｺｰﾄﾞ番号
+ANB M13000               ; ｱﾗｰﾑｺｰﾄﾞ書込み指令
+OR M13000                ; ｱﾗｰﾑｺｰﾄﾞ書込み指令
+ANB M13007               ; ｱﾗｰﾑｺｰﾄﾞ書込み完了
+OUT M13000               ; ｱﾗｰﾑｺｰﾄﾞ書込み指令
+;　　ｴﾗｰLOG無
+LD M13000                ; ｱﾗｰﾑｺｰﾄﾞ書込み指令
+OR M13004                ; ｱﾗｰﾑｺｰﾄﾞ格納完了
+AND M13000               ; ｱﾗｰﾑｺｰﾄﾞ書込み指令
+MPS
+LDB L20                  ; ｴﾗｰLOG(1=ON/0=OFF)
+AND= D200 W0111          ; ｱﾗｰﾑｺｰﾄﾞ番号  ｴﾗｰｺｰﾄﾞ(表示用)
+LD L20                   ; ｴﾗｰLOG(1=ON/0=OFF)
+AND= D200 W0112          ; ｱﾗｰﾑｺｰﾄﾞ番号  ｴﾗｰｺｰﾄﾞ(ﾛｸﾞ保存用)
+AND W00.4                ; ｴﾗｰﾛｸﾞ完了
+ORL
+ANL
+OUT M13004               ; ｱﾗｰﾑｺｰﾄﾞ格納完了
+MRD
+ANB L20                  ; ｴﾗｰLOG(1=ON/0=OFF)
+@MOV D200 W0111          ; ｱﾗｰﾑｺｰﾄﾞ番号  ｴﾗｰｺｰﾄﾞ(表示用)
+MRD
+AND L20                  ; ｴﾗｰLOG(1=ON/0=OFF)
+MPS
+@MOV D200 W0112          ; ｱﾗｰﾑｺｰﾄﾞ番号  ｴﾗｰｺｰﾄﾞ(ﾛｸﾞ保存用)
+MPP
+ANB M13004               ; ｱﾗｰﾑｺｰﾄﾞ格納完了
+OUT W0100.5              ; ｴﾗｰﾛｸﾞ要求
+MPP
+LD M58                   ; 非常停止異常まとめ
+OR M51                   ; 即停止異常(緊急停止)
+ANL
+@SET W0100.1             ; PLC Error
+;ｴﾗｰ解除
+LD M13004                ; ｱﾗｰﾑｺｰﾄﾞ格納完了
+LD M13000                ; ｱﾗｰﾑｺｰﾄﾞ書込み指令
+LDB M300                 ; PC通信正常
+OR B0A                   ; 10)_PC通信異常
+OR B0320                 ; 800)_PCｴﾗｰ
+ANL
+ORL
+AND M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+OR M13005                ; 異常ﾘｾｯﾄ
+AND M13000               ; ｱﾗｰﾑｺｰﾄﾞ書込み指令
+OUT M13005               ; 異常ﾘｾｯﾄ
+@ZRES B2000 B239F
+@RES W0100.1             ; PLC Error
+@MOV K0 D200             ; ｱﾗｰﾑｺｰﾄﾞ番号
+LD M13005                ; 異常ﾘｾｯﾄ
+OR M13006                ; ｱﾗｰﾑ書込み完了
+AND M13000               ; ｱﾗｰﾑｺｰﾄﾞ書込み指令
+OUT M13007               ; ｱﾗｰﾑｺｰﾄﾞ書込み完了
+;<h1/>□□　　出力回路　　□□
+;ソレノイドバルブ出力
+;■PLC→PCへ出力
+;　　PLC_RUN
+LD CR2002                ; 常時ON
+MPS
+ANB T2503                ; PLC起動ﾀｲﾏ
+TMR K2502 K20            ; PLC起動ﾀｲﾏ
+MPP
+AND T2502                ; PLC起動ﾀｲﾏ
+TMR K2503 K20            ; PLC起動ﾀｲﾏ
+LD T2502                 ; PLC起動ﾀｲﾏ
+OUT W0100.0              ; PLC動作中
+;　　AUTO/MANUAL
+LD M72                   ; 自動運転開始
+OR M13308                ; PCへ自動運転状態
+ANB M13311               ; 停止ﾓｰﾄﾞ処理終了
+OUT M13308               ; PCへ自動運転状態
+LD M13308                ; PCへ自動運転状態
+ANB M13310               ; PCﾃﾞｰﾀ送信
+OUT W0100.2              ; 自動/手動
+;　　PCからのﾌﾞｻﾞｰ要求
+LD W00.2                 ; PC Busy
+OUT M13300               ; PCﾌﾞｻﾞｰ要求
+;　　PCからのﾌﾞｻﾞｰ要求停止処理
+LD M13300                ; PCﾌﾞｻﾞｰ要求
+AND M110                 ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR M13301                ; ﾌﾞｻﾞｰ停止要求
+AND M13300               ; PCﾌﾞｻﾞｰ要求
+OUT M13301               ; ﾌﾞｻﾞｰ停止要求
+;　　PCからの非常停止
+LD B0320                 ; 800)_PCｴﾗｰ
+OUT M13304               ; PC非常停止
+LD M13304                ; PC非常停止
+AND M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+OR M13305                ; PC非常停止ﾘｾｯﾄ
+ANB M13305               ; PC非常停止ﾘｾｯﾄ
+OUT M13305               ; PC非常停止ﾘｾｯﾄ
+LD M13305                ; PC非常停止ﾘｾｯﾄ
+ANB W00.1                ; PC Error
+OUT M13306               ; PC非常停止OFF確認
+;　　ﾘｾｯﾄSW受付
+LD M13301                ; ﾌﾞｻﾞｰ停止要求
+OR M13305                ; PC非常停止ﾘｾｯﾄ
+OUT W0100.3              ; Reset SW受付
+;　　停止ﾓｰﾄﾞ処理
+LD M13308                ; PCへ自動運転状態
+AND<> W010 K0            ; 停止ﾓｰﾄﾞ(PC)
+@MOV W010 W0110          ; 停止ﾓｰﾄﾞ(PC)  停止ﾓｰﾄﾞ(PLC)
+OUT M13309               ; PC→自動運転停止ﾌﾗｸﾞ
+LD M13308                ; PCへ自動運転状態
+ANF M71                  ; 自動運転開始BZ
+OR M13310                ; PCﾃﾞｰﾀ送信
+AND M13308               ; PCへ自動運転状態
+OUT M13310               ; PCﾃﾞｰﾀ送信
+MPS
+LD M51                   ; 即停止異常(緊急停止)
+OR M52                   ; ｻｲｸﾙ停止異常(ｻｲｸﾙ停止)
+ANL
+@MOV K2 W0110            ; 停止ﾓｰﾄﾞ(PLC)
+MPP
+LD M57                   ; 自動起動停止指令(払出停止)
+ANB M13309               ; PC→自動運転停止ﾌﾗｸﾞ
+ANL
+@MOV K1 W0110            ; 停止ﾓｰﾄﾞ(PLC)
+LD M13310                ; PCﾃﾞｰﾀ送信
+ANB W0100.2              ; 自動/手動
+OR M13311                ; 停止ﾓｰﾄﾞ処理終了
+AND M13308               ; PCへ自動運転状態
+OUT M13311               ; 停止ﾓｰﾄﾞ処理終了
+@MOV K0 W0110            ; 停止ﾓｰﾄﾞ(PLC)
+;　　起動確認
+LD M18                   ; 起動PB
+AND M70                  ; 自動起動条件
+ANB M13400               ; PCへ自動起動OK確認
+OR M13400                ; PCへ自動起動OK確認
+ANB M13402               ; 自動起動OK確認終了
+OUT M13400               ; PCへ自動起動OK確認
+;　　自動起動OK
+LD M13400                ; PCへ自動起動OK確認
+AND W00.6                ; 起動可能
+AND W00.5                ; 起動確認完了
+ANB M13401               ; PC→自動起動OK
+OR M13401                ; PC→自動起動OK
+AND M13400               ; PCへ自動起動OK確認
+OUT M13401               ; PC→自動起動OK
+;　　自動起動NG
+LD M13400                ; PCへ自動起動OK確認
+ANB W00.6                ; 起動可能
+AND W00.5                ; 起動確認完了
+ANB M13401               ; PC→自動起動OK
+OR M13404                ; 自動起動NG
+AND M13400               ; PCへ自動起動OK確認
+OUT M13404               ; 自動起動NG
+;　　自動起動確認終了
+LD M13401                ; PC→自動起動OK
+OR M13404                ; 自動起動NG
+ANB W00.6                ; 起動可能
+ANB W00.5                ; 起動確認完了
+OR M13402                ; 自動起動OK確認終了
+AND M13400               ; PCへ自動起動OK確認
+OUT M13402               ; 自動起動OK確認終了
+LD M13400                ; PCへ自動起動OK確認
+ANB M13401               ; PC→自動起動OK
+ANB M13404               ; 自動起動NG
+OUT W0100.6              ; 起動確認
+;□□　　I/O出力　　□□
+;□□　　パネル表示　　□□
+;<h1/>□□　　異常検出　　□□
+LD W00.1                 ; PC Error
+LD CR2003                ; 常時OFF
+ANB B0820                ; 800)Bz停止
+ORB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B0320                ; 800)_PCｴﾗｰ
+ORL
+OUT B0320                ; 800)_PCｴﾗｰ
+LD B0320                 ; 800)_PCｴﾗｰ
+AND= D200 K0             ; ｱﾗｰﾑｺｰﾄﾞ番号
+SET B2320
+MOV K33 D200             ; ｱﾗｰﾑｺｰﾄﾞ番号
+LD M110                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B0820                 ; 800)Bz停止
+AND B0320                ; 800)_PCｴﾗｰ
+OUT B0820                ; 800)Bz停止
+;異常ﾌﾞｻﾞｰまとめ
+LDB B0320                ; 800)_PCｴﾗｰ
+OR B0820                 ; 800)Bz停止
+LDB B0321                ; 801)_
+OR B0821
+ANL
+LDB B0322                ; 802)_
+OR B0822
+ANL
+LDB B0323                ; 803)_
+OR B0823
+ANL
+LDB B0324                ; 804)_
+OR B0824
+ANL
+LDB B0325                ; 805)_
+OR B0825
+ANL
+LDB B0326                ; 806)_
+OR B0826
+ANL
+LDB B0327                ; 807)_
+OR B0827
+ANL
+LDB B0328                ; 808)_
+OR B0828
+ANL
+LDB B0329                ; 809)_
+OR B0829
+ANL
+LDB B032A                ; 810)_
+OR B082A
+ANL
+LDB B032B                ; 811)_
+OR B082B
+ANL
+LDB B032C                ; 812)_
+OR B082C
+ANL
+LDB B032D                ; 813)_
+OR B082D
+ANL
+LDB B032E                ; 814)_
+OR B082E
+ANL
+LDB B032F                ; 815)_
+OR B082F
+ANL
+LDB B0330                ; 816)_
+OR B0830
+ANL
+LDB B0331                ; 817)_
+OR B0831
+ANL
+LDB B0332                ; 818)_
+OR B0832
+ANL
+LDB B0333                ; 819)_
+OR B0833
+ANL
+LDB B034                 ; 52)_U1E21
+OR B0534                 ; 52)_U1E21Bz停止
+ANL
+LDB B035                 ; 53)_U1E22
+OR B0535                 ; 53)_U1E22Bz停止
+ANL
+LDB B036                 ; 54)_U1E23
+OR B0536                 ; 54)_U1E23Bz停止
+ANL
+LDB B037                 ; 55)_U1E24
+OR B0537                 ; 55)_U1E24Bz停止
+ANL
+LDB B038                 ; 56)_U1E25
+OR B0538                 ; 56)_U1E25Bz停止
+ANL
+LDB B039                 ; 57)_U1E26
+OR B0539                 ; 57)_U1E26Bz停止
+ANL
+LDB B03A                 ; 58)_U1E27
+OR B053A                 ; 58)_U1E27Bz停止
+ANL
+LDB B03B                 ; 59)_U1E28
+OR B053B                 ; 59)_U1E28Bz停止
+ANL
+LDB B03C                 ; 60)_U1E29
+OR B053C                 ; 60)_U1E29Bz停止
+ANL
+LDB B03D                 ; 61)_U1E30
+OR B053D                 ; 61)_U1E30Bz停止
+ANL
+LDB B03E                 ; 62)_U1E31
+OR B053E                 ; 62)_U1E31Bz停止
+ANL
+LDB B03F                 ; 63)_U1E32
+OR B053F                 ; 63)_U1E32Bz停止
+ANL
+LDB M13300               ; PCﾌﾞｻﾞｰ要求
+OR M13301                ; ﾌﾞｻﾞｰ停止要求
+ANL
+INV
+OUT M13489               ; ﾕﾆｯﾄ25異常BZ補助
+END
+ENDH

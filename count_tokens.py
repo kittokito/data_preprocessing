@@ -7,7 +7,7 @@ from tqdm import tqdm
 from transformers import AutoTokenizer
 
 # --- ファイルパスの設定 ---
-jsonl_file = './jsonl/jsonl_filtered/filtered_plc_01.jsonl'
+jsonl_file = './jsonl/jsonl_sft/sample/plc_sft_sample.jsonl'
 output_dir = './analyzed_data/token_count_plot'
 os.makedirs(output_dir, exist_ok=True)
 
@@ -18,19 +18,44 @@ tokenizer = AutoTokenizer.from_pretrained("Qwen/Qwen2.5-Coder-14B-Instruct")
 with open(jsonl_file, 'r', encoding='utf-8') as f:
     total_lines = sum(1 for _ in f)
 
-# --- テキスト一括読み込み ---
+# --- テキストとタイトルの読み込み ---
 texts = []
+titles = []
 with open(jsonl_file, 'r', encoding='utf-8') as f:
     for line in tqdm(f, total=total_lines, desc="テキスト読み込み", dynamic_ncols=True):
-        texts.append(json.loads(line).get("text", ""))
+        data = json.loads(line)
+        texts.append(data.get("text", ""))
+        titles.append(data.get("title", "不明"))
 
-# --- 一括トークン化（バッチ処理） ---
+# --- 一括トークン化とタイトルごとの集計（バッチ処理） ---
 batch_size = 1000  # バッチサイズは必要に応じて調整
-token_counts = []
+title_token_counts = {}  # タイトルごとのトークン数を保持
+
 for i in tqdm(range(0, len(texts), batch_size), desc="トークン化", dynamic_ncols=True):
     batch_texts = texts[i: i+batch_size]
+    batch_titles = titles[i: i+batch_size]
     batch_encoding = tokenizer(batch_texts, add_special_tokens=False)
-    token_counts.extend([len(ids) for ids in batch_encoding["input_ids"]])
+    
+    # バッチ内の各テキストのトークン数をタイトルごとに集計
+    for title, token_ids in zip(batch_titles, batch_encoding["input_ids"]):
+        if title not in title_token_counts:
+            title_token_counts[title] = 0
+        title_token_counts[title] += len(token_ids)
+
+# タイトルごとのトークン数を出力
+output_file = os.path.join(output_dir, 'title_token_counts.txt')
+with open(output_file, 'w', encoding='utf-8') as f:
+    f.write("タイトルごとの総トークン数\n")
+    f.write("=" * 30 + "\n\n")
+    for title, count in title_token_counts.items():
+        f.write(f"{title}: {count}トークン\n")
+
+print(f"タイトルごとの総トークン数を保存しました: {output_file}")
+
+# 全体の統計用にtoken_countsを更新
+token_counts = []
+for ids in batch_encoding["input_ids"]:
+    token_counts.append(len(ids))
 
 # --- 統計値の計算 ---
 if token_counts:

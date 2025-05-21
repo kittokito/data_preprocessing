@@ -1,0 +1,2706 @@
+DEVICE:53
+;MODULE:RB
+;MODULE_TYPE:0
+;SCRIPT_TYPE:
+LDP R46104               ; _非常停止中　ﾓｰﾄﾞﾌﾗｸﾞ
+DW #0 DM10724            ; RB10 動作ｺﾏﾝﾄﾞ/数値指定1
+CON
+DW #0 DM10725            ; RB10 数値指定2/制御出力
+CON
+ZRES R35000 R35915       ; RB1 MOVE
+CON
+ZRES @R100 @R2915
+;動作MONITOR
+BLDB DM10507 #2          ; RB1 STATUS
+BANB DM10515 #2          ; RB2 STATUS
+BANB DM10523 #2          ; RB3 STATUS
+INV
+OUT R39900               ; RB動作中
+;<h1/>RB Teaching　Dyisplay
+;DATA Display
+;TYPE D50300.U,D50302-D50304.D,D50406.U,D50307.U,D50312.U,DM50318.U,@DM0-@DM2.U,EM10000.D
+;
+;DM50318=DM50300-1+(DM50312*100)+#10100 'Position Messag 表示
+;
+;'DATA表示
+;@DM0 = ((D50300-1)*6)+(D50312*600)
+;DM50302 = EM10000:(@DM0) 'Position
+;DM50306 = EM10004:(@DM0) 'SPEED
+;DM50307 = EM10005:(@DM0) 'ACC/DEC
+;D4=((D50300+@DM1-1)*6)+(D50312*600)
+;
+;IF D3000 = #2220 THEN
+;
+;	IF DM50312 <> D50319-1 THEN    'POSI No.= 1
+;	   DM50300 = 1
+;	END IF
+;	
+;IF R39900 = OFF THEN	'MONITOR画面 RB 切り替え
+;	DM50312 = DM50319-1
+;END IF
+;	
+;	FOR @DM1 = 0 TO 9
+;		@DM2=(((D50300+@DM1)-1)*6)+(D50312*600)			
+;  		D50350:(@D1*4) = EM10000:@DM2'point
+;		D50352:(@D1*4) = EM10004:@DM2'SPEED
+;		D50353:(@D1*4) = EM10005:@DM2'ACC/DCC
+;	NEXT
+;
+;END IF
+LD<= DM3000 #2220        ; _MainTP　表示中ﾍﾟｰｼﾞNo
+AND>= DM3000 #2150       ; _MainTP　表示中ﾍﾟｰｼﾞNo
+NCJ #1002
+;TYPE D50300.U,D50302-D50304.D,D50406.U,D50307.U,D50312.U,DM50318.U,@DM0-@DM2.U,EM10000.D
+;
+;DM50318=DM50300-1+(DM50312*100)+#10100 'Position Messag 表示
+;
+LD CR2002                ; 常時ON
+LDA DM50312              ; RB選択
+CON
+EXT
+CON
+MUL.L +100
+CON
+STA.L @VM0
+CON
+LDA DM50300              ; Position No
+CON
+EXT
+CON
+SUB.L +1
+CON
+ADD.L @VM0
+CON
+ADD.L +10100
+CON
+STA DM50318
+;'DATA表示
+;
+;@DM0 = ((D50300-1)*6)+(D50312*600)
+;
+LD CR2002                ; 常時ON
+LDA DM50312              ; RB選択
+CON
+EXT
+CON
+MUL.L +600
+CON
+STA.L @VM2
+CON
+LDA DM50300              ; Position No
+CON
+EXT
+CON
+SUB.L +1
+CON
+MUL.L +6
+CON
+ADD.L @VM2
+CON
+STA @DM0
+;DM50302 = EM10000:(@DM0) 'Position
+;
+LD CR2002                ; 常時ON
+LDA @DM0
+CON
+EXT
+CON
+STA.L Z12
+CON
+MOV.D EM10000:Z12 DM50302; RB1目標値（下位）1  RB Position Low
+;DM50306 = EM10004:(@DM0) 'SPEED
+;
+LD CR2002                ; 常時ON
+LDA @DM0
+CON
+EXT
+CON
+STA.L Z12
+CON
+MOV EM10004:Z12 DM50306  ; RB1速度1  RB SPEED
+;DM50307 = EM10005:(@DM0) 'ACC/DEC
+;
+LD CR2002                ; 常時ON
+LDA @DM0
+CON
+EXT
+CON
+STA.L Z12
+CON
+MOV EM10005:Z12 DM50307  ; RB1加減速1  RB Acc/Dec
+;D4=((D50300+@DM1-1)*6)+(D50312*600)
+;
+LD CR2002                ; 常時ON
+LDA DM50312              ; RB選択
+CON
+EXT
+CON
+MUL.L +600
+CON
+STA.L @VM4
+CON
+LDA @DM1
+CON
+EXT
+CON
+STA.L @VM6
+CON
+LDA DM50300              ; Position No
+CON
+EXT
+CON
+ADD.L @VM6
+CON
+SUB.L +1
+CON
+MUL.L +6
+CON
+ADD.L @VM4
+CON
+STA DM4
+;IF D3000 = #2220 THEN
+;
+LD= DM3000 #2220         ; _MainTP　表示中ﾍﾟｰｼﾞNo
+NCJ #2000
+;	IF DM50312 <> D50319-1 THEN    'POSI No.= 1
+;
+LD CR2002                ; 常時ON
+LDA DM50319
+CON
+EXT
+CON
+SUB.L +1
+CON
+STA.L @VM8
+CON
+LDA DM50312              ; RB選択
+CON
+EXT
+CON
+CMP.L @VM8
+LDB CR2010               ; 演算結果がｾﾞﾛ
+NCJ #2001
+;	   DM50300 = 1
+;
+LD CR2002                ; 常時ON
+MOV #1 DM50300           ; Position No
+;	END IF
+;
+LABEL #2001
+;IF R39900 = OFF THEN	'MONITOR画面 RB 切り替え
+;
+LDB R39900               ; RB動作中
+NCJ #2002
+;	DM50312 = DM50319-1
+;
+LD CR2002                ; 常時ON
+LDA DM50319
+CON
+EXT
+CON
+SUB.L +1
+CON
+STA DM50312              ; RB選択
+;END IF
+;
+LABEL #2002
+;	FOR @DM1 = 0 TO 9
+;
+LD CR2002                ; 常時ON
+MOV #0 @DM1
+LABEL #2003
+LD> @DM1 #9
+CJ #2004
+;		@DM2=(((D50300+@DM1)-1)*6)+(D50312*600)			
+;
+LD CR2002                ; 常時ON
+LDA DM50312              ; RB選択
+CON
+EXT
+CON
+MUL.L +600
+CON
+STA.L @VM10
+CON
+LDA @DM1
+CON
+EXT
+CON
+STA.L @VM12
+CON
+LDA DM50300              ; Position No
+CON
+EXT
+CON
+ADD.L @VM12
+CON
+SUB.L +1
+CON
+MUL.L +6
+CON
+ADD.L @VM10
+CON
+STA @DM2
+;  		D50350:(@D1*4) = EM10000:@DM2'point
+;
+LD CR2002                ; 常時ON
+LDA @DM1
+CON
+EXT
+CON
+MUL.L +4
+CON
+STA.L Z11
+CON
+LDA @DM2
+CON
+EXT
+CON
+STA.L Z12
+CON
+MOV EM10000:Z12 DM50350:Z11;RB1目標値（下位）1  VT Pos NAME
+;		D50352:(@D1*4) = EM10004:@DM2'SPEED
+;
+LD CR2002                ; 常時ON
+LDA @DM1
+CON
+EXT
+CON
+MUL.L +4
+CON
+STA.L Z11
+CON
+LDA @DM2
+CON
+EXT
+CON
+STA.L Z12
+CON
+MOV EM10004:Z12 DM50352:Z11;RB1速度1
+;		D50353:(@D1*4) = EM10005:@DM2'ACC/DCC
+;
+LD CR2002                ; 常時ON
+LDA @DM1
+CON
+EXT
+CON
+MUL.L +4
+CON
+STA.L Z11
+CON
+LDA @DM2
+CON
+EXT
+CON
+STA.L Z12
+CON
+MOV EM10005:Z12 DM50353:Z11;RB1加減速1
+;	NEXT
+;
+LD CR2002                ; 常時ON
+INC @DM1
+LDB CR2009               ; 演算結果が負
+CJ #2003
+LABEL #2004
+;END IF
+LABEL #2000
+LABEL #1002
+;
+LDP R44915               ; Teaching End(Yes)
+BMOV EM10000 ZF470 #19200; RB1目標値（下位）1  RBPOSﾃﾞｰﾀ
+SET @R2505
+STG @R2505
+OUT R45010               ; Memory書き込み開始
+CON
+TMR @10 #5
+CON
+AND @T10
+ENDS
+;DATA Write
+;TYPE D50312.D,@DM0.U,D50320.D,DM10500.D
+;'現在値 表示
+;DM50320 = DM10500:(D50312*8) 'Now Position
+LD<= DM3000 #2220        ; _MainTP　表示中ﾍﾟｰｼﾞNo
+AND>= DM3000 #2150       ; _MainTP　表示中ﾍﾟｰｼﾞNo
+NCJ #1043
+;TYPE D50312.D,@DM0.U,D50320.D,DM10500.D
+;
+;'現在値 表示
+;
+;DM50320 = DM10500:(D50312*8) 'Now Position
+LD CR2002                ; 常時ON
+LDA.L DM50312            ; RB選択
+CON
+MUL.L +8
+CON
+STA.L Z12
+CON
+MOV.D DM10500:Z12 DM50320; RB1 POS
+LABEL #1043
+;
+;TYPE D50300.U,D50312.D,@DM0.U,D50320.D,DM10500.D
+;'現在値 表示
+;DM50320 = DM10500:(D50312*8) 'Now Position
+;
+;'DATA 格納
+;IF R34001 = 1 THEN
+;	@DM0 = ((D50300-1)*6)+(D50312*600)
+;	'IF 34002 = 1 THEN 
+;		EM10000.D:(@DM0) = DM50320.D	'Position
+;		EM10004:(@DM0) = DM50326.U		'SPEED
+;		EM10005:(@DM0) = DM50327.U		'ACC/DEC
+;	'ELSE
+;	'	EM10000.D:(@DM0) = DM50302.D	'Direct Position
+;	'	EM10004:(@DM0) = DM50306.U		'SPEED
+;    '    EM10005:(@DM0) = DM50307.U		'ACC/DEC
+;	'END IF
+;	'RES (R34002)
+;END IF
+LD<= DM3000 #2220        ; _MainTP　表示中ﾍﾟｰｼﾞNo
+AND>= DM3000 #2150       ; _MainTP　表示中ﾍﾟｰｼﾞNo
+NCJ #1004
+;TYPE D50300.U,D50312.D,@DM0.U,D50320.D,DM10500.D
+;
+;'現在値 表示
+;
+;DM50320 = DM10500:(D50312*8) 'Now Position
+;
+LD CR2002                ; 常時ON
+LDA.L DM50312            ; RB選択
+CON
+MUL.L +8
+CON
+STA.L Z12
+CON
+MOV.D DM10500:Z12 DM50320; RB1 POS
+;'DATA 格納
+;
+;IF R34001 = 1 THEN
+;
+LD R34001                ; Teaching SW
+NCJ #2005
+;	@DM0 = ((D50300-1)*6)+(D50312*600)
+;
+LD CR2002                ; 常時ON
+LDA.L DM50312            ; RB選択
+CON
+MUL.L +600
+CON
+STA.L @VM14
+CON
+LDA DM50300              ; Position No
+CON
+EXT
+CON
+SUB.L +1
+CON
+MUL.L +6
+CON
+ADD.L @VM14
+CON
+STA @DM0
+;	'IF 34002 = 1 THEN 
+;
+;		EM10000.D:(@DM0) = DM50320.D	'Position
+;
+LD CR2002                ; 常時ON
+LDA @DM0
+CON
+EXT
+CON
+STA.L Z11
+CON
+MOV.D DM50320 EM10000:Z11; RB1目標値（下位）1
+;		EM10004:(@DM0) = DM50326.U		'SPEED
+;
+LD CR2002                ; 常時ON
+LDA @DM0
+CON
+EXT
+CON
+STA.L Z11
+CON
+MOV DM50326 EM10004:Z11  ; RB1速度1
+;		EM10005:(@DM0) = DM50327.U		'ACC/DEC
+;
+LD CR2002                ; 常時ON
+LDA @DM0
+CON
+EXT
+CON
+STA.L Z11
+CON
+MOV DM50327 EM10005:Z11  ; RB1加減速1
+;	'ELSE
+;
+;	'	EM10000.D:(@DM0) = DM50302.D	'Direct Position
+;
+;	'	EM10004:(@DM0) = DM50306.U		'SPEED
+;
+;    '    EM10005:(@DM0) = DM50307.U		'ACC/DEC
+;
+;	'END IF
+;
+;	'RES (R34002)
+;
+;END IF
+LABEL #2005
+LABEL #1004
+;
+;TYPE D50300.U,D50312.D,@DM0.U,D50320.D,DM10500.D
+;'現在値 表示
+;DM50320 = DM10500:(D50312*8) 'Now Position
+;
+;'DATA 格納
+;IF R34002 = 1 THEN
+;	@DM0 = ((D50300-1)*6)+(D50312*600)
+;	'IF 34002 = 1 THEN 
+;	'	EM10000.D:(@DM0) = DM50320.D	'Position
+;	'	EM10004:(@DM0) = DM50326.U		'SPEED
+;	'	EM10005:(@DM0) = DM50327.U		'ACC/DEC
+;	'ELSE
+;		EM10000.D:(@DM0) = DM50302.D	'Direct Position
+;		EM10004:(@DM0) = DM50306.U		'SPEED
+;        EM10005:(@DM0) = DM50307.U		'ACC/DEC
+;	'END IF
+;	RES (R34002)
+;END IF
+LD<= DM3000 #2220        ; _MainTP　表示中ﾍﾟｰｼﾞNo
+AND>= DM3000 #2150       ; _MainTP　表示中ﾍﾟｰｼﾞNo
+NCJ #1044
+;TYPE D50300.U,D50312.D,@DM0.U,D50320.D,DM10500.D
+;
+;'現在値 表示
+;
+;DM50320 = DM10500:(D50312*8) 'Now Position
+;
+LD CR2002                ; 常時ON
+LDA.L DM50312            ; RB選択
+CON
+MUL.L +8
+CON
+STA.L Z12
+CON
+MOV.D DM10500:Z12 DM50320; RB1 POS
+;'DATA 格納
+;
+;IF R34002 = 1 THEN
+;
+LD R34002                ; direct Teach T.P
+NCJ #2006
+;	@DM0 = ((D50300-1)*6)+(D50312*600)
+;
+LD CR2002                ; 常時ON
+LDA.L DM50312            ; RB選択
+CON
+MUL.L +600
+CON
+STA.L @VM16
+CON
+LDA DM50300              ; Position No
+CON
+EXT
+CON
+SUB.L +1
+CON
+MUL.L +6
+CON
+ADD.L @VM16
+CON
+STA @DM0
+;	'IF 34002 = 1 THEN 
+;
+;	'	EM10000.D:(@DM0) = DM50320.D	'Position
+;
+;	'	EM10004:(@DM0) = DM50326.U		'SPEED
+;
+;	'	EM10005:(@DM0) = DM50327.U		'ACC/DEC
+;
+;	'ELSE
+;
+;		EM10000.D:(@DM0) = DM50302.D	'Direct Position
+;
+LD CR2002                ; 常時ON
+LDA @DM0
+CON
+EXT
+CON
+STA.L Z11
+CON
+MOV.D DM50302 EM10000:Z11; RB Position Low  RB1目標値（下位）1
+;		EM10004:(@DM0) = DM50306.U		'SPEED
+;
+LD CR2002                ; 常時ON
+LDA @DM0
+CON
+EXT
+CON
+STA.L Z11
+CON
+MOV DM50306 EM10004:Z11  ; RB SPEED  RB1速度1
+;        EM10005:(@DM0) = DM50307.U		'ACC/DEC
+;
+LD CR2002                ; 常時ON
+LDA @DM0
+CON
+EXT
+CON
+STA.L Z11
+CON
+MOV DM50307 EM10005:Z11  ; RB Acc/Dec  RB1加減速1
+;	'END IF
+;
+;	RES (R34002)
+;
+LD CR2002                ; 常時ON
+RES R34002               ; direct Teach T.P
+;END IF
+LABEL #2006
+LABEL #1044
+;
+;'Position Edit OffSet
+;IF DM21060.U < 1 OR DM21060.U > 32 THEN
+;	DM21060.U = 1
+;END IF
+;
+;IF DM21062.U < 1 OR DM21062 > 100 THEN
+;	DM21062 = 1
+;END IF
+;
+;DM21064.U = ((DM21060.U - 1) * 4)
+;DM21066.U = ((DM21060.U - 1) * 600 + (DM21062.U - 1) *6 )/2
+;DM21068.U = (DM21060.U - 1) * 600 + (DM21062.U - 1) * 6
+LD CR2002                ; 常時ON
+NCJ #1045
+;'Position Edit OffSet
+;
+;IF DM21060.U < 1 OR DM21060.U > 32 THEN
+;
+LD< DM21060 #1           ; Edit_ﾛﾎﾞｯﾄNo
+OUT @VB00
+LD> DM21060 #32          ; Edit_ﾛﾎﾞｯﾄNo
+OR @VB00
+NCJ #2007
+;	DM21060.U = 1
+;
+LD CR2002                ; 常時ON
+MOV #1 DM21060           ; Edit_ﾛﾎﾞｯﾄNo
+;END IF
+;
+LABEL #2007
+;IF DM21062.U < 1 OR DM21062 > 100 THEN
+;
+LD< DM21062 #1           ; Edit_Position_No
+OUT @VB01
+LD> DM21062 #100         ; Edit_Position_No
+OR @VB01
+NCJ #2008
+;	DM21062 = 1
+;
+LD CR2002                ; 常時ON
+MOV #1 DM21062           ; Edit_Position_No
+;END IF
+;
+LABEL #2008
+;DM21064.U = ((DM21060.U - 1) * 4)
+;
+LD CR2002                ; 常時ON
+LDA DM21060              ; Edit_ﾛﾎﾞｯﾄNo
+CON
+EXT
+CON
+SUB.L +1
+CON
+MUL.L +4
+CON
+STA DM21064              ; Edit_ﾛﾎﾞｯﾄ現在位置_OffSet
+;DM21066.U = ((DM21060.U - 1) * 600 + (DM21062.U - 1) *6 )/2
+;
+LD CR2002                ; 常時ON
+LDA DM21062              ; Edit_Position_No
+CON
+EXT
+CON
+SUB.L +1
+CON
+MUL.L +6
+CON
+STA.L @VM18
+CON
+LDA DM21060              ; Edit_ﾛﾎﾞｯﾄNo
+CON
+EXT
+CON
+SUB.L +1
+CON
+MUL.L +600
+CON
+ADD.L @VM18
+CON
+EXT.L
+CON
+DIV.L +2
+CON
+STA DM21066              ; Edit_D_Data_OffSet
+;DM21068.U = (DM21060.U - 1) * 600 + (DM21062.U - 1) * 6
+LD CR2002                ; 常時ON
+LDA DM21062              ; Edit_Position_No
+CON
+EXT
+CON
+SUB.L +1
+CON
+MUL.L +6
+CON
+STA.L @VM20
+CON
+LDA DM21060              ; Edit_ﾛﾎﾞｯﾄNo
+CON
+EXT
+CON
+SUB.L +1
+CON
+MUL.L +600
+CON
+ADD.L @VM20
+CON
+STA DM21068              ; Edit_S_Data_OffSet
+LABEL #1045
+;
+;<h1/>Panel Control
+;移動方向カーソル設定
+;1=通常X 2=ﾘﾊﾞｰｽX 3通常Y,Z 4ﾘﾊﾞｰｽY,Z
+;RB1 給材ｴﾚﾍﾞｰﾀ
+LD= DM50312 #0           ; RB選択
+MPS
+AND R34000               ; Teaching
+BSET DM50317 #3          ; RB Cursor type 表示
+MPP
+ANB R34000               ; Teaching
+DW #0 DM50317            ; RB Cursor type 表示
+;'SW名称
+;'2200:前進 2201:後退 2202:上昇 2203:下降 
+;'2204:ON   2205:OFF  2206:開   2207:閉
+;DM1940 = 2207 'ｼﾘﾝﾀﾞ1_SW1名称
+;DM1941 = 2206 'ｼﾘﾝﾀﾞ1_SW2名称
+;DM1942 = 2200 'ｼﾘﾝﾀﾞ2_SW1名称
+;DM1943 = 2201 'ｼﾘﾝﾀﾞ2_SW2名称
+;DM1944 = 2203 'ｼﾘﾝﾀﾞ3_SW1名称
+;DM1945 = 2202 'ｼﾘﾝﾀﾞ3_SW2名称
+;DM1946 = 0 'ｼﾘﾝﾀﾞ4_SW1名称
+;DM1947 = 0 'ｼﾘﾝﾀﾞ4_SW2名称
+;
+LD= DM50312 #0           ; RB選択
+NCJ #1003
+;'SW名称
+;
+;'2200:前進 2201:後退 2202:上昇 2203:下降 
+;
+;'2204:ON   2205:OFF  2206:開   2207:閉
+;
+;DM1940 = 2207 'ｼﾘﾝﾀﾞ1_SW1名称
+;
+LD CR2002                ; 常時ON
+MOV #2207 DM1940         ; SWﾒｯｾｰｼﾞ0
+;DM1941 = 2206 'ｼﾘﾝﾀﾞ1_SW2名称
+;
+LD CR2002                ; 常時ON
+MOV #2206 DM1941         ; SWﾒｯｾｰｼﾞ1
+;DM1942 = 2200 'ｼﾘﾝﾀﾞ2_SW1名称
+;
+LD CR2002                ; 常時ON
+MOV #2200 DM1942         ; SWﾒｯｾｰｼﾞ2
+;DM1943 = 2201 'ｼﾘﾝﾀﾞ2_SW2名称
+;
+LD CR2002                ; 常時ON
+MOV #2201 DM1943         ; SWﾒｯｾｰｼﾞ3
+;DM1944 = 2203 'ｼﾘﾝﾀﾞ3_SW1名称
+;
+LD CR2002                ; 常時ON
+MOV #2203 DM1944         ; SWﾒｯｾｰｼﾞ4
+;DM1945 = 2202 'ｼﾘﾝﾀﾞ3_SW2名称
+;
+LD CR2002                ; 常時ON
+MOV #2202 DM1945         ; SWﾒｯｾｰｼﾞ5
+;DM1946 = 0 'ｼﾘﾝﾀﾞ4_SW1名称
+;
+LD CR2002                ; 常時ON
+MOV #0 DM1946            ; SWﾒｯｾｰｼﾞ6
+;DM1947 = 0 'ｼﾘﾝﾀﾞ4_SW2名称
+;
+LD CR2002                ; 常時ON
+MOV #0 DM1947            ; SWﾒｯｾｰｼﾞ7
+LABEL #1003
+;
+;'ｼﾘﾝﾀﾞ名称
+;DM1950 = 2220 'ｼﾘﾝﾀﾞ1_名称
+;DM1951 = 2221 'ｼﾘﾝﾀﾞ2_名称
+;DM1952 = 2222 'ｼﾘﾝﾀﾞ3_名称
+;DM1953 = 0 'ｼﾘﾝﾀﾞ4_名称
+;
+LD= DM50312 #0           ; RB選択
+NCJ #1046
+;'ｼﾘﾝﾀﾞ名称
+;
+;DM1950 = 2220 'ｼﾘﾝﾀﾞ1_名称
+;
+LD CR2002                ; 常時ON
+MOV #2220 DM1950         ; Cylinder0
+;DM1951 = 2221 'ｼﾘﾝﾀﾞ2_名称
+;
+LD CR2002                ; 常時ON
+MOV #2221 DM1951         ; Cylinder1
+;DM1952 = 2222 'ｼﾘﾝﾀﾞ3_名称
+;
+LD CR2002                ; 常時ON
+MOV #2222 DM1952         ; Cylinder2
+;DM1953 = 0 'ｼﾘﾝﾀﾞ4_名称
+;
+LD CR2002                ; 常時ON
+MOV #0 DM1953            ; Cylinder3
+LABEL #1046
+;
+;RB2 ﾄﾚｲ搬送
+LD= DM50312 #1           ; RB選択
+MPS
+AND R34000               ; Teaching
+BSET DM50317 #3          ; RB Cursor type 表示
+MPP
+ANB R34000               ; Teaching
+DW #0 DM50317            ; RB Cursor type 表示
+;'SW名称
+;'2200:前進 2201:後退 2202:上昇 2203:下降 
+;'2204:ON   2205:OFF  2206:開   2207:閉
+;DM1940 = 2207 'ｼﾘﾝﾀﾞ1_SW1名称
+;DM1941 = 2206 'ｼﾘﾝﾀﾞ1_SW2名称
+;DM1942 = 2200 'ｼﾘﾝﾀﾞ2_SW1名称
+;DM1943 = 2201 'ｼﾘﾝﾀﾞ2_SW2名称
+;DM1944 = 2200 'ｼﾘﾝﾀﾞ3_SW1名称
+;DM1945 = 2201 'ｼﾘﾝﾀﾞ3_SW2名称
+;DM1946 = 2203 'ｼﾘﾝﾀﾞ4_SW1名称
+;DM1947 = 2202 'ｼﾘﾝﾀﾞ4_SW2名称
+;
+LD= DM50312 #1           ; RB選択
+NCJ #1047
+;'SW名称
+;
+;'2200:前進 2201:後退 2202:上昇 2203:下降 
+;
+;'2204:ON   2205:OFF  2206:開   2207:閉
+;
+;DM1940 = 2207 'ｼﾘﾝﾀﾞ1_SW1名称
+;
+LD CR2002                ; 常時ON
+MOV #2207 DM1940         ; SWﾒｯｾｰｼﾞ0
+;DM1941 = 2206 'ｼﾘﾝﾀﾞ1_SW2名称
+;
+LD CR2002                ; 常時ON
+MOV #2206 DM1941         ; SWﾒｯｾｰｼﾞ1
+;DM1942 = 2200 'ｼﾘﾝﾀﾞ2_SW1名称
+;
+LD CR2002                ; 常時ON
+MOV #2200 DM1942         ; SWﾒｯｾｰｼﾞ2
+;DM1943 = 2201 'ｼﾘﾝﾀﾞ2_SW2名称
+;
+LD CR2002                ; 常時ON
+MOV #2201 DM1943         ; SWﾒｯｾｰｼﾞ3
+;DM1944 = 2200 'ｼﾘﾝﾀﾞ3_SW1名称
+;
+LD CR2002                ; 常時ON
+MOV #2200 DM1944         ; SWﾒｯｾｰｼﾞ4
+;DM1945 = 2201 'ｼﾘﾝﾀﾞ3_SW2名称
+;
+LD CR2002                ; 常時ON
+MOV #2201 DM1945         ; SWﾒｯｾｰｼﾞ5
+;DM1946 = 2203 'ｼﾘﾝﾀﾞ4_SW1名称
+;
+LD CR2002                ; 常時ON
+MOV #2203 DM1946         ; SWﾒｯｾｰｼﾞ6
+;DM1947 = 2202 'ｼﾘﾝﾀﾞ4_SW2名称
+;
+LD CR2002                ; 常時ON
+MOV #2202 DM1947         ; SWﾒｯｾｰｼﾞ7
+LABEL #1047
+;
+;'ｼﾘﾝﾀﾞ名称
+;DM1950 = 2220 'ｼﾘﾝﾀﾞ1_名称
+;DM1951 = 2221 'ｼﾘﾝﾀﾞ2_名称
+;DM1952 = 2223 'ｼﾘﾝﾀﾞ3_名称
+;DM1953 = 2224 'ｼﾘﾝﾀﾞ4_名称
+;
+LD= DM50312 #1           ; RB選択
+NCJ #1048
+;'ｼﾘﾝﾀﾞ名称
+;
+;DM1950 = 2220 'ｼﾘﾝﾀﾞ1_名称
+;
+LD CR2002                ; 常時ON
+MOV #2220 DM1950         ; Cylinder0
+;DM1951 = 2221 'ｼﾘﾝﾀﾞ2_名称
+;
+LD CR2002                ; 常時ON
+MOV #2221 DM1951         ; Cylinder1
+;DM1952 = 2223 'ｼﾘﾝﾀﾞ3_名称
+;
+LD CR2002                ; 常時ON
+MOV #2223 DM1952         ; Cylinder2
+;DM1953 = 2224 'ｼﾘﾝﾀﾞ4_名称
+;
+LD CR2002                ; 常時ON
+MOV #2224 DM1953         ; Cylinder3
+LABEL #1048
+;
+;RB3 除材ｴﾚﾍﾞｰﾀ
+LD= DM50312 #2           ; RB選択
+MPS
+AND R34000               ; Teaching
+BSET DM50317 #1          ; RB Cursor type 表示
+MPP
+ANB R34000               ; Teaching
+DW #0 DM50317            ; RB Cursor type 表示
+;'SW名称
+;'2200:前進 2201:後退 2202:上昇 2203:下降 
+;'2204:ON   2205:OFF  2206:開   2207:閉
+;DM1940 = 2207 'ｼﾘﾝﾀﾞ1_SW1名称
+;DM1941 = 2206 'ｼﾘﾝﾀﾞ1_SW2名称
+;DM1942 = 2200 'ｼﾘﾝﾀﾞ2_SW1名称
+;DM1943 = 2201 'ｼﾘﾝﾀﾞ2_SW2名称
+;DM1944 = 0 'ｼﾘﾝﾀﾞ3_SW1名称
+;DM1945 = 0 'ｼﾘﾝﾀﾞ3_SW2名称
+;DM1946 = 0 'ｼﾘﾝﾀﾞ4_SW1名称
+;DM1947 = 0 'ｼﾘﾝﾀﾞ4_SW2名称
+;
+LD= DM50312 #2           ; RB選択
+NCJ #1049
+;'SW名称
+;
+;'2200:前進 2201:後退 2202:上昇 2203:下降 
+;
+;'2204:ON   2205:OFF  2206:開   2207:閉
+;
+;DM1940 = 2207 'ｼﾘﾝﾀﾞ1_SW1名称
+;
+LD CR2002                ; 常時ON
+MOV #2207 DM1940         ; SWﾒｯｾｰｼﾞ0
+;DM1941 = 2206 'ｼﾘﾝﾀﾞ1_SW2名称
+;
+LD CR2002                ; 常時ON
+MOV #2206 DM1941         ; SWﾒｯｾｰｼﾞ1
+;DM1942 = 2200 'ｼﾘﾝﾀﾞ2_SW1名称
+;
+LD CR2002                ; 常時ON
+MOV #2200 DM1942         ; SWﾒｯｾｰｼﾞ2
+;DM1943 = 2201 'ｼﾘﾝﾀﾞ2_SW2名称
+;
+LD CR2002                ; 常時ON
+MOV #2201 DM1943         ; SWﾒｯｾｰｼﾞ3
+;DM1944 = 0 'ｼﾘﾝﾀﾞ3_SW1名称
+;
+LD CR2002                ; 常時ON
+MOV #0 DM1944            ; SWﾒｯｾｰｼﾞ4
+;DM1945 = 0 'ｼﾘﾝﾀﾞ3_SW2名称
+;
+LD CR2002                ; 常時ON
+MOV #0 DM1945            ; SWﾒｯｾｰｼﾞ5
+;DM1946 = 0 'ｼﾘﾝﾀﾞ4_SW1名称
+;
+LD CR2002                ; 常時ON
+MOV #0 DM1946            ; SWﾒｯｾｰｼﾞ6
+;DM1947 = 0 'ｼﾘﾝﾀﾞ4_SW2名称
+;
+LD CR2002                ; 常時ON
+MOV #0 DM1947            ; SWﾒｯｾｰｼﾞ7
+LABEL #1049
+;
+;'ｼﾘﾝﾀﾞ名称
+;DM1950 = 2225 'ｼﾘﾝﾀﾞ1_名称
+;DM1951 = 2226 'ｼﾘﾝﾀﾞ2_名称
+;DM1952 = 0 'ｼﾘﾝﾀﾞ3_名称
+;DM1953 = 0 'ｼﾘﾝﾀﾞ4_名称
+;
+LD= DM50312 #2           ; RB選択
+NCJ #1050
+;'ｼﾘﾝﾀﾞ名称
+;
+;DM1950 = 2225 'ｼﾘﾝﾀﾞ1_名称
+;
+LD CR2002                ; 常時ON
+MOV #2225 DM1950         ; Cylinder0
+;DM1951 = 2226 'ｼﾘﾝﾀﾞ2_名称
+;
+LD CR2002                ; 常時ON
+MOV #2226 DM1951         ; Cylinder1
+;DM1952 = 0 'ｼﾘﾝﾀﾞ3_名称
+;
+LD CR2002                ; 常時ON
+MOV #0 DM1952            ; Cylinder2
+;DM1953 = 0 'ｼﾘﾝﾀﾞ4_名称
+;
+LD CR2002                ; 常時ON
+MOV #0 DM1953            ; Cylinder3
+LABEL #1050
+;
+;ｼﾘﾝﾀﾞ操作SW ﾗﾝﾌﾟ管理
+LD= DM3000 #2150         ; _MainTP　表示中ﾍﾟｰｼﾞNo
+LD= DM50312 #0           ; RB選択
+OR= DM50312 #1           ; RB選択
+ANL
+AND CR2003               ; 常時OFF
+OUT R41700               ; 共用SWﾗﾝﾌﾟ0
+LD= DM3000 #2150         ; _MainTP　表示中ﾍﾟｰｼﾞNo
+LD= DM50312 #0           ; RB選択
+OR= DM50312 #1           ; RB選択
+ANL
+AND CR2003               ; 常時OFF
+OUT R41701               ; 共用SWﾗﾝﾌﾟ1
+LD= DM3000 #2150         ; _MainTP　表示中ﾍﾟｰｼﾞNo
+LD= DM50312 #0           ; RB選択
+OR= DM50312 #1           ; RB選択
+ANL
+AND CR2003               ; 常時OFF
+OUT R41800               ; 共用ｾﾝｻｰﾗﾝﾌﾟ0
+LD= DM3000 #2150         ; _MainTP　表示中ﾍﾟｰｼﾞNo
+LD= DM50312 #0           ; RB選択
+OR= DM50312 #1           ; RB選択
+ANL
+AND CR2003               ; 常時OFF
+OUT R41801               ; 共用ｾﾝｻｰﾗﾝﾌﾟ1
+LD= DM3000 #2150         ; _MainTP　表示中ﾍﾟｰｼﾞNo
+LD= DM50312 #0           ; RB選択
+OR= DM50312 #1           ; RB選択
+ANL
+AND CR2003               ; 常時OFF
+OUT R41702               ; 共用SWﾗﾝﾌﾟ2
+LD= DM3000 #2150         ; _MainTP　表示中ﾍﾟｰｼﾞNo
+LD= DM50312 #0           ; RB選択
+OR= DM50312 #1           ; RB選択
+ANL
+AND CR2003               ; 常時OFF
+OUT R41703               ; 共用SWﾗﾝﾌﾟ3
+LD= DM3000 #2150         ; _MainTP　表示中ﾍﾟｰｼﾞNo
+LD= DM50312 #0           ; RB選択
+OR= DM50312 #1           ; RB選択
+ANL
+AND CR2003               ; 常時OFF
+OUT R41802               ; 共用ｾﾝｻｰﾗﾝﾌﾟ2
+LD= DM3000 #2150         ; _MainTP　表示中ﾍﾟｰｼﾞNo
+LD= DM50312 #0           ; RB選択
+OR= DM50312 #1           ; RB選択
+ANL
+AND CR2003               ; 常時OFF
+OUT R41803               ; 共用ｾﾝｻｰﾗﾝﾌﾟ3
+LD= DM3000 #2150         ; _MainTP　表示中ﾍﾟｰｼﾞNo
+LD= DM50312 #0           ; RB選択
+OR= DM50312 #1           ; RB選択
+ANL
+AND CR2003               ; 常時OFF
+OUT R41704               ; 共用SWﾗﾝﾌﾟ4
+LD= DM3000 #2150         ; _MainTP　表示中ﾍﾟｰｼﾞNo
+LD= DM50312 #0           ; RB選択
+OR= DM50312 #1           ; RB選択
+ANL
+AND CR2003               ; 常時OFF
+OUT R41705               ; 共用SWﾗﾝﾌﾟ5
+LD= DM3000 #2150         ; _MainTP　表示中ﾍﾟｰｼﾞNo
+LD= DM50312 #0           ; RB選択
+OR= DM50312 #1           ; RB選択
+ANL
+AND CR2003               ; 常時OFF
+OUT R41804               ; 共用ｾﾝｻｰﾗﾝﾌﾟ4
+LD= DM3000 #2150         ; _MainTP　表示中ﾍﾟｰｼﾞNo
+LD= DM50312 #0           ; RB選択
+OR= DM50312 #1           ; RB選択
+ANL
+AND CR2003               ; 常時OFF
+OUT R41805               ; 共用ｾﾝｻｰﾗﾝﾌﾟ5
+LD= DM3000 #2150         ; _MainTP　表示中ﾍﾟｰｼﾞNo
+LD= DM50312 #0           ; RB選択
+OR= DM50312 #1           ; RB選択
+ANL
+AND CR2003               ; 常時OFF
+OUT R41706               ; 共用SWﾗﾝﾌﾟ6
+LD= DM3000 #2150         ; _MainTP　表示中ﾍﾟｰｼﾞNo
+LD= DM50312 #0           ; RB選択
+OR= DM50312 #1           ; RB選択
+ANL
+AND CR2003               ; 常時OFF
+OUT R41707               ; 共用SWﾗﾝﾌﾟ7
+LD= DM3000 #2150         ; _MainTP　表示中ﾍﾟｰｼﾞNo
+LD= DM50312 #0           ; RB選択
+OR= DM50312 #1           ; RB選択
+ANL
+AND CR2003               ; 常時OFF
+OUT R41806               ; 共用ｾﾝｻｰﾗﾝﾌﾟ6
+LD= DM3000 #2150         ; _MainTP　表示中ﾍﾟｰｼﾞNo
+LD= DM50312 #0           ; RB選択
+OR= DM50312 #1           ; RB選択
+ANL
+AND CR2003               ; 常時OFF
+OUT R41807               ; 共用ｾﾝｻｰﾗﾝﾌﾟ7
+;<h1/>Teaching MOVE
+LDB R34000               ; Teaching
+BAND DM50314 #0
+MPS
+LDA DM50312              ; RB選択
+CON
+MUL #16
+CON
+STA Z3
+MRD
+LDA DM50312              ; RB選択
+CON
+MUL #8
+CON
+STA Z4
+MPP
+LDA DM50312              ; RB選択
+CON
+MUL #2
+CON
+STA Z5
+BLD DM50314 #0
+MEP
+ANB R35002:Z3            ; During RB1 MOVE 
+LD= DM50312 #0           ; RB選択
+AND MR3300               ; RB1 起動I/L(ON=起動可)
+LD= DM50312 #1           ; RB選択
+AND MR3301               ; RB2 起動I/L(ON=起動可)
+ORL
+LD= DM50312 #2           ; RB選択
+AND MR3302               ; RB3 起動I/L(ON=起動可)
+ORL
+ANL
+LDA DM50300              ; Position No
+CON
+STA EM1300:Z5            ; RB1 Target Pos
+CON
+SET R35000:Z3            ; RB1 MOVE
+CON
+SET @R2500
+STG @R2500
+AND R35001:Z3            ; RB1 MOVE END
+RES R35001:Z3            ; RB1 MOVE END
+CON
+ENDS
+;<h1/>Teaching HOME
+LD= DM3000 #2150         ; _MainTP　表示中ﾍﾟｰｼﾞNo
+OR= DM3000 #2151         ; _MainTP　表示中ﾍﾟｰｼﾞNo
+BAND DM50314 #1
+MPS
+LDA DM50312              ; RB選択
+CON
+MUL #16
+CON
+STA Z3
+MRD
+LDA DM50312              ; RB選択
+CON
+MUL #8
+CON
+STA Z4
+MPP
+LDA DM50312              ; RB選択
+CON
+MUL #2
+CON
+STA Z5
+BLD DM50314 #1
+MEP
+ANB R35010:Z3            ; During RB1 HOME
+LD= DM50312 #0           ; RB選択
+AND MR3308               ; RB1 原点復帰起動I/L(ON=起動可)
+LD= DM50312 #1           ; RB選択
+AND MR3309               ; RB2 原点復帰起動I/L(ON=起動可)
+ORL
+LD= DM50312 #2           ; RB選択
+AND MR3310               ; RB3 原点復帰起動I/L(ON=起動可)
+ORL
+ANL
+SET R35008:Z3            ; RB1 HOME
+CON
+SET @MR2502
+STG @MR2502
+AND R35009:Z3            ; RB1 HOME END
+RES R35009:Z3            ; RB1 HOME END
+CON
+ENDS
+;追加（TP用）
+;DM50340：ﾃｨｰﾁﾝｸﾞ操作ﾎﾞﾀﾝ用
+;DM50346：現在位置
+;DM50342：目標位置・位置決め幅
+;DM50344：指令速度・加速度
+;'Position Edit OffSet
+;IF DM50300.U < 1 OR DM50300.U > 32 THEN
+;'	DM50300.U = 1
+;END IF
+;
+;IF DM50314.U < 1 OR DM50314.U > 100 THEN
+;'	DM50314.U = 1
+;END IF
+;
+;DM50346.U = ((DM50312.U - 1) * 8)/2
+;DM50342.U = ((DM50312.U - 1) * 600 + (DM50300.U - 1) * 6)/2
+;DM50344.U = (DM50312.U - 1) * 600 + (DM50300.U - 1) * 6
+;
+LD CR2002                ; 常時ON
+MPS
+LDA DM50312              ; RB選択
+CON
+MUL #8
+CON
+STA Z4
+MRD
+LDA Z4
+CON
+MUL #16
+CON
+STA DM50315
+MPP
+NCJ #1042
+;'Position Edit OffSet
+;
+;IF DM50300.U < 1 OR DM50300.U > 32 THEN
+;
+LD< DM50300 #1           ; Position No
+OUT @VB02
+LD> DM50300 #32          ; Position No
+OR @VB02
+NCJ #2009
+;'	DM50300.U = 1
+;
+;END IF
+;
+LABEL #2009
+;IF DM50314.U < 1 OR DM50314.U > 100 THEN
+;
+LD< DM50314 #1
+OUT @VB03
+LD> DM50314 #100
+OR @VB03
+NCJ #2010
+;'	DM50314.U = 1
+;
+;END IF
+;
+LABEL #2010
+;DM50346.U = ((DM50312.U - 1) * 8)/2
+;
+LD CR2002                ; 常時ON
+LDA DM50312              ; RB選択
+CON
+EXT
+CON
+SUB.L +1
+CON
+MUL.L +8
+CON
+DIV.L +2
+CON
+STA DM50346
+;DM50342.U = ((DM50312.U - 1) * 600 + (DM50300.U - 1) * 6)/2
+;
+LD CR2002                ; 常時ON
+LDA DM50300              ; Position No
+CON
+EXT
+CON
+SUB.L +1
+CON
+MUL.L +6
+CON
+STA.L @VM22
+CON
+LDA DM50312              ; RB選択
+CON
+EXT
+CON
+SUB.L +1
+CON
+MUL.L +600
+CON
+ADD.L @VM22
+CON
+EXT.L
+CON
+DIV.L +2
+CON
+STA DM50342              ; 間接指定用　8ﾜｰﾄ
+;DM50344.U = (DM50312.U - 1) * 600 + (DM50300.U - 1) * 6
+;
+LD CR2002                ; 常時ON
+LDA DM50300              ; Position No
+CON
+EXT
+CON
+SUB.L +1
+CON
+MUL.L +6
+CON
+STA.L @VM24
+CON
+LDA DM50312              ; RB選択
+CON
+EXT
+CON
+SUB.L +1
+CON
+MUL.L +600
+CON
+ADD.L @VM24
+CON
+STA DM50344
+LABEL #1042
+;
+;Servo ON
+BLD DM50314 #4
+MEP
+MPS
+BAND DM10507:Z4 #4       ; RB1 STATUS
+OUT @R2504
+CON
+BRES DM10707:Z4 #4       ; RB1 OUT STATUS
+MPP
+BLDB DM10507:Z4 #4       ; RB1 STATUS
+ANB @R2504
+ANL
+BSET DM10707:Z4 #4       ; RB1 OUT STATUS
+;Alarm RESET
+BLD DM50314 #3
+BOUT DM10707:Z4 #3       ; RB1 OUT STATUS
+;Brake Release
+BLD DM50314 #15
+MEP
+MPS
+BAND DM10507:Z4 #15      ; RB1 STATUS
+OUT @MR2505
+CON
+BRES DM10507:Z4 #15      ; RB1 STATUS
+MPP
+BLDB DM10507:Z4 #15      ; RB1 STATUS
+ANB @MR2505
+ANL
+BSET DM10507:Z4 #15      ; RB1 STATUS
+;<h1/>ｼﾞｮｸﾞ/ｲﾝﾁﾝｸﾞ出力
+LDB R44300               ; *非常停止ｽｲｯﾁ
+RES MR16700              ; 給材EV JISL(ON=Jog/OFF=Inc)
+CON
+RES MR16701              ; 給材EV JVEL(ON=遅/OFF=速)
+CON
+RES MR16702              ; 給材EV -JOG(-INC)指令
+CON
+RES MR16703              ; 給材ｴﾚﾍﾞｰﾀ_+JOG(+INC)指令
+CON
+RES MR16704              ; 除材ｴﾚﾍﾞｰﾀ_JISL_JOG/INC_切替
+CON
+RES MR16705              ; 除材ｴﾚﾍﾞｰﾀ_JVEL_Lo/Hi_切替
+CON
+RES MR16706              ; 除材ｴﾚﾍﾞｰﾀ_-JOG(-INC)指令
+CON
+RES MR16707              ; 除材ｴﾚﾍﾞｰﾀ_+JOG(+INC)指令
+LD R44300                ; *非常停止ｽｲｯﾁ
+MC
+;RB1 供給ｴﾚﾍﾞｰﾀ
+LDB DM50314.5
+OR MR10115               ; T1 給材EV Jog信号使用中
+ANB MR16700              ; 給材EV JISL(ON=Jog/OFF=Inc)
+INV
+OUT @MR105               ; Jog/Inching
+LDB DM50314.6
+OR MR10115               ; T1 給材EV Jog信号使用中
+ANB MR16701              ; 給材EV JVEL(ON=遅/OFF=速)
+INV
+OUT @MR106               ; 速度切替 (距離切替)
+LDB DM50314.7
+OR MR10115               ; T1 給材EV Jog信号使用中
+ANB MR16702              ; 給材EV -JOG(-INC)指令
+INV
+AND R4405                ; 給材ﾃｰﾌﾞﾙ戻端(D-On)
+AND R1007                ; 給材側ﾄﾞｱ lock and close
+OUT @MR107               ; JOG-
+LDB DM50314.8
+OR MR10115               ; T1 給材EV Jog信号使用中
+ANB MR16703              ; 給材ｴﾚﾍﾞｰﾀ_+JOG(+INC)指令
+INV
+AND R4405                ; 給材ﾃｰﾌﾞﾙ戻端(D-On)
+AND R1007                ; 給材側ﾄﾞｱ lock and close
+OUT @MR108               ; JOG+
+LD= DM50312 #0           ; RB選択
+OR MR10115               ; T1 給材EV Jog信号使用中
+MPS
+AND @MR105               ; Jog/Inching
+OUT DM10707.5            ; RB1 JISL(ON=Jog/OFF=Inc)
+MRD
+AND @MR106               ; 速度切替 (距離切替)
+OUT DM10707.6            ; RB1 JVEL(ON=遅/OFF=速)
+MRD
+AND @MR107               ; JOG-
+OUT DM10707.7            ; RB1 JOG-
+MPP
+AND @MR108               ; JOG+
+OUT DM10707.8            ; RB1 JOG+
+;RB2 除材ｴﾚﾍﾞｰﾀ
+LDB DM50314.5
+OR MR10315               ; T3 除材EV Jog信号使用中
+ANB MR16704              ; 除材ｴﾚﾍﾞｰﾀ_JISL_JOG/INC_切替
+INV
+OUT @MR109               ; Jog/Inching
+LDB DM50314.6
+OR MR10315               ; T3 除材EV Jog信号使用中
+ANB MR16705              ; 除材ｴﾚﾍﾞｰﾀ_JVEL_Lo/Hi_切替
+INV
+OUT @MR110               ; 速度切替 (距離切替)
+LDB DM50314.7
+OR MR10315               ; T3 除材EV Jog信号使用中
+ANB MR16706              ; 除材ｴﾚﾍﾞｰﾀ_-JOG(-INC)指令
+INV
+AND R4405                ; 給材ﾃｰﾌﾞﾙ戻端(D-On)
+AND R1006                ; 除材側ﾄﾞｱ lock and close
+OUT @MR111               ; JOG-
+LDB DM50314.8
+OR MR10315               ; T3 除材EV Jog信号使用中
+ANB MR16707              ; 除材ｴﾚﾍﾞｰﾀ_+JOG(+INC)指令
+INV
+AND R4405                ; 給材ﾃｰﾌﾞﾙ戻端(D-On)
+AND R1006                ; 除材側ﾄﾞｱ lock and close
+OUT @MR112               ; JOG＋
+LD= DM50312 #1           ; RB選択
+OR MR10315               ; T3 除材EV Jog信号使用中
+MPS
+AND @MR109               ; Jog/Inching
+OUT DM10715.5            ; RB2 JISL JOG/INC(OFF=JOG)
+MRD
+AND @MR110               ; 速度切替 (距離切替)
+OUT DM10715.6            ; RB2 JVEL
+MRD
+AND @MR111               ; JOG-
+OUT DM10715.7            ; RB2 JOG-
+MPP
+AND @MR112               ; JOG＋
+OUT DM10715.8            ; RB2 JOG+
+;RB3 ﾄﾚｲ搬送
+LD= DM50312 #2           ; RB選択
+MPS
+AND DM50314.5
+OUT DM10723.5            ; RB3 JISL
+MRD
+AND DM50314.6
+OUT DM10723.6            ; RB3 JVEL
+MRD
+LD DM50314.7
+ANB R1004                ; ｶﾊﾞｰ閉確認
+ANL
+OUT DM10723.7            ; RB3 JOG-
+MPP
+LD DM50314.8
+ANB R1004                ; ｶﾊﾞｰ閉確認
+ANL
+OUT DM10723.8            ; RB3 JOG+
+MCR
+;<h1/>RB1
+;<h1/> RB1 POS CHECK
+LD= EM1300 #1            ; RB1 Target Pos
+AND R35002               ; During RB1 MOVE 
+AND R100                 ; 0.5s ｸﾛｯｸ
+LD T2000                 ; RB1 Pos1(下端)
+ANB R35002               ; During RB1 MOVE 
+ORL
+OR MR21000               ; TPSW RB1 PosSW1
+OUT MR22000              ; TPSW RB1 Pos1ﾗﾝﾌﾟ
+LD= EM1300 #11           ; RB1 Target Pos
+AND R35002               ; During RB1 MOVE 
+AND R100                 ; 0.5s ｸﾛｯｸ
+LD T2010                 ; RB1 Pos11(段ﾊﾞﾗｼ後戻)
+ANB R35002               ; During RB1 MOVE 
+ORL
+OR MR21001               ; TPSW RB1 PosSW2
+OUT MR22001              ; TPSW RB1 Pos2ﾗﾝﾌﾟ
+LD= EM1300 #12           ; RB1 Target Pos
+AND R35002               ; During RB1 MOVE 
+AND R100                 ; 0.5s ｸﾛｯｸ
+LD T2011                 ; RB1 Pos12(段ﾊﾞﾗｼ)
+ANB R35002               ; During RB1 MOVE 
+ORL
+OR MR21002               ; TPSW RB1 PosSW3
+OUT MR22002              ; TPSW RB1 Pos3ﾗﾝﾌﾟ
+LD= EM1300 #20           ; RB1 Target Pos
+AND R35002               ; During RB1 MOVE 
+AND R100                 ; 0.5s ｸﾛｯｸ
+LD T2019                 ; RB1 Pos20(待機)
+ANB R35002               ; During RB1 MOVE 
+ORL
+OR MR21003               ; TPSW RB1 PosSW4
+OUT MR22003              ; TPSW RB1 Pos4ﾗﾝﾌﾟ
+LD CR2002                ; 常時ON
+MOV.L +10 DM25000        ; RB1用 Pos位置の 監視幅
+MPS
+LDA.L EM10000            ; RB1目標値（下位）1
+CON
+SUB.L DM25000            ; RB1用 Pos位置の 監視幅
+CON
+STA.L DM25100
+CON
+LDA.L EM10000            ; RB1目標値（下位）1
+CON
+ADD.L DM25000            ; RB1用 Pos位置の 監視幅
+CON
+STA.L DM25102
+CON
+AND>=.L DM10500 DM25100  ; RB1 POS
+AND<=.L DM10500 DM25102  ; RB1 POS
+TMR #2000 #1             ; RB1 Pos1(下端)
+MRD
+LDA.L EM10060            ; RB1目標値（下位）11
+CON
+SUB.L DM25000            ; RB1用 Pos位置の 監視幅
+CON
+STA.L DM25140
+CON
+LDA.L EM10060            ; RB1目標値（下位）11
+CON
+ADD.L DM25000            ; RB1用 Pos位置の 監視幅
+CON
+STA.L DM25142
+CON
+AND>=.L DM10500 DM25140  ; RB1 POS
+AND<=.L DM10500 DM25142  ; RB1 POS
+TMR #2010 #1             ; RB1 Pos11(段ﾊﾞﾗｼ後戻)
+MRD
+LDA.L EM10066            ; RB1目標値（下位）12
+CON
+SUB.L DM25000            ; RB1用 Pos位置の 監視幅
+CON
+STA.L DM25144
+CON
+LDA.L EM10066            ; RB1目標値（下位）12
+CON
+ADD.L DM25000            ; RB1用 Pos位置の 監視幅
+CON
+STA.L DM25146
+CON
+AND>=.L DM10500 DM25144  ; RB1 POS
+AND<=.L DM10500 DM25146  ; RB1 POS
+TMR #2011 #1             ; RB1 Pos12(段ﾊﾞﾗｼ)
+MRD
+LDA.L EM10114            ; RB1目標値（下位）20
+CON
+SUB.L DM25000            ; RB1用 Pos位置の 監視幅
+CON
+STA.L DM25176
+CON
+LDA.L EM10114            ; RB1目標値（下位）20
+CON
+ADD.L DM25000            ; RB1用 Pos位置の 監視幅
+CON
+STA.L DM25178
+CON
+AND>=.L DM10500 DM25176  ; RB1 POS
+AND<=.L DM10500 DM25178  ; RB1 POS
+TMR #2019 #1             ; RB1 Pos20(待機)
+MPP
+AND<=.L DM10500 DM420    ; RB1 POS  _機種分類1　機種別ﾃﾞｰﾀ11
+TMR #2039 #1             ; RB1 ﾄﾚｲｻｰﾁ許可
+;<h1/> RB1 MOVE
+STG R35000               ; RB1 MOVE
+SET R35002               ; During RB1 MOVE 
+CON
+JMP @R100
+STG @R100
+AND @R101
+DW #0 @DM10
+CON
+JMP @R102
+;TYPE EM1000.U,EM01300.U,EM10000.U   
+;BMOV(EM10000:((EM01300-1)*6),EM1000,#6)	'指定されたPOSをEM1000へ格納
+;SET (@R101)
+LD @R100
+NCJ #1005
+;TYPE EM1000.U,EM01300.U,EM10000.U   
+;
+;BMOV(EM10000:((EM01300-1)*6),EM1000,#6)	'指定されたPOSをEM1000へ格納
+;
+LD CR2002                ; 常時ON
+LDA EM1300               ; RB1 Target Pos
+CON
+EXT
+CON
+SUB.L +1
+CON
+MUL.L +6
+CON
+STA.L Z12
+BMOV EM10000:Z12 EM1000 #6;RB1目標値（下位）1  RB1 目標値下位
+;SET (@R101)
+LD CR2002                ; 常時ON
+SET @R101
+LABEL #1005
+;
+LDP @R102
+RES @R101
+CON
+MSTRT CON_MOVE EM1000 EM1004 EM1005 DM10500 DM10700 @DM10;RB1 目標値下位  RB1 速度  RB1 G  RB1 POS  RB1 Target Pos
+STG @R102
+MPS
+AND= @DM10 #20
+JMP @R103                ; RB1
+MPP
+LD<> @DM10 #20
+AND<> @DM10 #0
+ANL
+SET R35003               ; RB1 Alarm
+CON
+JMP @R103                ; RB1
+STG @R103                ; RB1
+RES R35002               ; During RB1 MOVE 
+CON
+SET R35001               ; RB1 MOVE END
+CON
+ENDS
+;<h1/> RB1 PUSH
+STG R35004               ; RB1 PUSH
+SET R35006               ; During RB1 PUSH 
+CON
+JMP @R104
+STG @R104
+AND @R105
+DW #0 @DM11
+CON
+JMP @R106
+;TYPE EM1000.U,EM01300.U,EM10000.U   
+;BMOV(EM10000:((EM01300-1)*6),EM1000,#6)	'指定されたPOSをEM1000へ格納
+;SET (@R105)
+LD @R104
+NCJ #1000
+;TYPE EM1000.U,EM01300.U,EM10000.U   
+;
+;BMOV(EM10000:((EM01300-1)*6),EM1000,#6)	'指定されたPOSをEM1000へ格納
+;
+LD CR2002                ; 常時ON
+LDA EM1300               ; RB1 Target Pos
+CON
+EXT
+CON
+SUB.L +1
+CON
+MUL.L +6
+CON
+STA.L Z12
+BMOV EM10000:Z12 EM1000 #6;RB1目標値（下位）1  RB1 目標値下位
+;SET (@R105)
+LD CR2002                ; 常時ON
+SET @R105
+LABEL #1000
+;
+;PUSH ﾏｸﾛは2種類準備しています（任意で選択して下さい）
+;CON_PUSH	押付け動作用
+;CON_WD_PUSH	溶着向け動作用
+;
+;注1)速度(SPEED)はPUSH開始位置へ移動するまでの速度。
+;注2)押付け動作中速度はRBﾊﾟﾗﾒｰﾀにて設定してください。
+;注3)PUSH動作ではPush Wideが押付け幅となります。
+;注4)PUSH動作には電流値も必要です。
+;	※押付け電流制限値（単位：%）
+;	0～100％　※RCP4はMAX70％まで
+;	MAXを超えた値を入力するとｴﾗｰとなります。
+;	→ｺﾝﾄﾛｰﾗへは0～255で入力
+;注5)WD_PUSHマクロは、Break offが入力されると位置情報(PUSH_Result)が格納され終了となります。
+;	ﾀﾞﾐｰ接点を任意のﾃﾞﾊﾞｲｽに変更して下さい。
+;
+;Push_Result一時保管ﾃﾞﾊﾞｲｽ	@DM100～@DM138(2ﾜｰﾄﾞ)
+LDP @R106
+RES @R105
+CON
+MPS
+LDA #70
+CON
+MUL #25500
+CON
+DIV #10000
+CON
+STA EM1006               ; RB1 押付け電流値(0～255)
+MRD
+AND CR2002               ; 常時ON
+MSTRT CON_PUSH EM1000 EM1002 EM1004 EM1005 EM1006 DM10500 DM10700 @DM11;RB1 目標値下位  RB1 位置決め幅下位  RB1 速度  RB1 G  RB1 押付け電流値(0～255)  RB1 POS  RB1 Target Pos
+MPP
+ANB CR2002               ; 常時ON
+MSTRT CON_WD_PUSH EM1000 EM1002 EM1004 EM1005 EM1006 DM10500 DM10700 @DM11 @R000 @DM100;RB1 目標値下位  RB1 位置決め幅下位  RB1 速度  RB1 G  RB1 押付け電流値(0～255)  RB1 POS  RB1 Target Pos  ﾀﾞﾐｰ接点
+STG @R106
+MPS
+AND= @DM11 #20
+JMP @R107
+MPP
+LD<> @DM11 #20
+AND<> @DM11 #0
+ANL
+SET R35003               ; RB1 Alarm
+CON
+JMP @R107
+STG @R107
+RES R35006               ; During RB1 PUSH 
+CON
+SET R35005               ; RB1 PUSH END
+CON
+ENDS
+;<h1/> RB1 HOME
+STG R35008               ; RB1 HOME
+DW #0 @DM12
+CON
+SET R35010               ; During RB1 HOME
+CON
+JMP @R108
+;原点復帰ﾏｸﾛは2種類準備しています（任意で選択して下さい）
+;CON_HOME	通常用
+;CON_HOME2	原点確認仕様用
+;			→原点ｾﾝｻｰをSensor_INに指定してください。ｾﾝｻｰはA接点を想定しています。
+;			#20	=	正常終了
+;			#21	=	RB応答なし
+;			#22	=	ｽﾃｰﾀｽ異常
+;			#25	=	原点異常
+;			#26	=	原点ｾﾝｻｰ異常
+LDP @R108
+MPS
+ANB CR2002               ; 常時ON
+MSTRT CON_HOME DM10500 DM10700 @DM12;RB1 POS  RB1 Target Pos
+MPP
+AND CR2002               ; 常時ON
+MSTRT CON_HOME2 DM10500 DM10700 @DM12 R4500;RB1 POS  RB1 Target Pos  RB01 給材EV 原点ｾﾝｻ(D-On)
+STG @R108
+MPS
+AND= @DM12 #20
+JMP @R109
+MPP
+LD<> @DM12 #20
+AND<> @DM12 #0
+ANL
+SET R35003               ; RB1 Alarm
+CON
+JMP @R109
+STG @R109
+SET R35009               ; RB1 HOME END
+CON
+RES R35010               ; During RB1 HOME
+CON
+ENDS
+;<h1/>RB2
+;<h1/> RB2 POS CHECK
+LD= EM1302 #1            ; RB2 Target Pos
+AND R35102               ; During RB2 MOVE
+AND R100                 ; 0.5s ｸﾛｯｸ
+LD T2040                 ; RB2 Pos1(下端)
+ANB R35102               ; During RB2 MOVE
+ORL
+OR MR21100               ; TPSW RB2 PosSW1
+OUT MR22100              ; TPSW RB2 Pos1ﾗﾝﾌﾟ
+LD= EM1302 #11           ; RB2 Target Pos
+AND R35102               ; During RB2 MOVE
+AND R100                 ; 0.5s ｸﾛｯｸ
+LD T2050                 ; RB2 Pos11(段積後戻)
+ANB R35102               ; During RB2 MOVE
+ORL
+OR MR21101               ; TPSW RB2 PosSW2
+OUT MR22101              ; TPSW RB2 Pos2ﾗﾝﾌﾟ
+LD= EM1302 #12           ; RB2 Target Pos
+AND R35102               ; During RB2 MOVE
+AND R100                 ; 0.5s ｸﾛｯｸ
+LD T2051                 ; RB2 Pos12(段積)
+ANB R35102               ; During RB2 MOVE
+ORL
+OR MR21102               ; TPSW RB2 PosSW3
+OUT MR22102              ; TPSW RB2 Pos3ﾗﾝﾌﾟ
+LD= EM1302 #20           ; RB2 Target Pos
+AND R35102               ; During RB2 MOVE
+AND R100                 ; 0.5s ｸﾛｯｸ
+LD T2059                 ; RB2 Pos20(待機)
+ANB R35102               ; During RB2 MOVE
+ORL
+OR MR21103               ; TPSW RB2 PosSW4
+OUT MR22103              ; TPSW RB2 Pos4ﾗﾝﾌﾟ
+LD CR2002                ; 常時ON
+MOV.L +10 DM25002        ; RB2用 Pos位置の 監視幅
+MPS
+LDA.L EM10600            ; RB2目標値（下位）1
+CON
+SUB.L DM25002            ; RB2用 Pos位置の 監視幅
+CON
+STA.L DM25300
+CON
+LDA.L EM10600            ; RB2目標値（下位）1
+CON
+ADD.L DM25002            ; RB2用 Pos位置の 監視幅
+CON
+STA.L DM25302
+CON
+AND>=.L DM10508 DM25300  ; RB2 POS
+AND<=.L DM10508 DM25302  ; RB2 POS
+TMR #2040 #1             ; RB2 Pos1(下端)
+MRD
+LDA.L EM10660            ; RB2目標値（下位）11
+CON
+SUB.L DM25002            ; RB2用 Pos位置の 監視幅
+CON
+STA.L DM25340
+CON
+LDA.L EM10660            ; RB2目標値（下位）11
+CON
+ADD.L DM25002            ; RB2用 Pos位置の 監視幅
+CON
+STA.L DM25342
+CON
+AND>=.L DM10508 DM25340  ; RB2 POS
+AND<=.L DM10508 DM25342  ; RB2 POS
+TMR #2050 #1             ; RB2 Pos11(段積後戻)
+MRD
+LDA.L EM10666            ; RB2目標値（下位）12
+CON
+SUB.L DM25002            ; RB2用 Pos位置の 監視幅
+CON
+STA.L DM25344
+CON
+LDA.L EM10666            ; RB2目標値（下位）12
+CON
+ADD.L DM25002            ; RB2用 Pos位置の 監視幅
+CON
+STA.L DM25346
+CON
+AND>=.L DM10508 DM25344  ; RB2 POS
+AND<=.L DM10508 DM25346  ; RB2 POS
+TMR #2051 #1             ; RB2 Pos12(段積)
+MRD
+LDA.L EM10714            ; RB2 目標値（下位）20
+CON
+SUB.L DM25002            ; RB2用 Pos位置の 監視幅
+CON
+STA.L DM25376
+CON
+LDA.L EM10714            ; RB2 目標値（下位）20
+CON
+ADD.L DM25002            ; RB2用 Pos位置の 監視幅
+CON
+STA.L DM25378
+CON
+AND>=.L DM10508 DM25376  ; RB2 POS
+AND<=.L DM10508 DM25378  ; RB2 POS
+TMR #2059 #1             ; RB2 Pos20(待機)
+MPP
+AND<=.L DM10508 DM440    ; RB2 POS  _機種分類1　機種別ﾃﾞｰﾀ21
+TMR #2069 #1             ; RB2 ﾄﾚｲサーチ許可
+;<h1/> RB2 MOVE
+STG R35100               ; RB2 MOVE
+SET R35102               ; During RB2 MOVE
+CON
+JMP @R200
+;原点復帰ﾏｸﾛは2種類準備しています（任意で選択して下さい）
+;CON_HOME	通常用
+;CON_HOME2	原点確認仕様用
+;			→原点ｾﾝｻｰをSensor_INに指定してください。ｾﾝｻｰはA接点を想定しています。
+;			#20	=	正常終了
+;			#21	=	RB応答なし
+;			#22	=	ｽﾃｰﾀｽ異常
+;			#25	=	原点異常
+;			#26	=	原点ｾﾝｻｰ異常
+STG @R200
+AND @R201
+DW #0 @DM13
+CON
+JMP @R202
+;TYPE EM1008.U,EM01302.U,EM10600.U   
+;BMOV(EM10600:((EM01302-1)*6),EM1008,#6)	'指定されたPOSをEM1008へ格納
+;SET (@R201)
+LD @R200
+NCJ #1001
+;TYPE EM1008.U,EM01302.U,EM10600.U   
+;
+;BMOV(EM10600:((EM01302-1)*6),EM1008,#6)	'指定されたPOSをEM1008へ格納
+;
+LD CR2002                ; 常時ON
+LDA EM1302               ; RB2 Target Pos
+CON
+EXT
+CON
+SUB.L +1
+CON
+MUL.L +6
+CON
+STA.L Z12
+BMOV EM10600:Z12 EM1008 #6;RB2目標値（下位）1  RB2 目標値下位
+;SET (@R201)
+LD CR2002                ; 常時ON
+SET @R201
+LABEL #1001
+;
+LDP @R202
+RES @R201
+CON
+MSTRT CON_MOVE EM1008 EM1012 EM1013 DM10508 DM10708 @DM13;RB2 目標値下位  RB2 速度  RB2 G  RB2 POS  RB2 Target Pos
+STG @R202
+MPS
+AND= @DM13 #20
+JMP @R203                ; RB2
+MPP
+LD<> @DM13 #20
+AND<> @DM13 #0
+ANL
+SET R35103               ; RB2 Alarm
+CON
+JMP @R203                ; RB2
+STG @R203                ; RB2
+RES R35102               ; During RB2 MOVE
+CON
+SET R35101               ; RB2 MOVE END
+CON
+ENDS
+;<h1/> RB2 PUSH
+STG R35104               ; RB2 PUSH
+SET R35106               ; During RB2 PUSH
+CON
+JMP @R204
+STG @R204
+AND @R205
+DW #0 @DM14
+CON
+JMP @R206
+;TYPE EM1008.U,EM01302.U,EM10600.U   
+;BMOV(EM10600:((EM01302-1)*6),EM1008,#6)	'指定されたPOSをEM1008へ格納
+;SET (@R205)
+LD @R204
+NCJ #1023
+;TYPE EM1008.U,EM01302.U,EM10600.U   
+;
+;BMOV(EM10600:((EM01302-1)*6),EM1008,#6)	'指定されたPOSをEM1008へ格納
+;
+LD CR2002                ; 常時ON
+LDA EM1302               ; RB2 Target Pos
+CON
+EXT
+CON
+SUB.L +1
+CON
+MUL.L +6
+CON
+STA.L Z12
+BMOV EM10600:Z12 EM1008 #6;RB2目標値（下位）1  RB2 目標値下位
+;SET (@R205)
+LD CR2002                ; 常時ON
+SET @R205
+LABEL #1023
+;
+LDP @R206
+RES @R205
+CON
+MPS
+LDA #70
+CON
+MUL #25500
+CON
+DIV #10000
+CON
+STA EM1014               ; RB2 押付け電流値(0～255)
+MPP
+MSTRT CON_PUSH EM1008 EM1010 EM1012 EM1013 EM1014 DM10508 DM10708 @DM14;RB2 目標値下位  RB2 位置決め幅下位  RB2 速度  RB2 G  RB2 押付け電流値(0～255)  RB2 POS  RB2 Target Pos
+STG @R206
+MPS
+AND= @DM14 #20
+JMP @R207
+MPP
+LD<> @DM14 #20
+AND<> @DM14 #0
+ANL
+SET R35103               ; RB2 Alarm
+CON
+JMP @R207
+STG @R207
+RES R35106               ; During RB2 PUSH
+CON
+SET R35105               ; RB2 PUSH END
+CON
+ENDS
+;<h1/> RB2 HOME
+STG R35108               ; RB2 HOME
+DW #0 @DM15
+CON
+SET R35110               ; During RB2 HOME
+CON
+JMP @R208
+;原点復帰ﾏｸﾛは2種類準備しています（任意で選択して下さい）
+;CON_HOME	通常用
+;CON_HOME2	原点確認仕様用
+;			→原点ｾﾝｻｰをSensor_INに指定してください。ｾﾝｻｰはA接点を想定しています。
+;			#20	=	正常終了
+;			#21	=	RB応答なし
+;			#22	=	ｽﾃｰﾀｽ異常
+;			#25	=	原点異常
+;			#26	=	原点ｾﾝｻｰ異常
+LDP @R208
+MPS
+ANB CR2002               ; 常時ON
+MSTRT CON_HOME DM10508 DM10708 @DM15;RB2 POS  RB2 Target Pos
+MPP
+AND CR2002               ; 常時ON
+MSTRT CON_HOME2 DM10508 DM10708 @DM15 R4501;RB2 POS  RB2 Target Pos  RB02 除材EV 原点ｾﾝｻ(D-On)
+STG @R208
+MPS
+AND= @DM15 #20
+JMP @R209
+MPP
+LD<> @DM15 #20
+AND<> @DM15 #0
+ANL
+SET R35103               ; RB2 Alarm
+CON
+JMP @R209
+STG @R209
+SET R35109               ; RB2 HOME END
+CON
+RES R35110               ; During RB2 HOME
+CON
+ENDS
+;<h1/>RB3
+;<h1/> RB3 POS CHECK
+LD= #1 EM1304            ; RB3 Target Pos
+AND R35202               ; During RB3 MOVE
+AND R100                 ; 0.5s ｸﾛｯｸ
+LD T2070                 ; RB3 Pos1(段ﾊﾞﾗｼ)
+ANB R35202               ; During RB3 MOVE
+ORL
+OR MR21200               ; TPSW RB3 PosSW1
+OUT MR22200              ; TPSW RB3 Pos1ﾗﾝﾌﾟ
+LD= #2 EM1304            ; RB3 Target Pos
+AND R35202               ; During RB3 MOVE
+AND R100                 ; 0.5s ｸﾛｯｸ
+LD T2071                 ; RB3 Pos2(ﾜｰｸ取出)
+ANB R35202               ; During RB3 MOVE
+ORL
+OR MR21201               ; TPSW RB3 PosSW2
+OUT MR22201              ; TPSW RB3 Pos2ﾗﾝﾌﾟ
+LD= #3 EM1304            ; RB3 Target Pos
+AND R35202               ; During RB3 MOVE
+AND R100                 ; 0.5s ｸﾛｯｸ
+LD T2072                 ; RB3 Pos3(段積み)
+ANB R35202               ; During RB3 MOVE
+ORL
+OR MR21202               ; TPSW RB3 PosSW3
+OUT MR22202              ; TPSW RB3 Pos3ﾗﾝﾌﾟ
+LD CR2002                ; 常時ON
+MOV.L +10 DM25004        ; RB3用 Pos位置の 監視幅
+MPS
+LDA.L EM11200            ; RB3 目標値（下位）1
+CON
+SUB.L DM25004            ; RB3用 Pos位置の 監視幅
+CON
+STA.L DM25500
+CON
+LDA.L EM11200            ; RB3 目標値（下位）1
+CON
+ADD.L DM25004            ; RB3用 Pos位置の 監視幅
+CON
+STA.L DM25502
+CON
+AND>=.L DM10516 DM25500  ; RB3 POS
+AND<=.L DM10516 DM25502  ; RB3 POS
+TMR #2070 #1             ; RB3 Pos1(段ﾊﾞﾗｼ)
+MRD
+LDA.L EM11206            ; RB3 目標値（下位）2
+CON
+SUB.L DM25004            ; RB3用 Pos位置の 監視幅
+CON
+STA.L DM25504
+CON
+LDA.L EM11206            ; RB3 目標値（下位）2
+CON
+ADD.L DM25004            ; RB3用 Pos位置の 監視幅
+CON
+STA.L DM25506
+CON
+AND>=.L DM10516 DM25504  ; RB3 POS
+AND<=.L DM10516 DM25506  ; RB3 POS
+TMR #2071 #1             ; RB3 Pos2(ﾜｰｸ取出)
+MRD
+LDA.L EM11212            ; RB3目標値（下位）3
+CON
+SUB.L DM25004            ; RB3用 Pos位置の 監視幅
+CON
+STA.L DM25508
+CON
+LDA.L EM11212            ; RB3目標値（下位）3
+CON
+ADD.L DM25004            ; RB3用 Pos位置の 監視幅
+CON
+STA.L DM25510
+CON
+AND>=.L DM10516 DM25508  ; RB3 POS
+AND<=.L DM10516 DM25510  ; RB3 POS
+TMR #2072 #1             ; RB3 Pos3(段積み)
+MPP
+AND=.L DM10516 +0        ; RB3 POS
+TMR #2079 #1             ; RB3 原点
+;<h1/> RB3 MOVE
+STG R35200               ; RB3 MOVE
+SET R35202               ; During RB3 MOVE
+CON
+JMP @R300
+STG @R300
+AND @R301
+DW #0 @DM16
+CON
+JMP @R302
+;TYPE EM1016.U,EM01304.U,EM11200.U  
+;BMOV(EM11200:((EM01304-1)*6),EM1016,#6)	'指定されたPOSをEM1016へ格納
+;SET (@R301)
+LD @R300
+NCJ #1006
+;TYPE EM1016.U,EM01304.U,EM11200.U  
+;
+;BMOV(EM11200:((EM01304-1)*6),EM1016,#6)	'指定されたPOSをEM1016へ格納
+;
+LD CR2002                ; 常時ON
+LDA EM1304               ; RB3 Target Pos
+CON
+EXT
+CON
+SUB.L +1
+CON
+MUL.L +6
+CON
+STA.L Z12
+BMOV EM11200:Z12 EM1016 #6;RB3 目標値（下位）1  RB3 目標値下位
+;SET (@R301)
+LD CR2002                ; 常時ON
+SET @R301
+LABEL #1006
+;
+LDP @R302
+RES @R301
+CON
+MSTRT CON_MOVE EM1016 EM1020 EM1021 DM10516 DM10716 @DM16;RB3 目標値下位  RB3 速度  RB3 G  RB3 POS  RB3 Target Pos
+STG @R302
+MPS
+AND= @DM16 #20
+JMP @R303                ; RB3
+MPP
+LD<> @DM16 #20
+AND<> @DM16 #0
+ANL
+SET R35203               ; RB3 Alarm
+CON
+JMP @R303                ; RB3
+STG @R303                ; RB3
+RES R35202               ; During RB3 MOVE
+CON
+SET R35201               ; RB3 MOVE END
+CON
+ENDS
+;<h1/> RB3 PUSH
+STG R35204               ; RB3 PUSH
+SET R35206               ; During RB3 PUSH
+CON
+JMP @R304
+STG @R304
+AND @R305
+DW #0 @DM17
+CON
+JMP @R306
+;TYPE EM1016.U,EM01304.U,EM11200.U  
+;BMOV(EM11200:((EM01304-1)*6),EM1016,#6)	'指定されたPOSをEM1016へ格納
+;SET (@R305)
+LD @R304
+NCJ #1024
+;TYPE EM1016.U,EM01304.U,EM11200.U  
+;
+;BMOV(EM11200:((EM01304-1)*6),EM1016,#6)	'指定されたPOSをEM1016へ格納
+;
+LD CR2002                ; 常時ON
+LDA EM1304               ; RB3 Target Pos
+CON
+EXT
+CON
+SUB.L +1
+CON
+MUL.L +6
+CON
+STA.L Z12
+BMOV EM11200:Z12 EM1016 #6;RB3 目標値（下位）1  RB3 目標値下位
+;SET (@R305)
+LD CR2002                ; 常時ON
+SET @R305
+LABEL #1024
+;
+LDP @R306
+RES @R305
+CON
+MPS
+LDA #70
+CON
+MUL #25500
+CON
+DIV #10000
+CON
+STA EM1022               ; RB3 押付け電流値(0～255)
+MPP
+MSTRT CON_PUSH EM1016 EM1018 EM1020 EM1021 EM1022 DM10516 DM10716 @DM17;RB3 目標値下位  RB3 位置決め幅下位  RB3 速度  RB3 G  RB3 押付け電流値(0～255)  RB3 POS  RB3 Target Pos
+STG @R306
+MPS
+AND= @DM17 #20
+JMP @R307
+MPP
+LD<> @DM17 #20
+AND<> @DM17 #0
+ANL
+SET R35203               ; RB3 Alarm
+CON
+JMP @R307
+STG @R307
+RES R35206               ; During RB3 PUSH
+CON
+SET R35205               ; RB3 PUSH END
+CON
+ENDS
+;<h1/> RB3 HOME
+STG R35208               ; RB3 HOME
+DW #0 @DM18
+CON
+SET R35210               ; During RB3 HOME
+CON
+JMP @R308
+;原点復帰ﾏｸﾛは2種類準備しています（任意で選択して下さい）
+;CON_HOME	通常用
+;CON_HOME2	原点確認仕様用
+;			→原点ｾﾝｻｰをSensor_INに指定してください。ｾﾝｻｰはA接点を想定しています。
+;			#20	=	正常終了
+;			#21	=	RB応答なし
+;			#22	=	ｽﾃｰﾀｽ異常
+;			#25	=	原点異常
+;			#26	=	原点ｾﾝｻｰ異常
+LDP @R308
+MPS
+ANB CR2002               ; 常時ON
+MSTRT CON_HOME DM10516 DM10716 @DM18;RB3 POS  RB3 Target Pos
+MPP
+AND CR2002               ; 常時ON
+MSTRT CON_HOME2 DM10516 DM10716 @DM18 R4502;RB3 POS  RB3 Target Pos  RB03 ﾄﾚｲ搬送 原点ｾﾝｻ(D-On)
+STG @R308
+MPS
+AND= @DM18 #20
+JMP @R309
+MPP
+LD<> @DM18 #20
+AND<> @DM18 #0
+ANL
+SET R35203               ; RB3 Alarm
+CON
+JMP @R309
+STG @R309
+SET R35209               ; RB3 HOME END
+CON
+RES R35210               ; During RB3 HOME
+CON
+ENDS
+;<h1/>RB4 ScaraRB
+;<h1/> RB4 Program Start-Up
+LDB DM10525.11           ; RB4 Ctr_READY (Ctr起動完了)
+AND DM10525.8            ; RB4 RB_READY (RB起動中)
+INV
+AND MR23505              ; D-NET通信状態OK
+FLIK #50 #50 @MR1015
+LD @MR1015
+MPS
+AND<> DM3000 #2150       ; _MainTP　表示中ﾍﾟｰｼﾞNo
+OUT DM10725.9            ; RB4 Prg_START(537)
+MPP
+OUT DM10725.15           ; RB4 Ctr Reset(543)
+LD= DM3000 #2150         ; _MainTP　表示中ﾍﾟｰｼﾞNo
+OUT DM10725.10           ; RB4 Prg_STOP (538)
+LDB DM10525.11           ; RB4 Ctr_READY (Ctr起動完了)
+AND DM10525.8            ; RB4 RB_READY (RB起動中)
+OUT MR23504              ; RB4 ｺﾝﾄﾛｰﾗ起動完了
+LD DM10017.12
+AND R3805                ; ｵﾝﾗｲﾝ状態
+OUT MR23505              ; D-NET通信状態OK
+;<h1/> RB4 Continue
+LD R40700                ; _安全ｶﾊﾞｰ1ﾛｯｸOK
+OR @MR1012               ; RB10 Pause解除Trg
+AND DM10525.14           ; RB10 Paused(542)
+OUT @MR1012              ; RB10 Pause解除Trg
+LD @MR1012               ; RB10 Pause解除Trg
+ANB R1004                ; ｶﾊﾞｰ閉確認
+AND DM10525.14           ; RB10 Paused(542)
+AND CR2005               ; 100msｸﾛｯｸﾊﾟﾙｽ
+OUT DM10725.14           ; RB10_Continue(542)
+;<h1/> RB4 Operation Command
+STG R35900               ; RB4 MOVE
+AND DM10525.8            ; RB4 RB_READY (RB起動中)
+ANB DM10525.9            ; RB4 RB_BUSY (RB動作中)
+AND DM10525.13           ; RB4 RB_COMP (RB動作完了)
+ANB DM10525.11           ; RB4 Ctr_READY (Ctr起動完了)
+ANB R35902               ; During RB4 MOVE
+ANB R35906               ; During RB4 RECOVERY MOVE
+ZRES EM1077 EM1079       ; RB4 動作ｽﾃｰﾀｽ1  RB4 動作中ｴﾗｰｺｰﾄﾞ
+CON
+SET R35902               ; During RB4 MOVE
+CON
+JMP @R1000
+STG @R1000
+AND @R1001
+JMP @R1002
+;TYPE EM1072-EM1074.U,DM10724.U,DM10725.U
+;
+;DM10724 = ANDA(EM1072,$00FF)
+;DM10724 = ORA(DM10724,SLA(EM1073,8))
+;DM10725 = ANDA(EM1074,$00FF)
+;SET (@R1001)
+LD @R1000
+NCJ #1012
+;TYPE EM1072-EM1074.U,DM10724.U,DM10725.U
+;
+;DM10724 = ANDA(EM1072,$00FF)
+;
+LD CR2002                ; 常時ON
+LDA EM1072               ; RB4 動作ｺﾏﾝﾄﾞ
+CON
+ANDA $00FF
+CON
+STA DM10724              ; RB10 動作ｺﾏﾝﾄﾞ/数値指定1
+;DM10724 = ORA(DM10724,SLA(EM1073,8))
+;
+LD CR2002                ; 常時ON
+LDA EM1073               ; RB4 数値指定1
+CON
+SLA #8
+CON
+STA @VM26
+CON
+LDA DM10724              ; RB10 動作ｺﾏﾝﾄﾞ/数値指定1
+CON
+ORA @VM26
+CON
+STA DM10724              ; RB10 動作ｺﾏﾝﾄﾞ/数値指定1
+;DM10725 = ANDA(EM1074,$00FF)
+;
+LD CR2002                ; 常時ON
+LDA EM1074               ; RB4 数値指定2
+CON
+ANDA $00FF
+CON
+STA DM10725              ; RB10 数値指定2/制御出力
+;SET (@R1001)
+LD CR2002                ; 常時ON
+SET @R1001
+LABEL #1012
+;
+STG @R1002
+DW #0 EM1077             ; RB4 動作ｽﾃｰﾀｽ1
+CON
+DW #0 EM1078             ; RB4 動作ｽﾃｰﾀｽ2
+CON
+DW #0 EM1079             ; RB4 動作中ｴﾗｰｺｰﾄﾞ
+CON
+RES @R1001
+CON
+SET DM10725.8            ; RB4 RB_START (動作開始)
+CON
+JMP @R1003
+STG @R1003
+AND DM10525.9            ; RB4 RB_BUSY (RB動作中)
+ANB DM10525.13           ; RB4 RB_COMP (RB動作完了)
+RES DM10725.8            ; RB4 RB_START (動作開始)
+CON
+JMP @R1004
+STG @R1004
+LDB DM10525.9            ; RB4 RB_BUSY (RB動作中)
+AND DM10525.13           ; RB4 RB_COMP (RB動作完了)
+ANB DM10525.10           ; RB4 RB_ERROR(538)
+LD DM10525.9             ; RB4 RB_BUSY (RB動作中)
+ANB DM10525.13           ; RB4 RB_COMP (RB動作完了)
+AND DM10525.10           ; RB4 RB_ERROR(538)
+ORL
+OR DM10525.15            ; RB4 Ctr_Alarm(543)
+ANL
+MPS
+ANB DM10525.15           ; RB4 Ctr_Alarm(543)
+MPS
+LDB DM10525.9            ; RB4 RB_BUSY (RB動作中)
+AND DM10525.13           ; RB4 RB_COMP (RB動作完了)
+ANB DM10525.10           ; RB4 RB_ERROR(538)
+ANL
+LDA DM10524              ; RB4 動作ｽﾃｰﾀｽ/動作中ｴﾗｰｺｰﾄﾞ
+CON
+ANDA $00FF
+CON
+STA EM1077               ; RB4 動作ｽﾃｰﾀｽ1
+MRD
+LDA DM10525              ; RB4 動作ｽﾃｰﾀｽ2/制御入力
+CON
+ANDA $00FF
+CON
+STA EM1078               ; RB4 動作ｽﾃｰﾀｽ2
+MRD
+LD DM10525.9             ; RB4 RB_BUSY (RB動作中)
+ANB DM10525.13           ; RB4 RB_COMP (RB動作完了)
+AND DM10525.10           ; RB4 RB_ERROR(538)
+ANL
+LDA DM10524              ; RB4 動作ｽﾃｰﾀｽ/動作中ｴﾗｰｺｰﾄﾞ
+CON
+SRA #8
+CON
+STA EM1079               ; RB4 動作中ｴﾗｰｺｰﾄﾞ
+MRD
+LDB DM10525.9            ; RB4 RB_BUSY (RB動作中)
+AND DM10525.13           ; RB4 RB_COMP (RB動作完了)
+AND<> EM1077 #0          ; RB4 動作ｽﾃｰﾀｽ1
+ANL
+MPS
+AND<> EM1077 #99         ; RB4 動作ｽﾃｰﾀｽ1
+SET R35903               ; RB4 Status Alarm
+MPP
+AND= EM1077 #99          ; RB4 動作ｽﾃｰﾀｽ1
+MSTRT F_ERROR_DISP #12
+MRD
+LD DM10525.9             ; RB4 RB_BUSY (RB動作中)
+ANB DM10525.13           ; RB4 RB_COMP (RB動作完了)
+AND DM10525.10           ; RB4 RB_ERROR(538)
+ANL
+SET R35907               ; RB4 Moving Alarm
+MPP
+JMP @R1005
+MPP
+AND DM10525.15           ; RB4 Ctr_Alarm(543)
+TMR @9 #5
+CON
+AND @T9
+MSTRT F_ERROR_DISP #13
+STG @R1005
+RES R35902               ; During RB4 MOVE
+CON
+SET R35901               ; RB4 MOVE END
+CON
+ENDS
+;<h1/> RB4 Error Recovery Command
+STG R35904               ; RB10 RECOVERY MOVE
+AND DM10525.8            ; RB4 RB_READY (RB起動中)
+AND DM10525.9            ; RB4 RB_BUSY (RB動作中)
+ANB DM10525.13           ; RB4 RB_COMP (RB動作完了)
+ANB R35902               ; During RB4 MOVE
+ANB R35906               ; During RB4 RECOVERY MOVE
+ZRES EM1077 EM1079       ; RB4 動作ｽﾃｰﾀｽ1  RB4 動作中ｴﾗｰｺｰﾄﾞ
+CON
+SET R35906               ; During RB4 RECOVERY MOVE
+CON
+JMP @R1008
+STG @R1008
+AND @R1009
+JMP @R1010               ; RB10
+;TYPE EM1072.U,EM1075.U,DM10724.U
+;
+;DM10724 = ANDA(EM1072,$00FF)
+;DM10724 = ORA(DM10724,SLA(EM1075,8))
+;SET (@R1009)
+LD @R1008
+NCJ #1013
+;TYPE EM1072.U,EM1075.U,DM10724.U
+;
+;DM10724 = ANDA(EM1072,$00FF)
+;
+LD CR2002                ; 常時ON
+LDA EM1072               ; RB4 動作ｺﾏﾝﾄﾞ
+CON
+ANDA $00FF
+CON
+STA DM10724              ; RB10 動作ｺﾏﾝﾄﾞ/数値指定1
+;DM10724 = ORA(DM10724,SLA(EM1075,8))
+;
+LD CR2002                ; 常時ON
+LDA EM1075               ; RB10 復帰ｺﾏﾝﾄﾞ
+CON
+SLA #8
+CON
+STA @VM27
+CON
+LDA DM10724              ; RB10 動作ｺﾏﾝﾄﾞ/数値指定1
+CON
+ORA @VM27
+CON
+STA DM10724              ; RB10 動作ｺﾏﾝﾄﾞ/数値指定1
+;SET (@R1009)
+LD CR2002                ; 常時ON
+SET @R1009
+LABEL #1013
+;
+STG @R1010               ; RB10
+DW #0 EM1077             ; RB4 動作ｽﾃｰﾀｽ1
+CON
+DW #0 EM1078             ; RB4 動作ｽﾃｰﾀｽ2
+CON
+DW #0 EM1079             ; RB4 動作中ｴﾗｰｺｰﾄﾞ
+CON
+RES @R1009
+CON
+SET DM10725.8            ; RB4 RB_START (動作開始)
+CON
+JMP @R1011               ; RB10
+STG @R1011               ; RB10
+ANB DM10525.10           ; RB4 RB_ERROR(538)
+RES DM10725.8            ; RB4 RB_START (動作開始)
+CON
+JMP @R1012               ; RB10
+STG @R1012               ; RB10
+LDB DM10525.9            ; RB4 RB_BUSY (RB動作中)
+AND DM10525.13           ; RB4 RB_COMP (RB動作完了)
+ANB DM10525.10           ; RB4 RB_ERROR(538)
+LD DM10525.9             ; RB4 RB_BUSY (RB動作中)
+ANB DM10525.13           ; RB4 RB_COMP (RB動作完了)
+AND DM10525.10           ; RB4 RB_ERROR(538)
+ORL
+ANL
+MPS
+LDB DM10525.9            ; RB4 RB_BUSY (RB動作中)
+AND DM10525.13           ; RB4 RB_COMP (RB動作完了)
+ANB DM10525.10           ; RB4 RB_ERROR(538)
+ANL
+LDA DM10524              ; RB4 動作ｽﾃｰﾀｽ/動作中ｴﾗｰｺｰﾄﾞ
+CON
+ANDA $00FF
+CON
+STA EM1077               ; RB4 動作ｽﾃｰﾀｽ1
+MRD
+LDA DM10525              ; RB4 動作ｽﾃｰﾀｽ2/制御入力
+CON
+ANDA $00FF
+CON
+STA EM1078               ; RB4 動作ｽﾃｰﾀｽ2
+MRD
+LD DM10525.9             ; RB4 RB_BUSY (RB動作中)
+ANB DM10525.13           ; RB4 RB_COMP (RB動作完了)
+AND DM10525.10           ; RB4 RB_ERROR(538)
+ANL
+LDA DM10524              ; RB4 動作ｽﾃｰﾀｽ/動作中ｴﾗｰｺｰﾄﾞ
+CON
+SRA #8
+CON
+STA EM1079               ; RB4 動作中ｴﾗｰｺｰﾄﾞ
+MRD
+LDB DM10525.9            ; RB4 RB_BUSY (RB動作中)
+AND DM10525.13           ; RB4 RB_COMP (RB動作完了)
+AND<> EM1077 #0          ; RB4 動作ｽﾃｰﾀｽ1
+ANL
+SET R35903               ; RB4 Status Alarm
+MRD
+LD DM10525.9             ; RB4 RB_BUSY (RB動作中)
+ANB DM10525.13           ; RB4 RB_COMP (RB動作完了)
+AND DM10525.10           ; RB4 RB_ERROR(538)
+ANL
+SET R35907               ; RB4 Moving Alarm
+MPP
+JMP @R1013
+STG @R1013
+RES R35906               ; During RB4 RECOVERY MOVE
+CON
+SET R35905               ; RB4 RECOVERY MOVE END
+CON
+ENDS
+;<h1/> RB4 POS CHECK1
+; Cmd30(待機位置移動)
+LD= EM1072 #30           ; RB4 動作ｺﾏﾝﾄﾞ
+AND R35902               ; During RB4 MOVE
+AND R100                 ; 0.5s ｸﾛｯｸ
+LD= EM1072 #30           ; RB4 動作ｺﾏﾝﾄﾞ
+AND R35901               ; RB4 MOVE END
+ANB R35902               ; During RB4 MOVE
+ANB R35903               ; RB4 Status Alarm
+ORL
+LD MR22800               ; TPSW RB4 待機位置ﾗﾝﾌﾟ
+ANB R35902               ; During RB4 MOVE
+ORL
+OUT MR22800              ; TPSW RB4 待機位置ﾗﾝﾌﾟ
+; Cmd31(ﾌｨﾙﾀ捨て移動)
+LD= EM1072 #31           ; RB4 動作ｺﾏﾝﾄﾞ
+AND R35902               ; During RB4 MOVE
+AND R100                 ; 0.5s ｸﾛｯｸ
+LD= EM1072 #31           ; RB4 動作ｺﾏﾝﾄﾞ
+AND R35901               ; RB4 MOVE END
+ANB R35902               ; During RB4 MOVE
+ANB R35903               ; RB4 Status Alarm
+ORL
+LD MR22801               ; TPSW RB4 ﾌｨﾙﾀ捨て位置ﾗﾝﾌﾟ
+ANB R35902               ; During RB4 MOVE
+ORL
+OUT MR22801              ; TPSW RB4 ﾌｨﾙﾀ捨て位置ﾗﾝﾌﾟ
+; Cmd60　フィルタ取出上昇位置移動
+LD= EM1072 #60           ; RB4 動作ｺﾏﾝﾄﾞ
+AND R35902               ; During RB4 MOVE
+AND R100                 ; 0.5s ｸﾛｯｸ
+LD= EM1072 #60           ; RB4 動作ｺﾏﾝﾄﾞ
+AND R35901               ; RB4 MOVE END
+ANB R35902               ; During RB4 MOVE
+ANB R35903               ; RB4 Status Alarm
+ORL
+LD MR22802               ; TPSW RB4 ﾌｨﾙﾀ取出 上昇位置ﾗﾝﾌﾟ
+ANB R35902               ; During RB4 MOVE
+ORL
+OUT MR22802              ; TPSW RB4 ﾌｨﾙﾀ取出 上昇位置ﾗﾝﾌﾟ
+; Cmd61　フィルタ取出下降位置移動
+LD= EM1072 #61           ; RB4 動作ｺﾏﾝﾄﾞ
+AND R35902               ; During RB4 MOVE
+AND R100                 ; 0.5s ｸﾛｯｸ
+LD= EM1072 #61           ; RB4 動作ｺﾏﾝﾄﾞ
+AND R35901               ; RB4 MOVE END
+ANB R35902               ; During RB4 MOVE
+ANB R35903               ; RB4 Status Alarm
+ORL
+LD MR22803               ; TPSW RB4 ﾌｨﾙﾀ取出 下降位置ﾗﾝﾌﾟ
+ANB R35902               ; During RB4 MOVE
+ORL
+OUT MR22803              ; TPSW RB4 ﾌｨﾙﾀ取出 下降位置ﾗﾝﾌﾟ
+; Cmd50　集塵上昇位置
+LD= EM1072 #50           ; RB4 動作ｺﾏﾝﾄﾞ
+AND R35902               ; During RB4 MOVE
+AND R100                 ; 0.5s ｸﾛｯｸ
+LD= EM1072 #50           ; RB4 動作ｺﾏﾝﾄﾞ
+AND R35901               ; RB4 MOVE END
+ANB R35902               ; During RB4 MOVE
+ANB R35903               ; RB4 Status Alarm
+ORL
+LD MR22804               ; TPSW_RB4 集塵 上昇位置ﾗﾝﾌﾟ
+ANB R35902               ; During RB4 MOVE
+ORL
+OUT MR22804              ; TPSW_RB4 集塵 上昇位置ﾗﾝﾌﾟ
+; Cmd51　集塵下降位置
+LD= EM1072 #51           ; RB4 動作ｺﾏﾝﾄﾞ
+AND R35902               ; During RB4 MOVE
+AND R100                 ; 0.5s ｸﾛｯｸ
+LD= EM1072 #51           ; RB4 動作ｺﾏﾝﾄﾞ
+AND R35901               ; RB4 MOVE END
+ANB R35902               ; During RB4 MOVE
+ANB R35903               ; RB4 Status Alarm
+ORL
+LD MR22805               ; TPSW_RB4 集塵 下降位置ﾗﾝﾌﾟ
+ANB R35902               ; During RB4 MOVE
+ORL
+OUT MR22805              ; TPSW_RB4 集塵 下降位置ﾗﾝﾌﾟ
+; Cmd40　トレイ上昇位置移動
+LD= EM1072 #40           ; RB4 動作ｺﾏﾝﾄﾞ
+AND R35902               ; During RB4 MOVE
+AND R100                 ; 0.5s ｸﾛｯｸ
+LD= EM1072 #40           ; RB4 動作ｺﾏﾝﾄﾞ
+AND R35901               ; RB4 MOVE END
+ANB R35902               ; During RB4 MOVE
+ANB R35903               ; RB4 Status Alarm
+ORL
+LD MR22806               ; TPSW RB4 ﾄﾚｲ上昇位置ﾗﾝﾌﾟ
+ANB R35902               ; During RB4 MOVE
+ORL
+OUT MR22806              ; TPSW RB4 ﾄﾚｲ上昇位置ﾗﾝﾌﾟ
+; Cmd41　トレイ下降位置移動
+LD= EM1072 #41           ; RB4 動作ｺﾏﾝﾄﾞ
+AND R35902               ; During RB4 MOVE
+AND R100                 ; 0.5s ｸﾛｯｸ
+LD= EM1072 #41           ; RB4 動作ｺﾏﾝﾄﾞ
+AND R35901               ; RB4 MOVE END
+ANB R35902               ; During RB4 MOVE
+ANB R35903               ; RB4 Status Alarm
+ORL
+LD MR22807               ; TPSW RB4 ﾄﾚｲ下降位置ﾗﾝﾌﾟ
+ANB R35902               ; During RB4 MOVE
+ORL
+OUT MR22807              ; TPSW RB4 ﾄﾚｲ下降位置ﾗﾝﾌﾟ
+;<h1/>RB JOG操作
+LD= EM1072 #6            ; RB4 動作ｺﾏﾝﾄﾞ
+OR= EM1072 #7            ; RB4 動作ｺﾏﾝﾄﾞ
+MPS
+AND= EM1073 #1           ; RB4 数値指定1
+OUT MR22900              ; TPSW RB2 定量移動X+ﾗﾝﾌﾟ
+MRD
+AND= EM1073 #2           ; RB4 数値指定1
+OUT MR22902              ; TPSW RB2 定量移動Y+ﾗﾝﾌﾟ
+MRD
+AND= EM1073 #3           ; RB4 数値指定1
+OUT MR22904              ; TPSW RB2 定量移動Z+ﾗﾝﾌﾟ
+MPP
+AND= EM1073 #4           ; RB4 数値指定1
+OUT MR22906              ; TPSW RB2 定量移動θ+ﾗﾝﾌﾟ
+LD= EM1072 #8            ; RB4 動作ｺﾏﾝﾄﾞ
+OR= EM1072 #9            ; RB4 動作ｺﾏﾝﾄﾞ
+MPS
+AND= EM1073 #1           ; RB4 数値指定1
+OUT MR22901              ; TPSW RB2 定量移動X-ﾗﾝﾌﾟ
+MRD
+AND= EM1073 #2           ; RB4 数値指定1
+OUT MR22903              ; TPSW RB2 定量移動Y-ﾗﾝﾌﾟ
+MRD
+AND= EM1073 #3           ; RB4 数値指定1
+OUT MR22905              ; TPSW RB2 定量移動Z-ﾗﾝﾌﾟ
+MPP
+AND= EM1073 #4           ; RB4 数値指定1
+OUT MR22907              ; TPSW RB2 定量移動θ-ﾗﾝﾌﾟ
+;<h1/> RB4 POS CHECK
+LDP R35902               ; During RB4 MOVE
+LD<= #6 EM1072           ; RB4 動作ｺﾏﾝﾄﾞ
+AND<= EM1072 #9          ; RB4 動作ｺﾏﾝﾄﾞ
+LD<= #30 EM1072          ; RB4 動作ｺﾏﾝﾄﾞ
+AND<= EM1072 #71         ; RB4 動作ｺﾏﾝﾄﾞ
+ORL
+ANL
+MOV MR24500 @DM20        ; RB4 待機位置
+ZRES MR24500 MR24509     ; RB4 待機位置  RB4 仮置ﾄﾚｲ 下降位置
+LDP R35901               ; RB4 MOVE END
+AND R35903               ; RB4 Status Alarm
+LD<= #6 EM1072           ; RB4 動作ｺﾏﾝﾄﾞ
+AND<= EM1072 #9          ; RB4 動作ｺﾏﾝﾄﾞ
+LD<= #30 EM1072          ; RB4 動作ｺﾏﾝﾄﾞ
+AND<= EM1072 #50         ; RB4 動作ｺﾏﾝﾄﾞ
+ORL
+LD<= #60 EM1072          ; RB4 動作ｺﾏﾝﾄﾞ
+AND<= EM1072 #64         ; RB4 動作ｺﾏﾝﾄﾞ
+ORL
+ANL
+AND CR2003               ; 常時OFF
+MOV @DM20 MR24500        ; RB4 待機位置
+;Cmd30
+LDP R35901               ; RB4 MOVE END
+ANB R35903               ; RB4 Status Alarm
+AND= EM1072 #30          ; RB4 動作ｺﾏﾝﾄﾞ
+SET MR24500              ; RB4 待機位置
+;Cmd31
+LDP R35901               ; RB4 MOVE END
+ANB R35903               ; RB4 Status Alarm
+AND= EM1072 #31          ; RB4 動作ｺﾏﾝﾄﾞ
+SET MR24501              ; RB4 ﾌｨﾙﾀ捨て位置
+;Cmd60
+LDP R35901               ; RB4 MOVE END
+ANB R35903               ; RB4 Status Alarm
+AND= EM1072 #60          ; RB4 動作ｺﾏﾝﾄﾞ
+SET MR24502              ; RB4 ﾌｨﾙﾀ取出 上昇位置
+;Cmd61
+LDP R35901               ; RB4 MOVE END
+ANB R35903               ; RB4 Status Alarm
+AND= EM1072 #61          ; RB4 動作ｺﾏﾝﾄﾞ
+SET MR24503              ; RB4 ﾌｨﾙﾀ取出 下降位置
+;Cmd40
+LDP R35901               ; RB4 MOVE END
+ANB R35903               ; RB4 Status Alarm
+AND= EM1072 #40          ; RB4 動作ｺﾏﾝﾄﾞ
+SET MR24504              ; RB4 ﾄﾚｲ 上昇位置
+;Cmd41
+LDP R35901               ; RB4 MOVE END
+ANB R35903               ; RB4 Status Alarm
+AND= EM1072 #41          ; RB4 動作ｺﾏﾝﾄﾞ
+SET MR24505              ; RB4 ﾄﾚｲ 下降位置
+;Cmd50
+LDP R35901               ; RB4 MOVE END
+ANB R35903               ; RB4 Status Alarm
+AND= EM1072 #50          ; RB4 動作ｺﾏﾝﾄﾞ
+SET MR24506              ; RB4 集塵上昇位置
+;Cmd51
+LDP R35901               ; RB4 MOVE END
+ANB R35903               ; RB4 Status Alarm
+AND= EM1072 #51          ; RB4 動作ｺﾏﾝﾄﾞ
+SET MR24507              ; RB4 集塵下降位置
+;Cmd70
+LDP R35901               ; RB4 MOVE END
+ANB R35903               ; RB4 Status Alarm
+AND= EM1072 #70          ; RB4 動作ｺﾏﾝﾄﾞ
+SET MR24508              ; RB4 仮置ﾄﾚｲ 上昇位置
+;Cmd71
+LDP R35901               ; RB4 MOVE END
+ANB R35903               ; RB4 Status Alarm
+AND= EM1072 #71          ; RB4 動作ｺﾏﾝﾄﾞ
+SET MR24509              ; RB4 仮置ﾄﾚｲ 下降位置
+END
+ENDH

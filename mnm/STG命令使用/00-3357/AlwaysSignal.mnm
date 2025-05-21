@@ -1,0 +1,786 @@
+DEVICE:53
+;MODULE:AlwaysSignal
+;MODULE_TYPE:0
+;SCRIPT_TYPE:
+;OneSystem Sub-Module
+;
+;---------------------------------------
+;ModuleName	:	Always_Signal
+;ModuleType	:	Sub Module
+;Function	:	条件生成
+;---------------------------------------
+;<使用方法>
+;ﾌﾟﾛｼﾞｪｸﾄ全体に関わる条件ｼｸﾞﾅﾙ生成は本ﾓｼﾞｭｰﾙに記述して下さい
+;・ﾓｰｼｮﾝｺﾝﾄﾛｰﾙ動作許可
+;・ｺﾐｭﾆｹｰｼｮﾝﾕﾆｯﾄ通信許可
+;・ﾋｰﾀｰ電源ON
+;など
+LD CR2008                ; 運転開始時1ｽｷｬﾝON
+OR R46102                ; _ﾒﾝﾃﾅﾝｽ運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+OR MR10100               ; ﾊﾝﾄﾞ在荷ﾁｪｯｸ
+ANB R46100               ; _自動運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+OUT MR10100              ; ﾊﾝﾄﾞ在荷ﾁｪｯｸ
+LD CR2002                ; 常時ON
+MOV.L DM416 DM4502       ; _機種別ﾃﾞｰﾀ9(ｶｼﾒ後離脱))  離脱量(0.01mm)(U1)
+;ﾍｯﾄﾞｻﾌﾞ→ﾎﾙﾀﾞｰｻﾌﾞの先入れ先だし回路
+;<h1/>FIFOテーブル　読出し回路
+LD MR401                 ; FIFO読出し　Trig
+SET MR17200              ; 読出し開始
+STG MR17200              ; 読出し開始
+MPS
+LDB CR2002               ; 常時ON
+ANB MR17301              ; 書き込み実行中
+ANL
+SET MR17201              ; 読出し実行中
+CON
+JMP MR17202              ; START
+MPP
+AND CR2002               ; 常時ON
+SET MR17201              ; 読出し実行中
+CON
+JMP MR17202              ; START
+STG MR17202              ; START
+MPS
+AND<> DM50 #0            ; ﾎﾙﾀﾞｻﾌﾞ指定No.
+MPS
+AND= DM50 DM60           ; ﾎﾙﾀﾞｻﾌﾞ指定No.  ﾎﾙﾀﾞｻﾌﾞ指定No.
+JMP MR17206              ; 取出しOK
+MPP
+MOV DM50 DM60            ; ﾎﾙﾀﾞｻﾌﾞ指定No.  ﾎﾙﾀﾞｻﾌﾞ指定No.
+MPP
+AND= DM50 #0             ; ﾎﾙﾀﾞｻﾌﾞ指定No.
+JMP MR17203              ; ﾃﾞｰﾀシフト開始
+STG MR17203              ; ﾃﾞｰﾀシフト開始
+LDA DM51                 ; FIFOﾃｰﾌﾞﾙ 1個目
+CON
+STA DM50                 ; ﾎﾙﾀﾞｻﾌﾞ指定No.
+CON
+LDA DM52                 ; FIFOﾃｰﾌﾞﾙ 2個目
+CON
+STA DM51                 ; FIFOﾃｰﾌﾞﾙ 1個目
+CON
+LDA DM53                 ; FIFOﾃｰﾌﾞﾙ 3個目
+CON
+STA DM52                 ; FIFOﾃｰﾌﾞﾙ 2個目
+CON
+LDA DM54                 ; FIFOﾃｰﾌﾞﾙ 4個目
+CON
+STA DM53                 ; FIFOﾃｰﾌﾞﾙ 3個目
+CON
+LDA DM55                 ; FIFOﾃｰﾌﾞﾙ 5個目
+CON
+STA DM54                 ; FIFOﾃｰﾌﾞﾙ 4個目
+CON
+LDA DM56                 ; FIFOﾃｰﾌﾞﾙ 6個目
+CON
+STA DM55                 ; FIFOﾃｰﾌﾞﾙ 5個目
+CON
+LDA #0
+CON
+STA DM56                 ; FIFOﾃｰﾌﾞﾙ 6個目
+CON
+JMP MR17204
+STG MR17204
+MPS
+LD= DM51 #0              ; FIFOﾃｰﾌﾞﾙ 1個目
+AND= DM52 #0             ; FIFOﾃｰﾌﾞﾙ 2個目
+AND= DM53 #0             ; FIFOﾃｰﾌﾞﾙ 3個目
+AND= DM54 #0             ; FIFOﾃｰﾌﾞﾙ 4個目
+AND= DM55 #0             ; FIFOﾃｰﾌﾞﾙ 5個目
+AND= DM56 #0             ; FIFOﾃｰﾌﾞﾙ 6個目
+ANL
+OUT MR17210              ; 全てO
+CON
+SET MR403                ; FIFO読出し完了なし
+CON
+JMP MR17208
+MPP
+ANB MR17210              ; 全てO
+JMP MR17202              ; START
+;<<行コメント編集：Ctrl+Enter/Escで確定>>
+STG MR17206              ; 取出しOK
+LDA DM51                 ; FIFOﾃｰﾌﾞﾙ 1個目
+CON
+STA DM50                 ; ﾎﾙﾀﾞｻﾌﾞ指定No.
+CON
+LDA DM52                 ; FIFOﾃｰﾌﾞﾙ 2個目
+CON
+STA DM51                 ; FIFOﾃｰﾌﾞﾙ 1個目
+CON
+LDA DM53                 ; FIFOﾃｰﾌﾞﾙ 3個目
+CON
+STA DM52                 ; FIFOﾃｰﾌﾞﾙ 2個目
+CON
+LDA DM54                 ; FIFOﾃｰﾌﾞﾙ 4個目
+CON
+STA DM53                 ; FIFOﾃｰﾌﾞﾙ 3個目
+CON
+LDA DM55                 ; FIFOﾃｰﾌﾞﾙ 5個目
+CON
+STA DM54                 ; FIFOﾃｰﾌﾞﾙ 4個目
+CON
+LDA DM56                 ; FIFOﾃｰﾌﾞﾙ 6個目
+CON
+STA DM55                 ; FIFOﾃｰﾌﾞﾙ 5個目
+CON
+MPS
+LD= DM60 #1              ; ﾎﾙﾀﾞｻﾌﾞ指定No.
+AND DM11211.0            ; RB13 ﾍｯﾄﾞSub　受取完了 記憶FLG
+ANB DM11211.15           ; RB13 排出品 記憶FLG
+LD= DM60 #2              ; ﾎﾙﾀﾞｻﾌﾞ指定No.
+AND DM11212.0            ; RB14 ﾍｯﾄﾞSub　受取完了 記憶FLG
+ANB DM11212.15           ; RB14 不良品 記憶FLG
+ORL
+LD= DM60 #3              ; ﾎﾙﾀﾞｻﾌﾞ指定No.
+AND DM11213.0            ; RB15 ﾍｯﾄﾞSub　受取完了 記憶FLG
+ANB DM11213.15           ; RB15 不良品 記憶FLG
+ORL
+LD= DM60 #4              ; ﾎﾙﾀﾞｻﾌﾞ指定No.
+AND DM11214.0            ; RB16 ﾍｯﾄﾞSub　受取完了 記憶FLG
+ANB DM11214.15           ; RB16 不良品FLG
+ORL
+LD= DM60 #5              ; ﾎﾙﾀﾞｻﾌﾞ指定No.
+AND DM11215.0            ; RB17 ﾍｯﾄﾞSub　受取完了　記憶
+ANB DM11215.15           ; RB17 不良品 記憶FLG
+ORL
+LD= DM60 #6              ; ﾎﾙﾀﾞｻﾌﾞ指定No.
+AND DM11216.0            ; RB18 ﾍｯﾄﾞSub　受取完了 記憶FLG
+ANB DM11216.15           ; RB18 不良品 記憶FLG
+ORL
+ANL
+SET MR402                ; FIFO読出し完了OK
+CON
+JMP MR17208
+MPP
+ANB MR402                ; FIFO読出し完了OK
+JMP MR17208
+STG MR17208
+ANB MR402                ; FIFO読出し完了OK
+ANB MR403                ; FIFO読出し完了なし
+RES MR17201              ; 読出し実行中
+CON
+ENDS
+;<h1/>FIFOテーブル　書き込み回路
+LD MR405                 ; FIFO書き込みTrig
+SET MR17300              ; 書き込み開始
+STG MR17300              ; 書き込み開始
+ANB MR17201              ; 読出し実行中
+RES MR17310              ; 書き込みOK　DM50へ
+CON
+RES MR17311              ; 書き込みOK　DM51へ
+CON
+RES MR17312              ; 書き込みOK　DM52へ
+CON
+RES MR17313              ; 書き込みOK　DM53へ
+CON
+RES MR17314              ; 書き込みOK　DM54へ
+CON
+RES MR17315              ; 書き込みOK　DM55へ
+CON
+RES MR17400              ; 書き込みOK　DM56へ
+CON
+SET MR17301              ; 書き込み実行中
+CON
+JMP MR17302              ; START
+STG MR17302              ; START
+MPS
+AND= DM50 #0             ; ﾎﾙﾀﾞｻﾌﾞ指定No.
+SET MR17310              ; 書き込みOK　DM50へ
+CON
+JMP MR17303
+MPP
+AND<> DM50 #0            ; ﾎﾙﾀﾞｻﾌﾞ指定No.
+MPS
+AND= DM51 #0             ; FIFOﾃｰﾌﾞﾙ 1個目
+SET MR17311              ; 書き込みOK　DM51へ
+CON
+JMP MR17303
+MPP
+AND<> DM51 #0            ; FIFOﾃｰﾌﾞﾙ 1個目
+MPS
+AND= DM52 #0             ; FIFOﾃｰﾌﾞﾙ 2個目
+SET MR17312              ; 書き込みOK　DM52へ
+CON
+JMP MR17303
+MPP
+AND<> DM52 #0            ; FIFOﾃｰﾌﾞﾙ 2個目
+MPS
+AND= DM53 #0             ; FIFOﾃｰﾌﾞﾙ 3個目
+SET MR17313              ; 書き込みOK　DM53へ
+CON
+JMP MR17303
+MPP
+AND<> DM53 #0            ; FIFOﾃｰﾌﾞﾙ 3個目
+MPS
+AND= DM54 #0             ; FIFOﾃｰﾌﾞﾙ 4個目
+SET MR17314              ; 書き込みOK　DM54へ
+CON
+JMP MR17303
+MPP
+AND<> DM54 #0            ; FIFOﾃｰﾌﾞﾙ 4個目
+MPS
+AND= DM55 #0             ; FIFOﾃｰﾌﾞﾙ 5個目
+SET MR17315              ; 書き込みOK　DM55へ
+CON
+JMP MR17303
+MPP
+LD<> DM55 #0             ; FIFOﾃｰﾌﾞﾙ 5個目
+AND= DM56 #0             ; FIFOﾃｰﾌﾞﾙ 6個目
+ANL
+SET MR17400              ; 書き込みOK　DM56へ
+CON
+JMP MR17303
+STG MR17303
+ANB MR17310              ; 書き込みOK　DM50へ
+ANB MR17311              ; 書き込みOK　DM51へ
+ANB MR17312              ; 書き込みOK　DM52へ
+ANB MR17313              ; 書き込みOK　DM53へ
+ANB MR17314              ; 書き込みOK　DM54へ
+ANB MR17315              ; 書き込みOK　DM55へ
+ANB MR17400              ; 書き込みOK　DM56へ
+RES MR17301              ; 書き込み実行中
+CON
+ENDS
+;TPｶﾚﾝﾀﾞﾀｲﾏ自動同期
+LD= CM703 #8             ; ｶﾚﾝﾀﾞﾀｲﾏ（時）
+AND= CM704 #0            ; ｶﾚﾝﾀﾞﾀｲﾏ（分）
+AND= CM705 #0            ; ｶﾚﾝﾀﾞﾀｲﾏ（秒）
+SET @R010
+STG @R010
+MPS
+LDA CM700                ; ｶﾚﾝﾀﾞﾀｲﾏ（年）
+CON
+ADD #32768
+CON
+TBCD
+CON
+STA DM3010               ; _MainTP　ｶﾚﾝﾀﾞﾀｲﾏ（設定値）
+MRD
+LDA CM701                ; ｶﾚﾝﾀﾞﾀｲﾏ（月）
+CON
+TBCD
+CON
+STA DM3011               ; _MainTP　ｶﾚﾝﾀﾞﾀｲﾏ（設定値）
+MRD
+LDA CM702                ; ｶﾚﾝﾀﾞﾀｲﾏ（日）
+CON
+TBCD
+CON
+STA DM3012               ; _MainTP　ｶﾚﾝﾀﾞﾀｲﾏ（設定値）
+MRD
+LDA CM703                ; ｶﾚﾝﾀﾞﾀｲﾏ（時）
+CON
+TBCD
+CON
+STA @DM21
+MRD
+LDA CM704                ; ｶﾚﾝﾀﾞﾀｲﾏ（分）
+CON
+TBCD
+CON
+STA @DM20
+MRD
+UNIB @DM20 DM3013 #2     ; _MainTP　ｶﾚﾝﾀﾞﾀｲﾏ（設定値）
+MPP
+JMP @R011
+STG @R011
+TMH @1 #5
+CON
+AND @T1
+BRES DM3010 #15          ; _MainTP　ｶﾚﾝﾀﾞﾀｲﾏ（設定値）
+CON
+ENDS
+;原点復帰完了記憶
+LD MR10400               ; TASK0_原点復帰完了
+AND MR10401              ; TASK1_原点復帰完了
+AND MR10402              ; TASK2_原点復帰完了
+AND MR10403              ; TASK3_原点復帰完了
+AND MR10405              ; TASK5_原点復帰完了
+AND MR10406              ; TASK6_原点復帰完了
+OUT MR10415              ; 原点復帰完了OK
+LD= DM9032 #9            ; _MODE_INDI指定番号
+OR= DM9032 #2            ; _MODE_INDI指定番号
+ANP R46103               ; _停止中　ﾓｰﾄﾞﾌﾗｸﾞ
+LD<> DM4110 #1           ; _Group1　ﾒﾝﾃ動作番号
+AND R46102               ; _ﾒﾝﾃﾅﾝｽ運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+ORL
+OR R46104                ; _非常停止中　ﾓｰﾄﾞﾌﾗｸﾞ
+DW #0 MR10400            ; TASK0_原点復帰完了
+;<h1/>温調器通信
+LD CR2008                ; 運転開始時1ｽｷｬﾝON
+MSTRT TEMP_PV R18100 DM15000 EM2000 #4;ﾕﾆｯﾄｴﾗｰ番号  TEMP_PV_UT1_#1
+LD CR2008                ; 運転開始時1ｽｷｬﾝON
+MSTRT TEMP_PV R18400 DM15610 EM2004 #4;ﾕﾆｯﾄｴﾗｰ番号  TEMP_PV_UT2_#1
+;UT1
+LD R1200                 ;  ｶｼﾒ U1(I_W) 運転中出力
+AND CR2005               ; 100msｸﾛｯｸﾊﾟﾙｽ
+OUT MR1200               ; UT1描画
+LD CR2002                ; 常時ON
+MPS
+AND R1200                ;  ｶｼﾒ U1(I_W) 運転中出力
+MPS
+LDB MR24001              ; UT1取得中
+LD>= EM2000 DM4240       ; TEMP_PV_UT1_#1  _機種別ﾃﾞｰﾀ　ﾃﾝﾎﾟﾗﾘ
+OR>= EM2001 DM4240       ; TEMP_PV_UT1_#2  _機種別ﾃﾞｰﾀ　ﾃﾝﾎﾟﾗﾘ
+OR>= EM2002 DM4240       ; TEMP_PV_UT1_#3  _機種別ﾃﾞｰﾀ　ﾃﾝﾎﾟﾗﾘ
+OR>= EM2003 DM4240       ; TEMP_PV_UT1_#4  _機種別ﾃﾞｰﾀ　ﾃﾝﾎﾟﾗﾘ
+ANL
+ANL
+@SET MR24000             ; UT1温度取得開始
+CON
+@SET MR24001             ; UT1取得中
+MPP
+LD MR24001               ; UT1取得中
+AND< EM2000 DM4240       ; TEMP_PV_UT1_#1  _機種別ﾃﾞｰﾀ　ﾃﾝﾎﾟﾗﾘ
+AND< EM2001 DM4240       ; TEMP_PV_UT1_#2  _機種別ﾃﾞｰﾀ　ﾃﾝﾎﾟﾗﾘ
+AND< EM2002 DM4240       ; TEMP_PV_UT1_#3  _機種別ﾃﾞｰﾀ　ﾃﾝﾎﾟﾗﾘ
+AND< EM2003 DM4240       ; TEMP_PV_UT1_#4  _機種別ﾃﾞｰﾀ　ﾃﾝﾎﾟﾗﾘ
+ANL
+RES MR24000              ; UT1温度取得開始
+MPP
+LDB R1200                ;  ｶｼﾒ U1(I_W) 運転中出力
+LD R1201                 ;  ｶｼﾒ U1(I_W) 離脱出力 (END1)
+AND CR2003               ; 常時OFF
+ORL
+ANL
+RES MR24000              ; UT1温度取得開始
+CON
+RES MR24001              ; UT1取得中
+LDP MR24000              ; UT1温度取得開始
+ZRES @DM10 @DM11
+CON
+DW #0 FM2000             ; UT1_格納数
+CON
+ZRES FM2100 FM2299
+;'ﾃﾞｰﾀ集計の為の格納ｽｸﾘﾌﾟﾄ
+;'温調器通信で得た情報を通信ｻｲｸﾙ毎、集計用ﾃﾞﾊﾞｲｽに格納する
+;
+;IF LDP (R18202) THEN		'通信ﾎﾟｰﾄの読出し回数をｶｳﾝﾄ
+;		INC(@DM10)
+;		IF @DM10 >= 4 THEN 	'4回に1回格納実行(2chの場合は1/2回）
+;			IF FM2000 >= 50 THEN	'格納数制限確認
+;				FM2000 = 0			'格納数上限なら頭に戻す
+;			END IF
+;			@DM11 = FM2000			'ﾃﾞｰﾀ集計格納先を指定
+;			FM2100:@DM11 = EM2000	'ﾃﾞｰﾀ集計格納先ここから
+;			FM2150:@DM11 = EM2001	
+;			FM2200:@DM11 = EM2002	
+;			FM2250:@DM11 = EM2003	'ここまで
+;			INC (FM2000) 			'格納先をINC
+;			@DM10 = 0
+;			SET(M24012)
+;		END IF
+;END IF
+LD MR24000               ; UT1温度取得開始
+NCJ #1000
+;'ﾃﾞｰﾀ集計の為の格納ｽｸﾘﾌﾟﾄ
+;
+;'温調器通信で得た情報を通信ｻｲｸﾙ毎、集計用ﾃﾞﾊﾞｲｽに格納する
+;
+;IF LDP (R18202) THEN		'通信ﾎﾟｰﾄの読出し回数をｶｳﾝﾄ
+;
+LDP R18202               ; Port2 受信ﾃﾞｰﾀ読出要求
+NCJ #2003
+;		INC(@DM10)
+;
+LD CR2002                ; 常時ON
+INC @DM10
+;		IF @DM10 >= 4 THEN 	'4回に1回格納実行(2chの場合は1/2回）
+;
+LD>= @DM10 #4
+NCJ #2004
+;			IF FM2000 >= 50 THEN	'格納数制限確認
+;
+LD>= FM2000 #50          ; UT1_格納数
+NCJ #2005
+;				FM2000 = 0			'格納数上限なら頭に戻す
+;
+LD CR2002                ; 常時ON
+MOV #0 FM2000            ; UT1_格納数
+;			END IF
+;
+LABEL #2005
+;			@DM11 = FM2000			'ﾃﾞｰﾀ集計格納先を指定
+;
+LD CR2002                ; 常時ON
+MOV FM2000 @DM11         ; UT1_格納数
+;			FM2100:@DM11 = EM2000	'ﾃﾞｰﾀ集計格納先ここから
+;
+LD CR2002                ; 常時ON
+LDA @DM11
+CON
+EXT
+CON
+STA.L Z11
+CON
+MOV EM2000 FM2100:Z11    ; TEMP_PV_UT1_#1
+;			FM2150:@DM11 = EM2001	
+;
+LD CR2002                ; 常時ON
+LDA @DM11
+CON
+EXT
+CON
+STA.L Z11
+CON
+MOV EM2001 FM2150:Z11    ; TEMP_PV_UT1_#2
+;			FM2200:@DM11 = EM2002	
+;
+LD CR2002                ; 常時ON
+LDA @DM11
+CON
+EXT
+CON
+STA.L Z11
+CON
+MOV EM2002 FM2200:Z11    ; TEMP_PV_UT1_#3
+;			FM2250:@DM11 = EM2003	'ここまで
+;
+LD CR2002                ; 常時ON
+LDA @DM11
+CON
+EXT
+CON
+STA.L Z11
+CON
+MOV EM2003 FM2250:Z11    ; TEMP_PV_UT1_#4
+;			INC (FM2000) 			'格納先をINC
+;
+LD CR2002                ; 常時ON
+INC FM2000               ; UT1_格納数
+;			@DM10 = 0
+;
+LD CR2002                ; 常時ON
+MOV #0 @DM10
+;			SET(M24012)
+;
+LD CR2002                ; 常時ON
+SET MR24012              ; UT1-ﾛｷﾞﾝｸﾞ要求
+;		END IF
+;
+LABEL #2004
+;END IF
+LABEL #2003
+LABEL #1000
+;
+LD> FM2000 #0            ; UT1_格納数
+MPS
+AVG FM2100 FM2000        ; UT1_格納数
+CON
+STA FM2001               ; UT1_ch1平均温度
+MRD
+AVG FM2150 FM2000        ; UT1_格納数
+CON
+STA FM2002               ; UT1_ch2平均温度
+MRD
+AVG FM2200 FM2000        ; UT1_格納数
+CON
+STA FM2003               ; UT1_ch3平均温度
+MPP
+AVG FM2250 FM2000        ; UT1_格納数
+CON
+STA FM2004               ; UT1_ch4平均温度
+LDB MR24000              ; UT1温度取得開始
+MPS
+LD<= FM2001 DM4242       ; UT1_ch1平均温度  _機種別ﾃﾞｰﾀ　ﾃﾝﾎﾟﾗﾘ
+AND>= FM2001 DM4244      ; UT1_ch1平均温度  _機種別ﾃﾞｰﾀ　ﾃﾝﾎﾟﾗﾘ
+ANL
+OUT MR24002              ; UT1-1判定OK
+MRD
+LD> FM2001 DM4242        ; UT1_ch1平均温度  _機種別ﾃﾞｰﾀ　ﾃﾝﾎﾟﾗﾘ
+OR< FM2001 DM4244        ; UT1_ch1平均温度  _機種別ﾃﾞｰﾀ　ﾃﾝﾎﾟﾗﾘ
+ANL
+OUT MR24003              ; UT1-1判定NG
+MRD
+LD<= FM2002 DM4242       ; UT1_ch2平均温度  _機種別ﾃﾞｰﾀ　ﾃﾝﾎﾟﾗﾘ
+AND>= FM2002 DM4244      ; UT1_ch2平均温度  _機種別ﾃﾞｰﾀ　ﾃﾝﾎﾟﾗﾘ
+ANL
+OUT MR24004              ; UT1-2判定OK
+MRD
+LD> FM2002 DM4242        ; UT1_ch2平均温度  _機種別ﾃﾞｰﾀ　ﾃﾝﾎﾟﾗﾘ
+OR< FM2002 DM4244        ; UT1_ch2平均温度  _機種別ﾃﾞｰﾀ　ﾃﾝﾎﾟﾗﾘ
+ANL
+OUT MR24005              ; UT1-2判定NG
+MRD
+LD<= FM2003 DM4242       ; UT1_ch3平均温度  _機種別ﾃﾞｰﾀ　ﾃﾝﾎﾟﾗﾘ
+AND>= FM2003 DM4244      ; UT1_ch3平均温度  _機種別ﾃﾞｰﾀ　ﾃﾝﾎﾟﾗﾘ
+ANL
+OUT MR24006              ; UT1-3判定OK
+MRD
+LD> FM2003 DM4242        ; UT1_ch3平均温度  _機種別ﾃﾞｰﾀ　ﾃﾝﾎﾟﾗﾘ
+OR< FM2003 DM4244        ; UT1_ch3平均温度  _機種別ﾃﾞｰﾀ　ﾃﾝﾎﾟﾗﾘ
+ANL
+OUT MR24007              ; UT1-3判定NG
+MRD
+LD<= FM2004 DM4242       ; UT1_ch4平均温度  _機種別ﾃﾞｰﾀ　ﾃﾝﾎﾟﾗﾘ
+AND>= FM2004 DM4244      ; UT1_ch4平均温度  _機種別ﾃﾞｰﾀ　ﾃﾝﾎﾟﾗﾘ
+ANL
+OUT MR24008              ; UT1-4判定OK
+MPP
+LD> FM2004 DM4242        ; UT1_ch4平均温度  _機種別ﾃﾞｰﾀ　ﾃﾝﾎﾟﾗﾘ
+OR< FM2004 DM4244        ; UT1_ch4平均温度  _機種別ﾃﾞｰﾀ　ﾃﾝﾎﾟﾗﾘ
+ANL
+OUT MR24009              ; UT1-4判定NG
+LD MR24002               ; UT1-1判定OK
+ANB MR24003              ; UT1-1判定NG
+AND MR24004              ; UT1-2判定OK
+ANB MR24005              ; UT1-2判定NG
+AND MR24006              ; UT1-3判定OK
+ANB MR24007              ; UT1-3判定NG
+AND MR24008              ; UT1-4判定OK
+ANB MR24009              ; UT1-4判定NG
+OUT MR24014              ; UT1-温度判定ALL OK
+;UT2
+LD R1208                 ;  ｶｼﾒ U2(I_W)_運転中出力
+AND CR2005               ; 100msｸﾛｯｸﾊﾟﾙｽ
+OUT MR1201               ; UT2描画
+LD CR2002                ; 常時ON
+MPS
+AND R1208                ;  ｶｼﾒ U2(I_W)_運転中出力
+MPS
+LDB MR24101              ; UT2取得中
+LD>= EM2004 DM4246       ; TEMP_PV_UT2_#1  _機種別ﾃﾞｰﾀ　ﾃﾝﾎﾟﾗﾘ
+OR>= EM2005 DM4246       ; TEMP_PV_UT2_#2  _機種別ﾃﾞｰﾀ　ﾃﾝﾎﾟﾗﾘ
+OR>= EM2006 DM4246       ; TEMP_PV_UT2_#3  _機種別ﾃﾞｰﾀ　ﾃﾝﾎﾟﾗﾘ
+OR>= EM2007 DM4246       ; TEMP_PV_UT2_#4  _機種別ﾃﾞｰﾀ　ﾃﾝﾎﾟﾗﾘ
+ANL
+ANL
+@SET MR24100             ; UT2温度取得開始
+CON
+@SET MR24101             ; UT2取得中
+MPP
+LD MR24101               ; UT2取得中
+AND< EM2004 DM4246       ; TEMP_PV_UT2_#1  _機種別ﾃﾞｰﾀ　ﾃﾝﾎﾟﾗﾘ
+AND< EM2005 DM4246       ; TEMP_PV_UT2_#2  _機種別ﾃﾞｰﾀ　ﾃﾝﾎﾟﾗﾘ
+AND< EM2006 DM4246       ; TEMP_PV_UT2_#3  _機種別ﾃﾞｰﾀ　ﾃﾝﾎﾟﾗﾘ
+AND< EM2007 DM4246       ; TEMP_PV_UT2_#4  _機種別ﾃﾞｰﾀ　ﾃﾝﾎﾟﾗﾘ
+ANL
+RES MR24100              ; UT2温度取得開始
+MPP
+ANB R1208                ;  ｶｼﾒ U2(I_W)_運転中出力
+RES MR24100              ; UT2温度取得開始
+CON
+RES MR24101              ; UT2取得中
+LDP MR24100              ; UT2温度取得開始
+ZRES @DM12 @DM13
+CON
+DW #0 FM2008             ; UT2_格納数
+CON
+ZRES FM2300 FM2499
+;'ﾃﾞｰﾀ集計の為の格納ｽｸﾘﾌﾟﾄ
+;'温調器通信で得た情報を通信ｻｲｸﾙ毎、集計用ﾃﾞﾊﾞｲｽに格納する
+;
+;IF LDP (R18502) THEN		'通信ﾎﾟｰﾄの読出し回数をｶｳﾝﾄ
+;		INC(@DM12)
+;		IF @DM12 >= 4 THEN 	'4回に1回格納実行(2chの場合は1/2回）
+;			IF FM2008 >= 50 THEN	'格納数制限確認
+;				FM2008 = 0			'格納数上限なら頭に戻す
+;			END IF
+;			@DM13 = FM2008			'ﾃﾞｰﾀ集計格納先を指定
+;			FM2300:@DM13 = EM2004	'ﾃﾞｰﾀ集計格納先ここから
+;			FM2350:@DM13 = EM2005	
+;			FM2400:@DM13 = EM2006	
+;			FM2450:@DM13 = EM2007	'ここまで
+;			INC (FM2008) 			'格納先をINC
+;			@DM12 = 0
+;			SET(M24112)
+;		END IF
+;END IF
+LD MR24100               ; UT2温度取得開始
+NCJ #1001
+;'ﾃﾞｰﾀ集計の為の格納ｽｸﾘﾌﾟﾄ
+;
+;'温調器通信で得た情報を通信ｻｲｸﾙ毎、集計用ﾃﾞﾊﾞｲｽに格納する
+;
+;IF LDP (R18502) THEN		'通信ﾎﾟｰﾄの読出し回数をｶｳﾝﾄ
+;
+LDP R18502               ; Port2 受信ﾃﾞｰﾀ読出要求
+NCJ #2000
+;		INC(@DM12)
+;
+LD CR2002                ; 常時ON
+INC @DM12
+;		IF @DM12 >= 4 THEN 	'4回に1回格納実行(2chの場合は1/2回）
+;
+LD>= @DM12 #4
+NCJ #2001
+;			IF FM2008 >= 50 THEN	'格納数制限確認
+;
+LD>= FM2008 #50          ; UT2_格納数
+NCJ #2002
+;				FM2008 = 0			'格納数上限なら頭に戻す
+;
+LD CR2002                ; 常時ON
+MOV #0 FM2008            ; UT2_格納数
+;			END IF
+;
+LABEL #2002
+;			@DM13 = FM2008			'ﾃﾞｰﾀ集計格納先を指定
+;
+LD CR2002                ; 常時ON
+MOV FM2008 @DM13         ; UT2_格納数
+;			FM2300:@DM13 = EM2004	'ﾃﾞｰﾀ集計格納先ここから
+;
+LD CR2002                ; 常時ON
+LDA @DM13
+CON
+EXT
+CON
+STA.L Z11
+CON
+MOV EM2004 FM2300:Z11    ; TEMP_PV_UT2_#1
+;			FM2350:@DM13 = EM2005	
+;
+LD CR2002                ; 常時ON
+LDA @DM13
+CON
+EXT
+CON
+STA.L Z11
+CON
+MOV EM2005 FM2350:Z11    ; TEMP_PV_UT2_#2
+;			FM2400:@DM13 = EM2006	
+;
+LD CR2002                ; 常時ON
+LDA @DM13
+CON
+EXT
+CON
+STA.L Z11
+CON
+MOV EM2006 FM2400:Z11    ; TEMP_PV_UT2_#3
+;			FM2450:@DM13 = EM2007	'ここまで
+;
+LD CR2002                ; 常時ON
+LDA @DM13
+CON
+EXT
+CON
+STA.L Z11
+CON
+MOV EM2007 FM2450:Z11    ; TEMP_PV_UT2_#4
+;			INC (FM2008) 			'格納先をINC
+;
+LD CR2002                ; 常時ON
+INC FM2008               ; UT2_格納数
+;			@DM12 = 0
+;
+LD CR2002                ; 常時ON
+MOV #0 @DM12
+;			SET(M24112)
+;
+LD CR2002                ; 常時ON
+SET MR24112              ; UT2-ﾛｷﾞﾝｸﾞ要求
+;		END IF
+;
+LABEL #2001
+;END IF
+LABEL #2000
+LABEL #1001
+;
+LD> FM2008 #0            ; UT2_格納数
+MPS
+AVG FM2300 FM2008        ; UT2_格納数
+CON
+STA FM2009               ; UT2_ch1平均温度
+MRD
+AVG FM2350 FM2008        ; UT2_格納数
+CON
+STA FM2010               ; UT2_ch2平均温度
+MRD
+AVG FM2400 FM2008        ; UT2_格納数
+CON
+STA FM2011               ; UT2_ch3平均温度
+MPP
+AVG FM2450 FM2008        ; UT2_格納数
+CON
+STA FM2012               ; UT2_ch4平均温度
+LDB MR24100              ; UT2温度取得開始
+MPS
+LD<= FM2009 DM4248       ; UT2_ch1平均温度  _機種別ﾃﾞｰﾀ　ﾃﾝﾎﾟﾗﾘ
+AND>= FM2009 DM4250      ; UT2_ch1平均温度  _機種別ﾃﾞｰﾀ　ﾃﾝﾎﾟﾗﾘ
+ANL
+OUT MR24102              ; UT2-1判定OK
+MRD
+LD> FM2009 DM4248        ; UT2_ch1平均温度  _機種別ﾃﾞｰﾀ　ﾃﾝﾎﾟﾗﾘ
+OR< FM2009 DM4250        ; UT2_ch1平均温度  _機種別ﾃﾞｰﾀ　ﾃﾝﾎﾟﾗﾘ
+ANL
+OUT MR24103              ; UT2-1判定NG
+MRD
+LD<= FM2010 DM4248       ; UT2_ch2平均温度  _機種別ﾃﾞｰﾀ　ﾃﾝﾎﾟﾗﾘ
+AND>= FM2010 DM4250      ; UT2_ch2平均温度  _機種別ﾃﾞｰﾀ　ﾃﾝﾎﾟﾗﾘ
+ANL
+OUT MR24104              ; UT2-2判定OK
+MRD
+LD> FM2010 DM4248        ; UT2_ch2平均温度  _機種別ﾃﾞｰﾀ　ﾃﾝﾎﾟﾗﾘ
+OR< FM2010 DM4250        ; UT2_ch2平均温度  _機種別ﾃﾞｰﾀ　ﾃﾝﾎﾟﾗﾘ
+ANL
+OUT MR24105              ; UT2-2判定NG
+MRD
+LD<= FM2011 DM4248       ; UT2_ch3平均温度  _機種別ﾃﾞｰﾀ　ﾃﾝﾎﾟﾗﾘ
+AND>= FM2011 DM4250      ; UT2_ch3平均温度  _機種別ﾃﾞｰﾀ　ﾃﾝﾎﾟﾗﾘ
+ANL
+OUT MR24106              ; UT2-3判定OK
+MRD
+LD> FM2011 DM4248        ; UT2_ch3平均温度  _機種別ﾃﾞｰﾀ　ﾃﾝﾎﾟﾗﾘ
+OR< FM2011 DM4250        ; UT2_ch3平均温度  _機種別ﾃﾞｰﾀ　ﾃﾝﾎﾟﾗﾘ
+ANL
+OUT MR24107              ; UT2-3判定NG
+MRD
+LD<= FM2012 DM4248       ; UT2_ch4平均温度  _機種別ﾃﾞｰﾀ　ﾃﾝﾎﾟﾗﾘ
+AND>= FM2012 DM4250      ; UT2_ch4平均温度  _機種別ﾃﾞｰﾀ　ﾃﾝﾎﾟﾗﾘ
+ANL
+OUT MR24108              ; UT2-4判定OK
+MPP
+LD> FM2012 DM4248        ; UT2_ch4平均温度  _機種別ﾃﾞｰﾀ　ﾃﾝﾎﾟﾗﾘ
+OR< FM2012 DM4250        ; UT2_ch4平均温度  _機種別ﾃﾞｰﾀ　ﾃﾝﾎﾟﾗﾘ
+ANL
+OUT MR24109              ; UT2-4判定NG
+LD MR24102               ; UT2-1判定OK
+ANB MR24103              ; UT2-1判定NG
+AND MR24104              ; UT2-2判定OK
+ANB MR24105              ; UT2-2判定NG
+AND MR24106              ; UT2-3判定OK
+ANB MR24107              ; UT2-3判定NG
+AND MR24108              ; UT2-4判定OK
+ANB MR24109              ; UT2-4判定NG
+OUT MR24114              ; UT2-温度判定ALL OK
+;ﾛｷﾞﾝｸﾞﾒﾓﾘｰｶｰﾄﾞ書込み
+LD CR3212                ; ﾒﾓﾘｶｰﾄﾞ認識完了
+MPS
+ANP MR24012              ; UT1-ﾛｷﾞﾝｸﾞ要求
+LOGE #0
+MPP
+ANP MR24112              ; UT2-ﾛｷﾞﾝｸﾞ要求
+LOGE #1
+LDB CR3212               ; ﾒﾓﾘｶｰﾄﾞ認識完了
+MPS
+RES MR24012              ; UT1-ﾛｷﾞﾝｸﾞ要求
+CON
+LOGD #0
+MPP
+RES MR24112              ; UT2-ﾛｷﾞﾝｸﾞ要求
+CON
+LOGD #1
+LD CR3212                ; ﾒﾓﾘｶｰﾄﾞ認識完了
+ANB CR3215               ; ﾒﾓﾘｶｰﾄﾞﾗｲﾄﾌﾟﾛﾃｸﾄ
+ANB CR002                ; ﾛｷﾞﾝｸﾞ0ﾌｧｲﾙ書込み終了
+ANB CR102                ; ﾛｷﾞﾝｸﾞ1ﾌｧｲﾙ書込み終了
+ANB CR202                ; ﾛｷﾞﾝｸﾞ2ﾌｧｲﾙ書込み終了
+MPS
+LD MR24012               ; UT1-ﾛｷﾞﾝｸﾞ要求
+AND CR000                ; ﾛｷﾞﾝｸﾞ0実行許可
+ANL
+RES MR24012              ; UT1-ﾛｷﾞﾝｸﾞ要求
+CON
+TRGD #0
+MPP
+LDB MR24012              ; UT1-ﾛｷﾞﾝｸﾞ要求
+AND MR24112              ; UT2-ﾛｷﾞﾝｸﾞ要求
+AND CR100                ; ﾛｷﾞﾝｸﾞ1実行許可
+ANL
+RES MR24112              ; UT2-ﾛｷﾞﾝｸﾞ要求
+CON
+TRGD #1
+END
+ENDH

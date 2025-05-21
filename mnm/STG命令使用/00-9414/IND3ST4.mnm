@@ -1,0 +1,2148 @@
+DEVICE:53
+;MODULE:IND3ST4
+;MODULE_TYPE:0
+;***************************************
+; 非常停止
+; Emergency Stop 
+;***************************************
+LD R50010                ; Emergency　Stop
+OR @MR000                ; Emergency STOP
+ZRES @MR001 @MR2615
+CON
+OUT @MR000               ; Emergency STOP
+TMR @39 #5
+LD @T39
+MDSTOP IND3ST4
+;RB動作許可ﾌﾗｸﾞ
+;RB Move permission Flag
+;ﾜｰｸ有無ﾌﾗｸﾞ
+;Work Existence Flag
+LDB R6008                ; IND3 ST4 ﾜｰｸ有無検出
+OUT @MR010               ; IND3　ST4  全ﾜｰｸ無し
+LDB R6000                ; IND3 ST2 ﾜｰｸ有無検出
+AND R6001                ; IND3 ST2 ﾜｰｸ浮き検出1(供給孔側)
+AND R6002                ; IND3 ST2 ﾜｰｸ浮き検出2(ﾌｨﾙﾑ側)
+ANB R6005                ; IND3 ST3 ﾜｰｸ有無検出
+AND R6006                ; IND3 ST3 ﾜｰｸ浮き検出1(供給孔側)
+AND R6007                ; IND3 ST3 ﾜｰｸ浮き検出2(ﾌｨﾙﾑ側)
+ANB R6008                ; IND3 ST4 ﾜｰｸ有無検出
+ANB LR400                ; 搬送ｽﾗｲﾀﾞ給材ﾁｬｯｸ　ﾜｰｸ有
+ANB LR401                ; 搬送ｽﾗｲﾀﾞ上 ﾜｰｸ有
+OUT @MR009               ; IND3　 全ﾜｰｸ無し
+;動作ﾊﾟﾗﾒｰﾀ
+;Operation Parameter
+LDB LR41100              ; AUTO-0 全ﾕﾆｯﾄ動作
+ANB LR41101              ; AUTO-1 IND1 2UT
+ANB LR41102              ; AUTO-2 IND1 3UT
+ANB LR41103              ; AUTO-3 IND1 4UT
+ANB LR41104              ; AUTO-4 IND2 3UT
+ANB LR41105              ; AUTO-5 IND3 3UT
+ANB LR41106              ; AUTO-6
+ANB LR41107              ; AUTO-7
+ANB LR41108              ; AUTO-8
+OUB @MR013               ; IND3 ST4  AUTO Parameter OK
+;***************************************
+; ﾎﾟｰｽﾞ ･ ｴﾗｰ 監視
+; Pause ･ Error Check 
+;***************************************
+LDB R50300               ; Pause
+ANB R51604               ; Err IND3ST4
+ANB R51600               ; Err IND3
+OUT @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+;<h1/>原点復帰動作
+;HOME RETURN OPERATION 
+LD R50003                ; HOME
+ANB R51512               ; IND3 ST4  動作中
+SET R51512               ; IND3 ST4  動作中
+CON
+SET @MR500               ; 原点復帰  開始
+LDB R50003               ; HOME
+ANB R50001               ; AUTO
+ANB R50002               ; STEP
+AND @MR501               ; 原点復帰  終了
+RES R51512               ; IND3 ST4  動作中
+CON
+RES @MR501               ; 原点復帰  終了
+STG @MR500               ; 原点復帰  開始
+SET R50912               ; IND3 ST4  ｻｲｸﾙ動作中
+CON
+JMP @MR502               ; 1003
+STG @MR502               ; 1003
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+RES MR8404               ; ﾊﾞｲﾊﾟｽ封止 ﾊﾝﾄﾞ 下降
+CON
+RES MR8408               ; ●NG針 下降
+CON
+AND R6205                ; ﾊﾞｲﾊﾟｽ ﾊﾝﾄﾞ 上昇限
+LD R6213                 ; ●NG針 上昇限
+OR LR307                 ; 仮NAT 徐材CV無し
+ANL
+SET @MR600               ; 除材ﾊﾝﾄﾞ　ﾜｰｸ確認
+CON
+JMP @MR503               ; 除材位置ﾜｰｸﾁｪｯｸ
+;ｺﾝﾍﾞﾔ部ｶｰﾄﾘｯｼﾞ残確認 / Cartridge check at Conveyer
+STG @MR503               ; 除材位置ﾜｰｸﾁｪｯｸ
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+MPS
+ANB LR307                ; 仮NAT 徐材CV無し
+MPS
+LDB R6305                ; ●排出部 ｶｰﾄﾘｯｼﾞ到達検出
+AND R6303                ; ●排出部ｶｰﾄﾘｯｼﾞ満杯検出▲
+ANL
+MPS
+ANB R6302                ; ●NGﾏｰｷﾝｸﾞ部 ｶｰﾄﾘｯｼﾞ検出
+RES LR401                ; 搬送ｽﾗｲﾀﾞ上 ﾜｰｸ有
+CON
+JMP @MR508
+MPP
+AND R6302                ; ●NGﾏｰｷﾝｸﾞ部 ｶｰﾄﾘｯｼﾞ検出
+SET @MR300               ; Err118
+CON
+JMP @MR505
+MPP
+LDB R6303                ; ●排出部ｶｰﾄﾘｯｼﾞ満杯検出▲
+OR R6305                 ; ●排出部 ｶｰﾄﾘｯｼﾞ到達検出
+ANL
+SET @MR104               ; Err112
+CON
+JMP @MR504
+MPP
+AND LR307                ; 仮NAT 徐材CV無し
+RES LR401                ; 搬送ｽﾗｲﾀﾞ上 ﾜｰｸ有
+CON
+JMP @MR509
+;Err112 除材位置ﾜｰｸ残 / Cartridge remain on Remove point
+STG @MR504
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+AND @MR107               ; Err112 解除完了
+RES @MR107               ; Err112 解除完了
+CON
+JMP @MR503               ; 除材位置ﾜｰｸﾁｪｯｸ
+;Err118 NGｶｰﾄﾘｯｼﾞ残 / NG Cartridge remain
+STG @MR505
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+AND @MR303               ; Err118 解除完了
+RES @MR303               ; Err118 解除完了
+CON
+JMP @MR503               ; 除材位置ﾜｰｸﾁｪｯｸ
+;ｺﾝﾍﾞﾔ部原点復帰 / Home Routine for Coveyer part 
+STG @MR508
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+RES MR8414               ; ●天秤ｶｰﾄﾘｯｼﾞ押出し 前進
+CON
+RES MR8500               ; ●NGﾜｰｸｽﾄｯﾊﾟ 前進
+CON
+SET MR8501               ; ●NGﾜｰｸｽﾄｯﾊﾟ 後退
+CON
+ANB R6208                ; ●天秤ｶｰﾄﾘｯｼﾞ押出し 前進限
+AND R6209                ; ●天秤ｶｰﾄﾘｯｼﾞ押出し 後退限
+ANB R6210                ; ●NGﾜｰｸｽﾄｯﾊﾟ 前進限
+AND R6211                ; ●NGﾜｰｸｽﾄｯﾊﾟ 後退限
+JMP @MR509
+;Cartridge Check on the Scale
+STG @MR509
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+MPS
+AND R6301                ; 重量検査部ｶｰﾄﾘｯｼﾞ検出
+@DW #0 DM38959           ; Port2 受信ﾃﾞｰﾀ1
+CON
+RES MR24005              ; Scale Com OK
+CON
+JMP @MR512               ; Sclae Initialyze
+MPP
+ANB R6301                ; 重量検査部ｶｰﾄﾘｯｼﾞ検出
+SET @MR208               ; Err116
+CON
+JMP @MR510
+;Err116 - 天秤上ｶｰﾄﾘｯｼﾞ残 / Remove part on the weight scale
+STG @MR510
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+AND @MR211               ; Err116解除完了
+JMP @MR511
+STG @MR511
+RES @MR211               ; Err116解除完了
+CON
+JMP @MR509
+;Ink Weight Scale Initialyze
+STG @MR512               ; Sclae Initialyze
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+SET MR24000              ; Scale Power ON
+CON
+SET MR24004              ; Scale Initialyzation
+CON
+JMP @MR513
+STG @MR513
+MPS
+AND MR24005              ; Scale Com OK
+RES MR24009              ; ASCII conv Complete
+CON
+RES MR24000              ; Scale Power ON
+CON
+RES MR24004              ; Scale Initialyzation
+CON
+RES MR24005              ; Scale Com OK
+CON
+JMP @MR700               ; Complete Scale Init.
+MPP
+LDB MR24005              ; Scale Com OK
+AND MR24006              ; Scale Comm Error
+ANL
+SET @MR212               ; Err117
+CON
+JMP @MR514
+;Err117 - 天秤通信異常 / scale Communication Error
+STG @MR514
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+AND @MR215               ; Err117解除完了
+RES MR24000              ; Scale Power ON
+CON
+RES MR24004              ; Scale Initialyzation
+CON
+RES MR24006              ; Scale Comm Error
+CON
+JMP @MR515
+STG @MR515
+@DW #0 DM38959           ; Port2 受信ﾃﾞｰﾀ1
+CON
+RES MR24005              ; Scale Com OK
+CON
+RES @MR215               ; Err117解除完了
+CON
+JMP @MR512               ; Sclae Initialyze
+;除材ﾊﾝﾄﾞ ﾜｰｸ確認 / Remove Hand Cartridge Check
+STG @MR600               ; 除材ﾊﾝﾄﾞ　ﾜｰｸ確認
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+MPS
+AND R6201                ; ﾊﾞｲﾊﾟｽ 除材ﾁｬｯｸ開閉　開限
+RES LR400                ; 搬送ｽﾗｲﾀﾞ給材ﾁｬｯｸ　ﾜｰｸ有
+CON
+JMP @MR601               ; ﾜｰｸ把握無
+MPP
+ANB R6201                ; ﾊﾞｲﾊﾟｽ 除材ﾁｬｯｸ開閉　開限
+SET @MR900               ; ﾊﾝﾄﾞ ﾜｰｸ有Flg.
+CON
+JMP @MR602               ; ﾜｰｸ把握中
+STG @MR601               ; ﾜｰｸ把握無
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+RES MR8402               ; ﾊﾞｲﾊﾟｽ封止 ﾊﾝﾄﾞ 天秤側移動
+CON
+SET MR8403               ; ﾊﾞｲﾊﾟｽ封止 ﾊﾝﾄﾞ ｲﾝﾃﾞｯｸｽ側移動
+CON
+RES MR8406               ; ﾊﾞｲﾊﾟｽ封止 ﾊﾝﾄﾞ　旋回
+CON
+SET MR8407               ; ﾊﾞｲﾊﾟｽ封止 ﾊﾝﾄﾞ　旋回戻し
+CON
+AND R6203                ; ﾊﾞｲﾊﾟｽ ﾊﾝﾄﾞｽﾗｲﾄﾞ ｲﾝﾃﾞｯｸｽ側限
+AND R6207                ; ﾊﾞｲﾊﾟｽ ﾊﾝﾄﾞ 戻り限
+JMP @MR603
+STG @MR602               ; ﾜｰｸ把握中
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+RES MR8403               ; ﾊﾞｲﾊﾟｽ封止 ﾊﾝﾄﾞ ｲﾝﾃﾞｯｸｽ側移動
+CON
+SET MR8402               ; ﾊﾞｲﾊﾟｽ封止 ﾊﾝﾄﾞ 天秤側移動
+CON
+RES MR8407               ; ﾊﾞｲﾊﾟｽ封止 ﾊﾝﾄﾞ　旋回戻し
+CON
+SET MR8406               ; ﾊﾞｲﾊﾟｽ封止 ﾊﾝﾄﾞ　旋回
+CON
+AND R6202                ; ﾊﾞｲﾊﾟｽ ﾊﾝﾄﾞｽﾗｲﾄﾞ 天秤側限
+AND R6206                ; ﾊﾞｲﾊﾟｽ ﾊﾝﾄﾞ 旋回限
+JMP @MR603
+STG @MR603
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+SET @MR901               ; ﾊﾝﾄﾞﾜｰｸ確認完了
+CON
+ENDS
+;合流
+STG @MR700               ; Complete Scale Init.
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+AND @MR901               ; ﾊﾝﾄﾞﾜｰｸ確認完了
+RES @MR901               ; ﾊﾝﾄﾞﾜｰｸ確認完了
+CON
+MPS
+ANB @MR900               ; ﾊﾝﾄﾞ ﾜｰｸ有Flg.
+JMP @MR708
+MPP
+AND @MR900               ; ﾊﾝﾄﾞ ﾜｰｸ有Flg.
+JMP @MR701
+;<<Add bookmark: confirm with Ctrl+Enter/Esc>> 
+STG @MR701
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+AND R6202                ; ﾊﾞｲﾊﾟｽ ﾊﾝﾄﾞｽﾗｲﾄﾞ 天秤側限
+SET MR8404               ; ﾊﾞｲﾊﾟｽ封止 ﾊﾝﾄﾞ 下降
+CON
+AND R6204                ; ﾊﾞｲﾊﾟｽ ﾊﾝﾄﾞ 下降限
+JMP @MR702
+STG @MR702
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+RES MR8400               ; ﾊﾞｲﾊﾟｽ封止 除材ﾁｬｯｸ開閉　閉じ
+CON
+SET MR8401               ; ﾊﾞｲﾊﾟｽ封止 除材ﾁｬｯｸ開閉　開き
+CON
+AND R6201                ; ﾊﾞｲﾊﾟｽ 除材ﾁｬｯｸ開閉　開限
+TMR @3 #3
+CON
+AND @T3
+JMP @MR703
+STG @MR703
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+RES MR8404               ; ﾊﾞｲﾊﾟｽ封止 ﾊﾝﾄﾞ 下降
+CON
+AND R6205                ; ﾊﾞｲﾊﾟｽ ﾊﾝﾄﾞ 上昇限
+RES @MR900               ; ﾊﾝﾄﾞ ﾜｰｸ有Flg.
+CON
+JMP @MR704
+STG @MR704
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+RES LR400                ; 搬送ｽﾗｲﾀﾞ給材ﾁｬｯｸ　ﾜｰｸ有
+CON
+SET LR401                ; 搬送ｽﾗｲﾀﾞ上 ﾜｰｸ有
+CON
+RES MR8402               ; ﾊﾞｲﾊﾟｽ封止 ﾊﾝﾄﾞ 天秤側移動
+CON
+SET MR8403               ; ﾊﾞｲﾊﾟｽ封止 ﾊﾝﾄﾞ ｲﾝﾃﾞｯｸｽ側移動
+CON
+RES MR8406               ; ﾊﾞｲﾊﾟｽ封止 ﾊﾝﾄﾞ　旋回
+CON
+SET MR8407               ; ﾊﾞｲﾊﾟｽ封止 ﾊﾝﾄﾞ　旋回戻し
+CON
+JMP @MR502               ; 1003
+;
+STG @MR708
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+AND R6203                ; ﾊﾞｲﾊﾟｽ ﾊﾝﾄﾞｽﾗｲﾄﾞ ｲﾝﾃﾞｯｸｽ側限
+JMP @MR715               ; 原点復帰終了処理
+;
+STG @MR715               ; 原点復帰終了処理
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+AND MR602                ; IND3      ｻｲｸﾙ動作中
+RES R50912               ; IND3 ST4  ｻｲｸﾙ動作中
+CON
+SET R51504               ; IND3 ST4   1ｻｲｸﾙ終了
+CON
+SET @MR501               ; 原点復帰  終了
+CON
+ENDS
+;<h1/>自動運転
+;AUTO OPERATION
+LD R50001                ; AUTO
+ANB R51512               ; IND3 ST4  動作中
+SET @MR2300              ; 除材P&P  動作開始
+CON
+SET @MR1400              ; 天秤計測動作開始
+CON
+SET R51512               ; IND3 ST4  動作中
+CON
+SET @MR1000              ; AUTO開始
+LDB R50003               ; HOME
+ANB R50001               ; AUTO
+ANB R50002               ; STEP
+AND @MR1001              ; AUTO終了
+ANB @MR2301              ; 除材ﾊﾝﾄﾞ　動作中
+ANB @MR1401              ; 天秤計測動作中
+RES R51512               ; IND3 ST4  動作中
+CON
+RES @MR1001              ; AUTO終了
+; 動作パラメーター確認
+; Operating Parameter Check
+STG @MR1000              ; AUTO開始
+MPS
+AND R51500               ; IND3     動作開始
+SET R50912               ; IND3 ST4  ｻｲｸﾙ動作中
+CON
+MPS
+AND R50210               ; Model OK
+JMP @MR1002
+MPP
+LDB R50210               ; Model OK
+AND R50000               ; HOLD
+ANL
+JMP @MR1300              ; AUTO終了処理
+MPP
+LDB R51500               ; IND3     動作開始
+AND R50000               ; HOLD
+AND R51508               ; IND3     払出し完了
+ANL
+JMP @MR1300              ; AUTO終了処理
+STG @MR1002
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+MPS
+AND @MR013               ; IND3 ST4  AUTO Parameter OK
+JMP @MR1003
+MPP
+ANB @MR013               ; IND3 ST4  AUTO Parameter OK
+JMP @MR1300              ; AUTO終了処理
+;動作選択
+STG @MR1003
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+JMP @MR1200
+;AUTO動作開始
+;AUTO Operation Start
+STG @MR1200
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+MPS
+LDB @MR010               ; IND3　ST4  全ﾜｰｸ無し
+OR R50002                ; STEP
+ANL
+JMP @MR1201
+MPP
+LD @MR010                ; IND3　ST4  全ﾜｰｸ無し
+ANB R50002               ; STEP
+ANL
+JMP @MR1300              ; AUTO終了処理
+;自動/手動判別
+;Auto/Manual Check
+STG @MR1201
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+MPS
+ANB R50606               ; ﾏﾆｭｱﾙ除材要求
+SET @MR002               ; IND3_4ST 除材要求
+CON
+JMP @MR1202
+MPP
+AND R50606               ; ﾏﾆｭｱﾙ除材要求
+SET @MR204               ; Err6 ST1 Err6
+CON
+JMP @MR1207
+STG @MR1207
+AND @MR207               ; Err6 ST1 Err6解除完了
+RES @MR207               ; Err6 ST1 Err6解除完了
+CON
+JMP @MR1208
+STG @MR1208
+MPS
+ANB R6008                ; IND3 ST4 ﾜｰｸ有無検出
+DW #0 DM693              ; IND3_ST4 Work Memory
+CON
+JMP @MR1204
+MPP
+AND R6008                ; IND3 ST4 ﾜｰｸ有無検出
+SET @MR204               ; Err6 ST1 Err6
+CON
+JMP @MR1207
+STG @MR1202
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+AND @MR003               ; IND3_4ST 除材中
+JMP @MR1203
+STG @MR1203
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+ANB @MR003               ; IND3_4ST 除材中
+AND @MR004               ; IND3_4ST 除材完了
+RES @MR002               ; IND3_4ST 除材要求
+CON
+DW #0 DM693              ; IND3_ST4 Work Memory
+CON
+JMP @MR1204
+STG @MR1204
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+RES @MR004               ; IND3_4ST 除材完了
+CON
+MPS
+AND @MR010               ; IND3　ST4  全ﾜｰｸ無し
+MPS
+ANB R50002               ; STEP
+JMP @MR1300              ; AUTO終了処理
+MPP
+AND R50002               ; STEP
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+JMP @MR808               ; STEP終了処理
+MPP
+ANB @MR010               ; IND3　ST4  全ﾜｰｸ無し
+SET @MR112               ; Err4 ST1 Err4
+CON
+JMP @MR1205
+;Err4 IND3_4STﾜｰｸ除材異常 / Cartridge remove error on IND3_4ST 
+STG @MR1205
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+AND @MR115               ; Err4 ST1 Err4解除完了
+JMP @MR1206
+STG @MR1206
+RES @MR115               ; Err4 ST1 Err4解除完了
+CON
+JMP @MR1204
+;AUTO 1ｻｲｸﾙ終了処理
+;AUTO 1Cycle end Operation
+STG @MR1300              ; AUTO終了処理
+AND MR602                ; IND3      ｻｲｸﾙ動作中
+MPS
+LDB R50000               ; HOLD
+ORB @MR009               ; IND3　 全ﾜｰｸ無し
+ANL
+JMP @MR1302
+MPP
+LD R50000                ; HOLD
+AND @MR009               ; IND3　 全ﾜｰｸ無し
+ANB LR400                ; 搬送ｽﾗｲﾀﾞ給材ﾁｬｯｸ　ﾜｰｸ有
+ANB LR401                ; 搬送ｽﾗｲﾀﾞ上 ﾜｰｸ有
+ANL
+JMP @MR1302
+STG @MR1302
+@SET R51504              ; IND3 ST4   1ｻｲｸﾙ終了
+CON
+RES R50912               ; IND3 ST4  ｻｲｸﾙ動作中
+CON
+ANB R51500               ; IND3     動作開始
+JMP @MR1308
+STG @MR1308
+AND R51507               ; IND3      ｻｲｸﾙ完了
+JMP @MR1309
+STG @MR1309
+MPS
+LDB R50000               ; HOLD
+ORB R51508               ; IND3     払出し完了
+ANL
+JMP @MR1000              ; AUTO開始
+MPP
+LD R50000                ; HOLD
+AND R51508               ; IND3     払出し完了
+ANL
+JMP @MR1315              ; AUTO終了処理
+;<h1/>AUTO 終了処理
+;AUTO Finish Operation
+STG @MR1315              ; AUTO終了処理
+ANB @MR2301              ; 除材ﾊﾝﾄﾞ　動作中
+ANB @MR1401              ; 天秤計測動作中
+RES R50210               ; Model OK
+CON
+RES @MR002               ; IND3_4ST 除材要求
+CON
+SET @MR1001              ; AUTO終了
+CON
+ENDS
+;<h1/>ｽﾃｯﾌﾟ運転
+;STEP OERATION
+LD R50002                ; STEP
+ANB R51512               ; IND3 ST4  動作中
+SET R51512               ; IND3 ST4  動作中
+CON
+SET @MR800               ; STEP開始
+LDB R50003               ; HOME
+ANB R50001               ; AUTO
+ANB R50002               ; STEP
+AND @MR801               ; STEP終了
+RES R51512               ; IND3 ST4  動作中
+CON
+RES @MR801               ; STEP終了
+LDB LR40900              ; IND3_ST4 STEP-01 通常動作
+OUB @MR014               ; STEP Parameter OK
+;Ink Weight Scale
+STG @MR800               ; STEP開始
+AND R51512               ; IND3 ST4  動作中
+MPS
+AND LR40900              ; IND3_ST4 STEP-01 通常動作
+SET @MR2300              ; 除材P&P  動作開始
+CON
+SET @MR1400              ; 天秤計測動作開始
+CON
+JMP @MR1200
+MPP
+ANB @MR014               ; STEP Parameter OK
+JMP @MR808               ; STEP終了処理
+;STEP終了処理
+STG @MR808               ; STEP終了処理
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+SET R50009               ; HOLDRQ
+CON
+JMP @MR809               ; 809
+STG @MR809               ; 809
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+AND R50000               ; HOLD
+ANB @MR2301              ; 除材ﾊﾝﾄﾞ　動作中
+ANB @MR1401              ; 天秤計測動作中
+SET R51504               ; IND3 ST4   1ｻｲｸﾙ終了
+CON
+SET @MR801               ; STEP終了
+CON
+ENDS
+;<h1/>除材ﾊﾝﾄﾞ
+;Remove Hand
+STG @MR2300              ; 除材P&P  動作開始
+MPS
+LD R50210                ; Model OK
+OR R50002                ; STEP
+ANL
+SET @MR2301              ; 除材ﾊﾝﾄﾞ　動作中
+CON
+JMP @MR2308              ; 除材ﾊﾝﾄﾞ  ﾒｲﾝ
+MPP
+LDB R50210               ; Model OK
+ANB R50002               ; STEP
+AND R50000               ; HOLD
+AND R51508               ; IND3     払出し完了
+ANL
+JMP @MR2608              ; 除材ﾊﾝﾄﾞ  1ｻｲｸﾙ終了処理
+;Operation Main
+STG @MR2308              ; 除材ﾊﾝﾄﾞ  ﾒｲﾝ
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+JMP @MR2309              ; 除材ﾊﾝﾄﾞ初期化
+STG @MR2309              ; 除材ﾊﾝﾄﾞ初期化
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+RES MR8400               ; ﾊﾞｲﾊﾟｽ封止 除材ﾁｬｯｸ開閉　閉じ
+CON
+SET MR8401               ; ﾊﾞｲﾊﾟｽ封止 除材ﾁｬｯｸ開閉　開き
+CON
+AND R6201                ; ﾊﾞｲﾊﾟｽ 除材ﾁｬｯｸ開閉　開限
+JMP @MR2310
+STG @MR2310
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+RES MR8404               ; ﾊﾞｲﾊﾟｽ封止 ﾊﾝﾄﾞ 下降
+CON
+AND R6205                ; ﾊﾞｲﾊﾟｽ ﾊﾝﾄﾞ 上昇限
+JMP @MR2311
+STG @MR2311
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+RES MR8402               ; ﾊﾞｲﾊﾟｽ封止 ﾊﾝﾄﾞ 天秤側移動
+CON
+SET MR8403               ; ﾊﾞｲﾊﾟｽ封止 ﾊﾝﾄﾞ ｲﾝﾃﾞｯｸｽ側移動
+CON
+AND R6203                ; ﾊﾞｲﾊﾟｽ ﾊﾝﾄﾞｽﾗｲﾄﾞ ｲﾝﾃﾞｯｸｽ側限
+JMP @MR2312
+STG @MR2312
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+RES MR8406               ; ﾊﾞｲﾊﾟｽ封止 ﾊﾝﾄﾞ　旋回
+CON
+SET MR8407               ; ﾊﾞｲﾊﾟｽ封止 ﾊﾝﾄﾞ　旋回戻し
+CON
+AND R6207                ; ﾊﾞｲﾊﾟｽ ﾊﾝﾄﾞ 戻り限
+JMP @MR2400
+;IND3_4ST Remove operation
+STG @MR2400
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+MPS
+AND @MR002               ; IND3_4ST 除材要求
+SET @MR003               ; IND3_4ST 除材中
+CON
+JMP @MR2401
+MPP
+LDB @MR002               ; IND3_4ST 除材要求
+AND R50000               ; HOLD
+AND R51508               ; IND3     払出し完了
+ANL
+JMP @MR2608              ; 除材ﾊﾝﾄﾞ  1ｻｲｸﾙ終了処理
+STG @MR2401
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+SET MR8404               ; ﾊﾞｲﾊﾟｽ封止 ﾊﾝﾄﾞ 下降
+CON
+AND R6204                ; ﾊﾞｲﾊﾟｽ ﾊﾝﾄﾞ 下降限
+TMR @10 #2
+CON
+AND @T10
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+JMP @MR2402
+STG @MR2402
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+RES MR8401               ; ﾊﾞｲﾊﾟｽ封止 除材ﾁｬｯｸ開閉　開き
+CON
+SET MR8400               ; ﾊﾞｲﾊﾟｽ封止 除材ﾁｬｯｸ開閉　閉じ
+CON
+MPS
+AND R6200                ; ﾊﾞｲﾊﾟｽ 除材ﾁｬｯｸ開閉　閉限
+TMR @11 #2
+CON
+AND @T11
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+SET LR400                ; 搬送ｽﾗｲﾀﾞ給材ﾁｬｯｸ　ﾜｰｸ有
+CON
+JMP @MR2403
+MPP
+TMR @15 #20
+CON
+AND @T15
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+JMP @MR2403
+STG @MR2403
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+RES MR8404               ; ﾊﾞｲﾊﾟｽ封止 ﾊﾝﾄﾞ 下降
+CON
+AND R6205                ; ﾊﾞｲﾊﾟｽ ﾊﾝﾄﾞ 上昇限
+TMH @19 #28
+CON
+AND @T19
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+JMP @MR2404
+STG @MR2404
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+RES @MR003               ; IND3_4ST 除材中
+CON
+MPS
+AND @MR010               ; IND3　ST4  全ﾜｰｸ無し
+SET @MR004               ; IND3_4ST 除材完了
+CON
+JMP @MR2407              ; Cartridge Removed from Index
+MPP
+ANB @MR010               ; IND3　ST4  全ﾜｰｸ無し
+SET @MR112               ; Err4 ST1 Err4
+CON
+JMP @MR2405
+;Err4 Cartridge remove error on IND3_4ST 
+STG @MR2405
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+AND @MR115               ; Err4 ST1 Err4解除完了
+JMP @MR2406
+STG @MR2406
+RES @MR115               ; Err4 ST1 Err4解除完了
+CON
+JMP @MR2404
+;
+STG @MR2407              ; Cartridge Removed from Index
+ANB @MR002               ; IND3_4ST 除材要求
+JMP @MR2500
+;cartridge set on Weight Scale
+STG @MR2500
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+RES MR8407               ; ﾊﾞｲﾊﾟｽ封止 ﾊﾝﾄﾞ　旋回戻し
+CON
+SET MR8406               ; ﾊﾞｲﾊﾟｽ封止 ﾊﾝﾄﾞ　旋回
+CON
+LDB LR307                ; 仮NAT 徐材CV無し
+OR CR2002                ; 常時ON
+LD LR307                 ; 仮NAT 徐材CV無し
+ANB @MR1708
+AND R6301                ; 重量検査部ｶｰﾄﾘｯｼﾞ検出
+ORL
+ANL
+RES MR8403               ; ﾊﾞｲﾊﾟｽ封止 ﾊﾝﾄﾞ ｲﾝﾃﾞｯｸｽ側移動
+CON
+SET MR8402               ; ﾊﾞｲﾊﾟｽ封止 ﾊﾝﾄﾞ 天秤側移動
+CON
+AND R6206                ; ﾊﾞｲﾊﾟｽ ﾊﾝﾄﾞ 旋回限
+AND R6202                ; ﾊﾞｲﾊﾟｽ ﾊﾝﾄﾞｽﾗｲﾄﾞ 天秤側限
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+JMP @MR2501
+STG @MR2501
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+AND @MR006               ; IND3_ｺﾝﾍﾞﾔ 給材要求
+JMP @MR2502
+STG @MR2502
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+MPS
+AND R6301                ; 重量検査部ｶｰﾄﾘｯｼﾞ検出
+SET @MR007               ; IND3_ｺﾝﾍﾞﾔ 給材中
+CON
+JMP @MR2508
+MPP
+ANB R6301                ; 重量検査部ｶｰﾄﾘｯｼﾞ検出
+SET @MR208               ; Err116
+CON
+JMP @MR2503
+;Err116 - 天秤上ｶｰﾄﾘｯｼﾞ残 / Remove part on the weight scale
+STG @MR2503
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+AND @MR211               ; Err116解除完了
+RES @MR211               ; Err116解除完了
+CON
+JMP @MR2502
+;
+STG @MR2508
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+SET MR8404               ; ﾊﾞｲﾊﾟｽ封止 ﾊﾝﾄﾞ 下降
+CON
+AND R6204                ; ﾊﾞｲﾊﾟｽ ﾊﾝﾄﾞ 下降限
+TMR @12 #2
+CON
+AND @T12
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+MPS
+ANB LR201                ; QR Check Timing Change
+JMP @MR2509
+MPP
+AND LR201                ; QR Check Timing Change
+JMP @MR2504
+LD MR111                 ; Sｻｲｽﾞ
+OUT LR201                ; QR Check Timing Change
+STG @MR2504
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+SET @MR1900              ; QR読取
+CON
+JMP @MR2505
+STG @MR2505
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+AND @MR1901              ; QR読取完了
+RES @MR1901              ; QR読取完了
+CON
+JMP @MR2509
+STG @MR2509
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+RES MR8400               ; ﾊﾞｲﾊﾟｽ封止 除材ﾁｬｯｸ開閉　閉じ
+CON
+SET MR8401               ; ﾊﾞｲﾊﾟｽ封止 除材ﾁｬｯｸ開閉　開き
+CON
+AND R6201                ; ﾊﾞｲﾊﾟｽ 除材ﾁｬｯｸ開閉　開限
+TMR @13 #2
+CON
+AND @T13
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+JMP @MR2510
+STG @MR2510
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+RES MR8404               ; ﾊﾞｲﾊﾟｽ封止 ﾊﾝﾄﾞ 下降
+CON
+AND R6205                ; ﾊﾞｲﾊﾟｽ ﾊﾝﾄﾞ 上昇限
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+JMP @MR2511
+STG @MR2511
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+RES @MR007               ; IND3_ｺﾝﾍﾞﾔ 給材中
+CON
+MPS
+ANB R6301                ; 重量検査部ｶｰﾄﾘｯｼﾞ検出
+JMP @MR2514
+MPP
+AND R6301                ; 重量検査部ｶｰﾄﾘｯｼﾞ検出
+SET @MR304               ; Err118
+CON
+JMP @MR2512
+;Err118 - 天秤上ｶｰﾄﾘｯｼﾞ未検出 / Cartridge Missing on Scale
+STG @MR2512
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+AND @MR307               ; Err118解除完了
+RES @MR307               ; Err118解除完了
+CON
+JMP @MR2514
+;
+STG @MR2514
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+SET @MR008               ; IND3_ｺﾝﾍﾞﾔ 給材完了
+CON
+JMP @MR2515
+STG @MR2515
+ANB @MR006               ; IND3_ｺﾝﾍﾞﾔ 給材要求
+RES LR400                ; 搬送ｽﾗｲﾀﾞ給材ﾁｬｯｸ　ﾜｰｸ有
+CON
+JMP @MR2600
+STG @MR2600
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+RES MR8402               ; ﾊﾞｲﾊﾟｽ封止 ﾊﾝﾄﾞ 天秤側移動
+CON
+SET MR8403               ; ﾊﾞｲﾊﾟｽ封止 ﾊﾝﾄﾞ ｲﾝﾃﾞｯｸｽ側移動
+CON
+RES MR8406               ; ﾊﾞｲﾊﾟｽ封止 ﾊﾝﾄﾞ　旋回
+CON
+SET MR8407               ; ﾊﾞｲﾊﾟｽ封止 ﾊﾝﾄﾞ　旋回戻し
+CON
+AND R6207                ; ﾊﾞｲﾊﾟｽ ﾊﾝﾄﾞ 戻り限
+AND R6203                ; ﾊﾞｲﾊﾟｽ ﾊﾝﾄﾞｽﾗｲﾄﾞ ｲﾝﾃﾞｯｸｽ側限
+JMP @MR2608              ; 除材ﾊﾝﾄﾞ  1ｻｲｸﾙ終了処理
+;1cycle end process
+STG @MR2608              ; 除材ﾊﾝﾄﾞ  1ｻｲｸﾙ終了処理
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+MPS
+LDB R50000               ; HOLD
+ORB R51508               ; IND3     払出し完了
+ANB R50002               ; STEP
+ANL
+JMP @MR2308              ; 除材ﾊﾝﾄﾞ  ﾒｲﾝ
+MPP
+LD R50000                ; HOLD
+AND R51508               ; IND3     払出し完了
+OR R50002                ; STEP
+ANL
+ZRES @MR003 @MR004       ; IND3_4ST 除材中  IND3_4ST 除材完了
+CON
+ZRES @MR007 @MR008       ; IND3_ｺﾝﾍﾞﾔ 給材中  IND3_ｺﾝﾍﾞﾔ 給材完了
+CON
+RES @MR2301              ; 除材ﾊﾝﾄﾞ　動作中
+CON
+ENDS
+;<h1/>Ink Weight Scale
+STG @MR1400              ; 天秤計測動作開始
+MPS
+LD R50210                ; Model OK
+OR R50002                ; STEP
+ANL
+SET MR2105               ; ｺﾝﾍﾞﾔ電源ON
+CON
+DW #2000 DM1029
+CON
+SET @MR1401              ; 天秤計測動作中
+CON
+JMP @MR1404              ; Initial ck
+MPP
+LDB R50210               ; Model OK
+ANB R50002               ; STEP
+AND R50000               ; HOLD
+AND R51508               ; IND3     払出し完了
+ANB @MR2301              ; 除材ﾊﾝﾄﾞ　動作中
+ANB @MR1401              ; 天秤計測動作中
+ANL
+ENDS
+STG @MR1403
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+SET MR8414               ; ●天秤ｶｰﾄﾘｯｼﾞ押出し 前進
+CON
+RES MR8500               ; ●NGﾜｰｸｽﾄｯﾊﾟ 前進
+CON
+SET MR8501               ; ●NGﾜｰｸｽﾄｯﾊﾟ 後退
+CON
+RES MR8408               ; ●NG針 下降
+CON
+ANB R6209                ; ●天秤ｶｰﾄﾘｯｼﾞ押出し 後退限
+AND R6208                ; ●天秤ｶｰﾄﾘｯｼﾞ押出し 前進限
+ANB R6210                ; ●NGﾜｰｸｽﾄｯﾊﾟ 前進限
+AND R6211                ; ●NGﾜｰｸｽﾄｯﾊﾟ 後退限
+ANB R6212                ; ●NG針 下降限
+AND R6213                ; ●NG針 上昇限
+JMP @MR1404              ; Initial ck
+;動作開始時天秤上ｶｰﾄﾘｯｼﾞ残確認
+;Error Out first when automode start to double check for cartridge on scale
+STG @MR1404              ; Initial ck
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+MPS
+AND R6301                ; 重量検査部ｶｰﾄﾘｯｼﾞ検出
+JMP @MR1407
+MPP
+ANB R6301                ; 重量検査部ｶｰﾄﾘｯｼﾞ検出
+SET @MR208               ; Err116
+CON
+JMP @MR1405
+;Err116 - 天秤上ｶｰﾄﾘｯｼﾞ残 / Remove part on the weight scale
+STG @MR1405
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+AND @MR211               ; Err116解除完了
+JMP @MR1406
+STG @MR1406
+RES @MR211               ; Err116解除完了
+CON
+JMP @MR1404              ; Initial ck
+;ｺﾝﾍﾞﾔ Sｶﾞｲﾄﾞﾁｪｯｸ / Conveyer S-guide check
+STG @MR1407
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+MPS
+LD MR111                 ; Sｻｲｽﾞ
+AND R6300                ; 重量検査部Sｻｲｽﾞ用ｶﾞｲﾄﾞ検出
+LD MR112                 ; Lｻｲｽﾞ
+ANB R6300                ; 重量検査部Sｻｲｽﾞ用ｶﾞｲﾄﾞ検出
+ORL
+LD R6304                 ; ●排出部Sｻｲｽﾞ用ｶﾞｲﾄﾞ検出
+ORB R6304                ; ●排出部Sｻｲｽﾞ用ｶﾞｲﾄﾞ検出
+OR LR307                 ; 仮NAT 徐材CV無し
+ANL
+ANL
+JMP @MR1500              ; 天秤Main routine
+MRD
+LD MR111                 ; Sｻｲｽﾞ
+ANB R6300                ; 重量検査部Sｻｲｽﾞ用ｶﾞｲﾄﾞ検出
+LD MR112                 ; Lｻｲｽﾞ
+AND R6300                ; 重量検査部Sｻｲｽﾞ用ｶﾞｲﾄﾞ検出
+ORL
+ANL
+TMR @8 #10
+CON
+AND @T8
+SET @MR908               ; Err224
+CON
+JMP @MR1408
+MPP
+LD MR111                 ; Sｻｲｽﾞ
+ANB R6304                ; ●排出部Sｻｲｽﾞ用ｶﾞｲﾄﾞ検出
+LD MR112                 ; Lｻｲｽﾞ
+AND R6304                ; ●排出部Sｻｲｽﾞ用ｶﾞｲﾄﾞ検出
+ORL
+ANL
+TMR @9 #10
+CON
+AND @T9
+ANB LR307                ; 仮NAT 徐材CV無し
+SET @MR912               ; Err225
+CON
+JMP @MR1409
+;Err224 天秤 Sｶﾞｲﾄﾞ治具検出異常 / Scale S-guide Jig error
+STG @MR1408
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+AND @MR911               ; Err224解除完了
+RES @MR911               ; Err224解除完了
+CON
+JMP @MR1407
+;Err234 Index3 Sｶﾞｲﾄﾞ治具検出異常 / Index3 S-guide Jig error
+STG @MR1409
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+AND @MR915               ; Err225解除完了
+RES @MR915               ; Err225解除完了
+CON
+JMP @MR1407
+;天秤ｺﾝﾍﾞﾔﾒｲﾝ動作 / Scale main routine
+STG @MR1500              ; 天秤Main routine
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+MPS
+LDB @C3
+AND< DM1029 #2000
+OR MR012                 ; 天秤重量測定無効
+ANL
+JMP @MR1503
+MPP
+LDB MR012                ; 天秤重量測定無効
+LD @C3
+OR>= DM1029 #2000
+ANL
+ANL
+DW #0 DM1029
+CON
+JMP @MR1501
+;天秤Reset / Scale reset
+STG @MR1501
+AND R6301                ; 重量検査部ｶｰﾄﾘｯｼﾞ検出
+SET MR24001              ; Scale Re-Set
+CON
+JMP @MR1502
+STG @MR1502
+AND MR24101              ; Zero Complete
+RES MR24001              ; Scale Re-Set
+CON
+RES MR24101              ; Zero Complete
+CON
+JMP @MR1503
+;
+STG @MR1503
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+LD R6303                 ; ●排出部ｶｰﾄﾘｯｼﾞ満杯検出▲
+OR LR307                 ; 仮NAT 徐材CV無し
+ANL
+SET @MR006               ; IND3_ｺﾝﾍﾞﾔ 給材要求
+CON
+JMP @MR1505
+;
+STG @MR1505
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+MPS
+LDB R50000               ; HOLD
+AND @MR008               ; IND3_ｺﾝﾍﾞﾔ 給材完了
+ANL
+JMP @MR1507
+MPP
+AND R50000               ; HOLD
+MPS
+LD R51508                ; IND3     払出し完了
+OR R50002                ; STEP
+ANB @MR2301              ; 除材ﾊﾝﾄﾞ　動作中
+ANB @MR008               ; IND3_ｺﾝﾍﾞﾔ 給材完了
+ANL
+RES @MR006               ; IND3_ｺﾝﾍﾞﾔ 給材要求
+CON
+JMP @MR1506
+MPP
+LDB R51508               ; IND3     払出し完了
+OR @MR2301               ; 除材ﾊﾝﾄﾞ　動作中
+AND @MR008               ; IND3_ｺﾝﾍﾞﾔ 給材完了
+ANL
+JMP @MR1507
+LD @MR1505
+MPS
+AND R6301                ; 重量検査部ｶｰﾄﾘｯｼﾞ検出
+OUT @DM8.0
+MRD
+ANB R6302                ; ●NGﾏｰｷﾝｸﾞ部 ｶｰﾄﾘｯｼﾞ検出
+OUT @DM8.1
+MRD
+AND R6303                ; ●排出部ｶｰﾄﾘｯｼﾞ満杯検出▲
+OUT @DM8.2
+MRD
+ANB R6305                ; ●排出部 ｶｰﾄﾘｯｼﾞ到達検出
+OUT @DM8.3
+MRD
+LDB R50300               ; Pause
+AND<> @DM8 @DM9
+ANL
+LDA @DM8
+CON
+STA @DM9
+CON
+@SET MR2105              ; ｺﾝﾍﾞﾔ電源ON
+MPP
+LD R2105                 ; ｺﾝﾍﾞﾔ電源ON
+AND= @DM8 @DM9
+ANL
+TMR @16 #600
+CON
+AND @T16
+@RES MR2105              ; ｺﾝﾍﾞﾔ電源ON
+STG @MR1506
+TMR @21 #30
+CON
+AND @T21
+RES MR2105               ; ｺﾝﾍﾞﾔ電源ON
+CON
+RES @MR1401              ; 天秤計測動作中
+CON
+ENDS
+STG @MR1507
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+SET MR2105               ; ｺﾝﾍﾞﾔ電源ON
+CON
+SET LR401                ; 搬送ｽﾗｲﾀﾞ上 ﾜｰｸ有
+CON
+RES @MR006               ; IND3_ｺﾝﾍﾞﾔ 給材要求
+CON
+RES @MR008               ; IND3_ｺﾝﾍﾞﾔ 給材完了
+CON
+JMP @MR1508
+LD @MR006                ; IND3_ｺﾝﾍﾞﾔ 給材要求
+C @3 #5 @MR011           ; Supply Complete from Scale
+@INC DM1029
+;Cartridge Float Check on Weight Scale
+STG @MR1508
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+MPS
+ANB R6301                ; 重量検査部ｶｰﾄﾘｯｼﾞ検出
+MPS
+JMP @MR1600              ; Scale Read Start
+MPP
+LDB MR005                ; 排出部QR無効
+ANB LR201                ; QR Check Timing Change
+ANL
+SET @MR1900              ; QR読取
+MPP
+AND R6301                ; 重量検査部ｶｰﾄﾘｯｼﾞ検出
+SET @MR304               ; Err118
+CON
+JMP @MR1509              ; Cartridge Missing
+;Err118 - 天秤上ｶｰﾄﾘｯｼﾞ未検出 / Cartridge Missing on Scale
+STG @MR1509              ; Cartridge Missing
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+AND @MR307               ; Err118解除完了
+RES @MR307               ; Err118解除完了
+CON
+JMP @MR1510
+STG @MR1510
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+MPS
+AND R6301                ; 重量検査部ｶｰﾄﾘｯｼﾞ検出
+JMP @MR1500              ; 天秤Main routine
+MPP
+ANB R6301                ; 重量検査部ｶｰﾄﾘｯｼﾞ検出
+JMP @MR1508
+;Scale Measurement read
+STG @MR1600              ; Scale Read Start
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+MPS
+ANB MR012                ; 天秤重量測定無効
+ZRES MR24011 MR24013     ; InkWeight Low  InkWeight High
+CON
+RES MR24009              ; ASCII conv Complete
+CON
+SET MR24002              ; Scale data read
+CON
+JMP @MR1601
+MPP
+AND MR012                ; 天秤重量測定無効
+JMP @MR1604
+STG @MR1601
+MPS
+LD MR24009               ; ASCII conv Complete
+AND MR24100              ; Scale read Start Flag
+ANL
+JMP @MR1604
+MPP
+ANB MR24009              ; ASCII conv Complete
+TMR @20 #100
+CON
+AND @T20
+RES MR24009              ; ASCII conv Complete
+CON
+RES MR24002              ; Scale data read
+CON
+SET MR24010              ; ASCII Conv ERROR
+CON
+SET @MR312               ; Err129
+CON
+JMP @MR1602
+;Err129 - 天秤ﾃﾞｰﾀ変換異常 / Scale Data Coversion Error
+STG @MR1602
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+AND @MR315               ; Err129解除完了
+JMP @MR1603
+STG @MR1603
+RES MR24010              ; ASCII Conv ERROR
+CON
+RES @MR315               ; Err129解除完了
+CON
+JMP @MR1600              ; Scale Read Start
+;
+STG @MR1604
+RES MR24100              ; Scale read Start Flag
+CON
+RES MR24009              ; ASCII conv Complete
+CON
+RES MR24002              ; Scale data read
+CON
+JMP @MR1605              ; Received Check
+STG @MR1605              ; Received Check
+MPS
+LD<> DM38959 $4543       ; Port2 受信ﾃﾞｰﾀ1
+OR MR012                 ; 天秤重量測定無効
+ANL
+JMP @MR1700              ; Judgement start
+MPP
+LDB MR012                ; 天秤重量測定無効
+AND= DM38959 $4543       ; Port2 受信ﾃﾞｰﾀ1
+ANL
+TMH @2 #2
+CON
+AND @T2
+SET MR24006              ; Scale Comm Error
+CON
+SET @MR400               ; Err139 
+CON
+JMP @MR1606
+;Err139 - 天秤ﾃﾞｰﾀ読み取り異常 / Scale Data Read Error
+STG @MR1606
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+AND @MR403               ; Err139解除完了
+RES MR24009              ; ASCII conv Complete
+CON
+RES MR24002              ; Scale data read
+CON
+RES MR24006              ; Scale Comm Error
+CON
+JMP @MR1607
+STG @MR1607
+RES @MR403               ; Err139解除完了
+CON
+JMP @MR1600              ; Scale Read Start
+;Judgement
+STG @MR1700              ; Judgement start
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+MPS
+LD MR24012               ; InkWeight Good
+OR MR013                 ; 天秤判定無効
+OR MR103                 ; Running Dummy I/C
+ANL
+RES @MR902               ; ｶｰﾄﾘｯｼﾞ重量過小
+CON
+RES @MR903               ; ｶｰﾄﾘｯｼﾞ重量過重
+CON
+RES MR24012              ; InkWeight Good
+CON
+JMP @MR1704              ; Part Transfer to slide
+MPP
+LDB MR013                ; 天秤判定無効
+ANB MR103                ; Running Dummy I/C
+ANL
+MPS
+AND MR24011              ; InkWeight Low
+RES R42115               ; ﾘﾄﾗｲ要求
+CON
+SET @MR902               ; ｶｰﾄﾘｯｼﾞ重量過小
+CON
+RES @MR903               ; ｶｰﾄﾘｯｼﾞ重量過重
+CON
+SET @MR308               ; Err119-120
+CON
+JMP @MR1701
+MRD
+AND MR24013              ; InkWeight High
+RES R42115               ; ﾘﾄﾗｲ要求
+CON
+RES @MR902               ; ｶｰﾄﾘｯｼﾞ重量過小
+CON
+SET @MR903               ; ｶｰﾄﾘｯｼﾞ重量過重
+CON
+SET @MR308               ; Err119-120
+CON
+JMP @MR1701
+MPP
+MOV.D DM1037 W103C       ; Ink Weight Data  ｶｰﾄﾘｯｼﾞ重量
+;Err119 - ｶｰﾄﾘｯｼﾞ重量 過昇 / Cartridge Ink Weight Low
+;Err120 - ｶｰﾄﾘｯｼﾞ重量 過重 / Cartridge Ink Weight High
+STG @MR1701
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+AND @MR311               ; Err119-120解除完了
+RES @MR311               ; Err119-120解除完了
+CON
+ZRES MR24011 MR24013     ; InkWeight Low  InkWeight High
+CON
+MPS
+AND R6301                ; 重量検査部ｶｰﾄﾘｯｼﾞ検出
+ZRES @MR902 @MR903       ; ｶｰﾄﾘｯｼﾞ重量過小  ｶｰﾄﾘｯｼﾞ重量過重
+CON
+JMP @MR1702
+MPP
+ANB R6301                ; 重量検査部ｶｰﾄﾘｯｼﾞ検出
+MPS
+AND R42115               ; ﾘﾄﾗｲ要求
+ZRES @MR902 @MR903       ; ｶｰﾄﾘｯｼﾞ重量過小  ｶｰﾄﾘｯｼﾞ重量過重
+CON
+JMP @MR1600              ; Scale Read Start
+MPP
+ANB R42115               ; ﾘﾄﾗｲ要求
+JMP @MR1704              ; Part Transfer to slide
+;ﾘﾄﾗｲ前 QR読込完了待ち / Waiting for QR reading end
+STG @MR1702
+MPS
+LDB MR005                ; 排出部QR無効
+LD @MR1901               ; QR読取完了
+OR LR201                 ; QR Check Timing Change
+ANL
+ANL
+SET MR809
+CON
+MPS
+ANB @MR1903              ; QR読取NG
+RES @MR1901              ; QR読取完了
+CON
+JMP @MR1500              ; 天秤Main routine
+MPP
+AND @MR1903              ; QR読取NG
+JMP @MR1704              ; Part Transfer to slide
+MPP
+AND MR005                ; 排出部QR無効
+JMP @MR1500              ; 天秤Main routine
+;ｺﾝﾍﾞﾔ満杯検出 / Conveyer Full check
+STG @MR1704              ; Part Transfer to slide
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+MPS
+LD R6303                 ; ●排出部ｶｰﾄﾘｯｼﾞ満杯検出▲
+OR R6305                 ; ●排出部 ｶｰﾄﾘｯｼﾞ到達検出
+OR LR307                 ; 仮NAT 徐材CV無し
+ANL
+SET MR2105               ; ｺﾝﾍﾞﾔ電源ON
+CON
+JMP @MR1706
+MPP
+ANB R6303                ; ●排出部ｶｰﾄﾘｯｼﾞ満杯検出▲
+TMR @6 #50
+CON
+AND @T6
+ANB LR307                ; 仮NAT 徐材CV無し
+MPS
+SET @MR108               ; Err113
+CON
+JMP @MR1705
+MPP
+SET R59807
+LD @MR1704               ; Part Transfer to slide
+OR @MR1705
+AND R6305                ; ●排出部 ｶｰﾄﾘｯｼﾞ到達検出
+ANB R6303                ; ●排出部ｶｰﾄﾘｯｼﾞ満杯検出▲
+TMR @7 #50
+CON
+AND @T7
+RES MR2105               ; ｺﾝﾍﾞﾔ電源ON
+;Err113 ｺﾝﾍﾞﾔ上ﾜｰｸ満杯 / Cartridge full on Conveyer
+STG @MR1705
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+AND @MR111               ; Err113解除完了
+RES @MR111               ; Err113解除完了
+CON
+JMP @MR1704              ; Part Transfer to slide
+;QR読込完了待ち / Waiting for QR reading end
+STG @MR1706
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+MPS
+LDB MR005                ; 排出部QR無効
+LD @MR1901               ; QR読取完了
+OR LR201                 ; QR Check Timing Change
+ANL
+ANL
+SET MR809
+CON
+RES R59807
+CON
+RES @MR1901              ; QR読取完了
+CON
+JMP @MR1707
+MPP
+AND MR005                ; 排出部QR無効
+RES R59807
+CON
+JMP @MR1707
+;
+STG @MR1707
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+MPS
+LDB @MR902               ; ｶｰﾄﾘｯｼﾞ重量過小
+ANB @MR903               ; ｶｰﾄﾘｯｼﾞ重量過重
+ANB @MR1903              ; QR読取NG
+ANL
+JMP @MR1708
+MPP
+LD @MR902                ; ｶｰﾄﾘｯｼﾞ重量過小
+OR @MR903                ; ｶｰﾄﾘｯｼﾞ重量過重
+OR @MR1903               ; QR読取NG
+ANL
+RES MR8501               ; ●NGﾜｰｸｽﾄｯﾊﾟ 後退
+CON
+SET MR8500               ; ●NGﾜｰｸｽﾄｯﾊﾟ 前進
+CON
+ANB R6211                ; ●NGﾜｰｸｽﾄｯﾊﾟ 後退限
+LD R6210                 ; ●NGﾜｰｸｽﾄｯﾊﾟ 前進限
+OR LR307                 ; 仮NAT 徐材CV無し
+ANL
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+JMP @MR1708
+;ｶｰﾄﾘｯｼﾞ押出し / Cartridge push
+STG @MR1708
+MPS
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+MPS
+LD LR307                 ; 仮NAT 徐材CV無し
+ANP R4015                ; 下流 H/S用 ﾃﾞﾊﾞｯｸ SW
+ANL
+JMP @MR1709
+MPP
+ANB LR307                ; 仮NAT 徐材CV無し
+SET MR8414               ; ●天秤ｶｰﾄﾘｯｼﾞ押出し 前進
+CON
+ANB R6209                ; ●天秤ｶｰﾄﾘｯｼﾞ押出し 後退限
+AND R6208                ; ●天秤ｶｰﾄﾘｯｼﾞ押出し 前進限
+TMR @14 #3
+CON
+AND @T14
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+JMP @MR1709
+MPP
+@SET R2401               ; Tmpo. remove Req. buzzer
+LD LR307                 ; 仮NAT 徐材CV無し
+AND R2401                ; Tmpo. remove Req. buzzer
+TMH @22 #20
+CON
+AND @T22
+RES R2401                ; Tmpo. remove Req. buzzer
+;天秤上ｶｰﾄﾘｯｼﾞ残確認 / cartridge remain check on scale
+STG @MR1709
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+MPS
+AND R6301                ; 重量検査部ｶｰﾄﾘｯｼﾞ検出
+JMP @MR1711
+MPP
+ANB R6301                ; 重量検査部ｶｰﾄﾘｯｼﾞ検出
+SET @MR208               ; Err116
+CON
+JMP @MR1710
+;Err116 - 天秤上ｶｰﾄﾘｯｼﾞ残 / Remove part on the weight scale
+STG @MR1710
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+AND @MR211               ; Err116解除完了
+RES @MR211               ; Err116解除完了
+CON
+JMP @MR1709
+;
+STG @MR1711
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+MPS
+ANB LR307                ; 仮NAT 徐材CV無し
+RES MR8414               ; ●天秤ｶｰﾄﾘｯｼﾞ押出し 前進
+CON
+ANB R6208                ; ●天秤ｶｰﾄﾘｯｼﾞ押出し 前進限
+AND R6209                ; ●天秤ｶｰﾄﾘｯｼﾞ押出し 後退限
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+DIFU @MR011              ; Supply Complete from Scale
+CON
+JMP @MR1712
+MPP
+AND LR307                ; 仮NAT 徐材CV無し
+DIFU @MR011              ; Supply Complete from Scale
+CON
+JMP @MR1712
+STG @MR1712
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+MPS
+LDB @MR902               ; ｶｰﾄﾘｯｼﾞ重量過小
+ANB @MR903               ; ｶｰﾄﾘｯｼﾞ重量過重
+ANB @MR1903              ; QR読取NG
+ANL
+SET R50310               ; 出力ｶｳﾝﾄ
+CON
+JMP @MR1500              ; 天秤Main routine
+MPP
+LD @MR902                ; ｶｰﾄﾘｯｼﾞ重量過小
+OR @MR903                ; ｶｰﾄﾘｯｼﾞ重量過重
+OR @MR1903               ; QR読取NG
+ANL
+SET R50311               ; NGｶｳﾝﾄ
+CON
+JMP @MR1800
+;重量NG処理 / Weight NG routine
+STG @MR1800
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+ZRES @MR902 @MR903       ; ｶｰﾄﾘｯｼﾞ重量過小  ｶｰﾄﾘｯｼﾞ重量過重
+CON
+RES @MR1903              ; QR読取NG
+CON
+MPS
+LD R6302                 ; ●NGﾏｰｷﾝｸﾞ部 ｶｰﾄﾘｯｼﾞ検出
+OR LR307                 ; 仮NAT 徐材CV無し
+ANL
+JMP @MR1802
+MPP
+LDB R6302                ; ●NGﾏｰｷﾝｸﾞ部 ｶｰﾄﾘｯｼﾞ検出
+ANB LR307                ; 仮NAT 徐材CV無し
+ANL
+TMR @4 #50
+CON
+AND @T4
+SET @MR200               ; Err115
+CON
+JMP @MR1801
+;Err115 NGﾏｰｷﾝｸﾞ位置ｶｰﾄﾘｯｼﾞ未検出 / Cartridge Missing on NG marking
+STG @MR1801
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+AND @MR203               ; Err115解除完了
+RES @MR203               ; Err115解除完了
+CON
+JMP @MR1800
+;
+STG @MR1802
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+RES MR2105               ; ｺﾝﾍﾞﾔ電源ON
+CON
+TMR @17 #10
+CON
+AND @T17
+JMP @MR1803
+STG @MR1803
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+SET MR8408               ; ●NG針 下降
+CON
+ANB R6213                ; ●NG針 上昇限
+MPS
+AND R6212                ; ●NG針 下降限
+TMH @18 #50
+CON
+AND @T18
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+JMP @MR1804
+MPP
+AND LR307                ; 仮NAT 徐材CV無し
+JMP @MR1805
+STG @MR1804
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+RES MR8408               ; ●NG針 下降
+CON
+ANB R6212                ; ●NG針 下降限
+AND R6213                ; ●NG針 上昇限
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+JMP @MR1805
+STG @MR1805
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+MPS
+AND R6302                ; ●NGﾏｰｷﾝｸﾞ部 ｶｰﾄﾘｯｼﾞ検出
+SET @MR904               ; Err226
+CON
+JMP @MR1806
+MPP
+ANB R6302                ; ●NGﾏｰｷﾝｸﾞ部 ｶｰﾄﾘｯｼﾞ検出
+JMP @MR1807
+;Err226 Remaind Catridge In Slider 
+STG @MR1806
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+AND @MR907               ; Err226解除完了
+RES @MR907               ; Err226解除完了
+CON
+JMP @MR1805
+;
+STG @MR1807
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+RES MR8500               ; ●NGﾜｰｸｽﾄｯﾊﾟ 前進
+CON
+SET MR8501               ; ●NGﾜｰｸｽﾄｯﾊﾟ 後退
+CON
+ANB R6210                ; ●NGﾜｰｸｽﾄｯﾊﾟ 前進限
+LD R6211                 ; ●NGﾜｰｸｽﾄｯﾊﾟ 後退限
+OR LR307                 ; 仮NAT 徐材CV無し
+ANL
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+SET MR2105               ; ｺﾝﾍﾞﾔ電源ON
+CON
+JMP @MR1500              ; 天秤Main routine
+;<h1/>QR読取・照合 / QR-code reading & check
+STG @MR1900              ; QR読取
+MPS
+AND MR005                ; 排出部QR無効
+JMP @MR2015              ; 終了処理
+MPP
+ANB MR005                ; 排出部QR無効
+RES @MR1903              ; QR読取NG
+CON
+SET @MR1902              ; QR読取中
+CON
+SET MR20400              ; SR2_読取開始
+CON
+JMP @MR1904
+STG @MR1904
+AND MR20401              ; SR2_読取完了
+RES MR20401              ; SR2_読取完了
+CON
+JMP @MR1905
+STG @MR1905
+MPS
+ANB MR20415              ; SR2_1SL読取通信異常
+JMP @MR1908
+MPP
+AND MR20415              ; SR2_1SL読取通信異常
+JMP @MR1906
+;Err216 SR2通信異常 / SR2 communication error
+STG @MR1906
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+RES MR20415              ; SR2_1SL読取通信異常
+CON
+SET @MR404               ; Err216 
+CON
+JMP @MR1907
+STG @MR1907
+AND @MR407               ; Err216解除完了
+RES @MR407               ; Err216解除完了
+CON
+MPS
+ANB R42115               ; ﾘﾄﾗｲ要求
+SET @MR1903              ; QR読取NG
+CON
+JMP @MR2015              ; 終了処理
+MPP
+AND R42115               ; ﾘﾄﾗｲ要求
+JMP @MR1900              ; QR読取
+;検証用ﾃﾞｰﾀ抽出 / extraction data
+;<h1/>2018-07-19 ChangeQRID
+;New Format :BL,0,T9999YYMDDLLhhmmss00 / Ex:T123418A19MA20180700
+STG @MR1908
+MPS
+ZRES @DM30 @DM39         ; 製造年月日
+CON
+JMP @MR1909
+MRD
+SLEFT DM10450 @DM10 #5   ; SR2_Tｺｰﾄﾞﾃﾞｰﾀ  Tｺｰﾄﾞ
+MRD
+SMID DM10450 @DM13 #5 #2 ; SR2_Tｺｰﾄﾞﾃﾞｰﾀ  年
+MRD
+SMID DM10450 @DM15 #7 #1 ; SR2_Tｺｰﾄﾞﾃﾞｰﾀ  月(1桁)
+MRD
+SMID DM10450 @DM19 #8 #2 ; SR2_Tｺｰﾄﾞﾃﾞｰﾀ  日
+MRD
+SMID DM10450 @DM27 #10 #2; SR2_Tｺｰﾄﾞﾃﾞｰﾀ  ﾛｯﾄNo.末尾2桁
+MRD
+SMID DM10450 @DM21 #12 #2; SR2_Tｺｰﾄﾞﾃﾞｰﾀ  時
+MRD
+SMID DM10450 @DM23 #14 #2; SR2_Tｺｰﾄﾞﾃﾞｰﾀ  分
+MPP
+SMID DM10450 @DM25 #16 #2; SR2_Tｺｰﾄﾞﾃﾞｰﾀ  秒
+STG @MR1909
+MPS
+AND= @DM15 $4100         ; 月(1桁)
+SMOV "10" @DM17          ; 月(2桁)
+MRD
+AND= @DM15 $4200         ; 月(1桁)
+SMOV "11" @DM17          ; 月(2桁)
+MRD
+AND= @DM15 $4300         ; 月(1桁)
+SMOV "12" @DM17          ; 月(2桁)
+MRD
+LD<> @DM15 $4100         ; 月(1桁)
+AND<> @DM15 $4200        ; 月(1桁)
+AND<> @DM15 $4300        ; 月(1桁)
+ANL
+SADD "0" @DM15 @DM17     ; 月(1桁)  月(2桁)
+MRD
+RDASC @DM13 @DM30        ; 年  製造年月日
+MRD
+RDASC @DM17 @DM31        ; 月(2桁)  月
+MRD
+RDASC @DM19 @DM32        ; 日  日
+MRD
+RDASC @DM21 @DM33        ; 時  時
+MRD
+RDASC @DM23 @DM34        ; 分  分
+MRD
+RDASC @DM25 @DM35        ; 秒  秒
+MRD
+SEC @DM30 DM774          ; 製造年月日  排出ｶｰﾄﾘｯｼﾞ製造日時(sec)
+MRD
+SEC CM700 DM776          ; ｶﾚﾝﾀﾞﾀｲﾏ（年）  排出QR読込日時(sec)
+MPP
+JMP @MR2000              ; T-code check
+;Tｺｰﾄﾞ判断 / T-code check
+STG @MR2000              ; T-code check
+SCMP DM3015 @DM10        ; QRｺｰﾄﾞ2-1  Tｺｰﾄﾞ
+CON
+MPS
+AND CR2010               ; ＝
+JMP @MR2008              ; 製造経過時間確認
+MPP
+ANB CR2010               ; ＝
+JMP @MR2001
+;Err217 排出ｶｰﾄﾘｯｼﾞ Tｺｰﾄﾞ異常 / Exit QR T-code error
+STG @MR2001
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+RES R42115               ; ﾘﾄﾗｲ要求
+CON
+SET @MR408               ; Err217
+CON
+JMP @MR2002
+STG @MR2002
+AND @MR411               ; Err217解除完了
+RES @MR411               ; Err217解除完了
+CON
+MPS
+AND R42115               ; ﾘﾄﾗｲ要求
+JMP @MR1900              ; QR読取
+MPP
+ANB R42115               ; ﾘﾄﾗｲ要求
+SET @MR1903              ; QR読取NG
+CON
+JMP @MR2015              ; 終了処理
+;製造経過時間確認
+STG @MR2008              ; 製造経過時間確認
+LDA.D DM776              ; 排出QR読込日時(sec)
+CON
+SUB DM774                ; 排出ｶｰﾄﾘｯｼﾞ製造日時(sec)
+CON
+STA.L W103A              ; 製造経過時間(sec)
+CON
+JMP @MR2009              ; Lot末尾確認
+;Lot末尾確認 / LotNo. check
+STG @MR2009              ; Lot末尾確認
+SCMP DM3062 @DM27        ; LotNo3  ﾛｯﾄNo.末尾2桁
+CON
+MPS
+AND CR2010               ; ＝
+MPS
+AND MR006                ; ON=QRID Maneger Disable
+JMP @MR2015              ; 終了処理
+MPP
+ANB MR006                ; ON=QRID Maneger Disable
+JMP @MR2012
+MPP
+ANB CR2010               ; ＝
+JMP @MR2010
+;Err218 排出ｶｰﾄﾘｯｼﾞ LotNo.末尾異常 / Exit QR Lot No. error
+STG @MR2010
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+RES R42115               ; ﾘﾄﾗｲ要求
+CON
+SET @MR412               ; Err218 
+CON
+JMP @MR2011
+STG @MR2011
+AND @MR415               ; Err218解除完了
+RES @MR415               ; Err218解除完了
+CON
+MPS
+AND R42115               ; ﾘﾄﾗｲ要求
+JMP @MR1900              ; QR読取
+MPP
+ANB R42115               ; ﾘﾄﾗｲ要求
+SET @MR1903              ; QR読取NG
+CON
+JMP @MR2015              ; 終了処理
+;<h1/>QRID登録 / Registration QRID to Database
+STG @MR2012
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+SET MR26604              ; Registor QRID to DB
+CON
+JMP @MR2013
+STG @MR2013
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+AND MR26605              ; Finish Registor QRID to DB
+RES MR26605              ; Finish Registor QRID to DB
+CON
+MPS
+AND= W1CAC #20
+JMP @MR2015              ; 終了処理
+MPP
+AND<> W1CAC #20
+SET @MR612
+CON
+JMP @MR2014
+STG @MR2014
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+AND @MR615
+RES @MR615
+CON
+MPS
+AND= W1CAC #30
+JMP @MR2012
+MPP
+AND<> W1CAC #30
+SET @MR1903              ; QR読取NG
+CON
+JMP @MR2015              ; 終了処理
+;終了処理 / End process
+STG @MR2015              ; 終了処理
+RES @MR1902              ; QR読取中
+CON
+SET @MR1901              ; QR読取完了
+CON
+ENDS
+;<h1/>Err
+;Err112 除材位置ﾜｰｸ残
+;Err112 Cartridge remain on Remove point
+STG @MR104               ; Err112
+ANB R50008               ; Error
+SET R50008               ; Error
+CON
+SET R51604               ; Err IND3ST4
+CON
+JMP @MR105               ; 105
+MOV #112 DM400           ; ﾒｯｾｰｼﾞNo.
+STG @MR105               ; 105
+AND R50008               ; Error
+JMP @MR106               ; 106
+STG @MR106               ; 106
+ANB R50008               ; Error
+SET @MR107               ; Err112 解除完了
+CON
+ENDS
+;Err113 ｺﾝﾍﾞﾔ上ﾜｰｸ満杯
+;Err113 Cartridge full on Conveyer
+STG @MR108               ; Err113
+ANB R50008               ; Error
+SET R50008               ; Error
+CON
+SET R51604               ; Err IND3ST4
+CON
+JMP @MR109               ; 109
+MOV #113 DM400           ; ﾒｯｾｰｼﾞNo.
+STG @MR109               ; 109
+AND R50008               ; Error
+JMP @MR110               ; 110
+STG @MR110               ; 110
+ANB R50008               ; Error
+SET @MR111               ; Err113解除完了
+CON
+ENDS
+;Err114 IND3_4STﾜｰｸ除材異常 
+;Err114 Cartridge remove error on IND3_4ST 
+STG @MR112               ; Err4 ST1 Err4
+ANB R50008               ; Error
+SET R50008               ; Error
+CON
+SET R51604               ; Err IND3ST4
+CON
+JMP @MR113               ; 113
+MOV #114 DM400           ; ﾒｯｾｰｼﾞNo.
+STG @MR113               ; 113
+AND R50008               ; Error
+JMP @MR114               ; 114
+STG @MR114               ; 114
+ANB R50008               ; Error
+SET @MR115               ; Err4 ST1 Err4解除完了
+CON
+ENDS
+;Err115 NGﾏｰｷﾝｸﾞ位置ｶｰﾄﾘｯｼﾞ未検出 
+;Err115 Cartridge Missing on NG marking
+STG @MR200               ; Err115
+ANB R50008               ; Error
+SET R50008               ; Error
+CON
+SET R51604               ; Err IND3ST4
+CON
+JMP @MR201               ; 201
+MOV #115 DM400           ; ﾒｯｾｰｼﾞNo.
+STG @MR201               ; 201
+AND R50008               ; Error
+JMP @MR202               ; 202
+STG @MR202               ; 202
+ANB R50008               ; Error
+SET @MR203               ; Err115解除完了
+CON
+ENDS
+;Err116 - 天秤上ｶｰﾄﾘｯｼﾞ残
+;Err116 - Remove part on the weight scale
+STG @MR208               ; Err116
+ANB R50008               ; Error
+SET R50008               ; Error
+CON
+SET R51604               ; Err IND3ST4
+CON
+JMP @MR209               ; 209
+MOV #116 DM400           ; ﾒｯｾｰｼﾞNo.
+STG @MR209               ; 209
+AND R50008               ; Error
+JMP @MR210               ; 210
+STG @MR210               ; 210
+ANB R50008               ; Error
+SET @MR211               ; Err116解除完了
+CON
+ENDS
+;Err117 - 天秤通信異常
+;Err117 - scale Communication Error
+STG @MR212               ; Err117
+ANB R50008               ; Error
+SET R50008               ; Error
+CON
+SET R51604               ; Err IND3ST4
+CON
+JMP @MR213               ; 213
+MOV #117 DM400           ; ﾒｯｾｰｼﾞNo.
+STG @MR213               ; 213
+AND R50008               ; Error
+JMP @MR214               ; 214
+STG @MR214               ; 214
+ANB R50008               ; Error
+SET @MR215               ; Err117解除完了
+CON
+ENDS
+;Err111 - NGｶｰﾄﾘｯｼﾞ残
+;Err111- NG Cartridge remain
+STG @MR300               ; Err118
+ANB R50008               ; Error
+SET R50008               ; Error
+CON
+SET R51604               ; Err IND3ST4
+CON
+JMP @MR301               ; 301
+MOV #111 DM400           ; ﾒｯｾｰｼﾞNo.
+STG @MR301               ; 301
+AND R50008               ; Error
+JMP @MR302               ; 302
+STG @MR302               ; 302
+ANB R50008               ; Error
+SET @MR303               ; Err118 解除完了
+CON
+ENDS
+;Err118 - 天秤上ｶｰﾄﾘｯｼﾞ未検出
+;Err118 - Cartridge Missing on Scale
+STG @MR304               ; Err118
+ANB R50008               ; Error
+SET R50008               ; Error
+CON
+SET R51604               ; Err IND3ST4
+CON
+JMP @MR305               ; 305
+MOV #118 DM400           ; ﾒｯｾｰｼﾞNo.
+STG @MR305               ; 305
+AND R50008               ; Error
+JMP @MR306               ; 306
+STG @MR306               ; 306
+ANB R50008               ; Error
+SET @MR307               ; Err118解除完了
+CON
+ENDS
+;Err120 - ｶｰﾄﾘｯｼﾞ重量 過少
+;Err120 - Cartridge Ink Weight Low
+;Err119 - ｶｰﾄﾘｯｼﾞ重量 過重
+;Err119 - Cartridge Ink Weight High
+STG @MR308               ; Err119-120
+ANB R50008               ; Error
+SET R50008               ; Error
+CON
+SET R51604               ; Err IND3ST4
+CON
+JMP @MR309               ; 309
+MPS
+AND @MR902               ; ｶｰﾄﾘｯｼﾞ重量過小
+MOV #120 DM400           ; ﾒｯｾｰｼﾞNo.
+MPP
+AND @MR903               ; ｶｰﾄﾘｯｼﾞ重量過重
+MOV #119 DM400           ; ﾒｯｾｰｼﾞNo.
+STG @MR309               ; 309
+AND R50008               ; Error
+JMP @MR310               ; 310
+STG @MR310               ; 310
+ANB R50008               ; Error
+SET @MR311               ; Err119-120解除完了
+CON
+ENDS
+;Err129 - 天秤ﾃﾞｰﾀ変換異常
+;Err129 - Scale Data Coversion Error
+STG @MR312               ; Err129
+ANB R50008               ; Error
+SET R50008               ; Error
+CON
+SET R51604               ; Err IND3ST4
+CON
+JMP @MR313
+MOV #129 DM400           ; ﾒｯｾｰｼﾞNo.
+STG @MR313
+AND R50008               ; Error
+JMP @MR314
+STG @MR314
+ANB R50008               ; Error
+SET @MR315               ; Err129解除完了
+CON
+ENDS
+;Err139 - 天秤ﾃﾞｰﾀ読み取り異常
+;Err139 - Scale Data Read Error
+STG @MR400               ; Err139 
+ANB R50008               ; Error
+SET R50008               ; Error
+CON
+SET R51604               ; Err IND3ST4
+CON
+JMP @MR401
+MOV #139 DM400           ; ﾒｯｾｰｼﾞNo.
+STG @MR401
+AND R50008               ; Error
+JMP @MR402
+STG @MR402
+ANB R50008               ; Error
+SET @MR403               ; Err139解除完了
+CON
+ENDS
+;Err202
+;Err202
+STG @MR204               ; Err6 ST1 Err6
+ANB R50008               ; Error
+SET R50008               ; Error
+CON
+SET R51604               ; Err IND3ST4
+CON
+JMP @MR205               ; 205
+MOV #202 DM400           ; ﾒｯｾｰｼﾞNo.
+STG @MR205               ; 205
+AND R50008               ; Error
+JMP @MR206               ; 206
+STG @MR206               ; 206
+ANB R50008               ; Error
+SET @MR207               ; Err6 ST1 Err6解除完了
+CON
+ENDS
+;Err216 QR2通信異常
+;Err216 QR2 communication error
+STG @MR404               ; Err216 
+ANB R50008               ; Error
+SET R50008               ; Error
+CON
+SET R51604               ; Err IND3ST4
+CON
+JMP @MR405
+MOV #216 DM400           ; ﾒｯｾｰｼﾞNo.
+STG @MR405
+AND R50008               ; Error
+JMP @MR406
+STG @MR406
+ANB R50008               ; Error
+SET @MR407               ; Err216解除完了
+CON
+ENDS
+;Err217 排出ｶｰﾄﾘｯｼﾞ Tｺｰﾄﾞ異常
+;Err217 Exit QR T-code error
+STG @MR408               ; Err217
+ANB R50008               ; Error
+SET R50008               ; Error
+CON
+SET R51604               ; Err IND3ST4
+CON
+JMP @MR409
+MOV #217 DM400           ; ﾒｯｾｰｼﾞNo.
+STG @MR409
+AND R50008               ; Error
+JMP @MR410
+STG @MR410
+ANB R50008               ; Error
+SET @MR411               ; Err217解除完了
+CON
+ENDS
+;Err213 排出ｶｰﾄﾘｯｼﾞ LotNo.末尾異常
+;Err213 Exit QR Lot No. error
+STG @MR412               ; Err218 
+ANB R50008               ; Error
+SET R50008               ; Error
+CON
+SET R51604               ; Err IND3ST4
+CON
+JMP @MR413
+MOV #218 DM400           ; ﾒｯｾｰｼﾞNo.
+STG @MR413
+AND R50008               ; Error
+JMP @MR414
+STG @MR414
+ANB R50008               ; Error
+SET @MR415               ; Err218解除完了
+CON
+ENDS
+;Err219 QRID登録異常
+;Err219 QRID Registration Error
+STG @MR612
+ANB R50008               ; Error
+SET R50008               ; Error
+CON
+SET R51604               ; Err IND3ST4
+CON
+JMP @MR613
+MOV #219 DM400           ; ﾒｯｾｰｼﾞNo.
+STG @MR613
+AND R50008               ; Error
+JMP @MR614
+STG @MR614
+ANB R50008               ; Error
+SET @MR615
+CON
+ENDS
+;Err224 天秤 Sｶﾞｲﾄﾞ治具検出異常
+;Err224 Scale S-guide Jig error
+STG @MR908               ; Err224
+ANB R50008               ; Error
+SET R50008               ; Error
+CON
+SET R51604               ; Err IND3ST4
+CON
+JMP @MR909
+MOV #224 DM400           ; ﾒｯｾｰｼﾞNo.
+STG @MR909
+AND R50008               ; Error
+JMP @MR910
+STG @MR910
+ANB R50008               ; Error
+SET @MR911               ; Err224解除完了
+CON
+ENDS
+;Err225 ｺﾝﾍﾞﾔ Sｶﾞｲﾄﾞ治具検出異常
+;Err225 Conveyer S-guide Jig error
+STG @MR912               ; Err225
+ANB R50008               ; Error
+SET R50008               ; Error
+CON
+SET R51604               ; Err IND3ST4
+CON
+JMP @MR913
+MOV #225 DM400           ; ﾒｯｾｰｼﾞNo.
+STG @MR913
+AND R50008               ; Error
+JMP @MR914
+STG @MR914
+ANB R50008               ; Error
+SET @MR915               ; Err225解除完了
+CON
+ENDS
+;Err226 Remaind Catridge In Slider 
+STG @MR904               ; Err226
+ANB R50008               ; Error
+SET R50008               ; Error
+CON
+SET R51604               ; Err IND3ST4
+CON
+JMP @MR905
+MOV #226 DM400           ; ﾒｯｾｰｼﾞNo.
+STG @MR905
+AND R50008               ; Error
+JMP @MR906
+STG @MR906
+ANB R50008               ; Error
+SET @MR907               ; Err226解除完了
+CON
+ENDS
+;
+;Pack Set
+LD @MR1015               ; Downstream H/S Inside 
+OUT R51610               ; PACK IND3_ST4
+END
+ENDH

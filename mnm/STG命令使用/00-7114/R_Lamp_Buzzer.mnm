@@ -1,0 +1,118 @@
+DEVICE:53
+;MODULE:R_Lamp_Buzzer
+;MODULE_TYPE:0
+;ﾜｰｸﾌﾗｸﾞﾘｾｯﾄ
+;Product flag reset 
+LDB R002                 ; R_上ｶﾊﾞｰ閉
+ORB R003                 ; R_下ｶﾊﾞｰ閉
+TMR @1 #5
+CON
+AND @T1
+RES MR010                ; Rﾜｰｸ良品
+CON
+RES MR011                ; Rﾜｰｸ不良品
+LD MR010                 ; Rﾜｰｸ良品
+OR MR011                 ; Rﾜｰｸ不良品
+TMR @2 #30
+CON
+AND @T2
+RES MR010                ; Rﾜｰｸ良品
+CON
+RES MR011                ; Rﾜｰｸ不良品
+;表示　/　Indixation
+;<h1/>ｽﾀｰﾄswﾗﾝﾌﾟ/Start sw lamp
+;点灯：動作中、検査結果不良
+;点滅：動作開始要求
+;Lit: In operation, poor inspection result
+;Flashing: Operation start request
+LD R2008                 ; ｽﾀｰﾄSW_R 
+OR MR011                 ; Rﾜｰｸ不良品
+LDB MR310                ; R_原点復帰中
+ANB MR312                ; R_自動運転中
+ANB MR313                ; R_ﾒﾝﾃ動作中
+INV
+ANB @MR001
+ANB MR009                ; RｽﾀｰﾄSW点滅要求
+ORL
+LD MR009                 ; RｽﾀｰﾄSW点滅要求
+OR MR203                 ; ｴﾗｰ解除要求R
+OR @MR001
+AND MR005                ; ﾗﾝﾌﾟ点滅用(0.5S)
+ORL
+OUT MR6008               ; ｽﾀｰﾄSWﾗﾝﾌﾟ_R
+LD= EM29996 #821         ; (R_TP)現在表示中画面No.
+AND= EM30031 #5          ; (R_TP)装置ﾘｰｸ検査表示用
+ANB MR903                ; R_ｴﾗｰ処理中
+OUT @MR001
+;<h1/>ﾌﾞｻﾞｰ/Buzzer
+;異常中、検査結果不良
+;
+;3秒ON：検査結果良品
+;During abnormality, inspection result defect
+;
+;3 seconds ON: inspection results good product
+LDP MR903                ; R_ｴﾗｰ処理中
+OR MR415                 ; RﾌﾞｻﾞｰON要求
+ORP @MR000               ; 良品ﾌﾞｻﾞｰON
+SET MR6009               ; ﾌﾞｻﾞｰ_R
+LDB MR903                ; R_ｴﾗｰ処理中
+ANB MR415                ; RﾌﾞｻﾞｰON要求
+MEP
+ORP MR115                ; R_NGﾘｾｯﾄ処理ﾌﾞｻﾞｰ解除
+ORF @MR000               ; 良品ﾌﾞｻﾞｰON
+RES MR6009               ; ﾌﾞｻﾞｰ_R
+LDF MR312                ; R_自動運転中
+AND MR010                ; Rﾜｰｸ良品
+SET @MR000               ; 良品ﾌﾞｻﾞｰON
+LD @MR000                ; 良品ﾌﾞｻﾞｰON
+TMR @0 #30               ; 良品ﾌﾞｻﾞｰOFF
+CON
+AND @T0                  ; 良品ﾌﾞｻﾞｰOFF
+RES @MR000               ; 良品ﾌﾞｻﾞｰON
+;<h1/>ﾀﾜｰﾗﾝﾌﾟ赤/Tower lamp red
+;点灯：重度異常中
+;点滅：原点復帰要求、軽度異常中、検査異常中、検査結果不良
+;On: Severe error
+;Blinking: Home return request, mild abnormality, inspection abnormality, inspection result defect
+;EM30026=1:原点復帰要求/EM 30026 = 1: Home return request
+LD MR900                 ; 重度異常：電源再投入必要
+LD MR903                 ; R_ｴﾗｰ処理中
+LD MR310                 ; R_原点復帰中
+AND= EM29996 #0          ; (R_TP)現在表示中画面No.
+AND= EM30026 #1          ; (R TP)初期画面_ｺﾒﾝﾄ表示用
+ORL
+OR MR011                 ; Rﾜｰｸ不良品
+AND MR005                ; ﾗﾝﾌﾟ点滅用(0.5S)
+ORL
+OUT MR6010               ; ﾀﾜｰﾗﾝﾌﾟ 赤_R
+;<h1/>ﾀﾜｰﾗﾝﾌﾟ黄/Tower lamp yellow
+;点灯：動作中、軽度異常中、検査異常中、検査結果不良
+;点滅：検査結果良品
+;Lighting: Operating, Mildly Abnormal, Inspection Failure, Inspection Result Failure
+;Blinking: Good results
+LDB MR310                ; R_原点復帰中
+ANB MR312                ; R_自動運転中
+ANB MR313                ; R_ﾒﾝﾃ動作中
+ANB MR011                ; Rﾜｰｸ不良品
+INV
+LD MR903                 ; R_ｴﾗｰ処理中
+ANB MR900                ; 重度異常：電源再投入必要
+ORL
+LD MR010                 ; Rﾜｰｸ良品
+AND MR005                ; ﾗﾝﾌﾟ点滅用(0.5S)
+ORL
+OUT MR6011               ; ﾀﾜｰﾗﾝﾌﾟ 黄_R
+;<h1/>ﾀﾜｰﾗﾝﾌﾟ緑/Tower lamp green
+;点灯：原点復帰要求、動作開始要求、定停止中、待機中
+;/Lit: Home return request, operation start request, constant stop, waiting
+;EM30026=1:原点復帰要求/EM 30026 = 1: Home return request
+LD MR310                 ; R_原点復帰中
+AND= EM29996 #0          ; (R_TP)現在表示中画面No.
+AND= EM30026 #1          ; (R TP)初期画面_ｺﾒﾝﾄ表示用
+LDB MR310                ; R_原点復帰中
+ANB MR312                ; R_自動運転中
+ANB MR313                ; R_ﾒﾝﾃ動作中
+ORL
+OUT MR6012               ; ﾀﾜｰﾗﾝﾌﾟ 緑_R
+END
+ENDH

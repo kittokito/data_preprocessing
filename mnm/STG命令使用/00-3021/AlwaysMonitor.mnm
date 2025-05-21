@@ -1,0 +1,59 @@
+DEVICE:53
+;MODULE:AlwaysMonitor
+;MODULE_TYPE:0
+;OneSystem Sub-Module
+;
+;---------------------------------------
+;ModuleName	:	AlwaysMonitor
+;ModuleType	:	Sub Module
+;Function	:	常時監視
+;---------------------------------------
+;<使用方法>
+;常時監視が必要な物は本ﾓｼﾞｭｰﾙ内に記述して下さい
+;・ﾋｰﾀｰ過昇温検知による非常停止
+;・ﾁｬﾝﾊﾞｰ排気量低下によるｴﾗｰ出力
+;など
+LDB R2110                ; ﾎﾙﾀﾞｰSub下降部前進限 (ﾜｰｸ側)
+ANB R2111                ; ﾎﾙﾀﾞｰSub下降部後退限 (逃げ側)
+ANB R2113                ; ﾎﾙﾀﾞｰSub下降部上昇端 (逃げ側)
+DW #1 @DM0
+LD<> @DM0 #0
+MSTRT F_ERROR_DISP @DM0
+LD CR2002                ; 常時ON
+MPS
+LDA.D EM10612            ; RB2目標値（下位）3
+CON
+ADD.D #100
+CON
+STA.D DM8500
+MPP
+LDA.D EM10612            ; RB2目標値（下位）3
+CON
+ADD.D DM4512             ; 押付幅
+CON
+STA.D DM8506
+LD>=.D DM10508 DM8500    ; RB_2       現在位置
+SET MR8500               ; 接触到達
+LD>=.D DM10508 DM8506    ; RB_2       現在位置
+SET MR8501               ; 完了到達
+LD R1000                 ; UNIT1     運転中出力
+MPS
+LDB MR8500               ; 接触到達
+AND CR2004               ; 10msｸﾛｯｸﾊﾟﾙｽ
+ANL
+@INC DM8502
+MPP
+LDB MR8501               ; 完了到達
+AND CR2004               ; 10msｸﾛｯｸﾊﾟﾙｽ
+ANL
+@INC DM8504
+LDP R1000                ; UNIT1     運転中出力
+RES MR8501               ; 完了到達
+CON
+RES MR8500               ; 接触到達
+CON
+@DW #0 DM8502
+CON
+@DW #0 DM8504
+END
+ENDH

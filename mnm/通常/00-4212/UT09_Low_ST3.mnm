@@ -1,0 +1,1324 @@
+DEVICE:53
+;MODULE:UT09_Low_ST3
+;MODULE_TYPE:0
+;<h1/>□_入力受け
+;関連する入力受け(ｾﾝｻのﾃﾞｨﾚｲﾀｲﾏ等)を必要があれば作成する。
+;通常は入力ﾕﾆｯﾄに入力時定数(ﾃﾞｨﾚｲ)があるので直接使用しても問題は無い。
+LD X1058                 ; 低温検査正面上流安全扉正常
+AND X1059                ; 低温検査正面下流安全扉正常
+AND X105A                ; 低温検査背面上流安全扉正常
+AND X105B                ; 低温検査背面下流安全扉正常
+OR M37                   ; ｲﾝﾀｰﾛｯｸ解除ﾓｰﾄﾞ
+TMR K901 K5              ; LoST3扉閉
+LD X1082                 ; LoST3_部_ﾜｰｸ押_下降端
+TMH K902 K50             ; LoST3_部_ﾜｰｸ押_下降端
+LD CR2003                ; 常時OFF
+TMR K903 K3
+LD X1081                 ; LoST3_部_ﾊﾟﾚｯﾄ_後退端
+TMR K904 K5              ; LoST3_部_ﾊﾟﾚｯﾄ_後退端
+;ｺﾝﾀｸﾄﾍｯﾄﾞID
+LD X1086                 ; LoST3_部_ｺﾝﾀｸﾄﾍｯﾄﾞID_1
+OUT D5106.0
+LD X1087                 ; LoST3_部_ｺﾝﾀｸﾄﾍｯﾄﾞID_2
+OUT D5106.1
+LD X1088                 ; LoST3_部_ｺﾝﾀｸﾄﾍｯﾄﾞID_4
+OUT D5106.2
+;ﾊﾟﾚｯﾄID
+LD X1089                 ; LoST3_部_ﾊﾟﾚｯﾄID_1
+OUT D5107.0
+LD X108A                 ; LoST3_部_ﾊﾟﾚｯﾄID_2
+OUT D5107.1
+LD X108B                 ; LoST3_部_ﾊﾟﾚｯﾄID_4
+OUT D5107.2
+;ＩＤ保持
+LD M71                   ; 自動運転開始BZ
+AND L900                 ; Lo検査ST3_有効状態
+LD M5912                 ; LoST3_ID保持ﾄﾘｶﾞ
+ANB M5910                ; LoST3_無効中
+ORL
+AND M71                  ; 自動運転開始BZ
+OUT M5912                ; LoST3_ID保持ﾄﾘｶﾞ
+;____ｺﾝﾀｸﾄﾍｯﾄﾞＩＤ保持
+;※PC送信用は生ﾃﾞｰﾀに変更
+LD L900                  ; Lo検査ST3_有効状態
+MPS
+TMR K906 K5              ; LoST3_ｺﾝﾀｸﾄﾍｯﾄﾞID_更新_DLY
+MPP
+AND T906                 ; LoST3_ｺﾝﾀｸﾄﾍｯﾄﾞID_更新_DLY
+@MOV D5106 D5100         ; LoST3_ｺﾝﾀｸﾄﾍｯﾄﾞID_Copy  LoST3_ｺﾝﾀｸﾄﾍｯﾄﾞID
+LD CR2002                ; 常時ON
+MOV D5106 W012C          ; LoST3_ｺﾝﾀｸﾄﾍｯﾄﾞID_Copy  低温検査テストヘッドID#3
+LDB L900                 ; Lo検査ST3_有効状態
+MOV K0 D5100             ; LoST3_ｺﾝﾀｸﾄﾍｯﾄﾞID
+;____ﾊﾟﾚｯﾄＩＤ保持
+LD L900                  ; Lo検査ST3_有効状態
+LDB Y2108                ; LoST3ｽﾃｰｼﾞ前後前進
+AND T904                 ; LoST3_部_ﾊﾟﾚｯﾄ_後退端
+OR T907                  ; LoST3_ﾊﾟﾚｯﾄID_更新_DLY
+ANL
+TMR K907 K5              ; LoST3_ﾊﾟﾚｯﾄID_更新_DLY
+@MOV D5107 D5101         ; LoST3_ﾊﾟﾚｯﾄID_ｾﾝｻ状態  LoST3_ﾊﾟﾚｯﾄID
+LD CR2002                ; 常時ON
+MOV D5101 W0128          ; LoST3_ﾊﾟﾚｯﾄID  低温検査パレットID#3
+LDB L900                 ; Lo検査ST3_有効状態
+MOV K0 D5101             ; LoST3_ﾊﾟﾚｯﾄID
+;<h1/>__ST_有効/無効選択
+;段取り状態中ﾌﾗｸﾞの追加
+;自動中は段取り状態中に、ST上のﾜｰｸ無、RBﾊﾝﾄﾞﾜｰｸ無し、供給部ﾜｰｸ無しにて無効状態OKとなる
+LDPB X108F               ; ST3電特検査_有効/無効SW
+ANPB B118A               ; LoST3検査_有効/無効_Tpb
+INV
+ANB L900                 ; Lo検査ST3_有効状態
+OR M5904                 ; LoST3検査_有効確認要求
+LD M300                  ; PC通信正常
+OR M3                    ; OFFLINE_MODE
+ANL
+ANB M5905                ; LoST3検査_有効確認OK
+OUT M5904                ; LoST3検査_有効確認要求
+LD M5904                 ; LoST3検査_有効確認要求
+AND W0107.2              ; Lo_ST3ﾁｪｯｶ-確認要求
+LD W07.2                 ; Lo_ST3ﾁｪｯｶ-確認完了
+OR M3                    ; OFFLINE_MODE
+ANL
+OUT M5905                ; LoST3検査_有効確認OK
+LD M5905                 ; LoST3検査_有効確認OK
+ANB W03.6                ; ｽﾃｰｼﾞ#3 無効切替要求
+LDPB X108F               ; ST3電特検査_有効/無効SW
+ANPB B118A               ; LoST3検査_有効/無効_Tpb
+ANB W03.6                ; ｽﾃｰｼﾞ#3 無効切替要求
+ANB B0128                ; B128_296)LoST3 ﾋｰﾀｰ上昇ﾀｲﾑｱｳﾄ異
+INV
+AND L900                 ; Lo検査ST3_有効状態
+ORL
+OUT M5906                ; LoST3検査_有効/無効要求
+LD M71                   ; 自動運転開始BZ
+LDB M3982                ; ﾊﾝﾄﾞ1_Lo検査未了品
+ANB M3988                ; ﾊﾝﾄﾞ1_Lo検査ST3再検品
+OR M3983                 ; ﾊﾝﾄﾞ1_Lo検査完了品(排出ﾜｰｸ)
+ANL
+LDB M3992                ; ﾊﾝﾄﾞ2_Lo検査未了品
+ANB M3998                ; ﾊﾝﾄﾞ2_Lo検査ST3再検品
+OR M3993                 ; ﾊﾝﾄﾞ2_Lo検査完了品(排出ﾜｰｸ)
+ANL
+AND= D5201 K0            ; LoST3 ﾜｰｸ有無記憶
+LDB M5985                ; ﾕﾆｯﾄ9起動中
+LD M5501                 ; U9-1_S01
+ANB M3903                ; 【搬送】搬送→Lo_ST3搬送開始
+ORL
+ANL
+ANB M4034                ; ﾊﾝﾄﾞ1_LoST3給材中ﾌﾗｸﾞ
+ANB M4035                ; ﾊﾝﾄﾞ2_LoST3給材中ﾌﾗｸﾞ
+OUT M5907                ; LoST3_自動中無効条件OK
+LDB M71                  ; 自動運転開始BZ
+OR M5907                 ; LoST3_自動中無効条件OK
+OUT M5908                ; LoST3_無効OK条件
+LD M5909                 ; LoST3_無効予約(自動運転)
+ANB M5910                ; LoST3_無効中
+ANP M5906                ; LoST3検査_有効/無効要求
+OUT M5911                ; LoST3_予約ｷｬﾝｾﾙ
+LDP M5906                ; LoST3検査_有効/無効要求
+AND L900                 ; Lo検査ST3_有効状態
+AND M71                  ; 自動運転開始BZ
+ANB M5909                ; LoST3_無効予約(自動運転)
+LD M5909                 ; LoST3_無効予約(自動運転)
+ANB M5910                ; LoST3_無効中
+ANB M5911                ; LoST3_予約ｷｬﾝｾﾙ
+ORL
+OUT M5909                ; LoST3_無効予約(自動運転)
+LD M5909                 ; LoST3_無効予約(自動運転)
+AND M5908                ; LoST3_無効OK条件
+LDP M5906                ; LoST3検査_有効/無効要求
+ANB M41                  ; ﾕﾆｯﾄ_起動中
+ORL
+LDB B0122                ; B122_290)LoST3_ﾃｽﾄﾍｯﾄﾞID_不一致
+ANB B0123                ; B123_291)LoST3_ﾊﾟﾚｯﾄID_不一致
+INV
+MEP
+ORL
+LD M5910                 ; LoST3_無効中
+ANB L900                 ; Lo検査ST3_有効状態
+ORL
+OUT M5910                ; LoST3_無効中
+;<h1/>__ST_有効処理
+LDP M5906                ; LoST3検査_有効/無効要求
+LD<> D5106 K0            ; LoST3_ｺﾝﾀｸﾄﾍｯﾄﾞID_Copy
+AND<> D5107 K0           ; LoST3_ﾊﾟﾚｯﾄID_ｾﾝｻ状態
+AND X1081                ; LoST3_部_ﾊﾟﾚｯﾄ_後退端
+LD M35                   ; 空運転ﾓｰﾄﾞ
+AND= D5106 K0            ; LoST3_ｺﾝﾀｸﾄﾍｯﾄﾞID_Copy
+AND= D5107 K0            ; LoST3_ﾊﾟﾚｯﾄID_ｾﾝｻ状態
+ORL
+ANL
+ANB L900                 ; Lo検査ST3_有効状態
+LD L900                  ; Lo検査ST3_有効状態
+ANB M5910                ; LoST3_無効中
+ANB B0127                ; B127_295)LoST3 ﾋｰﾀｰ過昇異常
+LD M300                  ; PC通信正常
+OR M3                    ; OFFLINE_MODE
+ANL
+ORL
+OUT L900                 ; Lo検査ST3_有効状態
+;JIG_ID一致確認
+LD L900                  ; Lo検査ST3_有効状態
+MPS
+LD= D5100 D3711          ; LoST3_ｺﾝﾀｸﾄﾍｯﾄﾞID  ﾊﾝﾄﾞ1 低温検査ﾃｽﾄﾍｯﾄﾞID
+AND= D5101 D3710         ; LoST3_ﾊﾟﾚｯﾄID  ﾊﾝﾄﾞ1 低温検査ﾊﾟﾚｯﾄID
+LD M35                   ; 空運転ﾓｰﾄﾞ
+AND= D5100 K0            ; LoST3_ｺﾝﾀｸﾄﾍｯﾄﾞID
+AND= D5101 K0            ; LoST3_ﾊﾟﾚｯﾄID
+ORL
+ANL
+OUT M5901                ; LoST3-搬送ﾊﾝﾄﾞ1ID一致ﾌﾗｸﾞ
+MPP
+LD= D5100 D3811          ; LoST3_ｺﾝﾀｸﾄﾍｯﾄﾞID  ﾊﾝﾄﾞ2 低温検査ﾃｽﾄﾍｯﾄﾞID
+AND= D5101 D3810         ; LoST3_ﾊﾟﾚｯﾄID  ﾊﾝﾄﾞ2 低温検査ﾊﾟﾚｯﾄID
+LD M35                   ; 空運転ﾓｰﾄﾞ
+AND= D5100 K0            ; LoST3_ｺﾝﾀｸﾄﾍｯﾄﾞID
+AND= D5101 K0            ; LoST3_ﾊﾟﾚｯﾄID
+ORL
+ANL
+OUT M5902                ; LoST3-搬送ﾊﾝﾄﾞ2ID一致ﾌﾗｸﾞ
+;<h1/>__ｺﾝﾀｸﾄﾍｯﾄﾞﾋｰﾀｰ管理
+LD L900                  ; Lo検査ST3_有効状態
+MPS
+LDB T941                 ; LoST3_温度範囲内保持監視
+AND M126                 ; 低温検査安全扉正常
+ANL
+TMR K940 D5034           ; LoST3_初期温度上昇ﾀｲﾑｱｳﾄ監視  Lo_ST3_温度上昇時間設定値TP
+MRD
+LD<= D5032 D21120        ; Lo_ST3_温度範囲下限設定値TP
+AND>= D5031 D21120       ; Lo_ST3_温度範囲上限設定値TP
+ANL
+TMR K941 D5035           ; LoST3_温度範囲内保持監視
+INV
+TMR K942 D5035           ; LoST3_温度範囲外監視
+MPP
+LD T941                  ; LoST3_温度範囲内保持監視
+OR M5913                 ; LoST3_温度範囲内到達
+ANB T942                 ; LoST3_温度範囲外監視
+ANL
+OUT M5913                ; LoST3_温度範囲内到達
+;<h1/>__ﾛﾎﾞｯﾄ等機器入力受け
+;<h1/>□_装置状態・動作条件
+;ﾕﾆｯﾄまとめ
+LD M5570                 ; U9-1原点
+AND M5730                ; U9-3原点
+OUT M5980                ; ﾕﾆｯﾄ9原点
+;□ 非常停止
+LDB M5571                ; U9-1全異常
+ANB M5731                ; U9-3全異常
+INV
+OUT M5981                ; ﾕﾆｯﾄ9即停止異常
+;□ 起動条件
+LD CR2003                ; 常時OFF
+OUT M5982                ; ﾕﾆｯﾄ9起動条件
+;□ 起動OFF
+LDB M50                  ; 運転準備
+LD M60                   ; ｴﾗｰ発生
+OR M56                   ; 自動起動停止指令(ｻｲｸﾙ停止)
+AND M5984                ; ﾕﾆｯﾄ9原点復帰中
+ORL
+OR M5986                 ; ﾕﾆｯﾄ9ｻｲｸﾙ停止異常
+OR T15                   ; 強制停止
+OUT M5983                ; ﾕﾆｯﾄ9起動OFF
+;□ 原点復帰
+LD M82                   ; 原点復帰開始
+ANB M5984                ; ﾕﾆｯﾄ9原点復帰中
+OR M5984                 ; ﾕﾆｯﾄ9原点復帰中
+ANB M5983                ; ﾕﾆｯﾄ9起動OFF
+ANB M5991                ; ﾕﾆｯﾄ9ｴﾗｰ発生
+ANB M5797                ; OriStepEND
+OUT M5984                ; ﾕﾆｯﾄ9原点復帰中
+;□ 起動中
+LDB M5574                ; U9-1起動中
+ANB M5734                ; U9-3(検査SUB)起動中
+INV
+OUT M5985                ; ﾕﾆｯﾄ9起動中
+;□ ｻｲｸﾙ停止異常
+LDB M5575                ; U9-1ｻｲｸﾙ停止異常
+ANB M5735                ; U9-3ｻｲｸﾙ停止異常
+INV
+OUT M5986                ; ﾕﾆｯﾄ9ｻｲｸﾙ停止異常
+;□ 払出停止異常
+LDB CR2003               ; 常時OFF
+INV
+OUT M5987                ; ﾕﾆｯﾄ9払出停止異常
+;□ 警報補助
+LDB CR2003               ; 常時OFF
+INV
+OUT M5988                ; ﾕﾆｯﾄ9警報補助
+;□ 機器準備確認
+LD CR2002                ; 常時ON
+OUT M5990                ; ﾕﾆｯﾄ9機器準備完了
+;□ ｴﾗｰ発生　一時停止
+LDB M5576                ; U9-1ｴﾗｰ発生
+ANB M5736                ; U9-3ｴﾗｰ発生
+INV
+OUT M5991                ; ﾕﾆｯﾄ9ｴﾗｰ発生
+;□ 動作中ﾕﾆｯﾄ無し
+LD M5577                 ; U9-1動作無し
+AND M5737                ; U9-3動作無し
+OUT M5992                ; ﾕﾆｯﾄ9動作無し確認
+;□ 払出しﾜｰｸ無し
+LDB X1084                ; LoST3_部_ﾜｰｸ確認(ON=有)
+ANB M3982                ; ﾊﾝﾄﾞ1_Lo検査未了品
+ANB M3988                ; ﾊﾝﾄﾞ1_Lo検査ST3再検品
+ANB M3992                ; ﾊﾝﾄﾞ2_Lo検査未了品
+ANB M3998                ; ﾊﾝﾄﾞ2_Lo検査ST3再検品
+TMR K914 K10
+LD T914
+OUT M5993                ; ﾕﾆｯﾄ9ﾜｰｸ無し
+;□ ｽﾃｯﾌﾟ起動
+LD M30                   ; 自動ﾓｰﾄﾞ
+OR M31                   ; 手動ﾓｰﾄﾞ
+AND T901                 ; LoST3扉閉
+ANB M51                  ; 即停止異常(緊急停止)
+ANB M52                  ; ｻｲｸﾙ停止異常(ｻｲｸﾙ停止)
+ANB M57                  ; 全ﾕﾆｯﾄ払出完了
+ANB M59                  ; 払出停止異常まとめ
+ANB M5991                ; ﾕﾆｯﾄ9ｴﾗｰ発生
+LDB M130                 ; 一時停止
+ORB M5517                ; U9-1_S17
+ANL
+OUT M5979                ; ﾕﾆｯﾄ9ｽﾃｯﾌﾟ動作
+;<h1/>□_自動回路
+;<h1/>◇_状態・動作条件(補助)
+LD X1083                 ; LoST3_部_ﾜｰｸ押_上昇端
+AND X1081                ; LoST3_部_ﾊﾟﾚｯﾄ_後退端
+ANB X1084                ; LoST3_部_ﾜｰｸ確認(ON=有)
+AND= D5201 K0            ; LoST3 ﾜｰｸ有無記憶
+OUT M5570                ; U9-1原点
+LDB B0122                ; B122_290)LoST3_ﾃｽﾄﾍｯﾄﾞID_不一致
+ANB B0123                ; B123_291)LoST3_ﾊﾟﾚｯﾄID_不一致
+ANB B0124                ; B124_292)LoST3_ﾜｰｸ受取異常
+ANB B0125                ; B125_293)LoST3_ﾜｰｸ受渡し異常
+ANB B0126                ; B126_294)LoST3 ﾜｰｸ情報不一致
+ANB B0127                ; B127_295)LoST3 ﾋｰﾀｰ過昇異常
+INV
+OUT M5571                ; U9-1全異常
+LD M5570                 ; U9-1原点
+ANB M5574                ; U9-1起動中
+AND M5979                ; ﾕﾆｯﾄ9ｽﾃｯﾌﾟ動作
+LD M5901                 ; LoST3-搬送ﾊﾝﾄﾞ1ID一致ﾌﾗｸﾞ
+OR M5902                 ; LoST3-搬送ﾊﾝﾄﾞ2ID一致ﾌﾗｸﾞ
+ANL
+ANB M5908                ; LoST3_無効OK条件
+OUT M5572                ; U9-1起動条件
+LDB M50                  ; 運転準備
+ORB L900                 ; Lo検査ST3_有効状態
+OR M5986                 ; ﾕﾆｯﾄ9ｻｲｸﾙ停止異常
+OR T15                   ; 強制停止
+OUT M5573                ; U9-1起動OFF
+LD M73                   ; 各工程起動指令
+AND M5572                ; U9-1起動条件
+OR M5574                 ; U9-1起動中
+ANB M5573                ; U9-1起動OFF
+ANB M5563                ; U9-1 StepEnd
+OUT M5574                ; U9-1起動中
+;ﾕﾆｯﾄ1-1 ｻｲｸﾙ停止異常
+LDB CR2003               ; 常時OFF
+INV
+OUT M5575                ; U9-1ｻｲｸﾙ停止異常
+;ﾕﾆｯﾄ1-1 ｴﾗｰ発生まとめ
+LDB B0120                ; B120_288)LoST3ｽﾃｰｼﾞ前後CL異常
+ANB B0121                ; B121_289)LoST3ｸﾗﾝﾌﾟ開閉CLS異常
+ANB B013E                ; B13E_318)LoST3ﾜｰｸ除去要求
+ANB B013F                ; B13F_319)LoST3ﾜｰｸ検査中
+INV
+OUT M5576                ; U9-1ｴﾗｰ発生
+;ﾕﾆｯﾄ1-1 停止判定
+LD= D5000 D5005          ; LoST3-1自動運転ｽﾃｯﾌﾟ  LoST3-1動作中判定
+ORB M5574                ; U9-1起動中
+TMR K910 K20             ; 停止完了判定ﾀｲﾏｰ
+LD CR2002                ; 常時ON
+MOV D5000 D5005          ; LoST3-1自動運転ｽﾃｯﾌﾟ  LoST3-1動作中判定
+LD T910                  ; 停止完了判定ﾀｲﾏｰ
+OUT M5577                ; U9-1動作無し
+;□
+;□　ﾕﾆｯﾄ1-1 自動運転ステップ開始
+;□
+LD CR2002                ; 常時ON
+FMOV K0 M5500 K4         ; U9-1_S00
+LDB M5574                ; U9-1起動中
+MOV K0 D5000             ; LoST3-1自動運転ｽﾃｯﾌﾟ
+LD M5574                 ; U9-1起動中
+MOV D5000 Z1             ; LoST3-1自動運転ｽﾃｯﾌﾟ
+SET M5500:Z1             ; U9-1_S00
+;ﾜｰｸ有無判定等
+LD M5500                 ; U9-1_S00
+AND M5979                ; ﾕﾆｯﾄ9ｽﾃｯﾌﾟ動作
+INC D5000                ; LoST3-1自動運転ｽﾃｯﾌﾟ
+LD M5501                 ; U9-1_S01
+MPS
+LDB M5993                ; ﾕﾆｯﾄ9ﾜｰｸ無し
+AND M5913                ; LoST3_温度範囲内到達
+ANL
+MPS
+AND M3903                ; 【搬送】搬送→Lo_ST3搬送開始
+INC D5000                ; LoST3-1自動運転ｽﾃｯﾌﾟ
+MPP
+LD M5901                 ; LoST3-搬送ﾊﾝﾄﾞ1ID一致ﾌﾗｸﾞ
+OR M5902                 ; LoST3-搬送ﾊﾝﾄﾞ2ID一致ﾌﾗｸﾞ
+ANB X1084                ; LoST3_部_ﾜｰｸ確認(ON=有)
+ANL
+OUT M5920                ; LoST3→搬送ﾜｰｸ供給要求
+MPP
+LD M5993                 ; ﾕﾆｯﾄ9ﾜｰｸ無し
+AND M36                  ; 払出ﾓｰﾄﾞ
+ANL
+MOV K63 D5000            ; LoST3-1自動運転ｽﾃｯﾌﾟ
+LD M5502                 ; U9-1_S02
+LD M3907                 ; 【搬送】搬送→Lo_ST3搬送完了
+OR M5922                 ; LoST3→搬送ﾜｰｸ受取り完了
+ANL
+MPS
+LDB M3903                ; 【搬送】搬送→Lo_ST3搬送開始
+ANB M3907                ; 【搬送】搬送→Lo_ST3搬送完了
+ANL
+INC D5000                ; LoST3-1自動運転ｽﾃｯﾌﾟ
+MPP
+OUT M5922                ; LoST3→搬送ﾜｰｸ受取り完了
+LD M5503                 ; U9-1_S03
+AND M5979                ; ﾕﾆｯﾄ9ｽﾃｯﾌﾟ動作
+AND= D5201 K1            ; LoST3 ﾜｰｸ有無記憶
+MPS
+LD X1084                 ; LoST3_部_ﾜｰｸ確認(ON=有)
+OR M35                   ; 空運転ﾓｰﾄﾞ
+ANL
+INC D5000                ; LoST3-1自動運転ｽﾃｯﾌﾟ
+MPP
+LDB X1084                ; LoST3_部_ﾜｰｸ確認(ON=有)
+ANB M35                  ; 空運転ﾓｰﾄﾞ
+ANL
+MOV K60 D5000            ; LoST3-1自動運転ｽﾃｯﾌﾟ
+LD M5560                 ; U9-1_S60 LoST3_ﾜｰｸ受取異常
+AND B0124                ; B124_292)LoST3_ﾜｰｸ受取異常
+MOV K63 D5000            ; LoST3-1自動運転ｽﾃｯﾌﾟ
+;　　ｸﾗﾝﾌﾟ指令
+LD M5504                 ; U9-1_S04_ｸﾗﾝﾌﾟ指令
+AND M5979                ; ﾕﾆｯﾄ9ｽﾃｯﾌﾟ動作
+AND X1082                ; LoST3_部_ﾜｰｸ押_下降端
+ANB B0121                ; B121_289)LoST3ｸﾗﾝﾌﾟ開閉CLS異常
+INC D5000                ; LoST3-1自動運転ｽﾃｯﾌﾟ
+;　　Z軸上昇確認
+LD M5505                 ; U9-1_S05_開始確認待ち
+AND T901                 ; LoST3扉閉
+AND M5979                ; ﾕﾆｯﾄ9ｽﾃｯﾌﾟ動作
+LD L652                  ; Lo搬送高さ移動完了(HIGH)
+OR L651                  ; Lo搬送高さ移動完了(MIDLE)
+ANL
+INC D5000                ; LoST3-1自動運転ｽﾃｯﾌﾟ
+@INC D5020               ; LoST3投入回数
+LD M5506                 ; U9-1_S06
+INC D5000                ; LoST3-1自動運転ｽﾃｯﾌﾟ
+LD M5507                 ; U9-1_S07
+INC D5000                ; LoST3-1自動運転ｽﾃｯﾌﾟ
+LD M5508                 ; U9-1_S08
+INC D5000                ; LoST3-1自動運転ｽﾃｯﾌﾟ
+LD M5509                 ; U9-1_S09
+INC D5000                ; LoST3-1自動運転ｽﾃｯﾌﾟ
+;　　■電特検査前処理
+LD M5510                 ; U9-1_S10
+INC D5000                ; LoST3-1自動運転ｽﾃｯﾌﾟ
+LD M5511                 ; U9-1_S11
+INC D5000                ; LoST3-1自動運転ｽﾃｯﾌﾟ
+LD M5512                 ; U9-1_S12_
+INC D5000                ; LoST3-1自動運転ｽﾃｯﾌﾟ
+LD M5513                 ; U9-1_S13
+AND M5979                ; ﾕﾆｯﾄ9ｽﾃｯﾌﾟ動作
+INC D5000                ; LoST3-1自動運転ｽﾃｯﾌﾟ
+LD M5514                 ; U9-1_S14_ﾊﾟﾚｯﾄ前進指令
+AND M5979                ; ﾕﾆｯﾄ9ｽﾃｯﾌﾟ動作
+AND X1080                ; LoST3_部_ﾊﾟﾚｯﾄ_前進端
+INC D5000                ; LoST3-1自動運転ｽﾃｯﾌﾟ
+;<h1/>__S15_電特検査処理開始
+LD M5515                 ; U9-1_S15
+AND M5979                ; ﾕﾆｯﾄ9ｽﾃｯﾌﾟ動作
+ANB M5734                ; U9-3(検査SUB)起動中
+INC D5000                ; LoST3-1自動運転ｽﾃｯﾌﾟ
+LD M5516                 ; U9-1_S16_検査SUB開始ﾌﾗｸﾞ
+AND M5979                ; ﾕﾆｯﾄ9ｽﾃｯﾌﾟ動作
+AND M5734                ; U9-3(検査SUB)起動中
+INC D5000                ; LoST3-1自動運転ｽﾃｯﾌﾟ
+LD M5517                 ; U9-1_S17
+AND M5979                ; ﾕﾆｯﾄ9ｽﾃｯﾌﾟ動作
+ANB M5734                ; U9-3(検査SUB)起動中
+ANB M130                 ; 一時停止
+INC D5000                ; LoST3-1自動運転ｽﾃｯﾌﾟ
+LD M5518                 ; U9-1_S18
+AND M5979                ; ﾕﾆｯﾄ9ｽﾃｯﾌﾟ動作
+INC D5000                ; LoST3-1自動運転ｽﾃｯﾌﾟ
+LD M5519                 ; U9-1_S19
+AND M5979                ; ﾕﾆｯﾄ9ｽﾃｯﾌﾟ動作
+INC D5000                ; LoST3-1自動運転ｽﾃｯﾌﾟ
+;　　ｽﾃｰｼﾞ後退
+LD M5520                 ; U9-1_S20_ｽﾃｰｼﾞ後退命令
+AND M5979                ; ﾕﾆｯﾄ9ｽﾃｯﾌﾟ動作
+AND X1081                ; LoST3_部_ﾊﾟﾚｯﾄ_後退端
+INC D5000                ; LoST3-1自動運転ｽﾃｯﾌﾟ
+;　　ｸﾗﾝﾌﾟ解除
+LD M5521                 ; U9-1_S21_
+AND M5979                ; ﾕﾆｯﾄ9ｽﾃｯﾌﾟ動作
+INC D5000                ; LoST3-1自動運転ｽﾃｯﾌﾟ
+LD M5522                 ; U9-1_S22
+AND M5979                ; ﾕﾆｯﾄ9ｽﾃｯﾌﾟ動作
+INC D5000                ; LoST3-1自動運転ｽﾃｯﾌﾟ
+LD M5523                 ; U9-1_S23
+AND M5979                ; ﾕﾆｯﾄ9ｽﾃｯﾌﾟ動作
+INC D5000                ; LoST3-1自動運転ｽﾃｯﾌﾟ
+LD M5524                 ; U9-1_S24
+AND M5979                ; ﾕﾆｯﾄ9ｽﾃｯﾌﾟ動作
+INC D5000                ; LoST3-1自動運転ｽﾃｯﾌﾟ
+;<h1/>__S25_ﾜｰｸ除材要求
+LDB M3982                ; ﾊﾝﾄﾞ1_Lo検査未了品
+ANB M3988                ; ﾊﾝﾄﾞ1_Lo検査ST3再検品
+ANB M3992                ; ﾊﾝﾄﾞ2_Lo検査未了品
+ANB M3998                ; ﾊﾝﾄﾞ2_Lo検査ST3再検品
+ANB M4024                ; ﾊﾝﾄﾞ1LoST3除材中ﾌﾗｸﾞ
+ANB M4025                ; ﾊﾝﾄﾞ2LoST3除材中ﾌﾗｸﾞ
+ANB M4075                ; Lo_ST1-3 無効予約ｽﾃｰｼﾞ有ﾌﾗｸﾞ
+ANB M4076                ; Lo_ST1-3 温度未到達ｽﾃｰｼﾞ有ﾌﾗｸﾞ
+INV
+OUT M5925                ; LoST3_ﾜｰｸ除去要求発行許可
+;M9　M1304を上流仮置きよりﾜｰｸ除材要求なしに入れ替え
+LD M5525                 ; U9-1_S25
+MPS
+AND M3913                ; 【搬送】LoST3除材開始
+INC D5000                ; LoST3-1自動運転ｽﾃｯﾌﾟ
+MPP
+LDB M3011                ; 仮置き台ﾜｰｸ取出可
+OR M5925                 ; LoST3_ﾜｰｸ除去要求発行許可
+ANL
+OUT M5921                ; LoST3→搬送1除材要求
+LD M5526                 ; U9-1_S26
+LD M3917                 ; 【搬送】LoST3除材完了
+OR M5923                 ; LoST3→搬送除材完了受取
+ANL
+MPS
+LDB M3913                ; 【搬送】LoST3除材開始
+ANB M3917                ; 【搬送】LoST3除材完了
+ANL
+INC D5000                ; LoST3-1自動運転ｽﾃｯﾌﾟ
+MPP
+OUT M5923                ; LoST3→搬送除材完了受取
+LD M5527                 ; U9-1_S27
+AND M5979                ; ﾕﾆｯﾄ9ｽﾃｯﾌﾟ動作
+AND= D5201 K0            ; LoST3 ﾜｰｸ有無記憶
+LD L652                  ; Lo搬送高さ移動完了(HIGH)
+OR L651                  ; Lo搬送高さ移動完了(MIDLE)
+OR L650                  ; ﾜｰｸ入替高さ移動完了(LOW)
+ANL
+MPS
+ANB X1084                ; LoST3_部_ﾜｰｸ確認(ON=有)
+INC D5000                ; LoST3-1自動運転ｽﾃｯﾌﾟ
+MPP
+AND X1084                ; LoST3_部_ﾜｰｸ確認(ON=有)
+OUT M5930                ; LoST3_ﾜｰｸ受渡し異常
+LD M5528                 ; U9-1_S28
+AND M5979                ; ﾕﾆｯﾄ9ｽﾃｯﾌﾟ動作
+INC D5000                ; LoST3-1自動運転ｽﾃｯﾌﾟ
+LD M5529                 ; U9-1_S29
+AND M5979                ; ﾕﾆｯﾄ9ｽﾃｯﾌﾟ動作
+MOV K63 D5000            ; LoST3-1自動運転ｽﾃｯﾌﾟ
+;ｻｲｸﾙ終了
+LD M5562                 ; U9-1_S62
+OR CR2003                ; 常時OFF
+@MOV K63 D5000           ; LoST3-1自動運転ｽﾃｯﾌﾟ
+;<h1/>◇_電特検査SUB 状態・動作条件(補助)
+LD CR2002                ; 常時ON
+OUT M5730                ; U9-3原点
+LDB CR2003               ; 常時OFF
+INV
+OUT M5731                ; U9-3全異常
+LD M5730                 ; U9-3原点
+ANB M5734                ; U9-3(検査SUB)起動中
+AND M5979                ; ﾕﾆｯﾄ9ｽﾃｯﾌﾟ動作
+LD M300                  ; PC通信正常
+OR M3                    ; OFFLINE_MODE
+ANL
+OUT M5732                ; U9-3起動条件
+LDB M50                  ; 運転準備
+OR M5986                 ; ﾕﾆｯﾄ9ｻｲｸﾙ停止異常
+OR T15                   ; 強制停止
+OUT M5733                ; U9-3起動OFF
+LD M5516                 ; U9-1_S16_検査SUB開始ﾌﾗｸﾞ
+AND M5732                ; U9-3起動条件
+OR M5734                 ; U9-3(検査SUB)起動中
+ANB M5733                ; U9-3起動OFF
+ANB M5723                ; U9-3 StepEnd
+OUT M5734                ; U9-3(検査SUB)起動中
+;tp表示
+LD CR2002                ; 常時ON
+DW K0 D5400              ; Lo検査ST3_ｽﾃｰﾀｽ表示1
+DW K0 D5401              ; Lo検査ST3_ｽﾃｰﾀｽ表示2
+LD M5734                 ; U9-3(検査SUB)起動中
+DW K1 D5400              ; Lo検査ST3_ｽﾃｰﾀｽ表示1
+LD= D5204 K1             ; LoST3 Lo検査結果(1=OK_2=NG)
+DW K2 D5400              ; Lo検査ST3_ｽﾃｰﾀｽ表示1
+LD= D5204 K2             ; LoST3 Lo検査結果(1=OK_2=NG)
+DW K3 D5400              ; Lo検査ST3_ｽﾃｰﾀｽ表示1
+LDB L900                 ; Lo検査ST3_有効状態
+DW K4 D5400              ; Lo検査ST3_ｽﾃｰﾀｽ表示1
+DW K2 D5401              ; Lo検査ST3_ｽﾃｰﾀｽ表示2
+LD L900                  ; Lo検査ST3_有効状態
+ANB M5913                ; LoST3_温度範囲内到達
+DW K5 D5400              ; Lo検査ST3_ｽﾃｰﾀｽ表示1
+DW K1 D5401              ; Lo検査ST3_ｽﾃｰﾀｽ表示2
+;ﾕﾆｯﾄ1-3ｻｲｸﾙ停止異常
+LDB CR2003               ; 常時OFF
+INV
+OUT M5735                ; U9-3ｻｲｸﾙ停止異常
+;ﾕﾆｯﾄ1-3ｴﾗｰ発生まとめ
+LDB CR2003               ; 常時OFF
+INV
+OUT M5736                ; U9-3ｴﾗｰ発生
+;ﾕﾆｯﾄ1-3停止判定
+LD= D5002 D5007          ; LoST3-3自動運転ｽﾃｯﾌﾟ  LoST3-3動作中判定
+TMR K912 K20
+LD CR2002                ; 常時ON
+MOV D5002 D5007          ; LoST3-3自動運転ｽﾃｯﾌﾟ  LoST3-3動作中判定
+LD T912
+ORB M5734                ; U9-3(検査SUB)起動中
+OUT M5737                ; U9-3動作無し
+;□
+;□　ﾕﾆｯﾄ1-3自動運転ステップ開始
+;□
+LD CR2002                ; 常時ON
+FMOV K0 M5660 K4         ; U9-3_S0
+LDB M5734                ; U9-3(検査SUB)起動中
+MOV K0 D5002             ; LoST3-3自動運転ｽﾃｯﾌﾟ
+LD M5734                 ; U9-3(検査SUB)起動中
+MOV D5002 Z1             ; LoST3-3自動運転ｽﾃｯﾌﾟ
+SET M5660:Z1             ; U9-3_S0
+;<h1/>__S0_ﾜｰｸ有無判定
+LD M5660                 ; U9-3_S0
+MPS
+LD T901                  ; LoST3扉閉
+AND M5979                ; ﾕﾆｯﾄ9ｽﾃｯﾌﾟ動作
+ANB M35                  ; 空運転ﾓｰﾄﾞ
+ANB M3                   ; OFFLINE_MODE
+ANL
+INC D5002                ; LoST3-3自動運転ｽﾃｯﾌﾟ
+MPP
+LD M35                   ; 空運転ﾓｰﾄﾞ
+OR M3                    ; OFFLINE_MODE
+ANL
+MPS
+AND T930                 ; Lo検査時間(仮)
+INC D5002                ; LoST3-3自動運転ｽﾃｯﾌﾟ
+MPP
+TMR K930 K50             ; Lo検査時間(仮)
+LD M5661                 ; U9-3_S1Lo検査ｽﾀｰﾄ要求
+AND W0103.10             ; 電気特性検査開始要求#3
+LD W03.10                ; 電気特性検査ｽﾃｰｼﾞ状態#3
+ANB W03.14               ; 電気特性検査結果#3
+OR M3                    ; OFFLINE_MODE
+OR M35                   ; 空運転ﾓｰﾄﾞ
+ANL
+INC D5002                ; LoST3-3自動運転ｽﾃｯﾌﾟ
+LD M5662                 ; U9-3_S2
+LDB W03.10               ; 電気特性検査ｽﾃｰｼﾞ状態#3
+OR M3                    ; OFFLINE_MODE
+ANL
+INC D5002                ; LoST3-3自動運転ｽﾃｯﾌﾟ
+LD M5663                 ; U9-3_S3
+MPS
+AND<> D5204 K0           ; LoST3 Lo検査結果(1=OK_2=NG)
+INC D5002                ; LoST3-3自動運転ｽﾃｯﾌﾟ
+MRD
+LDB M35                  ; 空運転ﾓｰﾄﾞ
+ANB M3                   ; OFFLINE_MODE
+ANL
+MPS
+AND W03.14               ; 電気特性検査結果#3
+MOV K1 D5204             ; LoST3 Lo検査結果(1=OK_2=NG)
+MPP
+ANB W03.14               ; 電気特性検査結果#3
+MOV K2 D5204             ; LoST3 Lo検査結果(1=OK_2=NG)
+MPP
+LD M3                    ; OFFLINE_MODE
+OR M35                   ; 空運転ﾓｰﾄﾞ
+ANL
+MPS
+ANB B1038                ; B3C8_968)Bz停止
+MOV K1 D5204             ; LoST3 Lo検査結果(1=OK_2=NG)
+MPP
+AND B1038                ; B3C8_968)Bz停止
+MOV K2 D5204             ; LoST3 Lo検査結果(1=OK_2=NG)
+LD M5664                 ; U9-3_S4
+INC D5002                ; LoST3-3自動運転ｽﾃｯﾌﾟ
+LD M5665                 ; U9-3_S5
+INC D5002                ; LoST3-3自動運転ｽﾃｯﾌﾟ
+LD M5666                 ; U9-3_S6
+INC D5002                ; LoST3-3自動運転ｽﾃｯﾌﾟ
+LD M5667                 ; U9-3_S7
+INC D5002                ; LoST3-3自動運転ｽﾃｯﾌﾟ
+LD M5668                 ; U9-3_S8
+INC D5002                ; LoST3-3自動運転ｽﾃｯﾌﾟ
+LD M5669                 ; U9-3_S9
+AND T901                 ; LoST3扉閉
+AND M5979                ; ﾕﾆｯﾄ9ｽﾃｯﾌﾟ動作
+MOV K63 D5002            ; LoST3-3自動運転ｽﾃｯﾌﾟ
+;<h1/>□_原点復帰回路
+LD CR2002                ; 常時ON
+FMOV K0 M5750 K3         ; OriStep0
+LDB M5984                ; ﾕﾆｯﾄ9原点復帰中
+MOV K0 D5010             ; LoST3 原点復帰ｽﾃｯﾌﾟ
+LD M5984                 ; ﾕﾆｯﾄ9原点復帰中
+MOV D5010 Z1             ; LoST3 原点復帰ｽﾃｯﾌﾟ
+SET M5750:Z1             ; OriStep0
+;原点復帰ｻｲｸﾙ監視
+LD M5984                 ; ﾕﾆｯﾄ9原点復帰中
+TMR K900 K200            ; UNIT9原点復帰ﾀｲﾑｱｳﾄ
+;原点復帰ステップ開始
+LD M5750                 ; OriStep0
+AND T901                 ; LoST3扉閉
+AND M5979                ; ﾕﾆｯﾄ9ｽﾃｯﾌﾟ動作
+AND M66                  ; Lo_Hi_RB & Chamber原点
+DW K0 D5020              ; LoST3投入回数
+CON
+INC D5010                ; LoST3 原点復帰ｽﾃｯﾌﾟ
+LD M5751                 ; OriStep1
+AND T901                 ; LoST3扉閉
+AND M5979                ; ﾕﾆｯﾄ9ｽﾃｯﾌﾟ動作
+ANB W03.10               ; 電気特性検査ｽﾃｰｼﾞ状態#3
+INC D5010                ; LoST3 原点復帰ｽﾃｯﾌﾟ
+LD M5752                 ; OriStep2
+AND T901                 ; LoST3扉閉
+AND M5979                ; ﾕﾆｯﾄ9ｽﾃｯﾌﾟ動作
+INC D5010                ; LoST3 原点復帰ｽﾃｯﾌﾟ
+LD M5753                 ; OriStep3_ｽﾃｰｼﾞ戻り指令
+AND T901                 ; LoST3扉閉
+AND M5979                ; ﾕﾆｯﾄ9ｽﾃｯﾌﾟ動作
+AND X1081                ; LoST3_部_ﾊﾟﾚｯﾄ_後退端
+INC D5010                ; LoST3 原点復帰ｽﾃｯﾌﾟ
+LD M5754                 ; OriStep4
+AND T901                 ; LoST3扉閉
+AND M5979                ; ﾕﾆｯﾄ9ｽﾃｯﾌﾟ動作
+INC D5010                ; LoST3 原点復帰ｽﾃｯﾌﾟ
+LD M5755                 ; OriStep5_
+AND T901                 ; LoST3扉閉
+AND M5979                ; ﾕﾆｯﾄ9ｽﾃｯﾌﾟ動作
+AND L652                 ; Lo搬送高さ移動完了(HIGH)
+INC D5010                ; LoST3 原点復帰ｽﾃｯﾌﾟ
+LD M5756                 ; OriStep6_ｸﾗﾝﾌﾟ上昇指令
+AND T901                 ; LoST3扉閉
+AND M5979                ; ﾕﾆｯﾄ9ｽﾃｯﾌﾟ動作
+AND X1083                ; LoST3_部_ﾜｰｸ押_上昇端
+INC D5010                ; LoST3 原点復帰ｽﾃｯﾌﾟ
+;　　ﾜｰｸ有無ﾁｪｯｸ
+LD M5757                 ; OriStep7
+AND T901                 ; LoST3扉閉
+AND M5979                ; ﾕﾆｯﾄ9ｽﾃｯﾌﾟ動作
+MPS
+ANB X1084                ; LoST3_部_ﾜｰｸ確認(ON=有)
+MOV K10 D5010            ; LoST3 原点復帰ｽﾃｯﾌﾟ
+MPP
+AND X1084                ; LoST3_部_ﾜｰｸ確認(ON=有)
+INC D5010                ; LoST3 原点復帰ｽﾃｯﾌﾟ
+;　　ﾜｰｸ除去要求
+LD M5758                 ; OriStep8_ORGﾜｰｸ除去要求
+AND T901                 ; LoST3扉閉
+AND M5979                ; ﾕﾆｯﾄ9ｽﾃｯﾌﾟ動作
+AND B013E                ; B13E_318)LoST3ﾜｰｸ除去要求
+MOV K46 D5010            ; LoST3 原点復帰ｽﾃｯﾌﾟ
+;　　
+LD M5759                 ; OriStep9
+AND T901                 ; LoST3扉閉
+AND M5979                ; ﾕﾆｯﾄ9ｽﾃｯﾌﾟ動作
+INC D5010                ; LoST3 原点復帰ｽﾃｯﾌﾟ
+LD M5760                 ; OriStep10
+MPS
+AND M5980                ; ﾕﾆｯﾄ9原点
+MOV K46 D5010            ; LoST3 原点復帰ｽﾃｯﾌﾟ
+MPP
+FMOV K0 D5200 K20        ; LoST3 INDEX NO.
+LD M5796                 ; OriStep46
+ANB M82                  ; 原点復帰開始
+MOV K47 D5010            ; LoST3 原点復帰ｽﾃｯﾌﾟ
+;<h1/>□_手動回路
+LD M31                   ; 手動ﾓｰﾄﾞ
+AND M32                  ; ﾒｲﾝ手動操作可能条件
+ANB M5985                ; ﾕﾆｯﾄ9起動中
+ANB M5984                ; ﾕﾆｯﾄ9原点復帰中
+MC
+;ｺﾝﾀｸﾄﾍｯﾄﾞ前後
+LD CR2002                ; 常時ON
+AND M129                 ; 安全入力OK
+AND M3802                ; U6-3_RCX240起動条件
+AND M3811                ; RCX240動作完了
+AND L652                 ; Lo搬送高さ移動完了(HIGH)
+AND X1082                ; LoST3_部_ﾜｰｸ押_下降端
+OUT M5800                ; LoST3ﾊﾟﾚｯﾄ前進_OK
+LDP B1180                ; UNIT9-2-1 TP-PB
+LD M5812                 ; LoST3SwBoxMode_ﾊﾟﾚｯﾄ前後Flag
+ANP X1209                ; Lo#1_上段扉閉端
+ANB X1208                ; Lo#1_上段扉開端
+ORL
+ORP M5824                ; LoST3ｸﾗﾝﾌﾟ&前進_ﾊﾟﾚｯﾄ前進指令
+AND M5800                ; LoST3ﾊﾟﾚｯﾄ前進_OK
+LD M5801                 ; LoST3ﾊﾟﾚｯﾄ前進指令
+ANB M5803                ; LoST3ﾊﾟﾚｯﾄ後退指令
+ORL
+OUT M5801                ; LoST3ﾊﾟﾚｯﾄ前進指令
+LD CR2002                ; 常時ON
+ANB W03.10               ; 電気特性検査ｽﾃｰｼﾞ状態#3
+AND L652                 ; Lo搬送高さ移動完了(HIGH)
+OUT M5802                ; LoST3ﾊﾟﾚｯﾄ後退_OK
+LDP B1181                ; UNIT9-2-2 TP-PB
+LD M5812                 ; LoST3SwBoxMode_ﾊﾟﾚｯﾄ前後Flag
+ANP X1208                ; Lo#1_上段扉開端
+ANB X1209                ; Lo#1_上段扉閉端
+ORL
+ORP M5832                ; LoST3ｸﾗﾝﾌﾟ&前進_ﾊﾟﾚｯﾄ後退指令
+AND M5802                ; LoST3ﾊﾟﾚｯﾄ後退_OK
+LD M5803                 ; LoST3ﾊﾟﾚｯﾄ後退指令
+ANB M5801                ; LoST3ﾊﾟﾚｯﾄ前進指令
+ORL
+OUT M5803                ; LoST3ﾊﾟﾚｯﾄ後退指令
+;　　ｸﾗﾝﾌﾟ上下
+LD CR2002                ; 常時ON
+ANB L618                 ; ﾊﾝﾄﾞ1st3部ﾜｰｸ受渡し動作完了
+ANB L619                 ; ﾊﾝﾄﾞ2st3部ﾜｰｸ受取り動作完了
+ANB L620                 ; ﾊﾝﾄﾞ2st3部ﾜｰｸ受渡し動作完了
+ANB L621                 ; ﾊﾝﾄﾞ1OKｺﾝﾍﾞﾔ部ﾜｰｸ受渡し動作完了
+ANB L651                 ; Lo搬送高さ移動完了(MIDLE)
+ANB L652                 ; Lo搬送高さ移動完了(HIGH)
+INV
+AND M129                 ; 安全入力OK
+AND M3802                ; U6-3_RCX240起動条件
+AND M3811                ; RCX240動作完了
+AND X1081                ; LoST3_部_ﾊﾟﾚｯﾄ_後退端
+ANB M4100                ; Lo搬送XY位置移動
+OUT M5804                ; LoST3ｸﾗﾝﾌﾟ開閉_閉_起動OK
+LDP B1182                ; UNIT9-2-3 TP-PB
+ORP M5822                ; LoST3ｸﾗﾝﾌﾟ&前進_ｸﾗﾝﾌﾟ閉指令
+AND M5804                ; LoST3ｸﾗﾝﾌﾟ開閉_閉_起動OK
+LD M5805                 ; LoST3ｸﾗﾝﾌﾟ開閉_閉_指令
+ANB M5807                ; LoST3ｸﾗﾝﾌﾟ開閉_開__指令
+ORL
+OUT M5805                ; LoST3ｸﾗﾝﾌﾟ開閉_閉_指令
+LD CR2002                ; 常時ON
+ANB W03.10               ; 電気特性検査ｽﾃｰｼﾞ状態#3
+AND X1081                ; LoST3_部_ﾊﾟﾚｯﾄ_後退端
+OUT M5806                ; LoST3ｸﾗﾝﾌﾟ開閉_開_起動OK
+LDP B1183                ; UNIT9-2-4 TP-PB
+ORP M5834                ; LoST3ｸﾗﾝﾌﾟ&前進_ｸﾗﾝﾌﾟ開指令
+AND M5806                ; LoST3ｸﾗﾝﾌﾟ開閉_開_起動OK
+LD M5807                 ; LoST3ｸﾗﾝﾌﾟ開閉_開__指令
+ANB M5805                ; LoST3ｸﾗﾝﾌﾟ開閉_閉_指令
+ORL
+OUT M5807                ; LoST3ｸﾗﾝﾌﾟ開閉_開__指令
+;ｸﾗﾝﾌﾟ閉→ﾊﾟﾚｯﾄ前進
+LD M129                  ; 安全入力OK
+AND M3802                ; U6-3_RCX240起動条件
+AND M3811                ; RCX240動作完了
+AND L652                 ; Lo搬送高さ移動完了(HIGH)
+AND X1081                ; LoST3_部_ﾊﾟﾚｯﾄ_後退端
+OUT M5820                ; LoST3ｸﾗﾝﾌﾟ&前進指令条件
+LD M5813                 ; LoST3SwBoxMode_ｸﾗﾝﾌﾟ&ﾊﾟﾚｯﾄFlag
+ANP X1209                ; Lo#1_上段扉閉端
+ANB X1208                ; Lo#1_上段扉開端
+AND M5804                ; LoST3ｸﾗﾝﾌﾟ開閉_閉_起動OK
+AND M5820                ; LoST3ｸﾗﾝﾌﾟ&前進指令条件
+OR M5821                 ; LoST3ｸﾗﾝﾌﾟ&前進開始
+ANB M5826                ; LoST3ｸﾗﾝﾌﾟ閉→ﾊﾟﾚｯﾄ前進動作完了
+ANB B0120                ; B120_288)LoST3ｽﾃｰｼﾞ前後CL異常
+ANB B0121                ; B121_289)LoST3ｸﾗﾝﾌﾟ開閉CLS異常
+AND M5813                ; LoST3SwBoxMode_ｸﾗﾝﾌﾟ&ﾊﾟﾚｯﾄFlag
+OUT M5821                ; LoST3ｸﾗﾝﾌﾟ&前進開始
+LD M5821                 ; LoST3ｸﾗﾝﾌﾟ&前進開始
+AND M5804                ; LoST3ｸﾗﾝﾌﾟ開閉_閉_起動OK
+OR M5822                 ; LoST3ｸﾗﾝﾌﾟ&前進_ｸﾗﾝﾌﾟ閉指令
+AND M5821                ; LoST3ｸﾗﾝﾌﾟ&前進開始
+OUT M5822                ; LoST3ｸﾗﾝﾌﾟ&前進_ｸﾗﾝﾌﾟ閉指令
+LD M5822                 ; LoST3ｸﾗﾝﾌﾟ&前進_ｸﾗﾝﾌﾟ閉指令
+AND T902                 ; LoST3_部_ﾜｰｸ押_下降端
+OR M5823                 ; LoST3ｸﾗﾝﾌﾟ&前進_ｸﾗﾝﾌﾟ確認
+AND M5821                ; LoST3ｸﾗﾝﾌﾟ&前進開始
+OUT M5823                ; LoST3ｸﾗﾝﾌﾟ&前進_ｸﾗﾝﾌﾟ確認
+LD M5823                 ; LoST3ｸﾗﾝﾌﾟ&前進_ｸﾗﾝﾌﾟ確認
+AND M5800                ; LoST3ﾊﾟﾚｯﾄ前進_OK
+OR M5824                 ; LoST3ｸﾗﾝﾌﾟ&前進_ﾊﾟﾚｯﾄ前進指令
+AND M5821                ; LoST3ｸﾗﾝﾌﾟ&前進開始
+OUT M5824                ; LoST3ｸﾗﾝﾌﾟ&前進_ﾊﾟﾚｯﾄ前進指令
+LD M5824                 ; LoST3ｸﾗﾝﾌﾟ&前進_ﾊﾟﾚｯﾄ前進指令
+AND X1080                ; LoST3_部_ﾊﾟﾚｯﾄ_前進端
+OR M5825                 ; LoST3ｸﾗﾝﾌﾟ&前進_ﾊﾟﾚｯﾄ前進確認
+AND M5821                ; LoST3ｸﾗﾝﾌﾟ&前進開始
+OUT M5825                ; LoST3ｸﾗﾝﾌﾟ&前進_ﾊﾟﾚｯﾄ前進確認
+LD M5825                 ; LoST3ｸﾗﾝﾌﾟ&前進_ﾊﾟﾚｯﾄ前進確認
+OUT M5826                ; LoST3ｸﾗﾝﾌﾟ閉→ﾊﾟﾚｯﾄ前進動作完了
+;ﾊﾟﾚｯﾄ後退→ｸﾗﾝﾌﾟ解除
+LD M129                  ; 安全入力OK
+AND M3802                ; U6-3_RCX240起動条件
+AND M3811                ; RCX240動作完了
+AND L652                 ; Lo搬送高さ移動完了(HIGH)
+OUT M5830                ; LoST3ｸﾗﾝﾌﾟ解除&ﾊﾟﾚｯﾄ後退_指令条
+LD M5813                 ; LoST3SwBoxMode_ｸﾗﾝﾌﾟ&ﾊﾟﾚｯﾄFlag
+ANP X1208                ; Lo#1_上段扉開端
+ANB X1209                ; Lo#1_上段扉閉端
+AND M5802                ; LoST3ﾊﾟﾚｯﾄ後退_OK
+AND M5830                ; LoST3ｸﾗﾝﾌﾟ解除&ﾊﾟﾚｯﾄ後退_指令条
+OR M5831                 ; LoST3ﾊﾟﾚｯﾄ後退&ｸﾗﾝﾌﾟ解除開始
+ANB M5836                ; LoST3ﾊﾟﾚｯﾄ後退→ｸﾗﾝﾌﾟ開動作完了
+ANB B0120                ; B120_288)LoST3ｽﾃｰｼﾞ前後CL異常
+ANB B0121                ; B121_289)LoST3ｸﾗﾝﾌﾟ開閉CLS異常
+AND M5813                ; LoST3SwBoxMode_ｸﾗﾝﾌﾟ&ﾊﾟﾚｯﾄFlag
+OUT M5831                ; LoST3ﾊﾟﾚｯﾄ後退&ｸﾗﾝﾌﾟ解除開始
+LD M5831                 ; LoST3ﾊﾟﾚｯﾄ後退&ｸﾗﾝﾌﾟ解除開始
+AND M5802                ; LoST3ﾊﾟﾚｯﾄ後退_OK
+OR M5832                 ; LoST3ｸﾗﾝﾌﾟ&前進_ﾊﾟﾚｯﾄ後退指令
+AND M5831                ; LoST3ﾊﾟﾚｯﾄ後退&ｸﾗﾝﾌﾟ解除開始
+OUT M5832                ; LoST3ｸﾗﾝﾌﾟ&前進_ﾊﾟﾚｯﾄ後退指令
+LD M5832                 ; LoST3ｸﾗﾝﾌﾟ&前進_ﾊﾟﾚｯﾄ後退指令
+AND X1081                ; LoST3_部_ﾊﾟﾚｯﾄ_後退端
+OR M5833                 ; LoST3ｸﾗﾝﾌﾟ&前進_ﾊﾟﾚｯﾄ後退確認
+AND M5831                ; LoST3ﾊﾟﾚｯﾄ後退&ｸﾗﾝﾌﾟ解除開始
+OUT M5833                ; LoST3ｸﾗﾝﾌﾟ&前進_ﾊﾟﾚｯﾄ後退確認
+LD M5833                 ; LoST3ｸﾗﾝﾌﾟ&前進_ﾊﾟﾚｯﾄ後退確認
+AND M5806                ; LoST3ｸﾗﾝﾌﾟ開閉_開_起動OK
+OR M5834                 ; LoST3ｸﾗﾝﾌﾟ&前進_ｸﾗﾝﾌﾟ開指令
+AND M5831                ; LoST3ﾊﾟﾚｯﾄ後退&ｸﾗﾝﾌﾟ解除開始
+OUT M5834                ; LoST3ｸﾗﾝﾌﾟ&前進_ｸﾗﾝﾌﾟ開指令
+LD M5834                 ; LoST3ｸﾗﾝﾌﾟ&前進_ｸﾗﾝﾌﾟ開指令
+AND X1083                ; LoST3_部_ﾜｰｸ押_上昇端
+OR M5835                 ; LoST3ｸﾗﾝﾌﾟ&前進_ｸﾗﾝﾌﾟ開確認
+AND M5831                ; LoST3ﾊﾟﾚｯﾄ後退&ｸﾗﾝﾌﾟ解除開始
+OUT M5835                ; LoST3ｸﾗﾝﾌﾟ&前進_ｸﾗﾝﾌﾟ開確認
+LD M5835                 ; LoST3ｸﾗﾝﾌﾟ&前進_ｸﾗﾝﾌﾟ開確認
+OUT M5836                ; LoST3ﾊﾟﾚｯﾄ後退→ｸﾗﾝﾌﾟ開動作完了
+MCR
+LDP B1186                ; SWBox_ﾊﾟﾚｯﾄ前後ﾓｰﾄﾞsw
+ANB M5812                ; LoST3SwBoxMode_ﾊﾟﾚｯﾄ前後Flag
+LDPB B1186               ; SWBox_ﾊﾟﾚｯﾄ前後ﾓｰﾄﾞsw
+AND M5812                ; LoST3SwBoxMode_ﾊﾟﾚｯﾄ前後Flag
+ANB M6312                ; Hi_RBﾁｬｯｸ開可
+ANB M5813                ; LoST3SwBoxMode_ｸﾗﾝﾌﾟ&ﾊﾟﾚｯﾄFlag
+ORL
+AND= D50 K201            ; TpM-K_表示中ページNo.
+AND M31                  ; 手動ﾓｰﾄﾞ
+ANB M81                  ; 原点復帰動作中
+AND M50                  ; 運転準備
+AND M29                  ; 未使用
+OUT M5812                ; LoST3SwBoxMode_ﾊﾟﾚｯﾄ前後Flag
+LDP B1187                ; SWBox_ｸﾗﾝﾌﾟ&ﾊﾟﾚｯﾄﾓｰﾄﾞsw
+ANB M5813                ; LoST3SwBoxMode_ｸﾗﾝﾌﾟ&ﾊﾟﾚｯﾄFlag
+LDPB B1187               ; SWBox_ｸﾗﾝﾌﾟ&ﾊﾟﾚｯﾄﾓｰﾄﾞsw
+AND M5813                ; LoST3SwBoxMode_ｸﾗﾝﾌﾟ&ﾊﾟﾚｯﾄFlag
+ANB M5812                ; LoST3SwBoxMode_ﾊﾟﾚｯﾄ前後Flag
+ANB M6312                ; Hi_RBﾁｬｯｸ開可
+ORL
+AND= D50 K201            ; TpM-K_表示中ページNo.
+AND M31                  ; 手動ﾓｰﾄﾞ
+ANB M81                  ; 原点復帰動作中
+AND M50                  ; 運転準備
+AND M29                  ; 未使用
+OUT M5813                ; LoST3SwBoxMode_ｸﾗﾝﾌﾟ&ﾊﾟﾚｯﾄFlag
+;<h1/>□_出力回路
+;ソレノイドバルブ出力
+LDB L900                 ; Lo検査ST3_有効状態
+ANB B0127                ; B127_295)LoST3 ﾋｰﾀｰ過昇異常
+TMR K920 K1800           ; Lo検査ST3ﾋｰﾀｰｴｱｰ停止ﾃﾞｨﾚｲ
+LDB T920                 ; Lo検査ST3ﾋｰﾀｰｴｱｰ停止ﾃﾞｨﾚｲ
+OUT Y212A                ; Lo検査ST3ﾋｰﾀｰｴｱｰ供給
+LDB Y212A                ; Lo検査ST3ﾋｰﾀｰｴｱｰ供給
+OUT Y212B                ; Lo検査ST3ﾋｰﾀｰｴｱｰ供給OFF
+LD L900                  ; Lo検査ST3_有効状態
+AND Y212A                ; Lo検査ST3ﾋｰﾀｰｴｱｰ供給
+AND X03                  ; 圧空元圧正常
+AND M126                 ; 低温検査安全扉正常
+OUT Y201A                ; LoST3 Heater ON
+;ｽﾃｰｼﾞ(ﾊﾟﾚｯﾄ前後)
+LD M5801                 ; LoST3ﾊﾟﾚｯﾄ前進指令
+AND M5800                ; LoST3ﾊﾟﾚｯﾄ前進_OK
+LDB M5514                ; U9-1_S14_ﾊﾟﾚｯﾄ前進指令
+INV
+ORL
+LD Y2108                 ; LoST3ｽﾃｰｼﾞ前後前進
+ANB Y2109                ; LoST3ｽﾃｰｼﾞ前後後退
+ORL
+AND M50                  ; 運転準備
+OUT Y2108                ; LoST3ｽﾃｰｼﾞ前後前進
+LD M5803                 ; LoST3ﾊﾟﾚｯﾄ後退指令
+AND M5802                ; LoST3ﾊﾟﾚｯﾄ後退_OK
+LDB M5753                ; OriStep3_ｽﾃｰｼﾞ戻り指令
+ANB M5520                ; U9-1_S20_ｽﾃｰｼﾞ後退命令
+INV
+ORL
+LD Y2109                 ; LoST3ｽﾃｰｼﾞ前後後退
+ANB Y2108                ; LoST3ｽﾃｰｼﾞ前後前進
+ORL
+AND M50                  ; 運転準備
+OUT Y2109                ; LoST3ｽﾃｰｼﾞ前後後退
+;ｸﾗﾝﾌﾟ/ｱﾝｸﾗﾝﾌﾟ
+LD M5805                 ; LoST3ｸﾗﾝﾌﾟ開閉_閉_指令
+AND M5804                ; LoST3ｸﾗﾝﾌﾟ開閉_閉_起動OK
+OR M3956                 ; LoST3 ｸﾗﾝﾌﾟ指令(Lo給材)
+OR M5504                 ; U9-1_S04_ｸﾗﾝﾌﾟ指令
+LD Y210A                 ; LoST3ﾜｰｸ押さえ下降
+ANB Y210B                ; LoST3ﾜｰｸ押さえ上昇
+ORL
+AND M50                  ; 運転準備
+OUT Y210A                ; LoST3ﾜｰｸ押さえ下降
+LD M5807                 ; LoST3ｸﾗﾝﾌﾟ開閉_開__指令
+AND M5806                ; LoST3ｸﾗﾝﾌﾟ開閉_開_起動OK
+OR M3966                 ; LoST3_ｱﾝｸﾗﾝﾌﾟ指令(Lo除材)
+OR M5756                 ; OriStep6_ｸﾗﾝﾌﾟ上昇指令
+LD Y210B                 ; LoST3ﾜｰｸ押さえ上昇
+ANB Y210A                ; LoST3ﾜｰｸ押さえ下降
+ORL
+AND M50                  ; 運転準備
+OUT Y210B                ; LoST3ﾜｰｸ押さえ上昇
+;■その他制御出力
+LD M5661                 ; U9-3_S1Lo検査ｽﾀｰﾄ要求
+OUT W0103.10             ; 電気特性検査開始要求#3
+LD L900                  ; Lo検査ST3_有効状態
+OUT W0103.14             ; 電気特性検査ｽﾃｰｼﾞ有効/無効#3
+LD M5904                 ; LoST3検査_有効確認要求
+OUT W0107.2              ; Lo_ST3ﾁｪｯｶ-確認要求
+LD L900                  ; Lo検査ST3_有効状態
+LD M5913                 ; LoST3_温度範囲内到達
+LDB M5913                ; LoST3_温度範囲内到達
+AND T1                   ; 0.3Secｸﾛｯｸ
+ORL
+ANL
+ANB M5909                ; LoST3_無効予約(自動運転)
+LD M5909                 ; LoST3_無効予約(自動運転)
+AND CR2006               ; 1sｸﾛｯｸﾊﾟﾙｽ
+ORL
+OUT Y2092                ; LoST3__有効/無効表示
+OUT B168A                ; LoST3__有効/無効表示
+;□□　　パネル表示　　□□
+LD Y2108                 ; LoST3ｽﾃｰｼﾞ前後前進
+AND CR2006               ; 1sｸﾛｯｸﾊﾟﾙｽ
+OR X1080                 ; LoST3_部_ﾊﾟﾚｯﾄ_前進端
+OUT B1680                ; UNIT9-2-1 TP-PL
+LD Y2109                 ; LoST3ｽﾃｰｼﾞ前後後退
+AND CR2006               ; 1sｸﾛｯｸﾊﾟﾙｽ
+OR X1081                 ; LoST3_部_ﾊﾟﾚｯﾄ_後退端
+OUT B1681                ; UNIT9-2-2 TP-PL
+LD Y210A                 ; LoST3ﾜｰｸ押さえ下降
+AND CR2006               ; 1sｸﾛｯｸﾊﾟﾙｽ
+OR X1082                 ; LoST3_部_ﾜｰｸ押_下降端
+OUT B1682                ; UNIT9-2-3 TP-PL
+LD Y210B                 ; LoST3ﾜｰｸ押さえ上昇
+AND CR2006               ; 1sｸﾛｯｸﾊﾟﾙｽ
+OR X1083                 ; LoST3_部_ﾜｰｸ押_上昇端
+OUT B1683                ; UNIT9-2-4 TP-PL
+LD M5812                 ; LoST3SwBoxMode_ﾊﾟﾚｯﾄ前後Flag
+OUT B1686                ; SwBoxMode_ﾊﾟﾚｯﾄFlag_ONPL
+LD M5813                 ; LoST3SwBoxMode_ｸﾗﾝﾌﾟ&ﾊﾟﾚｯﾄFlag
+OUT B1687                ; SWBox_ｸﾗﾝﾌﾟ&ﾊﾟﾚｯﾄﾓｰﾄﾞONPL
+;<h1/>□_異常検出
+;□□    異常検出    □□
+;B120(K289)--B12F(K304)  B130(K305)--B13F(K320)
+LD Y2108                 ; LoST3ｽﾃｰｼﾞ前後前進
+ANB X1080                ; LoST3_部_ﾊﾟﾚｯﾄ_前進端
+LD Y2109                 ; LoST3ｽﾃｰｼﾞ前後後退
+ANB X1081                ; LoST3_部_ﾊﾟﾚｯﾄ_後退端
+ORL
+LD X1080                 ; LoST3_部_ﾊﾟﾚｯﾄ_前進端
+AND X1081                ; LoST3_部_ﾊﾟﾚｯﾄ_後退端
+ORL
+LD CR2003                ; 常時OFF
+ANB B0620                ; B120_288)Bz停止
+ORB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B0120                ; B120_288)LoST3ｽﾃｰｼﾞ前後CL異常
+ORL
+MPS
+AND T990                 ; CLSﾀｲﾑｱｳﾄ
+OUT B0120                ; B120_288)LoST3ｽﾃｰｼﾞ前後CL異常
+MPP
+TMR K990 K100            ; CLSﾀｲﾑｱｳﾄ
+LDP B0120                ; B120_288)LoST3ｽﾃｰｼﾞ前後CL異常
+AND< D900 K64            ; FIFO_DATA_VALUE
+MOV K289 D0              ; エラーコード
+FIFOW D0 D900            ; エラーコード  FIFO_DATA_VALUE
+LD M110                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B0620                 ; B120_288)Bz停止
+AND B0120                ; B120_288)LoST3ｽﾃｰｼﾞ前後CL異常
+OUT B0620                ; B120_288)Bz停止
+;　　
+LD Y210A                 ; LoST3ﾜｰｸ押さえ下降
+ANB X1082                ; LoST3_部_ﾜｰｸ押_下降端
+LD Y210B                 ; LoST3ﾜｰｸ押さえ上昇
+ANB X1083                ; LoST3_部_ﾜｰｸ押_上昇端
+ORL
+LD X1082                 ; LoST3_部_ﾜｰｸ押_下降端
+AND X1083                ; LoST3_部_ﾜｰｸ押_上昇端
+ORL
+LD CR2003                ; 常時OFF
+ANB B0621                ; B121_289)Bz停止
+ORB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B0121                ; B121_289)LoST3ｸﾗﾝﾌﾟ開閉CLS異常
+ORL
+MPS
+AND T991                 ; CLSﾀｲﾑｱｳﾄ
+OUT B0121                ; B121_289)LoST3ｸﾗﾝﾌﾟ開閉CLS異常
+MPP
+TMR K991 K100            ; CLSﾀｲﾑｱｳﾄ
+LDP B0121                ; B121_289)LoST3ｸﾗﾝﾌﾟ開閉CLS異常
+AND< D900 K64            ; FIFO_DATA_VALUE
+MOV K290 D0              ; エラーコード
+FIFOW D0 D900            ; エラーコード  FIFO_DATA_VALUE
+LD M110                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B0621                 ; B121_289)Bz停止
+AND B0121                ; B121_289)LoST3ｸﾗﾝﾌﾟ開閉CLS異常
+OUT B0621                ; B121_289)Bz停止
+;
+LD T906                  ; LoST3_ｺﾝﾀｸﾄﾍｯﾄﾞID_更新_DLY
+AND L900                 ; Lo検査ST3_有効状態
+AND<> D5100 D5106        ; LoST3_ｺﾝﾀｸﾄﾍｯﾄﾞID  LoST3_ｺﾝﾀｸﾄﾍｯﾄﾞID_Copy
+LD CR2003                ; 常時OFF
+ANB B0622                ; B122_290)Bz停止
+ORB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B0122                ; B122_290)LoST3_ﾃｽﾄﾍｯﾄﾞID_不一致
+ORL
+OUT B0122                ; B122_290)LoST3_ﾃｽﾄﾍｯﾄﾞID_不一致
+LDP B0122                ; B122_290)LoST3_ﾃｽﾄﾍｯﾄﾞID_不一致
+AND< D900 K64            ; FIFO_DATA_VALUE
+MOV K291 D0              ; エラーコード
+FIFOW D0 D900            ; エラーコード  FIFO_DATA_VALUE
+LD M110                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B0622                 ; B122_290)Bz停止
+AND B0122                ; B122_290)LoST3_ﾃｽﾄﾍｯﾄﾞID_不一致
+OUT B0622                ; B122_290)Bz停止
+;
+LD T907                  ; LoST3_ﾊﾟﾚｯﾄID_更新_DLY
+AND L900                 ; Lo検査ST3_有効状態
+AND<> D5101 D5107        ; LoST3_ﾊﾟﾚｯﾄID  LoST3_ﾊﾟﾚｯﾄID_ｾﾝｻ状態
+ANB Y2108                ; LoST3ｽﾃｰｼﾞ前後前進
+AND T904                 ; LoST3_部_ﾊﾟﾚｯﾄ_後退端
+LD CR2003                ; 常時OFF
+ANB B0623                ; B123_291)Bz停止
+ORB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B0123                ; B123_291)LoST3_ﾊﾟﾚｯﾄID_不一致
+ORL
+OUT B0123                ; B123_291)LoST3_ﾊﾟﾚｯﾄID_不一致
+LDP B0123                ; B123_291)LoST3_ﾊﾟﾚｯﾄID_不一致
+AND< D900 K64            ; FIFO_DATA_VALUE
+MOV K292 D0              ; エラーコード
+FIFOW D0 D900            ; エラーコード  FIFO_DATA_VALUE
+LD M110                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B0623                 ; B123_291)Bz停止
+AND B0123                ; B123_291)LoST3_ﾊﾟﾚｯﾄID_不一致
+OUT B0623                ; B123_291)Bz停止
+;
+LD M5560                 ; U9-1_S60 LoST3_ﾜｰｸ受取異常
+LD CR2003                ; 常時OFF
+ANB B0624                ; B124_292)Bz停止
+ORB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B0124                ; B124_292)LoST3_ﾜｰｸ受取異常
+ORL
+OUT B0124                ; B124_292)LoST3_ﾜｰｸ受取異常
+LDP B0124                ; B124_292)LoST3_ﾜｰｸ受取異常
+AND< D900 K64            ; FIFO_DATA_VALUE
+MOV K293 D0              ; エラーコード
+FIFOW D0 D900            ; エラーコード  FIFO_DATA_VALUE
+LD M110                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B0624                 ; B124_292)Bz停止
+AND B0124                ; B124_292)LoST3_ﾜｰｸ受取異常
+OUT B0624                ; B124_292)Bz停止
+;
+LD M5930                 ; LoST3_ﾜｰｸ受渡し異常
+LD CR2003                ; 常時OFF
+ANB B0625                ; B125_293)Bz停止
+ORB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B0125                ; B125_293)LoST3_ﾜｰｸ受渡し異常
+ORL
+OUT B0125                ; B125_293)LoST3_ﾜｰｸ受渡し異常
+LDP B0125                ; B125_293)LoST3_ﾜｰｸ受渡し異常
+AND< D900 K64            ; FIFO_DATA_VALUE
+MOV K294 D0              ; エラーコード
+FIFOW D0 D900            ; エラーコード  FIFO_DATA_VALUE
+LD M110                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B0625                 ; B125_293)Bz停止
+AND B0125                ; B125_293)LoST3_ﾜｰｸ受渡し異常
+OUT B0625                ; B125_293)Bz停止
+;
+LD D5201.0
+ANB X1084                ; LoST3_部_ﾜｰｸ確認(ON=有)
+LDB D5201.0
+AND X1084                ; LoST3_部_ﾜｰｸ確認(ON=有)
+ORL
+ANB M3903                ; 【搬送】搬送→Lo_ST3搬送開始
+ANB M3907                ; 【搬送】搬送→Lo_ST3搬送完了
+ANB M3913                ; 【搬送】LoST3除材開始
+ANB M3917                ; 【搬送】LoST3除材完了
+ANB M5553                ; U9-1_S53
+ANB M5554                ; U9-1_S54
+AND L900                 ; Lo検査ST3_有効状態
+AND M71                  ; 自動運転開始BZ
+LD CR2003                ; 常時OFF
+ANB B0626                ; B126_294)Bz停止
+ORB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B0126                ; B126_294)LoST3 ﾜｰｸ情報不一致
+ORL
+OUT B0126                ; B126_294)LoST3 ﾜｰｸ情報不一致
+LDP B0126                ; B126_294)LoST3 ﾜｰｸ情報不一致
+AND< D900 K64            ; FIFO_DATA_VALUE
+MOV K295 D0              ; エラーコード
+FIFOW D0 D900            ; エラーコード  FIFO_DATA_VALUE
+LD M110                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B0626                 ; B126_294)Bz停止
+AND B0126                ; B126_294)LoST3 ﾜｰｸ情報不一致
+OUT B0626                ; B126_294)Bz停止
+LD<= D5030 D21120        ; Lo_ST3_過昇設定値TP
+LD CR2003                ; 常時OFF
+ANB B0607                ; B107_263)Bz停止
+ORB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B0127                ; B127_295)LoST3 ﾋｰﾀｰ過昇異常
+ORL
+OUT B0127                ; B127_295)LoST3 ﾋｰﾀｰ過昇異常
+MOV K296 D0              ; エラーコード
+FIFOW D0 D900            ; エラーコード  FIFO_DATA_VALUE
+LD M110                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B0627                 ; B127_295)Bz停止
+AND B0127                ; B127_295)LoST3 ﾋｰﾀｰ過昇異常
+OUT B0627                ; B127_295)Bz停止
+LD T940                  ; LoST3_初期温度上昇ﾀｲﾑｱｳﾄ監視
+LD CR2003                ; 常時OFF
+ANB B0628                ; B128_296)Bz停止
+ORB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B0128                ; B128_296)LoST3 ﾋｰﾀｰ上昇ﾀｲﾑｱｳﾄ異
+ORL
+OUT B0128                ; B128_296)LoST3 ﾋｰﾀｰ上昇ﾀｲﾑｱｳﾄ異
+MOV K297 D0              ; エラーコード
+FIFOW D0 D900            ; エラーコード  FIFO_DATA_VALUE
+LD M110                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B0628                 ; B128_296)Bz停止
+AND B0128                ; B128_296)LoST3 ﾋｰﾀｰ上昇ﾀｲﾑｱｳﾄ異
+OUT B0628                ; B128_296)Bz停止
+;　　
+LD M5758                 ; OriStep8_ORGﾜｰｸ除去要求
+LD CR2003                ; 常時OFF
+ANB B063E                ; B13E_318)Bz停止
+ORB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B013E                ; B13E_318)LoST3ﾜｰｸ除去要求
+ORL
+OUT B013E                ; B13E_318)LoST3ﾜｰｸ除去要求
+LD M110                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B063E                 ; B13E_318)Bz停止
+AND B013E                ; B13E_318)LoST3ﾜｰｸ除去要求
+OUT B063E                ; B13E_318)Bz停止
+;電特検査中
+LD W03.10                ; 電気特性検査ｽﾃｰｼﾞ状態#3
+AND M31                  ; 手動ﾓｰﾄﾞ
+AND M5751                ; OriStep1
+LD CR2003                ; 常時OFF
+ANB B063F                ; B13F_319)Bz停止
+ORB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B013F                ; B13F_319)LoST3ﾜｰｸ検査中
+ORL
+OUT B013F                ; B13F_319)LoST3ﾜｰｸ検査中
+LD M110                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B063F                 ; B13F_319)Bz停止
+AND B013F                ; B13F_319)LoST3ﾜｰｸ検査中
+OUT B063F                ; B13F_319)Bz停止
+;異常ﾌﾞｻﾞｰまとめ
+LDB B0120                ; B120_288)LoST3ｽﾃｰｼﾞ前後CL異常
+OR B0620                 ; B120_288)Bz停止
+LDB B0121                ; B121_289)LoST3ｸﾗﾝﾌﾟ開閉CLS異常
+OR B0621                 ; B121_289)Bz停止
+ANL
+LDB B0122                ; B122_290)LoST3_ﾃｽﾄﾍｯﾄﾞID_不一致
+OR B0622                 ; B122_290)Bz停止
+ANL
+LDB B0123                ; B123_291)LoST3_ﾊﾟﾚｯﾄID_不一致
+OR B0623                 ; B123_291)Bz停止
+ANL
+LDB B0124                ; B124_292)LoST3_ﾜｰｸ受取異常
+OR B0624                 ; B124_292)Bz停止
+ANL
+LDB B0125                ; B125_293)LoST3_ﾜｰｸ受渡し異常
+OR B0625                 ; B125_293)Bz停止
+ANL
+LDB B0126                ; B126_294)LoST3 ﾜｰｸ情報不一致
+OR B0626                 ; B126_294)Bz停止
+ANL
+LDB B0127                ; B127_295)LoST3 ﾋｰﾀｰ過昇異常
+OR B0627                 ; B127_295)Bz停止
+ANL
+LDB B0128                ; B128_296)LoST3 ﾋｰﾀｰ上昇ﾀｲﾑｱｳﾄ異
+OR B0628                 ; B128_296)Bz停止
+ANL
+LDB B0129                ; B129_297)
+OR B0629                 ; B129_297)Bz停止
+ANL
+LDB B012A                ; B12A_298)
+OR B062A                 ; B12A_298)Bz停止
+ANL
+LDB B012B                ; B12B_299)
+OR B062B                 ; B12B_299)Bz停止
+ANL
+LDB B012C                ; B12C_300)
+OR B062C                 ; B12C_300)Bz停止
+ANL
+LDB B012D                ; B12D_301)
+OR B062D                 ; B12D_301)Bz停止
+ANL
+LDB B012E                ; B12E_302)
+OR B062E                 ; B12E_302)Bz停止
+ANL
+LDB B012F                ; B12F_303)
+OR B062F                 ; B12F_303)Bz停止
+ANL
+LDB B0130                ; B130_304)
+OR B0630                 ; B130_304)Bz停止
+ANL
+LDB B0131                ; B131_305)
+OR B0631                 ; B131_305)Bz停止
+ANL
+LDB B0132                ; B132_306)
+OR B0632                 ; B132_306)Bz停止
+ANL
+LDB B0133                ; B133_307)
+OR B0633                 ; B133_307)Bz停止
+ANL
+LDB B0134                ; B134_308)
+OR B0634                 ; B134_308)Bz停止
+ANL
+LDB B0135                ; B135_309)
+OR B0635                 ; B135_309)Bz停止
+ANL
+LDB B0136                ; B136_310)
+OR B0636                 ; B136_310)Bz停止
+ANL
+LDB B0137                ; B137_311)
+OR B0637                 ; B137_311)Bz停止
+ANL
+LDB B0138                ; B138_312)
+OR B0638                 ; B138_312)Bz停止
+ANL
+LDB B0139                ; B139_313)
+OR B0639                 ; B139_313)Bz停止
+ANL
+LDB B013A                ; B13A_314)
+OR B063A                 ; B13A_314)Bz停止
+ANL
+LDB B013B                ; B13B_315)
+OR B063B                 ; B13B_315)Bz停止
+ANL
+LDB B013C                ; B13C_316)
+OR B063C                 ; B13C_316)Bz停止
+ANL
+LDB B013D                ; B13D_317)
+OR B063D                 ; B13D_317)Bz停止
+ANL
+LDB B013E                ; B13E_318)LoST3ﾜｰｸ除去要求
+OR B063E                 ; B13E_318)Bz停止
+ANL
+LDB B013F                ; B13F_319)LoST3ﾜｰｸ検査中
+OR B063F                 ; B13F_319)Bz停止
+ANL
+LDB B013E                ; B13E_318)LoST3ﾜｰｸ除去要求
+OR B063E                 ; B13E_318)Bz停止
+ANL
+LDB B013F                ; B13F_319)LoST3ﾜｰｸ検査中
+OR B063F                 ; B13F_319)Bz停止
+ANL
+INV
+OUT M5989                ; ﾕﾆｯﾄ9異常BZ補助
+END
+ENDH

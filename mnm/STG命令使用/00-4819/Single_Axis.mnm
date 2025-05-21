@@ -1,0 +1,2658 @@
+DEVICE:53
+;MODULE:Single_Axis
+;MODULE_TYPE:0
+;SCRIPT_TYPE:
+;OneSystem Sub Module
+;----------------------------------------------------------------------------------------------------------
+;ModuleName	:	Single_Axis
+;ModuleType	:	Sub Module
+;Function	:	単軸RB制御   DEVICENet,PULSE列制御                             
+;-----------------------------------------------------------------------------------------------------------
+LD CR2008                ; 運転開始時1ｽｷｬﾝON
+ZRES @LR100 @LR3215
+;非常停止
+LDP R46104               ; _非常停止中　ﾓｰﾄﾞﾌﾗｸﾞ
+ZRES @EM0 @EM63
+CON
+ZRES @LR100 @LR3215
+;RB I/O初期化
+;'///// 出力 OFF
+;FOR  I =0 TO DM9412
+;	*RB_IN_STATUS:RB_OFFSET[I]=ANDA(*RB_IN_STATUS:RB_OFFSET[I],$0000)
+;	*RB_OUT_STATUS:RB_OFFSET[I]=ANDA(*RB_OUT_STATUS:RB_OFFSET[I],$0000)
+;NEXT
+;
+LD CR2008                ; 運転開始時1ｽｷｬﾝON
+NCJ #1069
+;'///// 出力 OFF
+;
+;FOR  I =0 TO DM9412
+;
+LD CR2002                ; 常時ON
+MOV.S +0 i               ; 変数i
+LABEL #2000
+LD CR2002                ; 常時ON
+LDA DM9412               ; IAI最大軸数
+CON
+EXT
+CON
+STA.L @VM0
+CON
+LDA.S i                  ; 変数i
+CON
+EXT.S
+CON
+CMP.L @VM0
+LD CR2011                ; 演算結果が正
+CJ #2001
+;	*RB_IN_STATUS:RB_OFFSET[I]=ANDA(*RB_IN_STATUS:RB_OFFSET[I],$0000)
+;
+LD CR2002                ; 常時ON
+LDA.S i                  ; 変数i
+CON
+EXT.S
+CON
+STA.L Z12
+CON
+LDA W3AB0:Z12            ; RB_OFFSET
+CON
+EXT
+CON
+STA.L Z11
+CON
+LDA.S i                  ; 変数i
+CON
+EXT.S
+CON
+STA.L Z12
+CON
+LDA W3AB0:Z12            ; RB_OFFSET
+CON
+EXT
+CON
+STA.L Z12
+CON
+LDA *W3A04:Z12           ; RB_IN (STATUS)
+CON
+ANDA $0000
+CON
+STA @VM2
+CON
+MOV @VM2 *W3A04:Z11      ; RB_IN (STATUS)
+;	*RB_OUT_STATUS:RB_OFFSET[I]=ANDA(*RB_OUT_STATUS:RB_OFFSET[I],$0000)
+;
+LD CR2002                ; 常時ON
+LDA.S i                  ; 変数i
+CON
+EXT.S
+CON
+STA.L Z12
+CON
+LDA W3AB0:Z12            ; RB_OFFSET
+CON
+EXT
+CON
+STA.L Z11
+CON
+LDA.S i                  ; 変数i
+CON
+EXT.S
+CON
+STA.L Z12
+CON
+LDA W3AB0:Z12            ; RB_OFFSET
+CON
+EXT
+CON
+STA.L Z12
+CON
+LDA *W3A14:Z12           ; RB_OUT (STATUS)
+CON
+ANDA $0000
+CON
+STA @VM3
+CON
+MOV @VM3 *W3A14:Z11      ; RB_OUT (STATUS)
+;NEXT
+;
+LD CR2002                ; 常時ON
+INC.S i                  ; 変数i
+LDB CR2009               ; 演算結果が負
+CJ #2000
+LABEL #2001
+LABEL #1069
+;
+;<h1/>軸設定
+;DSER(0,RB_TYPE[0,0],32,@DM4)
+;DM9412=32-@DM4		    '軸最大数算出
+;
+;DM9422=6*DM9420         '一軸あたりﾃﾞﾊﾞｲｽ使用数=6ﾜｰﾄﾞ*最大ﾎﾟｲﾝﾄ数
+;DM9424=DM9412*DM9422    '全RB使用ﾃﾞﾊﾞｲｽ点数
+;
+;
+;IF R39900 OR DM50300>=DM9420 THEN '軸動作中または最大ﾎﾟｲﾝﾄ数を超えた時はPos.No増加させない
+;    SET(R39901)
+;ELSE 
+;	RES(R39901)
+;END IF	
+;
+;
+;
+;
+;DSER(0,RB_TYPE[0,0],32,@DM4)
+;
+LD CR2002                ; 常時ON
+DSER #0 W3A25 @VM4 #32   ; RB1 TYPE
+MOV @VM5 @DM4
+LDA @VM4
+;DM9412=32-@DM4		    '軸最大数算出
+;
+LD CR2002                ; 常時ON
+LDA @DM4
+CON
+EXT
+CON
+STA.L @VM6
+CON
+LDA.L +32
+CON
+SUB.L @VM6
+CON
+STA DM9412               ; IAI最大軸数
+;DM9422=6*DM9420         '一軸あたりﾃﾞﾊﾞｲｽ使用数=6ﾜｰﾄﾞ*最大ﾎﾟｲﾝﾄ数
+;
+LD CR2002                ; 常時ON
+LDA DM9420               ; IAI最大ポイント数
+CON
+EXT
+CON
+MUL.L +6
+CON
+STA DM9422               ; 1軸あたり使用ﾃﾞﾊﾞｲｽ数
+;DM9424=DM9412*DM9422    '全RB使用ﾃﾞﾊﾞｲｽ点数
+;
+LD CR2002                ; 常時ON
+LDA DM9422               ; 1軸あたり使用ﾃﾞﾊﾞｲｽ数
+CON
+EXT
+CON
+STA.L @VM8
+CON
+LDA DM9412               ; IAI最大軸数
+CON
+EXT
+CON
+MUL.L @VM8
+CON
+STA DM9424               ; RB使用ﾃﾞﾊﾞｲｽ数
+;IF R39900 OR DM50300>=DM9420 THEN '軸動作中または最大ﾎﾟｲﾝﾄ数を超えた時はPos.No増加させない
+;
+LD>= DM50300 DM9420      ; Position No  IAI最大ポイント数
+OR R39900                ; RB動作中
+NCJ #2002
+;    SET(R39901)
+;
+LD CR2002                ; 常時ON
+SET R39901               ; POS変更禁止
+;ELSE 
+;
+LD CR2002                ; 常時ON
+CJ #2003
+LABEL #2002
+;	RES(R39901)
+;
+LD CR2002                ; 常時ON
+RES R39901               ; POS変更禁止
+;END IF	
+;
+LABEL #2003
+;
+;ポジションデータモニター用 SW 上限設定
+;TYPE D50300.S,D9420.S
+;IF DM50300 < (DM9420-9) THEN
+;	D50300= D50300+1
+;END IF
+;
+;
+LDP R39902               ; +1sw
+NCJ #1000
+;TYPE D50300.S,D9420.S
+;
+;IF DM50300 < (DM9420-9) THEN
+;
+LD CR2002                ; 常時ON
+LDA.S DM9420             ; IAI最大ポイント数
+CON
+EXT.S
+CON
+SUB.L +9
+CON
+STA.L @VM10
+CON
+LDA.S DM50300            ; Position No
+CON
+EXT.S
+CON
+CMP.L @VM10
+LD CR2009                ; 演算結果が負
+NCJ #2004
+;	D50300= D50300+1
+;
+LD CR2002                ; 常時ON
+LDA.S DM50300            ; Position No
+CON
+EXT.S
+CON
+ADD.L +1
+CON
+STA.S DM50300            ; Position No
+;END IF
+;
+LABEL #2004
+LABEL #1000
+;
+;TYPE D50300.S,D9420.S
+;IF DM50300 < (DM9420-19) THEN
+;	DM50300=DM50300+10
+;ELSE
+;	DM50300=(DM9420-9)
+;END IF
+;
+LDP R39903               ; +10sw
+NCJ #1009
+;TYPE D50300.S,D9420.S
+;
+;IF DM50300 < (DM9420-19) THEN
+;
+LD CR2002                ; 常時ON
+LDA.S DM9420             ; IAI最大ポイント数
+CON
+EXT.S
+CON
+SUB.L +19
+CON
+STA.L @VM12
+CON
+LDA.S DM50300            ; Position No
+CON
+EXT.S
+CON
+CMP.L @VM12
+LD CR2009                ; 演算結果が負
+NCJ #2005
+;	DM50300=DM50300+10
+;
+LD CR2002                ; 常時ON
+LDA.S DM50300            ; Position No
+CON
+EXT.S
+CON
+ADD.L +10
+CON
+STA.S DM50300            ; Position No
+;ELSE
+;
+LD CR2002                ; 常時ON
+CJ #2006
+LABEL #2005
+;	DM50300=(DM9420-9)
+;
+LD CR2002                ; 常時ON
+LDA.S DM9420             ; IAI最大ポイント数
+CON
+EXT.S
+CON
+SUB.L +9
+CON
+STA.S DM50300            ; Position No
+;END IF
+;
+LABEL #2006
+LABEL #1009
+;
+;TYPE D50300.S,D9420.S
+;IF DM50300 < (DM9420-100) THEN
+;	DM50300=DM50300+100
+;ELSE
+;	DM50300=(DM9420-9)
+;END IF
+;
+LDP R39904               ; +100sw
+NCJ #1010
+;TYPE D50300.S,D9420.S
+;
+;IF DM50300 < (DM9420-100) THEN
+;
+LD CR2002                ; 常時ON
+LDA.S DM9420             ; IAI最大ポイント数
+CON
+EXT.S
+CON
+SUB.L +100
+CON
+STA.L @VM14
+CON
+LDA.S DM50300            ; Position No
+CON
+EXT.S
+CON
+CMP.L @VM14
+LD CR2009                ; 演算結果が負
+NCJ #2007
+;	DM50300=DM50300+100
+;
+LD CR2002                ; 常時ON
+LDA.S DM50300            ; Position No
+CON
+EXT.S
+CON
+ADD.L +100
+CON
+STA.S DM50300            ; Position No
+;ELSE
+;
+LD CR2002                ; 常時ON
+CJ #2008
+LABEL #2007
+;	DM50300=(DM9420-9)
+;
+LD CR2002                ; 常時ON
+LDA.S DM9420             ; IAI最大ポイント数
+CON
+EXT.S
+CON
+SUB.L +9
+CON
+STA.S DM50300            ; Position No
+;END IF
+;
+LABEL #2008
+LABEL #1010
+;
+;<h1/>RB SW表示/非表示
+;DM9414.D=0
+;FOR @DM6 = 1 TO DM9412
+;	BSET(DM9414.D,(@DM6-1))			'未使用軸 消去
+;NEXT
+;
+;DM9416.D=0
+;FOR @DM6=1 TO 32
+;    IF R39900=ON OR @DM6>DM9412 THEN '未使用SW 動作禁止
+;    	BOUT(DM9416.D,(@DM6-1))    
+;    END IF
+;NEXT
+;
+;'--------------------------
+;IF DM50312>=(DM9412-1) OR R39900 THEN'MONITOR画面軸 加算sw  禁止
+;	SET(R39905)
+;ELSE
+;	RES(R39905)
+;END IF
+;	
+LD<> DM9412 #0           ; IAI最大軸数
+NCJ #1003
+;DM9414.D=0
+;
+LD CR2002                ; 常時ON
+MOV.D #0 DM9414          ; 使用可能軸BIT
+;FOR @DM6 = 1 TO DM9412
+;
+LD CR2002                ; 常時ON
+MOV #1 @DM6
+LABEL #2009
+LD> @DM6 DM9412          ; IAI最大軸数
+CJ #2010
+;	BSET(DM9414.D,(@DM6-1))			'未使用軸 消去
+;
+LD CR2002                ; 常時ON
+LDA @DM6
+CON
+EXT
+CON
+SUB.L +1
+CON
+STA.L @VM16
+BSET.D DM9414 @VM16      ; 使用可能軸BIT
+;NEXT
+;
+LD CR2002                ; 常時ON
+INC @DM6
+LDB CR2009               ; 演算結果が負
+CJ #2009
+LABEL #2010
+;DM9416.D=0
+;
+LD CR2002                ; 常時ON
+MOV.D #0 DM9416          ; TP用SW INTERLOCK
+;FOR @DM6=1 TO 32
+;
+LD CR2002                ; 常時ON
+MOV #1 @DM6
+LABEL #2011
+LD> @DM6 #32
+CJ #2012
+;    IF R39900=ON OR @DM6>DM9412 THEN '未使用SW 動作禁止
+;
+LD R39900                ; RB動作中
+OUT @VB00
+LD> @DM6 DM9412          ; IAI最大軸数
+OR @VB00
+NCJ #2013
+;    	BOUT(DM9416.D,(@DM6-1))    
+;
+LD CR2002                ; 常時ON
+LDA @DM6
+CON
+EXT
+CON
+SUB.L +1
+CON
+STA.L @VM18
+BOUT.D DM9416 @VM18      ; TP用SW INTERLOCK
+;    END IF
+;
+LABEL #2013
+;NEXT
+;
+LD CR2002                ; 常時ON
+INC @DM6
+LDB CR2009               ; 演算結果が負
+CJ #2011
+LABEL #2012
+;'--------------------------
+;
+;IF DM50312>=(DM9412-1) OR R39900 THEN'MONITOR画面軸 加算sw  禁止
+;
+LD CR2002                ; 常時ON
+LDA DM9412               ; IAI最大軸数
+CON
+EXT
+CON
+SUB.L +1
+CON
+STA.L @VM20
+CON
+LDA DM50312              ; RB選択
+CON
+EXT
+CON
+CMP.L @VM20
+LDB CR2009               ; 演算結果が負
+OR R39900                ; RB動作中
+NCJ #2014
+;	SET(R39905)
+;
+LD CR2002                ; 常時ON
+SET R39905               ; 軸加算 sw禁止
+;ELSE
+;
+LD CR2002                ; 常時ON
+CJ #2015
+LABEL #2014
+;	RES(R39905)
+;
+LD CR2002                ; 常時ON
+RES R39905               ; 軸加算 sw禁止
+;END IF
+;
+LABEL #2015
+LABEL #1003
+;
+;<h1/>移動方向カーソル設定：ﾃｨｰﾁﾝｸﾞSW方向ﾊﾟﾀｰﾝを4選択の中より指定。
+;1=通常X:2=ﾘﾊﾞｰｽX:3=通常Y,Z:4=ﾘﾊﾞｰｽY,Z
+;IF R34000 THEN
+;	DM50317=MPX(RB_TYPE[1,DM50312],0)'DM50800~参照  RBティーチングSW PANEL呼出し
+;ELSE 
+;	DM50317=0
+;END IF
+;
+;DM9418= RB_TYPE[0,DM50312]
+;IF RB_TYPE[0,DM50312]=2 OR B39B5 THEN 'JOG HI/LO 切替消去 (MSEPのみ)
+;	SET(R39906)
+;ELSE
+;	RES(R39906)
+;END IF		                         
+;
+;IF R34000 THEN
+;
+LD R34000                ; Teaching
+NCJ #2016
+;	DM50317=MPX(RB_TYPE[1,DM50312],0)'DM50800~参照  RBティーチングSW PANEL呼出し
+;
+LD CR2002                ; 常時ON
+LDA DM50312              ; RB選択
+CON
+EXT
+CON
+ADD.L +32
+CON
+STA.L Z12
+CON
+LDA W3A25:Z12            ; RB1 TYPE
+CON
+MPX #0
+CON
+STA DM50317              ; RB Cursor type 表示
+;ELSE 
+;
+LD CR2002                ; 常時ON
+CJ #2017
+LABEL #2016
+;	DM50317=0
+;
+LD CR2002                ; 常時ON
+MOV #0 DM50317           ; RB Cursor type 表示
+;END IF
+;
+LABEL #2017
+;DM9418= RB_TYPE[0,DM50312]
+;
+LD CR2002                ; 常時ON
+LDA DM50312              ; RB選択
+CON
+EXT
+CON
+ADD.L +0
+CON
+STA.L Z12
+CON
+MOV W3A25:Z12 DM9418     ; RB1 TYPE  IAI軸TYPE
+;IF RB_TYPE[0,DM50312]=2 OR B39B5 THEN 'JOG HI/LO 切替消去 (MSEPのみ)
+;
+LD CR2002                ; 常時ON
+LDA DM50312              ; RB選択
+CON
+EXT
+CON
+ADD.L +0
+CON
+STA.L Z12
+LD= W3A25:Z12 #2         ; RB1 TYPE
+OR B39B5                 ; JISL ON=ｲﾝﾁﾝｸﾞ T.P
+NCJ #2018
+;	SET(R39906)
+;
+LD CR2002                ; 常時ON
+SET R39906               ; HI/LO 表示切替
+;ELSE
+;
+LD CR2002                ; 常時ON
+CJ #2019
+LABEL #2018
+;	RES(R39906)
+;
+LD CR2002                ; 常時ON
+RES R39906               ; HI/LO 表示切替
+;END IF		                         
+;
+LABEL #2019
+;
+;<h1/>軸 TYPE FLG 作成 
+;FOR @DM10 = 0 TO 31
+; IF RB_TYPE[0,@DM10]=6 OR RB_TYPE[0,@DM10]=7 THEN   '設定がMC40、MC20の場合
+; 	SET(B3940:@DM10)							    'PULSE TYPE FLG ON
+; ELSE
+; 	RES(B3940:@DM10)								'PULSE TYPE FLG OFF
+; END IF
+;NEXT
+;	
+;FOR @DM10 = 0 TO 31
+;
+LD CR2002                ; 常時ON
+MOV #0 @DM10
+LABEL #2020
+LD> @DM10 #31
+CJ #2021
+; IF RB_TYPE[0,@DM10]=6 OR RB_TYPE[0,@DM10]=7 THEN   '設定がMC40、MC20の場合
+;
+LD CR2002                ; 常時ON
+LDA @DM10
+CON
+EXT
+CON
+ADD.L +0
+CON
+STA.L Z12
+LD= W3A25:Z12 #6         ; RB1 TYPE
+OUT @VB01
+LD CR2002                ; 常時ON
+LDA @DM10
+CON
+EXT
+CON
+ADD.L +0
+CON
+STA.L Z12
+LD= W3A25:Z12 #7         ; RB1 TYPE
+OR @VB01
+NCJ #2022
+; 	SET(B3940:@DM10)							    'PULSE TYPE FLG ON
+;
+LD CR2002                ; 常時ON
+LDA @DM10
+CON
+EXT
+CON
+STA.L Z12
+SET B3940:Z12            ; RB1_PLS TYPE=ON
+; ELSE
+;
+LD CR2002                ; 常時ON
+CJ #2023
+LABEL #2022
+; 	RES(B3940:@DM10)								'PULSE TYPE FLG OFF
+;
+LD CR2002                ; 常時ON
+LDA @DM10
+CON
+EXT
+CON
+STA.L Z12
+RES B3940:Z12            ; RB1_PLS TYPE=ON
+; END IF
+;
+LABEL #2023
+;NEXT
+;
+LD CR2002                ; 常時ON
+INC @DM10
+LDB CR2009               ; 演算結果が負
+CJ #2020
+LABEL #2021
+;
+;速度OVERRIDE 設定有効.無効
+LD CR2002                ; 常時ON
+OUT MR001                ; 速度低速設定
+;ﾃｨｰﾁﾝｸﾞ画面表示中
+LD>= DM3000 #2150        ; _MainTP　表示中ﾍﾟｰｼﾞNo
+AND<= DM3000 #2153       ; _MainTP　表示中ﾍﾟｰｼﾞNo
+OR= DM3000 #2220         ; _MainTP　表示中ﾍﾟｰｼﾞNo
+OUT @R003
+;IAI RB動作中
+;FOR @DM12= 0 TO 31 			'R35000~32CH分 11bit目意外がONしていたら動作中
+;	@DM16=R35000.U:(@D12*16)'1CH分  @DM16へ格納	
+;	@D14=ANDA($F7FF,@DM16)  ’@DM16の11BIT目にマスク処理
+;	IF @D14<> 0 THEN		’0以外なら11BIT以外がONしている。
+;		SET(@R100:@D12)
+;	ELSE
+;		RES(@R100:@D12)
+;	END IF
+;NEXT 
+;FOR @DM12= 0 TO 31 			'R35000~32CH分 11bit目意外がONしていたら動作中
+;
+LD CR2002                ; 常時ON
+MOV #0 @DM12
+LABEL #2024
+LD> @DM12 #31
+CJ #2025
+;	@DM16=R35000.U:(@D12*16)'1CH分  @DM16へ格納	
+;
+LD CR2002                ; 常時ON
+LDA @DM12
+CON
+EXT
+CON
+MUL.L +16
+CON
+STA.L Z12
+CON
+MOV R35000:Z12 @DM16     ; RB1 MOVE
+;	@D14=ANDA($F7FF,@DM16)  ’@DM16の11BIT目にマスク処理
+;
+LD CR2002                ; 常時ON
+LDA $F7FF
+CON
+ANDA @DM16
+CON
+STA @DM14
+;	IF @D14<> 0 THEN		’0以外なら11BIT以外がONしている。
+;
+LD<> @DM14 #0
+NCJ #2026
+;		SET(@R100:@D12)
+;
+LD CR2002                ; 常時ON
+LDA @DM12
+CON
+EXT
+CON
+STA.L Z12
+SET @R100:Z12
+;	ELSE
+;
+LD CR2002                ; 常時ON
+CJ #2027
+LABEL #2026
+;		RES(@R100:@D12)
+;
+LD CR2002                ; 常時ON
+LDA @DM12
+CON
+EXT
+CON
+STA.L Z12
+RES @R100:Z12
+;	END IF
+;
+LABEL #2027
+;NEXT 
+LD CR2002                ; 常時ON
+INC @DM12
+LDB CR2009               ; 演算結果が負
+CJ #2024
+LABEL #2025
+;
+LD<>.D @R100 #0
+OUT R39900               ; RB動作中
+;<h1/>RB Teaching 表示
+;TYPE D50300.U,D50302-D50304.D,D50406.U,D50307.U,D50312.U,DM50318.U,DM9420.U,@DM0-@DM2.U,EM10000.L
+;'///軸番号表示(MONITOR)
+;IF D3000= 2220 AND MR22010=OFF  THEN
+;	D50319=D50312+1
+;END IF
+;'///軸ﾎﾟｲﾝﾄ名称表示
+;DM50318=DM50300-1+(DM50312*DM9420)+#10100 'Position Messag 表示
+;'DATA表示
+;@DM0 = ((D50300-1)*6)+(D50312*DM9422)	'1軸あたりDM9410*6WORD占有
+;DM50302 = EM10000:(@DM0) 'Position
+;DM50306 = EM10004:(@DM0) 'SPEED
+;DM50307 = EM10005:(@DM0) 'ACC/DEC
+;
+;'/// MONITOR
+;
+;IF D3000 = #2220 THEN
+;		IF DM50312 <> D50319-1 THEN    'POSI No.= 1
+;	   		DM50300 = 1
+;		END IF
+;	
+;		IF R39900 = OFF THEN	'MONITOR画面 RB 切り替え
+;			DM50312 = DM50319-1
+;		END IF
+;'POSITION 内容表示:目標値,速度,加減速
+;	FOR @DM1 = 0 TO 9
+;		@DM2=(((D50300+@DM1)-1)*6)+(D50312*DM9422)'1軸あたりDM9410*6WORD占有	
+;  		D50350.L:(@D1*4) = EM10000:@DM2'POINT
+;		D50352:(@D1*4) = EM10004:@DM2'SPEED
+;		D50353:(@D1*4) = EM10005:@DM2'ACC/DCC
+;	NEXT
+;END IF
+;
+;RES(MR22010)
+;
+LD @R003
+MEP
+LD= DM3000 #2220         ; _MainTP　表示中ﾍﾟｰｼﾞNo
+MEP
+ORL
+OR @R001
+OR MR22010               ; 変更通知 RB_POS_Monitor
+NCJ #1002
+;TYPE D50300.U,D50302-D50304.D,D50406.U,D50307.U,D50312.U,DM50318.U,DM9420.U,@DM0-@DM2.U,EM10000.L
+;
+;'///軸番号表示(MONITOR)
+;
+;IF D3000= 2220 AND MR22010=OFF  THEN
+;
+LD= DM3000 #2220         ; _MainTP　表示中ﾍﾟｰｼﾞNo
+OUT @VB02
+LDB MR22010              ; 変更通知 RB_POS_Monitor
+AND @VB02
+NCJ #2028
+;	D50319=D50312+1
+;
+LD CR2002                ; 常時ON
+LDA DM50312              ; RB選択
+CON
+EXT
+CON
+ADD.L +1
+CON
+STA DM50319              ; 軸番号表示(ﾓﾆﾀｰ用)
+;END IF
+;
+LABEL #2028
+;'///軸ﾎﾟｲﾝﾄ名称表示
+;
+;DM50318=DM50300-1+(DM50312*DM9420)+#10100 'Position Messag 表示
+;
+LD CR2002                ; 常時ON
+LDA DM9420               ; IAI最大ポイント数
+CON
+EXT
+CON
+STA.L @VM22
+CON
+LDA DM50312              ; RB選択
+CON
+EXT
+CON
+MUL.L @VM22
+CON
+STA.L @VM24
+CON
+LDA DM50300              ; Position No
+CON
+EXT
+CON
+SUB.L +1
+CON
+ADD.L @VM24
+CON
+ADD.L +10100
+CON
+STA DM50318              ; ﾎﾟｲﾝﾄ名称表示
+;'DATA表示
+;
+;@DM0 = ((D50300-1)*6)+(D50312*DM9422)	'1軸あたりDM9410*6WORD占有
+;
+LD CR2002                ; 常時ON
+LDA DM9422               ; 1軸あたり使用ﾃﾞﾊﾞｲｽ数
+CON
+EXT
+CON
+STA.L @VM26
+CON
+LDA DM50312              ; RB選択
+CON
+EXT
+CON
+MUL.L @VM26
+CON
+STA.L @VM28
+CON
+LDA DM50300              ; Position No
+CON
+EXT
+CON
+SUB.L +1
+CON
+MUL.L +6
+CON
+ADD.L @VM28
+CON
+STA @DM0
+;DM50302 = EM10000:(@DM0) 'Position
+;
+LD CR2002                ; 常時ON
+LDA @DM0
+CON
+EXT
+CON
+STA.L Z12
+CON
+MOV.D EM10000:Z12 DM50302; RB1 P1 POS(LO)  RB Position Low
+;DM50306 = EM10004:(@DM0) 'SPEED
+;
+LD CR2002                ; 常時ON
+LDA @DM0
+CON
+EXT
+CON
+STA.L Z12
+CON
+MOV EM10004:Z12 DM50306  ; RB1 P1 Speed  RB SPEED
+;DM50307 = EM10005:(@DM0) 'ACC/DEC
+;
+LD CR2002                ; 常時ON
+LDA @DM0
+CON
+EXT
+CON
+STA.L Z12
+CON
+MOV EM10005:Z12 DM50307  ; RB1 P1 G  RB Acc/Dec
+;'/// MONITOR
+;
+;IF D3000 = #2220 THEN
+;
+LD= DM3000 #2220         ; _MainTP　表示中ﾍﾟｰｼﾞNo
+NCJ #2029
+;		IF DM50312 <> D50319-1 THEN    'POSI No.= 1
+;
+LD CR2002                ; 常時ON
+LDA DM50319              ; 軸番号表示(ﾓﾆﾀｰ用)
+CON
+EXT
+CON
+SUB.L +1
+CON
+STA.L @VM30
+CON
+LDA DM50312              ; RB選択
+CON
+EXT
+CON
+CMP.L @VM30
+LDB CR2010               ; 演算結果がｾﾞﾛ
+NCJ #2030
+;	   		DM50300 = 1
+;
+LD CR2002                ; 常時ON
+MOV #1 DM50300           ; Position No
+;		END IF
+;
+LABEL #2030
+;		IF R39900 = OFF THEN	'MONITOR画面 RB 切り替え
+;
+LDB R39900               ; RB動作中
+NCJ #2031
+;			DM50312 = DM50319-1
+;
+LD CR2002                ; 常時ON
+LDA DM50319              ; 軸番号表示(ﾓﾆﾀｰ用)
+CON
+EXT
+CON
+SUB.L +1
+CON
+STA DM50312              ; RB選択
+;		END IF
+;
+LABEL #2031
+;'POSITION 内容表示:目標値,速度,加減速
+;
+;	FOR @DM1 = 0 TO 9
+;
+LD CR2002                ; 常時ON
+MOV #0 @DM1
+LABEL #2032
+LD> @DM1 #9
+CJ #2033
+;		@DM2=(((D50300+@DM1)-1)*6)+(D50312*DM9422)'1軸あたりDM9410*6WORD占有	
+;
+LD CR2002                ; 常時ON
+LDA DM9422               ; 1軸あたり使用ﾃﾞﾊﾞｲｽ数
+CON
+EXT
+CON
+STA.L @VM32
+CON
+LDA DM50312              ; RB選択
+CON
+EXT
+CON
+MUL.L @VM32
+CON
+STA.L @VM34
+CON
+LDA @DM1
+CON
+EXT
+CON
+STA.L @VM36
+CON
+LDA DM50300              ; Position No
+CON
+EXT
+CON
+ADD.L @VM36
+CON
+SUB.L +1
+CON
+MUL.L +6
+CON
+ADD.L @VM34
+CON
+STA @DM2
+;  		D50350.L:(@D1*4) = EM10000:@DM2'POINT
+;
+LD CR2002                ; 常時ON
+LDA @DM1
+CON
+EXT
+CON
+MUL.L +4
+CON
+STA.L Z11
+CON
+LDA @DM2
+CON
+EXT
+CON
+STA.L Z12
+CON
+MOV.L EM10000:Z12 DM50350:Z11;RB1 P1 POS(LO)  VT Pos Moni
+;		D50352:(@D1*4) = EM10004:@DM2'SPEED
+;
+LD CR2002                ; 常時ON
+LDA @DM1
+CON
+EXT
+CON
+MUL.L +4
+CON
+STA.L Z11
+CON
+LDA @DM2
+CON
+EXT
+CON
+STA.L Z12
+CON
+MOV EM10004:Z12 DM50352:Z11;RB1 P1 Speed  VT Pos Moni
+;		D50353:(@D1*4) = EM10005:@DM2'ACC/DCC
+;
+LD CR2002                ; 常時ON
+LDA @DM1
+CON
+EXT
+CON
+MUL.L +4
+CON
+STA.L Z11
+CON
+LDA @DM2
+CON
+EXT
+CON
+STA.L Z12
+CON
+MOV EM10005:Z12 DM50353:Z11;RB1 P1 G  VT Pos Moni
+;	NEXT
+;
+LD CR2002                ; 常時ON
+INC @DM1
+LDB CR2009               ; 演算結果が負
+CJ #2032
+LABEL #2033
+;END IF
+;
+LABEL #2029
+;RES(MR22010)
+;
+LD CR2002                ; 常時ON
+RES MR22010              ; 変更通知 RB_POS_Monitor
+LABEL #1002
+;
+LDP R44915               ; Teaching End
+SET @R004
+BMOV EM10000 ZF800 DM9424; RB1 P1 POS(LO)  RB使用ﾃﾞﾊﾞｲｽ数
+STG @R004
+OUT R45010               ; Memory書き込み開始
+CON
+TMR @10 #5
+CON
+AND @T10
+ENDS
+LDB R34000               ; Teaching
+ORF R34001               ; Teaching SW
+OR @R001
+RES R34002               ; direct Teach T.P
+LD @R003
+MPS
+LD<> DM50300 DM50390     ; Position No  pos変更
+OR<> DM50312 DM50392     ; RB選択  RB変更
+OR<> DM50320 DM50394     ; 現在地  Now pos変更
+ANL
+OUT @R001
+MPP
+LDA DM50300              ; Position No
+CON
+STA DM50390              ; pos変更
+CON
+LDA DM50312              ; RB選択
+CON
+STA DM50392              ; RB変更
+CON
+LDA DM50320              ; 現在地
+CON
+STA DM50394              ; Now pos変更
+;<h1/>________________________________________________________________________
+;各軸動作
+;※各デバイス割付に合わせでMacro 引数 "RB IN" ,"RB OUT"を修正して下さい。
+;________________________________________________________________________
+;<h1/>RB1移動	:#20=正常終了 :#21=RB応答なし :#22=ｽﾃｰﾀｽ異常 :23速度設定異常
+STG R35000               ; RB1 MOVE
+ANB _CON_MOVE_1
+SET R35002               ; During RB1 MOVE 
+CON
+JMP @LR100
+STG @LR100
+AND @LR101
+DW #0 @EM0
+CON
+JMP @LR102
+;TYPE EM1000.U,EM1004.U,EM1300.U,EM10000.U   
+;BMOV(EM10000:((EM1300-1+0*DM9420)*6),EM1000,#6)	'指定されたPOSをEM1000へ格納
+;
+;'//////Over ride
+;IF MR001 AND DM7000.D>= 1 AND DM7000.D <=100 THEN 
+;	IF  EM1004.U <> 0 THEN
+;		EM1004.U=INT(FLOAT(EM1004.U)*((FLOAT(DM7000.D))/(FLOAT(#100))))
+;		IF EM1004.U <= 0 THEN
+;			EM1004.U= 10
+;		END IF
+;	
+;	END IF
+;  
+;END IF
+;'/////// INC-
+;IF MR22008 THEN 
+;	EM1000.L = DM50320.L-DM50322.L
+;	EM1004.U= 10
+;	EM1005.U= 10
+;END IF
+;'////// INC +
+;IF MR22009 THEN
+;	EM1000.L = DM50320.L+DM50322.L
+;	EM1004.U= 10
+;	EM1005.U= 10
+;END IF
+;SET (@LR101)
+LD @LR100
+ANB @LR101
+NCJ #1001
+;TYPE EM1000.U,EM1004.U,EM1300.U,EM10000.U   
+;
+;BMOV(EM10000:((EM1300-1+0*DM9420)*6),EM1000,#6)	'指定されたPOSをEM1000へ格納
+;
+LD CR2002                ; 常時ON
+LDA DM9420               ; IAI最大ポイント数
+CON
+EXT
+CON
+MUL.L +0
+CON
+STA.L @VM38
+CON
+LDA EM1300               ; RB1Target Pos
+CON
+EXT
+CON
+SUB.L +1
+CON
+ADD.L @VM38
+CON
+MUL.L +6
+CON
+STA.L Z12
+BMOV EM10000:Z12 EM1000 #6;RB1 P1 POS(LO)  RB1 目標値下位
+;'//////Over ride
+;
+;IF MR001 AND DM7000.D>= 1 AND DM7000.D <=100 THEN 
+;
+LD>=.D DM7000 #1         ; 装置基礎ﾃﾞｰﾀ1 RB速度OVERRIDE
+AND MR001                ; 速度低速設定
+OUT @VB03
+LD<=.D DM7000 #100       ; 装置基礎ﾃﾞｰﾀ1 RB速度OVERRIDE
+AND @VB03
+NCJ #2034
+;	IF  EM1004.U <> 0 THEN
+;
+LD<> EM1004 #0           ; RB1 速度
+NCJ #2035
+;		EM1004.U=INT(FLOAT(EM1004.U)*((FLOAT(DM7000.D))/(FLOAT(#100))))
+;
+LD CR2002                ; 常時ON
+LDA #100
+CON
+FLOAT
+CON
+STA.F @VM40
+CON
+LDA.D DM7000             ; 装置基礎ﾃﾞｰﾀ1 RB速度OVERRIDE
+CON
+FLOAT.D
+CON
+DIV.F @VM40
+CON
+STA.F @VM42
+CON
+LDA EM1004               ; RB1 速度
+CON
+FLOAT
+CON
+MUL.F @VM42
+CON
+INTG.L
+CON
+STA EM1004               ; RB1 速度
+;		IF EM1004.U <= 0 THEN
+;
+LD<= EM1004 #0           ; RB1 速度
+NCJ #2036
+;			EM1004.U= 10
+;
+LD CR2002                ; 常時ON
+MOV #10 EM1004           ; RB1 速度
+;		END IF
+;
+LABEL #2036
+;	END IF
+;
+LABEL #2035
+;END IF
+;
+LABEL #2034
+;'/////// INC-
+;
+;IF MR22008 THEN 
+;
+LD MR22008               ; INC-
+NCJ #2037
+;	EM1000.L = DM50320.L-DM50322.L
+;
+LD CR2002                ; 常時ON
+LDA.L DM50320            ; 現在地
+CON
+SUB.L DM50322            ; INC距離
+CON
+STA.L EM1000             ; RB1 目標値下位
+;	EM1004.U= 10
+;
+LD CR2002                ; 常時ON
+MOV #10 EM1004           ; RB1 速度
+;	EM1005.U= 10
+;
+LD CR2002                ; 常時ON
+MOV #10 EM1005           ; RB1 G
+;END IF
+;
+LABEL #2037
+;'////// INC +
+;
+;IF MR22009 THEN
+;
+LD MR22009               ; INC+
+NCJ #2038
+;	EM1000.L = DM50320.L+DM50322.L
+;
+LD CR2002                ; 常時ON
+LDA.L DM50320            ; 現在地
+CON
+ADD.L DM50322            ; INC距離
+CON
+STA.L EM1000             ; RB1 目標値下位
+;	EM1004.U= 10
+;
+LD CR2002                ; 常時ON
+MOV #10 EM1004           ; RB1 速度
+;	EM1005.U= 10
+;
+LD CR2002                ; 常時ON
+MOV #10 EM1005           ; RB1 G
+;END IF
+;
+LABEL #2038
+;SET (@LR101)
+LD CR2002                ; 常時ON
+SET @LR101
+LABEL #1001
+;
+STG @LR102
+RES @LR101
+CON
+MPS
+AND= @EM0 #20
+LDA EM1300               ; RB1Target Pos
+CON
+STA EM1301               ; RB1Now Pos
+CON
+JMP @LR103
+MPP
+LD<> @EM0 #20
+AND<> @EM0 #0
+ANL
+SET R35003               ; RB1 Alarm
+CON
+JMP @LR103
+STG @LR103
+RES R35002               ; During RB1 MOVE 
+CON
+SET R35001               ; RB1 MOVE END
+CON
+ENDS
+;<h1/>RB1 HOME
+STG R35008               ; RB1 HOME
+DW #0 @EM0
+CON
+SET R35010               ; During RB1 HOME
+CON
+JMP @LR108
+;原点復帰ﾏｸﾛは2種類準備しています（任意で選択して下さい）
+;CON_HOME	通常用
+;CON_HOME2	原点確認仕様用
+;			→原点ｾﾝｻｰをSensor_INに指定してください。ｾﾝｻｰはA接点を想定しています。
+;			#20	=	正常終了
+;			#21	=	RB応答なし
+;			#22	=	ｽﾃｰﾀｽ異常
+;			#25	=	原点異常
+;			#26	=	原点ｾﾝｻｰ異常
+STG @LR108
+MPS
+AND= @EM0 #20
+SET R35011               ; RB1原点復帰済
+CON
+JMP @LR109
+MPP
+LD<> @EM0 #20
+AND<> @EM0 #0
+ANL
+SET R35003               ; RB1 Alarm
+CON
+JMP @LR109
+STG @LR109
+SET R35009               ; RB1 HOME END
+CON
+RES R35010               ; During RB1 HOME
+CON
+ENDS
+;<h1/>RB1 Macro
+;Z2=RB_OFFSET[0]
+LD @LR102
+OR @LR108
+NCJ #1011
+;Z2=RB_OFFSET[0]
+LD CR2002                ; 常時ON
+LDA W3AB0                ; RB_OFFSET
+CON
+EXT
+CON
+STA.L Z2
+LABEL #1011
+;
+;IAI DEVICE NET Type
+LD @LR102
+ANB B3940                ; RB1_PLS TYPE=ON
+MSTRT CON_MOVE_1 EM1000 EM1004 EM1005 *W3A00:Z2 *W3A10:Z2 @EM0;RB1 目標値下位  RB1 速度  RB1 G  RB NOW_Pos  RB_Target_POS
+LD @LR108
+ANB B3940                ; RB1_PLS TYPE=ON
+MSTRT CON_HOME *W3A00:Z2 *W3A10:Z2 @EM0;RB NOW_Pos  RB_Target_POS
+;<h1/>RB2移動	:#20=正常終了 :#21=RB応答なし :#22=ｽﾃｰﾀｽ異常 :23速度設定異常
+STG R35100               ; RB2 MOVE
+ANB _CON_MOVE_2
+SET R35102               ; During RB2 MOVE
+CON
+JMP @LR200
+STG @LR200
+AND @LR201
+DW #0 @EM2
+CON
+JMP @LR202
+;TYPE EM1008.U,EM1012.U,EM1302.U,EM10000.U   
+;BMOV(EM10000:((EM1302-1+1*DM9420)*6),EM1008,#6)	'指定されたPOSをEM1000へ格納
+;
+;'//////Over ride
+;IF MR001 AND DM7000.D>= 1 AND DM7000.D <=100 THEN 
+;	IF  EM1012.U <> 0 THEN
+;		EM1012.U=INT(FLOAT(EM1012.U)*((FLOAT(DM7000.D))/(FLOAT(#100))))
+;		IF EM1012.U <= 0 THEN
+;			EM1012.U= 10
+;		END IF
+;	
+;	END IF
+;  
+;END IF
+;'/////// INC-
+;IF MR22008 THEN 
+;	EM1008.L = DM50320.L-DM50322.L
+;	EM1012.U= 10
+;	EM1013.U= 10
+;END IF
+;'////// INC +
+;IF MR22009 THEN
+;	EM1008.L = DM50320.L+DM50322.L
+;	EM1012.U= 10
+;	EM1013.U= 10
+;END IF
+;
+;SET (@LR201)
+LD @LR200
+ANB @LR201
+NCJ #1012
+;TYPE EM1008.U,EM1012.U,EM1302.U,EM10000.U   
+;
+;BMOV(EM10000:((EM1302-1+1*DM9420)*6),EM1008,#6)	'指定されたPOSをEM1000へ格納
+;
+LD CR2002                ; 常時ON
+LDA DM9420               ; IAI最大ポイント数
+CON
+EXT
+CON
+MUL.L +1
+CON
+STA.L @VM44
+CON
+LDA EM1302               ; RB2Target Pos
+CON
+EXT
+CON
+SUB.L +1
+CON
+ADD.L @VM44
+CON
+MUL.L +6
+CON
+STA.L Z12
+BMOV EM10000:Z12 EM1008 #6;RB1 P1 POS(LO)  RB2 目標値下位
+;'//////Over ride
+;
+;IF MR001 AND DM7000.D>= 1 AND DM7000.D <=100 THEN 
+;
+LD>=.D DM7000 #1         ; 装置基礎ﾃﾞｰﾀ1 RB速度OVERRIDE
+AND MR001                ; 速度低速設定
+OUT @VB04
+LD<=.D DM7000 #100       ; 装置基礎ﾃﾞｰﾀ1 RB速度OVERRIDE
+AND @VB04
+NCJ #2039
+;	IF  EM1012.U <> 0 THEN
+;
+LD<> EM1012 #0           ; RB2 速度
+NCJ #2040
+;		EM1012.U=INT(FLOAT(EM1012.U)*((FLOAT(DM7000.D))/(FLOAT(#100))))
+;
+LD CR2002                ; 常時ON
+LDA #100
+CON
+FLOAT
+CON
+STA.F @VM46
+CON
+LDA.D DM7000             ; 装置基礎ﾃﾞｰﾀ1 RB速度OVERRIDE
+CON
+FLOAT.D
+CON
+DIV.F @VM46
+CON
+STA.F @VM48
+CON
+LDA EM1012               ; RB2 速度
+CON
+FLOAT
+CON
+MUL.F @VM48
+CON
+INTG.L
+CON
+STA EM1012               ; RB2 速度
+;		IF EM1012.U <= 0 THEN
+;
+LD<= EM1012 #0           ; RB2 速度
+NCJ #2041
+;			EM1012.U= 10
+;
+LD CR2002                ; 常時ON
+MOV #10 EM1012           ; RB2 速度
+;		END IF
+;
+LABEL #2041
+;	END IF
+;
+LABEL #2040
+;END IF
+;
+LABEL #2039
+;'/////// INC-
+;
+;IF MR22008 THEN 
+;
+LD MR22008               ; INC-
+NCJ #2042
+;	EM1008.L = DM50320.L-DM50322.L
+;
+LD CR2002                ; 常時ON
+LDA.L DM50320            ; 現在地
+CON
+SUB.L DM50322            ; INC距離
+CON
+STA.L EM1008             ; RB2 目標値下位
+;	EM1012.U= 10
+;
+LD CR2002                ; 常時ON
+MOV #10 EM1012           ; RB2 速度
+;	EM1013.U= 10
+;
+LD CR2002                ; 常時ON
+MOV #10 EM1013           ; RB2 G
+;END IF
+;
+LABEL #2042
+;'////// INC +
+;
+;IF MR22009 THEN
+;
+LD MR22009               ; INC+
+NCJ #2043
+;	EM1008.L = DM50320.L+DM50322.L
+;
+LD CR2002                ; 常時ON
+LDA.L DM50320            ; 現在地
+CON
+ADD.L DM50322            ; INC距離
+CON
+STA.L EM1008             ; RB2 目標値下位
+;	EM1012.U= 10
+;
+LD CR2002                ; 常時ON
+MOV #10 EM1012           ; RB2 速度
+;	EM1013.U= 10
+;
+LD CR2002                ; 常時ON
+MOV #10 EM1013           ; RB2 G
+;END IF
+;
+LABEL #2043
+;SET (@LR201)
+LD CR2002                ; 常時ON
+SET @LR201
+LABEL #1012
+;
+STG @LR202
+RES @LR201
+CON
+MPS
+AND= @EM2 #20
+LDA EM1302               ; RB2Target Pos
+CON
+STA EM1303               ; RB2Now Pos
+CON
+JMP @LR203
+MPP
+LD<> @EM2 #20
+AND<> @EM2 #0
+ANL
+SET R35103               ; RB2 Alarm
+CON
+JMP @LR203
+STG @LR203
+RES R35102               ; During RB2 MOVE
+CON
+SET R35101               ; RB2 MOVE END
+CON
+ENDS
+;<h1/>RB2 HOME
+STG R35108               ; RB2 HOME
+DW #0 @EM2
+CON
+SET R35110               ; During RB2 HOME
+CON
+JMP @LR208
+;原点復帰ﾏｸﾛは2種類準備しています（任意で選択して下さい）
+;CON_HOME	通常用
+;CON_HOME2	原点確認仕様用
+;			→原点ｾﾝｻｰをSensor_INに指定してください。ｾﾝｻｰはA接点を想定しています。
+;			#20	=	正常終了
+;			#21	=	RB応答なし
+;			#22	=	ｽﾃｰﾀｽ異常
+;			#25	=	原点異常
+;			#26	=	原点ｾﾝｻｰ異常
+STG @LR208
+MPS
+AND= @EM2 #20
+SET R35111               ; RB2原点復帰済
+CON
+JMP @LR209
+MPP
+LD<> @EM2 #20
+AND<> @EM2 #0
+ANL
+SET R35103               ; RB2 Alarm
+CON
+JMP @LR209
+STG @LR209
+SET R35109               ; RB2 HOME END
+CON
+RES R35110               ; During RB2 HOME
+CON
+ENDS
+;<h1/>RB2 Macro
+;Z2=RB_OFFSET[1]
+LD @LR202
+OR @LR208
+NCJ #1013
+;Z2=RB_OFFSET[1]
+LD CR2002                ; 常時ON
+LDA W3AB0:#1             ; RB_OFFSET
+CON
+EXT
+CON
+STA.L Z2
+LABEL #1013
+;
+;RB2 DEVICENET TYPE
+LD @LR202
+ANB B3941                ; RB2_PLS TYPE=ON
+MSTRT CON_MOVE_2 EM1008 EM1012 EM1013 *W3A00:Z2 *W3A10:Z2 @EM2;RB2 目標値下位  RB2 速度  RB2 G  RB NOW_Pos  RB_Target_POS
+LD @LR208
+ANB B3941                ; RB2_PLS TYPE=ON
+MSTRT CON_HOME *W3A00:Z2 *W3A10:Z2 @EM2;RB NOW_Pos  RB_Target_POS
+;<h1/>RB3移動	:#20=正常終了 :#21=RB応答なし :#22=ｽﾃｰﾀｽ異常 :23速度設定異常
+STG R35200               ; RB3 MOVE
+ANB _CON_MOVE_3
+SET R35202               ; During RB3 MOVE
+CON
+JMP @LR300
+STG @LR300
+AND @LR301
+DW #0 @EM4
+CON
+JMP @LR302
+;TYPE EM1016.U,EM1020.U,EM1300.U,EM10000.U   
+;BMOV(EM10000:((EM1304-1+2*DM9420)*6),EM1016,#6)	'指定されたPOSをEM1000へ格納
+;
+;'//////Over ride
+;IF MR001 AND DM7000.D>= 1 AND DM7000.D <=100 THEN 
+;	IF  EM1020.U <> 0 THEN
+;		EM1020.U=INT(FLOAT(EM1020.U)*((FLOAT(DM7000.D))/(FLOAT(#100))))
+;		IF EM1020.U <= 0 THEN
+;			EM1020.U = 10
+;		END IF
+;	END IF
+;  
+;END IF
+;'/////// INC-
+;IF MR22008 THEN 
+;	EM1016.L = DM50320.L-DM50322.L
+;	EM1020.U= 10
+;	EM1021.U= 10
+;END IF
+;'////// INC +
+;IF MR22009 THEN
+;	EM1016.L = DM50320.L+DM50322.L
+;	EM1020.U= 10
+;	EM1021.U= 10
+;END IF
+;
+;SET (@LR301)
+LD @LR300
+ANB @LR301
+NCJ #1014
+;TYPE EM1016.U,EM1020.U,EM1300.U,EM10000.U   
+;
+;BMOV(EM10000:((EM1304-1+2*DM9420)*6),EM1016,#6)	'指定されたPOSをEM1000へ格納
+;
+LD CR2002                ; 常時ON
+LDA DM9420               ; IAI最大ポイント数
+CON
+EXT
+CON
+MUL.L +2
+CON
+STA.L @VM50
+CON
+LDA EM1304               ; RB3Target Pos
+CON
+EXT
+CON
+SUB.L +1
+CON
+ADD.L @VM50
+CON
+MUL.L +6
+CON
+STA.L Z12
+BMOV EM10000:Z12 EM1016 #6;RB1 P1 POS(LO)  RB3 目標値下位
+;'//////Over ride
+;
+;IF MR001 AND DM7000.D>= 1 AND DM7000.D <=100 THEN 
+;
+LD>=.D DM7000 #1         ; 装置基礎ﾃﾞｰﾀ1 RB速度OVERRIDE
+AND MR001                ; 速度低速設定
+OUT @VB05
+LD<=.D DM7000 #100       ; 装置基礎ﾃﾞｰﾀ1 RB速度OVERRIDE
+AND @VB05
+NCJ #2044
+;	IF  EM1020.U <> 0 THEN
+;
+LD<> EM1020 #0           ; RB3 速度
+NCJ #2045
+;		EM1020.U=INT(FLOAT(EM1020.U)*((FLOAT(DM7000.D))/(FLOAT(#100))))
+;
+LD CR2002                ; 常時ON
+LDA #100
+CON
+FLOAT
+CON
+STA.F @VM52
+CON
+LDA.D DM7000             ; 装置基礎ﾃﾞｰﾀ1 RB速度OVERRIDE
+CON
+FLOAT.D
+CON
+DIV.F @VM52
+CON
+STA.F @VM54
+CON
+LDA EM1020               ; RB3 速度
+CON
+FLOAT
+CON
+MUL.F @VM54
+CON
+INTG.L
+CON
+STA EM1020               ; RB3 速度
+;		IF EM1020.U <= 0 THEN
+;
+LD<= EM1020 #0           ; RB3 速度
+NCJ #2046
+;			EM1020.U = 10
+;
+LD CR2002                ; 常時ON
+MOV #10 EM1020           ; RB3 速度
+;		END IF
+;
+LABEL #2046
+;	END IF
+;
+LABEL #2045
+;END IF
+;
+LABEL #2044
+;'/////// INC-
+;
+;IF MR22008 THEN 
+;
+LD MR22008               ; INC-
+NCJ #2047
+;	EM1016.L = DM50320.L-DM50322.L
+;
+LD CR2002                ; 常時ON
+LDA.L DM50320            ; 現在地
+CON
+SUB.L DM50322            ; INC距離
+CON
+STA.L EM1016             ; RB3 目標値下位
+;	EM1020.U= 10
+;
+LD CR2002                ; 常時ON
+MOV #10 EM1020           ; RB3 速度
+;	EM1021.U= 10
+;
+LD CR2002                ; 常時ON
+MOV #10 EM1021           ; RB3 G
+;END IF
+;
+LABEL #2047
+;'////// INC +
+;
+;IF MR22009 THEN
+;
+LD MR22009               ; INC+
+NCJ #2048
+;	EM1016.L = DM50320.L+DM50322.L
+;
+LD CR2002                ; 常時ON
+LDA.L DM50320            ; 現在地
+CON
+ADD.L DM50322            ; INC距離
+CON
+STA.L EM1016             ; RB3 目標値下位
+;	EM1020.U= 10
+;
+LD CR2002                ; 常時ON
+MOV #10 EM1020           ; RB3 速度
+;	EM1021.U= 10
+;
+LD CR2002                ; 常時ON
+MOV #10 EM1021           ; RB3 G
+;END IF
+;
+LABEL #2048
+;SET (@LR301)
+LD CR2002                ; 常時ON
+SET @LR301
+LABEL #1014
+;
+STG @LR302
+RES @LR301
+CON
+MPS
+AND= @EM4 #20
+LDA EM1304               ; RB3Target Pos
+CON
+STA EM1305               ; RB3Now Pos
+CON
+JMP @LR303
+MPP
+LD<> @EM4 #20
+AND<> @EM4 #0
+ANL
+SET R35203               ; RB3 Alarm
+CON
+JMP @LR303
+STG @LR303
+RES R35202               ; During RB3 MOVE
+CON
+SET R35201               ; RB3 MOVE END
+CON
+ENDS
+;<h1/>RB3 HOME
+STG R35208               ; RB3 HOME
+DW #0 @EM4
+CON
+SET R35210               ; During RB3 HOME
+CON
+JMP @LR308
+;原点復帰ﾏｸﾛは2種類準備しています（任意で選択して下さい）
+;CON_HOME	通常用
+;CON_HOME2	原点確認仕様用
+;			→原点ｾﾝｻｰをSensor_INに指定してください。ｾﾝｻｰはA接点を想定しています。
+;			#20	=	正常終了
+;			#21	=	RB応答なし
+;			#22	=	ｽﾃｰﾀｽ異常
+;			#25	=	原点異常
+;			#26	=	原点ｾﾝｻｰ異常
+STG @LR308
+MPS
+AND= @EM4 #20
+SET R35211               ; RB3原点復帰済
+CON
+JMP @LR309
+MPP
+LD<> @EM4 #20
+AND<> @EM4 #0
+ANL
+SET R35203               ; RB3 Alarm
+CON
+JMP @LR309
+STG @LR309
+SET R35209               ; RB3 HOME END
+CON
+RES R35210               ; During RB3 HOME
+CON
+ENDS
+;<h1/>RB3 Macro
+;Z2=RB_OFFSET[2]
+;
+LD @LR302
+OR @LR308
+NCJ #1015
+;Z2=RB_OFFSET[2]
+;
+LD CR2002                ; 常時ON
+LDA W3AB0:#2             ; RB_OFFSET
+CON
+EXT
+CON
+STA.L Z2
+LABEL #1015
+;
+;RB3 DEVICENET TYPE
+LD @LR302
+ANB B3942                ; RB3_PLS TYPE=ON
+MSTRT CON_MOVE_3 EM1016 EM1020 EM1021 *W3A00:Z2 *W3A10:Z2 @EM4;RB3 目標値下位  RB3 速度  RB3 G  RB NOW_Pos  RB_Target_POS
+LD @LR308
+ANB B3942                ; RB3_PLS TYPE=ON
+MSTRT CON_HOME *W3A00:Z2 *W3A10:Z2 @EM4;RB NOW_Pos  RB_Target_POS
+;<h1/>RB4移動	:#20=正常終了 :#21=RB応答なし :#22=ｽﾃｰﾀｽ異常 :23速度設定異常
+STG R35300               ; RB4 MOVE
+ANB _CON_MOVE_4
+SET R35302               ; During RB4 MOVE
+CON
+JMP @LR400
+STG @LR400
+AND @LR401
+DW #0 @EM6
+CON
+JMP @LR402
+;TYPE EM1024.U,EM1028.U,EM1306.U,EM10000.U   
+;BMOV(EM10000:((EM1306-1+3*DM9420)*6),EM1024,#6)	'指定されたPOSをEM1000へ格納
+;
+;'//////Over ride
+;IF MR001 AND DM7000.D>= 1 AND DM7000.D <=100 THEN 
+;	IF  EM1028.U <> 0 THEN
+;		EM1028.U=INT(FLOAT(EM1028.U)*((FLOAT(DM7000.D))/(FLOAT(#100))))
+;		IF EM1028.U <= 0 THEN
+;			EM1028.U= 10
+;		END IF
+;	
+;	END IF
+;  
+;END IF
+;'/////// INC-
+;IF MR22008 THEN 
+;	EM1024.L = DM50320.L-DM50322.L
+;	EM1028.U= 10
+;	EM1029.U= 10
+;END IF
+;'////// INC +
+;IF MR22009 THEN
+;	EM1024.L = DM50320.L+DM50322.L
+;	EM1028.U= 10
+;	EM1029.U= 10
+;END IF
+;
+;SET (@LR401)
+LD @LR400
+ANB @LR401
+NCJ #1016
+;TYPE EM1024.U,EM1028.U,EM1306.U,EM10000.U   
+;
+;BMOV(EM10000:((EM1306-1+3*DM9420)*6),EM1024,#6)	'指定されたPOSをEM1000へ格納
+;
+LD CR2002                ; 常時ON
+LDA DM9420               ; IAI最大ポイント数
+CON
+EXT
+CON
+MUL.L +3
+CON
+STA.L @VM56
+CON
+LDA EM1306               ; RB4Target Pos
+CON
+EXT
+CON
+SUB.L +1
+CON
+ADD.L @VM56
+CON
+MUL.L +6
+CON
+STA.L Z12
+BMOV EM10000:Z12 EM1024 #6;RB1 P1 POS(LO)  RB4 目標値下位
+;'//////Over ride
+;
+;IF MR001 AND DM7000.D>= 1 AND DM7000.D <=100 THEN 
+;
+LD>=.D DM7000 #1         ; 装置基礎ﾃﾞｰﾀ1 RB速度OVERRIDE
+AND MR001                ; 速度低速設定
+OUT @VB06
+LD<=.D DM7000 #100       ; 装置基礎ﾃﾞｰﾀ1 RB速度OVERRIDE
+AND @VB06
+NCJ #2049
+;	IF  EM1028.U <> 0 THEN
+;
+LD<> EM1028 #0           ; RB4 速度
+NCJ #2050
+;		EM1028.U=INT(FLOAT(EM1028.U)*((FLOAT(DM7000.D))/(FLOAT(#100))))
+;
+LD CR2002                ; 常時ON
+LDA #100
+CON
+FLOAT
+CON
+STA.F @VM58
+CON
+LDA.D DM7000             ; 装置基礎ﾃﾞｰﾀ1 RB速度OVERRIDE
+CON
+FLOAT.D
+CON
+DIV.F @VM58
+CON
+STA.F @VM60
+CON
+LDA EM1028               ; RB4 速度
+CON
+FLOAT
+CON
+MUL.F @VM60
+CON
+INTG.L
+CON
+STA EM1028               ; RB4 速度
+;		IF EM1028.U <= 0 THEN
+;
+LD<= EM1028 #0           ; RB4 速度
+NCJ #2051
+;			EM1028.U= 10
+;
+LD CR2002                ; 常時ON
+MOV #10 EM1028           ; RB4 速度
+;		END IF
+;
+LABEL #2051
+;	END IF
+;
+LABEL #2050
+;END IF
+;
+LABEL #2049
+;'/////// INC-
+;
+;IF MR22008 THEN 
+;
+LD MR22008               ; INC-
+NCJ #2052
+;	EM1024.L = DM50320.L-DM50322.L
+;
+LD CR2002                ; 常時ON
+LDA.L DM50320            ; 現在地
+CON
+SUB.L DM50322            ; INC距離
+CON
+STA.L EM1024             ; RB4 目標値下位
+;	EM1028.U= 10
+;
+LD CR2002                ; 常時ON
+MOV #10 EM1028           ; RB4 速度
+;	EM1029.U= 10
+;
+LD CR2002                ; 常時ON
+MOV #10 EM1029           ; RB4 G
+;END IF
+;
+LABEL #2052
+;'////// INC +
+;
+;IF MR22009 THEN
+;
+LD MR22009               ; INC+
+NCJ #2053
+;	EM1024.L = DM50320.L+DM50322.L
+;
+LD CR2002                ; 常時ON
+LDA.L DM50320            ; 現在地
+CON
+ADD.L DM50322            ; INC距離
+CON
+STA.L EM1024             ; RB4 目標値下位
+;	EM1028.U= 10
+;
+LD CR2002                ; 常時ON
+MOV #10 EM1028           ; RB4 速度
+;	EM1029.U= 10
+;
+LD CR2002                ; 常時ON
+MOV #10 EM1029           ; RB4 G
+;END IF
+;
+LABEL #2053
+;SET (@LR401)
+LD CR2002                ; 常時ON
+SET @LR401
+LABEL #1016
+;
+STG @LR402
+RES @LR401
+CON
+MPS
+AND= @EM6 #20
+LDA EM1306               ; RB4Target Pos
+CON
+STA EM1307               ; RB4Now Pos
+CON
+JMP @LR403
+MPP
+LD<> @EM6 #20
+AND<> @EM6 #0
+ANL
+SET R35303               ; RB4 Alarm
+CON
+JMP @LR403
+STG @LR403
+RES R35302               ; During RB4 MOVE
+CON
+SET R35301               ; RB4 MOVE END
+CON
+ENDS
+;<h1/>RB4 HOME
+STG R35308               ; RB4 HOME
+DW #0 @EM6
+CON
+SET R35310               ; During RB4 HOME
+CON
+JMP @LR408
+;原点復帰ﾏｸﾛは2種類準備しています（任意で選択して下さい）
+;CON_HOME	通常用
+;CON_HOME2	原点確認仕様用
+;			→原点ｾﾝｻｰをSensor_INに指定してください。ｾﾝｻｰはA接点を想定しています。
+;			#20	=	正常終了
+;			#21	=	RB応答なし
+;			#22	=	ｽﾃｰﾀｽ異常
+;			#25	=	原点異常
+;			#26	=	原点ｾﾝｻｰ異常
+STG @LR408
+MPS
+AND= @EM6 #20
+SET R35311               ; RB4原点復帰済
+CON
+JMP @LR409
+MPP
+LD<> @EM6 #20
+AND<> @EM6 #0
+ANL
+SET R35303               ; RB4 Alarm
+CON
+JMP @LR409
+STG @LR409
+SET R35309               ; RB4 HOME END
+CON
+RES R35310               ; During RB4 HOME
+CON
+ENDS
+;<h1/>RB4 Macro
+;Z2=RB_OFFSET[3]
+;
+LD @LR402
+OR @LR408
+NCJ #1017
+;Z2=RB_OFFSET[3]
+;
+LD CR2002                ; 常時ON
+LDA W3AB0:#3             ; RB_OFFSET
+CON
+EXT
+CON
+STA.L Z2
+LABEL #1017
+;
+LD @LR402
+ANB B3943                ; RB4_PLS TYPE=ON
+MSTRT CON_MOVE_4 EM1024 EM1028 EM1029 *W3A00:Z2 *W3A10:Z2 @EM6;RB4 目標値下位  RB4 速度  RB4 G  RB NOW_Pos  RB_Target_POS
+LD @LR408
+ANB B3943                ; RB4_PLS TYPE=ON
+MSTRT CON_HOME *W3A00:Z2 *W3A10:Z2 @EM6;RB NOW_Pos  RB_Target_POS
+;<h1/>RB5移動	:#20=正常終了 :#21=RB応答なし :#22=ｽﾃｰﾀｽ異常 :23速度設定異常
+STG R35400               ; RB5 MOVE
+ANB _CON_MOVE_5
+SET R35402               ; During RB5 MOVE
+CON
+JMP @LR500
+STG @LR500
+AND @LR501
+DW #0 @EM8
+CON
+JMP @LR502
+;TYPE EM1032.U,EM1036.U,EM1308.U,EM10000.U   
+;BMOV(EM10000:((EM1308-1+4*DM9420)*6),EM1032,#6)	'指定されたPOSをEM1000へ格納
+;
+;'//////Over ride
+;IF MR001 AND DM7000.D>= 1 AND DM7000.D <=100 THEN 
+;	IF  EM1036.U <> 0 THEN
+;		EM1036.U=INT(FLOAT(EM1036.U)*((FLOAT(DM7000.D))/(FLOAT(#100))))
+;		IF EM1036.U <= 0 THEN
+;			EM1036.U= 10
+;		END IF
+;	
+;	END IF
+;  
+;END IF
+;'/////// INC-
+;IF MR22008 THEN 
+;	EM1032.L = DM50320.L-DM50322.L
+;	EM1036.U= 10
+;	EM1037.U= 10
+;END IF
+;'////// INC +
+;IF MR22009 THEN
+;	EM1032.L = DM50320.L+DM50322.L
+;	EM1036.U= 10
+;	EM1037.U= 10
+;END IF
+;
+;SET (@LR501)
+LD @LR500
+ANB @LR501
+NCJ #1018
+;TYPE EM1032.U,EM1036.U,EM1308.U,EM10000.U   
+;
+;BMOV(EM10000:((EM1308-1+4*DM9420)*6),EM1032,#6)	'指定されたPOSをEM1000へ格納
+;
+LD CR2002                ; 常時ON
+LDA DM9420               ; IAI最大ポイント数
+CON
+EXT
+CON
+MUL.L +4
+CON
+STA.L @VM62
+CON
+LDA EM1308               ; RB5Target Pos
+CON
+EXT
+CON
+SUB.L +1
+CON
+ADD.L @VM62
+CON
+MUL.L +6
+CON
+STA.L Z12
+BMOV EM10000:Z12 EM1032 #6;RB1 P1 POS(LO)  RB5 目標値下位
+;'//////Over ride
+;
+;IF MR001 AND DM7000.D>= 1 AND DM7000.D <=100 THEN 
+;
+LD>=.D DM7000 #1         ; 装置基礎ﾃﾞｰﾀ1 RB速度OVERRIDE
+AND MR001                ; 速度低速設定
+OUT @VB07
+LD<=.D DM7000 #100       ; 装置基礎ﾃﾞｰﾀ1 RB速度OVERRIDE
+AND @VB07
+NCJ #2054
+;	IF  EM1036.U <> 0 THEN
+;
+LD<> EM1036 #0           ; RB5 速度
+NCJ #2055
+;		EM1036.U=INT(FLOAT(EM1036.U)*((FLOAT(DM7000.D))/(FLOAT(#100))))
+;
+LD CR2002                ; 常時ON
+LDA #100
+CON
+FLOAT
+CON
+STA.F @VM64
+CON
+LDA.D DM7000             ; 装置基礎ﾃﾞｰﾀ1 RB速度OVERRIDE
+CON
+FLOAT.D
+CON
+DIV.F @VM64
+CON
+STA.F @VM66
+CON
+LDA EM1036               ; RB5 速度
+CON
+FLOAT
+CON
+MUL.F @VM66
+CON
+INTG.L
+CON
+STA EM1036               ; RB5 速度
+;		IF EM1036.U <= 0 THEN
+;
+LD<= EM1036 #0           ; RB5 速度
+NCJ #2056
+;			EM1036.U= 10
+;
+LD CR2002                ; 常時ON
+MOV #10 EM1036           ; RB5 速度
+;		END IF
+;
+LABEL #2056
+;	END IF
+;
+LABEL #2055
+;END IF
+;
+LABEL #2054
+;'/////// INC-
+;
+;IF MR22008 THEN 
+;
+LD MR22008               ; INC-
+NCJ #2057
+;	EM1032.L = DM50320.L-DM50322.L
+;
+LD CR2002                ; 常時ON
+LDA.L DM50320            ; 現在地
+CON
+SUB.L DM50322            ; INC距離
+CON
+STA.L EM1032             ; RB5 目標値下位
+;	EM1036.U= 10
+;
+LD CR2002                ; 常時ON
+MOV #10 EM1036           ; RB5 速度
+;	EM1037.U= 10
+;
+LD CR2002                ; 常時ON
+MOV #10 EM1037           ; RB5 G
+;END IF
+;
+LABEL #2057
+;'////// INC +
+;
+;IF MR22009 THEN
+;
+LD MR22009               ; INC+
+NCJ #2058
+;	EM1032.L = DM50320.L+DM50322.L
+;
+LD CR2002                ; 常時ON
+LDA.L DM50320            ; 現在地
+CON
+ADD.L DM50322            ; INC距離
+CON
+STA.L EM1032             ; RB5 目標値下位
+;	EM1036.U= 10
+;
+LD CR2002                ; 常時ON
+MOV #10 EM1036           ; RB5 速度
+;	EM1037.U= 10
+;
+LD CR2002                ; 常時ON
+MOV #10 EM1037           ; RB5 G
+;END IF
+;
+LABEL #2058
+;SET (@LR501)
+LD CR2002                ; 常時ON
+SET @LR501
+LABEL #1018
+;
+STG @LR502
+RES @LR501
+CON
+MPS
+AND= @EM8 #20
+LDA EM1308               ; RB5Target Pos
+CON
+STA EM1309               ; RB5Now Pos
+CON
+JMP @LR503
+MPP
+LD<> @EM8 #20
+AND<> @EM8 #0
+ANL
+SET R35403               ; RB5 Alarm
+CON
+JMP @LR503
+STG @LR503
+RES R35402               ; During RB5 MOVE
+CON
+SET R35401               ; RB5 MOVE END
+CON
+ENDS
+;<h1/>RB5 HOME
+STG R35408               ; RB5 HOME
+DW #0 @EM8
+CON
+SET R35410               ; During RB5 HOME
+CON
+JMP @LR508
+;原点復帰ﾏｸﾛは2種類準備しています（任意で選択して下さい）
+;CON_HOME	通常用
+;CON_HOME2	原点確認仕様用
+;			→原点ｾﾝｻｰをSensor_INに指定してください。ｾﾝｻｰはA接点を想定しています。
+;			#20	=	正常終了
+;			#21	=	RB応答なし
+;			#22	=	ｽﾃｰﾀｽ異常
+;			#25	=	原点異常
+;			#26	=	原点ｾﾝｻｰ異常
+STG @LR508
+MPS
+AND= @EM8 #20
+SET R35411               ; RB5原点復帰済
+CON
+JMP @LR509
+MPP
+LD<> @EM8 #20
+AND<> @EM8 #0
+ANL
+SET R35403               ; RB5 Alarm
+CON
+JMP @LR509
+STG @LR509
+SET R35409               ; RB5 HOME END
+CON
+RES R35410               ; During RB5 HOME
+CON
+ENDS
+;<h1/>RB5 Macro
+;Z2=RB_OFFSET[4]
+;
+LD @LR502
+OR @LR508
+NCJ #1019
+;Z2=RB_OFFSET[4]
+;
+LD CR2002                ; 常時ON
+LDA W3AB0:#4             ; RB_OFFSET
+CON
+EXT
+CON
+STA.L Z2
+LABEL #1019
+;
+;RB5 DEVICENET TYPE
+LD @LR502
+ANB B3944                ; RB5_PLS TYPE=ON
+MSTRT CON_MOVE_5 EM1032 EM1036 EM1037 *W3A00:Z2 *W3A10:Z2 @EM8;RB5 目標値下位  RB5 速度  RB5 G  RB NOW_Pos  RB_Target_POS
+LD @LR508
+ANB B3944                ; RB5_PLS TYPE=ON
+MSTRT CON_HOME *W3A00:Z2 *W3A10:Z2 @EM8;RB NOW_Pos  RB_Target_POS
+;<h1/>RB6移動	:#20=正常終了 :#21=RB応答なし :#22=ｽﾃｰﾀｽ異常 :23速度設定異常
+STG R35500               ; RB6 MOVE
+ANB _CON_MOVE_6
+SET R35502               ; During RB6 MOVE
+CON
+JMP @LR600
+STG @LR600
+AND @LR601
+DW #0 @EM10
+CON
+JMP @LR602
+;TYPE EM1040.U,EM1044.U,EM1310.U,EM10000.U   
+;BMOV(EM10000:((EM1310-1+5*DM9420)*6),EM1040,#6)	'指定されたPOSをEM1000へ格納
+;
+;'//////Over ride
+;IF MR001 AND DM7000.D>= 1 AND DM7000.D <=100 THEN 
+;	IF  EM1044.U <> 0 THEN
+;		EM1044.U=INT(FLOAT(EM1044.U)*((FLOAT(DM7000.D))/(FLOAT(#100))))
+;		IF EM1044.U <= 0 THEN
+;			EM1044.U= 10
+;		END IF
+;	
+;	END IF
+;  
+;END IF
+;'/////// INC-
+;IF MR22008 THEN 
+;	EM1040.L = DM50320.L-DM50322.L
+;	EM1044.U= 10
+;	EM1045.U= 10
+;END IF
+;'////// INC +
+;IF MR22009 THEN
+;	EM1040.L = DM50320.L+DM50322.L
+;	EM1044.U= 10
+;	EM1045.U= 10
+;END IF
+;
+;SET (@LR601)
+LD @LR600
+ANB @LR601
+NCJ #1020
+;TYPE EM1040.U,EM1044.U,EM1310.U,EM10000.U   
+;
+;BMOV(EM10000:((EM1310-1+5*DM9420)*6),EM1040,#6)	'指定されたPOSをEM1000へ格納
+;
+LD CR2002                ; 常時ON
+LDA DM9420               ; IAI最大ポイント数
+CON
+EXT
+CON
+MUL.L +5
+CON
+STA.L @VM68
+CON
+LDA EM1310               ; RB6Target Pos
+CON
+EXT
+CON
+SUB.L +1
+CON
+ADD.L @VM68
+CON
+MUL.L +6
+CON
+STA.L Z12
+BMOV EM10000:Z12 EM1040 #6;RB1 P1 POS(LO)  RB6 目標値下位
+;'//////Over ride
+;
+;IF MR001 AND DM7000.D>= 1 AND DM7000.D <=100 THEN 
+;
+LD>=.D DM7000 #1         ; 装置基礎ﾃﾞｰﾀ1 RB速度OVERRIDE
+AND MR001                ; 速度低速設定
+OUT @VB08
+LD<=.D DM7000 #100       ; 装置基礎ﾃﾞｰﾀ1 RB速度OVERRIDE
+AND @VB08
+NCJ #2059
+;	IF  EM1044.U <> 0 THEN
+;
+LD<> EM1044 #0           ; RB6 速度
+NCJ #2060
+;		EM1044.U=INT(FLOAT(EM1044.U)*((FLOAT(DM7000.D))/(FLOAT(#100))))
+;
+LD CR2002                ; 常時ON
+LDA #100
+CON
+FLOAT
+CON
+STA.F @VM70
+CON
+LDA.D DM7000             ; 装置基礎ﾃﾞｰﾀ1 RB速度OVERRIDE
+CON
+FLOAT.D
+CON
+DIV.F @VM70
+CON
+STA.F @VM72
+CON
+LDA EM1044               ; RB6 速度
+CON
+FLOAT
+CON
+MUL.F @VM72
+CON
+INTG.L
+CON
+STA EM1044               ; RB6 速度
+;		IF EM1044.U <= 0 THEN
+;
+LD<= EM1044 #0           ; RB6 速度
+NCJ #2061
+;			EM1044.U= 10
+;
+LD CR2002                ; 常時ON
+MOV #10 EM1044           ; RB6 速度
+;		END IF
+;
+LABEL #2061
+;	END IF
+;
+LABEL #2060
+;END IF
+;
+LABEL #2059
+;'/////// INC-
+;
+;IF MR22008 THEN 
+;
+LD MR22008               ; INC-
+NCJ #2062
+;	EM1040.L = DM50320.L-DM50322.L
+;
+LD CR2002                ; 常時ON
+LDA.L DM50320            ; 現在地
+CON
+SUB.L DM50322            ; INC距離
+CON
+STA.L EM1040             ; RB6 目標値下位
+;	EM1044.U= 10
+;
+LD CR2002                ; 常時ON
+MOV #10 EM1044           ; RB6 速度
+;	EM1045.U= 10
+;
+LD CR2002                ; 常時ON
+MOV #10 EM1045           ; RB6 G
+;END IF
+;
+LABEL #2062
+;'////// INC +
+;
+;IF MR22009 THEN
+;
+LD MR22009               ; INC+
+NCJ #2063
+;	EM1040.L = DM50320.L+DM50322.L
+;
+LD CR2002                ; 常時ON
+LDA.L DM50320            ; 現在地
+CON
+ADD.L DM50322            ; INC距離
+CON
+STA.L EM1040             ; RB6 目標値下位
+;	EM1044.U= 10
+;
+LD CR2002                ; 常時ON
+MOV #10 EM1044           ; RB6 速度
+;	EM1045.U= 10
+;
+LD CR2002                ; 常時ON
+MOV #10 EM1045           ; RB6 G
+;END IF
+;
+LABEL #2063
+;SET (@LR601)
+LD CR2002                ; 常時ON
+SET @LR601
+LABEL #1020
+;
+STG @LR602
+RES @LR601
+CON
+MPS
+AND= @EM10 #20
+LDA EM1310               ; RB6Target Pos
+CON
+STA EM1311               ; RB6Now Pos
+CON
+JMP @LR603
+MPP
+LD<> @EM10 #20
+AND<> @EM10 #0
+ANL
+SET R35503               ; RB6 Alarm
+CON
+JMP @LR603
+STG @LR603
+RES R35502               ; During RB6 MOVE
+CON
+SET R35501               ; RB6 MOVE END
+CON
+ENDS
+;<h1/>RB6 HOME
+STG R35508               ; RB6 HOME
+DW #0 @EM10
+CON
+SET R35510               ; During RB6 HOME
+CON
+JMP @LR608
+;原点復帰ﾏｸﾛは2種類準備しています（任意で選択して下さい）
+;CON_HOME	通常用
+;CON_HOME2	原点確認仕様用
+;			→原点ｾﾝｻｰをSensor_INに指定してください。ｾﾝｻｰはA接点を想定しています。
+;			#20	=	正常終了
+;			#21	=	RB応答なし
+;			#22	=	ｽﾃｰﾀｽ異常
+;			#25	=	原点異常
+;			#26	=	原点ｾﾝｻｰ異常
+STG @LR608
+MPS
+AND= @EM10 #20
+SET R35511               ; RB6原点復帰済
+CON
+JMP @LR609
+MPP
+LD<> @EM10 #20
+AND<> @EM10 #0
+ANL
+SET R35503               ; RB6 Alarm
+CON
+JMP @LR609
+STG @LR609
+SET R35509               ; RB6 HOME END
+CON
+RES R35510               ; During RB6 HOME
+CON
+ENDS
+;<h1/>RB6 Macro
+;Z2=RB_OFFSET[5]
+;
+LD @LR602
+OR @LR608
+NCJ #1021
+;Z2=RB_OFFSET[5]
+;
+LD CR2002                ; 常時ON
+LDA W3AB0:#5             ; RB_OFFSET
+CON
+EXT
+CON
+STA.L Z2
+LABEL #1021
+;
+;RB6 DEVICENET TYPE
+LD @LR602
+ANB B3945                ; RB6_PLS TYPE=ON
+MSTRT CON_MOVE_6 EM1040 EM1044 EM1045 *W3A00:Z2 *W3A10:Z2 @EM10;RB6 目標値下位  RB6 速度  RB6 G  RB NOW_Pos  RB_Target_POS
+LD @LR608
+ANB B3945                ; RB6_PLS TYPE=ON
+MSTRT CON_HOME *W3A00:Z2 *W3A10:Z2 @EM10;RB NOW_Pos  RB_Target_POS
+END
+ENDH

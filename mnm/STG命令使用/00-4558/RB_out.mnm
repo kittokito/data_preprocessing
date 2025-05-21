@@ -1,0 +1,2665 @@
+DEVICE:53
+;MODULE:RB_out
+;MODULE_TYPE:0
+;非常停止
+;Emergency Stop
+LD R50010                ; 非常停止
+ZRES MR2200 MR2205       ; Rob1_Motor Power ON  Rob6_Motor Power ON
+CON
+ZRES @MR000 @MR2115
+LDB R50010               ; 非常停止
+ANB R50900               ; TRAP
+OUT R11600               ; 動作許可
+CON
+OUT R21600               ; 動作許可
+;ALL ROBOT 電源ON
+LD T200                  ; 遅延ﾀｲﾏ－200　1s
+ANB R50900               ; TRAP
+SET MR2200               ; Rob1_Motor Power ON
+CON
+SET MR2201               ; Rob2_Motor Power ON
+CON
+SET MR2202               ; Rob3_Motor Power ON
+CON
+SET MR2203               ; Rob4_Motor Power ON
+CON
+SET MR2204               ; Rob5_Motor Power ON
+CON
+SET MR2205               ; Rob6_Motor Power ON
+;Motion Controller -1 
+LD T200                  ; 遅延ﾀｲﾏ－200　1s
+ANB R50900               ; TRAP
+AND R2200                ; Rob1_Motor Power ON
+ANB MR14001              ; 給材P&P X軸_ｻｰﾎﾞｵﾝ完了
+@SET MR2402              ; 給材X_CSTP
+CON
+@SET @MR001
+STG @MR001
+AND T202                 ; 遅延ﾀｲﾏ－202　6s
+SET R14305               ; 軸1 ﾄﾞﾗｲﾊﾞｱﾗｰﾑﾘｾｯﾄ
+CON
+JMP @MR002               ; 002
+STG @MR002               ; 002
+ANB R14705               ; 軸1 ﾄﾞﾗｲﾊﾞｱﾗｰﾑ
+RES R14305               ; 軸1 ﾄﾞﾗｲﾊﾞｱﾗｰﾑﾘｾｯﾄ
+CON
+JMP @MR003               ; 003
+STG @MR003               ; 003
+SET R14000               ; 軸1 軸ｴﾗｰｸﾘｱ
+CON
+JMP @MR004               ; 002
+STG @MR004               ; 002
+ANB R14400               ; 軸1 軸ｴﾗｰ中
+RES R14000               ; 軸1 軸ｴﾗｰｸﾘｱ
+CON
+JMP @MR005               ; 003
+STG @MR005               ; 003
+TMR @5 #30               ; 軸1_ｻｰﾎﾞｵﾝ遅延
+CON
+AND @T5                  ; 軸1_ｻｰﾎﾞｵﾝ遅延
+SET R14113               ; 軸1 ｻｰﾎﾞON
+CON
+JMP @MR006
+STG @MR006
+TMR @6 #30               ; 軸1_ｻｰﾎﾞｵﾝ確認遅延
+CON
+AND @T6                  ; 軸1_ｻｰﾎﾞｵﾝ確認遅延
+AND R14513               ; 軸1 ｻｰﾎﾞﾚﾃﾞｨ
+SET MR14001              ; 給材P&P X軸_ｻｰﾎﾞｵﾝ完了
+CON
+ENDS
+LDF R14513               ; 軸1 ｻｰﾎﾞﾚﾃﾞｨ
+RES MR14001              ; 給材P&P X軸_ｻｰﾎﾞｵﾝ完了
+;給材P&P X軸_ﾌﾗｯｼｭﾛﾑ書込み
+LDP R36015               ; 書き込みOK SW
+@SET @MR1001             ; 給材PP X軸_ﾌﾗｯｼｭﾛﾑ書込み
+STG @MR1001              ; 給材PP X軸_ﾌﾗｯｼｭﾛﾑ書込み
+ANB R12812               ; ﾌﾗｯｼｭROM書込完了
+SET R11612               ; ﾌﾗｯｼｭROM書込要求
+CON
+JMP @MR1002
+STG @MR1002
+AND R12812               ; ﾌﾗｯｼｭROM書込完了
+UREAD #2 #105 @DM1 #1    ; ﾌﾗｯｼｭROM書込完了ｺｰﾄﾞ
+RES R11612               ; ﾌﾗｯｼｭROM書込要求
+CON
+JMP @MR1003
+STG @MR1003
+MPS
+AND= @DM1 #0             ; ﾌﾗｯｼｭROM書込完了ｺｰﾄﾞ
+ENDS
+MPP
+AND<> @DM1 #0            ; ﾌﾗｯｼｭROM書込完了ｺｰﾄﾞ
+SET MR14002              ; 給材P&P X軸_ﾌﾗｯｼｭﾛﾑ書込み異常
+CON
+ENDS
+;給材P&P X軸_移動可条件
+LDB R14404               ; 軸1 軸制御中
+ANB R15204               ; 軸2 軸制御中
+LD R38108                ; 給材P&P Z軸 P1 位置　表示
+AND R4111                ; 給材_ｽﾗｲﾀﾞ 戻り端
+OR CR2002                ; 常時ON
+ANL
+OUT MR14003              ; 給材P&P X軸_移動可
+LDB R15204               ; 軸2 軸制御中
+LD R4111                 ; 給材_ｽﾗｲﾀﾞ 戻り端
+OR CR2002                ; 常時ON
+ANL
+OUT MR14004              ; 給材P&P X軸_移動可(JOG)
+;給材P&P X軸_ﾎﾟｼﾞｼｮﾝ表示
+LD CR2002                ; 常時ON
+U_RDFPOS.L #2 #1 DM2050  ; 給材P&P X軸_現在座標読出し
+MPS
+LDA.D DM2050             ; 給材P&P X軸_現在座標読出し
+CON
+STA.D DM2052             ; 給材P&P X軸_現在座標表示用
+MRD
+MOV DM2058 DM2054        ; 給材P&P X軸_変更速度表示用  給材P&P X軸_現在速度表示用
+MRD
+AND=.L DM2050 DM2012     ; 給材P&P X軸_現在座標読出し  給材P&P X軸_P1:位置
+OUT R38008               ; 給材P&P X軸 P1 位置　表示
+MRD
+AND=.L DM2050 DM2014     ; 給材P&P X軸_現在座標読出し  給材P&P X軸_P2:位置
+OUT R38009               ; 給材P&P X軸 P2 位置　表示
+MRD
+AND=.L DM2050 DM2016     ; 給材P&P X軸_現在座標読出し  給材P&P X軸_P3:位置
+OUT R38010               ; 給材P&P X軸 P3 位置　表示
+MRD
+AND=.L DM2050 DM2018     ; 給材P&P X軸_現在座標読出し  給材P&P X軸_P4:位置
+OUT R38011               ; 給材P&P X軸 P4 位置　表示
+MRD
+AND=.L DM2050 DM2020     ; 給材P&P X軸_現在座標読出し  給材P&P X軸_P5:位置
+OUT R38012               ; 給材P&P X軸 P5 位置　表示
+MPP
+AND=.L DM2050 DM2022     ; 給材P&P X軸_現在座標読出し  給材P&P X軸_P6:位置
+OUT R38013               ; 給材P&P X軸 P6 位置　表示
+;ﾎﾟｲﾝﾄﾃﾞｰﾀ格納
+;　　ﾎﾟｲﾝﾄﾃﾞｰﾀ
+;　　　P1　待機位置
+;　　　P2　Line-A（Left)　投入位置
+;　　　P3　Line-B（Right)　投入位置
+LD= DM3000 #200          ; 表示画面
+OUT MR14015              ; RBﾎﾟｲﾝﾄ設定1画面表示中(TP)
+LDB R14404               ; 軸1 軸制御中
+OUT R38006               ; 給材P&P X軸_位置取込み可PL(TP)
+CON
+OUT R38007               ; 給材P&P X軸_位置書込み可PL(TP)
+LDP R36004               ; 給材P&P X軸_ﾎﾟｲﾝﾄNo+PB(TP)
+INC DM2000               ; 給材P&P X軸_ﾎﾟｲﾝﾄNo(TP)
+LDP R36005               ; 給材P&P X軸_ﾎﾟｲﾝﾄNo-PB(TP)
+DEC DM2000               ; 給材P&P X軸_ﾎﾟｲﾝﾄNo(TP)
+LD> DM2000 #8            ; 給材P&P X軸_ﾎﾟｲﾝﾄNo(TP)
+DW #8 DM2000             ; 給材P&P X軸_ﾎﾟｲﾝﾄNo(TP)
+LD< DM2000 #1            ; 給材P&P X軸_ﾎﾟｲﾝﾄNo(TP)
+DW #1 DM2000             ; 給材P&P X軸_ﾎﾟｲﾝﾄNo(TP)
+LD CR2002                ; 常時ON
+MPS
+AND= DM2000 #1           ; 給材P&P X軸_ﾎﾟｲﾝﾄNo(TP)
+OUT @MR2001              ; 給材P&P X軸_ﾎﾟｲﾝﾄ1表示
+MRD
+AND= DM2000 #2           ; 給材P&P X軸_ﾎﾟｲﾝﾄNo(TP)
+OUT @MR2002              ; 給材P&P X軸_ﾎﾟｲﾝﾄ2表示
+MRD
+AND= DM2000 #3           ; 給材P&P X軸_ﾎﾟｲﾝﾄNo(TP)
+OUT @MR2003              ; 給材P&P X軸_ﾎﾟｲﾝﾄ3表示
+MRD
+AND= DM2000 #4           ; 給材P&P X軸_ﾎﾟｲﾝﾄNo(TP)
+OUT @MR2004              ; 給材P&P X軸_ﾎﾟｲﾝﾄ4表示
+MRD
+AND= DM2000 #5           ; 給材P&P X軸_ﾎﾟｲﾝﾄNo(TP)
+OUT @MR2005              ; 給材P&P X軸_ﾎﾟｲﾝﾄ5表示
+MPP
+AND= DM2000 #6           ; 給材P&P X軸_ﾎﾟｲﾝﾄNo(TP)
+OUT @MR2006              ; 給材P&P X軸_ﾎﾟｲﾝﾄ6表示
+LD CR2002                ; 常時ON
+MPS
+ANP @MR2001              ; 給材P&P X軸_ﾎﾟｲﾝﾄ1表示
+MPS
+LDA.D DM2012             ; 給材P&P X軸_P1:位置
+CON
+STA.D DM2056             ; 給材P&P X軸_変更位置表示用
+MPP
+LDA.D DM2032             ; 給材P&P X軸_P1:移動速度
+CON
+STA.D DM2058             ; 給材P&P X軸_変更速度表示用
+MRD
+ANP @MR2002              ; 給材P&P X軸_ﾎﾟｲﾝﾄ2表示
+MPS
+LDA.D DM2014             ; 給材P&P X軸_P2:位置
+CON
+STA.D DM2056             ; 給材P&P X軸_変更位置表示用
+MPP
+LDA.D DM2034             ; 給材P&P X軸_P2:移動速度
+CON
+STA.D DM2058             ; 給材P&P X軸_変更速度表示用
+MRD
+ANP @MR2003              ; 給材P&P X軸_ﾎﾟｲﾝﾄ3表示
+MPS
+LDA.D DM2016             ; 給材P&P X軸_P3:位置
+CON
+STA.D DM2056             ; 給材P&P X軸_変更位置表示用
+MPP
+LDA.D DM2036             ; 給材P&P X軸_P3:移動速度
+CON
+STA.D DM2058             ; 給材P&P X軸_変更速度表示用
+MRD
+ANP @MR2004              ; 給材P&P X軸_ﾎﾟｲﾝﾄ4表示
+MPS
+LDA.D DM2018             ; 給材P&P X軸_P4:位置
+CON
+STA.D DM2056             ; 給材P&P X軸_変更位置表示用
+MPP
+LDA.D DM2038             ; 給材P&P X軸_P4:移動速度
+CON
+STA.D DM2058             ; 給材P&P X軸_変更速度表示用
+MRD
+ANP @MR2005              ; 給材P&P X軸_ﾎﾟｲﾝﾄ5表示
+MPS
+LDA.D DM2020             ; 給材P&P X軸_P5:位置
+CON
+STA.D DM2056             ; 給材P&P X軸_変更位置表示用
+MPP
+LDA.D DM2040             ; 給材P&P X軸_P5:移動速度
+CON
+STA.D DM2058             ; 給材P&P X軸_変更速度表示用
+MPP
+ANP @MR2006              ; 給材P&P X軸_ﾎﾟｲﾝﾄ6表示
+MPS
+LDA.D DM2022             ; 給材P&P X軸_P6:位置
+CON
+STA.D DM2056             ; 給材P&P X軸_変更位置表示用
+MPP
+LDA.D DM2042             ; 給材P&P X軸_P6:移動速度
+CON
+STA.D DM2058             ; 給材P&P X軸_変更速度表示用
+LD CR2002                ; 常時ON
+ANP R36006               ; 給材P&P X軸_位置取込みPB(TP)
+AND R38006               ; 給材P&P X軸_位置取込み可PL(TP)
+MPS
+AND= DM2000 #1           ; 給材P&P X軸_ﾎﾟｲﾝﾄNo(TP)
+MOV DM2012 DM7012        ; 給材P&P X軸_P1:位置
+MOV DM12290 DM2012       ; 軸1 現在座標  給材P&P X軸_P1:位置
+MRD
+AND= DM2000 #2           ; 給材P&P X軸_ﾎﾟｲﾝﾄNo(TP)
+MOV DM2014 DM7014        ; 給材P&P X軸_P2:位置
+MOV DM12290 DM2014       ; 軸1 現在座標  給材P&P X軸_P2:位置
+MRD
+AND= DM2000 #3           ; 給材P&P X軸_ﾎﾟｲﾝﾄNo(TP)
+MOV DM2016 DM7016        ; 給材P&P X軸_P3:位置
+MOV DM12290 DM2016       ; 軸1 現在座標  給材P&P X軸_P3:位置
+MRD
+AND= DM2000 #4           ; 給材P&P X軸_ﾎﾟｲﾝﾄNo(TP)
+MOV DM2018 DM7018        ; 給材P&P X軸_P4:位置
+MOV DM12290 DM2018       ; 軸1 現在座標  給材P&P X軸_P4:位置
+MRD
+AND= DM2000 #5           ; 給材P&P X軸_ﾎﾟｲﾝﾄNo(TP)
+MOV DM2020 DM7020        ; 給材P&P X軸_P5:位置
+MOV DM12290 DM2020       ; 軸1 現在座標  給材P&P X軸_P5:位置
+MRD
+AND= DM2000 #6           ; 給材P&P X軸_ﾎﾟｲﾝﾄNo(TP)
+MOV DM2022 DM7022        ; 給材P&P X軸_P6:位置
+MOV DM12290 DM2022       ; 軸1 現在座標  給材P&P X軸_P6:位置
+MPP
+LDA.D DM12290            ; 軸1 現在座標
+CON
+STA.D DM2056             ; 給材P&P X軸_変更位置表示用
+LD CR2002                ; 常時ON
+AND R36007               ; 給材P&P X軸_位置書込みPB(TP)
+AND R38007               ; 給材P&P X軸_位置書込み可PL(TP)
+MPS
+AND= DM2000 #1           ; 給材P&P X軸_ﾎﾟｲﾝﾄNo(TP)
+MPS
+LDA.D DM2056             ; 給材P&P X軸_変更位置表示用
+CON
+STA.D DM2012             ; 給材P&P X軸_P1:位置
+MPP
+LDA.D DM2058             ; 給材P&P X軸_変更速度表示用
+CON
+STA.D DM2032             ; 給材P&P X軸_P1:移動速度
+MRD
+AND= DM2000 #2           ; 給材P&P X軸_ﾎﾟｲﾝﾄNo(TP)
+MPS
+LDA.D DM2056             ; 給材P&P X軸_変更位置表示用
+CON
+STA.D DM2014             ; 給材P&P X軸_P2:位置
+MPP
+LDA.D DM2058             ; 給材P&P X軸_変更速度表示用
+CON
+STA.D DM2034             ; 給材P&P X軸_P2:移動速度
+MRD
+AND= DM2000 #3           ; 給材P&P X軸_ﾎﾟｲﾝﾄNo(TP)
+MPS
+LDA.D DM2056             ; 給材P&P X軸_変更位置表示用
+CON
+STA.D DM2016             ; 給材P&P X軸_P3:位置
+MPP
+LDA.D DM2058             ; 給材P&P X軸_変更速度表示用
+CON
+STA.D DM2036             ; 給材P&P X軸_P3:移動速度
+MRD
+AND= DM2000 #4           ; 給材P&P X軸_ﾎﾟｲﾝﾄNo(TP)
+MPS
+LDA.D DM2056             ; 給材P&P X軸_変更位置表示用
+CON
+STA.D DM2018             ; 給材P&P X軸_P4:位置
+MPP
+LDA.D DM2058             ; 給材P&P X軸_変更速度表示用
+CON
+STA.D DM2038             ; 給材P&P X軸_P4:移動速度
+MRD
+AND= DM2000 #5           ; 給材P&P X軸_ﾎﾟｲﾝﾄNo(TP)
+MPS
+LDA.D DM2056             ; 給材P&P X軸_変更位置表示用
+CON
+STA.D DM2020             ; 給材P&P X軸_P5:位置
+MPP
+LDA.D DM2058             ; 給材P&P X軸_変更速度表示用
+CON
+STA.D DM2040             ; 給材P&P X軸_P5:移動速度
+MPP
+AND= DM2000 #6           ; 給材P&P X軸_ﾎﾟｲﾝﾄNo(TP)
+MPS
+LDA.D DM2056             ; 給材P&P X軸_変更位置表示用
+CON
+STA.D DM2022             ; 給材P&P X軸_P6:位置
+MPP
+LDA.D DM2058             ; 給材P&P X軸_変更速度表示用
+CON
+STA.D DM2042             ; 給材P&P X軸_P6:移動速度
+LD CR2002                ; 常時ON
+ANP R36015               ; 書き込みOK SW
+LD R38006                ; 給材P&P X軸_位置取込み可PL(TP)
+OR R38007                ; 給材P&P X軸_位置書込み可PL(TP)
+ANL
+MPS
+AND= DM2000 #1           ; 給材P&P X軸_ﾎﾟｲﾝﾄNo(TP)
+UWRIT #2 #18016 DM2012 #2; 給材P&P X軸_P1:位置
+UWRIT #2 #18028 DM2032 #2; 給材P&P X軸_P1:移動速度
+MRD
+AND= DM2000 #2           ; 給材P&P X軸_ﾎﾟｲﾝﾄNo(TP)
+UWRIT #2 #18528 DM2014 #2; 給材P&P X軸_P2:位置
+UWRIT #2 #18540 DM2034 #2; 給材P&P X軸_P2:移動速度
+MRD
+AND= DM2000 #3           ; 給材P&P X軸_ﾎﾟｲﾝﾄNo(TP)
+UWRIT #2 #19040 DM2016 #2; 給材P&P X軸_P3:位置
+UWRIT #2 #19052 DM2036 #2; 給材P&P X軸_P3:移動速度
+MRD
+AND= DM2000 #4           ; 給材P&P X軸_ﾎﾟｲﾝﾄNo(TP)
+UWRIT #2 #19552 DM2018 #2; 給材P&P X軸_P4:位置
+UWRIT #2 #19564 DM2038 #2; 給材P&P X軸_P4:移動速度
+MRD
+AND= DM2000 #5           ; 給材P&P X軸_ﾎﾟｲﾝﾄNo(TP)
+UWRIT #2 #20064 DM2020 #2; 給材P&P X軸_P5:位置
+UWRIT #2 #20076 DM2040 #2; 給材P&P X軸_P5:移動速度
+MPP
+AND= DM2000 #6           ; 給材P&P X軸_ﾎﾟｲﾝﾄNo(TP)
+UWRIT #2 #20576 DM2022 #2; 給材P&P X軸_P6:位置
+UWRIT #2 #20588 DM2042 #2; 給材P&P X軸_P6:移動速度
+LD CR2002                ; 常時ON
+ANP R36100               ; 書き込みいいえ SW
+MPS
+AND= DM2000 #1           ; 給材P&P X軸_ﾎﾟｲﾝﾄNo(TP)
+MOV DM7012 DM2012        ; 給材P&P X軸_P1:位置
+LDA.D DM2012             ; 給材P&P X軸_P1:位置
+CON
+STA.D DM2056             ; 給材P&P X軸_変更位置表示用
+MRD
+AND= DM2000 #2           ; 給材P&P X軸_ﾎﾟｲﾝﾄNo(TP)
+MOV DM7014 DM2014        ; 給材P&P X軸_P2:位置
+LDA.D DM2014             ; 給材P&P X軸_P2:位置
+CON
+STA.D DM2056             ; 給材P&P X軸_変更位置表示用
+MRD
+AND= DM2000 #3           ; 給材P&P X軸_ﾎﾟｲﾝﾄNo(TP)
+MOV DM7016 DM2016        ; 給材P&P X軸_P3:位置
+LDA.D DM2016             ; 給材P&P X軸_P3:位置
+CON
+STA.D DM2056             ; 給材P&P X軸_変更位置表示用
+MRD
+AND= DM2000 #4           ; 給材P&P X軸_ﾎﾟｲﾝﾄNo(TP)
+MOV DM7018 DM2018        ; 給材P&P X軸_P4:位置
+LDA.D DM2018             ; 給材P&P X軸_P4:位置
+CON
+STA.D DM2056             ; 給材P&P X軸_変更位置表示用
+MRD
+AND= DM2000 #5           ; 給材P&P X軸_ﾎﾟｲﾝﾄNo(TP)
+MOV DM7020 DM2020        ; 給材P&P X軸_P5:位置
+LDA.D DM2020             ; 給材P&P X軸_P5:位置
+CON
+STA.D DM2056             ; 給材P&P X軸_変更位置表示用
+MPP
+AND= DM2000 #6           ; 給材P&P X軸_ﾎﾟｲﾝﾄNo(TP)
+MOV DM7022 DM2022        ; 給材P&P X軸_P6:位置
+LDA.D DM2022             ; 給材P&P X軸_P6:位置
+CON
+STA.D DM2056             ; 給材P&P X軸_変更位置表示用
+LDP R50001               ; 自動中
+ORP R50002               ; 手動中
+ORP R50003               ; 原点復帰中
+ORP MR14015              ; RBﾎﾟｲﾝﾄ設定1画面表示中(TP)
+ORP T200                 ; 遅延ﾀｲﾏ－200　1s
+UREAD #2 #18016 DM2012 #2; 給材P&P X軸_P1:位置
+UREAD #2 #18028 DM2032 #2; 給材P&P X軸_P1:移動速度
+UREAD #2 #18528 DM2014 #2; 給材P&P X軸_P2:位置
+UREAD #2 #18540 DM2034 #2; 給材P&P X軸_P2:移動速度
+UREAD #2 #19040 DM2016 #2; 給材P&P X軸_P3:位置
+UREAD #2 #19052 DM2036 #2; 給材P&P X軸_P3:移動速度
+UREAD #2 #19552 DM2018 #2; 給材P&P X軸_P4:位置
+UREAD #2 #19564 DM2038 #2; 給材P&P X軸_P4:移動速度
+UREAD #2 #20064 DM2020 #2; 給材P&P X軸_P5:位置
+UREAD #2 #20076 DM2040 #2; 給材P&P X軸_P5:移動速度
+UREAD #2 #20576 DM2022 #2; 給材P&P X軸_P6:位置
+UREAD #2 #20588 DM2042 #2; 給材P&P X軸_P6:移動速度
+LDF MR14015              ; RBﾎﾟｲﾝﾄ設定1画面表示中(TP)
+UWRIT #2 #18016 DM2012 #2; 給材P&P X軸_P1:位置
+UWRIT #2 #18028 DM2032 #2; 給材P&P X軸_P1:移動速度
+UWRIT #2 #18528 DM2014 #2; 給材P&P X軸_P2:位置
+UWRIT #2 #18540 DM2034 #2; 給材P&P X軸_P2:移動速度
+UWRIT #2 #19040 DM2016 #2; 給材P&P X軸_P3:位置
+UWRIT #2 #19052 DM2036 #2; 給材P&P X軸_P3:移動速度
+UWRIT #2 #19552 DM2018 #2; 給材P&P X軸_P4:位置
+UWRIT #2 #19564 DM2038 #2; 給材P&P X軸_P4:移動速度
+UWRIT #2 #20064 DM2020 #2; 給材P&P X軸_P5:位置
+UWRIT #2 #20076 DM2040 #2; 給材P&P X軸_P5:移動速度
+UWRIT #2 #20576 DM2022 #2; 給材P&P X軸_P6:位置
+UWRIT #2 #20588 DM2042 #2; 給材P&P X軸_P6:移動速度
+;Motion Controller -1 
+LD T200                  ; 遅延ﾀｲﾏ－200　1s
+ANB R50900               ; TRAP
+AND R2201                ; Rob2_Motor Power ON
+ANB MR14201              ; 給材P&P Z軸_ｻｰﾎﾞｵﾝ完了
+@SET MR2407              ; 給材Z_CSTP
+CON
+@SET @MR101              ; 101
+STG @MR101               ; 101
+AND T202                 ; 遅延ﾀｲﾏ－202　6s
+SET R15105               ; 軸2 ﾄﾞﾗｲﾊﾞｱﾗｰﾑﾘｾｯﾄ
+CON
+JMP @MR102               ; 102
+STG @MR102               ; 102
+ANB R15505               ; 軸2 ﾄﾞﾗｲﾊﾞｱﾗｰﾑ
+RES R15105               ; 軸2 ﾄﾞﾗｲﾊﾞｱﾗｰﾑﾘｾｯﾄ
+CON
+JMP @MR103
+STG @MR103
+SET R14800               ; 軸2 軸ｴﾗｰｸﾘｱ
+CON
+JMP @MR104
+STG @MR104
+ANB R15200               ; 軸2 軸ｴﾗｰ中
+RES R14800               ; 軸2 軸ｴﾗｰｸﾘｱ
+CON
+JMP @MR105
+STG @MR105
+TMR @15 #30
+CON
+AND @T15
+SET R14913               ; 軸2 ｻｰﾎﾞON
+CON
+JMP @MR106
+STG @MR106
+TMR @16 #30
+CON
+AND @T16
+AND R15313               ; 軸2 ｻｰﾎﾞﾚﾃﾞｨ
+SET MR14201              ; 給材P&P Z軸_ｻｰﾎﾞｵﾝ完了
+CON
+ENDS
+LDF R15313               ; 軸2 ｻｰﾎﾞﾚﾃﾞｨ
+RES MR14201              ; 給材P&P Z軸_ｻｰﾎﾞｵﾝ完了
+;給材P&P Z軸_ﾌﾗｯｼｭﾛﾑ書込み
+LDP R36115               ; 書き込みOK SW
+@SET @MR1101             ; 給材PP Z軸_ﾌﾗｯｼｭﾛﾑ書込み
+STG @MR1101              ; 給材PP Z軸_ﾌﾗｯｼｭﾛﾑ書込み
+ANB R12812               ; ﾌﾗｯｼｭROM書込完了
+SET R11612               ; ﾌﾗｯｼｭROM書込要求
+CON
+JMP @MR1102
+STG @MR1102
+AND R12812               ; ﾌﾗｯｼｭROM書込完了
+UREAD #2 #105 @DM2 #1    ; ﾌﾗｯｼｭROM書込完了ｺｰﾄﾞ
+RES R11612               ; ﾌﾗｯｼｭROM書込要求
+CON
+JMP @MR1103
+STG @MR1103
+MPS
+AND= @DM2 #0             ; ﾌﾗｯｼｭROM書込完了ｺｰﾄﾞ
+ENDS
+MPP
+AND<> @DM2 #0            ; ﾌﾗｯｼｭROM書込完了ｺｰﾄﾞ
+SET MR14202              ; 給材P&P Z軸_ﾌﾗｯｼｭﾛﾑ書込み異常
+CON
+ENDS
+;給材P&P Z軸_移動可条件
+LDB R14404               ; 軸1 軸制御中
+ANB R15204               ; 軸2 軸制御中
+LD R38108                ; 給材P&P Z軸 P1 位置　表示
+AND R4111                ; 給材_ｽﾗｲﾀﾞ 戻り端
+LD R38109                ; 給材P&P Z軸 P2 位置　表示
+OR R38110                ; 給材P&P Z軸 P3 位置　表示
+AND R4110                ; 給材_ｽﾗｲﾀﾞ 出端
+ORL
+OR CR2002                ; 常時ON
+ANL
+OUT MR14203              ; 給材P&P Z軸_移動可
+LDB R15204               ; 軸2 軸制御中
+LD R4111                 ; 給材_ｽﾗｲﾀﾞ 戻り端
+LD R38109                ; 給材P&P Z軸 P2 位置　表示
+OR R38110                ; 給材P&P Z軸 P3 位置　表示
+AND R4110                ; 給材_ｽﾗｲﾀﾞ 出端
+ORL
+OR CR2002                ; 常時ON
+ANL
+OUT MR14204              ; 給材P&P Z軸_移動可(JOG)
+;給材P&P Z軸_ﾎﾟｼﾞｼｮﾝ表示
+LD CR2002                ; 常時ON
+U_RDFPOS.L #2 #2 DM2150  ; 給材P&P Z軸_現在座標読出し
+MPS
+LDA.D DM2150             ; 給材P&P Z軸_現在座標読出し
+CON
+STA.D DM2152             ; 給材P&P Z軸_現在座標表示用
+MRD
+MOV DM2158 DM2154        ; 給材P&P Z軸_変更速度表示用  給材P&P Z軸_現在速度表示用
+MRD
+AND=.L DM2150 DM2112     ; 給材P&P Z軸_現在座標読出し  給材P&P Z軸_P1:位置
+OUT R38108               ; 給材P&P Z軸 P1 位置　表示
+MRD
+AND=.L DM2150 DM2114     ; 給材P&P Z軸_現在座標読出し  給材P&P Z軸_P2:位置
+OUT R38109               ; 給材P&P Z軸 P2 位置　表示
+MRD
+AND=.L DM2150 DM2116     ; 給材P&P Z軸_現在座標読出し  給材P&P Z軸_P3:位置
+OUT R38110               ; 給材P&P Z軸 P3 位置　表示
+MRD
+AND=.L DM2150 DM2118     ; 給材P&P Z軸_現在座標読出し  給材P&P Z軸_P4:位置
+OUT R38111               ; 給材P&P Z軸 P4 位置　表示
+MRD
+AND=.L DM2150 DM2120     ; 給材P&P Z軸_現在座標読出し  給材P&P Z軸_P5:位置
+OUT R38112               ; 給材P&P Z軸 P5 位置　表示
+MPP
+AND=.L DM2150 DM2122     ; 給材P&P Z軸_現在座標読出し  給材P&P Z軸_P6:位置
+OUT R38113               ; 給材P&P Z軸 P6 位置　表示
+;ﾎﾟｲﾝﾄﾃﾞｰﾀ格納
+;　　ﾎﾟｲﾝﾄﾃﾞｰﾀ
+;　　　P1　待機位置
+;　　　P2　CV部　下降位置
+;　　　P3　Line-A（Left)　下降位置
+;　　　P4　Line-B（Right)　下降位置
+LD= DM3000 #200          ; 表示画面
+OUT MR14015              ; RBﾎﾟｲﾝﾄ設定1画面表示中(TP)
+LDB R15204               ; 軸2 軸制御中
+OUT R38106               ; 給材P&P Z軸_位置取込み可PL(TP)
+CON
+OUT R38107               ; 給材P&P Z軸_位置書込み可PL(TP)
+LDP R36104               ; 給材P&P Z軸_ﾎﾟｲﾝﾄNo+PB(TP)
+INC DM2100               ; 給材P&P Z軸_ﾎﾟｲﾝﾄNo(TP)
+LDP R36105               ; 給材P&P Z軸_ﾎﾟｲﾝﾄNo-PB(TP)
+DEC DM2100               ; 給材P&P Z軸_ﾎﾟｲﾝﾄNo(TP)
+LD> DM2100 #8            ; 給材P&P Z軸_ﾎﾟｲﾝﾄNo(TP)
+DW #8 DM2100             ; 給材P&P Z軸_ﾎﾟｲﾝﾄNo(TP)
+LD< DM2100 #1            ; 給材P&P Z軸_ﾎﾟｲﾝﾄNo(TP)
+DW #1 DM2100             ; 給材P&P Z軸_ﾎﾟｲﾝﾄNo(TP)
+LD CR2002                ; 常時ON
+MPS
+AND= DM2100 #1           ; 給材P&P Z軸_ﾎﾟｲﾝﾄNo(TP)
+OUT @MR2101              ; 給材P&P Z軸_ﾎﾟｲﾝﾄ1表示
+MRD
+AND= DM2100 #2           ; 給材P&P Z軸_ﾎﾟｲﾝﾄNo(TP)
+OUT @MR2102              ; 給材P&P Z軸_ﾎﾟｲﾝﾄ2表示
+MRD
+AND= DM2100 #3           ; 給材P&P Z軸_ﾎﾟｲﾝﾄNo(TP)
+OUT @MR2103              ; 給材P&P Z軸_ﾎﾟｲﾝﾄ3表示
+MRD
+AND= DM2100 #4           ; 給材P&P Z軸_ﾎﾟｲﾝﾄNo(TP)
+OUT @MR2104              ; 給材P&P Z軸_ﾎﾟｲﾝﾄ4表示
+MRD
+AND= DM2100 #5           ; 給材P&P Z軸_ﾎﾟｲﾝﾄNo(TP)
+OUT @MR2105              ; 給材P&P Z軸_ﾎﾟｲﾝﾄ5表示
+MPP
+AND= DM2100 #6           ; 給材P&P Z軸_ﾎﾟｲﾝﾄNo(TP)
+OUT @MR2106              ; 給材P&P Z軸_ﾎﾟｲﾝﾄ6表示
+LD CR2002                ; 常時ON
+MPS
+ANP @MR2101              ; 給材P&P Z軸_ﾎﾟｲﾝﾄ1表示
+MPS
+LDA.D DM2112             ; 給材P&P Z軸_P1:位置
+CON
+STA.D DM2156             ; 給材P&P Z軸_変更位置表示用
+MPP
+LDA.D DM2132             ; 給材P&P Z軸_P1:移動速度
+CON
+STA.D DM2158             ; 給材P&P Z軸_変更速度表示用
+MRD
+ANP @MR2102              ; 給材P&P Z軸_ﾎﾟｲﾝﾄ2表示
+MPS
+LDA.D DM2114             ; 給材P&P Z軸_P2:位置
+CON
+STA.D DM2156             ; 給材P&P Z軸_変更位置表示用
+MPP
+LDA.D DM2134             ; 給材P&P Z軸_P2:移動速度
+CON
+STA.D DM2158             ; 給材P&P Z軸_変更速度表示用
+MRD
+ANP @MR2103              ; 給材P&P Z軸_ﾎﾟｲﾝﾄ3表示
+MPS
+LDA.D DM2116             ; 給材P&P Z軸_P3:位置
+CON
+STA.D DM2156             ; 給材P&P Z軸_変更位置表示用
+MPP
+LDA.D DM2136             ; 給材P&P Z軸_P3:移動速度
+CON
+STA.D DM2158             ; 給材P&P Z軸_変更速度表示用
+MRD
+ANP @MR2104              ; 給材P&P Z軸_ﾎﾟｲﾝﾄ4表示
+MPS
+LDA.D DM2118             ; 給材P&P Z軸_P4:位置
+CON
+STA.D DM2156             ; 給材P&P Z軸_変更位置表示用
+MPP
+LDA.D DM2138             ; 給材P&P Z軸_P4:移動速度
+CON
+STA.D DM2158             ; 給材P&P Z軸_変更速度表示用
+MRD
+ANP @MR2105              ; 給材P&P Z軸_ﾎﾟｲﾝﾄ5表示
+MPS
+LDA.D DM2120             ; 給材P&P Z軸_P5:位置
+CON
+STA.D DM2156             ; 給材P&P Z軸_変更位置表示用
+MPP
+LDA.D DM2140             ; 給材P&P Z軸_P5:移動速度
+CON
+STA.D DM2158             ; 給材P&P Z軸_変更速度表示用
+MPP
+ANP @MR2106              ; 給材P&P Z軸_ﾎﾟｲﾝﾄ6表示
+MPS
+LDA.D DM2122             ; 給材P&P Z軸_P6:位置
+CON
+STA.D DM2156             ; 給材P&P Z軸_変更位置表示用
+MPP
+LDA.D DM2142             ; 給材P&P Z軸_P6:移動速度
+CON
+STA.D DM2158             ; 給材P&P Z軸_変更速度表示用
+LD CR2002                ; 常時ON
+ANP R36106               ; 給材P&P Z軸_位置取込みPB(TP)
+AND R38106               ; 給材P&P Z軸_位置取込み可PL(TP)
+MPS
+AND= DM2100 #1           ; 給材P&P Z軸_ﾎﾟｲﾝﾄNo(TP)
+MOV DM2112 DM7112        ; 給材P&P Z軸_P1:位置
+MOV DM12350 DM2112       ; 軸2 現在座標  給材P&P Z軸_P1:位置
+MRD
+AND= DM2100 #2           ; 給材P&P Z軸_ﾎﾟｲﾝﾄNo(TP)
+MOV DM2114 DM7114        ; 給材P&P Z軸_P2:位置
+MOV DM12350 DM2114       ; 軸2 現在座標  給材P&P Z軸_P2:位置
+MRD
+AND= DM2100 #3           ; 給材P&P Z軸_ﾎﾟｲﾝﾄNo(TP)
+MOV DM2116 DM7116        ; 給材P&P Z軸_P3:位置
+MOV DM12350 DM2116       ; 軸2 現在座標  給材P&P Z軸_P3:位置
+MRD
+AND= DM2100 #4           ; 給材P&P Z軸_ﾎﾟｲﾝﾄNo(TP)
+MOV DM2118 DM7118        ; 給材P&P Z軸_P4:位置
+MOV DM12350 DM2118       ; 軸2 現在座標  給材P&P Z軸_P4:位置
+MRD
+AND= DM2100 #5           ; 給材P&P Z軸_ﾎﾟｲﾝﾄNo(TP)
+MOV DM2120 DM7120        ; 給材P&P Z軸_P5:位置
+MOV DM12350 DM2120       ; 軸2 現在座標  給材P&P Z軸_P5:位置
+MRD
+AND= DM2100 #6           ; 給材P&P Z軸_ﾎﾟｲﾝﾄNo(TP)
+MOV DM2122 DM7122        ; 給材P&P Z軸_P6:位置
+MOV DM12350 DM2122       ; 軸2 現在座標  給材P&P Z軸_P6:位置
+MPP
+LDA.D DM12350            ; 軸2 現在座標
+CON
+STA.D DM2156             ; 給材P&P Z軸_変更位置表示用
+LD CR2002                ; 常時ON
+AND R36107               ; 給材P&P Z軸_位置書込みPB(TP)
+AND R38107               ; 給材P&P Z軸_位置書込み可PL(TP)
+MPS
+AND= DM2100 #1           ; 給材P&P Z軸_ﾎﾟｲﾝﾄNo(TP)
+MPS
+LDA.D DM2156             ; 給材P&P Z軸_変更位置表示用
+CON
+STA.D DM2112             ; 給材P&P Z軸_P1:位置
+MPP
+LDA.D DM2158             ; 給材P&P Z軸_変更速度表示用
+CON
+STA.D DM2132             ; 給材P&P Z軸_P1:移動速度
+MRD
+AND= DM2100 #2           ; 給材P&P Z軸_ﾎﾟｲﾝﾄNo(TP)
+MPS
+LDA.D DM2156             ; 給材P&P Z軸_変更位置表示用
+CON
+STA.D DM2114             ; 給材P&P Z軸_P2:位置
+MPP
+LDA.D DM2158             ; 給材P&P Z軸_変更速度表示用
+CON
+STA.D DM2134             ; 給材P&P Z軸_P2:移動速度
+MRD
+AND= DM2100 #3           ; 給材P&P Z軸_ﾎﾟｲﾝﾄNo(TP)
+MPS
+LDA.D DM2156             ; 給材P&P Z軸_変更位置表示用
+CON
+STA.D DM2116             ; 給材P&P Z軸_P3:位置
+MPP
+LDA.D DM2158             ; 給材P&P Z軸_変更速度表示用
+CON
+STA.D DM2136             ; 給材P&P Z軸_P3:移動速度
+MRD
+AND= DM2100 #4           ; 給材P&P Z軸_ﾎﾟｲﾝﾄNo(TP)
+MPS
+LDA.D DM2156             ; 給材P&P Z軸_変更位置表示用
+CON
+STA.D DM2118             ; 給材P&P Z軸_P4:位置
+MPP
+LDA.D DM2158             ; 給材P&P Z軸_変更速度表示用
+CON
+STA.D DM2138             ; 給材P&P Z軸_P4:移動速度
+MRD
+AND= DM2100 #5           ; 給材P&P Z軸_ﾎﾟｲﾝﾄNo(TP)
+MPS
+LDA.D DM2156             ; 給材P&P Z軸_変更位置表示用
+CON
+STA.D DM2120             ; 給材P&P Z軸_P5:位置
+MPP
+LDA.D DM2158             ; 給材P&P Z軸_変更速度表示用
+CON
+STA.D DM2140             ; 給材P&P Z軸_P5:移動速度
+MPP
+AND= DM2100 #6           ; 給材P&P Z軸_ﾎﾟｲﾝﾄNo(TP)
+MPS
+LDA.D DM2156             ; 給材P&P Z軸_変更位置表示用
+CON
+STA.D DM2122             ; 給材P&P Z軸_P6:位置
+MPP
+LDA.D DM2158             ; 給材P&P Z軸_変更速度表示用
+CON
+STA.D DM2142             ; 給材P&P Z軸_P6:移動速度
+LD CR2002                ; 常時ON
+ANP R36115               ; 書き込みOK SW
+LD R38106                ; 給材P&P Z軸_位置取込み可PL(TP)
+OR R38107                ; 給材P&P Z軸_位置書込み可PL(TP)
+ANL
+MPS
+AND= DM2100 #1           ; 給材P&P Z軸_ﾎﾟｲﾝﾄNo(TP)
+UWRIT #2 #18048 DM2112 #2; 給材P&P Z軸_P1:位置
+UWRIT #2 #18060 DM2132 #2; 給材P&P Z軸_P1:移動速度
+MRD
+AND= DM2100 #2           ; 給材P&P Z軸_ﾎﾟｲﾝﾄNo(TP)
+UWRIT #2 #18560 DM2114 #2; 給材P&P Z軸_P2:位置
+UWRIT #2 #18572 DM2134 #2; 給材P&P Z軸_P2:移動速度
+MRD
+AND= DM2100 #3           ; 給材P&P Z軸_ﾎﾟｲﾝﾄNo(TP)
+UWRIT #2 #19072 DM2116 #2; 給材P&P Z軸_P3:位置
+UWRIT #2 #19084 DM2136 #2; 給材P&P Z軸_P3:移動速度
+MRD
+AND= DM2100 #4           ; 給材P&P Z軸_ﾎﾟｲﾝﾄNo(TP)
+UWRIT #2 #19584 DM2118 #2; 給材P&P Z軸_P4:位置
+UWRIT #2 #19596 DM2138 #2; 給材P&P Z軸_P4:移動速度
+MRD
+AND= DM2100 #5           ; 給材P&P Z軸_ﾎﾟｲﾝﾄNo(TP)
+UWRIT #2 #20096 DM2120 #2; 給材P&P Z軸_P5:位置
+UWRIT #2 #20108 DM2140 #2; 給材P&P Z軸_P5:移動速度
+MPP
+AND= DM2100 #6           ; 給材P&P Z軸_ﾎﾟｲﾝﾄNo(TP)
+UWRIT #2 #20608 DM2122 #2; 給材P&P Z軸_P6:位置
+UWRIT #2 #20620 DM2142 #2; 給材P&P Z軸_P6:移動速度
+LD CR2002                ; 常時ON
+ANP R36200               ; 書き込みいいえ SW
+MPS
+AND= DM2100 #1           ; 給材P&P Z軸_ﾎﾟｲﾝﾄNo(TP)
+MOV DM7112 DM2112        ; 給材P&P Z軸_P1:位置
+LDA.D DM2112             ; 給材P&P Z軸_P1:位置
+CON
+STA.D DM2156             ; 給材P&P Z軸_変更位置表示用
+MRD
+AND= DM2100 #2           ; 給材P&P Z軸_ﾎﾟｲﾝﾄNo(TP)
+MOV DM7114 DM2114        ; 給材P&P Z軸_P2:位置
+LDA.D DM2114             ; 給材P&P Z軸_P2:位置
+CON
+STA.D DM2156             ; 給材P&P Z軸_変更位置表示用
+MRD
+AND= DM2100 #3           ; 給材P&P Z軸_ﾎﾟｲﾝﾄNo(TP)
+MOV DM7116 DM2116        ; 給材P&P Z軸_P3:位置
+LDA.D DM2116             ; 給材P&P Z軸_P3:位置
+CON
+STA.D DM2156             ; 給材P&P Z軸_変更位置表示用
+MRD
+AND= DM2100 #4           ; 給材P&P Z軸_ﾎﾟｲﾝﾄNo(TP)
+MOV DM7118 DM2118        ; 給材P&P Z軸_P4:位置
+LDA.D DM2118             ; 給材P&P Z軸_P4:位置
+CON
+STA.D DM2156             ; 給材P&P Z軸_変更位置表示用
+MRD
+AND= DM2100 #5           ; 給材P&P Z軸_ﾎﾟｲﾝﾄNo(TP)
+MOV DM7120 DM2120        ; 給材P&P Z軸_P5:位置
+LDA.D DM2120             ; 給材P&P Z軸_P5:位置
+CON
+STA.D DM2156             ; 給材P&P Z軸_変更位置表示用
+MPP
+AND= DM2100 #6           ; 給材P&P Z軸_ﾎﾟｲﾝﾄNo(TP)
+MOV DM7122 DM2122        ; 給材P&P Z軸_P6:位置
+LDA.D DM2122             ; 給材P&P Z軸_P6:位置
+CON
+STA.D DM2156             ; 給材P&P Z軸_変更位置表示用
+LDP R50001               ; 自動中
+ORP R50002               ; 手動中
+ORP R50003               ; 原点復帰中
+ORP MR14015              ; RBﾎﾟｲﾝﾄ設定1画面表示中(TP)
+ORP T200                 ; 遅延ﾀｲﾏ－200　1s
+UREAD #2 #18048 DM2112 #2; 給材P&P Z軸_P1:位置
+UREAD #2 #18060 DM2132 #2; 給材P&P Z軸_P1:移動速度
+UREAD #2 #18560 DM2114 #2; 給材P&P Z軸_P2:位置
+UREAD #2 #18572 DM2134 #2; 給材P&P Z軸_P2:移動速度
+UREAD #2 #19072 DM2120 #2; 給材P&P Z軸_P5:位置
+UREAD #2 #19084 DM2140 #2; 給材P&P Z軸_P5:移動速度
+UREAD #2 #19584 DM2122 #2; 給材P&P Z軸_P6:位置
+UREAD #2 #19596 DM2142 #2; 給材P&P Z軸_P6:移動速度
+UREAD #2 #20096 DM2124 #2; 給材P&P Z軸_P7:位置
+UREAD #2 #20108 DM2144 #2; 給材P&P Z軸_P7:移動速度
+UREAD #2 #20608 DM2126 #2; 給材P&P Z軸_P8:位置
+UREAD #2 #20620 DM2146 #2; 給材P&P Z軸_P8:移動速度
+LDF MR14015              ; RBﾎﾟｲﾝﾄ設定1画面表示中(TP)
+UWRIT #2 #18048 DM2112 #2; 給材P&P Z軸_P1:位置
+UWRIT #2 #18060 DM2132 #2; 給材P&P Z軸_P1:移動速度
+UWRIT #2 #18560 DM2114 #2; 給材P&P Z軸_P2:位置
+UWRIT #2 #18572 DM2134 #2; 給材P&P Z軸_P2:移動速度
+UWRIT #2 #19072 DM2116 #2; 給材P&P Z軸_P3:位置
+UWRIT #2 #19084 DM2136 #2; 給材P&P Z軸_P3:移動速度
+UWRIT #2 #19584 DM2118 #2; 給材P&P Z軸_P4:位置
+UWRIT #2 #19596 DM2138 #2; 給材P&P Z軸_P4:移動速度
+UWRIT #2 #20096 DM2120 #2; 給材P&P Z軸_P5:位置
+UWRIT #2 #20108 DM2140 #2; 給材P&P Z軸_P5:移動速度
+UWRIT #2 #20608 DM2122 #2; 給材P&P Z軸_P6:位置
+UWRIT #2 #20620 DM2142 #2; 給材P&P Z軸_P6:移動速度
+;Motion Controller -1 
+LD T200                  ; 遅延ﾀｲﾏ－200　1s
+ANB R50900               ; TRAP
+AND R2202                ; Rob3_Motor Power ON
+ANB MR14401              ; 移載P&P X軸_ｻｰﾎﾞｵﾝ完了
+@SET MR2412              ; 移載X_CSTP
+CON
+@SET @MR201
+STG @MR201
+AND T202                 ; 遅延ﾀｲﾏ－202　6s
+SET R15905               ; 軸3 ﾄﾞﾗｲﾊﾞｱﾗｰﾑﾘｾｯﾄ
+CON
+JMP @MR202               ; RB2 ﾎﾟｲﾝﾄmove完了
+STG @MR202               ; RB2 ﾎﾟｲﾝﾄmove完了
+ANB R16305               ; 軸3 ﾄﾞﾗｲﾊﾞｱﾗｰﾑ
+RES R15905               ; 軸3 ﾄﾞﾗｲﾊﾞｱﾗｰﾑﾘｾｯﾄ
+CON
+JMP @MR203               ; RB3 ﾎﾟｲﾝﾄmove完了
+STG @MR203               ; RB3 ﾎﾟｲﾝﾄmove完了
+SET R15600               ; 軸3 軸ｴﾗｰｸﾘｱ
+CON
+JMP @MR204               ; RB4 ﾎﾟｲﾝﾄmove完了
+STG @MR204               ; RB4 ﾎﾟｲﾝﾄmove完了
+ANB R16000               ; 軸3 軸ｴﾗｰ中
+RES R15600               ; 軸3 軸ｴﾗｰｸﾘｱ
+CON
+JMP @MR205
+STG @MR205
+TMR @25 #30
+CON
+AND @T25
+SET R15713               ; 軸3 ｻｰﾎﾞON
+CON
+JMP @MR206
+STG @MR206
+TMR @26 #30
+CON
+AND @T26
+AND R16113               ; 軸3 ｻｰﾎﾞﾚﾃﾞｨ
+SET MR14401              ; 移載P&P X軸_ｻｰﾎﾞｵﾝ完了
+CON
+ENDS
+LDF R16113               ; 軸3 ｻｰﾎﾞﾚﾃﾞｨ
+RES MR14401              ; 移載P&P X軸_ｻｰﾎﾞｵﾝ完了
+;移載P&P X軸_ﾌﾗｯｼｭﾛﾑ書込み
+LDP R36215               ; 書き込みOK SW
+@SET @MR1201             ; 移載PP X軸_ﾌﾗｯｼｭﾛﾑ書込み
+STG @MR1201              ; 移載PP X軸_ﾌﾗｯｼｭﾛﾑ書込み
+ANB R12812               ; ﾌﾗｯｼｭROM書込完了
+SET R11612               ; ﾌﾗｯｼｭROM書込要求
+CON
+JMP @MR1202
+STG @MR1202
+AND R12812               ; ﾌﾗｯｼｭROM書込完了
+UREAD #2 #105 @DM3 #1    ; ﾌﾗｯｼｭROM書込完了ｺｰﾄﾞ
+RES R11612               ; ﾌﾗｯｼｭROM書込要求
+CON
+JMP @MR1203
+STG @MR1203
+MPS
+AND= @DM3 #0             ; ﾌﾗｯｼｭROM書込完了ｺｰﾄﾞ
+ENDS
+MPP
+AND<> @DM3 #0            ; ﾌﾗｯｼｭROM書込完了ｺｰﾄﾞ
+SET MR14402              ; 移載P&P X軸_ﾌﾗｯｼｭﾛﾑ書込み異常
+CON
+ENDS
+;移載P&P X軸_移動可条件
+LDB R16004               ; 軸3 軸制御中
+ANB R16804               ; 軸4 軸制御中
+LD R38308                ; 移載P&P Z軸 P1 位置　表示
+LD R38408                ; 除材P&P Y軸 P1 位置　表示
+OR R38410                ; 除材P&P Y軸 P3 位置　表示
+ANL
+OR CR2002                ; 常時ON
+ANL
+OUT MR14403              ; 移載P&P X軸_移動可
+CON
+OUT MR14404              ; 移載P&P X軸_移動可(JOG)
+;移載P&P X軸_ﾎﾟｼﾞｼｮﾝ表示
+LD CR2002                ; 常時ON
+U_RDFPOS.L #2 #3 DM2250  ; 移載P&P X軸_現在座標読出し
+MPS
+LDA.D DM2250             ; 移載P&P X軸_現在座標読出し
+CON
+STA.D DM2252             ; 移載P&P X軸_現在座標表示用
+MRD
+MOV DM2258 DM2254        ; 移載P&P X軸_変更速度表示用  移載P&P X軸_現在速度表示用
+MRD
+AND=.L DM2250 DM2212     ; 移載P&P X軸_現在座標読出し  移載P&P X軸_P1:位置
+OUT R38208               ; 移載P&P X軸 P1 位置　表示
+MRD
+AND=.L DM2250 DM2214     ; 移載P&P X軸_現在座標読出し  移載P&P X軸_P2:位置
+OUT R38209               ; 移載P&P X軸 P2 位置　表示
+MRD
+AND=.L DM2250 DM2216     ; 移載P&P X軸_現在座標読出し  移載P&P X軸_P3:位置
+OUT R38210               ; 移載P&P X軸 P3 位置　表示
+MRD
+AND=.L DM2250 DM2218     ; 移載P&P X軸_現在座標読出し  移載P&P X軸_P4:位置
+OUT R38211               ; 移載P&P X軸 P4 位置　表示
+MRD
+AND=.L DM2250 DM2220     ; 移載P&P X軸_現在座標読出し  移載P&P X軸_P5:位置
+OUT R38212               ; 移載P&P X軸 P5 位置　表示
+MRD
+AND=.L DM2250 DM2224     ; 移載P&P X軸_現在座標読出し  移載P&P X軸_P7:位置
+OUT R38213               ; 移載P&P X軸 P6 位置　表示
+MPP
+AND=.L DM2250 DM2226     ; 移載P&P X軸_現在座標読出し  移載P&P X軸_P8:位置
+OUT R38214               ; 移載P&P X軸 P7 位置　表示
+;ﾎﾟｲﾝﾄﾃﾞｰﾀ格納
+;　　ﾎﾟｲﾝﾄﾃﾞｰﾀ
+;　　　P1　待機位置
+;　　　P2　Line-A（Left)　取出し位置
+;　　　P3　Line-B（Right)　取出し位置
+;　　　P4　ﾊﾞｯﾌｧ前 待避位置
+;　　　P5　ﾊﾞｯﾌｧ位置
+LD= DM3000 #201          ; 表示画面
+OUT MR14415              ; RBﾎﾟｲﾝﾄ設定1画面表示中(TP)
+LDB R16804               ; 軸4 軸制御中
+OUT R38206               ; 移載P&P X軸_位置取込み可PL(TP)
+CON
+OUT R38207               ; 移載P&P X軸_位置書込み可PL(TP)
+LDP R36204               ; 移載P&P X軸_ﾎﾟｲﾝﾄNo+PB(TP)
+INC DM2200               ; 移載P&P X軸_ﾎﾟｲﾝﾄNo(TP)
+LDP R36205               ; 移載P&P X軸_ﾎﾟｲﾝﾄNo-PB(TP)
+DEC DM2200               ; 移載P&P X軸_ﾎﾟｲﾝﾄNo(TP)
+LD> DM2200 #8            ; 移載P&P X軸_ﾎﾟｲﾝﾄNo(TP)
+DW #8 DM2200             ; 移載P&P X軸_ﾎﾟｲﾝﾄNo(TP)
+LD< DM2200 #1            ; 移載P&P X軸_ﾎﾟｲﾝﾄNo(TP)
+DW #1 DM2200             ; 移載P&P X軸_ﾎﾟｲﾝﾄNo(TP)
+LD CR2002                ; 常時ON
+MPS
+AND= DM2200 #1           ; 移載P&P X軸_ﾎﾟｲﾝﾄNo(TP)
+OUT @MR1601              ; 移載P&P X軸_ﾎﾟｲﾝﾄ1表示
+MRD
+AND= DM2200 #2           ; 移載P&P X軸_ﾎﾟｲﾝﾄNo(TP)
+OUT @MR1602              ; 移載P&P X軸_ﾎﾟｲﾝﾄ2表示
+MRD
+AND= DM2200 #3           ; 移載P&P X軸_ﾎﾟｲﾝﾄNo(TP)
+OUT @MR1603              ; 移載P&P X軸_ﾎﾟｲﾝﾄ3表示
+MRD
+AND= DM2200 #4           ; 移載P&P X軸_ﾎﾟｲﾝﾄNo(TP)
+OUT @MR1604              ; 移載P&P X軸_ﾎﾟｲﾝﾄ4表示
+MRD
+AND= DM2200 #5           ; 移載P&P X軸_ﾎﾟｲﾝﾄNo(TP)
+OUT @MR1605              ; 移載P&P X軸_ﾎﾟｲﾝﾄ5表示
+MRD
+AND= DM2200 #6           ; 移載P&P X軸_ﾎﾟｲﾝﾄNo(TP)
+OUT @MR1606              ; 移載P&P X軸_ﾎﾟｲﾝﾄ6表示
+MRD
+AND= DM2200 #7           ; 移載P&P X軸_ﾎﾟｲﾝﾄNo(TP)
+OUT @MR1607              ; 移載P&P X軸_ﾎﾟｲﾝﾄ7表示
+MPP
+AND= DM2200 #8           ; 移載P&P X軸_ﾎﾟｲﾝﾄNo(TP)
+OUT @MR1608              ; 移載P&P X軸_ﾎﾟｲﾝﾄ8表示
+LD CR2002                ; 常時ON
+MPS
+ANP @MR1601              ; 移載P&P X軸_ﾎﾟｲﾝﾄ1表示
+MPS
+LDA.D DM2212             ; 移載P&P X軸_P1:位置
+CON
+STA.D DM2256             ; 移載P&P X軸_変更位置表示用
+MPP
+LDA.D DM2232             ; 移載P&P X軸_P1:移動速度
+CON
+STA.D DM2258             ; 移載P&P X軸_変更速度表示用
+MRD
+ANP @MR1602              ; 移載P&P X軸_ﾎﾟｲﾝﾄ2表示
+MPS
+LDA.D DM2214             ; 移載P&P X軸_P2:位置
+CON
+STA.D DM2256             ; 移載P&P X軸_変更位置表示用
+MPP
+LDA.D DM2234             ; 移載P&P X軸_P2:移動速度
+CON
+STA.D DM2258             ; 移載P&P X軸_変更速度表示用
+MRD
+ANP @MR1603              ; 移載P&P X軸_ﾎﾟｲﾝﾄ3表示
+MPS
+LDA.D DM2216             ; 移載P&P X軸_P3:位置
+CON
+STA.D DM2256             ; 移載P&P X軸_変更位置表示用
+MPP
+LDA.D DM2236             ; 移載P&P X軸_P3:移動速度
+CON
+STA.D DM2258             ; 移載P&P X軸_変更速度表示用
+MRD
+ANP @MR1604              ; 移載P&P X軸_ﾎﾟｲﾝﾄ4表示
+MPS
+LDA.D DM2218             ; 移載P&P X軸_P4:位置
+CON
+STA.D DM2256             ; 移載P&P X軸_変更位置表示用
+MPP
+LDA.D DM2238             ; 移載P&P X軸_P4:移動速度
+CON
+STA.D DM2258             ; 移載P&P X軸_変更速度表示用
+MRD
+ANP @MR1605              ; 移載P&P X軸_ﾎﾟｲﾝﾄ5表示
+MPS
+LDA.D DM2220             ; 移載P&P X軸_P5:位置
+CON
+STA.D DM2256             ; 移載P&P X軸_変更位置表示用
+MPP
+LDA.D DM2240             ; 移載P&P X軸_P5:移動速度
+CON
+STA.D DM2258             ; 移載P&P X軸_変更速度表示用
+MRD
+ANP @MR1606              ; 移載P&P X軸_ﾎﾟｲﾝﾄ6表示
+MPS
+LDA.D DM2222             ; 移載P&P X軸_P6:位置
+CON
+STA.D DM2256             ; 移載P&P X軸_変更位置表示用
+MPP
+LDA.D DM2242             ; 移載P&P X軸_P6:移動速度
+CON
+STA.D DM2258             ; 移載P&P X軸_変更速度表示用
+MRD
+ANP @MR1607              ; 移載P&P X軸_ﾎﾟｲﾝﾄ7表示
+MPS
+LDA.D DM2224             ; 移載P&P X軸_P7:位置
+CON
+STA.D DM2256             ; 移載P&P X軸_変更位置表示用
+MPP
+LDA.D DM2244             ; 移載P&P X軸_P7:移動速度
+CON
+STA.D DM2258             ; 移載P&P X軸_変更速度表示用
+MPP
+ANP @MR1608              ; 移載P&P X軸_ﾎﾟｲﾝﾄ8表示
+MPS
+LDA.D DM2226             ; 移載P&P X軸_P8:位置
+CON
+STA.D DM2256             ; 移載P&P X軸_変更位置表示用
+MPP
+LDA.D DM2246             ; 移載P&P X軸_P8:移動速度
+CON
+STA.D DM2258             ; 移載P&P X軸_変更速度表示用
+LD CR2002                ; 常時ON
+ANP R36206               ; 移載P&P X軸_位置取込みPB(TP)
+AND R38206               ; 移載P&P X軸_位置取込み可PL(TP)
+MPS
+AND= DM2200 #1           ; 移載P&P X軸_ﾎﾟｲﾝﾄNo(TP)
+MOV DM2212 DM7212        ; 移載P&P X軸_P1:位置
+MOV DM12410 DM2212       ; 軸3 現在座標  移載P&P X軸_P1:位置
+MRD
+AND= DM2200 #2           ; 移載P&P X軸_ﾎﾟｲﾝﾄNo(TP)
+MOV DM2214 DM7214        ; 移載P&P X軸_P2:位置
+MOV DM12410 DM2214       ; 軸3 現在座標  移載P&P X軸_P2:位置
+MRD
+AND= DM2200 #3           ; 移載P&P X軸_ﾎﾟｲﾝﾄNo(TP)
+MOV DM2216 DM7216        ; 移載P&P X軸_P3:位置
+MOV DM12410 DM2216       ; 軸3 現在座標  移載P&P X軸_P3:位置
+MRD
+AND= DM2200 #4           ; 移載P&P X軸_ﾎﾟｲﾝﾄNo(TP)
+MOV DM2218 DM7218        ; 移載P&P X軸_P4:位置
+MOV DM12410 DM2218       ; 軸3 現在座標  移載P&P X軸_P4:位置
+MRD
+AND= DM2200 #5           ; 移載P&P X軸_ﾎﾟｲﾝﾄNo(TP)
+MOV DM2220 DM7220        ; 移載P&P X軸_P5:位置
+MOV DM12410 DM2220       ; 軸3 現在座標  移載P&P X軸_P5:位置
+MRD
+AND= DM2200 #6           ; 移載P&P X軸_ﾎﾟｲﾝﾄNo(TP)
+MOV DM2222 DM7222        ; 移載P&P X軸_P6:位置
+MOV DM12410 DM2222       ; 軸3 現在座標  移載P&P X軸_P6:位置
+MRD
+AND= DM2200 #7           ; 移載P&P X軸_ﾎﾟｲﾝﾄNo(TP)
+MOV DM2224 DM7224        ; 移載P&P X軸_P7:位置
+MOV DM12410 DM2224       ; 軸3 現在座標  移載P&P X軸_P7:位置
+MRD
+AND= DM2200 #8           ; 移載P&P X軸_ﾎﾟｲﾝﾄNo(TP)
+MOV DM2226 DM7226        ; 移載P&P X軸_P8:位置
+MOV DM12410 DM2226       ; 軸3 現在座標  移載P&P X軸_P8:位置
+MPP
+LDA.D DM12410            ; 軸3 現在座標
+CON
+STA.D DM2256             ; 移載P&P X軸_変更位置表示用
+LD CR2002                ; 常時ON
+AND R36207               ; 移載P&P X軸_位置書込みPB(TP)
+AND R38207               ; 移載P&P X軸_位置書込み可PL(TP)
+MPS
+AND= DM2200 #1           ; 移載P&P X軸_ﾎﾟｲﾝﾄNo(TP)
+MPS
+LDA.D DM2256             ; 移載P&P X軸_変更位置表示用
+CON
+STA.D DM2212             ; 移載P&P X軸_P1:位置
+MPP
+LDA.D DM2258             ; 移載P&P X軸_変更速度表示用
+CON
+STA.D DM2232             ; 移載P&P X軸_P1:移動速度
+MRD
+AND= DM2200 #2           ; 移載P&P X軸_ﾎﾟｲﾝﾄNo(TP)
+MPS
+LDA.D DM2256             ; 移載P&P X軸_変更位置表示用
+CON
+STA.D DM2214             ; 移載P&P X軸_P2:位置
+MPP
+LDA.D DM2258             ; 移載P&P X軸_変更速度表示用
+CON
+STA.D DM2234             ; 移載P&P X軸_P2:移動速度
+MRD
+AND= DM2200 #3           ; 移載P&P X軸_ﾎﾟｲﾝﾄNo(TP)
+MPS
+LDA.D DM2256             ; 移載P&P X軸_変更位置表示用
+CON
+STA.D DM2216             ; 移載P&P X軸_P3:位置
+MPP
+LDA.D DM2258             ; 移載P&P X軸_変更速度表示用
+CON
+STA.D DM2236             ; 移載P&P X軸_P3:移動速度
+MRD
+AND= DM2200 #4           ; 移載P&P X軸_ﾎﾟｲﾝﾄNo(TP)
+MPS
+LDA.D DM2256             ; 移載P&P X軸_変更位置表示用
+CON
+STA.D DM2218             ; 移載P&P X軸_P4:位置
+MPP
+LDA.D DM2258             ; 移載P&P X軸_変更速度表示用
+CON
+STA.D DM2238             ; 移載P&P X軸_P4:移動速度
+MRD
+AND= DM2200 #5           ; 移載P&P X軸_ﾎﾟｲﾝﾄNo(TP)
+MPS
+LDA.D DM2256             ; 移載P&P X軸_変更位置表示用
+CON
+STA.D DM2220             ; 移載P&P X軸_P5:位置
+MPP
+LDA.D DM2258             ; 移載P&P X軸_変更速度表示用
+CON
+STA.D DM2240             ; 移載P&P X軸_P5:移動速度
+MRD
+AND= DM2200 #6           ; 移載P&P X軸_ﾎﾟｲﾝﾄNo(TP)
+MPS
+LDA.D DM2256             ; 移載P&P X軸_変更位置表示用
+CON
+STA.D DM2222             ; 移載P&P X軸_P6:位置
+MPP
+LDA.D DM2258             ; 移載P&P X軸_変更速度表示用
+CON
+STA.D DM2242             ; 移載P&P X軸_P6:移動速度
+MRD
+AND= DM2200 #7           ; 移載P&P X軸_ﾎﾟｲﾝﾄNo(TP)
+MPS
+LDA.D DM2256             ; 移載P&P X軸_変更位置表示用
+CON
+STA.D DM2224             ; 移載P&P X軸_P7:位置
+MPP
+LDA.D DM2258             ; 移載P&P X軸_変更速度表示用
+CON
+STA.D DM2244             ; 移載P&P X軸_P7:移動速度
+MPP
+AND= DM2200 #8           ; 移載P&P X軸_ﾎﾟｲﾝﾄNo(TP)
+MPS
+LDA.D DM2256             ; 移載P&P X軸_変更位置表示用
+CON
+STA.D DM2226             ; 移載P&P X軸_P8:位置
+MPP
+LDA.D DM2258             ; 移載P&P X軸_変更速度表示用
+CON
+STA.D DM2246             ; 移載P&P X軸_P8:移動速度
+LD CR2002                ; 常時ON
+ANP R36215               ; 書き込みOK SW
+LD R38206                ; 移載P&P X軸_位置取込み可PL(TP)
+OR R38207                ; 移載P&P X軸_位置書込み可PL(TP)
+ANL
+MPS
+AND= DM2200 #1           ; 移載P&P X軸_ﾎﾟｲﾝﾄNo(TP)
+UWRIT #2 #18080 DM2212 #2; 移載P&P X軸_P1:位置
+UWRIT #2 #18092 DM2232 #2; 移載P&P X軸_P1:移動速度
+MRD
+AND= DM2200 #2           ; 移載P&P X軸_ﾎﾟｲﾝﾄNo(TP)
+UWRIT #2 #18592 DM2214 #2; 移載P&P X軸_P2:位置
+UWRIT #2 #18604 DM2234 #2; 移載P&P X軸_P2:移動速度
+MRD
+AND= DM2200 #3           ; 移載P&P X軸_ﾎﾟｲﾝﾄNo(TP)
+UWRIT #2 #19104 DM2216 #2; 移載P&P X軸_P3:位置
+UWRIT #2 #19116 DM2236 #2; 移載P&P X軸_P3:移動速度
+MRD
+AND= DM2200 #4           ; 移載P&P X軸_ﾎﾟｲﾝﾄNo(TP)
+UWRIT #2 #19616 DM2218 #2; 移載P&P X軸_P4:位置
+UWRIT #2 #19628 DM2238 #2; 移載P&P X軸_P4:移動速度
+MRD
+AND= DM2200 #5           ; 移載P&P X軸_ﾎﾟｲﾝﾄNo(TP)
+UWRIT #2 #20128 DM2220 #2; 移載P&P X軸_P5:位置
+UWRIT #2 #20140 DM2240 #2; 移載P&P X軸_P5:移動速度
+MRD
+AND= DM2200 #6           ; 移載P&P X軸_ﾎﾟｲﾝﾄNo(TP)
+UWRIT #2 #20640 DM2222 #2; 移載P&P X軸_P6:位置
+UWRIT #2 #20652 DM2242 #2; 移載P&P X軸_P6:移動速度
+MRD
+AND= DM2200 #7           ; 移載P&P X軸_ﾎﾟｲﾝﾄNo(TP)
+UWRIT #2 #21152 DM2224 #2; 移載P&P X軸_P7:位置
+UWRIT #2 #21164 DM2244 #2; 移載P&P X軸_P7:移動速度
+MPP
+AND= DM2200 #8           ; 移載P&P X軸_ﾎﾟｲﾝﾄNo(TP)
+UWRIT #2 #21664 DM2226 #2; 移載P&P X軸_P8:位置
+UWRIT #2 #21676 DM2246 #2; 移載P&P X軸_P8:移動速度
+LD CR2002                ; 常時ON
+ANP R36300               ; 書き込みいいえ SW
+MPS
+AND= DM2200 #1           ; 移載P&P X軸_ﾎﾟｲﾝﾄNo(TP)
+MOV DM7212 DM2212        ; 移載P&P X軸_P1:位置
+LDA.D DM2212             ; 移載P&P X軸_P1:位置
+CON
+STA.D DM2256             ; 移載P&P X軸_変更位置表示用
+MRD
+AND= DM2200 #2           ; 移載P&P X軸_ﾎﾟｲﾝﾄNo(TP)
+MOV DM7214 DM2214        ; 移載P&P X軸_P2:位置
+LDA.D DM2214             ; 移載P&P X軸_P2:位置
+CON
+STA.D DM2256             ; 移載P&P X軸_変更位置表示用
+MRD
+AND= DM2200 #3           ; 移載P&P X軸_ﾎﾟｲﾝﾄNo(TP)
+MOV DM7216 DM2216        ; 移載P&P X軸_P3:位置
+LDA.D DM2216             ; 移載P&P X軸_P3:位置
+CON
+STA.D DM2256             ; 移載P&P X軸_変更位置表示用
+MRD
+AND= DM2200 #4           ; 移載P&P X軸_ﾎﾟｲﾝﾄNo(TP)
+MOV DM7218 DM2218        ; 移載P&P X軸_P4:位置
+LDA.D DM2218             ; 移載P&P X軸_P4:位置
+CON
+STA.D DM2256             ; 移載P&P X軸_変更位置表示用
+MRD
+AND= DM2200 #5           ; 移載P&P X軸_ﾎﾟｲﾝﾄNo(TP)
+MOV DM7220 DM2220        ; 移載P&P X軸_P5:位置
+LDA.D DM2220             ; 移載P&P X軸_P5:位置
+CON
+STA.D DM2256             ; 移載P&P X軸_変更位置表示用
+MRD
+AND= DM2200 #6           ; 移載P&P X軸_ﾎﾟｲﾝﾄNo(TP)
+MOV DM7222 DM2222        ; 移載P&P X軸_P6:位置
+LDA.D DM2222             ; 移載P&P X軸_P6:位置
+CON
+STA.D DM2256             ; 移載P&P X軸_変更位置表示用
+MRD
+AND= DM2200 #7           ; 移載P&P X軸_ﾎﾟｲﾝﾄNo(TP)
+MOV DM7224 DM2224        ; 移載P&P X軸_P7:位置
+LDA.D DM2224             ; 移載P&P X軸_P7:位置
+CON
+STA.D DM2256             ; 移載P&P X軸_変更位置表示用
+MPP
+AND= DM2200 #8           ; 移載P&P X軸_ﾎﾟｲﾝﾄNo(TP)
+MOV DM7226 DM2226        ; 移載P&P X軸_P8:位置
+LDA.D DM2226             ; 移載P&P X軸_P8:位置
+CON
+STA.D DM2256             ; 移載P&P X軸_変更位置表示用
+LDP R50001               ; 自動中
+ORP R50002               ; 手動中
+ORP R50003               ; 原点復帰中
+ORP MR14415              ; RBﾎﾟｲﾝﾄ設定1画面表示中(TP)
+ORP T200                 ; 遅延ﾀｲﾏ－200　1s
+UREAD #2 #18080 DM2212 #2; 移載P&P X軸_P1:位置
+UREAD #2 #18092 DM2232 #2; 移載P&P X軸_P1:移動速度
+UREAD #2 #18592 DM2214 #2; 移載P&P X軸_P2:位置
+UREAD #2 #18604 DM2234 #2; 移載P&P X軸_P2:移動速度
+UREAD #2 #19104 DM2216 #2; 移載P&P X軸_P3:位置
+UREAD #2 #19116 DM2236 #2; 移載P&P X軸_P3:移動速度
+UREAD #2 #19616 DM2218 #2; 移載P&P X軸_P4:位置
+UREAD #2 #19628 DM2238 #2; 移載P&P X軸_P4:移動速度
+UREAD #2 #20128 DM2220 #2; 移載P&P X軸_P5:位置
+UREAD #2 #20140 DM2240 #2; 移載P&P X軸_P5:移動速度
+UREAD #2 #20640 DM2222 #2; 移載P&P X軸_P6:位置
+UREAD #2 #20652 DM2242 #2; 移載P&P X軸_P6:移動速度
+UREAD #2 #21152 DM2224 #2; 移載P&P X軸_P7:位置
+UREAD #2 #21164 DM2244 #2; 移載P&P X軸_P7:移動速度
+UREAD #2 #21664 DM2226 #2; 移載P&P X軸_P8:位置
+UREAD #2 #21676 DM2246 #2; 移載P&P X軸_P8:移動速度
+LDF MR14415              ; RBﾎﾟｲﾝﾄ設定1画面表示中(TP)
+UWRIT #2 #18080 DM2212 #2; 移載P&P X軸_P1:位置
+UWRIT #2 #18092 DM2232 #2; 移載P&P X軸_P1:移動速度
+UWRIT #2 #18592 DM2214 #2; 移載P&P X軸_P2:位置
+UWRIT #2 #18604 DM2234 #2; 移載P&P X軸_P2:移動速度
+UWRIT #2 #19104 DM2216 #2; 移載P&P X軸_P3:位置
+UWRIT #2 #19116 DM2236 #2; 移載P&P X軸_P3:移動速度
+UWRIT #2 #19616 DM2218 #2; 移載P&P X軸_P4:位置
+UWRIT #2 #19628 DM2238 #2; 移載P&P X軸_P4:移動速度
+UWRIT #2 #20128 DM2220 #2; 移載P&P X軸_P5:位置
+UWRIT #2 #20140 DM2240 #2; 移載P&P X軸_P5:移動速度
+UWRIT #2 #20640 DM2222 #2; 移載P&P X軸_P6:位置
+UWRIT #2 #20652 DM2242 #2; 移載P&P X軸_P6:移動速度
+UWRIT #2 #21152 DM2224 #2; 移載P&P X軸_P7:位置
+UWRIT #2 #21164 DM2244 #2; 移載P&P X軸_P7:移動速度
+UWRIT #2 #21664 DM2226 #2; 移載P&P X軸_P8:位置
+UWRIT #2 #21676 DM2246 #2; 移載P&P X軸_P8:移動速度
+;Motion Controller -1 
+LD T200                  ; 遅延ﾀｲﾏ－200　1s
+ANB R50900               ; TRAP
+AND R2203                ; Rob4_Motor Power ON
+ANB MR14601              ; 移載P&P Z軸_ｻｰﾎﾞｵﾝ完了
+@SET MR2502              ; 移載Z_CSTP
+CON
+@SET @MR301              ; 301
+STG @MR301               ; 301
+AND T202                 ; 遅延ﾀｲﾏ－202　6s
+SET R16705               ; 軸4 ﾄﾞﾗｲﾊﾞｱﾗｰﾑﾘｾｯﾄ
+CON
+JMP @MR302
+STG @MR302
+ANB R17105               ; 軸4 ﾄﾞﾗｲﾊﾞｱﾗｰﾑ
+RES R16705               ; 軸4 ﾄﾞﾗｲﾊﾞｱﾗｰﾑﾘｾｯﾄ
+CON
+JMP @MR303
+STG @MR303
+SET R16400               ; 軸4 軸ｴﾗｰｸﾘｱ
+CON
+JMP @MR304
+STG @MR304
+ANB R16800               ; 軸4 軸ｴﾗｰ中
+RES R16400               ; 軸4 軸ｴﾗｰｸﾘｱ
+CON
+JMP @MR305
+STG @MR305
+TMR @35 #30
+CON
+AND @T35
+SET R16513               ; 軸4 ｻｰﾎﾞON
+CON
+JMP @MR306
+STG @MR306
+TMR @36 #30
+CON
+AND @T36
+AND R16913               ; 軸4 ｻｰﾎﾞﾚﾃﾞｨ
+SET MR14601              ; 移載P&P Z軸_ｻｰﾎﾞｵﾝ完了
+CON
+ENDS
+LDF R16913               ; 軸4 ｻｰﾎﾞﾚﾃﾞｨ
+RES MR14601              ; 移載P&P Z軸_ｻｰﾎﾞｵﾝ完了
+;移載P&P Z軸_ﾌﾗｯｼｭﾛﾑ書込み
+LDP R36415               ; 書き込みOK SW
+@SET @MR1301             ; 移載PP Z軸_ﾌﾗｯｼｭﾛﾑ書込み
+STG @MR1301              ; 移載PP Z軸_ﾌﾗｯｼｭﾛﾑ書込み
+ANB R12812               ; ﾌﾗｯｼｭROM書込完了
+SET R11612               ; ﾌﾗｯｼｭROM書込要求
+CON
+JMP @MR1302
+STG @MR1302
+AND R12812               ; ﾌﾗｯｼｭROM書込完了
+UREAD #2 #105 @DM4 #1    ; ﾌﾗｯｼｭROM書込完了ｺｰﾄﾞ
+RES R11612               ; ﾌﾗｯｼｭROM書込要求
+CON
+JMP @MR1303
+STG @MR1303
+MPS
+AND= @DM4 #0             ; ﾌﾗｯｼｭROM書込完了ｺｰﾄﾞ
+ENDS
+MPP
+AND<> @DM4 #0            ; ﾌﾗｯｼｭROM書込完了ｺｰﾄﾞ
+SET MR14602              ; 移載P&P Z軸_ﾌﾗｯｼｭﾛﾑ書込み異常
+CON
+ENDS
+;移載P&P Z軸_移動可条件
+LDB R16004               ; 軸3 軸制御中
+ANB R16804               ; 軸4 軸制御中
+OUT MR14603              ; 移載P&P Z軸_移動可
+CON
+OUT MR14604              ; 移載P&P Z軸_移動可(JOG)
+;移載P&P Z軸_ﾎﾟｼﾞｼｮﾝ表示
+LD CR2002                ; 常時ON
+U_RDFPOS.L #2 #4 DM2350  ; 移載P&P Z軸_現在座標読出し
+MPS
+LDA.D DM2350             ; 移載P&P Z軸_現在座標読出し
+CON
+STA.D DM2352             ; 移載P&P Z軸_現在座標表示用
+MRD
+MOV DM2358 DM2354        ; 移載P&P Z軸_変更速度表示用  移載P&P Z軸_現在速度表示用
+MRD
+AND=.L DM2350 DM2312     ; 移載P&P Z軸_現在座標読出し  移載P&P Z軸_P1:位置
+OUT R38308               ; 移載P&P Z軸 P1 位置　表示
+MRD
+AND=.L DM2350 DM2314     ; 移載P&P Z軸_現在座標読出し  移載P&P Z軸_P2:位置
+OUT R38309               ; 移載P&P Z軸 P2 位置　表示
+MRD
+AND=.L DM2350 DM2316     ; 移載P&P Z軸_現在座標読出し  移載P&P Z軸_P3:位置
+OUT R38310               ; 移載P&P Z軸 P3 位置　表示
+MRD
+AND=.L DM2350 DM2318     ; 移載P&P Z軸_現在座標読出し  移載P&P Z軸_P4:位置
+OUT R38311               ; 移載P&P Z軸 P4 位置　表示
+MRD
+AND=.L DM2350 DM2320     ; 移載P&P Z軸_現在座標読出し  移載P&P Z軸_P5:位置
+OUT R38312               ; 移載P&P Z軸 P5 位置　表示
+MPP
+AND=.L DM2350 DM2322     ; 移載P&P Z軸_現在座標読出し  移載P&P Z軸_P6:位置
+OUT R38313               ; 移載P&P Z軸 P6 位置　表示
+;ﾎﾟｲﾝﾄﾃﾞｰﾀ格納
+;　　ﾎﾟｲﾝﾄﾃﾞｰﾀ
+;　　　P1　待機位置
+;　　　P2　Line-A（Left)　下降位置
+;　　　P3　Line-B（Right)　下降位置
+;　　　P4　ﾊﾞｯﾌｧ前 下降位置
+LD= DM3000 #201          ; 表示画面
+OUT MR14415              ; RBﾎﾟｲﾝﾄ設定1画面表示中(TP)
+LDB R16804               ; 軸4 軸制御中
+OUT R38306               ; 移載P&P Z軸_位置取込み可PL(TP)
+CON
+OUT R38307               ; 移載P&P Z軸_位置書込み可PL(TP)
+LDP R36304               ; 移載P&P Z軸_ﾎﾟｲﾝﾄNo+PB(TP)
+INC DM2300               ; 移載P&P Z軸_ﾎﾟｲﾝﾄNo(TP)
+LDP R36305               ; 移載P&P Z軸_ﾎﾟｲﾝﾄNo-PB(TP)
+DEC DM2300               ; 移載P&P Z軸_ﾎﾟｲﾝﾄNo(TP)
+LD> DM2300 #8            ; 移載P&P Z軸_ﾎﾟｲﾝﾄNo(TP)
+DW #8 DM2300             ; 移載P&P Z軸_ﾎﾟｲﾝﾄNo(TP)
+LD< DM2300 #1            ; 移載P&P Z軸_ﾎﾟｲﾝﾄNo(TP)
+DW #1 DM2300             ; 移載P&P Z軸_ﾎﾟｲﾝﾄNo(TP)
+LD CR2002                ; 常時ON
+MPS
+AND= DM2300 #1           ; 移載P&P Z軸_ﾎﾟｲﾝﾄNo(TP)
+OUT @MR1701              ; 移載P&P Z軸_ﾎﾟｲﾝﾄ1表示
+MRD
+AND= DM2300 #2           ; 移載P&P Z軸_ﾎﾟｲﾝﾄNo(TP)
+OUT @MR1702              ; 移載P&P Z軸_ﾎﾟｲﾝﾄ2表示
+MRD
+AND= DM2300 #3           ; 移載P&P Z軸_ﾎﾟｲﾝﾄNo(TP)
+OUT @MR1703              ; 移載P&P Z軸_ﾎﾟｲﾝﾄ3表示
+MRD
+AND= DM2300 #4           ; 移載P&P Z軸_ﾎﾟｲﾝﾄNo(TP)
+OUT @MR1704              ; 移載P&P Z軸_ﾎﾟｲﾝﾄ4表示
+MRD
+AND= DM2300 #5           ; 移載P&P Z軸_ﾎﾟｲﾝﾄNo(TP)
+OUT @MR1705              ; 移載P&P Z軸_ﾎﾟｲﾝﾄ5表示
+MPP
+AND= DM2300 #6           ; 移載P&P Z軸_ﾎﾟｲﾝﾄNo(TP)
+OUT @MR1706              ; 移載P&P Z軸_ﾎﾟｲﾝﾄ6表示
+LD CR2002                ; 常時ON
+MPS
+ANP @MR1701              ; 移載P&P Z軸_ﾎﾟｲﾝﾄ1表示
+MPS
+LDA.D DM2312             ; 移載P&P Z軸_P1:位置
+CON
+STA.D DM2356             ; 移載P&P Z軸_変更位置表示用
+MPP
+LDA.D DM2332             ; 移載P&P Z軸_P1:移動速度
+CON
+STA.D DM2358             ; 移載P&P Z軸_変更速度表示用
+MRD
+ANP @MR1702              ; 移載P&P Z軸_ﾎﾟｲﾝﾄ2表示
+MPS
+LDA.D DM2314             ; 移載P&P Z軸_P2:位置
+CON
+STA.D DM2356             ; 移載P&P Z軸_変更位置表示用
+MPP
+LDA.D DM2334             ; 移載P&P Z軸_P2:移動速度
+CON
+STA.D DM2358             ; 移載P&P Z軸_変更速度表示用
+MRD
+ANP @MR1703              ; 移載P&P Z軸_ﾎﾟｲﾝﾄ3表示
+MPS
+LDA.D DM2316             ; 移載P&P Z軸_P3:位置
+CON
+STA.D DM2356             ; 移載P&P Z軸_変更位置表示用
+MPP
+LDA.D DM2336             ; 移載P&P Z軸_P3:移動速度
+CON
+STA.D DM2358             ; 移載P&P Z軸_変更速度表示用
+MRD
+ANP @MR1704              ; 移載P&P Z軸_ﾎﾟｲﾝﾄ4表示
+MPS
+LDA.D DM2318             ; 移載P&P Z軸_P4:位置
+CON
+STA.D DM2356             ; 移載P&P Z軸_変更位置表示用
+MPP
+LDA.D DM2338             ; 移載P&P Z軸_P4:移動速度
+CON
+STA.D DM2358             ; 移載P&P Z軸_変更速度表示用
+MRD
+ANP @MR1705              ; 移載P&P Z軸_ﾎﾟｲﾝﾄ5表示
+MPS
+LDA.D DM2320             ; 移載P&P Z軸_P5:位置
+CON
+STA.D DM2356             ; 移載P&P Z軸_変更位置表示用
+MPP
+LDA.D DM2340             ; 移載P&P Z軸_P5:移動速度
+CON
+STA.D DM2358             ; 移載P&P Z軸_変更速度表示用
+MPP
+ANP @MR1706              ; 移載P&P Z軸_ﾎﾟｲﾝﾄ6表示
+MPS
+LDA.D DM2322             ; 移載P&P Z軸_P6:位置
+CON
+STA.D DM2356             ; 移載P&P Z軸_変更位置表示用
+MPP
+LDA.D DM2342             ; 移載P&P Z軸_P6:移動速度
+CON
+STA.D DM2358             ; 移載P&P Z軸_変更速度表示用
+LD CR2002                ; 常時ON
+ANP R36306               ; 移載P&P Z軸_位置取込みPB(TP)
+AND R38306               ; 移載P&P Z軸_位置取込み可PL(TP)
+MPS
+AND= DM2300 #1           ; 移載P&P Z軸_ﾎﾟｲﾝﾄNo(TP)
+MOV DM2312 DM7312        ; 移載P&P Z軸_P1:位置
+MOV DM12470 DM2312       ; 軸4 現在座標  移載P&P Z軸_P1:位置
+MRD
+AND= DM2300 #2           ; 移載P&P Z軸_ﾎﾟｲﾝﾄNo(TP)
+MOV DM2314 DM7314        ; 移載P&P Z軸_P2:位置
+MOV DM12470 DM2314       ; 軸4 現在座標  移載P&P Z軸_P2:位置
+MRD
+AND= DM2300 #3           ; 移載P&P Z軸_ﾎﾟｲﾝﾄNo(TP)
+MOV DM2316 DM7316        ; 移載P&P Z軸_P3:位置
+MOV DM12470 DM2316       ; 軸4 現在座標  移載P&P Z軸_P3:位置
+MRD
+AND= DM2300 #4           ; 移載P&P Z軸_ﾎﾟｲﾝﾄNo(TP)
+MOV DM2318 DM7318        ; 移載P&P Z軸_P4:位置
+MOV DM12470 DM2318       ; 軸4 現在座標  移載P&P Z軸_P4:位置
+MRD
+AND= DM2300 #5           ; 移載P&P Z軸_ﾎﾟｲﾝﾄNo(TP)
+MOV DM2320 DM7320        ; 移載P&P Z軸_P5:位置
+MOV DM12470 DM2320       ; 軸4 現在座標  移載P&P Z軸_P5:位置
+MRD
+AND= DM2300 #6           ; 移載P&P Z軸_ﾎﾟｲﾝﾄNo(TP)
+MOV DM2322 DM7322        ; 移載P&P Z軸_P6:位置
+MOV DM12470 DM2322       ; 軸4 現在座標  移載P&P Z軸_P6:位置
+MPP
+LDA.D DM12470            ; 軸4 現在座標
+CON
+STA.D DM2356             ; 移載P&P Z軸_変更位置表示用
+LD CR2002                ; 常時ON
+AND R36307               ; 移載P&P Z軸_位置書込みPB(TP)
+AND R38307               ; 移載P&P Z軸_位置書込み可PL(TP)
+MPS
+AND= DM2300 #1           ; 移載P&P Z軸_ﾎﾟｲﾝﾄNo(TP)
+MPS
+LDA.D DM2356             ; 移載P&P Z軸_変更位置表示用
+CON
+STA.D DM2312             ; 移載P&P Z軸_P1:位置
+MPP
+LDA.D DM2358             ; 移載P&P Z軸_変更速度表示用
+CON
+STA.D DM2332             ; 移載P&P Z軸_P1:移動速度
+MRD
+AND= DM2300 #2           ; 移載P&P Z軸_ﾎﾟｲﾝﾄNo(TP)
+MPS
+LDA.D DM2356             ; 移載P&P Z軸_変更位置表示用
+CON
+STA.D DM2314             ; 移載P&P Z軸_P2:位置
+MPP
+LDA.D DM2358             ; 移載P&P Z軸_変更速度表示用
+CON
+STA.D DM2334             ; 移載P&P Z軸_P2:移動速度
+MRD
+AND= DM2300 #3           ; 移載P&P Z軸_ﾎﾟｲﾝﾄNo(TP)
+MPS
+LDA.D DM2356             ; 移載P&P Z軸_変更位置表示用
+CON
+STA.D DM2316             ; 移載P&P Z軸_P3:位置
+MPP
+LDA.D DM2358             ; 移載P&P Z軸_変更速度表示用
+CON
+STA.D DM2336             ; 移載P&P Z軸_P3:移動速度
+MRD
+AND= DM2300 #4           ; 移載P&P Z軸_ﾎﾟｲﾝﾄNo(TP)
+MPS
+LDA.D DM2356             ; 移載P&P Z軸_変更位置表示用
+CON
+STA.D DM2318             ; 移載P&P Z軸_P4:位置
+MPP
+LDA.D DM2358             ; 移載P&P Z軸_変更速度表示用
+CON
+STA.D DM2338             ; 移載P&P Z軸_P4:移動速度
+MRD
+AND= DM2300 #5           ; 移載P&P Z軸_ﾎﾟｲﾝﾄNo(TP)
+MPS
+LDA.D DM2356             ; 移載P&P Z軸_変更位置表示用
+CON
+STA.D DM2320             ; 移載P&P Z軸_P5:位置
+MPP
+LDA.D DM2358             ; 移載P&P Z軸_変更速度表示用
+CON
+STA.D DM2340             ; 移載P&P Z軸_P5:移動速度
+MPP
+AND= DM2300 #6           ; 移載P&P Z軸_ﾎﾟｲﾝﾄNo(TP)
+MPS
+LDA.D DM2356             ; 移載P&P Z軸_変更位置表示用
+CON
+STA.D DM2322             ; 移載P&P Z軸_P6:位置
+MPP
+LDA.D DM2358             ; 移載P&P Z軸_変更速度表示用
+CON
+STA.D DM2342             ; 移載P&P Z軸_P6:移動速度
+LD CR2002                ; 常時ON
+ANP R36315               ; 書き込みOK SW
+LD R38306                ; 移載P&P Z軸_位置取込み可PL(TP)
+OR R38307                ; 移載P&P Z軸_位置書込み可PL(TP)
+ANL
+MPS
+AND= DM2300 #1           ; 移載P&P Z軸_ﾎﾟｲﾝﾄNo(TP)
+UWRIT #2 #18112 DM2312 #2; 移載P&P Z軸_P1:位置
+UWRIT #2 #18124 DM2332 #2; 移載P&P Z軸_P1:移動速度
+MRD
+AND= DM2300 #2           ; 移載P&P Z軸_ﾎﾟｲﾝﾄNo(TP)
+UWRIT #2 #18624 DM2314 #2; 移載P&P Z軸_P2:位置
+UWRIT #2 #18636 DM2334 #2; 移載P&P Z軸_P2:移動速度
+MRD
+AND= DM2300 #3           ; 移載P&P Z軸_ﾎﾟｲﾝﾄNo(TP)
+UWRIT #2 #19136 DM2316 #2; 移載P&P Z軸_P3:位置
+UWRIT #2 #19148 DM2336 #2; 移載P&P Z軸_P3:移動速度
+MRD
+AND= DM2300 #4           ; 移載P&P Z軸_ﾎﾟｲﾝﾄNo(TP)
+UWRIT #2 #19648 DM2318 #2; 移載P&P Z軸_P4:位置
+UWRIT #2 #19660 DM2338 #2; 移載P&P Z軸_P4:移動速度
+MRD
+AND= DM2300 #5           ; 移載P&P Z軸_ﾎﾟｲﾝﾄNo(TP)
+UWRIT #2 #20160 DM2320 #2; 移載P&P Z軸_P5:位置
+UWRIT #2 #20172 DM2340 #2; 移載P&P Z軸_P5:移動速度
+MPP
+AND= DM2300 #6           ; 移載P&P Z軸_ﾎﾟｲﾝﾄNo(TP)
+UWRIT #2 #20672 DM2322 #2; 移載P&P Z軸_P6:位置
+UWRIT #2 #20684 DM2342 #2; 移載P&P Z軸_P6:移動速度
+LD CR2002                ; 常時ON
+ANP R36400               ; 書き込みいいえ SW
+MPS
+AND= DM2300 #1           ; 移載P&P Z軸_ﾎﾟｲﾝﾄNo(TP)
+MOV DM7312 DM2312        ; 移載P&P Z軸_P1:位置
+LDA.D DM2312             ; 移載P&P Z軸_P1:位置
+CON
+STA.D DM2356             ; 移載P&P Z軸_変更位置表示用
+MRD
+AND= DM2300 #2           ; 移載P&P Z軸_ﾎﾟｲﾝﾄNo(TP)
+MOV DM7314 DM2314        ; 移載P&P Z軸_P2:位置
+LDA.D DM2314             ; 移載P&P Z軸_P2:位置
+CON
+STA.D DM2356             ; 移載P&P Z軸_変更位置表示用
+MRD
+AND= DM2300 #3           ; 移載P&P Z軸_ﾎﾟｲﾝﾄNo(TP)
+MOV DM7316 DM2316        ; 移載P&P Z軸_P3:位置
+LDA.D DM2316             ; 移載P&P Z軸_P3:位置
+CON
+STA.D DM2356             ; 移載P&P Z軸_変更位置表示用
+MRD
+AND= DM2300 #4           ; 移載P&P Z軸_ﾎﾟｲﾝﾄNo(TP)
+MOV DM7318 DM2318        ; 移載P&P Z軸_P4:位置
+LDA.D DM2318             ; 移載P&P Z軸_P4:位置
+CON
+STA.D DM2356             ; 移載P&P Z軸_変更位置表示用
+MRD
+AND= DM2300 #5           ; 移載P&P Z軸_ﾎﾟｲﾝﾄNo(TP)
+MOV DM7320 DM2320        ; 移載P&P Z軸_P5:位置
+LDA.D DM2320             ; 移載P&P Z軸_P5:位置
+CON
+STA.D DM2356             ; 移載P&P Z軸_変更位置表示用
+MPP
+AND= DM2300 #6           ; 移載P&P Z軸_ﾎﾟｲﾝﾄNo(TP)
+MOV DM7322 DM2322        ; 移載P&P Z軸_P6:位置
+LDA.D DM2322             ; 移載P&P Z軸_P6:位置
+CON
+STA.D DM2356             ; 移載P&P Z軸_変更位置表示用
+LDP R50001               ; 自動中
+ORP R50002               ; 手動中
+ORP R50003               ; 原点復帰中
+ORP MR14415              ; RBﾎﾟｲﾝﾄ設定1画面表示中(TP)
+ORP T200                 ; 遅延ﾀｲﾏ－200　1s
+UREAD #2 #18112 DM2312 #2; 移載P&P Z軸_P1:位置
+UREAD #2 #18124 DM2332 #2; 移載P&P Z軸_P1:移動速度
+UREAD #2 #18624 DM2314 #2; 移載P&P Z軸_P2:位置
+UREAD #2 #18636 DM2334 #2; 移載P&P Z軸_P2:移動速度
+UREAD #2 #19136 DM2316 #2; 移載P&P Z軸_P3:位置
+UREAD #2 #19148 DM2336 #2; 移載P&P Z軸_P3:移動速度
+UREAD #2 #19648 DM2318 #2; 移載P&P Z軸_P4:位置
+UREAD #2 #19660 DM2338 #2; 移載P&P Z軸_P4:移動速度
+UREAD #2 #20160 DM2320 #2; 移載P&P Z軸_P5:位置
+UREAD #2 #20172 DM2340 #2; 移載P&P Z軸_P5:移動速度
+UREAD #2 #20672 DM2322 #2; 移載P&P Z軸_P6:位置
+UREAD #2 #20684 DM2342 #2; 移載P&P Z軸_P6:移動速度
+LDF MR14415              ; RBﾎﾟｲﾝﾄ設定1画面表示中(TP)
+UWRIT #2 #18112 DM2312 #2; 移載P&P Z軸_P1:位置
+UWRIT #2 #18124 DM2332 #2; 移載P&P Z軸_P1:移動速度
+UWRIT #2 #18624 DM2314 #2; 移載P&P Z軸_P2:位置
+UWRIT #2 #18636 DM2334 #2; 移載P&P Z軸_P2:移動速度
+UWRIT #2 #19136 DM2316 #2; 移載P&P Z軸_P3:位置
+UWRIT #2 #19148 DM2336 #2; 移載P&P Z軸_P3:移動速度
+UWRIT #2 #19648 DM2318 #2; 移載P&P Z軸_P4:位置
+UWRIT #2 #19660 DM2338 #2; 移載P&P Z軸_P4:移動速度
+UWRIT #2 #20160 DM2320 #2; 移載P&P Z軸_P5:位置
+UWRIT #2 #20172 DM2340 #2; 移載P&P Z軸_P5:移動速度
+UWRIT #2 #20672 DM2322 #2; 移載P&P Z軸_P6:位置
+UWRIT #2 #20684 DM2342 #2; 移載P&P Z軸_P6:移動速度
+;Motion Controller -2
+LD T200                  ; 遅延ﾀｲﾏ－200　1s
+ANB R50900               ; TRAP
+AND R2204                ; Rob5_Motor Power ON
+ANB MR14401              ; 移載P&P X軸_ｻｰﾎﾞｵﾝ完了
+@SET MR2507              ; 除材Y_CSTP
+CON
+@SET @MR401              ; 401
+STG @MR401               ; 401
+AND T202                 ; 遅延ﾀｲﾏ－202　6s
+SET R24305               ; 軸1 ﾄﾞﾗｲﾊﾞｱﾗｰﾑﾘｾｯﾄ
+CON
+JMP @MR402
+STG @MR402
+ANB R24705               ; 軸1 ﾄﾞﾗｲﾊﾞｱﾗｰﾑ
+RES R24305               ; 軸1 ﾄﾞﾗｲﾊﾞｱﾗｰﾑﾘｾｯﾄ
+CON
+JMP @MR403
+STG @MR403
+SET R24000               ; 軸1 軸ｴﾗｰｸﾘｱ
+CON
+JMP @MR404
+STG @MR404
+ANB R24400               ; 軸1 軸ｴﾗｰ中
+RES R24000               ; 軸1 軸ｴﾗｰｸﾘｱ
+CON
+JMP @MR405
+STG @MR405
+TMR @45 #30
+CON
+AND @T45
+SET R24113               ; 軸1 ｻｰﾎﾞON
+CON
+JMP @MR406
+STG @MR406
+TMR @46 #30
+CON
+AND @T46
+AND R24513               ; 軸1 ｻｰﾎﾞﾚﾃﾞｨ
+SET MR14801              ; 除材RB-Y軸_ｻｰﾎﾞｵﾝ完了
+CON
+ENDS
+LDF R24513               ; 軸1 ｻｰﾎﾞﾚﾃﾞｨ
+RES MR14801              ; 除材RB-Y軸_ｻｰﾎﾞｵﾝ完了
+;除材P&P Y軸_ﾌﾗｯｼｭﾛﾑ書込み
+LDP R36415               ; 書き込みOK SW
+@SET @MR1401             ; 除材PP Y軸_ﾌﾗｯｼｭﾛﾑ書込み
+STG @MR1401              ; 除材PP Y軸_ﾌﾗｯｼｭﾛﾑ書込み
+ANB R22812               ; ﾌﾗｯｼｭROM書込完了
+SET R21612               ; ﾌﾗｯｼｭROM書込要求
+CON
+JMP @MR1402
+STG @MR1402
+AND R22812               ; ﾌﾗｯｼｭROM書込完了
+UREAD #3 #105 @DM5 #1    ; ﾌﾗｯｼｭROM書込完了ｺｰﾄﾞ
+RES R21612               ; ﾌﾗｯｼｭROM書込要求
+CON
+JMP @MR1403
+STG @MR1403
+MPS
+AND= @DM5 #0             ; ﾌﾗｯｼｭROM書込完了ｺｰﾄﾞ
+ENDS
+MPP
+AND<> @DM5 #0            ; ﾌﾗｯｼｭROM書込完了ｺｰﾄﾞ
+SET MR24002
+CON
+ENDS
+;除材P&P Y軸_移動可条件
+LDB R24404               ; 軸1 軸制御中
+ANB R25204               ; 軸2 軸制御中
+LD R38508                ; 除材P&P Z軸 P1 位置　表示
+OR CR2002                ; 常時ON
+ANL
+OUT MR14803              ; 除材RB-Y軸_移動可
+LDB R25204               ; 軸2 軸制御中
+OUT MR14804              ; 除材RB-Y軸_移動可(JOG)
+;除材P&P Y軸_ﾎﾟｼﾞｼｮﾝ表示
+LD CR2002                ; 常時ON
+U_RDFPOS.L #3 #1 DM2450  ; 除材P&P Y軸_現在座標読出し
+MPS
+LDA.D DM2450             ; 除材P&P Y軸_現在座標読出し
+CON
+STA.D DM2452             ; 除材P&P Y軸_現在座標表示用
+MRD
+MOV DM2458 DM2454        ; 除材P&P Y軸_変更速度表示用  除材P&P Y軸_現在速度表示用
+MRD
+AND=.L DM2450 DM2412     ; 除材P&P Y軸_現在座標読出し  除材P&P Y軸_P1:位置
+OUT R38408               ; 除材P&P Y軸 P1 位置　表示
+MRD
+AND=.L DM2450 DM2414     ; 除材P&P Y軸_現在座標読出し  除材P&P Y軸_P2:位置
+OUT R38409               ; 除材P&P Y軸 P2 位置　表示
+MRD
+AND=.L DM2450 DM2416     ; 除材P&P Y軸_現在座標読出し  除材P&P Y軸_P3:位置
+OUT R38410               ; 除材P&P Y軸 P3 位置　表示
+MRD
+AND=.L DM2450 DM2418     ; 除材P&P Y軸_現在座標読出し  除材P&P Y軸_P4:位置
+OUT R38411               ; 除材P&P Y軸 P4 位置　表示
+MRD
+AND=.L DM2450 DM2420     ; 除材P&P Y軸_現在座標読出し  除材P&P Y軸_P5:位置
+OUT R38412               ; 除材P&P Y軸 P5 位置　表示
+MPP
+AND=.L DM2450 DM2422     ; 除材P&P Y軸_現在座標読出し  除材P&P Y軸_P6:位置
+OUT R38413               ; 除材P&P Y軸 P6 位置　表示
+;ﾎﾟｲﾝﾄﾃﾞｰﾀ格納
+;　　ﾎﾟｲﾝﾄﾃﾞｰﾀ
+;　　　P1　待機位置
+;　　　P2　ﾊﾞｯﾌｧ　取出位置
+;　　　P3　CV　除材位置
+LD= DM3000 #202          ; 表示画面
+OUT MR14815              ; RBﾎﾟｲﾝﾄ設定1画面表示中(TP)
+LDB R24404               ; 軸1 軸制御中
+OUT R38406               ; 除材P&P Y軸_位置取込み可PL(TP)
+CON
+OUT R38407               ; 除材P&P Y軸_位置書込み可PL(TP)
+LDP R36404               ; 除材P&P Y軸_ﾎﾟｲﾝﾄNo+PB(TP)
+INC DM2400               ; 除材P&P Y軸_ﾎﾟｲﾝﾄNo(TP)
+LDP R36405               ; 除材P&P Y軸_ﾎﾟｲﾝﾄNo-PB(TP)
+DEC DM2400               ; 除材P&P Y軸_ﾎﾟｲﾝﾄNo(TP)
+LD> DM2400 #8            ; 除材P&P Y軸_ﾎﾟｲﾝﾄNo(TP)
+DW #8 DM2400             ; 除材P&P Y軸_ﾎﾟｲﾝﾄNo(TP)
+LD< DM2400 #1            ; 除材P&P Y軸_ﾎﾟｲﾝﾄNo(TP)
+DW #1 DM2400             ; 除材P&P Y軸_ﾎﾟｲﾝﾄNo(TP)
+LD CR2002                ; 常時ON
+MPS
+AND= DM2400 #1           ; 除材P&P Y軸_ﾎﾟｲﾝﾄNo(TP)
+OUT @MR1801              ; 除材P&P Y軸_ﾎﾟｲﾝﾄ1表示
+MRD
+AND= DM2400 #2           ; 除材P&P Y軸_ﾎﾟｲﾝﾄNo(TP)
+OUT @MR1802              ; 除材P&P Y軸_ﾎﾟｲﾝﾄ2表示
+MRD
+AND= DM2400 #3           ; 除材P&P Y軸_ﾎﾟｲﾝﾄNo(TP)
+OUT @MR1803              ; 除材P&P Y軸_ﾎﾟｲﾝﾄ3表示
+MRD
+AND= DM2400 #4           ; 除材P&P Y軸_ﾎﾟｲﾝﾄNo(TP)
+OUT @MR1804              ; 除材P&P Y軸_ﾎﾟｲﾝﾄ4表示
+MRD
+AND= DM2400 #5           ; 除材P&P Y軸_ﾎﾟｲﾝﾄNo(TP)
+OUT @MR1805              ; 除材P&P Y軸_ﾎﾟｲﾝﾄ5表示
+MPP
+AND= DM2400 #6           ; 除材P&P Y軸_ﾎﾟｲﾝﾄNo(TP)
+OUT @MR1806              ; 除材P&P Y軸_ﾎﾟｲﾝﾄ6表示
+LD CR2002                ; 常時ON
+MPS
+ANP @MR1801              ; 除材P&P Y軸_ﾎﾟｲﾝﾄ1表示
+MPS
+LDA.D DM2412             ; 除材P&P Y軸_P1:位置
+CON
+STA.D DM2456             ; 除材P&P Y軸_変更位置表示用
+MPP
+LDA.D DM2432             ; 除材P&P Y軸_P1:移動速度
+CON
+STA.D DM2458             ; 除材P&P Y軸_変更速度表示用
+MRD
+ANP @MR1802              ; 除材P&P Y軸_ﾎﾟｲﾝﾄ2表示
+MPS
+LDA.D DM2414             ; 除材P&P Y軸_P2:位置
+CON
+STA.D DM2456             ; 除材P&P Y軸_変更位置表示用
+MPP
+LDA.D DM2434             ; 除材P&P Y軸_P2:移動速度
+CON
+STA.D DM2458             ; 除材P&P Y軸_変更速度表示用
+MRD
+ANP @MR1803              ; 除材P&P Y軸_ﾎﾟｲﾝﾄ3表示
+MPS
+LDA.D DM2416             ; 除材P&P Y軸_P3:位置
+CON
+STA.D DM2456             ; 除材P&P Y軸_変更位置表示用
+MPP
+LDA.D DM2436             ; 除材P&P Y軸_P3:移動速度
+CON
+STA.D DM2458             ; 除材P&P Y軸_変更速度表示用
+MRD
+ANP @MR1804              ; 除材P&P Y軸_ﾎﾟｲﾝﾄ4表示
+MPS
+LDA.D DM2418             ; 除材P&P Y軸_P4:位置
+CON
+STA.D DM2456             ; 除材P&P Y軸_変更位置表示用
+MPP
+LDA.D DM2438             ; 除材P&P Y軸_P4:移動速度
+CON
+STA.D DM2458             ; 除材P&P Y軸_変更速度表示用
+MRD
+ANP @MR1805              ; 除材P&P Y軸_ﾎﾟｲﾝﾄ5表示
+MPS
+LDA.D DM2420             ; 除材P&P Y軸_P5:位置
+CON
+STA.D DM2456             ; 除材P&P Y軸_変更位置表示用
+MPP
+LDA.D DM2440             ; 除材P&P Y軸_P5:移動速度
+CON
+STA.D DM2458             ; 除材P&P Y軸_変更速度表示用
+MPP
+ANP @MR1806              ; 除材P&P Y軸_ﾎﾟｲﾝﾄ6表示
+MPS
+LDA.D DM2422             ; 除材P&P Y軸_P6:位置
+CON
+STA.D DM2456             ; 除材P&P Y軸_変更位置表示用
+MPP
+LDA.D DM2442             ; 除材P&P Y軸_P6:移動速度
+CON
+STA.D DM2458             ; 除材P&P Y軸_変更速度表示用
+LD CR2002                ; 常時ON
+ANP R36406               ; 除材P&P Y軸_位置取込みPB(TP)
+AND R38406               ; 除材P&P Y軸_位置取込み可PL(TP)
+MPS
+AND= DM2400 #1           ; 除材P&P Y軸_ﾎﾟｲﾝﾄNo(TP)
+MOV DM2412 DM7412        ; 除材P&P Y軸_P1:位置
+MOV DM22290 DM2412       ; 軸1 現在座標  除材P&P Y軸_P1:位置
+MRD
+AND= DM2400 #2           ; 除材P&P Y軸_ﾎﾟｲﾝﾄNo(TP)
+MOV DM2414 DM7414        ; 除材P&P Y軸_P2:位置
+MOV DM22290 DM2414       ; 軸1 現在座標  除材P&P Y軸_P2:位置
+MRD
+AND= DM2400 #3           ; 除材P&P Y軸_ﾎﾟｲﾝﾄNo(TP)
+MOV DM2416 DM7416        ; 除材P&P Y軸_P3:位置
+MOV DM22290 DM2416       ; 軸1 現在座標  除材P&P Y軸_P3:位置
+MRD
+AND= DM2400 #4           ; 除材P&P Y軸_ﾎﾟｲﾝﾄNo(TP)
+MOV DM2418 DM7418        ; 除材P&P Y軸_P4:位置
+MOV DM22290 DM2418       ; 軸1 現在座標  除材P&P Y軸_P4:位置
+MRD
+AND= DM2400 #5           ; 除材P&P Y軸_ﾎﾟｲﾝﾄNo(TP)
+MOV DM2420 DM7420        ; 除材P&P Y軸_P5:位置
+MOV DM22290 DM2420       ; 軸1 現在座標  除材P&P Y軸_P5:位置
+MRD
+AND= DM2400 #6           ; 除材P&P Y軸_ﾎﾟｲﾝﾄNo(TP)
+MOV DM2422 DM7422        ; 除材P&P Y軸_P6:位置
+MOV DM22290 DM2422       ; 軸1 現在座標  除材P&P Y軸_P6:位置
+MPP
+LDA.D DM22290            ; 軸1 現在座標
+CON
+STA.D DM2456             ; 除材P&P Y軸_変更位置表示用
+LD CR2002                ; 常時ON
+AND R36407               ; 除材P&P Y軸_位置書込みPB(TP)
+AND R38407               ; 除材P&P Y軸_位置書込み可PL(TP)
+MPS
+AND= DM2400 #1           ; 除材P&P Y軸_ﾎﾟｲﾝﾄNo(TP)
+MPS
+LDA.D DM2456             ; 除材P&P Y軸_変更位置表示用
+CON
+STA.D DM2412             ; 除材P&P Y軸_P1:位置
+MPP
+LDA.D DM2458             ; 除材P&P Y軸_変更速度表示用
+CON
+STA.D DM2432             ; 除材P&P Y軸_P1:移動速度
+MRD
+AND= DM2400 #2           ; 除材P&P Y軸_ﾎﾟｲﾝﾄNo(TP)
+MPS
+LDA.D DM2456             ; 除材P&P Y軸_変更位置表示用
+CON
+STA.D DM2414             ; 除材P&P Y軸_P2:位置
+MPP
+LDA.D DM2458             ; 除材P&P Y軸_変更速度表示用
+CON
+STA.D DM2434             ; 除材P&P Y軸_P2:移動速度
+MRD
+AND= DM2400 #3           ; 除材P&P Y軸_ﾎﾟｲﾝﾄNo(TP)
+MPS
+LDA.D DM2456             ; 除材P&P Y軸_変更位置表示用
+CON
+STA.D DM2416             ; 除材P&P Y軸_P3:位置
+MPP
+LDA.D DM2458             ; 除材P&P Y軸_変更速度表示用
+CON
+STA.D DM2436             ; 除材P&P Y軸_P3:移動速度
+MRD
+AND= DM2400 #4           ; 除材P&P Y軸_ﾎﾟｲﾝﾄNo(TP)
+MPS
+LDA.D DM2456             ; 除材P&P Y軸_変更位置表示用
+CON
+STA.D DM2418             ; 除材P&P Y軸_P4:位置
+MPP
+LDA.D DM2458             ; 除材P&P Y軸_変更速度表示用
+CON
+STA.D DM2438             ; 除材P&P Y軸_P4:移動速度
+MRD
+AND= DM2400 #5           ; 除材P&P Y軸_ﾎﾟｲﾝﾄNo(TP)
+MPS
+LDA.D DM2456             ; 除材P&P Y軸_変更位置表示用
+CON
+STA.D DM2420             ; 除材P&P Y軸_P5:位置
+MPP
+LDA.D DM2458             ; 除材P&P Y軸_変更速度表示用
+CON
+STA.D DM2440             ; 除材P&P Y軸_P5:移動速度
+MPP
+AND= DM2400 #6           ; 除材P&P Y軸_ﾎﾟｲﾝﾄNo(TP)
+MPS
+LDA.D DM2456             ; 除材P&P Y軸_変更位置表示用
+CON
+STA.D DM2422             ; 除材P&P Y軸_P6:位置
+MPP
+LDA.D DM2458             ; 除材P&P Y軸_変更速度表示用
+CON
+STA.D DM2442             ; 除材P&P Y軸_P6:移動速度
+LD CR2002                ; 常時ON
+ANP R36415               ; 書き込みOK SW
+LD R38406                ; 除材P&P Y軸_位置取込み可PL(TP)
+OR R38407                ; 除材P&P Y軸_位置書込み可PL(TP)
+ANL
+MPS
+AND= DM2400 #1           ; 除材P&P Y軸_ﾎﾟｲﾝﾄNo(TP)
+UWRIT #3 #18016 DM2412 #2; 除材P&P Y軸_P1:位置
+UWRIT #3 #18028 DM2432 #2; 除材P&P Y軸_P1:移動速度
+MRD
+AND= DM2400 #2           ; 除材P&P Y軸_ﾎﾟｲﾝﾄNo(TP)
+UWRIT #3 #18528 DM2414 #2; 除材P&P Y軸_P2:位置
+UWRIT #3 #18540 DM2434 #2; 除材P&P Y軸_P2:移動速度
+MRD
+AND= DM2400 #3           ; 除材P&P Y軸_ﾎﾟｲﾝﾄNo(TP)
+UWRIT #3 #19040 DM2416 #2; 除材P&P Y軸_P3:位置
+UWRIT #3 #19052 DM2436 #2; 除材P&P Y軸_P3:移動速度
+MRD
+AND= DM2400 #4           ; 除材P&P Y軸_ﾎﾟｲﾝﾄNo(TP)
+UWRIT #3 #19552 DM2418 #2; 除材P&P Y軸_P4:位置
+UWRIT #3 #19564 DM2438 #2; 除材P&P Y軸_P4:移動速度
+MRD
+AND= DM2400 #5           ; 除材P&P Y軸_ﾎﾟｲﾝﾄNo(TP)
+UWRIT #3 #20064 DM2420 #2; 除材P&P Y軸_P5:位置
+UWRIT #3 #20076 DM2440 #2; 除材P&P Y軸_P5:移動速度
+MPP
+AND= DM2400 #6           ; 除材P&P Y軸_ﾎﾟｲﾝﾄNo(TP)
+UWRIT #3 #20576 DM2422 #2; 除材P&P Y軸_P6:位置
+UWRIT #3 #20588 DM2442 #2; 除材P&P Y軸_P6:移動速度
+LD CR2002                ; 常時ON
+ANP R36500               ; 書き込みいいえ SW
+MPS
+AND= DM2400 #1           ; 除材P&P Y軸_ﾎﾟｲﾝﾄNo(TP)
+MOV DM7412 DM2412        ; 除材P&P Y軸_P1:位置
+LDA.D DM2412             ; 除材P&P Y軸_P1:位置
+CON
+STA.D DM2456             ; 除材P&P Y軸_変更位置表示用
+MRD
+AND= DM2400 #2           ; 除材P&P Y軸_ﾎﾟｲﾝﾄNo(TP)
+MOV DM7414 DM2414        ; 除材P&P Y軸_P2:位置
+LDA.D DM2414             ; 除材P&P Y軸_P2:位置
+CON
+STA.D DM2456             ; 除材P&P Y軸_変更位置表示用
+MRD
+AND= DM2400 #3           ; 除材P&P Y軸_ﾎﾟｲﾝﾄNo(TP)
+MOV DM7416 DM2416        ; 除材P&P Y軸_P3:位置
+LDA.D DM2416             ; 除材P&P Y軸_P3:位置
+CON
+STA.D DM2456             ; 除材P&P Y軸_変更位置表示用
+MRD
+AND= DM2400 #4           ; 除材P&P Y軸_ﾎﾟｲﾝﾄNo(TP)
+MOV DM7418 DM2418        ; 除材P&P Y軸_P4:位置
+LDA.D DM2418             ; 除材P&P Y軸_P4:位置
+CON
+STA.D DM2456             ; 除材P&P Y軸_変更位置表示用
+MRD
+AND= DM2400 #5           ; 除材P&P Y軸_ﾎﾟｲﾝﾄNo(TP)
+MOV DM7420 DM2420        ; 除材P&P Y軸_P5:位置
+LDA.D DM2420             ; 除材P&P Y軸_P5:位置
+CON
+STA.D DM2456             ; 除材P&P Y軸_変更位置表示用
+MRD
+MOV DM7422 DM2422        ; 除材P&P Y軸_P6:位置
+MPP
+LDA.D DM2422             ; 除材P&P Y軸_P6:位置
+CON
+STA.D DM2456             ; 除材P&P Y軸_変更位置表示用
+LDP R50001               ; 自動中
+ORP R50002               ; 手動中
+ORP R50003               ; 原点復帰中
+ORP MR14815              ; RBﾎﾟｲﾝﾄ設定1画面表示中(TP)
+ORP T200                 ; 遅延ﾀｲﾏ－200　1s
+UREAD #3 #18016 DM2412 #2; 除材P&P Y軸_P1:位置
+UREAD #3 #18028 DM2432 #2; 除材P&P Y軸_P1:移動速度
+UREAD #3 #18528 DM2414 #2; 除材P&P Y軸_P2:位置
+UREAD #3 #18540 DM2434 #2; 除材P&P Y軸_P2:移動速度
+UREAD #3 #19040 DM2416 #2; 除材P&P Y軸_P3:位置
+UREAD #3 #19052 DM2436 #2; 除材P&P Y軸_P3:移動速度
+UREAD #3 #19552 DM2418 #2; 除材P&P Y軸_P4:位置
+UREAD #3 #19564 DM2438 #2; 除材P&P Y軸_P4:移動速度
+UREAD #3 #20064 DM2420 #2; 除材P&P Y軸_P5:位置
+UREAD #3 #20076 DM2440 #2; 除材P&P Y軸_P5:移動速度
+UREAD #3 #20576 DM2422 #2; 除材P&P Y軸_P6:位置
+UREAD #3 #20588 DM2442 #2; 除材P&P Y軸_P6:移動速度
+LDF MR14015              ; RBﾎﾟｲﾝﾄ設定1画面表示中(TP)
+UWRIT #3 #18016 DM2412 #2; 除材P&P Y軸_P1:位置
+UWRIT #3 #18028 DM2432 #2; 除材P&P Y軸_P1:移動速度
+UWRIT #3 #18528 DM2414 #2; 除材P&P Y軸_P2:位置
+UWRIT #3 #18540 DM2434 #2; 除材P&P Y軸_P2:移動速度
+UWRIT #3 #19040 DM2416 #2; 除材P&P Y軸_P3:位置
+UWRIT #3 #19052 DM2436 #2; 除材P&P Y軸_P3:移動速度
+UWRIT #3 #19552 DM2418 #2; 除材P&P Y軸_P4:位置
+UWRIT #3 #19564 DM2438 #2; 除材P&P Y軸_P4:移動速度
+UWRIT #3 #20064 DM2420 #2; 除材P&P Y軸_P5:位置
+UWRIT #3 #20076 DM2440 #2; 除材P&P Y軸_P5:移動速度
+UWRIT #3 #20576 DM2422 #2; 除材P&P Y軸_P6:位置
+UWRIT #3 #20588 DM2442 #2; 除材P&P Y軸_P6:移動速度
+;Motion Controller -2
+LD T200                  ; 遅延ﾀｲﾏ－200　1s
+ANB R50900               ; TRAP
+AND R2205                ; Rob6_Motor Power ON
+ANB MR15001              ; 除材RB-Z軸_ｻｰﾎﾞｵﾝ完了
+@SET MR2512              ; 除材Z_CSTP
+CON
+@SET @MR501
+STG @MR501
+AND T202                 ; 遅延ﾀｲﾏ－202　6s
+SET R25105               ; 軸2 ﾄﾞﾗｲﾊﾞｱﾗｰﾑﾘｾｯﾄ
+CON
+JMP @MR502
+STG @MR502
+ANB R25505               ; 軸2 ﾄﾞﾗｲﾊﾞｱﾗｰﾑ
+RES R25105               ; 軸2 ﾄﾞﾗｲﾊﾞｱﾗｰﾑﾘｾｯﾄ
+CON
+JMP @MR503
+STG @MR503
+SET R24800               ; 軸2 軸ｴﾗｰｸﾘｱ
+CON
+JMP @MR504
+STG @MR504
+ANB R25200               ; 軸2 軸ｴﾗｰ中
+RES R24800               ; 軸2 軸ｴﾗｰｸﾘｱ
+CON
+JMP @MR505
+STG @MR505
+TMR @55 #30
+CON
+AND @T55
+SET R24913               ; 軸2 ｻｰﾎﾞON
+CON
+JMP @MR506
+STG @MR506
+TMR @56 #30
+CON
+AND @T56
+AND R25313               ; 軸2 ｻｰﾎﾞﾚﾃﾞｨ
+SET MR15001              ; 除材RB-Z軸_ｻｰﾎﾞｵﾝ完了
+CON
+ENDS
+LDF R25313               ; 軸2 ｻｰﾎﾞﾚﾃﾞｨ
+RES MR15001              ; 除材RB-Z軸_ｻｰﾎﾞｵﾝ完了
+;除材P&P Z軸_ﾌﾗｯｼｭﾛﾑ書込み
+LDP R36515               ; 書き込みOK SW
+@SET @MR1501             ; 除材PP Z軸_ﾌﾗｯｼｭﾛﾑ書込み
+STG @MR1501              ; 除材PP Z軸_ﾌﾗｯｼｭﾛﾑ書込み
+ANB R22812               ; ﾌﾗｯｼｭROM書込完了
+SET R21612               ; ﾌﾗｯｼｭROM書込要求
+CON
+JMP @MR1502
+STG @MR1502
+AND R22812               ; ﾌﾗｯｼｭROM書込完了
+UREAD #3 #105 @DM6 #1    ; ﾌﾗｯｼｭROM書込完了ｺｰﾄﾞ
+RES R21612               ; ﾌﾗｯｼｭROM書込要求
+CON
+JMP @MR1503
+STG @MR1503
+MPS
+AND= @DM6 #0             ; ﾌﾗｯｼｭROM書込完了ｺｰﾄﾞ
+ENDS
+MPP
+AND<> @DM6 #0            ; ﾌﾗｯｼｭROM書込完了ｺｰﾄﾞ
+SET MR15002              ; 除材RB-Z軸_ﾌﾗｯｼｭﾛﾑ書込み異常
+CON
+ENDS
+;除材P&P Z軸_移動可条件
+LDB R24404               ; 軸1 軸制御中
+ANB R25204               ; 軸2 軸制御中
+OUT MR15003              ; 除材RB-Z軸_移動可
+LDB R15204               ; 軸2 軸制御中
+OUT MR15004              ; 除材RB-Z軸_移動可(JOG)
+;除材P&P Z軸_ﾎﾟｼﾞｼｮﾝ表示
+LD CR2002                ; 常時ON
+U_RDFPOS.L #3 #2 DM2550  ; 除材P&P Z軸_現在座標読出し
+MPS
+LDA.D DM2550             ; 除材P&P Z軸_現在座標読出し
+CON
+STA.D DM2552             ; 除材P&P Z軸_現在座標表示用
+MRD
+MOV DM2558 DM2554        ; 除材P&P Z軸_変更速度表示用  除材P&P Z軸_現在速度表示用
+MRD
+AND=.L DM2550 DM2512     ; 除材P&P Z軸_現在座標読出し  除材P&P Z軸_P1:位置
+OUT R38508               ; 除材P&P Z軸 P1 位置　表示
+MRD
+AND=.L DM2550 DM2514     ; 除材P&P Z軸_現在座標読出し  除材P&P Z軸_P2:位置
+OUT R38509               ; 除材P&P Z軸 P2 位置　表示
+MRD
+AND=.L DM2550 DM2516     ; 除材P&P Z軸_現在座標読出し  除材P&P Z軸_P3:位置
+OUT R38510               ; 除材P&P Z軸 P3 位置　表示
+MRD
+AND=.L DM2550 DM2518     ; 除材P&P Z軸_現在座標読出し  除材P&P Z軸_P4:位置
+OUT R38511               ; 除材P&P Z軸 P4 位置　表示
+MRD
+AND=.L DM2550 DM2520     ; 除材P&P Z軸_現在座標読出し  除材P&P Z軸_P5:位置
+OUT R38512               ; 除材P&P Z軸 P5 位置　表示
+MPP
+AND=.L DM2550 DM2522     ; 除材P&P Z軸_現在座標読出し  除材P&P Z軸_P6:位置
+OUT R38513               ; 除材P&P Z軸 P6 位置　表示
+;ﾎﾟｲﾝﾄﾃﾞｰﾀ格納
+;　　ﾎﾟｲﾝﾄﾃﾞｰﾀ
+;　　　P1　待機位置
+;　　　P2　ﾊﾞｯﾌｧ　下降位置
+;　　　P3　CV　下降位置
+LD= DM3000 #202          ; 表示画面
+OUT MR15015              ; RBﾎﾟｲﾝﾄ設定1画面表示中(TP)
+LDB R25204               ; 軸2 軸制御中
+OUT R38506               ; 除材P&P Z軸_位置取込み可PL(TP)
+CON
+OUT R38507               ; 除材P&P Z軸_位置書込み可PL(TP)
+LDP R36504               ; 除材P&P Z軸_ﾎﾟｲﾝﾄNo+PB(TP)
+INC DM2500               ; 除材P&P Z軸_ﾎﾟｲﾝﾄNo(TP)
+LDP R36505               ; 除材P&P Z軸_ﾎﾟｲﾝﾄNo-PB(TP)
+DEC DM2500               ; 除材P&P Z軸_ﾎﾟｲﾝﾄNo(TP)
+LD> DM2500 #8            ; 除材P&P Z軸_ﾎﾟｲﾝﾄNo(TP)
+DW #8 DM2500             ; 除材P&P Z軸_ﾎﾟｲﾝﾄNo(TP)
+LD< DM2500 #1            ; 除材P&P Z軸_ﾎﾟｲﾝﾄNo(TP)
+DW #1 DM2500             ; 除材P&P Z軸_ﾎﾟｲﾝﾄNo(TP)
+LD CR2002                ; 常時ON
+MPS
+AND= DM2500 #1           ; 除材P&P Z軸_ﾎﾟｲﾝﾄNo(TP)
+OUT @MR1901              ; 除材P&P Z軸_ﾎﾟｲﾝﾄ1表示
+MRD
+AND= DM2500 #2           ; 除材P&P Z軸_ﾎﾟｲﾝﾄNo(TP)
+OUT @MR1902              ; 除材P&P Z軸_ﾎﾟｲﾝﾄ2表示
+MRD
+AND= DM2500 #3           ; 除材P&P Z軸_ﾎﾟｲﾝﾄNo(TP)
+OUT @MR1903              ; 除材P&P Z軸_ﾎﾟｲﾝﾄ3表示
+MRD
+AND= DM2500 #4           ; 除材P&P Z軸_ﾎﾟｲﾝﾄNo(TP)
+OUT @MR1904              ; 除材P&P Z軸_ﾎﾟｲﾝﾄ4表示
+MRD
+AND= DM2500 #5           ; 除材P&P Z軸_ﾎﾟｲﾝﾄNo(TP)
+OUT @MR1905              ; 除材P&P Z軸_ﾎﾟｲﾝﾄ5表示
+MPP
+AND= DM2500 #6           ; 除材P&P Z軸_ﾎﾟｲﾝﾄNo(TP)
+OUT @MR1906              ; 除材P&P Z軸_ﾎﾟｲﾝﾄ6表示
+LD CR2002                ; 常時ON
+MPS
+ANP @MR1901              ; 除材P&P Z軸_ﾎﾟｲﾝﾄ1表示
+MPS
+LDA.D DM2512             ; 除材P&P Z軸_P1:位置
+CON
+STA.D DM2556             ; 除材P&P Z軸_変更位置表示用
+MPP
+LDA.D DM2532             ; 除材P&P Z軸_P1:移動速度
+CON
+STA.D DM2558             ; 除材P&P Z軸_変更速度表示用
+MRD
+ANP @MR1902              ; 除材P&P Z軸_ﾎﾟｲﾝﾄ2表示
+MPS
+LDA.D DM2514             ; 除材P&P Z軸_P2:位置
+CON
+STA.D DM2556             ; 除材P&P Z軸_変更位置表示用
+MPP
+LDA.D DM2534             ; 除材P&P Z軸_P2:移動速度
+CON
+STA.D DM2558             ; 除材P&P Z軸_変更速度表示用
+MRD
+ANP @MR1903              ; 除材P&P Z軸_ﾎﾟｲﾝﾄ3表示
+MPS
+LDA.D DM2516             ; 除材P&P Z軸_P3:位置
+CON
+STA.D DM2556             ; 除材P&P Z軸_変更位置表示用
+MPP
+LDA.D DM2536             ; 除材P&P Z軸_P3:移動速度
+CON
+STA.D DM2558             ; 除材P&P Z軸_変更速度表示用
+MRD
+ANP @MR1904              ; 除材P&P Z軸_ﾎﾟｲﾝﾄ4表示
+MPS
+LDA.D DM2518             ; 除材P&P Z軸_P4:位置
+CON
+STA.D DM2556             ; 除材P&P Z軸_変更位置表示用
+MPP
+LDA.D DM2538             ; 除材P&P Z軸_P4:移動速度
+CON
+STA.D DM2558             ; 除材P&P Z軸_変更速度表示用
+MRD
+ANP @MR1905              ; 除材P&P Z軸_ﾎﾟｲﾝﾄ5表示
+MPS
+LDA.D DM2520             ; 除材P&P Z軸_P5:位置
+CON
+STA.D DM2556             ; 除材P&P Z軸_変更位置表示用
+MPP
+LDA.D DM2540             ; 除材P&P Z軸_P5:移動速度
+CON
+STA.D DM2558             ; 除材P&P Z軸_変更速度表示用
+MPP
+ANP @MR1906              ; 除材P&P Z軸_ﾎﾟｲﾝﾄ6表示
+MPS
+LDA.D DM2522             ; 除材P&P Z軸_P6:位置
+CON
+STA.D DM2556             ; 除材P&P Z軸_変更位置表示用
+MPP
+AND CR2003               ; 常時OFF
+LDA.D DM2542             ; 除材P&P Z軸_P6:移動速度
+CON
+STA.D DM2558             ; 除材P&P Z軸_変更速度表示用
+LD CR2002                ; 常時ON
+ANP R36506               ; 除材P&P Z軸_位置取込みPB(TP)
+AND R38506               ; 除材P&P Z軸_位置取込み可PL(TP)
+MPS
+AND= DM2500 #1           ; 除材P&P Z軸_ﾎﾟｲﾝﾄNo(TP)
+MOV DM2512 DM7512        ; 除材P&P Z軸_P1:位置
+MOV DM22350 DM2512       ; 軸2 現在座標  除材P&P Z軸_P1:位置
+MRD
+AND= DM2500 #2           ; 除材P&P Z軸_ﾎﾟｲﾝﾄNo(TP)
+MOV DM2514 DM7514        ; 除材P&P Z軸_P2:位置
+MOV DM22350 DM2514       ; 軸2 現在座標  除材P&P Z軸_P2:位置
+MRD
+AND= DM2500 #3           ; 除材P&P Z軸_ﾎﾟｲﾝﾄNo(TP)
+MOV DM2516 DM7516        ; 除材P&P Z軸_P3:位置
+MOV DM22350 DM2516       ; 軸2 現在座標  除材P&P Z軸_P3:位置
+MRD
+AND= DM2500 #4           ; 除材P&P Z軸_ﾎﾟｲﾝﾄNo(TP)
+MOV DM2518 DM7518        ; 除材P&P Z軸_P4:位置
+MOV DM22350 DM2518       ; 軸2 現在座標  除材P&P Z軸_P4:位置
+MRD
+AND= DM2500 #5           ; 除材P&P Z軸_ﾎﾟｲﾝﾄNo(TP)
+MOV DM2520 DM7520        ; 除材P&P Z軸_P5:位置
+MOV DM22350 DM2520       ; 軸2 現在座標  除材P&P Z軸_P5:位置
+MRD
+AND= DM2500 #6           ; 除材P&P Z軸_ﾎﾟｲﾝﾄNo(TP)
+MOV DM2522 DM7522        ; 除材P&P Z軸_P6:位置
+MOV DM22350 DM2522       ; 軸2 現在座標  除材P&P Z軸_P6:位置
+MPP
+LDA.D DM22350            ; 軸2 現在座標
+CON
+STA.D DM2556             ; 除材P&P Z軸_変更位置表示用
+LD CR2002                ; 常時ON
+AND R36507               ; 除材P&P Z軸_位置書込みPB(TP)
+AND R38507               ; 除材P&P Z軸_位置書込み可PL(TP)
+MPS
+AND= DM2500 #1           ; 除材P&P Z軸_ﾎﾟｲﾝﾄNo(TP)
+MPS
+LDA.D DM2556             ; 除材P&P Z軸_変更位置表示用
+CON
+STA.D DM2512             ; 除材P&P Z軸_P1:位置
+MPP
+LDA.D DM2558             ; 除材P&P Z軸_変更速度表示用
+CON
+STA.D DM2532             ; 除材P&P Z軸_P1:移動速度
+MRD
+AND= DM2500 #2           ; 除材P&P Z軸_ﾎﾟｲﾝﾄNo(TP)
+MPS
+LDA.D DM2556             ; 除材P&P Z軸_変更位置表示用
+CON
+STA.D DM2514             ; 除材P&P Z軸_P2:位置
+MPP
+LDA.D DM2558             ; 除材P&P Z軸_変更速度表示用
+CON
+STA.D DM2534             ; 除材P&P Z軸_P2:移動速度
+MRD
+AND= DM2500 #3           ; 除材P&P Z軸_ﾎﾟｲﾝﾄNo(TP)
+MPS
+LDA.D DM2556             ; 除材P&P Z軸_変更位置表示用
+CON
+STA.D DM2516             ; 除材P&P Z軸_P3:位置
+MPP
+LDA.D DM2558             ; 除材P&P Z軸_変更速度表示用
+CON
+STA.D DM2536             ; 除材P&P Z軸_P3:移動速度
+MRD
+AND= DM2500 #4           ; 除材P&P Z軸_ﾎﾟｲﾝﾄNo(TP)
+MPS
+LDA.D DM2556             ; 除材P&P Z軸_変更位置表示用
+CON
+STA.D DM2518             ; 除材P&P Z軸_P4:位置
+MPP
+LDA.D DM2558             ; 除材P&P Z軸_変更速度表示用
+CON
+STA.D DM2538             ; 除材P&P Z軸_P4:移動速度
+MRD
+AND= DM2500 #5           ; 除材P&P Z軸_ﾎﾟｲﾝﾄNo(TP)
+MPS
+LDA.D DM2556             ; 除材P&P Z軸_変更位置表示用
+CON
+STA.D DM2520             ; 除材P&P Z軸_P5:位置
+MPP
+LDA.D DM2558             ; 除材P&P Z軸_変更速度表示用
+CON
+STA.D DM2540             ; 除材P&P Z軸_P5:移動速度
+MPP
+AND= DM2500 #6           ; 除材P&P Z軸_ﾎﾟｲﾝﾄNo(TP)
+MPS
+LDA.D DM2556             ; 除材P&P Z軸_変更位置表示用
+CON
+STA.D DM2522             ; 除材P&P Z軸_P6:位置
+MPP
+LDA.D DM2558             ; 除材P&P Z軸_変更速度表示用
+CON
+STA.D DM2542             ; 除材P&P Z軸_P6:移動速度
+LD CR2002                ; 常時ON
+ANP R36515               ; 書き込みOK SW
+LD R38506                ; 除材P&P Z軸_位置取込み可PL(TP)
+OR R38507                ; 除材P&P Z軸_位置書込み可PL(TP)
+ANL
+MPS
+AND= DM2500 #1           ; 除材P&P Z軸_ﾎﾟｲﾝﾄNo(TP)
+UWRIT #3 #18048 DM2512 #2; 除材P&P Z軸_P1:位置
+UWRIT #3 #18060 DM2532 #2; 除材P&P Z軸_P1:移動速度
+MRD
+AND= DM2500 #2           ; 除材P&P Z軸_ﾎﾟｲﾝﾄNo(TP)
+UWRIT #3 #18560 DM2514 #2; 除材P&P Z軸_P2:位置
+UWRIT #3 #18572 DM2534 #2; 除材P&P Z軸_P2:移動速度
+MRD
+AND= DM2500 #3           ; 除材P&P Z軸_ﾎﾟｲﾝﾄNo(TP)
+UWRIT #3 #19072 DM2516 #2; 除材P&P Z軸_P3:位置
+UWRIT #3 #19084 DM2536 #2; 除材P&P Z軸_P3:移動速度
+MRD
+AND= DM2500 #4           ; 除材P&P Z軸_ﾎﾟｲﾝﾄNo(TP)
+UWRIT #3 #19584 DM2518 #2; 除材P&P Z軸_P4:位置
+UWRIT #3 #19596 DM2538 #2; 除材P&P Z軸_P4:移動速度
+MRD
+AND= DM2500 #5           ; 除材P&P Z軸_ﾎﾟｲﾝﾄNo(TP)
+UWRIT #3 #20096 DM2520 #2; 除材P&P Z軸_P5:位置
+UWRIT #3 #20108 DM2540 #2; 除材P&P Z軸_P5:移動速度
+MPP
+AND= DM2500 #6           ; 除材P&P Z軸_ﾎﾟｲﾝﾄNo(TP)
+UWRIT #3 #20608 DM2522 #2; 除材P&P Z軸_P6:位置
+UWRIT #3 #20620 DM2542 #2; 除材P&P Z軸_P6:移動速度
+LD CR2002                ; 常時ON
+ANP R36600               ; 書き込みいいえ SW
+MPS
+AND= DM2500 #1           ; 除材P&P Z軸_ﾎﾟｲﾝﾄNo(TP)
+MOV DM7512 DM2512        ; 除材P&P Z軸_P1:位置
+LDA.D DM2512             ; 除材P&P Z軸_P1:位置
+CON
+STA.D DM2556             ; 除材P&P Z軸_変更位置表示用
+MRD
+AND= DM2500 #2           ; 除材P&P Z軸_ﾎﾟｲﾝﾄNo(TP)
+MOV DM7514 DM2514        ; 除材P&P Z軸_P2:位置
+LDA.D DM2514             ; 除材P&P Z軸_P2:位置
+CON
+STA.D DM2556             ; 除材P&P Z軸_変更位置表示用
+MRD
+AND= DM2500 #3           ; 除材P&P Z軸_ﾎﾟｲﾝﾄNo(TP)
+MOV DM7516 DM2516        ; 除材P&P Z軸_P3:位置
+LDA.D DM2516             ; 除材P&P Z軸_P3:位置
+CON
+STA.D DM2556             ; 除材P&P Z軸_変更位置表示用
+MRD
+AND= DM2500 #4           ; 除材P&P Z軸_ﾎﾟｲﾝﾄNo(TP)
+MOV DM7518 DM2518        ; 除材P&P Z軸_P4:位置
+LDA.D DM2518             ; 除材P&P Z軸_P4:位置
+CON
+STA.D DM2556             ; 除材P&P Z軸_変更位置表示用
+MRD
+AND= DM2500 #5           ; 除材P&P Z軸_ﾎﾟｲﾝﾄNo(TP)
+MOV DM7520 DM2520        ; 除材P&P Z軸_P5:位置
+LDA.D DM2520             ; 除材P&P Z軸_P5:位置
+CON
+STA.D DM2556             ; 除材P&P Z軸_変更位置表示用
+MPP
+AND= DM2500 #6           ; 除材P&P Z軸_ﾎﾟｲﾝﾄNo(TP)
+MOV DM7522 DM2522        ; 除材P&P Z軸_P6:位置
+LDA.D DM2522             ; 除材P&P Z軸_P6:位置
+CON
+STA.D DM2556             ; 除材P&P Z軸_変更位置表示用
+LDP R50001               ; 自動中
+ORP R50002               ; 手動中
+ORP R50003               ; 原点復帰中
+ORP MR14815              ; RBﾎﾟｲﾝﾄ設定1画面表示中(TP)
+ORP T200                 ; 遅延ﾀｲﾏ－200　1s
+UREAD #3 #18048 DM2512 #2; 除材P&P Z軸_P1:位置
+UREAD #3 #18060 DM2532 #2; 除材P&P Z軸_P1:移動速度
+UREAD #3 #18560 DM2514 #2; 除材P&P Z軸_P2:位置
+UREAD #3 #18572 DM2534 #2; 除材P&P Z軸_P2:移動速度
+UREAD #3 #19072 DM2516 #2; 除材P&P Z軸_P3:位置
+UREAD #3 #19084 DM2536 #2; 除材P&P Z軸_P3:移動速度
+UREAD #3 #19584 DM2518 #2; 除材P&P Z軸_P4:位置
+UREAD #3 #19596 DM2538 #2; 除材P&P Z軸_P4:移動速度
+UREAD #3 #20096 DM2520 #2; 除材P&P Z軸_P5:位置
+UREAD #3 #20108 DM2540 #2; 除材P&P Z軸_P5:移動速度
+UREAD #3 #20608 DM2522 #2; 除材P&P Z軸_P6:位置
+UREAD #3 #20620 DM2542 #2; 除材P&P Z軸_P6:移動速度
+LDF MR14015              ; RBﾎﾟｲﾝﾄ設定1画面表示中(TP)
+UWRIT #3 #18048 DM2512 #2; 除材P&P Z軸_P1:位置
+UWRIT #3 #18060 DM2532 #2; 除材P&P Z軸_P1:移動速度
+UWRIT #3 #18560 DM2514 #2; 除材P&P Z軸_P2:位置
+UWRIT #3 #18572 DM2534 #2; 除材P&P Z軸_P2:移動速度
+UWRIT #3 #19072 DM2516 #2; 除材P&P Z軸_P3:位置
+UWRIT #3 #19084 DM2536 #2; 除材P&P Z軸_P3:移動速度
+UWRIT #3 #19584 DM2518 #2; 除材P&P Z軸_P4:位置
+UWRIT #3 #19596 DM2538 #2; 除材P&P Z軸_P4:移動速度
+UWRIT #3 #20096 DM2520 #2; 除材P&P Z軸_P5:位置
+UWRIT #3 #20108 DM2540 #2; 除材P&P Z軸_P5:移動速度
+UWRIT #3 #20608 DM2522 #2; 除材P&P Z軸_P6:位置
+UWRIT #3 #20620 DM2542 #2; 除材P&P Z軸_P6:移動速度
+LDP R37000               ; 隠し原点復帰SW
+ORP MR900                ; 給材P&P X-RB原点復帰要求
+ANB MR14104              ; 給材P&P X軸_原点復帰中
+ANB @MR702
+RES MR14105              ; 給材P&P X軸原点復帰完了
+CON
+RES MR2400               ; 給材X_HOME
+CON
+SET @MR702
+STG @MR702
+MPS
+AND MR14105              ; 給材P&P X軸原点復帰完了
+JMP @MR703
+MPP
+MCALL GENTEN1 #2 #1 MR2400 R1101 MR14105;給材X_HOME  給材X_HEND  給材P&P X軸原点復帰完了
+STG @MR703
+RES MR14105              ; 給材P&P X軸原点復帰完了
+CON
+RES MR2400               ; 給材X_HOME
+CON
+ANB MR14105              ; 給材P&P X軸原点復帰完了
+MPS
+ANB R50003               ; 原点復帰中
+ENDS
+MPP
+AND R50003               ; 原点復帰中
+SET MR901                ; 給材P&P X-RB原点復帰完了
+CON
+ENDS
+LDP R37001               ; 隠し原点復帰SW
+ORP MR902                ; 給材P&P Z-RB原点復帰要求
+ANB MR14304              ; 給材P&P Z軸_原点復帰中
+ANB @MR700
+RES MR14305              ; 給材P&P Z軸_原点復帰完了
+CON
+RES MR2405               ; 給材Z_HOME
+CON
+SET @MR700
+STG @MR700
+MPS
+AND MR14305              ; 給材P&P Z軸_原点復帰完了
+JMP @MR701
+MPP
+MCALL GENTEN1 #2 #2 MR2405 R1109 MR14305;給材Z_HOME  給材Z_HEND  給材P&P Z軸_原点復帰完了
+STG @MR701
+RES MR14305              ; 給材P&P Z軸_原点復帰完了
+CON
+RES MR2405               ; 給材Z_HOME
+CON
+ANB MR14305              ; 給材P&P Z軸_原点復帰完了
+MPS
+ANB R50003               ; 原点復帰中
+ENDS
+MPP
+AND R50003               ; 原点復帰中
+SET MR903                ; 給材P&P Z-RB原点復帰完了
+CON
+ENDS
+LDP R37002               ; 隠し原点復帰SW
+ORP MR904                ; 移載P&P X-RB原点復帰要求
+ANB MR14504              ; 移載P&P X軸_原点復帰中
+ANB @MR704
+RES MR14505              ; 移載P&P X軸_原点復帰完了
+CON
+RES MR2410               ; 移載X_HOME
+CON
+SET @MR704
+STG @MR704
+MPS
+AND MR14505              ; 移載P&P X軸_原点復帰完了
+JMP @MR705
+MPP
+MCALL GENTEN1 #2 #3 MR2410 R1201 MR14505;移載X_HOME  移載X_HEND  移載P&P X軸_原点復帰完了
+STG @MR705
+RES MR14505              ; 移載P&P X軸_原点復帰完了
+CON
+RES MR2410               ; 移載X_HOME
+CON
+ANB MR14505              ; 移載P&P X軸_原点復帰完了
+MPS
+ANB R50003               ; 原点復帰中
+ENDS
+MPP
+AND R50003               ; 原点復帰中
+SET MR905                ; 移載P&P X-RB原点復帰完了
+CON
+ENDS
+LDP R37003               ; 隠し原点復帰SW
+ORP MR906                ; 移載P&P Z-RB原点復帰要求
+ANB MR14704              ; 移載P&P Z軸_原点復帰中
+ANB @MR706
+RES MR14705              ; 移載P&P Z軸_原点復帰完了
+CON
+RES MR2500               ; 移載Z_HOME
+CON
+SET @MR706
+STG @MR706
+MPS
+AND MR14705              ; 移載P&P Z軸_原点復帰完了
+JMP @MR707
+MPP
+MCALL GENTEN1 #2 #4 MR2500 R1209 MR14705;移載Z_HOME  移載Z_HEND  移載P&P Z軸_原点復帰完了
+STG @MR707
+RES MR14705              ; 移載P&P Z軸_原点復帰完了
+CON
+RES MR2500               ; 移載Z_HOME
+CON
+ANB MR14705              ; 移載P&P Z軸_原点復帰完了
+MPS
+ANB R50003               ; 原点復帰中
+ENDS
+MPP
+AND R50003               ; 原点復帰中
+SET MR907                ; 移載P&P Z-RB原点復帰完了
+CON
+ENDS
+LDP R37004               ; 隠し原点復帰SW
+ORP MR908                ; 除材P&P Y-RB原点復帰要求
+ANB MR14905              ; 除材RB-Y軸_原点復帰完了
+ANB @MR708
+RES MR14905              ; 除材RB-Y軸_原点復帰完了
+CON
+RES MR2505               ; 除材Y_HOME
+CON
+SET @MR708
+STG @MR708
+MPS
+AND MR14905              ; 除材RB-Y軸_原点復帰完了
+JMP @MR709
+MPP
+MCALL GENTEN2 #3 #1 MR2505 R1301 MR14905;除材Y_HOME  除材Y_YHEND  除材RB-Y軸_原点復帰完了
+STG @MR709
+RES MR14905              ; 除材RB-Y軸_原点復帰完了
+CON
+RES MR2505               ; 除材Y_HOME
+CON
+ANB MR14905              ; 除材RB-Y軸_原点復帰完了
+MPS
+ANB R50003               ; 原点復帰中
+ENDS
+MPP
+AND R50003               ; 原点復帰中
+SET MR909                ; 除材P&P Y-RB原点復帰完了
+CON
+ENDS
+LDP R37005               ; 隠し原点復帰SW
+ORP MR910                ; 除材P&P Z-RB原点復帰要求
+ANB MR15104              ; 除材RB-Z軸_原点復帰中
+ANB @MR710
+RES MR15105              ; 除材RB-Z軸_原点復帰完了
+CON
+RES MR2510               ; 除材Z_HOME
+CON
+SET @MR710
+STG @MR710
+MPS
+AND MR15105              ; 除材RB-Z軸_原点復帰完了
+JMP @MR711
+MPP
+MCALL GENTEN2 #3 #2 MR2510 R1309 MR15105;除材Z_HOME  除材Z_HEND  除材RB-Z軸_原点復帰完了
+STG @MR711
+RES MR15105              ; 除材RB-Z軸_原点復帰完了
+CON
+RES MR2510               ; 除材Z_HOME
+CON
+ANB MR15105              ; 除材RB-Z軸_原点復帰完了
+MPS
+ANB R50003               ; 原点復帰中
+ENDS
+MPP
+AND R50003               ; 原点復帰中
+SET MR911                ; 除材P&P Z-RB原点復帰完了
+CON
+ENDS
+END
+ENDH

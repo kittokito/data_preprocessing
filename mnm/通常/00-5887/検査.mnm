@@ -1,0 +1,477 @@
+DEVICE:51
+;MODULE:検査
+;MODULE_TYPE:0
+LD CR2002                ; 常時ON
+ANB R99915               ; 170405 NAT追加
+MOV #600 DM199
+LD CR2008                ; 運転開始時1ｽｷｬﾝON
+OR @T24                  ; 液循環時間
+ORP MR10002              ; 検査画面表示
+MOV DM199 DM1200
+;空圧調整は無し
+LD CR2002                ; 常時ON
+SET B0719                ; TPSW 調整終了
+;現在表示されている画面表示No
+LD CR2002                ; 常時ON
+LDA DM1000
+CON
+MPS
+CMP #0
+CON
+AND CR2010               ; 演算結果がｾﾞﾛ
+OUT MR10000              ; Main画面表示
+MRD
+CMP #1
+CON
+AND CR2010               ; 演算結果がｾﾞﾛ
+OUT MR10001              ; 異常詳細画面表示
+MRD
+CMP #10
+CON
+AND CR2010               ; 演算結果がｾﾞﾛ
+OUT MR10002              ; 検査画面表示
+MRD
+CMP #20
+CON
+AND CR2010               ; 演算結果がｾﾞﾛ
+OUT MR10003              ; 保全画面表示
+MRD
+CMP #30
+CON
+AND CR2010               ; 演算結果がｾﾞﾛ
+OUT MR10004              ; 一連操作画面表示
+MRD
+CMP #50
+CON
+AND CR2010               ; 演算結果がｾﾞﾛ
+OUT MR10005              ; 個別操作1画面表示
+MPP
+CMP #60
+CON
+AND CR2010               ; 演算結果がｾﾞﾛ
+OUT MR10006              ; Filter交換画表示
+;流路1流量センサ入力
+LD R1008                 ; 流路1 流量検出1
+ANB R1009                ; 流路1 流量検出2
+OUT MR5800               ; 流路1適正流量
+LDB R1008                ; 流路1 流量検出1
+ANB R1009                ; 流路1 流量検出2
+OUT MR5801               ; 流路1_P1流量以下
+;流路2流量センサー入力
+LD R1011                 ; 流路2 流量検出1
+ANB R1012                ; 流路2 流量検出2
+OUT MR5802               ; 流路2適正流量
+LDB R1011                ; 流路2 流量検出1
+ANB R1012                ; 流路2 流量検出2
+OUT MR5803               ; 流路2_P1 流量以下
+;流路1ワークチューブ圧力センサー入力
+LD R1102                 ; 流路1ﾜｰｸﾁｭｰﾌﾞ圧力適正
+OUT MR5804               ; 流路1ﾜｰｸﾁｭｰﾌﾞ適正圧力
+;流路2ワークチューブ圧力センサー入力
+LD R1103                 ; 流路2ﾜｰｸﾁｭｰﾌﾞ圧力適正
+OUT MR5805               ; 流路2ﾜｰｸﾁｭｰﾌﾞ適正圧力
+;検査画面が立上がった場合はTP装置状態をクリアーする
+;
+LDB MR3004               ; 一連動作中
+ANP MR10002              ; 検査画面表示
+OUT MR10100              ; 検査画面立ち上がり
+LD MR10100               ; 検査画面立ち上がり
+MOV #11 DM2              ; TP装置状態
+;検査画面が表示されてる状態で開始PBを押した場合
+LD MR5001                ; 流路1検査中
+AND MR5101               ; 流路2検査中
+MPS
+LD MR10002               ; 検査画面表示
+ANB MR7303               ; 一連操作検査
+ANL
+TMR #50 #2               ; 検査開始
+MPP
+LD T50                   ; 検査開始
+OR MR6000                ; 検査中
+ANL
+OUT MR6000               ; 検査中
+;元圧空0.05MPa調整  B719で終了
+LDP MR6000               ; 検査中
+ORP MR7200               ; 一連操作流路1接続確認
+ORP MR7201               ; 一連操作流路2接続確認
+ORP MR7202               ; 一連操作流路1，2接続確認
+OR MR5900                ; 電空0.05MPa
+AND MR3004               ; 一連動作中
+ANB MR6001               ; 接続確認①
+OUT MR5900               ; 電空0.05MPa
+MOV #0 DM2               ; TP装置状態
+;バルブ接続確認①（加圧）
+;入口流路1閉、圧空1開、入口流路2閉、圧空2開、元圧空1開、出口流路1閉、元圧空2開、出口流路2閉にして確認する
+LD MR5900                ; 電空0.05MPa
+AND B0719                ; TPSW 調整終了
+OR MR6001                ; 接続確認①
+AND MR3004               ; 一連動作中
+ANB MR6002               ; 接続確認①正常終了
+OUT MR6001               ; 接続確認①
+TMR #20 #20              ; 接続確認①判定
+;接続確認①判定
+LD MR6001                ; 接続確認①
+ANP T20                  ; 接続確認①判定
+MPS
+AND CR2002               ; 常時ON
+OUT MR6002               ; 接続確認①正常終了
+MPP
+ANB CR2002               ; 常時ON
+OUT MR7002               ; 接続確認①異常終了
+;バルブ接続確認②圧力センサーで圧力上昇の有無を検出し、良否判定を行う
+;入口流量1閉、圧空1開、入口流路2閉、圧空2開、元圧空1閉、出口流路1閉、元圧空2閉、出口流路2閉にして確認する
+;
+LDP MR6002               ; 接続確認①正常終了
+OR MR6003                ; 接続確認②
+AND MR3004               ; 一連動作中
+ANB MR6004               ; 接続確認②OK
+ANB MR7004               ; 接続確認②NG
+OUT MR6003               ; 接続確認②
+TMR #21 #600             ; 接続確認②判定
+;接続判定：  ＊判定条件  OK：MPa以上  TP表示  接続OK  NG：TP表示  接続NG）    
+LD MR6003                ; 接続確認②
+ANP T21                  ; 接続確認②判定
+MPS
+LD MR5804                ; 流路1ﾜｰｸﾁｭｰﾌﾞ適正圧力
+ORB MR5001               ; 流路1検査中
+LD MR5805                ; 流路2ﾜｰｸﾁｭｰﾌﾞ適正圧力
+ORB MR5101               ; 流路2検査中
+ANL
+ANL
+OUT MR6004               ; 接続確認②OK
+MPP
+LDB MR5804               ; 流路1ﾜｰｸﾁｭｰﾌﾞ適正圧力
+AND MR5001               ; 流路1検査中
+LDB MR5805               ; 流路2ﾜｰｸﾁｭｰﾌﾞ適正圧力
+AND MR5101               ; 流路2検査中
+ORL
+ANL
+OUT MR7004               ; 接続確認②NG
+;TP表示  接続OK
+LDP MR6004               ; 接続確認②OK
+MOV #1 DM2               ; TP装置状態
+;TP表示  接続NG
+LDP MR7004               ; 接続確認②NG
+MOV #6 DM2               ; TP装置状態
+;接続NGでもバルブ接続確認③を実行する
+;バルブ接続確認③エアー解放
+;入口流量1閉、圧空1開、入口流路2閉、圧空2開、元圧空1閉、出口流路1開、元圧空2閉、出口流路2開して確認する
+;
+LDP MR6004               ; 接続確認②OK
+ORP MR7004               ; 接続確認②NG
+OR MR6005                ; 接続確認③
+AND MR3004               ; 一連動作中
+ANB MR6006               ; 接続確認③OK
+ANB MR7006               ; 接続確認③NG
+OUT MR6005               ; 接続確認③
+TMR #22 #10              ; 接続確認③判定
+LD MR6005                ; 接続確認③
+ANP T22                  ; 接続確認③判定
+LDA DM2                  ; TP装置状態
+CON
+CMP #1
+CON
+MPS
+AND CR2010               ; 演算結果がｾﾞﾛ
+OUT MR6006               ; 接続確認③OK
+MPP
+ANB CR2010               ; 演算結果がｾﾞﾛ
+OUT MR7006               ; 接続確認③NG
+;接続確認③NGでﾀﾜｰﾗﾝﾌﾟ赤、ﾌﾞｻﾞｰ早い
+LDP MR7006               ; 接続確認③NG
+AND MR3004               ; 一連動作中
+OUT MR7007               ; 接続確認③NG
+;バルブ：液循環  流量、IN側温度を確認した後、OUT側温度の値で良否判定を行う
+;入口流量1開、圧空1閉、入口流路2開、圧空2閉、元圧空1閉、出口流路1開、元圧空2閉、出口流路2開して確認する
+;TP表示：液循環中
+;
+LDB MR7300               ; 一連操作　接続確認
+ANP MR6006               ; 接続確認③OK
+ORP MR7301               ; 一連操作　液循環
+OR MR6007                ; 液循環
+AND MR3004               ; 一連動作中
+ANB MR6008               ; 液循環終了
+OUT MR6007               ; 液循環
+TMR #23 #1               ; 液循環
+MOV #2 DM2               ; TP装置状態
+LD MR6007                ; 液循環
+ANP T23                  ; 液循環
+OUT MR6008               ; 液循環終了
+;チラー：液送り
+;
+LDP MR6008               ; 液循環終了
+ORP MR7303               ; 一連操作検査
+OR MR6009                ; チラー液送り
+AND MR3004               ; 一連動作中
+ANB MR6010               ; 流量確認OK
+ANB MR6104               ; 排液開始0.05MPa
+OUT MR6009               ; チラー液送り
+TMR @24 DM199            ; 液循環時間
+MOV @T24 DM1200          ; 液循環時間
+MPS
+AND @T24                 ; 液循環時間
+OUT MR27010              ; 循環時間タイムアップ
+MRD
+ANB CR2002               ; 常時ON
+TMR @64 DM199
+MPP
+LD @T24                  ; 液循環時間
+OR @T64
+ANB B0716                ; TPSW再検査
+ANL
+TMR #34 #1               ; 流量確認
+;流量確認  NGの場合：TP表示流量NG（MR6011） の場合に再検査、排液ボタンを表示する
+LD MR6009                ; チラー液送り
+LDP T34                  ; 流量確認
+LD CR2003                ; 常時OFF
+ANP MR7303               ; 一連操作検査
+ORL
+ANL
+MPS
+LD MR5800                ; 流路1適正流量
+ORB MR5001               ; 流路1検査中
+LD MR5802                ; 流路2適正流量
+ORB MR5101               ; 流路2検査中
+ANL
+ANB MR7301               ; 一連操作　液循環
+ANL
+OUT MR6010               ; 流量確認OK
+MPP
+LDB MR5800               ; 流路1適正流量
+AND MR5001               ; 流路1検査中
+LDB MR5802               ; 流路2適正流量
+AND MR5101               ; 流路2検査中
+ORL
+ANB MR7301               ; 一連操作　液循環
+ANL
+OUT MR6011               ; 流量確認NG
+;流量確認  NGの場合： TP表示  流量NG       排液PB（B717）を選択した場合に排液へ進む         
+;
+LDP MR6011               ; 流量確認NG
+MOV #7 DM2               ; TP装置状態
+;流量確認  NGでﾀﾜｰﾗﾝﾌﾟ赤、ﾌﾞｻﾞｰ早い
+LDP MR6011               ; 流量確認NG
+AND MR3004               ; 一連動作中
+OUT MR7008               ; 流量異常発生
+;IN側温度確認  NG（MR7014）の場合に  再検査、排液PBを表示する
+LDP MR6010               ; 流量確認OK
+OR MR6013                ; 入口温度確認
+AND MR3004               ; 一連動作中
+ANB MR6014               ; 入口温度OK
+ANB MR6104               ; 排液開始0.05MPa
+MPS
+OUT MR6013               ; 入口温度確認
+MPP
+ANB B0716                ; TPSW再検査
+TMR #25 #1               ; 入口温度確認
+LD MR6013                ; 入口温度確認
+ANP T25                  ; 入口温度確認
+MPS
+LD R1112                 ; 流路1 IN側 適温
+ORB MR5001               ; 流路1検査中
+LD R1114                 ; 流路2 IN側 適温
+ORB MR5101               ; 流路2検査中
+ANL
+ANL
+OUT MR6014               ; 入口温度OK
+MPP
+LDB R1112                ; 流路1 IN側 適温
+AND MR5001               ; 流路1検査中
+LDB R1114                ; 流路2 IN側 適温
+AND MR5101               ; 流路2検査中
+ORL
+ANL
+OUT MR7014               ; 入口温度NG
+;TP表示  入口温度NG
+LDP MR7014               ; 入口温度NG
+MOV #8 DM2               ; TP装置状態
+LDP MR7014               ; 入口温度NG
+AND MR3004               ; 一連動作中
+OUT MR7009               ; 入口温度異常
+;OUT側温度確認
+LDP MR6014               ; 入口温度OK
+OR MR6100                ; 出口温度確認
+AND MR3004               ; 一連動作中
+ANB MR6101               ; 出口側温度OK
+ANB MR6104               ; 排液開始0.05MPa
+MPS
+OUT MR6100               ; 出口温度確認
+MPP
+ANB B0716                ; TPSW再検査
+TMR #26 #1               ; 出口温度確認
+LD MR6100                ; 出口温度確認
+ANP T26                  ; 出口温度確認
+MPS
+LD R1113                 ; 流路1 OUT側 適温
+ORB MR5001               ; 流路1検査中
+LD R1115                 ; 流路2 OUT側 適温
+ORB MR5101               ; 流路2検査中
+ANL
+ANL
+OUT MR6101               ; 出口側温度OK
+MPP
+LDB R1113                ; 流路1 OUT側 適温
+AND MR5001               ; 流路1検査中
+LDB R1115                ; 流路2 OUT側 適温
+AND MR5101               ; 流路2検査中
+ORL
+ANL
+OUT MR7005               ; 出口温度NG
+;
+;TP表示  検査OK    排液PB表示   ﾀﾜｰﾗﾝﾌﾟ青ゆっくり3秒  作業者が検査値を記録
+;排液PBを押したら排液を実施
+LDP MR6101               ; 出口側温度OK
+ANB MR7303               ; 一連操作検査
+MOV #3 DM2               ; TP装置状態
+LDP MR6101               ; 出口側温度OK
+OR MR6103                ; 出口温度OK　BZゆっくり
+ANB MR6104               ; 排液開始0.05MPa
+MPS
+AND MR3004               ; 一連動作中
+OUT MR6103               ; 出口温度OK　BZゆっくり
+MPP
+AND MR7303               ; 一連操作検査
+@MOV #12 DM2             ; TP装置状態
+;TP表示  出口温度NG
+LDP MR7005               ; 出口温度NG
+MOV #9 DM2               ; TP装置状態
+LDP MR7005               ; 出口温度NG
+AND MR3004               ; 一連動作中
+OUT MR7010               ; 出口温度異常
+;液循環フラグ
+LD MR6007                ; 液循環
+OR MR6009                ; チラー液送り
+LD MR6013                ; 入口温度確認
+OR MR6100                ; 出口温度確認
+OR MR6103                ; 出口温度OK　BZゆっくり
+LDB MR7303               ; 一連操作検査
+OR MR20001               ; 修正フラグ
+ANL
+ORL
+AND MR3004               ; 一連動作中
+OUT MR6102               ; 検査時液循環
+;排液を押した場合にTP表示  排液中  タワーランプ黄    
+;
+;排液1  0.05MPa   チラー：液送り停止  タワーランプは黄
+;TP表示  排液0.05MPa
+LD @T24                  ; 液循環時間
+OR MR6013                ; 入口温度確認
+OR MR6100                ; 出口温度確認
+ANP B0717                ; TPSW排液その１
+LD MR6103                ; 出口温度OK　BZゆっくり
+ANP B0718                ; TPSW排液その２
+ORL
+ORP MR7304               ; 一連操作　排液
+OR MR6104                ; 排液開始0.05MPa
+MPS
+LD MR3004                ; 一連動作中
+ANB MR6106               ; 排液1　　　0.2MPa
+ANL
+OUT MR6104               ; 排液開始0.05MPa
+MPP
+LD CR2002                ; 常時ON
+ANB MR7303               ; 一連操作検査
+ANL
+@MOV #4 DM2              ; TP装置状態
+;排液1  0.05MPa調整終了  5秒後に0.2MPa変更
+;TP表示  排液終了
+LD MR6104                ; 排液開始0.05MPa
+AND B0719                ; TPSW 調整終了
+ANB MR6106               ; 排液1　　　0.2MPa
+OUT MR6105               ; 排液１　0.05MPa
+MPS
+TMR #27 #1200            ; 電空0.2MPa変更
+MPP
+ANB CR2002               ; 常時ON
+@MOV #13 DM2             ; TP装置状態
+;排液1  電空0.2MPa調整終了  10秒後に0.05MPaに変更
+;TP表示  排液0.05MPa
+LD T27                   ; 電空0.2MPa変更
+AND B0719                ; TPSW 調整終了
+OR MR6106                ; 排液1　　　0.2MPa
+AND MR3004               ; 一連動作中
+ANB MR6107               ; 排液2　　　0.05MPa
+OUT MR6106               ; 排液1　　　0.2MPa
+MPS
+TMR #28 #1               ; 排液2　電空　0.05MPa変更
+MPP
+ANB CR2002               ; 常時ON
+@MOV #12 DM2             ; TP装置状態
+;排液2  電空0.05MPa調整終了  5秒後に0.005MPaに変更
+;TP表示  排液終了
+LD T28                   ; 排液2　電空　0.05MPa変更
+AND B0719                ; TPSW 調整終了
+OR MR6107                ; 排液2　　　0.05MPa
+AND MR3004               ; 一連動作中
+ANB MR6108               ; 排液2　　終了
+OUT MR6107               ; 排液2　　　0.05MPa
+MPS
+TMR #29 #1               ; 排液2　　　0.005MPa
+MPP
+ANB CR2002               ; 常時ON
+@MOV #13 DM2             ; TP装置状態
+;排液2終了  電空0.005MPa
+;TP表示  検査終了
+LD T29                   ; 排液2　　　0.005MPa
+AND CR2002               ; 常時ON
+AND B0719                ; TPSW 調整終了
+OR MR6108                ; 排液2　　終了
+AND MR3004               ; 一連動作中
+ANB MR6109               ; 一連操作検査終了
+OUT MR6108               ; 排液2　　終了
+MPS
+AND MR7304               ; 一連操作　排液
+TMR #30 #5               ; 検査終了
+@MOV #13 DM2             ; TP装置状態
+MPP
+ANB MR7304               ; 一連操作　排液
+@MOV #5 DM2              ; TP装置状態
+TMR #32 #1               ; 検査終了
+;検査終了（待機状態にする）
+LD T30                   ; 検査終了
+OR T32                   ; 検査終了
+AND MR3004               ; 一連動作中
+ANB MR7304               ; 一連操作　排液
+OUT MR6109               ; 一連操作検査終了
+;排液ﾌﾗｸﾞ
+LD MR6105                ; 排液１　0.05MPa
+OR MR6106                ; 排液1　　　0.2MPa
+OR MR6107                ; 排液2　　　0.05MPa
+OUT MR6110               ; 排出ﾌﾗｸﾞ
+;再検査、排液PB  の表示
+LD MR6011                ; 流量確認NG
+OR MR7014                ; 入口温度NG
+OR MR7005                ; 出口温度NG
+ANB MR7303               ; 一連操作検査
+OR MR8000                ; 再検査、排液PB表示
+ANB B0716                ; TPSW再検査
+ANB B0717                ; TPSW排液その１
+AND MR3004               ; 一連動作中
+OUT MR8000               ; 再検査、排液PB表示
+;排液PB  の表示
+LD MR6103                ; 出口温度OK　BZゆっくり
+OUT MR8001               ; 排液PB表示
+;空圧調整PBの表示
+LD MR5900                ; 電空0.05MPa
+ORF B010                 ; 接続確認③異常
+OR MR6104                ; 排液開始0.05MPa
+OR T27                   ; 電空0.2MPa変更
+OR T28                   ; 排液2　電空　0.05MPa変更
+OR T29                   ; 排液2　　　0.005MPa
+AND MR6000               ; 検査中
+OR MR7304                ; 一連操作　排液
+LD MR15900               ; 電空0.05MPa
+ORF B010                 ; 接続確認③異常
+OR MR18000               ; Filter排液
+OR MR18003               ; バルブ待機状態0.005MPa
+OR MR16104               ; 排液開始0.05MPa
+OR T127                  ; 電空0.2MPa変更
+OR T128                  ; 空圧0.05MPa変更
+OR T129                  ; 空圧0.005MPa変更
+AND MR16000              ; Filter交換
+ORL
+OR MR7305                ; 一連操作　F排液
+AND CR2003               ; 常時OFF
+OUT MR8002               ; 空圧調整終了PBの表示
+END
+ENDH

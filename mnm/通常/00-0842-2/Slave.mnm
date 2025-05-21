@@ -1,0 +1,388 @@
+DEVICE:51
+;MODULE:Slave
+;MODULE_TYPE:0
+LD R50010                ; Emargency　Stop
+ZRES @MR000 @MR215       ; PAUSE　　　条件確認
+;一時停止条件
+;１、Ｍａｉｎ　Ａｉｒ
+;２、ＰＡＵＳＥ ＳＷ
+;３、動作中のカバー開
+LDB R50010               ; Emargency　Stop
+AND R1014                ; 装置電源ON
+MPS
+@SET MR6010              ; ﾄﾞｱﾛｯｸ
+CON
+TMR @0 #5                ; 起動遅延
+CON
+ANP @T0                  ; 起動遅延
+SET @MR000               ; PAUSE　　　条件確認
+MPP
+TMR #230 #10             ; 電源ON後ｳｪｲﾄ
+CON
+TMR @30 #10              ; ｳｴｲﾄﾀｲﾏｰ30
+LD @MR000                ; PAUSE　　　条件確認
+ANB R1715                ; 元圧確認
+AND @T30                 ; ｳｴｲﾄﾀｲﾏｰ30
+RES MR6109               ; ｲﾝﾃﾞｯｸｽ　非常停止入力
+CON
+SET MR607                ; ﾒｲﾝｴｱｰOFF
+STG @MR000               ; PAUSE　　　条件確認
+LDB R1715                ; 元圧確認
+OR R1004                 ; 一時停止ｽｲｯﾁ
+ORB R1015                ; ﾄﾞｱﾛｯｸ信号
+ANL
+ANB LR49914              ; ｴﾗｰﾘｾｯﾄｷｰ要求
+SET R50208
+CON
+SET R50300               ; 一時停止中
+CON
+JMP @MR001               ; PAUSE　　　開始
+LDB R50001               ; AUTO　MODE
+AND R50300               ; 一時停止中
+MPS
+AND R1015                ; ﾄﾞｱﾛｯｸ信号
+LDA #544
+CON
+STA DM100                ; ﾒｯｾｰｼﾞ表示
+MPP
+ANB R1015                ; ﾄﾞｱﾛｯｸ信号
+LDA #545
+CON
+STA DM100                ; ﾒｯｾｰｼﾞ表示
+LDB R50001               ; AUTO　MODE
+ANF R50300               ; 一時停止中
+LDA #0
+CON
+STA DM100                ; ﾒｯｾｰｼﾞ表示
+;一時停止確認
+STG @MR001               ; PAUSE　　　開始
+ANB R50100               ; PACK INDEX
+ANB R50101               ; PACK UT1
+ANB R50102               ; PACK UT2
+ANB R50103               ; PACK UT3
+ANB R50104               ; PACK UT4
+ANB MR2601               ; 一時停止禁止
+SET MR606                ; 一時停止確認
+CON
+JMP @MR002               ; 待機ﾓｼﾞｭｰﾙ UT1～4実行停止要求
+LDP @MR002               ; 待機ﾓｼﾞｭｰﾙ UT1～4実行停止要求
+MPS
+AND _UT1
+SET @MR201               ; UT1 ﾎﾟｰｽﾞ中
+CON
+MDSTOP UT1
+MRD
+AND _UT2
+SET @MR202               ; UT2 ﾎﾟｰｽﾞ中
+CON
+MDSTOP UT2
+MRD
+AND _UT3
+SET @MR203               ; UT3 ﾎﾟｰｽﾞ中
+CON
+MDSTOP UT3
+MPP
+AND _UT4
+SET @MR204               ; UT4 ﾎﾟｰｽﾞ中
+CON
+MDSTOP UT4
+STG @MR002               ; 待機ﾓｼﾞｭｰﾙ UT1～4実行停止要求
+ANB _UT1
+ANB _UT2
+ANB _UT3
+ANB _UT4
+JMP @MR003               ; 003
+STG @MR003               ; 003
+RES MR6010               ; ﾄﾞｱﾛｯｸ
+CON
+JMP @MR004               ; 004
+;カバー閉じ後、ＳＴＡＲＴ ｓｗ　ＯＮ
+STG @MR004               ; 004
+RES MR606                ; 一時停止確認
+CON
+AND R1715                ; 元圧確認
+ANB R1004                ; 一時停止ｽｲｯﾁ
+MPS
+AND R1002                ; 操作BOX  運転開始
+RES R50208
+CON
+RES MR610                ; 一時停止解除待ち表示
+CON
+SET MR611                ; 一時停止解除中
+CON
+SET MR6010               ; ﾄﾞｱﾛｯｸ
+CON
+JMP @MR005               ; 005
+MPP
+ANB R1002                ; 操作BOX  運転開始
+SET MR610                ; 一時停止解除待ち表示
+STG @MR005               ; 005
+TMR @1 #2                ; ｶﾊﾞｰ閉確認遅延
+CON
+AND @T1                  ; ｶﾊﾞｰ閉確認遅延
+JMP @MR006               ; 006
+STG @MR006               ; 006
+MPS
+LDB R1715                ; 元圧確認
+OR R1004                 ; 一時停止ｽｲｯﾁ
+ORB R1015                ; ﾄﾞｱﾛｯｸ信号
+ANL
+JMP @MR007               ; 007
+MPP
+LD R1715                 ; 元圧確認
+ANB R1004                ; 一時停止ｽｲｯﾁ
+AND R1015                ; ﾄﾞｱﾛｯｸ信号
+ANL
+RES R50301               ; 一時停止中　CV停止
+CON
+JMP @MR008               ; 008
+STG @MR007               ; 007
+ANB R1002                ; 操作BOX  運転開始
+RES MR6010               ; ﾄﾞｱﾛｯｸ
+CON
+JMP @MR004               ; 004
+;カバーを閉じた
+STG @MR008               ; 008
+MPS
+LD R50005                ; 原点復帰完了
+AND R50007               ; 原点復帰　完了
+OR R50003                ; 原点復帰
+ANL
+JMP @MR009               ; 009
+MPP
+LDB R50007               ; 原点復帰　完了
+ORB R50005               ; 原点復帰完了
+ANB R50003               ; 原点復帰
+ANL
+JMP @MR104               ; 104
+LDP @MR009               ; 009
+MPS
+AND @MR201               ; UT1 ﾎﾟｰｽﾞ中
+MDSTRT UT1
+MRD
+AND @MR202               ; UT2 ﾎﾟｰｽﾞ中
+MDSTRT UT2
+MRD
+AND @MR203               ; UT3 ﾎﾟｰｽﾞ中
+MDSTRT UT3
+MPP
+AND @MR204               ; UT4 ﾎﾟｰｽﾞ中
+MDSTRT UT4
+STG @MR009               ; 009
+LD _Index
+AND _UT1
+AND _UT2
+AND _UT3
+AND _UT4
+OR CR2002                ; 常時ON
+ANL
+MPS
+LD R50007                ; 原点復帰　完了
+AND R50005               ; 原点復帰完了
+ANL
+JMP @MR010               ; 010
+MPP
+LDB R50007               ; 原点復帰　完了
+ORB R50005               ; 原点復帰完了
+ANL
+JMP @MR104               ; 104
+;最初に、カバーロックして、ＩＮＤＥＸの電源ＯＮ、
+;位置決め解除後、サーボＯＮ（プログラムＮｏ４）
+;その後、プログラムを通常回転（ＣＷ９０°）に戻しておく。
+LDB MR6008               ; ｲﾝﾃﾞｯｸｽ電源ON
+TMH @4 #400              ; ｳｴｲﾄﾀｲﾏｰ04
+STG @MR010               ; 010
+SET MR6109               ; ｲﾝﾃﾞｯｸｽ　非常停止入力
+CON
+TMR @6 #10               ; ｳｴｲﾄﾀｲﾏｰ06
+CON
+AND @T6                  ; ｳｴｲﾄﾀｲﾏｰ06
+ZRES MR6100 MR6105       ; ｲﾝﾃﾞｯｸｽ　ﾌﾟﾛｸﾞﾗﾑ選択　BIT0  ｲﾝﾃﾞｯｸｽ　ﾌﾟﾛｸﾞﾗﾑ設定　一桁目
+CON
+JMP @MR011               ; 011
+STG @MR011               ; 011
+SET MR6106               ; ｲﾝﾃﾞｯｸｽ　ﾘｾｯﾄ
+CON
+MPS
+AND R1107                ; INDEX  起動入力待ち
+JMP @MR012               ; 012
+MPP
+ANB R1107                ; INDEX  起動入力待ち
+TMR @7 #200
+CON
+AND @T7
+RES MR6109               ; ｲﾝﾃﾞｯｸｽ　非常停止入力
+CON
+JMP @MR109
+STG @MR109
+RES MR6106               ; ｲﾝﾃﾞｯｸｽ　ﾘｾｯﾄ
+CON
+TMH @10 #430
+CON
+AND @T10
+JMP @MR010               ; 010
+STG @MR012               ; 012
+RES MR6106               ; ｲﾝﾃﾞｯｸｽ　ﾘｾｯﾄ
+CON
+RES MR6100               ; ｲﾝﾃﾞｯｸｽ　ﾌﾟﾛｸﾞﾗﾑ選択　BIT0
+CON
+RES MR6101               ; ｲﾝﾃﾞｯｸｽ　ﾌﾟﾛｸﾞﾗﾑ選択　BIT1
+CON
+SET MR6102               ; ｲﾝﾃﾞｯｸｽ　ﾌﾟﾛｸﾞﾗﾑ選択　BIT2
+CON
+RES MR6103               ; ｲﾝﾃﾞｯｸｽ　ﾌﾟﾛｸﾞﾗﾑ選択　BIT3
+CON
+TMH @2 #2                ; ｳｴｲﾄﾀｲﾏｰ02
+CON
+AND @T2                  ; ｳｴｲﾄﾀｲﾏｰ02
+JMP @MR013               ; 013
+STG @MR013               ; 013
+SET MR6105               ; ｲﾝﾃﾞｯｸｽ　ﾌﾟﾛｸﾞﾗﾑ設定　一桁目
+CON
+TMH @3 #10               ; ｳｴｲﾄﾀｲﾏｰ03
+CON
+AND @T3                  ; ｳｴｲﾄﾀｲﾏｰ03
+ZRES MR6100 MR6105       ; ｲﾝﾃﾞｯｸｽ　ﾌﾟﾛｸﾞﾗﾑ選択　BIT0  ｲﾝﾃﾞｯｸｽ　ﾌﾟﾛｸﾞﾗﾑ設定　一桁目
+CON
+JMP @MR014               ; 014
+STG @MR014               ; 014
+TMH @12 #2
+CON
+AND @T12
+SET MR6107               ; ｲﾝﾃﾞｯｸｽ　起動入力
+CON
+TMR @5 #10               ; ｳｴｲﾄﾀｲﾏｰ05
+CON
+LDB R1107                ; INDEX  起動入力待ち
+OR @T5                   ; ｳｴｲﾄﾀｲﾏｰ05
+ANL
+JMP @MR015               ; 015
+STG @MR015               ; 015
+RES MR6107               ; ｲﾝﾃﾞｯｸｽ　起動入力
+CON
+JMP @MR100               ; 100
+STG @MR100               ; 100
+MPS
+AND R1107                ; INDEX  起動入力待ち
+JMP @MR101               ; 101
+MPP
+ANB R1107                ; INDEX  起動入力待ち
+TMR @8 #20               ; ｳｴｲﾄﾀｲﾏｰ08
+CON
+AND @T8                  ; ｳｴｲﾄﾀｲﾏｰ08
+JMP @MR105               ; 105
+STG @MR105               ; 105
+TMR @9 #1                ; ｳｴｲﾄﾀｲﾏｰ09
+CON
+AND @T9                  ; ｳｴｲﾄﾀｲﾏｰ09
+JMP @MR010               ; 010
+;プログラムＮｏ．２にする。NCﾌﾟﾛｸﾞﾗﾑA0実行
+;
+STG @MR101               ; 101
+SET MR6106               ; ｲﾝﾃﾞｯｸｽ　ﾘｾｯﾄ
+CON
+JMP @MR102               ; 102
+STG @MR102               ; 102
+AND R1107                ; INDEX  起動入力待ち
+RES MR6106               ; ｲﾝﾃﾞｯｸｽ　ﾘｾｯﾄ
+CON
+MPS
+AND= DM609 #1            ; INDEX位置記憶
+RES MR6100               ; ｲﾝﾃﾞｯｸｽ　ﾌﾟﾛｸﾞﾗﾑ選択　BIT0
+CON
+RES MR6101               ; ｲﾝﾃﾞｯｸｽ　ﾌﾟﾛｸﾞﾗﾑ選択　BIT1
+CON
+RES MR6102               ; ｲﾝﾃﾞｯｸｽ　ﾌﾟﾛｸﾞﾗﾑ選択　BIT2
+CON
+RES MR6103               ; ｲﾝﾃﾞｯｸｽ　ﾌﾟﾛｸﾞﾗﾑ選択　BIT3
+CON
+JMP @MR103               ; 103
+MRD
+AND= DM609 #2            ; INDEX位置記憶
+SET MR6100               ; ｲﾝﾃﾞｯｸｽ　ﾌﾟﾛｸﾞﾗﾑ選択　BIT0
+CON
+RES MR6101               ; ｲﾝﾃﾞｯｸｽ　ﾌﾟﾛｸﾞﾗﾑ選択　BIT1
+CON
+RES MR6102               ; ｲﾝﾃﾞｯｸｽ　ﾌﾟﾛｸﾞﾗﾑ選択　BIT2
+CON
+RES MR6103               ; ｲﾝﾃﾞｯｸｽ　ﾌﾟﾛｸﾞﾗﾑ選択　BIT3
+CON
+JMP @MR103               ; 103
+MRD
+AND= DM609 #3            ; INDEX位置記憶
+RES MR6100               ; ｲﾝﾃﾞｯｸｽ　ﾌﾟﾛｸﾞﾗﾑ選択　BIT0
+CON
+SET MR6101               ; ｲﾝﾃﾞｯｸｽ　ﾌﾟﾛｸﾞﾗﾑ選択　BIT1
+CON
+RES MR6102               ; ｲﾝﾃﾞｯｸｽ　ﾌﾟﾛｸﾞﾗﾑ選択　BIT2
+CON
+RES MR6103               ; ｲﾝﾃﾞｯｸｽ　ﾌﾟﾛｸﾞﾗﾑ選択　BIT3
+CON
+JMP @MR103               ; 103
+MPP
+AND= DM609 #4            ; INDEX位置記憶
+SET MR6100               ; ｲﾝﾃﾞｯｸｽ　ﾌﾟﾛｸﾞﾗﾑ選択　BIT0
+CON
+SET MR6101               ; ｲﾝﾃﾞｯｸｽ　ﾌﾟﾛｸﾞﾗﾑ選択　BIT1
+CON
+RES MR6102               ; ｲﾝﾃﾞｯｸｽ　ﾌﾟﾛｸﾞﾗﾑ選択　BIT2
+CON
+RES MR6103               ; ｲﾝﾃﾞｯｸｽ　ﾌﾟﾛｸﾞﾗﾑ選択　BIT3
+CON
+JMP @MR103               ; 103
+STG @MR103               ; 103
+TMH @11 #2               ; ｳｴｲﾄﾀｲﾏｰ11
+CON
+AND @T11                 ; ｳｴｲﾄﾀｲﾏｰ11
+SET MR6105               ; ｲﾝﾃﾞｯｸｽ　ﾌﾟﾛｸﾞﾗﾑ設定　一桁目
+CON
+TMH @13 #2
+CON
+AND @T13
+ZRES MR6100 MR6105       ; ｲﾝﾃﾞｯｸｽ　ﾌﾟﾛｸﾞﾗﾑ選択　BIT0  ｲﾝﾃﾞｯｸｽ　ﾌﾟﾛｸﾞﾗﾑ設定　一桁目
+CON
+JMP @MR110
+STG @MR110
+TMH @15 #2
+CON
+AND @T15
+SET MR6107               ; ｲﾝﾃﾞｯｸｽ　起動入力
+CON
+TMR @14 #10
+CON
+LDB R1107                ; INDEX  起動入力待ち
+OR @T14
+ANL
+JMP @MR111
+STG @MR111
+RES MR6107               ; ｲﾝﾃﾞｯｸｽ　起動入力
+CON
+AND R1106                ; INDEX　位置決完了
+SET MR6108               ; ｲﾝﾃﾞｯｸｽ　ｱﾝｻｰ入力
+CON
+JMP @MR112
+STG @MR112
+ANB R1106                ; INDEX　位置決完了
+RES MR6108               ; ｲﾝﾃﾞｯｸｽ　ｱﾝｻｰ入力
+CON
+JMP @MR104               ; 104
+STG @MR104               ; 104
+RES MR611                ; 一時停止解除中
+CON
+RES @MR201               ; UT1 ﾎﾟｰｽﾞ中
+CON
+RES @MR202               ; UT2 ﾎﾟｰｽﾞ中
+CON
+RES @MR203               ; UT3 ﾎﾟｰｽﾞ中
+CON
+RES @MR204               ; UT4 ﾎﾟｰｽﾞ中
+CON
+RES R51204               ; ｴﾗｰﾘｾｯﾄ裏入力
+CON
+RES R50300               ; 一時停止中
+CON
+RES R50208
+CON
+JMP @MR000               ; PAUSE　　　条件確認
+END
+ENDH

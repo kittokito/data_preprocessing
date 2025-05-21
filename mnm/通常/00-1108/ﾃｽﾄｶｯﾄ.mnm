@@ -1,0 +1,250 @@
+DEVICE:51
+;MODULE:ﾃｽﾄｶｯﾄ
+;MODULE_TYPE:0
+;非常停止
+LD= DM4000 #370          ; 現在表示中画面
+OUT @MR002
+CON
+DIFU @MR003
+LD R50010                ; 非常停止
+ORB R1203                ; 装置電源ON
+OR R49900                ; 非常停止2
+OR @MR001                ; 001
+ORF @MR002
+ZRES @MR004 @MR2915      ; ﾃｽﾄｶｯﾄ動作完了
+CON
+RES R15500               ; ﾃｽﾄｶｯﾄ1回目終了ﾌﾗｸﾞ
+CON
+RES R15200               ; ﾃｽﾄｶｯﾄ動作中
+CON
+RES MR2606               ; ｶｯﾀｰ刃回転ﾓｰﾀ　回転
+CON
+RES R15300               ; 管投入要求
+CON
+ANB @MR003
+OUT @MR001               ; 001
+TMR @0 #5                ; Wait timer00
+LD @T0                   ; Wait timer00
+MDSTOP ﾃｽﾄｶｯﾄ
+;MANUAL：ﾃｽﾄｶｯﾄ運転ﾒｲﾝ
+;
+LD R50002                ; 手動　MODE
+AND R15200               ; ﾃｽﾄｶｯﾄ動作中
+ANP R1003                ; ｻｲｸﾙ停止ｽｲｯﾁ
+SET R15201               ; 停止動作
+LD R50002                ; 手動　MODE
+ANB R15200               ; ﾃｽﾄｶｯﾄ動作中
+ANB R50204               ; ﾃｽﾄｶｯﾄ Do
+SET R50204               ; ﾃｽﾄｶｯﾄ Do
+CON
+SET @MR2000              ; ﾃｽﾄｶｯﾄ動作開始
+LDB R50003               ; 原点復帰
+ANB R50001               ; 自動運転中
+ANB R50002               ; 手動　MODE
+AND @MR2915              ; ﾃｽﾄｶｯﾄ動作完了
+RES R50204               ; ﾃｽﾄｶｯﾄ Do
+CON
+RES @MR2915              ; ﾃｽﾄｶｯﾄ動作完了
+;ﾃｽﾄｶｯﾄ運転開始
+;
+STG @MR2000              ; ﾃｽﾄｶｯﾄ動作開始
+ANB R50008               ; 全体ERROR
+SET R15200               ; ﾃｽﾄｶｯﾄ動作中
+CON
+MPS
+AND<=.D CM2020 #78000    ; X軸現在位置
+RES MR2413               ; 生地管ｸﾗﾝﾌﾟ2（ﾍﾞｰｽ側）_上昇行
+CON
+SET MR2412               ; 生地管ｸﾗﾝﾌﾟ2（ﾍﾞｰｽ側）_下降行
+CON
+RES MR2409               ; 給材ｻﾎﾟｰﾄ_下降行
+CON
+SET MR2408               ; 給材ｻﾎﾟｰﾄ_上昇行
+CON
+AND T1110                ; 給材ｻﾎﾟｰﾄ（給材側）_上昇限補助Ｔ
+AND T1112                ; 給材ｻﾎﾟｰﾄ（反給材側）_上昇限補助
+AND T1200                ; 生地管ｸﾗﾝﾌﾟ2（ﾍﾞｰｽ側）_下限補助T
+JMP @MR2002
+MPP
+AND>.D CM2020 #78000     ; X軸現在位置
+RES MR2412               ; 生地管ｸﾗﾝﾌﾟ2（ﾍﾞｰｽ側）_下降行
+CON
+SET MR2413               ; 生地管ｸﾗﾝﾌﾟ2（ﾍﾞｰｽ側）_上昇行
+CON
+RES MR2408               ; 給材ｻﾎﾟｰﾄ_上昇行
+CON
+SET MR2409               ; 給材ｻﾎﾟｰﾄ_下降行
+CON
+AND T1111                ; 給材ｻﾎﾟｰﾄ（給材側）_下降限補助Ｔ
+AND T1113                ; 給材ｻﾎﾟｰﾄ（反給材側）_下降限補助
+AND T1201                ; 生地管ｸﾗﾝﾌﾟ2（ﾍﾞｰｽ側）_上限補助T
+JMP @MR2002
+STG @MR2002
+ANB R50008               ; 全体ERROR
+RES MR2407               ; 終端側生地管ｸﾗﾝﾌﾟ_上昇行
+CON
+SET MR2406               ; 終端側生地管ｸﾗﾝﾌﾟ_下降行
+CON
+AND T1108                ; 終端側生地管ｸﾗﾝﾌﾟ_下降限補助Ｔ
+JMP @MR2003
+STG @MR2003
+ANB R50008               ; 全体ERROR
+SET R15300               ; 管投入要求
+CON
+TMR @1 #2
+CON
+AND @T1
+RES MR2606               ; ｶｯﾀｰ刃回転ﾓｰﾀ　回転
+CON
+RES MR2605               ; 生地管回転ﾓｰﾀ　回転
+CON
+JMP @MR2004
+STG @MR2004
+MPS
+LDB R15201               ; 停止動作
+AND<.D DM6710 #175000    ; 次回移動位置
+ANL
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+JMP @MR2006
+MPP
+LD R15201                ; 停止動作
+OR>=.D DM6710 #175000    ; 次回移動位置
+ANL
+JMP @MR2006
+STG @MR2006
+ANB R50008               ; 全体ERROR
+SET MR2606               ; ｶｯﾀｰ刃回転ﾓｰﾀ　回転
+CON
+RES R15300               ; 管投入要求
+CON
+MPS
+ANB R15201               ; 停止動作
+SET MR2605               ; 生地管回転ﾓｰﾀ　回転
+CON
+TMR @2 #10
+CON
+AND @T2
+JMP @MR2008
+MPP
+LD R15201                ; 停止動作
+OR>=.D DM6710 #175000    ; 次回移動位置
+ANL
+RES MR2605               ; 生地管回転ﾓｰﾀ　回転
+CON
+RES MR2606               ; ｶｯﾀｰ刃回転ﾓｰﾀ　回転
+CON
+RES R15201               ; 停止動作
+CON
+JMP @MR2200
+STG @MR2008
+MPS
+ANB R15500               ; ﾃｽﾄｶｯﾄ1回目終了ﾌﾗｸﾞ
+@SET @MR2800             ; ﾎﾟｲﾝﾄ1　移動要求
+CON
+AND CR3009               ; X軸ﾊﾟﾙｽ出力中/緊急停止
+JMP @MR2010
+MPP
+AND R15500               ; ﾃｽﾄｶｯﾄ1回目終了ﾌﾗｸﾞ
+@SET @MR2801             ; ﾎﾟｲﾝﾄ2　移動要求
+CON
+AND CR3009               ; X軸ﾊﾟﾙｽ出力中/緊急停止
+JMP @MR2010
+STG @MR2010
+RES @MR2800              ; ﾎﾟｲﾝﾄ1　移動要求
+CON
+RES @MR2801              ; ﾎﾟｲﾝﾄ2　移動要求
+CON
+AND CR3006               ; X軸位置決め完了ﾘﾚｰ
+RES CR3006               ; X軸位置決め完了ﾘﾚｰ
+CON
+JMP @MR2012
+STG @MR2012
+ANB R50008               ; 全体ERROR
+MPS
+AND<=.D CM2020 #78000    ; X軸現在位置
+RES MR2411               ; 生地管ｸﾗﾝﾌﾟ1_上昇行
+CON
+SET MR2410               ; 生地管ｸﾗﾝﾌﾟ1_下降行
+CON
+RES MR2415               ; 切断側生地管ｸﾗﾝﾌﾟ_上昇行
+CON
+SET MR2414               ; 切断側生地管ｸﾗﾝﾌﾟ_下降行
+CON
+AND T1114                ; 生地管ｸﾗﾝﾌﾟ1_下降限補助Ｔ
+AND T1400                ; 切断側生地管ｸﾗﾝﾌﾟ_下降限補助Ｔ
+JMP @MR2014
+MPP
+AND>.D CM2020 #78000     ; X軸現在位置
+RES MR2410               ; 生地管ｸﾗﾝﾌﾟ1_下降行
+CON
+SET MR2411               ; 生地管ｸﾗﾝﾌﾟ1_上昇行
+CON
+RES MR2415               ; 切断側生地管ｸﾗﾝﾌﾟ_上昇行
+CON
+SET MR2414               ; 切断側生地管ｸﾗﾝﾌﾟ_下降行
+CON
+AND T1115                ; 生地管ｸﾗﾝﾌﾟ1_上昇限補助Ｔ
+AND T1400                ; 切断側生地管ｸﾗﾝﾌﾟ_下降限補助Ｔ
+JMP @MR2014
+STG @MR2014
+SET @MR2500              ; ｶｯﾀｰｶﾑﾓｰﾀ1回転停止
+CON
+JMP @MR2100
+STG @MR2100
+AND @MR2502              ; ｶｯﾀｰｶﾑ一回転停止完了
+RES @MR2502              ; ｶｯﾀｰｶﾑ一回転停止完了
+CON
+JMP @MR2102
+STG @MR2102
+ANB R50008               ; 全体ERROR
+RES MR2410               ; 生地管ｸﾗﾝﾌﾟ1_下降行
+CON
+SET MR2411               ; 生地管ｸﾗﾝﾌﾟ1_上昇行
+CON
+RES MR2414               ; 切断側生地管ｸﾗﾝﾌﾟ_下降行
+CON
+SET MR2415               ; 切断側生地管ｸﾗﾝﾌﾟ_上昇行
+CON
+AND T1115                ; 生地管ｸﾗﾝﾌﾟ1_上昇限補助Ｔ
+AND T1401                ; 切断側生地管ｸﾗﾝﾌﾟ_上昇限補助Ｔ
+SET R15500               ; ﾃｽﾄｶｯﾄ1回目終了ﾌﾗｸﾞ
+CON
+JMP @MR2000              ; ﾃｽﾄｶｯﾄ動作開始
+STG @MR2200
+RES R50007               ; 原点復帰　完了
+CON
+RES R15200               ; ﾃｽﾄｶｯﾄ動作中
+CON
+SET R50414               ; ﾃｽﾄｶｯﾄ　1ｻｲｸﾙ動作終了
+CON
+SET @MR2915              ; ﾃｽﾄｶｯﾄ動作完了
+CON
+ENDS
+;ｶｯﾀｰｶﾑﾓｰﾀ1回転停止動作
+;
+STG @MR2500              ; ｶｯﾀｰｶﾑﾓｰﾀ1回転停止
+SET MR2607               ; ｶｯﾀｰｶﾑ回転ﾓｰﾀ　回転
+CON
+ANP R1408                ; ｶｯﾄ完了ﾀｲﾐﾝｸﾞｾﾝｻ
+JMP @MR2501
+STG @MR2501
+TMR #396 #0
+CON
+AND T396
+RES MR2607               ; ｶｯﾀｰｶﾑ回転ﾓｰﾀ　回転
+CON
+SET @MR2502              ; ｶｯﾀｰｶﾑ一回転停止完了
+CON
+ENDS
+;定寸送りｻｰﾎﾞ動作
+;
+LD R60000                ; 定寸送りｻｰﾎﾞ動作可
+AND @MR2800              ; ﾎﾟｲﾝﾄ1　移動要求
+PLSX #1
+LD R60000                ; 定寸送りｻｰﾎﾞ動作可
+AND @MR2801              ; ﾎﾟｲﾝﾄ2　移動要求
+PLSX #2
+END
+ENDH

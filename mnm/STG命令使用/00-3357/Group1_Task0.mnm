@@ -1,0 +1,5813 @@
+DEVICE:53
+;MODULE:Group1_Task0
+;MODULE_TYPE:0
+;SCRIPT_TYPE:
+;OneSystem Main-Module
+;
+;-----------------------------------------
+;ModuleName	:	Group1_Task0
+;ModuleType	:	Main Module
+;Line		:　	μTFP-2ﾎﾙﾀﾞｰAssyﾗｲﾝ
+;Cell		:	3-2(ｶｼﾒ溶接機)
+;Function	:	AUTO(Main1)
+;　　　　　　:	AUTO(Main2)RB1 ﾎﾙﾀﾞｰSub供給PP
+;-----------------------------------------
+;<<Task LocalDevice>>
+;/*項目			/*割付ｴﾘｱ				/*備考
+;---------------------------------------------------------------------			
+;Emergency		@MR000～@MR015			Emergency処理時RESET禁止ｴﾘｱ
+;Free			@MR100～@MR915			ﾕｰｻﾞｰﾌﾘｰｴﾘｱ
+;HOME			@MR1000～@MR1515		HOME動作時使用ｴﾘｱ
+;MAINTENANCE		@MR2000～@MR2915		MAINTE動作時使用ｴﾘｱ
+;AUTO(Main1)		@MR3000～@MR3915		AUTO(Main1)動作時使用ｴﾘｱ
+;	(Main2)		@MR4000～@MR4415		AUTO(Main2)動作時使用ｴﾘｱ
+;SubRoutine		@MR5000～@MR6415		ｻﾌﾞﾙｰﾁﾝ共通動作使用ｴﾘｱ
+;----------------------------------------------------------------------
+;<h1/>Device_Init/ﾃﾞﾊﾞｲｽ初期化
+;[内容]
+;・非常停止、優先ｴﾗｰ発生時に初期化したいﾃﾞﾊﾞｲｽを指定して下さい
+;※本Taskで使用するﾛｰｶﾙﾃﾞﾊﾞｲｽなど
+;※STG～JMPにて使用しているﾃﾞﾊﾞｲｽは必須
+LDP R46104               ; _非常停止中　ﾓｰﾄﾞﾌﾗｸﾞ
+ZRES @MR100 @MR6415      ; Task0 ERROR
+;<h1/>Task_Monitor/ﾀｽｸﾓﾆﾀｰ
+LD CR2002                ; 常時ON
+FLIK #50 #50 @MR000
+LD= DM60000 #0           ; TaskNo /ERROR_DISP
+AND R46208               ; _Group1　ｴﾗｰ発生中
+OUT @MR001               ; TASK0 ERROR
+;ON STG Main1
+;TYPE EM600.U,EM601.U,@MR000.U,@MR3000.U
+;
+;FOR EM600 = EM600 TO 160 STEP 16
+;	IF @MR3000:EM600 <> 0 THEN
+;		BREAK
+;	END IF	
+;NEXT
+;	
+;IF EM600 < 160 THEN
+;	EM601 = (EM600 / 16) * 100 + DMX(@MR3000:EM600) + #3000
+;END IF		
+;		
+;EM600 = EM600 + 16		
+;IF EM600 > 160 THEN		
+;	EM600 = 0	
+;END IF
+LDP @MR000
+NCJ #1000
+;TYPE EM600.U,EM601.U,@MR000.U,@MR3000.U
+;
+;FOR EM600 = EM600 TO 160 STEP 16
+;
+LD CR2002                ; 常時ON
+MOV EM600 EM600          ; Task0 Main1@MR  Task0 Main1@MR
+LABEL #2000
+LD> EM600 #160           ; Task0 Main1@MR
+CJ #2001
+;	IF @MR3000:EM600 <> 0 THEN
+;
+LD CR2002                ; 常時ON
+LDA EM600                ; Task0 Main1@MR
+CON
+EXT
+CON
+STA.L Z12
+LD<> @MR3000:Z12 #0      ; AUTO Main1
+NCJ #2002
+;		BREAK
+;
+LD CR2002                ; 常時ON
+CJ #2003
+;	END IF	
+;
+LABEL #2002
+;NEXT
+;
+LD CR2002                ; 常時ON
+LDA EM600                ; Task0 Main1@MR
+CON
+ADD #16
+CON
+STA EM600                ; Task0 Main1@MR
+LDB CR2009               ; 演算結果が負
+CJ #2000
+LABEL #2003
+LABEL #2001
+;IF EM600 < 160 THEN
+;
+LD< EM600 #160           ; Task0 Main1@MR
+NCJ #2004
+;	EM601 = (EM600 / 16) * 100 + DMX(@MR3000:EM600) + #3000
+;
+LD CR2002                ; 常時ON
+LDA EM600                ; Task0 Main1@MR
+CON
+EXT
+CON
+STA.L Z12
+CON
+LDA @MR3000:Z12          ; AUTO Main1
+CON
+DMX
+CON
+STA @VM0
+CON
+LDA EM600                ; Task0 Main1@MR
+CON
+EXT
+CON
+EXT.L
+CON
+DIV.L +16
+CON
+MUL.L +100
+CON
+STA.L @VM1
+CON
+LDA @VM0
+CON
+EXT
+CON
+ADD.L @VM1
+CON
+ADD.L +3000
+CON
+STA EM601                ; Task0 Main1@MR
+;END IF		
+;
+LABEL #2004
+;EM600 = EM600 + 16		
+;
+LD CR2002                ; 常時ON
+LDA EM600                ; Task0 Main1@MR
+CON
+EXT
+CON
+ADD.L +16
+CON
+STA EM600                ; Task0 Main1@MR
+;IF EM600 > 160 THEN		
+;
+LD> EM600 #160           ; Task0 Main1@MR
+NCJ #2005
+;	EM600 = 0	
+;
+LD CR2002                ; 常時ON
+MOV #0 EM600             ; Task0 Main1@MR
+;END IF
+LABEL #2005
+LABEL #1000
+;
+;ON STG Main2
+;TYPE EM602.U,EM603.U,@MR4000.U
+;
+;FOR EM602 = EM602 TO 80 STEP 16
+;	IF @MR4000:EM602 <> 0 THEN
+;		BREAK
+;	END IF	
+;NEXT	
+;
+;IF EM602 < 80 THEN
+;	EM603 = (EM602 / 16) * 100 + DMX(@MR4000:EM602) + #4000
+;END IF
+;
+;EM602 = EM602 + 16		
+;
+;IF EM602 > 80 THEN
+;	EM602 = 0	
+;END IF
+LDP @MR000
+NCJ #1001
+;TYPE EM602.U,EM603.U,@MR4000.U
+;
+;FOR EM602 = EM602 TO 80 STEP 16
+;
+LD CR2002                ; 常時ON
+MOV EM602 EM602          ; Task0 Main2@MR  Task0 Main2@MR
+LABEL #2006
+LD> EM602 #80            ; Task0 Main2@MR
+CJ #2007
+;	IF @MR4000:EM602 <> 0 THEN
+;
+LD CR2002                ; 常時ON
+LDA EM602                ; Task0 Main2@MR
+CON
+EXT
+CON
+STA.L Z12
+LD<> @MR4000:Z12 #0      ; AUTO Main2
+NCJ #2008
+;		BREAK
+;
+LD CR2002                ; 常時ON
+CJ #2009
+;	END IF	
+;
+LABEL #2008
+;NEXT	
+;
+LD CR2002                ; 常時ON
+LDA EM602                ; Task0 Main2@MR
+CON
+ADD #16
+CON
+STA EM602                ; Task0 Main2@MR
+LDB CR2009               ; 演算結果が負
+CJ #2006
+LABEL #2009
+LABEL #2007
+;IF EM602 < 80 THEN
+;
+LD< EM602 #80            ; Task0 Main2@MR
+NCJ #2010
+;	EM603 = (EM602 / 16) * 100 + DMX(@MR4000:EM602) + #4000
+;
+LD CR2002                ; 常時ON
+LDA EM602                ; Task0 Main2@MR
+CON
+EXT
+CON
+STA.L Z12
+CON
+LDA @MR4000:Z12          ; AUTO Main2
+CON
+DMX
+CON
+STA @VM3
+CON
+LDA EM602                ; Task0 Main2@MR
+CON
+EXT
+CON
+EXT.L
+CON
+DIV.L +16
+CON
+MUL.L +100
+CON
+STA.L @VM4
+CON
+LDA @VM3
+CON
+EXT
+CON
+ADD.L @VM4
+CON
+ADD.L +4000
+CON
+STA EM603                ; Task0 Main2@MR
+;END IF
+;
+LABEL #2010
+;EM602 = EM602 + 16		
+;
+LD CR2002                ; 常時ON
+LDA EM602                ; Task0 Main2@MR
+CON
+EXT
+CON
+ADD.L +16
+CON
+STA EM602                ; Task0 Main2@MR
+;IF EM602 > 80 THEN
+;
+LD> EM602 #80            ; Task0 Main2@MR
+NCJ #2011
+;	EM602 = 0	
+;
+LD CR2002                ; 常時ON
+MOV #0 EM602             ; Task0 Main2@MR
+;END IF
+LABEL #2011
+LABEL #1001
+;
+;ON STG SubRoutine
+;TYPE EM604.U,EM605.U,@MR4500.U
+;	
+;FOR EM604 = EM604 TO 320 STEP 16
+;	IF @MR4500:EM604 <> 0 THEN
+;		BREAK
+;	END IF	
+;NEXT
+;		
+;IF EM604 < 320 THEN
+;	EM605 = (EM604 / 16) * 100 + DMX(@MR4500:EM604) + #4500
+;END IF
+;		
+;EM604 = EM604 + 16	
+;
+;IF EM604 > 320 THEN
+;   EM604 = 0
+;END IF
+LDP @MR000
+NCJ #1002
+;TYPE EM604.U,EM605.U,@MR4500.U
+;
+;FOR EM604 = EM604 TO 320 STEP 16
+;
+LD CR2002                ; 常時ON
+MOV EM604 EM604          ; Task0 Sub@MR  Task0 Sub@MR
+LABEL #2012
+LD> EM604 #320           ; Task0 Sub@MR
+CJ #2013
+;	IF @MR4500:EM604 <> 0 THEN
+;
+LD CR2002                ; 常時ON
+LDA EM604                ; Task0 Sub@MR
+CON
+EXT
+CON
+STA.L Z12
+LD<> @MR4500:Z12 #0
+NCJ #2014
+;		BREAK
+;
+LD CR2002                ; 常時ON
+CJ #2015
+;	END IF	
+;
+LABEL #2014
+;NEXT
+;
+LD CR2002                ; 常時ON
+LDA EM604                ; Task0 Sub@MR
+CON
+ADD #16
+CON
+STA EM604                ; Task0 Sub@MR
+LDB CR2009               ; 演算結果が負
+CJ #2012
+LABEL #2015
+LABEL #2013
+;IF EM604 < 320 THEN
+;
+LD< EM604 #320           ; Task0 Sub@MR
+NCJ #2016
+;	EM605 = (EM604 / 16) * 100 + DMX(@MR4500:EM604) + #4500
+;
+LD CR2002                ; 常時ON
+LDA EM604                ; Task0 Sub@MR
+CON
+EXT
+CON
+STA.L Z12
+CON
+LDA @MR4500:Z12
+CON
+DMX
+CON
+STA @VM6
+CON
+LDA EM604                ; Task0 Sub@MR
+CON
+EXT
+CON
+EXT.L
+CON
+DIV.L +16
+CON
+MUL.L +100
+CON
+STA.L @VM7
+CON
+LDA @VM6
+CON
+EXT
+CON
+ADD.L @VM7
+CON
+ADD.L +4500
+CON
+STA EM605                ; Task0 Sub@MR
+;END IF
+;
+LABEL #2016
+;EM604 = EM604 + 16	
+;
+LD CR2002                ; 常時ON
+LDA EM604                ; Task0 Sub@MR
+CON
+EXT
+CON
+ADD.L +16
+CON
+STA EM604                ; Task0 Sub@MR
+;IF EM604 > 320 THEN
+;
+LD> EM604 #320           ; Task0 Sub@MR
+NCJ #2017
+;   EM604 = 0
+;
+LD CR2002                ; 常時ON
+MOV #0 EM604             ; Task0 Sub@MR
+;END IF
+LABEL #2017
+LABEL #1002
+;
+;<h1/>Task_Init/ﾀｽｸ初期化
+;[本STG内容]
+;・本Task起動時に必要な初期化処理を記述して下さい
+;・起動Taskの全Init処理終了後、Task_StartのSTGが起動します
+STG LR800                ; _Grp1_Task0_Init.STG
+ZRES @MR100 @MR6415      ; Task0 ERROR
+CON
+ENDS
+;<h1/>Task_Start/ﾀｽｸ開始
+;[本STG内容]
+;・Task起動後、以下運転ﾓｰﾄﾞに従い、各STGにJMPします
+;【HOME】	→	LR5200
+;【AUTO】	→	LR5400
+;【MAINTE】	→	LR5600
+;・本STGは追記、修正不要です
+STG LR400                ; _Grp1_Task0_Start.STG
+MPS
+AND R46101               ; _原点復帰中　ﾓｰﾄﾞﾌﾗｸﾞ
+JMP LR5200               ; _Grp1_Task0_HOME.STG
+MRD
+AND R46100               ; _自動運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+JMP LR5400               ; _Grp1_Task0_AUTO.STG
+MPP
+AND R46102               ; _ﾒﾝﾃﾅﾝｽ運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+JMP LR5600               ; _Grp1_Task0_MAINTE.STG
+;Cylinder ERROR 監視
+LDP MR005
+ZRES MR4000 MR4900       ; ｻﾌﾞｶﾊﾞｰSWBOX1(ｶｼﾒUT1) ｽﾀｰﾄERR  ﾍｯﾄﾞｻﾌﾞ供給PP_圧力ｾﾝｻ1_OUT1ERR
+CON
+RES R42600               ; _Grp1_Task0_ﾎﾟｰｽﾞ許可
+CON
+RES R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+;<h1/>Task_Finish/ﾀｽｸ終了
+;[本STG内容]
+;・各Taskの終了STGになります
+;・運転ﾓｰﾄﾞに係わらず終了時は本STGを経由して終了して下さい
+;・本STGは追記、修正不要です
+STG LR600                ; _Grp1_Task0_Fin.STG
+MPS
+ZRES @MR6200 @MR6215
+CON
+ZRES @MR100 @MR6415      ; Task0 ERROR
+CON
+RES R41000               ; _Grp1_Task0_起動中ﾌﾗｸﾞ
+CON
+ENDS
+MRD
+ANB CR2002               ; 常時ON
+RES R41202               ; _Grp2_Task2_起動中ﾌﾗｸﾞ
+CON
+RES R41203               ; _Grp2_Task3_起動中ﾌﾗｸﾞ
+CON
+RES R41204               ; _Grp2_Task4_起動中ﾌﾗｸﾞ
+CON
+RES R41205               ; _Grp2_Task5_起動中ﾌﾗｸﾞ
+CON
+RES R41206               ; _Grp2_Task6_起動中ﾌﾗｸﾞ
+CON
+ENDS
+MPP
+ANB CR2002               ; 常時ON
+RES R41207               ; _Grp2_Task7_起動中ﾌﾗｸﾞ
+CON
+RES R41208               ; _Grp2_Task8_起動中ﾌﾗｸﾞ
+CON
+RES R41209               ; _Grp2_Task9_起動中ﾌﾗｸﾞ
+CON
+ENDS
+;<h1/>HOME/原点復帰
+;[本STG内容]
+;・STG @MR1000の続きから各Taskの原点復帰動作を記述する
+;・動作終了時は@MR1515にJMPする事
+STG LR5200               ; _Grp1_Task0_HOME.STG
+SET @MR1002              ; HOME中
+CON
+JMP @MR1000              ; HOME
+STG @MR1000              ; HOME
+JMP @MR1005
+LD DM10507.1             ; HEND_原復完了 RB1
+MPS
+LDA.L EM10000            ; RB1目標値（下位）1
+CON
+SUB DM25000              ; RB用 Pos位置の 監視幅
+CON
+STA.L DM25100
+CON
+LDA EM10000              ; RB1目標値（下位）1
+CON
+ADD DM25000              ; RB用 Pos位置の 監視幅
+CON
+STA.L DM25102
+CON
+AND>= DM10500 DM25100    ; RB1POS
+AND<= DM10500 DM25102    ; RB1POS
+OUT @MR1003
+MPP
+MOV.L +100 DM25000       ; RB用 Pos位置の 監視幅
+STG @MR1005
+JMP @MR1006
+STG @MR1006
+MPS
+ANB MR4609               ; ﾎﾙﾀﾞｻﾌﾞ供給PP上下 上限ERR
+SET MR7609               ; ﾎﾙﾀﾞｻﾌﾞ供給PP上下 上昇
+CON
+RES MR7608               ; ﾎﾙﾀﾞｻﾌﾞ供給PP上下 下降
+CON
+AND R4609                ; ﾎﾙﾀﾞｻﾌﾞ供給PP上下 上限
+ANB R4608                ; ﾎﾙﾀﾞｻﾌﾞ供給PP上下 下限
+JMP @MR1007
+MPP
+LD MR4609                ; ﾎﾙﾀﾞｻﾌﾞ供給PP上下 上限ERR
+AND R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+ANL
+SET @MR1900              ; Main1 HALT許可
+;RB4原点復帰
+STG @MR1007
+MPS
+LDB DM10531.3            ; ALM_異常 RB4
+ANB DM10531.7            ; ALM 軽故障 RB4
+AND DM10531.14           ; PWR_準備完了 RB4
+ANB DM10531.15           ; MGS_非常停止 RB4
+ANL
+JMP @MR1008
+MPP
+AND DM10531.3            ; ALM_異常 RB4
+SET DM10731.3            ; RES(ﾘｾｯﾄ) RB4
+CON
+JMP @MR1007
+STG @MR1008
+ANB R35310               ; During RB4 HOME
+RES DM10731.3            ; RES(ﾘｾｯﾄ) RB4
+CON
+SET DM10731.4            ; SON(ｻｰﾎﾞON指令) RB4
+CON
+JMP @MR1009
+STG @MR1009
+AND DM10531.4            ; SV_ｻｰﾎﾞON中 RB4
+ANB R35308               ; RB4 HOME
+ANB R35310               ; During RB4 HOME
+MPS
+LD MR3003                ; RB4 起動IL　ON=起動可能
+LDB DM10531.1            ; HEND_原復完了 RB4
+OR MR18403               ; 【sw1】RB4_HOME_ALM
+ANL
+ANL
+SET R35308               ; RB4 HOME
+CON
+JMP @MR1010
+MPP
+LD DM10531.1             ; HEND_原復完了 RB4
+ANB MR18403              ; 【sw1】RB4_HOME_ALM
+ANL
+JMP @MR1300
+STG @MR1010
+AND R35310               ; During RB4 HOME
+RES MR18403              ; 【sw1】RB4_HOME_ALM
+CON
+JMP @MR1011
+STG @MR1011
+ANB R35310               ; During RB4 HOME
+AND R35309               ; RB4 HOME END
+MPS
+LDB R35303               ; RB4Alarm
+ANB MR18403              ; 【sw1】RB4_HOME_ALM
+ANL
+RES R35309               ; RB4 HOME END
+CON
+JMP @MR1300
+MPP
+AND R35303               ; RB4Alarm
+@SET MR13204             ; RB4原点復帰ｴﾗｰ
+CON
+AND MR18403              ; 【sw1】RB4_HOME_ALM
+RES R35309               ; RB4 HOME END
+CON
+JMP @MR1009
+;RB4 作業原点(P1)へ移動
+STG @MR1300
+TMH #726 #2              ; RB4
+CON
+AND T726                 ; RB4
+JMP @MR1301
+STG @MR1301
+ANB MR16804              ; RB4ｴﾗｰ検出
+ANB R35300               ; RB4 MOVE
+ANB R35302               ; During RB4 MOVE
+ANB R35301               ; RB4 MOVE END
+MPS
+LD= #1 EM1306            ; RB4Target Pos
+AND MR3003               ; RB4 起動IL　ON=起動可能
+ANL
+SET R35300               ; RB4 MOVE
+CON
+JMP @MR1302
+MPP
+DW #1 EM1306             ; RB4Target Pos
+STG @MR1302
+AND R35301               ; RB4 MOVE END
+MPS
+LDB R35303               ; RB4Alarm
+AND T2060                ; RB4 Pos.1　作業原点高さ
+ANL
+RES R35301               ; RB4 MOVE END
+CON
+JMP @MR1303
+MPP
+AND R35303               ; RB4Alarm
+@SET MR16804             ; RB4ｴﾗｰ検出
+CON
+RES R35301               ; RB4 MOVE END
+CON
+JMP @MR1301
+STG @MR1303
+JMP @MR1012
+;COFｶﾞｲﾄﾞ開
+STG @MR1012
+MPS
+LDB MR4205               ; M/S1 COFｶﾞｲﾄﾞ用ﾁｬｯｸ 開限ERR
+ANB MR4405               ; M/S3 COFｶﾞｲﾄﾞ用ﾁｬｯｸ 開限ERR
+ANL
+RES MR7204               ; M/S1 COFｶﾞｲﾄﾞ用ﾁｬｯｸ 閉
+CON
+RES MR7404               ; M/S3 COFｶﾞｲﾄﾞ用ﾁｬｯｸ 閉
+CON
+AND R4205                ; M/S1 COFｶﾞｲﾄﾞ用ﾁｬｯｸ 開限
+ANB R4204                ; M/S1 COFｶﾞｲﾄﾞ用ﾁｬｯｸ 閉限
+AND R4405                ; M/S3 COFｶﾞｲﾄﾞ用ﾁｬｯｸ 開限
+ANB R4404                ; M/S3 COFｶﾞｲﾄﾞ用ﾁｬｯｸ 閉限
+JMP @MR1013
+MPP
+LD MR4405                ; M/S3 COFｶﾞｲﾄﾞ用ﾁｬｯｸ 開限ERR
+OR MR4205                ; M/S1 COFｶﾞｲﾄﾞ用ﾁｬｯｸ 開限ERR
+AND R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+ANL
+SET @MR1900              ; Main1 HALT許可
+;COFｶﾞｲﾄﾞ後退
+STG @MR1013
+MPS
+LDB MR4207               ; M/S1 COFｶﾞｲﾄﾞ前後 戻し側ERR
+ANB MR4407               ; M/S3 COFｶﾞｲﾄﾞ前後 戻し側ERR
+ANL
+SET MR7207               ; M/S1 COFｶﾞｲﾄﾞ前後 戻し側
+CON
+RES MR7206               ; M/S1 COFｶﾞｲﾄﾞ前後 ﾜｰｸ保持側
+CON
+SET MR7407               ; M/S3 COFｶﾞｲﾄﾞ前後 戻し側
+CON
+RES MR7406               ; M/S3 COFｶﾞｲﾄﾞ前後 ﾜｰｸ保持側
+CON
+AND R4207                ; M/S1 COFｶﾞｲﾄﾞ前後 戻し側
+ANB R4206                ; M/S1 COFｶﾞｲﾄﾞ前後 ﾜｰｸ保持側
+AND R4407                ; M/S3 COFｶﾞｲﾄﾞ前後 戻し側
+ANB R4406                ; M/S3 COFｶﾞｲﾄﾞ前後 ﾜｰｸ保持側
+JMP @MR1014
+MPP
+LD MR4207                ; M/S1 COFｶﾞｲﾄﾞ前後 戻し側ERR
+OR MR4407                ; M/S3 COFｶﾞｲﾄﾞ前後 戻し側ERR
+AND R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+ANL
+SET @MR1900              ; Main1 HALT許可
+;COFｶﾞｲﾄﾞ下降
+STG @MR1014
+MPS
+LDB MR4701               ; M/S1 COFｶﾞｲﾄﾞ上下 下限ERR
+ANB MR4705               ; M/S3 COFｶﾞｲﾄﾞ上下 下限ERR
+ANL
+SET MR7301               ; M/S1 COFｶﾞｲﾄﾞ上下 下降
+CON
+RES MR7300               ; M/S1 COFｶﾞｲﾄﾞ上下 上昇
+CON
+SET MR7501               ; M/S3 COFｶﾞｲﾄﾞ上下 下降
+CON
+RES MR7500               ; M/S3 COFｶﾞｲﾄﾞ上下 上昇
+CON
+AND R4701                ; M/S1 COFｶﾞｲﾄﾞ上下 下限
+ANB R4700                ; M/S1 COFｶﾞｲﾄﾞ上下 上限
+AND R4705                ; M/S3 COFｶﾞｲﾄﾞ上下 下限
+ANB R4704                ; M/S3 COFｶﾞｲﾄﾞ上下 上限
+JMP @MR1100
+MPP
+LD MR4701                ; M/S1 COFｶﾞｲﾄﾞ上下 下限ERR
+OR MR4705                ; M/S3 COFｶﾞｲﾄﾞ上下 下限ERR
+AND R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+ANL
+SET @MR1900              ; Main1 HALT許可
+STG @MR1100
+JMP @MR1101
+STG @MR1101
+JMP @MR1102
+STG @MR1102
+JMP @MR1103
+STG @MR1103
+JMP @MR1104
+STG @MR1104
+JMP @MR1105
+;RB1原点復帰
+STG @MR1105
+MPS
+LDB DM10507.3            ; ALM_異常 RB1
+ANB DM10507.7            ; BALM_ﾊﾞｯﾃﾘ低下 RB1
+AND DM10507.14           ; PWR_準備完了 RB1
+ANB DM10507.15           ; EMGS_非常停止 RB1
+ANL
+JMP @MR1106
+MPP
+AND DM10507.3            ; ALM_異常 RB1
+@SET DM10707.3           ; RES(ﾘｾｯﾄ) RB1
+CON
+JMP @MR1105
+STG @MR1106
+ANB R35010               ; During RB1 HOME
+RES DM10707.3            ; RES(ﾘｾｯﾄ) RB1
+CON
+SET DM10707.4            ; SON(ｻｰﾎﾞON指令) RB1
+CON
+JMP @MR1107
+STG @MR1107
+MPS
+LDB R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+AND DM10507.4            ; SV_ｻｰﾎﾞON中 RB1
+ANB R35008               ; RB1 HOME
+ANB R35010               ; During RB1 HOME
+ANL
+MPS
+LDB DM10507.1            ; HEND_原復完了 RB1
+OR MR18400               ; 【sw1】RB1_HOME_ALM
+AND MR3000               ; RB1 起動IL　ON=起動可能
+LD T2060                 ; RB4 Pos.1　作業原点高さ
+OR T2061                 ; RB4 Pos.2　搬送高さ
+ANL
+ANL
+SET R35008               ; RB1 HOME
+CON
+JMP @MR1108
+MPP
+LD DM10507.1             ; HEND_原復完了 RB1
+ANB MR18400              ; 【sw1】RB1_HOME_ALM
+ANL
+JMP @MR1110
+MPP
+AND R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR1108
+AND R35010               ; During RB1 HOME
+RES MR18400              ; 【sw1】RB1_HOME_ALM
+CON
+JMP @MR1109
+STG @MR1109
+ANB R35010               ; During RB1 HOME
+AND R35009               ; RB1 HOME END
+MPS
+LDB R35003               ; RB1 Alarm
+ANB MR18400              ; 【sw1】RB1_HOME_ALM
+ANL
+RES R35009               ; RB1 HOME END
+CON
+JMP @MR1110
+MPP
+AND R35003               ; RB1 Alarm
+@SET MR13201             ; RB1原点復帰ｴﾗｰ
+CON
+AND MR18400              ; 【sw1】RB1_HOME_ALM
+RES R35009               ; RB1 HOME END
+CON
+JMP @MR1107
+STG @MR1110
+JMP @MR1111
+STG @MR1111
+JMP @MR1305
+;RB1待機位置移動
+STG @MR1305
+JMP @MR1306
+STG @MR1306
+ANB MR16801              ; RB1ｴﾗｰ検出
+MPS
+LDB R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+ANB R35000               ; RB1 MOVE
+ANB R35002               ; During RB1 MOVE 
+ANB R35001               ; RB1 MOVE END
+ANL
+MPS
+LD= #1 EM1300            ; RB1Target Pos
+AND MR3000               ; RB1 起動IL　ON=起動可能
+ANL
+SET R35000               ; RB1 MOVE
+CON
+JMP @MR1307
+MPP
+DW #1 EM1300             ; RB1Target Pos
+MPP
+AND R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR1307
+AND R35001               ; RB1 MOVE END
+MPS
+LDB R35003               ; RB1 Alarm
+AND T2000                ; RB1 Pos1　 待機位置
+ANL
+RES R35001               ; RB1 MOVE END
+CON
+JMP @MR1308
+MPP
+AND R35003               ; RB1 Alarm
+@SET MR16801             ; RB1ｴﾗｰ検出
+CON
+RES R35001               ; RB1 MOVE END
+CON
+JMP @MR1306
+STG @MR1308
+JMP @MR1112
+STG @MR1112
+JMP @MR1113
+STG @MR1113
+JMP @MR1114
+STG @MR1114
+JMP @MR1115
+;電源断時の一回目の原点復帰のとき、ﾜｰｸ在荷のチェックを行う
+STG @MR1115
+MPS
+AND MR10100              ; ﾊﾝﾄﾞ在荷ﾁｪｯｸ
+SET @MR5400              ; Org_HSppﾊﾝﾄﾞ　在荷確認_Sub
+CON
+JMP @MR1200
+MPP
+ANB MR10100              ; ﾊﾝﾄﾞ在荷ﾁｪｯｸ
+JMP @MR1202
+STG @MR1200
+AND @MR5402              ; Org HSppﾊﾝ　在荷確認_Sub　実行中
+AND @MR5401              ; Org HSppﾊﾝ　在荷確認_Sub実行完了
+RES @MR5401              ; Org HSppﾊﾝ　在荷確認_Sub実行完了
+CON
+JMP @MR1201
+STG @MR1201
+ANB @MR5402              ; Org HSppﾊﾝ　在荷確認_Sub　実行中
+JMP @MR1202
+STG @MR1202
+JMP @MR1203
+STG @MR1203
+JMP @MR1204
+STG @MR1204
+JMP @MR1205
+STG @MR1205
+JMP @MR1206
+STG @MR1206
+JMP @MR1207
+STG @MR1207
+JMP @MR1208
+STG @MR1208
+JMP @MR1215
+STG @MR1215
+JMP @MR1515              ; HOME END
+STG @MR1515              ; HOME END
+SET MR10400              ; TASK0_原点復帰完了
+CON
+RES @MR1002              ; HOME中
+CON
+JMP LR600                ; _Grp1_Task0_Fin.STG
+;<h1/>AUTO/自動動作
+;見本仕様
+;
+;上流よりﾜｰｸを受け取ったら給材されている WFとﾜｰｸを張り合わせ除材するとサイクル終了
+;Main1=張り合わせ＆給除材
+;Main2=WFの給材   サイクル短縮の為、WFが無くなったら直ぐに次のWFを給材する事
+STG LR5400               ; _Grp1_Task0_AUTO.STG
+JMP @MR3000              ; AUTO Main1
+;<h1/>Auto-Main1/Autoﾒｲﾝﾙｰﾁﾝ1
+;<h1/>■TASK0-1未使用■
+;[本STG内容]
+;・各TaskのAUTO動作を記述して下さい
+;・動作ﾓｰﾄﾞは「AUTOAC」に格納されています(1～32)
+;・@MR3000:AUTO_Main1開始、@MR3001:AUTO_Main1完了、@MR3002:AUTO_Main1動作中
+STG @MR3000              ; AUTO Main1
+SET @MR5500              ; ﾀﾞﾌﾞﾙｽﾗｲﾀﾞｰ動作監視_Sub
+CON
+SET @MR3002              ; AUTO Main1 Busy
+CON
+SET @MR4000              ; AUTO Main2
+CON
+JMP @MR3003
+STG @MR3003
+MPS
+LDB R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+LD R46106                ; _定停止移行中
+OR R47800                ; _Group1　ﾒﾝﾃ動作定停止移行中
+ANL
+ANL
+JMP @MR3900              ; Main1 END
+MPP
+AND R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+SET @MR1900              ; Main1 HALT許可
+;<h1/>Auto終了処理
+STG @MR3900              ; Main1 END
+AND @MR4001              ; Main2 END
+RES @MR3002              ; AUTO Main1 Busy
+CON
+RES @MR4001              ; Main2 END
+CON
+JMP @MR3915              ; AUTO END
+STG @MR3915              ; AUTO END
+MPS
+LDB R47800               ; _Group1　ﾒﾝﾃ動作定停止移行中
+ANB R41005               ; _Grp1_Task5_起動中ﾌﾗｸﾞ
+ANL
+JMP LR600                ; _Grp1_Task0_Fin.STG
+MPP
+AND R47800               ; _Group1　ﾒﾝﾃ動作定停止移行中
+ENDS
+;<h1/>Auto-Main2/Autoﾒｲﾝﾙｰﾁﾝ2
+;<h1/>■RB1 ﾎﾙﾀﾞｰSub供給PP■
+;[本STG内容]
+;・@MR4000の起動はMain1にて行う事
+;・@MR4000:AUTO_Main2開始、@MR4001:AUTO_Main2完了、@MR4002:AUTO_Main2動作中
+STG @MR4000              ; AUTO Main2
+SET @MR4002              ; Main2 Busy
+CON
+JMP @MR4003              ; Repeat　A
+STG @MR4003              ; Repeat　A
+JMP @MR4005
+STG @MR4005
+MPS
+ANB R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+MPS
+LD R4607                 ; ﾎﾙﾀﾞｻﾌﾞ供給PP ﾊﾝﾄﾞ 開限
+ANB MR10600              ; ﾎﾙﾀﾞｻﾌﾞ供給PP ﾊﾝﾄﾞ 閉限
+ANL
+JMP @MR4006              ; ﾜｰｸ無　START
+MPP
+LDB R4607                ; ﾎﾙﾀﾞｻﾌﾞ供給PP ﾊﾝﾄﾞ 開限
+AND MR10600              ; ﾎﾙﾀﾞｻﾌﾞ供給PP ﾊﾝﾄﾞ 閉限
+ANL
+JMP @MR4100              ; ﾜｰｸ有　START
+MPP
+AND R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+SET @MR1901              ; Main2 HALT許可
+;<h1/>▽_上流ｾﾙよりﾜｰｸ受取
+;	ﾜｰｸ供給要求【L-REQ】
+STG @MR4006              ; ﾜｰｸ無　START
+MPS
+ANB R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+MPS
+LD B2012                 ; 上流ｾﾙよりIL信号
+AND B2014                ; 上流ｾﾙより動作開始許可
+AND B2002                ; 上流ｾﾙへIL信号
+LD DM2000.14             ; 上流ﾊﾝﾄﾞｼｪｲｸ有無(0:有/1:無)
+OR @MR2102               ; STEP動作中
+AND MR24912              ; ﾃﾞﾊﾞｯｸ用ﾜｰｸ有
+ORL
+ANL
+MPS
+ANB DM2000.14            ; 上流ﾊﾝﾄﾞｼｪｲｸ有無(0:有/1:無)
+SET B2003                ; 上流ｾﾙへ動作開始通知
+CON
+JMP @MR4007
+MRD
+AND DM2000.14            ; 上流ﾊﾝﾄﾞｼｪｲｸ有無(0:有/1:無)
+JMP @MR4007
+MPP
+SET R47102               ; _処理時間3取得
+MPP
+LDB B2014                ; 上流ｾﾙより動作開始許可
+AND R46106               ; _定停止移行中
+ANL
+RES B2003                ; 上流ｾﾙへ動作開始通知
+CON
+JMP @MR4914              ; Main2 ENDへ
+MPP
+AND R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+SET @MR1901              ; Main2 HALT許可
+LD B2014                 ; 上流ｾﾙより動作開始許可
+LD @MR4007
+AND DM2000.14            ; 上流ﾊﾝﾄﾞｼｪｲｸ有無(0:有/1:無)
+ORL
+SET R47002               ; _処理時間3計測開始
+LD R47102                ; _処理時間3取得
+RES R47002               ; _処理時間3計測開始
+LD B2003                 ; 上流ｾﾙへ動作開始通知
+ANB B202B                ; 下流ｾﾙより ｽﾃｰﾀｽ(AUTO)
+ANB DM2000.14            ; 上流ﾊﾝﾄﾞｼｪｲｸ有無(0:有/1:無)
+OUT MR14400              ; 上流とのH/S断
+;上流ｾﾙよりｽﾗｲﾀﾞがくる
+STG @MR4007
+LDB B2014                ; 上流ｾﾙより動作開始許可
+OR DM2000.14             ; 上流ﾊﾝﾄﾞｼｪｲｸ有無(0:有/1:無)
+OR @MR2102               ; STEP動作中
+ANL
+JMP @MR4008
+STG @MR4008
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR4009
+STG @MR4009
+MPS
+LDB R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+LDB B2014                ; 上流ｾﾙより動作開始許可
+AND B2012                ; 上流ｾﾙよりIL信号
+OR DM2000.14             ; 上流ﾊﾝﾄﾞｼｪｲｸ有無(0:有/1:無)
+OR @MR2102               ; STEP動作中
+ANL
+ANL
+SET @MR5800              ; ｾﾙ間ｽﾗｲﾀﾞﾖﾘ給材_Sub
+CON
+JMP @MR4010
+MPP
+AND R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+SET @MR1901              ; Main2 HALT許可
+STG @MR4010
+AND @MR5802              ; ｾﾙ間ｽﾗｲﾀﾞﾖﾘ給材_Sub　実行中
+AND @MR900               ; 補助動作開始要求(sub→main)
+SET B2006                ; ④上流ｾﾙへ補助動作開始要求
+CON
+JMP @MR4011
+STG @MR4011
+AND @MR5801              ; ｾﾙ間ｽﾗｲﾀﾞﾖﾘ給材_Sub　実行完了
+RES @MR5801              ; ｾﾙ間ｽﾗｲﾀﾞﾖﾘ給材_Sub　実行完了
+CON
+JMP @MR4012
+STG @MR4012
+ANB @MR5802              ; ｾﾙ間ｽﾗｲﾀﾞﾖﾘ給材_Sub　実行中
+RES B2006                ; ④上流ｾﾙへ補助動作開始要求
+CON
+JMP @MR4013
+STG @MR4013
+ANB B2017                ; 上流ｾﾙより補助動作開始許可
+RES B2003                ; 上流ｾﾙへ動作開始通知
+CON
+JMP @MR4014
+STG @MR4014
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR4015
+STG @MR4015
+MPS
+LDB R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+AND MR10600              ; ﾎﾙﾀﾞｻﾌﾞ供給PP ﾊﾝﾄﾞ 閉限
+ANB R4607                ; ﾎﾙﾀﾞｻﾌﾞ供給PP ﾊﾝﾄﾞ 開限
+ANL
+JMP @MR4100              ; ﾜｰｸ有　START
+MRD
+AND R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+SET @MR1901              ; Main2 HALT許可
+MPP
+@INC.D DM5020            ; _生産ｶｳﾝﾀ1
+;<h1/>▽_ﾎﾙﾀﾞｰｻﾌﾞ組込み動作
+STG @MR4100              ; ﾜｰｸ有　START
+JMP @MR4102
+STG @MR4102
+MPS
+ANB R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+MPS
+LDB R46106               ; _定停止移行中
+ANB R47800               ; _Group1　ﾒﾝﾃ動作定停止移行中
+ANL
+JMP @MR4104              ; FIFO読出し開始STG
+MPP
+LD R46106                ; _定停止移行中
+OR R47800                ; _Group1　ﾒﾝﾃ動作定停止移行中
+ANL
+JMP @MR4914              ; Main2 ENDへ
+MPP
+AND R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+SET @MR1901              ; Main2 HALT許可
+;FIFO読出し開始STG
+STG @MR4104              ; FIFO読出し開始STG
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+@SET MR401               ; FIFO読出し　Trig
+CON
+JMP @MR4112
+STG @MR4112
+AND MR17201              ; 読出し実行中
+RES MR401                ; FIFO読出し　Trig
+CON
+MPS
+AND MR402                ; FIFO読出し完了OK
+JMP @MR4113
+MPP
+AND MR403                ; FIFO読出し完了なし
+JMP @MR4115
+;		FIFO読出しデータ無し
+STG @MR4115
+RES MR403                ; FIFO読出し完了なし
+CON
+ANB MR17201              ; 読出し実行中
+TMR #793 #1              ; ﾘﾄﾗｲ　遅延時間
+CON
+AND T793                 ; ﾘﾄﾗｲ　遅延時間
+ANB MR401                ; FIFO読出し　Trig
+JMP @MR4100              ; ﾜｰｸ有　START
+;		FIFO読出しデータ有り
+STG @MR4113
+RES MR402                ; FIFO読出し完了OK
+CON
+ANB MR17201              ; 読出し実行中
+JMP @MR4114
+STG @MR4114
+ANB T793                 ; ﾘﾄﾗｲ　遅延時間
+MPS
+AND= DM60 DM41           ; ﾎﾙﾀﾞｻﾌﾞ指定No.  ﾎﾙﾀﾞｰｻﾌﾞ 給材ｽﾗｲﾀﾞ　指定Ｎo.
+JMP @MR4200              ; ﾎﾙﾀﾞｰｻﾌﾞ　準備OK
+MPP
+MOV DM60 DM41            ; ﾎﾙﾀﾞｻﾌﾞ指定No.  ﾎﾙﾀﾞｰｻﾌﾞ 給材ｽﾗｲﾀﾞ　指定Ｎo.
+;<h1/>ﾒｲﾝｽﾗｲﾀﾞからﾎﾙﾀﾞｰｻﾌﾞ給材要求待ち
+;ﾎﾙﾀﾞｰｻﾌﾞの供給先はD41に入っていて、B530
+STG @MR4200              ; ﾎﾙﾀﾞｰｻﾌﾞ　準備OK
+TMR #791 #1              ; このTIMは、削除不可　0.1sec必要
+CON
+AND T791                 ; このTIMは、削除不可　0.1sec必要
+MPS
+LDB B0530                ; RB13置台給材要求 (L-REQ)
+OR<> DM41 #1             ; ﾎﾙﾀﾞｰｻﾌﾞ 給材ｽﾗｲﾀﾞ　指定Ｎo.
+ANL
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR4202
+MPP
+LD B0530                 ; RB13置台給材要求 (L-REQ)
+AND= DM41 #1             ; ﾎﾙﾀﾞｰｻﾌﾞ 給材ｽﾗｲﾀﾞ　指定Ｎo.
+ANL
+SET MR13000              ; R1 R13選択記憶
+CON
+RES MR13001              ; R1 R14選択記憶
+CON
+RES MR13002              ; R1 R15選択記憶
+CON
+RES MR13003              ; R1 R16選択記憶
+CON
+SET B0533                ; RB1ﾊﾝﾄﾞ 要求応答 (T-REQ)
+CON
+JMP @MR4300              ; 確定
+STG @MR4202
+MPS
+LDB B0540                ; RB14置台給材要求 (L-REQ)
+OR<> DM41 #2             ; ﾎﾙﾀﾞｰｻﾌﾞ 給材ｽﾗｲﾀﾞ　指定Ｎo.
+OR CR2002                ; 常時ON
+ANL
+JMP @MR4204
+MPP
+LD B0540                 ; RB14置台給材要求 (L-REQ)
+AND= DM41 #2             ; ﾎﾙﾀﾞｰｻﾌﾞ 給材ｽﾗｲﾀﾞ　指定Ｎo.
+AND CR2003               ; 常時OFF
+ANL
+RES MR13000              ; R1 R13選択記憶
+CON
+SET MR13001              ; R1 R14選択記憶
+CON
+RES MR13002              ; R1 R15選択記憶
+CON
+RES MR13003              ; R1 R16選択記憶
+CON
+SET B0543                ; RB1ﾊﾝﾄﾞ 要求応答 (T-REQ)
+CON
+JMP @MR4300              ; 確定
+STG @MR4204
+MPS
+LDB B0550                ; RB15置台給材要求 (L-REQ)
+OR<> DM41 #3             ; ﾎﾙﾀﾞｰｻﾌﾞ 給材ｽﾗｲﾀﾞ　指定Ｎo.
+ANL
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR4206
+MPP
+LD B0550                 ; RB15置台給材要求 (L-REQ)
+AND= DM41 #3             ; ﾎﾙﾀﾞｰｻﾌﾞ 給材ｽﾗｲﾀﾞ　指定Ｎo.
+ANL
+RES MR13000              ; R1 R13選択記憶
+CON
+RES MR13001              ; R1 R14選択記憶
+CON
+SET MR13002              ; R1 R15選択記憶
+CON
+RES MR13003              ; R1 R16選択記憶
+CON
+SET B0553                ; RB1ﾊﾝﾄﾞ 要求応答 (T-REQ)
+CON
+JMP @MR4300              ; 確定
+STG @MR4206
+MPS
+LDB B0560                ; RB16置台給材要求 (L-REQ)
+OR<> DM41 #4             ; ﾎﾙﾀﾞｰｻﾌﾞ 給材ｽﾗｲﾀﾞ　指定Ｎo.
+OR CR2002                ; 常時ON
+ANL
+JMP @MR4212
+MPP
+LD B0560                 ; RB16置台給材要求 (L-REQ)
+AND= DM41 #4             ; ﾎﾙﾀﾞｰｻﾌﾞ 給材ｽﾗｲﾀﾞ　指定Ｎo.
+AND CR2003               ; 常時OFF
+ANL
+RES MR13000              ; R1 R13選択記憶
+CON
+RES MR13001              ; R1 R14選択記憶
+CON
+RES MR13002              ; R1 R15選択記憶
+CON
+SET MR13003              ; R1 R16選択記憶
+CON
+SET B0563                ; RB1ﾊﾝﾄﾞ 要求応答 (T-REQ)
+CON
+JMP @MR4300              ; 確定
+STG @MR4212
+JMP @MR4100              ; ﾜｰｸ有　START
+;<h1/>組込先のﾒｲﾝｽﾗｲﾀﾞｰへ移動
+STG @MR4300              ; 確定
+RES MR14205              ; RB2起動許可申請FLG
+CON
+RES MR14206              ; RB2起動 可能FLG
+CON
+ANB MR14206              ; RB2起動 可能FLG
+JMP @MR4500
+STG @MR4500
+SET MR14205              ; RB2起動許可申請FLG
+CON
+MPS
+AND MR14206              ; RB2起動 可能FLG
+JMP @MR4502              ; 移動OK
+MPP
+ANB MR14206              ; RB2起動 可能FLG
+JMP @MR4503              ; 移動不可
+STG @MR4503              ; 移動不可
+MPS
+ANB R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+MPS
+LDB R46106               ; _定停止移行中
+ANB R47800               ; _Group1　ﾒﾝﾃ動作定停止移行中
+ANL
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR4500
+MPP
+LD R46106                ; _定停止移行中
+OR R47800                ; _Group1　ﾒﾝﾃ動作定停止移行中
+ANL
+RES MR14205              ; RB2起動許可申請FLG
+CON
+JMP @MR4914              ; Main2 ENDへ
+MPP
+AND R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+RES MR14205              ; RB2起動許可申請FLG
+CON
+SET @MR1901              ; Main2 HALT許可
+;移動開始
+STG @MR4502              ; 移動OK
+ANB MR16801              ; RB1ｴﾗｰ検出
+ANB R35000               ; RB1 MOVE
+ANB R35002               ; During RB1 MOVE 
+ANB R35001               ; RB1 MOVE END
+JMP @MR4504
+STG @MR4504
+MPS
+ANB R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+RES MR14205              ; RB2起動許可申請FLG
+CON
+RES MR14206              ; RB2起動 可能FLG
+CON
+MPS
+AND MR13000              ; R1 R13選択記憶
+MPS
+LD= #11 EM1300           ; RB1Target Pos
+AND MR3000               ; RB1 起動IL　ON=起動可能
+ANL
+SET R35000               ; RB1 MOVE
+CON
+JMP @MR4301
+MPP
+DW #11 EM1300            ; RB1Target Pos
+MRD
+AND MR13001              ; R1 R14選択記憶
+MPS
+LD= #12 EM1300           ; RB1Target Pos
+AND MR3000               ; RB1 起動IL　ON=起動可能
+ANL
+SET R35000               ; RB1 MOVE
+CON
+JMP @MR4301
+MPP
+DW #12 EM1300            ; RB1Target Pos
+MRD
+AND MR13002              ; R1 R15選択記憶
+MPS
+LD= #13 EM1300           ; RB1Target Pos
+AND MR3000               ; RB1 起動IL　ON=起動可能
+ANL
+SET R35000               ; RB1 MOVE
+CON
+JMP @MR4301
+MPP
+DW #13 EM1300            ; RB1Target Pos
+MPP
+AND MR13003              ; R1 R16選択記憶
+MPS
+LD= #14 EM1300           ; RB1Target Pos
+AND MR3000               ; RB1 起動IL　ON=起動可能
+ANL
+SET R35000               ; RB1 MOVE
+CON
+JMP @MR4301
+MPP
+DW #14 EM1300            ; RB1Target Pos
+MPP
+AND R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+SET @MR1901              ; Main2 HALT許可
+STG @MR4301
+AND R35001               ; RB1 MOVE END
+MPS
+ANB R35003               ; RB1 Alarm
+RES R35001               ; RB1 MOVE END
+CON
+JMP @MR4302
+MPP
+AND R35003               ; RB1 Alarm
+@SET MR16801             ; RB1ｴﾗｰ検出
+CON
+RES R35001               ; RB1 MOVE END
+CON
+JMP @MR4502              ; 移動OK
+STG @MR4302
+LD MR13000               ; R1 R13選択記憶
+AND T2010                ; RB1 Pos11　 M/S1組込位置
+LD MR13001               ; R1 R14選択記憶
+AND T2011                ; RB1 Pos12　 M/S2組込位置
+ORL
+LD MR13002               ; R1 R15選択記憶
+AND T2012                ; RB1 Pos13　 M/S3組込位置
+ORL
+LD MR13003               ; R1 R16選択記憶
+AND T2013                ; RB1 Pos14　 M/S4組込位置
+ORL
+ANL
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR4307
+;<h1/>ﾎﾙﾀﾞｰSub組込開始
+STG @MR4307
+MPS
+ANB R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+MPS
+LD MR13000               ; R1 R13選択記憶
+AND B0531                ; RB13置台開始許可 (READY)
+ANL
+SET B0534                ; RB1ﾊﾝﾄﾞ 実行中 (BUSY)
+CON
+JMP @MR4303
+MRD
+LD MR13001               ; R1 R14選択記憶
+AND B0541                ; RB14置台開始許可 (READY)
+ANL
+SET B0544                ; RB1ﾊﾝﾄﾞ 実行中 (BUSY)
+CON
+JMP @MR4303
+MRD
+LD MR13002               ; R1 R15選択記憶
+AND B0551                ; RB15置台開始許可 (READY)
+ANL
+SET B0554                ; RB1ﾊﾝﾄﾞ 実行中 (BUSY)
+CON
+JMP @MR4303
+MPP
+LD MR13003               ; R1 R16選択記憶
+AND B0561                ; RB16置台開始許可 (READY)
+ANL
+SET B0564                ; RB1ﾊﾝﾄﾞ 実行中 (BUSY)
+CON
+JMP @MR4303
+MPP
+AND R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+SET @MR1901              ; Main2 HALT許可
+;ﾎﾙﾀﾞｰSub組込_Sub
+STG @MR4303
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+SET @MR6000              ; ﾎﾙﾀﾞｰSub組込_Sub
+CON
+JMP @MR4304
+STG @MR4304
+AND @MR6002              ; ﾎﾙﾀﾞｰSub組込_Sub　実行中
+AND @MR6001              ; ﾎﾙﾀﾞｰSub組込_Sub 実行完了
+RES @MR6001              ; ﾎﾙﾀﾞｰSub組込_Sub 実行完了
+CON
+JMP @MR4305
+STG @MR4305
+ANB @MR6002              ; ﾎﾙﾀﾞｰSub組込_Sub　実行中
+MPS
+AND MR13000              ; R1 R13選択記憶
+RES MR8206               ; M/S ｽﾃｰｼﾞ1 吸着ON
+CON
+SET MR8207               ; M/S ｽﾃｰｼﾞ1 吸着OFF
+CON
+SET MR8208               ; M/S ｽﾃｰｼﾞ1 破壊ON
+CON
+JMP @MR4306
+MRD
+AND MR13001              ; R1 R14選択記憶
+RES MR8209               ; M/S ｽﾃｰｼﾞ2 吸着ON
+CON
+SET MR8210               ; M/S ｽﾃｰｼﾞ2 吸着OFF
+CON
+SET MR8211               ; M/S ｽﾃｰｼﾞ2 破壊ON
+CON
+JMP @MR4306
+MRD
+AND MR13002              ; R1 R15選択記憶
+RES MR8212               ; M/S ｽﾃｰｼﾞ3 吸着ON
+CON
+SET MR8213               ; M/S ｽﾃｰｼﾞ3 吸着OFF
+CON
+SET MR8214               ; M/S ｽﾃｰｼﾞ3 破壊ON
+CON
+JMP @MR4306
+MPP
+AND MR13003              ; R1 R16選択記憶
+RES MR8300               ; M/S ｽﾃｰｼﾞ4 吸着ON
+CON
+SET MR8301               ; M/S ｽﾃｰｼﾞ4 吸着OFF
+CON
+SET MR8302               ; M/S ｽﾃｰｼﾞ4 破壊ON
+CON
+JMP @MR4306
+STG @MR4306
+TMR #749 #3              ; ｽﾃｰｼﾞ吸着破壊時間
+CON
+AND T749                 ; ｽﾃｰｼﾞ吸着破壊時間
+JMP @MR4311
+STG @MR4311
+ANB T749                 ; ｽﾃｰｼﾞ吸着破壊時間
+MPS
+AND MR13000              ; R1 R13選択記憶
+RES MR8208               ; M/S ｽﾃｰｼﾞ1 破壊ON
+CON
+SET B0535                ; RB1ﾊﾝﾄﾞ 補開始要求 (COMP)
+CON
+JMP @MR4308
+MRD
+AND MR13001              ; R1 R14選択記憶
+RES MR8211               ; M/S ｽﾃｰｼﾞ2 破壊ON
+CON
+SET B0545                ; RB1ﾊﾝﾄﾞ 補開始要求 (COMP)
+CON
+JMP @MR4308
+MRD
+AND MR13002              ; R1 R15選択記憶
+RES MR8214               ; M/S ｽﾃｰｼﾞ3 破壊ON
+CON
+SET B0555                ; RB1ﾊﾝﾄﾞ 補開始要求 (COMP)
+CON
+JMP @MR4308
+MPP
+AND MR13003              ; R1 R16選択記憶
+RES MR8302               ; M/S ｽﾃｰｼﾞ4 破壊ON
+CON
+SET B0565                ; RB1ﾊﾝﾄﾞ 補開始要求 (COMP)
+CON
+JMP @MR4308
+STG @MR4308
+MPS
+ANB R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+MPS
+LD MR13000               ; R1 R13選択記憶
+ANB B0530                ; RB13置台給材要求 (L-REQ)
+ANB B0531                ; RB13置台開始許可 (READY)
+ANL
+RES B0533                ; RB1ﾊﾝﾄﾞ 要求応答 (T-REQ)
+CON
+RES B0534                ; RB1ﾊﾝﾄﾞ 実行中 (BUSY)
+CON
+RES B0535                ; RB1ﾊﾝﾄﾞ 補開始要求 (COMP)
+CON
+JMP @MR4309
+MRD
+LD MR13001               ; R1 R14選択記憶
+ANB B0540                ; RB14置台給材要求 (L-REQ)
+ANB B0541                ; RB14置台開始許可 (READY)
+ANL
+RES B0543                ; RB1ﾊﾝﾄﾞ 要求応答 (T-REQ)
+CON
+RES B0544                ; RB1ﾊﾝﾄﾞ 実行中 (BUSY)
+CON
+RES B0545                ; RB1ﾊﾝﾄﾞ 補開始要求 (COMP)
+CON
+JMP @MR4309
+MRD
+LD MR13002               ; R1 R15選択記憶
+ANB B0550                ; RB15置台給材要求 (L-REQ)
+ANB B0551                ; RB15置台開始許可 (READY)
+ANL
+RES B0553                ; RB1ﾊﾝﾄﾞ 要求応答 (T-REQ)
+CON
+RES B0554                ; RB1ﾊﾝﾄﾞ 実行中 (BUSY)
+CON
+RES B0555                ; RB1ﾊﾝﾄﾞ 補開始要求 (COMP)
+CON
+JMP @MR4309
+MPP
+LD MR13003               ; R1 R16選択記憶
+ANB B0560                ; RB16置台給材要求 (L-REQ)
+ANB B0561                ; RB16置台開始許可 (READY)
+ANL
+RES B0563                ; RB1ﾊﾝﾄﾞ 要求応答 (T-REQ)
+CON
+RES B0564                ; RB1ﾊﾝﾄﾞ 実行中 (BUSY)
+CON
+RES B0565                ; RB1ﾊﾝﾄﾞ 補開始要求 (COMP)
+CON
+JMP @MR4309
+MPP
+AND R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+SET @MR1901              ; Main2 HALT許可
+;ﾎﾙﾀﾞｰｻﾌﾞ受取確認
+STG @MR4309
+MPS
+LD MR13000               ; R1 R13選択記憶
+AND R4213                ; M/S1 ﾎﾙﾀﾞｰｻﾌﾞ有無確認
+LD MR13002               ; R1 R15選択記憶
+AND R4413                ; M/S3 ﾎﾙﾀﾞｰｻﾌﾞ有無確認
+ORL
+ANL
+JMP @MR4310
+MPP
+LD MR13000               ; R1 R13選択記憶
+ANB R4213                ; M/S1 ﾎﾙﾀﾞｰｻﾌﾞ有無確認
+LD MR13002               ; R1 R15選択記憶
+ANB R4413                ; M/S3 ﾎﾙﾀﾞｰｻﾌﾞ有無確認
+ORL
+ANL
+SET MR11500              ; 【ALM】ﾎﾙﾀﾞｰｻﾌﾞﾜｰｸ確認
+CON
+JMP @MR4405
+STG @MR4405
+MPS
+LDB R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+ANB MR11500              ; 【ALM】ﾎﾙﾀﾞｰｻﾌﾞﾜｰｸ確認
+AND MR11501              ; 【sw1】ﾜｰｸ除去
+ANL
+MPS
+AND MR13000              ; R1 R13選択記憶
+JMP @MR4406
+MPP
+AND MR13002              ; R1 R15選択記憶
+JMP @MR4406
+MPP
+AND R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+SET @MR1901              ; Main2 HALT許可
+STG @MR4406
+JMP @MR4310
+STG @MR4310
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+RES MR13000              ; R1 R13選択記憶
+CON
+RES MR13001              ; R1 R14選択記憶
+CON
+RES MR13002              ; R1 R15選択記憶
+CON
+RES MR13003              ; R1 R16選択記憶
+CON
+JMP @MR4312
+;RB1待機位置へ移動
+STG @MR4312
+ANB MR16801              ; RB1ｴﾗｰ検出
+MPS
+LDB R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+ANB R35000               ; RB1 MOVE
+ANB R35002               ; During RB1 MOVE 
+ANB R35001               ; RB1 MOVE END
+ANL
+MPS
+LD= #1 EM1300            ; RB1Target Pos
+AND MR3000               ; RB1 起動IL　ON=起動可能
+ANL
+SET R35000               ; RB1 MOVE
+CON
+JMP @MR4314
+MPP
+DW #1 EM1300             ; RB1Target Pos
+MPP
+AND R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+SET @MR1901              ; Main2 HALT許可
+STG @MR4314
+AND R35001               ; RB1 MOVE END
+MPS
+LDB R35003               ; RB1 Alarm
+AND T2000                ; RB1 Pos1　 待機位置
+ANL
+RES R35001               ; RB1 MOVE END
+CON
+JMP @MR4400
+MPP
+AND R35003               ; RB1 Alarm
+@SET MR16801             ; RB1ｴﾗｰ検出
+CON
+RES R35001               ; RB1 MOVE END
+CON
+JMP @MR4312
+STG @MR4400
+@SET MR14209             ; RB2移動可能ﾏｯﾌﾟ更新Trg
+CON
+AND= DM40011 #7          ; RB3用 移動範囲ﾏｯﾌﾟ
+RES MR14209              ; RB2移動可能ﾏｯﾌﾟ更新Trg
+CON
+JMP @MR4402
+STG @MR4402
+JMP @MR4404
+;自動先頭へ
+STG @MR4404
+JMP @MR4003              ; Repeat　A
+;MAIN2_終了処理へ
+STG @MR4914              ; Main2 ENDへ
+JMP @MR4915              ; Main2 END
+STG @MR4915              ; Main2 END
+SET @MR4001              ; Main2 END
+CON
+RES @MR4002              ; Main2 Busy
+CON
+ENDS
+;<h1/>■□MAINTE/ﾒﾝﾃﾅﾝｽ動作
+;[本STG内容]
+;・各TaskのMAINTE動作を記述して下さい
+;・動作ﾓｰﾄﾞは「MAINTEAC*」に格納されています(1～32)
+;・動作終了時は@MR2915にJMPして下さい
+STG LR5600               ; _Grp1_Task0_MAINTE.STG
+JMP @MR2000              ; Mainte
+STG @MR2000              ; Mainte
+SET @MR2002              ; Mainte中
+CON
+JMP @MR2003
+LD @MR2002               ; Mainte中
+MPS
+AND= DM4110 #29          ; _Group1　ﾒﾝﾃ動作番号
+@DW #2000 DM3008         ; _MainTP　切替ﾍﾟｰｼﾞNo
+MPP
+AND= DM4110 #26          ; _Group1　ﾒﾝﾃ動作番号
+@DW #2150 DM3008         ; _MainTP　切替ﾍﾟｰｼﾞNo
+STG @MR2003
+MPS
+AND R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+SET @MR1900              ; Main1 HALT許可
+CON
+SET @MR1901              ; Main2 HALT許可
+MPP
+ANB R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+MPS
+AND= DM4110 #1           ; _Group1　ﾒﾝﾃ動作番号
+RES MR10300              ; ﾒﾝﾃﾅﾝｽｾﾚｸﾄAuto開始(全Task展開用)
+CON
+JMP @MR2500              ; ｾﾚｸﾄAct
+MRD
+AND= DM4110 #9           ; _Group1　ﾒﾝﾃ動作番号
+SET MR13000              ; R1 R13選択記憶
+CON
+RES MR13001              ; R1 R14選択記憶
+CON
+RES MR13002              ; R1 R15選択記憶
+CON
+RES MR13003              ; R1 R16選択記憶
+CON
+JMP @MR2004              ; ﾎﾙﾀﾞｰSub組込開始STG
+MRD
+LD= DM4110 #10           ; _Group1　ﾒﾝﾃ動作番号
+AND CR2003               ; 常時OFF
+ANL
+RES MR13000              ; R1 R13選択記憶
+CON
+SET MR13001              ; R1 R14選択記憶
+CON
+RES MR13002              ; R1 R15選択記憶
+CON
+RES MR13003              ; R1 R16選択記憶
+CON
+JMP @MR2004              ; ﾎﾙﾀﾞｰSub組込開始STG
+MRD
+AND= DM4110 #11          ; _Group1　ﾒﾝﾃ動作番号
+RES MR13000              ; R1 R13選択記憶
+CON
+RES MR13001              ; R1 R14選択記憶
+CON
+SET MR13002              ; R1 R15選択記憶
+CON
+RES MR13003              ; R1 R16選択記憶
+CON
+JMP @MR2004              ; ﾎﾙﾀﾞｰSub組込開始STG
+MRD
+LD= DM4110 #12           ; _Group1　ﾒﾝﾃ動作番号
+AND CR2003               ; 常時OFF
+ANL
+RES MR13000              ; R1 R13選択記憶
+CON
+RES MR13001              ; R1 R14選択記憶
+CON
+RES MR13002              ; R1 R15選択記憶
+CON
+SET MR13003              ; R1 R16選択記憶
+CON
+JMP @MR2004              ; ﾎﾙﾀﾞｰSub組込開始STG
+MRD
+LD= DM4110 #26           ; _Group1　ﾒﾝﾃ動作番号
+LDP R44915               ; Teaching End
+ORF R45015               ; 単動終了
+ANL
+ANL
+JMP @MR2110              ; ﾒﾝﾃﾅﾝｽ終了へ
+MRD
+LD= DM4110 #29           ; _Group1　ﾒﾝﾃ動作番号
+LDP R44915               ; Teaching End
+ORF R45015               ; 単動終了
+ANL
+ANL
+JMP @MR2110              ; ﾒﾝﾃﾅﾝｽ終了へ
+MPP
+AND R47800               ; _Group1　ﾒﾝﾃ動作定停止移行中
+JMP @MR2110              ; ﾒﾝﾃﾅﾝｽ終了へ
+;<h1/>　　No.1_ｾﾚｸﾄAct&ｾﾚｸﾄPOST
+STG @MR2500              ; ｾﾚｸﾄAct
+MPS
+LD MR10415               ; 原点復帰完了OK
+ANB R39204               ; SELECT_ACT Interlock
+ANL
+SET R39204               ; SELECT_ACT Interlock
+CON
+DW #0 @DM31              ; ScreenNo /SELECT_ACT
+CON
+DW #1 @DM32              ; SW1 /SELECT_ACT
+CON
+DW #0 @DM33              ; SW2 /SELECT_ACT
+CON
+DW #0 @DM34              ; SW3 /SELECT_ACT
+CON
+DW #2 @DM35              ; SW4 /SELECT_ACT
+CON
+DW #0 @DM36              ; Bz_Use /SELECT_ACT
+CON
+SET @MR200               ; Task0 SELECT_ACT
+CON
+JMP @MR2501
+MPP
+LDB MR10415              ; 原点復帰完了OK
+ANB R39204               ; SELECT_ACT Interlock
+ANL
+SET R39204               ; SELECT_ACT Interlock
+CON
+DW #1 @DM31              ; ScreenNo /SELECT_ACT
+CON
+DW #3 @DM32              ; SW1 /SELECT_ACT
+CON
+DW #0 @DM33              ; SW2 /SELECT_ACT
+CON
+DW #0 @DM34              ; SW3 /SELECT_ACT
+CON
+DW #1 @DM35              ; SW4 /SELECT_ACT
+CON
+DW #0 @DM36              ; Bz_Use /SELECT_ACT
+CON
+SET @MR200               ; Task0 SELECT_ACT
+CON
+JMP @MR2501
+STG @MR2501
+AND @MR201               ; Task0 SEL_ACT END
+RES @MR201               ; Task0 SEL_ACT END
+CON
+RES R39204               ; SELECT_ACT Interlock
+CON
+JMP @MR2502
+STG @MR2502
+MPS
+AND MR10415              ; 原点復帰完了OK
+MPS
+AND @MR205               ; SW1
+JMP @MR2503              ; Postﾏｸﾛへ
+MPP
+AND @MR208               ; sw4
+JMP @MR2110              ; ﾒﾝﾃﾅﾝｽ終了へ
+MPP
+ANB MR10415              ; 原点復帰完了OK
+JMP @MR2110              ; ﾒﾝﾃﾅﾝｽ終了へ
+STG @MR2503              ; Postﾏｸﾛへ
+MPS
+MSTRT SELECT_POST #1 #0 #0 @MR1800;selectEND
+MPP
+AND @MR1800              ; selectEND
+JMP @MR2504
+STG @MR2504
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+MPS
+ANB R47800               ; _Group1　ﾒﾝﾃ動作定停止移行中
+SET MR10300              ; ﾒﾝﾃﾅﾝｽｾﾚｸﾄAuto開始(全Task展開用)
+CON
+SET @MR2102              ; STEP動作中
+CON
+JMP @MR2505
+MPP
+AND R47800               ; _Group1　ﾒﾝﾃ動作定停止移行中
+JMP @MR2110              ; ﾒﾝﾃﾅﾝｽ終了へ
+STG @MR2505
+SET @MR3000              ; AUTO Main1
+CON
+SET @MR4000              ; AUTO Main2
+CON
+JMP @MR2506
+STG @MR2506
+AND @MR3002              ; AUTO Main1 Busy
+AND @MR4002              ; Main2 Busy
+JMP @MR2507
+STG @MR2507
+ANB @MR3002              ; AUTO Main1 Busy
+ANB @MR4002              ; Main2 Busy
+RES MR10300              ; ﾒﾝﾃﾅﾝｽｾﾚｸﾄAuto開始(全Task展開用)
+CON
+RES @MR2102              ; STEP動作中
+CON
+RES @MR2103              ; Step動作完了
+CON
+JMP @MR2110              ; ﾒﾝﾃﾅﾝｽ終了へ
+;<h1/>　　No.9-14 ﾎﾙﾀﾞｰｻﾌﾞ＆ﾍｯﾄﾞｻﾌﾞ組込
+;ｽﾗｲﾀﾞｰ、組込位置へ移動
+;ﾎﾙﾀﾞｰｻﾌﾞをあらかじめｾｯﾄしておくのは、NG（干渉あり）
+LD MR13000               ; R1 R13選択記憶
+ANB R4213                ; M/S1 ﾎﾙﾀﾞｰｻﾌﾞ有無確認
+AND R4205                ; M/S1 COFｶﾞｲﾄﾞ用ﾁｬｯｸ 開限
+AND R4207                ; M/S1 COFｶﾞｲﾄﾞ前後 戻し側
+AND R4203                ; M/S1 ﾜｰｸ押さえ 上限
+AND R4201                ; M/S1 ｸﾘｰﾆﾝｸﾞﾛｰﾗ上下 上限
+AND R5304                ; M/S ｽﾃｰｼﾞ1 圧力ｾﾝｻOUT1
+LD MR13001               ; R1 R14選択記憶
+ANB R4313                ; -
+AND R4305                ; -
+AND R4307                ; -
+AND R4303                ; -
+AND R4301                ; -
+AND CR2003               ; 常時OFF
+ORL
+AND T2190                ; RB10 Pos.1　 待機位置
+LD MR13002               ; R1 R15選択記憶
+ANB R4413                ; M/S3 ﾎﾙﾀﾞｰｻﾌﾞ有無確認
+AND R4405                ; M/S3 COFｶﾞｲﾄﾞ用ﾁｬｯｸ 開限
+AND R4407                ; M/S3 COFｶﾞｲﾄﾞ前後 戻し側
+AND R4403                ; M/S3 ﾜｰｸ押さえ 上限
+AND R4401                ; M/S3 ｸﾘｰﾆﾝｸﾞﾛｰﾗ上下 上限
+AND R5308                ; M/S ｽﾃｰｼﾞ3 圧力ｾﾝｻOUT1
+LD MR13003               ; R1 R16選択記憶
+ANB R4513                ; -
+AND R4505                ; -
+AND R4507                ; -
+AND R4503                ; -
+AND R4501                ; -
+AND CR2003               ; 常時OFF
+ORL
+AND T2200                ; RB11 Pos.1　待機高さ
+ORL
+AND MR10600              ; ﾎﾙﾀﾞｻﾌﾞ供給PP ﾊﾝﾄﾞ 閉限
+AND MR2814               ; RB3　原点･下流動作位置
+OUT @MR2104              ; 起動条件
+STG @MR2004              ; ﾎﾙﾀﾞｰSub組込開始STG
+MPS
+LD @MR2104               ; 起動条件
+AND MR3000               ; RB1 起動IL　ON=起動可能
+ANL
+JMP @MR2105
+MPP
+TMR #754 #5              ; 起動条件不成立ﾀｲﾏ
+CON
+AND T754                 ; 起動条件不成立ﾀｲﾏ
+JMP @MR2110              ; ﾒﾝﾃﾅﾝｽ終了へ
+STG @MR2105
+MPS
+MEP
+MSTRT SELECT_POST #1 #0 #0 @MR1800;selectEND
+MPP
+AND @MR1800              ; selectEND
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR2106
+STG @MR2106
+MPS
+LDB MR16813              ; RB13ｴﾗｰ検出
+ANB MR16815              ; RB15ｴﾗｰ検出
+ANB R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+ANL
+MPS
+LD MR13000               ; R1 R13選択記憶
+ANB R36200               ; RB13 MOVE
+ANB R36202               ; During RB13 MOVE
+ANL
+MPS
+LD= #5 EM1324            ; RB13Target Pos
+AND MR3012               ; RB13 起動IL　ON=起動可能
+ANL
+SET R36200               ; RB13 MOVE
+CON
+JMP @MR2006
+MPP
+DW #5 EM1324             ; RB13Target Pos
+MRD
+LD MR13001               ; R1 R14選択記憶
+ANB R36300               ; RB14 MOVE
+ANB R36302               ; During RB14 MOVE
+ANL
+MPS
+LD= #5 EM1326            ; RB14Target Pos
+AND MR3013               ; RB14 起動IL　ON=起動可能
+ANL
+SET R36300               ; RB14 MOVE
+CON
+JMP @MR2006
+MPP
+DW #5 EM1326             ; RB14Target Pos
+MRD
+LD MR13002               ; R1 R15選択記憶
+ANB R36400               ; RB15 MOVE
+ANB R36402               ; During RB15 MOVE
+ANL
+MPS
+LD= #5 EM1328            ; RB15Target Pos
+AND MR3014               ; RB15 起動IL　ON=起動可能
+ANL
+SET R36400               ; RB15 MOVE
+CON
+JMP @MR2006
+MPP
+DW #5 EM1328             ; RB15Target Pos
+MPP
+LD MR13003               ; R1 R16選択記憶
+ANB R36500               ; RB16 MOVE
+ANB R36502               ; During RB16 MOVE
+ANL
+MPS
+LD= #5 EM1330            ; RB16Target Pos
+AND MR3015               ; RB16 起動IL　ON=起動可能
+ANL
+SET R36500               ; RB16 MOVE
+CON
+JMP @MR2006
+MPP
+DW #5 EM1330             ; RB16Target Pos
+MPP
+AND R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+SET @MR1900              ; Main1 HALT許可
+CON
+SET @MR1901              ; Main2 HALT許可
+STG @MR2006
+MPS
+LD MR13000               ; R1 R13選択記憶
+AND R36201               ; RB13 MOVE END
+ANL
+MPS
+LDB R36203               ; RB13Alarm
+AND T2224                ; RB13 Pos.5　ﾎﾙﾀﾞｰｻﾌﾞ組付位置
+ANL
+RES R36201               ; RB13 MOVE END
+CON
+JMP @MR2007
+MPP
+AND R36203               ; RB13Alarm
+@SET MR16813             ; RB13ｴﾗｰ検出
+CON
+RES R36201               ; RB13 MOVE END
+CON
+JMP @MR2004              ; ﾎﾙﾀﾞｰSub組込開始STG
+MRD
+LD MR13001               ; R1 R14選択記憶
+AND R36301               ; RB14 MOVE END
+ANL
+MPS
+LDB R36303               ; RB14Alarm
+AND T2244                ; RB14 Pos.5　ﾎﾙﾀﾞｰｻﾌﾞ組付位置
+ANL
+RES R36301               ; RB14 MOVE END
+CON
+JMP @MR2007
+MPP
+AND R36303               ; RB14Alarm
+@SET MR16814             ; RB14ｴﾗｰ検出
+CON
+RES R36301               ; RB14 MOVE END
+CON
+JMP @MR2004              ; ﾎﾙﾀﾞｰSub組込開始STG
+MRD
+LD MR13002               ; R1 R15選択記憶
+AND R36401               ; RB15 MOVE END
+ANL
+MPS
+LDB R36403               ; RB15Alarm
+AND T2264                ; RB15 Pos.5　ﾎﾙﾀﾞｰｻﾌﾞ組付位置
+ANL
+RES R36401               ; RB15 MOVE END
+CON
+JMP @MR2007
+MPP
+AND R36403               ; RB15Alarm
+@SET MR16815             ; RB15ｴﾗｰ検出
+CON
+RES R36401               ; RB15 MOVE END
+CON
+JMP @MR2004              ; ﾎﾙﾀﾞｰSub組込開始STG
+MPP
+LD MR13003               ; R1 R16選択記憶
+AND R36501               ; RB16 MOVE END
+ANL
+MPS
+LDB R36503               ; RB16Alarm
+AND T2284                ; RB16 Pos.5　ﾎﾙﾀﾞｰｻﾌﾞ組付位置
+ANL
+RES R36501               ; RB16 MOVE END
+CON
+JMP @MR2007
+MPP
+AND R36503               ; RB16Alarm
+@SET MR16900             ; RB16ｴﾗｰ検出
+CON
+RES R36501               ; RB16 MOVE END
+CON
+JMP @MR2004              ; ﾎﾙﾀﾞｰSub組込開始STG
+;RB1も、組込位置まで移動
+STG @MR2007
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+ANB MR16801              ; RB1ｴﾗｰ検出
+MPS
+LDB R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+ANB R35000               ; RB1 MOVE
+ANB R35002               ; During RB1 MOVE 
+ANB R35001               ; RB1 MOVE END
+ANL
+MPS
+AND MR13000              ; R1 R13選択記憶
+MPS
+LD= #11 EM1300           ; RB1Target Pos
+AND MR3000               ; RB1 起動IL　ON=起動可能
+ANL
+SET R35000               ; RB1 MOVE
+CON
+JMP @MR2008
+MPP
+DW #11 EM1300            ; RB1Target Pos
+MRD
+AND MR13001              ; R1 R14選択記憶
+MPS
+LD= #12 EM1300           ; RB1Target Pos
+AND MR3000               ; RB1 起動IL　ON=起動可能
+ANL
+SET R35000               ; RB1 MOVE
+CON
+JMP @MR2008
+MPP
+DW #12 EM1300            ; RB1Target Pos
+MRD
+AND MR13002              ; R1 R15選択記憶
+MPS
+LD= #13 EM1300           ; RB1Target Pos
+AND MR3000               ; RB1 起動IL　ON=起動可能
+ANL
+SET R35000               ; RB1 MOVE
+CON
+JMP @MR2008
+MPP
+DW #13 EM1300            ; RB1Target Pos
+MPP
+AND MR13003              ; R1 R16選択記憶
+MPS
+LD= #14 EM1300           ; RB1Target Pos
+AND MR3000               ; RB1 起動IL　ON=起動可能
+ANL
+SET R35000               ; RB1 MOVE
+CON
+JMP @MR2008
+MPP
+DW #14 EM1300            ; RB1Target Pos
+MPP
+AND R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+SET @MR1900              ; Main1 HALT許可
+CON
+SET @MR1901              ; Main2 HALT許可
+STG @MR2008
+AND R35001               ; RB1 MOVE END
+MPS
+ANB R35003               ; RB1 Alarm
+MPS
+LD MR13000               ; R1 R13選択記憶
+AND T2010                ; RB1 Pos11　 M/S1組込位置
+ANL
+RES R35001               ; RB1 MOVE END
+CON
+JMP @MR2009
+MRD
+LD MR13001               ; R1 R14選択記憶
+AND T2011                ; RB1 Pos12　 M/S2組込位置
+ANL
+RES R35001               ; RB1 MOVE END
+CON
+JMP @MR2009
+MRD
+LD MR13002               ; R1 R15選択記憶
+AND T2012                ; RB1 Pos13　 M/S3組込位置
+ANL
+RES R35001               ; RB1 MOVE END
+CON
+JMP @MR2009
+MPP
+LD MR13003               ; R1 R16選択記憶
+AND T2013                ; RB1 Pos14　 M/S4組込位置
+ANL
+RES R35001               ; RB1 MOVE END
+CON
+JMP @MR2009
+MPP
+AND R35003               ; RB1 Alarm
+@SET MR16801             ; RB1ｴﾗｰ検出
+CON
+RES R35001               ; RB1 MOVE END
+CON
+JMP @MR2007
+;組込開始
+STG @MR2009
+AND CR2002               ; 常時ON
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+SET @MR6000              ; ﾎﾙﾀﾞｰSub組込_Sub
+CON
+JMP @MR2010
+STG @MR2010
+AND @MR6002              ; ﾎﾙﾀﾞｰSub組込_Sub　実行中
+AND @MR6001              ; ﾎﾙﾀﾞｰSub組込_Sub 実行完了
+RES @MR6001              ; ﾎﾙﾀﾞｰSub組込_Sub 実行完了
+CON
+JMP @MR2011
+;組込完了、ﾍｯﾄﾞSub吸着OFF→破壊
+STG @MR2011
+ANB @MR6002              ; ﾎﾙﾀﾞｰSub組込_Sub　実行中
+MPS
+AND MR13000              ; R1 R13選択記憶
+RES MR8206               ; M/S ｽﾃｰｼﾞ1 吸着ON
+CON
+SET MR8207               ; M/S ｽﾃｰｼﾞ1 吸着OFF
+CON
+SET MR8208               ; M/S ｽﾃｰｼﾞ1 破壊ON
+CON
+JMP @MR2012
+MRD
+AND MR13001              ; R1 R14選択記憶
+RES MR8209               ; M/S ｽﾃｰｼﾞ2 吸着ON
+CON
+SET MR8210               ; M/S ｽﾃｰｼﾞ2 吸着OFF
+CON
+SET MR8211               ; M/S ｽﾃｰｼﾞ2 破壊ON
+CON
+JMP @MR2012
+MRD
+AND MR13002              ; R1 R15選択記憶
+RES MR8212               ; M/S ｽﾃｰｼﾞ3 吸着ON
+CON
+SET MR8213               ; M/S ｽﾃｰｼﾞ3 吸着OFF
+CON
+SET MR8214               ; M/S ｽﾃｰｼﾞ3 破壊ON
+CON
+JMP @MR2012
+MPP
+AND MR13003              ; R1 R16選択記憶
+RES MR8300               ; M/S ｽﾃｰｼﾞ4 吸着ON
+CON
+SET MR8301               ; M/S ｽﾃｰｼﾞ4 吸着OFF
+CON
+SET MR8302               ; M/S ｽﾃｰｼﾞ4 破壊ON
+CON
+JMP @MR2012
+STG @MR2012
+TMR #755 #5
+CON
+AND T755
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+MPS
+AND MR13000              ; R1 R13選択記憶
+RES MR8208               ; M/S ｽﾃｰｼﾞ1 破壊ON
+CON
+JMP @MR2013
+MRD
+AND MR13001              ; R1 R14選択記憶
+RES MR8211               ; M/S ｽﾃｰｼﾞ2 破壊ON
+CON
+JMP @MR2013
+MRD
+AND MR13002              ; R1 R15選択記憶
+RES MR8214               ; M/S ｽﾃｰｼﾞ3 破壊ON
+CON
+JMP @MR2013
+MPP
+AND MR13003              ; R1 R16選択記憶
+RES MR8302               ; M/S ｽﾃｰｼﾞ4 破壊ON
+CON
+JMP @MR2013
+STG @MR2013
+MPS
+LDB MR16813              ; RB13ｴﾗｰ検出
+ANB MR16815              ; RB15ｴﾗｰ検出
+ANB R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+ANL
+MPS
+LD MR13000               ; R1 R13選択記憶
+ANB R36200               ; RB13 MOVE
+ANB R36202               ; During RB13 MOVE
+ANB R36201               ; RB13 MOVE END
+ANL
+MPS
+LD= #10 EM1324           ; RB13Target Pos
+AND MR3012               ; RB13 起動IL　ON=起動可能
+ANL
+SET R36200               ; RB13 MOVE
+CON
+JMP @MR2014
+MPP
+DW #10 EM1324            ; RB13Target Pos
+MRD
+LD MR13001               ; R1 R14選択記憶
+ANB R36300               ; RB14 MOVE
+ANB R36302               ; During RB14 MOVE
+ANB R36301               ; RB14 MOVE END
+ANL
+MPS
+LD= #10 EM1326           ; RB14Target Pos
+AND MR3013               ; RB14 起動IL　ON=起動可能
+ANL
+SET R36300               ; RB14 MOVE
+CON
+JMP @MR2014
+MPP
+DW #10 EM1326            ; RB14Target Pos
+MRD
+LD MR13002               ; R1 R15選択記憶
+ANB R36400               ; RB15 MOVE
+ANB R36402               ; During RB15 MOVE
+ANB R36401               ; RB15 MOVE END
+ANL
+MPS
+LD= #10 EM1328           ; RB15Target Pos
+AND MR3014               ; RB15 起動IL　ON=起動可能
+ANL
+SET R36400               ; RB15 MOVE
+CON
+JMP @MR2014
+MPP
+DW #10 EM1328            ; RB15Target Pos
+MRD
+LD MR13003               ; R1 R16選択記憶
+ANB R36500               ; RB16 MOVE
+ANB R36502               ; During RB16 MOVE
+ANB R36501               ; RB16 MOVE END
+ANL
+MPS
+LD= #10 EM1330           ; RB16Target Pos
+AND MR3015               ; RB16 起動IL　ON=起動可能
+ANL
+SET R36500               ; RB16 MOVE
+CON
+JMP @MR2014
+MPP
+DW #10 EM1330            ; RB16Target Pos
+MPP
+TMR #756 #30
+CON
+AND T756
+JMP @MR2110              ; ﾒﾝﾃﾅﾝｽ終了へ
+MPP
+AND R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+SET @MR1900              ; Main1 HALT許可
+CON
+SET @MR1901              ; Main2 HALT許可
+STG @MR2014
+MPS
+LD MR13000               ; R1 R13選択記憶
+AND R36201               ; RB13 MOVE END
+ANL
+MPS
+LDB R36203               ; RB13Alarm
+AND T2229                ; RB13 Pos.10 ｶｼﾒﾕﾆｯﾄNG排出位置
+ANL
+RES R36201               ; RB13 MOVE END
+CON
+JMP @MR2015
+MPP
+AND R36203               ; RB13Alarm
+@SET MR16813             ; RB13ｴﾗｰ検出
+CON
+RES R36201               ; RB13 MOVE END
+CON
+JMP @MR2013
+MRD
+LD MR13001               ; R1 R14選択記憶
+AND R36301               ; RB14 MOVE END
+ANL
+MPS
+LDB R36303               ; RB14Alarm
+AND T2249                ; RB14 Pos.10
+ANL
+RES R36301               ; RB14 MOVE END
+CON
+JMP @MR2015
+MPP
+AND R36303               ; RB14Alarm
+@SET MR16814             ; RB14ｴﾗｰ検出
+CON
+RES R36301               ; RB14 MOVE END
+CON
+JMP @MR2013
+MRD
+LD MR13002               ; R1 R15選択記憶
+AND R36401               ; RB15 MOVE END
+ANL
+MPS
+LDB R36403               ; RB15Alarm
+AND T2269                ; RB15 Pos.10 ｶｼﾒﾕﾆｯﾄNG排出位置
+ANL
+RES R36401               ; RB15 MOVE END
+CON
+JMP @MR2015
+MPP
+AND R36403               ; RB15Alarm
+@SET MR16815             ; RB15ｴﾗｰ検出
+CON
+RES R36401               ; RB15 MOVE END
+CON
+JMP @MR2013
+MPP
+LD MR13003               ; R1 R16選択記憶
+AND R36501               ; RB16 MOVE END
+ANL
+MPS
+LDB R36503               ; RB16Alarm
+AND T2289                ; RB16 Pos.10
+ANL
+RES R36501               ; RB16 MOVE END
+CON
+JMP @MR2015
+MPP
+AND R36503               ; RB16Alarm
+@SET MR16900             ; RB16ｴﾗｰ検出
+CON
+RES R36501               ; RB16 MOVE END
+CON
+JMP @MR2013
+STG @MR2015
+RES MR13000              ; R1 R13選択記憶
+CON
+RES MR13001              ; R1 R14選択記憶
+CON
+RES MR13002              ; R1 R15選択記憶
+CON
+RES MR13003              ; R1 R16選択記憶
+CON
+JMP @MR2110              ; ﾒﾝﾃﾅﾝｽ終了へ
+;<h1/>_MainTP　表示中ﾍﾟｰｼﾞNo2011
+LD @MR2002               ; Mainte中
+ANB R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+MC
+;<h1/>_MainTP　表示中ﾍﾟｰｼﾞNo2012
+LD @MR2002               ; Mainte中
+AND= DM3000 #2012        ; _MainTP　表示中ﾍﾟｰｼﾞNo
+MPS
+ANP MR20300              ; H_ｻﾌﾞ 供給PP ﾊﾝﾄﾞ 開
+SET MR7607               ; ﾎﾙﾀﾞｻﾌﾞ供給PP ﾊﾝﾄﾞ 開
+CON
+RES MR7606               ; ﾎﾙﾀﾞｻﾌﾞ供給PP ﾊﾝﾄﾞ 閉
+MRD
+LDP MR20301              ; H_ｻﾌﾞ 供給PP ﾊﾝﾄﾞ 閉
+LD T2060                 ; RB4 Pos.1　作業原点高さ
+OR T2061                 ; RB4 Pos.2　搬送高さ
+ANL
+ANL
+RES MR7607               ; ﾎﾙﾀﾞｻﾌﾞ供給PP ﾊﾝﾄﾞ 開
+CON
+SET MR7606               ; ﾎﾙﾀﾞｻﾌﾞ供給PP ﾊﾝﾄﾞ 閉
+MRD
+ANP MR20302              ; H_ｻﾌﾞ 供給PP上下 下降
+SET MR7608               ; ﾎﾙﾀﾞｻﾌﾞ供給PP上下 下降
+CON
+RES MR7609               ; ﾎﾙﾀﾞｻﾌﾞ供給PP上下 上昇
+MRD
+ANP MR20303              ; H_ｻﾌﾞ 供給PP上下 上昇
+RES MR7608               ; ﾎﾙﾀﾞｻﾌﾞ供給PP上下 下降
+CON
+SET MR7609               ; ﾎﾙﾀﾞｻﾌﾞ供給PP上下 上昇
+MRD
+ANP MR20214              ; H_ｻﾌﾞ 供給PP上下 低速ON
+SET MR7612               ; ﾎﾙﾀﾞｻﾌﾞ給材pp上下_低速切替
+MPP
+ANP MR20215              ; H_ｻﾌﾞ 供給PP上下 低速OFF
+RES MR7612               ; ﾎﾙﾀﾞｻﾌﾞ給材pp上下_低速切替
+LD @MR2002               ; Mainte中
+MPS
+LDB R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+AND= DM3000 #2012        ; _MainTP　表示中ﾍﾟｰｼﾞNo
+ANB R35010               ; During RB1 HOME
+ANB R35002               ; During RB1 MOVE 
+ANL
+MPS
+ANP MR20304              ; RB1 Pos.1
+DW #1 EM1300             ; RB1Target Pos
+MRD
+ANP MR20306              ; RB1 Pos.2
+DW #2 EM1300             ; RB1Target Pos
+MRD
+ANP MR20308              ; RB1 Pos.3
+DW #3 EM1300             ; RB1Target Pos
+MRD
+ANP MR20310              ; RB1 Pos.11
+DW #11 EM1300            ; RB1Target Pos
+MRD
+ANP MR20404              ; RB1 Pos.12
+DW #12 EM1300            ; RB1Target Pos
+MRD
+ANP MR20312              ; RB1 Pos.13
+DW #13 EM1300            ; RB1Target Pos
+MRD
+ANP MR20314              ; RB1 Pos.14
+DW #14 EM1300            ; RB1Target Pos
+MRD
+ANP MR20400              ; RB1 Pos.15
+DW #15 EM1300            ; RB1Target Pos
+MRD
+ANP MR20402              ; RB1 Pos.16
+DW #16 EM1300            ; RB1Target Pos
+MRD
+LDP MR24600              ; RB起動
+AND MR3000               ; RB1 起動IL　ON=起動可能
+ANB R35010               ; During RB1 HOME
+ANL
+SET R35000               ; RB1 MOVE
+CON
+SET @MR2200              ; RB1 Pos.1
+MPP
+LDP MR24602              ; RB　原点復帰PB
+AND MR3000               ; RB1 起動IL　ON=起動可能
+ANB R35002               ; During RB1 MOVE 
+ANL
+SET R35008               ; RB1 HOME
+CON
+SET @MR2201              ; RB1 HOME
+MPP
+AND R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+SET @MR1900              ; Main1 HALT許可
+CON
+SET @MR1901              ; Main2 HALT許可
+STG @MR2200              ; RB1 Pos.1
+AND R35001               ; RB1 MOVE END
+MPS
+ANB R35003               ; RB1 Alarm
+RES R35001               ; RB1 MOVE END
+CON
+ENDS
+MPP
+AND R35003               ; RB1 Alarm
+@SET MR16801             ; RB1ｴﾗｰ検出
+CON
+RES R35001               ; RB1 MOVE END
+CON
+ENDS
+STG @MR2201              ; RB1 HOME
+AND R35009               ; RB1 HOME END
+MPS
+ANB R35003               ; RB1 Alarm
+RES R35009               ; RB1 HOME END
+CON
+ENDS
+MPP
+AND R35003               ; RB1 Alarm
+@SET MR13201             ; RB1原点復帰ｴﾗｰ
+CON
+RES R35009               ; RB1 HOME END
+CON
+ENDS
+;<<行コメント編集：Ctrl+Enter/Escで確定>>
+LD @MR2002               ; Mainte中
+AND= DM3000 #2012        ; _MainTP　表示中ﾍﾟｰｼﾞNo
+ANB R35310               ; During RB4 HOME
+ANB R35302               ; During RB4 MOVE
+MPS
+ANP MR20406              ; RB4 Pos.1
+DW #1 EM1306             ; RB4Target Pos
+MRD
+ANP MR20408              ; RB4 Pos.2
+DW #2 EM1306             ; RB4Target Pos
+MRD
+ANP MR20410              ; RB4 Pos.3
+DW #3 EM1306             ; RB4Target Pos
+MRD
+ANP MR20210              ; RB4 Pos.4
+DW #4 EM1306             ; RB4Target Pos
+MRD
+ANP MR20412              ; RB4 Pos.5
+DW #5 EM1306             ; RB4Target Pos
+MRD
+ANP MR20414              ; RB4 Pos.7
+DW #7 EM1306             ; RB4Target Pos
+MRD
+ANP MR18700              ; RB4 Pos.9
+DW #9 EM1306             ; RB4Target Pos
+MRD
+ANP MR18702              ; RB4 Pos.11
+DW #11 EM1306            ; RB4Target Pos
+MRD
+ANP MR18704              ; RB4 Pos.13
+DW #13 EM1306            ; RB4Target Pos
+MRD
+ANP MR18706              ; RB4 Pos.15
+DW #15 EM1306            ; RB4Target Pos
+MRD
+LDP MR24604              ; RB起動
+AND MR3003               ; RB4 起動IL　ON=起動可能
+ANB R35310               ; During RB4 HOME
+ANL
+SET R35300               ; RB4 MOVE
+CON
+SET @MR2300              ; RB4 Pos.1
+MPP
+LDP MR24606              ; RB原点復帰起動
+AND MR3003               ; RB4 起動IL　ON=起動可能
+ANB R35302               ; During RB4 MOVE
+ANL
+SET R35308               ; RB4 HOME
+CON
+SET @MR2301              ; RB4 Pos.2
+STG @MR2300              ; RB4 Pos.1
+AND R35301               ; RB4 MOVE END
+MPS
+ANB R35303               ; RB4Alarm
+RES R35301               ; RB4 MOVE END
+CON
+ENDS
+MPP
+AND R35303               ; RB4Alarm
+@SET MR16804             ; RB4ｴﾗｰ検出
+CON
+RES R35301               ; RB4 MOVE END
+CON
+ENDS
+STG @MR2301              ; RB4 Pos.2
+AND R35309               ; RB4 HOME END
+MPS
+ANB R35303               ; RB4Alarm
+RES R35309               ; RB4 HOME END
+CON
+ENDS
+MPP
+AND R35303               ; RB4Alarm
+@SET MR13204             ; RB4原点復帰ｴﾗｰ
+CON
+RES R35309               ; RB4 HOME END
+CON
+ENDS
+;<h1/>_MainTP　表示中ﾍﾟｰｼﾞNo2015
+LD @MR2002               ; Mainte中
+AND= DM3000 #2015        ; _MainTP　表示中ﾍﾟｰｼﾞNo
+MPS
+LDP MR20502              ; M_ｽﾗ 1COFｶﾞｲﾄ用ﾁｬｯｸ 閉
+LD R4206                 ; M/S1 COFｶﾞｲﾄﾞ前後 ﾜｰｸ保持側
+ANB R4207                ; M/S1 COFｶﾞｲﾄﾞ前後 戻し側
+OR CR2002                ; 常時ON
+ANL
+ANL
+SET MR7204               ; M/S1 COFｶﾞｲﾄﾞ用ﾁｬｯｸ 閉
+CON
+RES MR7205               ; -
+MRD
+LDP MR20503              ; M_ｽﾗ 1COFｶﾞｲﾄ用ﾁｬｯｸ 開
+LD R4206                 ; M/S1 COFｶﾞｲﾄﾞ前後 ﾜｰｸ保持側
+ANB R4207                ; M/S1 COFｶﾞｲﾄﾞ前後 戻し側
+OR CR2002                ; 常時ON
+ANL
+ANL
+RES MR7204               ; M/S1 COFｶﾞｲﾄﾞ用ﾁｬｯｸ 閉
+CON
+SET MR7205               ; -
+MRD
+LDP MR20504              ; M_ｽﾗ 1COFｶﾞｲﾄﾞ前後ﾜｰｸ保持側
+LD R4205                 ; M/S1 COFｶﾞｲﾄﾞ用ﾁｬｯｸ 開限
+ANB R4204                ; M/S1 COFｶﾞｲﾄﾞ用ﾁｬｯｸ 閉限
+OR CR2002                ; 常時ON
+ANL
+LD T2060                 ; RB4 Pos.1　作業原点高さ
+OR T2061                 ; RB4 Pos.2　搬送高さ
+OR T2063                 ; RB4 Pos.4　ﾎﾙﾀﾞｻﾌﾞ組込み前高さ
+ORB T2010                ; RB1 Pos11　 M/S1組込位置
+ANL
+LD T2100                 ; RB6 Pos.1 作業原点
+OR T2101                 ; RB6 Pos.2 搬送高さ
+ORB T2050                ; RB3 Pos.11　ms1ﾜｰｸ取位置
+ANL
+LD R4210                 ; M/S1 ﾎﾙﾀﾞｻﾌﾞ受けﾋﾟﾝ上下 上限
+ORB R4213                ; M/S1 ﾎﾙﾀﾞｰｻﾌﾞ有無確認
+ANL
+ANL
+SET MR7206               ; M/S1 COFｶﾞｲﾄﾞ前後 ﾜｰｸ保持側
+CON
+RES MR7207               ; M/S1 COFｶﾞｲﾄﾞ前後 戻し側
+MRD
+LDP MR20505              ; M_ｽﾗ 1COFｶﾞｲﾄﾞ前後戻し側
+LD R4205                 ; M/S1 COFｶﾞｲﾄﾞ用ﾁｬｯｸ 開限
+ANB R4204                ; M/S1 COFｶﾞｲﾄﾞ用ﾁｬｯｸ 閉限
+OR CR2002                ; 常時ON
+ANL
+ANL
+RES MR7206               ; M/S1 COFｶﾞｲﾄﾞ前後 ﾜｰｸ保持側
+CON
+SET MR7207               ; M/S1 COFｶﾞｲﾄﾞ前後 戻し側
+MRD
+LDP MR20506              ; M_ｽﾗ 1COFｶﾞｲﾄ用ﾁｬｯｸ 上昇
+LD R4205                 ; M/S1 COFｶﾞｲﾄﾞ用ﾁｬｯｸ 開限
+ANB R4204                ; M/S1 COFｶﾞｲﾄﾞ用ﾁｬｯｸ 閉限
+OR R4207                 ; M/S1 COFｶﾞｲﾄﾞ前後 戻し側
+ANL
+ANL
+SET MR7300               ; M/S1 COFｶﾞｲﾄﾞ上下 上昇
+CON
+RES MR7301               ; M/S1 COFｶﾞｲﾄﾞ上下 下降
+MPP
+LDP MR20507              ; M_ｽﾗ 1COFｶﾞｲﾄ用ﾁｬｯｸ 下降
+LD R4205                 ; M/S1 COFｶﾞｲﾄﾞ用ﾁｬｯｸ 開限
+ANB R4204                ; M/S1 COFｶﾞｲﾄﾞ用ﾁｬｯｸ 閉限
+OR R4207                 ; M/S1 COFｶﾞｲﾄﾞ前後 戻し側
+ANL
+ANL
+RES MR7300               ; M/S1 COFｶﾞｲﾄﾞ上下 上昇
+CON
+SET MR7301               ; M/S1 COFｶﾞｲﾄﾞ上下 下降
+;<h1/>_MainTP　表示中ﾍﾟｰｼﾞNo2017
+LD @MR2002               ; Mainte中
+AND= DM3000 #2017        ; _MainTP　表示中ﾍﾟｰｼﾞNo
+MPS
+LDP MR20702              ; M_ｽﾗ 3COFｶﾞｲﾄﾞ用ﾁｬｯｸ 閉
+LD R4406                 ; M/S3 COFｶﾞｲﾄﾞ前後 ﾜｰｸ保持側
+ANB R4407                ; M/S3 COFｶﾞｲﾄﾞ前後 戻し側
+OR CR2002                ; 常時ON
+ANL
+ANL
+SET MR7404               ; M/S3 COFｶﾞｲﾄﾞ用ﾁｬｯｸ 閉
+CON
+RES MR7405               ; -
+MRD
+LDP MR20703              ; M_ｽﾗ 3COFｶﾞｲﾄﾞ用ﾁｬｯｸ 開
+LD R4406                 ; M/S3 COFｶﾞｲﾄﾞ前後 ﾜｰｸ保持側
+ANB R4407                ; M/S3 COFｶﾞｲﾄﾞ前後 戻し側
+OR CR2002                ; 常時ON
+ANL
+ANL
+RES MR7404               ; M/S3 COFｶﾞｲﾄﾞ用ﾁｬｯｸ 閉
+CON
+SET MR7405               ; -
+MRD
+LDP MR20704              ; M_ｽﾗ3 COFｶﾞｲﾄﾞ前後 ﾜｰｸ保持側
+LD R4405                 ; M/S3 COFｶﾞｲﾄﾞ用ﾁｬｯｸ 開限
+ANB R4404                ; M/S3 COFｶﾞｲﾄﾞ用ﾁｬｯｸ 閉限
+OR CR2002                ; 常時ON
+ANL
+LD T2060                 ; RB4 Pos.1　作業原点高さ
+OR T2061                 ; RB4 Pos.2　搬送高さ
+OR T2063                 ; RB4 Pos.4　ﾎﾙﾀﾞｻﾌﾞ組込み前高さ
+ORB T2012                ; RB1 Pos13　 M/S3組込位置
+ANL
+LD T2100                 ; RB6 Pos.1 作業原点
+OR T2101                 ; RB6 Pos.2 搬送高さ
+ORB T2052                ; RB3 Pos.13　ms3ﾜｰｸ取位置
+ANL
+LD R4410                 ; M/S3 ﾎﾙﾀﾞｻﾌﾞ受けﾋﾟﾝ上下 上限
+ORB R4413                ; M/S3 ﾎﾙﾀﾞｰｻﾌﾞ有無確認
+ANL
+ANL
+SET MR7406               ; M/S3 COFｶﾞｲﾄﾞ前後 ﾜｰｸ保持側
+CON
+RES MR7407               ; M/S3 COFｶﾞｲﾄﾞ前後 戻し側
+MRD
+LDP MR20705              ; M_ｽﾗ 3COFｶﾞｲﾄﾞ前後 戻し側
+LD R4405                 ; M/S3 COFｶﾞｲﾄﾞ用ﾁｬｯｸ 開限
+ANB R4404                ; M/S3 COFｶﾞｲﾄﾞ用ﾁｬｯｸ 閉限
+OR CR2002                ; 常時ON
+ANL
+ANL
+RES MR7406               ; M/S3 COFｶﾞｲﾄﾞ前後 ﾜｰｸ保持側
+CON
+SET MR7407               ; M/S3 COFｶﾞｲﾄﾞ前後 戻し側
+MRD
+LDP MR20706              ; M_ｽﾗ 3COFｶﾞｲﾄ用ﾁｬｯｸ 上昇
+LD R4405                 ; M/S3 COFｶﾞｲﾄﾞ用ﾁｬｯｸ 開限
+ANB R4404                ; M/S3 COFｶﾞｲﾄﾞ用ﾁｬｯｸ 閉限
+OR CR2002                ; 常時ON
+ANL
+ANL
+SET MR7500               ; M/S3 COFｶﾞｲﾄﾞ上下 上昇
+CON
+RES MR7501               ; M/S3 COFｶﾞｲﾄﾞ上下 下降
+MPP
+LDP MR20707              ; M_ｽﾗ 3COFｶﾞｲﾄ用ﾁｬｯｸ 下降
+LD R4405                 ; M/S3 COFｶﾞｲﾄﾞ用ﾁｬｯｸ 開限
+ANB R4404                ; M/S3 COFｶﾞｲﾄﾞ用ﾁｬｯｸ 閉限
+OR CR2002                ; 常時ON
+ANL
+ANL
+RES MR7500               ; M/S3 COFｶﾞｲﾄﾞ上下 上昇
+CON
+SET MR7501               ; M/S3 COFｶﾞｲﾄﾞ上下 下降
+MCR
+;Maintenance　終了
+STG @MR2108
+ANB R39104               ; SELECT_Y_N Interlock
+SET R39104               ; SELECT_Y_N Interlock
+CON
+DW #7 @DM21              ; ScreenNo /SELECT_Y_N
+CON
+DW #0 @DM22              ; Bz_Use /SELECT_Y_N
+CON
+SET @MR300               ; Task0 SELECT_Y_N
+CON
+JMP @MR2109
+STG @MR2109
+AND @MR301               ; Task0 Y/N END
+RES @MR301               ; Task0 Y/N END
+CON
+RES R39104               ; SELECT_Y_N Interlock
+CON
+MPS
+AND @MR306               ; Task0 Y/N
+JMP @MR2000              ; Mainte
+MPP
+ANB @MR306               ; Task0 Y/N
+JMP @MR2110              ; ﾒﾝﾃﾅﾝｽ終了へ
+STG @MR2110              ; ﾒﾝﾃﾅﾝｽ終了へ
+MCALL HOLD_REQUEST #1
+JMP @MR2914
+STG @MR2914
+MPS
+MCALL MODE_INDI #2
+MPP
+ANB @MR001               ; TASK0 ERROR
+MPS
+AND R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+SET @MR1900              ; Main1 HALT許可
+CON
+SET @MR1901              ; Main2 HALT許可
+MPP
+ANB R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+RES @MR2002              ; Mainte中
+CON
+JMP @MR2915              ; Mainte END
+STG @MR2915              ; Mainte END
+JMP LR600                ; _Grp1_Task0_Fin.STG
+;<h1/>ERROR
+;//*Error Sample
+;[使用方法]
+;・@DM1にERROR番号を代入
+;・@DM2にSensor番号を代入(センサ無しエラーの場合は0)
+;・@DM9に復帰SW番号(1～9、0はSW無し)をdegit単位で4桁入力
+;・Task0 ERROR SET(@MR100)でエラー処理開始
+;・エラー復帰でTask0 ERROR END(@MR101)がON
+;・押下復帰SW番号により左から対応した@MR105,@MR106,@MR107,@MR108のいずれかがON
+;・上記ONが成立したらJMPするSTGに対応する処理を記述
+;Error0を左側から1,2,3,4の番号に対応した復帰選択SWを出力する
+;Error Sample *//
+;＠DM1のSW内容
+;1:「ErrorReset」
+;2:「再検出」
+;3:「再検査」
+;4:「動作継続」
+;5:「定停止」
+;6:「ﾜｰｸ除去」
+;7:「電源断要求」
+;8:「Retry」
+;9:「再確認」
+;RB4原点復帰ｴﾗｰ
+LD MR13204               ; RB4原点復帰ｴﾗｰ
+ANB R39004               ; ｴﾗｰ中
+SET MR18403              ; 【sw1】RB4_HOME_ALM
+CON
+SET R39004               ; ｴﾗｰ中
+CON
+DW #1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #19 @DM1              ; ErrorNo /ERROR_DISP
+CON
+DW #5200 @DM2            ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task0 ERROR
+CON
+SET @MR500
+STG @MR500
+AND @MR101               ; Task0 ｴﾗｰ完了
+RES @MR101               ; Task0 ｴﾗｰ完了
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+RES MR13204              ; RB4原点復帰ｴﾗｰ
+CON
+RES R35303               ; RB4Alarm
+CON
+AND @MR105               ; SW1
+SET MR18403              ; 【sw1】RB4_HOME_ALM
+CON
+ENDS
+;RB1原点復帰ｴﾗｰ
+LD MR13201               ; RB1原点復帰ｴﾗｰ
+ANB R39004               ; ｴﾗｰ中
+RES MR18400              ; 【sw1】RB1_HOME_ALM
+CON
+SET R39004               ; ｴﾗｰ中
+CON
+DW #1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #10 @DM1              ; ErrorNo /ERROR_DISP
+CON
+DW #5213 @DM2            ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task0 ERROR
+CON
+SET @MR501
+STG @MR501
+AND @MR101               ; Task0 ｴﾗｰ完了
+RES @MR101               ; Task0 ｴﾗｰ完了
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+RES MR13201              ; RB1原点復帰ｴﾗｰ
+CON
+RES R35003               ; RB1 Alarm
+CON
+AND @MR105               ; SW1
+SET MR18400              ; 【sw1】RB1_HOME_ALM
+CON
+ENDS
+;COFｾﾝｻ未確定
+LD MR13310               ; COF挿入未確認
+ANB R39004               ; ｴﾗｰ中
+SET R39004               ; ｴﾗｰ中
+CON
+DW #3460 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #3 @DM1               ; ErrorNo /ERROR_DISP
+CON
+DW #194 @DM2             ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task0 ERROR
+CON
+SET @MR502
+STG @MR502
+AND @MR101               ; Task0 ｴﾗｰ完了
+RES @MR101               ; Task0 ｴﾗｰ完了
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+RES MR13310              ; COF挿入未確認
+CON
+MPS
+AND @MR105               ; SW1
+SET MR13311
+CON
+ENDS
+MRD
+AND @MR106               ; SW2
+SET MR13312
+CON
+ENDS
+MPP
+AND @MR107               ; SW3
+SET MR13404
+CON
+ENDS
+;ﾎﾙﾀﾞｰｻﾌﾞｾﾙ間ｽﾗｲﾀﾞ　受取り未確定
+LD MR15305               ; ﾎﾙﾀﾞｰｻﾌﾞｾﾙ間ｽﾗｲﾀﾞ　受取り未確定
+ANB R39004               ; ｴﾗｰ中
+SET R39004               ; ｴﾗｰ中
+CON
+ZRES MR15306 MR15307     ; SW1_再検査からｽﾀｰﾄ  SW2_ﾜｰｸ除去からｽﾀｰﾄ
+CON
+DW #3600 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #99 @DM1              ; ErrorNo /ERROR_DISP
+CON
+DW #5008 @DM2            ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task0 ERROR
+CON
+SET @MR503
+STG @MR503
+AND @MR101               ; Task0 ｴﾗｰ完了
+RES @MR101               ; Task0 ｴﾗｰ完了
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+RES MR15305              ; ﾎﾙﾀﾞｰｻﾌﾞｾﾙ間ｽﾗｲﾀﾞ　受取り未確定
+CON
+MPS
+AND @MR105               ; SW1
+SET MR15306              ; SW1_再検査からｽﾀｰﾄ
+CON
+ENDS
+MPP
+AND @MR106               ; SW2
+SET MR15307              ; SW2_ﾜｰｸ除去からｽﾀｰﾄ
+CON
+ENDS
+;ﾎﾙﾀﾞｰｻﾌﾞｾﾙ間ｽﾗｲﾀﾞ　受取り未確定
+LD MR15310               ; ﾎﾙﾀﾞｰｻﾌﾞｾﾙ間ｽﾗｲﾀﾞ　受渡し未確定
+ANB R39004               ; ｴﾗｰ中
+SET R39004               ; ｴﾗｰ中
+CON
+ZRES MR15311 MR15312     ; SW1_再検査からｽﾀｰﾄ  SW2_ﾜｰｸ除去からｽﾀｰﾄ
+CON
+DW #3600 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #100 @DM1             ; ErrorNo /ERROR_DISP
+CON
+DW #5008 @DM2            ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task0 ERROR
+CON
+SET @MR504
+STG @MR504
+AND @MR101               ; Task0 ｴﾗｰ完了
+RES @MR101               ; Task0 ｴﾗｰ完了
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+RES MR15310              ; ﾎﾙﾀﾞｰｻﾌﾞｾﾙ間ｽﾗｲﾀﾞ　受渡し未確定
+CON
+MPS
+AND @MR105               ; SW1
+SET MR15311              ; SW1_再検査からｽﾀｰﾄ
+CON
+ENDS
+MPP
+AND @MR106               ; SW2
+SET MR15312              ; SW2_ﾜｰｸ除去からｽﾀｰﾄ
+CON
+ENDS
+;ﾎﾙﾀﾞｰｻﾌﾞｾﾙ間ｽﾗｲﾀﾞ　ﾜｰｸ取出し
+LD MR16712               ; ﾎﾙﾀﾞｰｻﾌﾞｾﾙ間ｽﾗｲﾀﾞ　ﾜｰｸ取出し
+ANB R39004               ; ｴﾗｰ中
+SET R39004               ; ｴﾗｰ中
+CON
+ZRES MR16713 MR16714     ; SW1_ﾜｰｸ除去からｽﾀｰﾄ
+CON
+DW #6000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #103 @DM1             ; ErrorNo /ERROR_DISP
+CON
+DW #5008 @DM2            ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task0 ERROR
+CON
+SET @MR505
+STG @MR505
+AND @MR101               ; Task0 ｴﾗｰ完了
+RES @MR101               ; Task0 ｴﾗｰ完了
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+RES MR16712              ; ﾎﾙﾀﾞｰｻﾌﾞｾﾙ間ｽﾗｲﾀﾞ　ﾜｰｸ取出し
+CON
+MPS
+AND @MR105               ; SW1
+SET MR16713              ; SW1_ﾜｰｸ除去からｽﾀｰﾄ
+CON
+ENDS
+MPP
+AND @MR106               ; SW2
+SET MR16714
+CON
+ENDS
+;ﾎﾙﾀﾞｰｻﾌﾞ供PPﾊﾝﾄﾞ ﾜｰｸ除残判別ALM
+LD MR17500               ; ﾎﾙﾀﾞｰｻﾌﾞ供PPﾊﾝﾄﾞﾜｰｸ除残判別ALM
+ANB R39004               ; ｴﾗｰ中
+SET R39004               ; ｴﾗｰ中
+CON
+ZRES MR17501 MR17502     ; SW1「動作継続」_からｽﾀｰﾄ  SW2_「ﾜｰｸ除去」からｽﾀｰﾄ
+CON
+DW #4600 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #190 @DM1             ; ErrorNo /ERROR_DISP
+CON
+DW #4606 @DM2            ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task0 ERROR
+CON
+SET @MR508
+STG @MR508
+AND @MR101               ; Task0 ｴﾗｰ完了
+RES @MR101               ; Task0 ｴﾗｰ完了
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+RES MR17500              ; ﾎﾙﾀﾞｰｻﾌﾞ供PPﾊﾝﾄﾞﾜｰｸ除残判別ALM
+CON
+MPS
+AND @MR105               ; SW1
+SET MR17501              ; SW1「動作継続」_からｽﾀｰﾄ
+CON
+ENDS
+MPP
+AND @MR106               ; SW2
+SET MR17502              ; SW2_「ﾜｰｸ除去」からｽﾀｰﾄ
+CON
+ENDS
+;ﾎﾙﾀﾞｰｻﾌﾞｾﾙ間ｽﾗｲﾀﾞ　ﾜｰｸ除残判別ALM
+LD MR17506
+ANB R39004               ; ｴﾗｰ中
+SET R39004               ; ｴﾗｰ中
+CON
+ZRES MR17507 MR17508     ; SW1「動作継続」_からｽﾀｰﾄ  SW2_「ﾜｰｸ除去」からｽﾀｰﾄ
+CON
+DW #4600 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #191 @DM1             ; ErrorNo /ERROR_DISP
+CON
+DW #5008 @DM2            ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task0 ERROR
+CON
+SET @MR509
+STG @MR509
+AND @MR101               ; Task0 ｴﾗｰ完了
+RES @MR101               ; Task0 ｴﾗｰ完了
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+RES MR17506
+CON
+MPS
+AND @MR105               ; SW1
+SET MR17507              ; SW1「動作継続」_からｽﾀｰﾄ
+CON
+ENDS
+MPP
+AND @MR106               ; SW2
+SET MR17508              ; SW2_「ﾜｰｸ除去」からｽﾀｰﾄ
+CON
+ENDS
+;RB1 ｴﾗｰ
+LD MR16801               ; RB1ｴﾗｰ検出
+ANB R39004               ; ｴﾗｰ中
+SET DM10707.3            ; RES(ﾘｾｯﾄ) RB1
+CON
+RES MR11200              ; 【SW1_Retry】ALM_RES_RB1
+CON
+SET R39004               ; ｴﾗｰ中
+CON
+DW #8000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #8 @DM1               ; ErrorNo /ERROR_DISP
+CON
+DW #0 @DM2               ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task0 ERROR
+CON
+SET @MR506
+STG @MR506
+AND @MR101               ; Task0 ｴﾗｰ完了
+RES @MR101               ; Task0 ｴﾗｰ完了
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+RES MR16801              ; RB1ｴﾗｰ検出
+CON
+AND @MR105               ; SW1
+RES R35003               ; RB1 Alarm
+CON
+RES DM10707.3            ; RES(ﾘｾｯﾄ) RB1
+CON
+SET MR11200              ; 【SW1_Retry】ALM_RES_RB1
+CON
+ENDS
+;RB4 ｴﾗｰ
+LD MR16804               ; RB4ｴﾗｰ検出
+ANB R39004               ; ｴﾗｰ中
+SET DM10731.3            ; RES(ﾘｾｯﾄ) RB4
+CON
+RES MR11203              ; 【SW1_Retry】ALM_RES_RB4
+CON
+SET R39004               ; ｴﾗｰ中
+CON
+DW #8000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #17 @DM1              ; ErrorNo /ERROR_DISP
+CON
+DW #0 @DM2               ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task0 ERROR
+CON
+SET @MR507
+STG @MR507
+AND @MR101               ; Task0 ｴﾗｰ完了
+RES @MR101               ; Task0 ｴﾗｰ完了
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+RES MR16804              ; RB4ｴﾗｰ検出
+CON
+AND @MR105               ; SW1
+RES R35303               ; RB4Alarm
+CON
+RES DM10731.3            ; RES(ﾘｾｯﾄ) RB4
+CON
+SET MR11203              ; 【SW1_Retry】ALM_RES_RB4
+CON
+ENDS
+;RB4 ﾍｯﾄﾞｻﾌﾞ組込みｴﾗｰ
+LD MR18600               ; 【ALM】RB4ﾍｯﾄﾞｻﾌﾞ組込み異常
+ANB R39004               ; ｴﾗｰ中
+SET DM10731.3            ; RES(ﾘｾｯﾄ) RB4
+CON
+ZRES MR18601 MR18602     ; 【SW1】Error_RESET  【SW2】動作継続
+CON
+SET R39004               ; ｴﾗｰ中
+CON
+DW #8400 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #206 @DM1             ; ErrorNo /ERROR_DISP
+CON
+DW #0 @DM2               ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task0 ERROR
+CON
+SET @MR510
+STG @MR510
+AND @MR101               ; Task0 ｴﾗｰ完了
+RES @MR101               ; Task0 ｴﾗｰ完了
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+RES MR18600              ; 【ALM】RB4ﾍｯﾄﾞｻﾌﾞ組込み異常
+CON
+RES R35303               ; RB4Alarm
+CON
+RES DM10731.3            ; RES(ﾘｾｯﾄ) RB4
+CON
+MPS
+AND @MR105               ; SW1
+SET MR18601              ; 【SW1】Error_RESET
+CON
+ENDS
+MPP
+AND @MR106               ; SW2
+SET MR18602              ; 【SW2】動作継続
+CON
+ENDS
+;RB1とRB3の接近検出非常停止ALM
+LD MR15815               ; RB1/3接近検出ALM
+ANB R39004               ; ｴﾗｰ中
+SET R39004               ; ｴﾗｰ中
+CON
+ZRES MR15900 MR15901     ; SW1 ｢再確認] からのｽﾀｰﾄ  SW2 ｢ﾜｰｸ除去]からのｽﾀｰﾄ
+CON
+DW #1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #149 @DM1             ; ErrorNo /ERROR_DISP
+CON
+DW #0 @DM2               ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task0 ERROR
+CON
+SET @MR600
+STG @MR600
+AND @MR101               ; Task0 ｴﾗｰ完了
+RES @MR101               ; Task0 ｴﾗｰ完了
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+RES MR15815              ; RB1/3接近検出ALM
+CON
+MPS
+AND @MR105               ; SW1
+SET MR15900              ; SW1 ｢再確認] からのｽﾀｰﾄ
+CON
+ENDS
+MPP
+AND @MR106               ; SW2
+SET MR15901              ; SW2 ｢ﾜｰｸ除去]からのｽﾀｰﾄ
+CON
+ENDS
+;ﾎﾙﾀﾞｰｻﾌﾞ組込み失敗
+LD MR11500               ; 【ALM】ﾎﾙﾀﾞｰｻﾌﾞﾜｰｸ確認
+ANB R39004               ; ｴﾗｰ中
+SET R39004               ; ｴﾗｰ中
+CON
+RES MR11501              ; 【sw1】ﾜｰｸ除去
+CON
+DW #6000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+DW #196 @DM1             ; ErrorNo /ERROR_DISP
+CON
+DW #0 @DM2               ; SensorNo /ERROR_DISP
+CON
+SET @MR100               ; Task0 ERROR
+CON
+SET @MR601
+STG @MR601
+AND @MR101               ; Task0 ｴﾗｰ完了
+RES @MR101               ; Task0 ｴﾗｰ完了
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+RES MR11500              ; 【ALM】ﾎﾙﾀﾞｰｻﾌﾞﾜｰｸ確認
+CON
+AND @MR105               ; SW1
+SET MR11501              ; 【sw1】ﾜｰｸ除去
+CON
+ENDS
+;MyTask Error Process Substance/エラー処理実体
+STG @MR100               ; Task0 ERROR
+ANB R39002               ; ERROR_DISP Busy
+MPS
+ZRES @MR105 @MR108       ; SW1
+CON
+LDA @DM9                 ; ReturnSW /ERROR_DISP
+CON
+TBCD
+CON
+STA @DM10
+CON
+DISN @DM10 @DM3 #4
+MRD
+DW #0 @DM0               ; TaskNo /ERROR_DISP
+CON
+BMOV @DM0 DM60000 #7     ; TaskNo /ERROR_DISP  TaskNo /ERROR_DISP
+MPP
+SET R39000               ; ERROR_DISP Start
+CON
+SET @MR102               ; Task0 ERROR Busy
+CON
+JMP @MR103
+STG @MR103
+AND R39002               ; ERROR_DISP Busy
+AND= DM60008 @DM1        ; ReturnNo /ERROR_DISP  ErrorNo /ERROR_DISP
+MPS
+AND= DM60007 @DM6        ; ReturnSW /ERROR_DISP
+SET @MR105               ; SW1
+CON
+JMP @MR104
+MRD
+AND= DM60007 @DM5        ; ReturnSW /ERROR_DISP
+SET @MR106               ; SW2
+CON
+JMP @MR104
+MRD
+AND= DM60007 @DM4        ; ReturnSW /ERROR_DISP
+SET @MR107               ; SW3
+CON
+JMP @MR104
+MPP
+AND= DM60007 @DM3        ; ReturnSW /ERROR_DISP
+SET @MR108
+CON
+JMP @MR104
+STG @MR104
+ANB R39002               ; ERROR_DISP Busy
+RES @MR102               ; Task0 ERROR Busy
+CON
+SET @MR101               ; Task0 ｴﾗｰ完了
+CON
+ENDS
+;<h1/>SELECT_ACT
+;Select_ACT Sample *//
+;MyTask Select_ACT Process Substance/SELECT_ACT処理実体
+STG @MR200               ; Task0 SELECT_ACT
+ANB R39202               ; SELECT_ACT Busy
+MPS
+ZRES @MR205 @MR208       ; SW1  sw4
+CON
+DW #0 @DM30              ; TaskNo /SELECT_ACT
+CON
+BMOV @DM30 DM60030 #7    ; TaskNo /SELECT_ACT  TaskNo /SELECT_ACT
+MPP
+SET R39200               ; SELECT_ACT Start
+CON
+SET @MR202               ; Task0 SEL_ACT Busy
+CON
+JMP @MR203
+STG @MR203
+AND R39202               ; SELECT_ACT Busy
+AND<> DM60037 #0         ; SelectSW /SELECT_ACT
+MPS
+AND= DM60037 #1          ; SelectSW /SELECT_ACT
+SET @MR205               ; SW1
+CON
+JMP @MR204
+MRD
+AND= DM60037 #2          ; SelectSW /SELECT_ACT
+SET @MR206               ; SW2
+CON
+JMP @MR204
+MRD
+AND= DM60037 #3          ; SelectSW /SELECT_ACT
+SET @MR207               ; SW3
+CON
+JMP @MR204
+MPP
+AND= DM60037 #4          ; SelectSW /SELECT_ACT
+SET @MR208               ; sw4
+CON
+JMP @MR204
+STG @MR204
+ANB R39202               ; SELECT_ACT Busy
+RES @MR202               ; Task0 SEL_ACT Busy
+CON
+SET @MR201               ; Task0 SEL_ACT END
+CON
+ENDS
+;<h1/>SELECT_Y_N
+;//*Select_Y_N Sample
+STG @MR208               ; sw4
+AND CR2003               ; 常時OFF
+ANB R39104               ; SELECT_Y_N Interlock
+SET R39104               ; SELECT_Y_N Interlock
+CON
+DW #7 @DM21              ; ScreenNo /SELECT_Y_N
+CON
+DW #0 @DM22              ; Bz_Use /SELECT_Y_N
+CON
+SET @MR300               ; Task0 SELECT_Y_N
+CON
+JMP @MR209
+STG @MR209
+AND @MR301               ; Task0 Y/N END
+RES @MR301               ; Task0 Y/N END
+CON
+RES R39104               ; SELECT_Y_N Interlock
+CON
+MPS
+AND @MR306               ; Task0 Y/N
+JMP @MR210
+MPP
+ANB @MR306               ; Task0 Y/N
+JMP @MR211
+;*Select_Y_N Sample//
+;MyTask Select_Y_N Process Substance/SELECT_Y_N処理実体
+STG @MR300               ; Task0 SELECT_Y_N
+ANB R39102               ; SELECT_Y_N Busy
+MPS
+ZRES @MR306 @MR307       ; Task0 Y/N
+CON
+DW #0 @DM20              ; TaskNo /SELECT_Y_N
+CON
+BMOV @DM20 DM60020 #3    ; TaskNo /SELECT_Y_N  TaskNo /SELECT_Y_N
+MPP
+SET R39100               ; SELECT_Y_N Start
+CON
+SET @MR302               ; Task0 Y_N Busy
+CON
+JMP @MR303
+STG @MR303
+AND R39102               ; SELECT_Y_N Busy
+MPS
+AND= DM60023 #1          ; Y_N /SELECT_Y_N
+SET @MR306               ; Task0 Y/N
+CON
+JMP @MR304
+MPP
+AND= DM60023 #2          ; Y_N /SELECT_Y_N
+RES @MR306               ; Task0 Y/N
+CON
+JMP @MR304
+STG @MR304
+ANB R39102               ; SELECT_Y_N Busy
+RES @MR302               ; Task0 Y_N Busy
+CON
+SET @MR301               ; Task0 Y/N END
+CON
+ENDS
+;<h1/>TIMEUP_ERROR
+;//*TIMEUP_ERROR Sample
+;サンプルセンサ:MR5000=ON AND MR5001 = OFF のいずれかが5sタイムアップしたらTIMEUP_ERROR出力
+;エラー復帰後、再度センサ確認
+;TIMEUP_ERROR Sample *//
+;MyTask TIMEUP_ERROR Process Substance/TIMEUP_ERROR処理実体
+STG @MR400               ; Task0 TIMEUP_ERR
+ANB R39302               ; TIMEUP_ERR Busy
+MPS
+DW #0 @DM40              ; TaskNo /TIMEUP_ERR
+CON
+BMOV @DM40 DM60040 #2    ; TaskNo /TIMEUP_ERR  TaskNo /TIMEUP_ERR
+MPP
+SET R39300               ; TIMEUP_ERR Start
+CON
+SET @MR402               ; Task0 TIMEUP Busy
+CON
+JMP @MR403
+STG @MR403
+AND R39302               ; TIMEUP_ERR Busy
+JMP @MR404
+STG @MR404
+ANB R39302               ; TIMEUP_ERR Busy
+RES @MR402               ; Task0 TIMEUP Busy
+CON
+SET @MR401               ; Task0 TIMEUP_END
+CON
+ENDS
+;<h1/>SubRoutines/ｻﾌﾞﾙｰﾁﾝ
+;[記述方法]
+;・ｻﾌﾞﾙｰﾁﾝは本ﾌﾞｯｸﾏｰｸから下に記述していって下さい
+;・ｻﾌﾞﾙｰﾁﾝは必ずﾌﾞｯｸﾏｰｸを挿入して処理内容を明確にする事
+;<h1/>01_5000_Pause処理1
+STG @MR5000              ; Pause処理1_Sub_START
+SET @MR5002              ; Pause処理_　Sub_Exc
+CON
+JMP @MR5015
+STG @MR5015
+SET @MR1900              ; Main1 HALT許可
+CON
+JMP @MR5003
+STG @MR5003
+AND R42600               ; _Grp1_Task0_ﾎﾟｰｽﾞ許可
+JMP @MR5004
+STG @MR5004
+AND R42600               ; _Grp1_Task0_ﾎﾟｰｽﾞ許可
+AND R42601               ; _Grp1_Task1_ﾎﾟｰｽﾞ許可
+AND R42602               ; _Grp1_Task2_ﾎﾟｰｽﾞ許可
+AND R42603               ; _Grp1_Task3_ﾎﾟｰｽﾞ許可
+AND R42604               ; _Grp1_Task4_ﾎﾟｰｽﾞ許可
+AND R42605               ; _Grp1_Task5_ﾎﾟｰｽﾞ許可
+AND R42606               ; _Grp1_Task6_ﾎﾟｰｽﾞ許可
+AND R42607               ; _Grp1_Task7_ﾎﾟｰｽﾞ許可
+AND R42608               ; _Grp1_Task8_ﾎﾟｰｽﾞ許可
+AND R42609               ; _Grp1_Task9_ﾎﾟｰｽﾞ許可
+JMP @MR5005
+STG @MR5005
+RES @MR1900              ; Main1 HALT許可
+CON
+JMP @MR5006
+STG @MR5006
+ANB R42600               ; _Grp1_Task0_ﾎﾟｰｽﾞ許可
+ANB R42601               ; _Grp1_Task1_ﾎﾟｰｽﾞ許可
+ANB R42602               ; _Grp1_Task2_ﾎﾟｰｽﾞ許可
+ANB R42603               ; _Grp1_Task3_ﾎﾟｰｽﾞ許可
+ANB R42604               ; _Grp1_Task4_ﾎﾟｰｽﾞ許可
+ANB R42605               ; _Grp1_Task5_ﾎﾟｰｽﾞ許可
+ANB R42606               ; _Grp1_Task6_ﾎﾟｰｽﾞ許可
+ANB R42607               ; _Grp1_Task7_ﾎﾟｰｽﾞ許可
+ANB R42608               ; _Grp1_Task8_ﾎﾟｰｽﾞ許可
+ANB R42609               ; _Grp1_Task9_ﾎﾟｰｽﾞ許可
+JMP @MR5007
+STG @MR5007
+JMP @MR5008
+STG @MR5008
+JMP @MR5009
+STG @MR5009
+JMP @MR5010
+STG @MR5010
+JMP @MR5011
+STG @MR5011
+JMP @MR5012
+STG @MR5012
+JMP @MR5013
+STG @MR5013
+JMP @MR5014
+STG @MR5014
+@SET @MR5001             ; PAUSE処理 Sub_End
+CON
+ANB @MR5001              ; PAUSE処理 Sub_End
+RES @MR5002              ; Pause処理_　Sub_Exc
+CON
+ENDS
+;<h1/>02_5100
+STG @MR5100              ; ***_Sub
+SET @MR5102              ; ***_実行中
+CON
+JMP @MR5115
+STG @MR5115
+@SET @MR5101             ; ***_Sub実行完了
+CON
+ANB @MR5101              ; ***_Sub実行完了
+RES @MR5102              ; ***_実行中
+CON
+ENDS
+;<h1/>03_5200
+STG @MR5200              ; ***_Sub
+SET @MR5202              ; ***_Sub　実行中
+CON
+JMP @MR5203
+STG @MR5203
+JMP @MR5204
+STG @MR5204
+JMP @MR5205
+STG @MR5205
+JMP @MR5206
+STG @MR5206
+JMP @MR5207
+STG @MR5207
+JMP @MR5208
+STG @MR5208
+JMP @MR5209
+STG @MR5209
+JMP @MR5210
+STG @MR5210
+JMP @MR5211
+STG @MR5211
+JMP @MR5212
+STG @MR5212
+JMP @MR5213
+STG @MR5213
+JMP @MR5214
+STG @MR5214
+@SET @MR5201             ; ***_Sub実行完了
+CON
+ANB @MR5201              ; ***_Sub実行完了
+RES @MR5202              ; ***_Sub　実行中
+CON
+ENDS
+;<h1/>04_5300_
+STG @MR5300              ; ***_Sub
+SET @MR5302              ; ***_Sub　実行中
+CON
+JMP @MR5303
+STG @MR5303
+JMP @MR5304
+STG @MR5304
+JMP @MR5305
+STG @MR5305
+JMP @MR5306
+STG @MR5306
+JMP @MR5307
+STG @MR5307
+JMP @MR5308
+STG @MR5308
+JMP @MR5309
+STG @MR5309
+JMP @MR5310
+STG @MR5310
+JMP @MR5311
+STG @MR5311
+JMP @MR5312
+STG @MR5312
+JMP @MR5313
+STG @MR5313
+JMP @MR5314
+STG @MR5314
+@SET @MR5301             ; ***_Sub実行完了
+CON
+ANB @MR5301              ; ***_Sub実行完了
+RES @MR5302              ; ***_Sub　実行中
+CON
+ENDS
+;<h1/>05_5400 原復ﾊﾝﾄﾞ　在荷確認_Sub 
+STG @MR5400              ; Org_HSppﾊﾝﾄﾞ　在荷確認_Sub
+SET @MR5402              ; Org HSppﾊﾝ　在荷確認_Sub　実行中
+CON
+JMP @MR5403              ; Repeat-1
+STG @MR5403              ; Repeat-1
+JMP @MR5406
+;ﾊﾝﾄﾞ在荷ﾁｪｯｸ
+STG @MR5406
+AND CR2002               ; 常時ON
+MPS
+AND R4607                ; ﾎﾙﾀﾞｻﾌﾞ供給PP ﾊﾝﾄﾞ 開限
+JMP @MR5408
+MPP
+LDB R4607                ; ﾎﾙﾀﾞｻﾌﾞ供給PP ﾊﾝﾄﾞ 開限
+OR MR10600               ; ﾎﾙﾀﾞｻﾌﾞ供給PP ﾊﾝﾄﾞ 閉限
+ANL
+SET MR17500              ; ﾎﾙﾀﾞｰｻﾌﾞ供PPﾊﾝﾄﾞﾜｰｸ除残判別ALM
+CON
+JMP @MR5407
+STG @MR5407
+MPS
+LDB R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+ANB MR17500              ; ﾎﾙﾀﾞｰｻﾌﾞ供PPﾊﾝﾄﾞﾜｰｸ除残判別ALM
+ANL
+MPS
+AND MR17501              ; SW1「動作継続」_からｽﾀｰﾄ
+JMP @MR5410
+MPP
+AND MR17502              ; SW2_「ﾜｰｸ除去」からｽﾀｰﾄ
+JMP @MR5408
+MPP
+AND R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+SET @MR1900              ; Main1 HALT許可
+;ﾊﾝﾄﾞ開
+STG @MR5408
+MPS
+ANB MR4607               ; ﾎﾙﾀﾞｻﾌﾞ供給PP ﾊﾝﾄﾞ 開限ERR
+SET MR7607               ; ﾎﾙﾀﾞｻﾌﾞ供給PP ﾊﾝﾄﾞ 開
+CON
+RES MR7606               ; ﾎﾙﾀﾞｻﾌﾞ供給PP ﾊﾝﾄﾞ 閉
+CON
+AND R4607                ; ﾎﾙﾀﾞｻﾌﾞ供給PP ﾊﾝﾄﾞ 開限
+ANB MR10600              ; ﾎﾙﾀﾞｻﾌﾞ供給PP ﾊﾝﾄﾞ 閉限
+JMP @MR5413              ; 終了処理へ
+MPP
+LD MR4607                ; ﾎﾙﾀﾞｻﾌﾞ供給PP ﾊﾝﾄﾞ 開限ERR
+AND R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+ANL
+SET @MR1900              ; Main1 HALT許可
+STG @MR5409
+JMP @MR5410
+;ﾊﾝﾄﾞ閉
+STG @MR5410
+MPS
+ANB MR4606               ; ﾎﾙﾀﾞｻﾌﾞ供給PP ﾊﾝﾄﾞ 閉限ERR
+SET MR7606               ; ﾎﾙﾀﾞｻﾌﾞ供給PP ﾊﾝﾄﾞ 閉
+CON
+RES MR7607               ; ﾎﾙﾀﾞｻﾌﾞ供給PP ﾊﾝﾄﾞ 開
+CON
+AND MR10600              ; ﾎﾙﾀﾞｻﾌﾞ供給PP ﾊﾝﾄﾞ 閉限
+ANB R4607                ; ﾎﾙﾀﾞｻﾌﾞ供給PP ﾊﾝﾄﾞ 開限
+JMP @MR5411
+MPP
+LD MR4607                ; ﾎﾙﾀﾞｻﾌﾞ供給PP ﾊﾝﾄﾞ 開限ERR
+AND R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+ANL
+SET @MR1900              ; Main1 HALT許可
+STG @MR5411
+JMP @MR5412
+STG @MR5412
+JMP @MR5413              ; 終了処理へ
+STG @MR5413              ; 終了処理へ
+JMP @MR5414
+STG @MR5414
+@SET @MR5401             ; Org HSppﾊﾝ　在荷確認_Sub実行完了
+CON
+ANB @MR5401              ; Org HSppﾊﾝ　在荷確認_Sub実行完了
+RES @MR5402              ; Org HSppﾊﾝ　在荷確認_Sub　実行中
+CON
+ENDS
+;<h1/>05_5500 ﾀﾞﾌﾞﾙｽﾗｲﾀﾞｰ動作監視_Sub
+;ﾋﾞｯﾄ割付表
+;b0：RB2のｱﾗｲﾒﾝﾄ位置
+;b1:ﾒｲﾝｽﾗｲﾀﾞｰ1の位置
+;b2:ﾒｲﾝｽﾗｲﾀﾞｰ2の位置
+;b3:ﾒｲﾝｽﾗｲﾀﾞｰ3の位置
+;b4:ﾒｲﾝｽﾗｲﾀﾞｰ4の位置
+;b5:ﾒｲﾝｽﾗｲﾀﾞｰ5の位置
+;b6:ﾒｲﾝｽﾗｲﾀﾞｰ6の位置
+STG @MR5500              ; ﾀﾞﾌﾞﾙｽﾗｲﾀﾞｰ動作監視_Sub
+SET @MR5502              ; ﾀﾞﾌﾞﾙｽﾗｲﾀﾞｰ動作監視_Sub　実行中
+CON
+JMP @MR5513
+STG @MR5513
+DW #7 DM40010            ; RB1用 移動範囲ﾏｯﾌﾟ
+CON
+JMP @MR5503
+STG @MR5503
+MPS
+AND MR14205              ; RB2起動許可申請FLG
+MPS
+AND MR14212              ; １ｽｷｬﾝ遅延
+MPS
+LD DM40010.0
+AND MR13000              ; R1 R13選択記憶
+ANL
+JMP @MR5504
+MRD
+LD DM40010.0
+AND MR13001              ; R1 R14選択記憶
+ANL
+JMP @MR5504
+MRD
+LD DM40010.1
+AND MR13002              ; R1 R15選択記憶
+ANL
+JMP @MR5504
+MRD
+LD DM40010.1
+AND MR13003              ; R1 R16選択記憶
+ANL
+JMP @MR5504
+MRD
+LD DM40010.2
+AND MR13004              ; R1 R17選択記憶
+ANL
+JMP @MR5504
+MPP
+LD DM40010.2
+AND MR13005              ; R1 R18選択記憶
+ANL
+JMP @MR5504
+MRD
+OUT MR14212              ; １ｽｷｬﾝ遅延
+MRD
+TMR #727 #10
+CON
+AND T727
+JMP @MR5506
+MPP
+AND MR14210              ; RB3移動可能ﾏｯﾌﾟ更新Trg
+DW #7 DM40010            ; RB1用 移動範囲ﾏｯﾌﾟ
+CON
+JMP @MR5503
+MPP
+ANB MR14205              ; RB2起動許可申請FLG
+JMP @MR5506
+STG @MR5504
+SET MR14206              ; RB2起動 可能FLG
+CON
+JMP @MR5505
+;RB3用移動範囲ﾏｯﾌﾟ更新
+STG @MR5505
+MPS
+AND MR13000              ; R1 R13選択記憶
+DW #6 DM40011            ; RB3用 移動範囲ﾏｯﾌﾟ
+CON
+JMP @MR5506
+MRD
+AND MR13001              ; R1 R14選択記憶
+DW #6 DM40011            ; RB3用 移動範囲ﾏｯﾌﾟ
+CON
+JMP @MR5506
+MRD
+AND MR13002              ; R1 R15選択記憶
+DW #4 DM40011            ; RB3用 移動範囲ﾏｯﾌﾟ
+CON
+JMP @MR5506
+MRD
+AND MR13003              ; R1 R16選択記憶
+DW #4 DM40011            ; RB3用 移動範囲ﾏｯﾌﾟ
+CON
+JMP @MR5506
+MRD
+AND MR13004              ; R1 R17選択記憶
+DW #0 DM40011            ; RB3用 移動範囲ﾏｯﾌﾟ
+CON
+JMP @MR5506
+MPP
+AND MR13005              ; R1 R18選択記憶
+DW #0 DM40011            ; RB3用 移動範囲ﾏｯﾌﾟ
+CON
+JMP @MR5506
+STG @MR5506
+JMP @MR5507
+STG @MR5507
+MPS
+AND MR14207              ; RB3起動許可申請FLG
+MPS
+AND MR14213              ; １ｽｷｬﾝ遅延
+MPS
+LD DM40011.0
+AND MR13012              ; R3 R13選択記憶
+ANL
+JMP @MR5508
+MRD
+LD DM40011.0
+AND MR13013              ; R3 R14選択記憶
+ANL
+JMP @MR5508
+MRD
+LD DM40011.1
+AND MR13014              ; R3 R15選択記憶
+ANL
+JMP @MR5508
+MRD
+LD DM40011.1
+AND MR13015              ; R3 R16選択記憶
+ANL
+JMP @MR5508
+MRD
+LD DM40011.2
+AND MR13100              ; R3 R17選択記憶
+ANL
+JMP @MR5508
+MPP
+LD DM40011.2
+AND MR13101              ; R3 R18選択記憶
+ANL
+JMP @MR5508
+MRD
+OUT MR14213              ; １ｽｷｬﾝ遅延
+MRD
+TMR #728 #10             ; ﾀｲﾑｱｯﾌﾟ
+CON
+AND T728                 ; ﾀｲﾑｱｯﾌﾟ
+JMP @MR5510
+MPP
+AND MR14209              ; RB2移動可能ﾏｯﾌﾟ更新Trg
+DW #7 DM40011            ; RB3用 移動範囲ﾏｯﾌﾟ
+CON
+JMP @MR5507
+MPP
+ANB MR14207              ; RB3起動許可申請FLG
+JMP @MR5510
+STG @MR5508
+SET MR14208              ; RB3起動 可能FLG
+CON
+JMP @MR5509
+;RB2用移動範囲ﾏｯﾌﾟ更新
+STG @MR5509
+MPS
+AND MR13012              ; R3 R13選択記憶
+DW #0 DM40010            ; RB1用 移動範囲ﾏｯﾌﾟ
+CON
+JMP @MR5510
+MRD
+AND MR13013              ; R3 R14選択記憶
+DW #0 DM40010            ; RB1用 移動範囲ﾏｯﾌﾟ
+CON
+JMP @MR5510
+MRD
+AND MR13014              ; R3 R15選択記憶
+DW #1 DM40010            ; RB1用 移動範囲ﾏｯﾌﾟ
+CON
+JMP @MR5510
+MRD
+AND MR13015              ; R3 R16選択記憶
+DW #1 DM40010            ; RB1用 移動範囲ﾏｯﾌﾟ
+CON
+JMP @MR5510
+MRD
+AND MR13100              ; R3 R17選択記憶
+DW #3 DM40010            ; RB1用 移動範囲ﾏｯﾌﾟ
+CON
+JMP @MR5510
+MPP
+AND MR13101              ; R3 R18選択記憶
+DW #3 DM40010            ; RB1用 移動範囲ﾏｯﾌﾟ
+CON
+JMP @MR5510
+STG @MR5510
+MPS
+AND MR14210              ; RB3移動可能ﾏｯﾌﾟ更新Trg
+DW #7 DM40010            ; RB1用 移動範囲ﾏｯﾌﾟ
+CON
+JMP @MR5511
+MPP
+ANB MR14210              ; RB3移動可能ﾏｯﾌﾟ更新Trg
+JMP @MR5511
+STG @MR5511
+MPS
+AND MR14209              ; RB2移動可能ﾏｯﾌﾟ更新Trg
+DW #7 DM40011            ; RB3用 移動範囲ﾏｯﾌﾟ
+CON
+JMP @MR5512
+MPP
+ANB MR14210              ; RB3移動可能ﾏｯﾌﾟ更新Trg
+JMP @MR5512
+STG @MR5512
+JMP @MR5503
+STG @MR5514
+@SET @MR5501             ; ﾀﾞﾌﾞﾙｽﾗｲﾀﾞｰ動作監視_Sub実行完了
+CON
+ANB @MR5501              ; ﾀﾞﾌﾞﾙｽﾗｲﾀﾞｰ動作監視_Sub実行完了
+RES @MR5502              ; ﾀﾞﾌﾞﾙｽﾗｲﾀﾞｰ動作監視_Sub　実行中
+CON
+ENDS
+;<h1/>07_5600
+STG @MR5600              ; ***_Sub
+SET @MR5602              ; ***_Sub実行中
+CON
+JMP @MR5603
+STG @MR5603
+JMP @MR5604
+STG @MR5604
+JMP @MR5605
+STG @MR5605
+JMP @MR5606
+STG @MR5606
+JMP @MR5607
+STG @MR5607
+JMP @MR5608
+STG @MR5608
+JMP @MR5609
+STG @MR5609
+JMP @MR5610
+STG @MR5610
+JMP @MR5611
+STG @MR5611
+JMP @MR5612
+STG @MR5612
+JMP @MR5613
+STG @MR5613
+JMP @MR5614
+STG @MR5614
+@SET @MR5601             ; ***_Sub 実行完了
+CON
+ANB @MR5601              ; ***_Sub 実行完了
+RES @MR5602              ; ***_Sub実行中
+CON
+ENDS
+;<h1/>08_5700_Pause処理2　
+STG @MR5700              ; Pause処理2_Sub_Start
+SET @MR5702              ; Pause処理2_Sub_EXC
+CON
+JMP @MR5715
+STG @MR5715
+SET @MR1901              ; Main2 HALT許可
+CON
+JMP @MR5703
+STG @MR5703
+AND R42600               ; _Grp1_Task0_ﾎﾟｰｽﾞ許可
+JMP @MR5704
+STG @MR5704
+AND R42600               ; _Grp1_Task0_ﾎﾟｰｽﾞ許可
+AND R42601               ; _Grp1_Task1_ﾎﾟｰｽﾞ許可
+AND R42602               ; _Grp1_Task2_ﾎﾟｰｽﾞ許可
+AND R42603               ; _Grp1_Task3_ﾎﾟｰｽﾞ許可
+AND R42604               ; _Grp1_Task4_ﾎﾟｰｽﾞ許可
+AND R42605               ; _Grp1_Task5_ﾎﾟｰｽﾞ許可
+AND R42606               ; _Grp1_Task6_ﾎﾟｰｽﾞ許可
+AND R42607               ; _Grp1_Task7_ﾎﾟｰｽﾞ許可
+AND R42608               ; _Grp1_Task8_ﾎﾟｰｽﾞ許可
+AND R42609               ; _Grp1_Task9_ﾎﾟｰｽﾞ許可
+JMP @MR5705
+STG @MR5705
+RES @MR1901              ; Main2 HALT許可
+CON
+JMP @MR5706
+STG @MR5706
+ANB R42600               ; _Grp1_Task0_ﾎﾟｰｽﾞ許可
+ANB R42601               ; _Grp1_Task1_ﾎﾟｰｽﾞ許可
+ANB R42602               ; _Grp1_Task2_ﾎﾟｰｽﾞ許可
+ANB R42603               ; _Grp1_Task3_ﾎﾟｰｽﾞ許可
+ANB R42604               ; _Grp1_Task4_ﾎﾟｰｽﾞ許可
+ANB R42605               ; _Grp1_Task5_ﾎﾟｰｽﾞ許可
+ANB R42606               ; _Grp1_Task6_ﾎﾟｰｽﾞ許可
+ANB R42607               ; _Grp1_Task7_ﾎﾟｰｽﾞ許可
+ANB R42608               ; _Grp1_Task8_ﾎﾟｰｽﾞ許可
+ANB R42609               ; _Grp1_Task9_ﾎﾟｰｽﾞ許可
+JMP @MR5707
+STG @MR5707
+JMP @MR5708
+STG @MR5708
+JMP @MR5709
+STG @MR5709
+JMP @MR5710
+STG @MR5710
+JMP @MR5711
+STG @MR5711
+JMP @MR5712
+STG @MR5712
+JMP @MR5713
+STG @MR5713
+JMP @MR5714
+STG @MR5714
+@SET @MR5701             ; Pause処理2_Sub_END
+CON
+ANB @MR5701              ; Pause処理2_Sub_END
+RES @MR5702              ; Pause処理2_Sub_EXC
+CON
+ENDS
+;<h1/>09_5800 ｾﾙ間ｽﾗｲﾀﾞﾖﾘ給材_Sub
+STG @MR5800              ; ｾﾙ間ｽﾗｲﾀﾞﾖﾘ給材_Sub
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+SET @MR5802              ; ｾﾙ間ｽﾗｲﾀﾞﾖﾘ給材_Sub　実行中
+CON
+JMP @MR5815
+;RB1_取出し位置へ移動
+STG @MR5815
+ANB MR16801              ; RB1ｴﾗｰ検出
+MPS
+LDB R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+ANB R35000               ; RB1 MOVE
+ANB R35002               ; During RB1 MOVE 
+ANB R35001               ; RB1 MOVE END
+ANL
+MPS
+LD= #2 EM1300            ; RB1Target Pos
+AND MR3000               ; RB1 起動IL　ON=起動可能
+ANL
+SET R35000               ; RB1 MOVE
+CON
+JMP @MR5803
+MPP
+DW #2 EM1300             ; RB1Target Pos
+MPP
+AND R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+MPS
+ANB @MR2002              ; Mainte中
+SET @MR1901              ; Main2 HALT許可
+MPP
+AND @MR2002              ; Mainte中
+SET @MR1900              ; Main1 HALT許可
+CON
+SET @MR1901              ; Main2 HALT許可
+STG @MR5803
+AND R35001               ; RB1 MOVE END
+MPS
+LDB R35003               ; RB1 Alarm
+AND T2001                ; RB1 Pos2 上流ｾﾙ間ｽﾗｲﾀﾞﾜｰｸ受取位
+ANL
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+RES R35001               ; RB1 MOVE END
+CON
+JMP @MR5804
+MPP
+AND R35003               ; RB1 Alarm
+@SET MR16801             ; RB1ｴﾗｰ検出
+CON
+RES R35001               ; RB1 MOVE END
+CON
+JMP @MR5815
+;RB4　取出し位置へ下降
+STG @MR5804
+@RES MR7612              ; ﾎﾙﾀﾞｻﾌﾞ給材pp上下_低速切替
+CON
+SET MR7608               ; ﾎﾙﾀﾞｻﾌﾞ供給PP上下 下降
+CON
+RES MR7609               ; ﾎﾙﾀﾞｻﾌﾞ供給PP上下 上昇
+CON
+TMR @1 #10               ; 速度切替時間
+CON
+AND @T1                  ; 速度切替時間
+SET MR7612               ; ﾎﾙﾀﾞｻﾌﾞ給材pp上下_低速切替
+CON
+JMP @MR5805
+STG @MR5805
+MPS
+LDB R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+ANB MR4608               ; ﾎﾙﾀﾞｻﾌﾞ供給PP上下 下限ERR
+ANL
+SET MR7608               ; ﾎﾙﾀﾞｻﾌﾞ供給PP上下 下降
+CON
+RES MR7609               ; ﾎﾙﾀﾞｻﾌﾞ供給PP上下 上昇
+CON
+AND R4608                ; ﾎﾙﾀﾞｻﾌﾞ供給PP上下 下限
+ANB R4609                ; ﾎﾙﾀﾞｻﾌﾞ供給PP上下 上限
+RES MR7612               ; ﾎﾙﾀﾞｻﾌﾞ給材pp上下_低速切替
+CON
+JMP @MR5806
+MRD
+AND MR4608               ; ﾎﾙﾀﾞｻﾌﾞ供給PP上下 下限ERR
+SET MR7609               ; ﾎﾙﾀﾞｻﾌﾞ供給PP上下 上昇
+CON
+RES MR7608               ; ﾎﾙﾀﾞｻﾌﾞ供給PP上下 下降
+CON
+MPS
+ANB @MR2002              ; Mainte中
+SET @MR1901              ; Main2 HALT許可
+MPP
+AND @MR2002              ; Mainte中
+SET @MR1900              ; Main1 HALT許可
+CON
+SET @MR1901              ; Main2 HALT許可
+MPP
+AND R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+MPS
+ANB @MR2002              ; Mainte中
+SET @MR1901              ; Main2 HALT許可
+MPP
+AND @MR2002              ; Mainte中
+SET @MR1900              ; Main1 HALT許可
+CON
+SET @MR1901              ; Main2 HALT許可
+STG @MR5806
+TMR #1023 #2             ; Hｻﾌﾞ下降後待ち時間
+CON
+AND T1023                ; Hｻﾌﾞ下降後待ち時間
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR5807
+STG @MR5807
+MPS
+ANB MR4606               ; ﾎﾙﾀﾞｻﾌﾞ供給PP ﾊﾝﾄﾞ 閉限ERR
+SET MR7606               ; ﾎﾙﾀﾞｻﾌﾞ供給PP ﾊﾝﾄﾞ 閉
+CON
+RES MR7607               ; ﾎﾙﾀﾞｻﾌﾞ供給PP ﾊﾝﾄﾞ 開
+CON
+AND MR10600              ; ﾎﾙﾀﾞｻﾌﾞ供給PP ﾊﾝﾄﾞ 閉限
+ANB R4607                ; ﾎﾙﾀﾞｻﾌﾞ供給PP ﾊﾝﾄﾞ 開限
+JMP @MR5808
+MPP
+LD MR4606                ; ﾎﾙﾀﾞｻﾌﾞ供給PP ﾊﾝﾄﾞ 閉限ERR
+AND R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+ANL
+MPS
+ANB @MR2002              ; Mainte中
+SET @MR1901              ; Main2 HALT許可
+MPP
+AND @MR2002              ; Mainte中
+SET @MR1900              ; Main1 HALT許可
+CON
+SET @MR1901              ; Main2 HALT許可
+STG @MR5808
+@SET @MR900              ; 補助動作開始要求(sub→main)
+CON
+AND B2006                ; ④上流ｾﾙへ補助動作開始要求
+LD B2017                 ; 上流ｾﾙより補助動作開始許可
+OR MR14400               ; 上流とのH/S断
+OR DM2000.14             ; 上流ﾊﾝﾄﾞｼｪｲｸ有無(0:有/1:無)
+OR @MR2102               ; STEP動作中
+ANL
+RES @MR900               ; 補助動作開始要求(sub→main)
+CON
+JMP @MR5809
+STG @MR5809
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR5810
+;H_ｻﾌﾞ 供給PP上下 上昇
+STG @MR5810
+MPS
+ANB MR4609               ; ﾎﾙﾀﾞｻﾌﾞ供給PP上下 上限ERR
+SET MR7609               ; ﾎﾙﾀﾞｻﾌﾞ供給PP上下 上昇
+CON
+RES MR7608               ; ﾎﾙﾀﾞｻﾌﾞ供給PP上下 下降
+CON
+AND R4609                ; ﾎﾙﾀﾞｻﾌﾞ供給PP上下 上限
+ANB R4608                ; ﾎﾙﾀﾞｻﾌﾞ供給PP上下 下限
+JMP @MR5811
+MPP
+LD MR4609                ; ﾎﾙﾀﾞｻﾌﾞ供給PP上下 上限ERR
+AND R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+ANL
+MPS
+ANB @MR2002              ; Mainte中
+SET @MR1901              ; Main2 HALT許可
+MPP
+AND @MR2002              ; Mainte中
+SET @MR1900              ; Main1 HALT許可
+CON
+SET @MR1901              ; Main2 HALT許可
+STG @MR5811
+JMP @MR5812
+STG @MR5812
+TMR #1024 #2             ; Hｻﾌﾞ上昇後待ち時間
+CON
+AND T1024                ; Hｻﾌﾞ上昇後待ち時間
+JMP @MR5813
+STG @MR5813
+JMP @MR5814
+STG @MR5814
+@SET @MR5801             ; ｾﾙ間ｽﾗｲﾀﾞﾖﾘ給材_Sub　実行完了
+CON
+ANB @MR5801              ; ｾﾙ間ｽﾗｲﾀﾞﾖﾘ給材_Sub　実行完了
+RES @MR5802              ; ｾﾙ間ｽﾗｲﾀﾞﾖﾘ給材_Sub　実行中
+CON
+ENDS
+;<h1/>10_5900 
+STG @MR5900
+SET @MR5902              ; ***_Sub　実行中
+CON
+JMP @MR5915
+STG @MR5915
+JMP @MR5914
+STG @MR5914
+@SET @MR5901             ; ***_Sub実行完了
+CON
+ANB @MR5901              ; ***_Sub実行完了
+RES @MR5902              ; ***_Sub　実行中
+CON
+ENDS
+;<h1/>11_6000 ﾎﾙﾀﾞｰSub組込_Sub
+; 
+STG @MR6000              ; ﾎﾙﾀﾞｰSub組込_Sub
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+RES MR18603              ; 組込み異常記憶FLG
+CON
+SET @MR6002              ; ﾎﾙﾀﾞｰSub組込_Sub　実行中
+CON
+JMP @MR6115
+;ﾎﾙﾀﾞｰｻﾌﾞ 受けﾋﾟﾝ上昇
+STG @MR6115
+MPS
+AND MR13000              ; R1 R13選択記憶
+MPS
+ANB MR4210               ; M/S1 ﾎﾙﾀﾞｻﾌﾞ受けﾋﾟﾝ上下 上限ERR
+SET MR7212               ; M/S1 ﾎﾙﾀﾞｻﾌﾞ受けﾋﾟﾝ上下 上昇
+CON
+RES MR7213               ; M/S1 ﾎﾙﾀﾞｻﾌﾞ受けﾋﾟﾝ上下 下降
+CON
+AND R4210                ; M/S1 ﾎﾙﾀﾞｻﾌﾞ受けﾋﾟﾝ上下 上限
+ANB R4211                ; M/S1 ﾎﾙﾀﾞｻﾌﾞ受けﾋﾟﾝ上下 下限
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR6003
+MPP
+AND MR4210               ; M/S1 ﾎﾙﾀﾞｻﾌﾞ受けﾋﾟﾝ上下 上限ERR
+SET MR7213               ; M/S1 ﾎﾙﾀﾞｻﾌﾞ受けﾋﾟﾝ上下 下降
+CON
+RES MR7212               ; M/S1 ﾎﾙﾀﾞｻﾌﾞ受けﾋﾟﾝ上下 上昇
+CON
+AND R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+MPS
+ANB @MR2002              ; Mainte中
+SET @MR1901              ; Main2 HALT許可
+MPP
+AND @MR2002              ; Mainte中
+SET @MR1900              ; Main1 HALT許可
+CON
+SET @MR1901              ; Main2 HALT許可
+MRD
+LD CR2003                ; 常時OFF
+AND MR13001              ; R1 R14選択記憶
+ANL
+MPS
+ANB MR4310               ; -ERR
+SET MR7312               ; -
+CON
+RES MR7313               ; -
+CON
+AND R4310                ; -
+ANB R4311                ; -
+JMP @MR6003
+MPP
+AND MR4310               ; -ERR
+SET MR7313               ; -
+CON
+RES MR7312               ; -
+CON
+AND R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+MPS
+ANB @MR2002              ; Mainte中
+SET @MR1901              ; Main2 HALT許可
+MPP
+AND @MR2002              ; Mainte中
+SET @MR1900              ; Main1 HALT許可
+CON
+SET @MR1901              ; Main2 HALT許可
+MRD
+AND MR13002              ; R1 R15選択記憶
+MPS
+ANB MR4410               ; M/S3 ﾎﾙﾀﾞｻﾌﾞ受けﾋﾟﾝ上下 上限ERR
+SET MR7412               ; M/S3 ﾎﾙﾀﾞｻﾌﾞ受けﾋﾟﾝ上下 上昇
+CON
+RES MR7413               ; M/S3 ﾎﾙﾀﾞｻﾌﾞ受けﾋﾟﾝ上下 下降
+CON
+AND R4410                ; M/S3 ﾎﾙﾀﾞｻﾌﾞ受けﾋﾟﾝ上下 上限
+ANB R4411                ; M/S3 ﾎﾙﾀﾞｻﾌﾞ受けﾋﾟﾝ上下 下限
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR6003
+MPP
+AND MR4410               ; M/S3 ﾎﾙﾀﾞｻﾌﾞ受けﾋﾟﾝ上下 上限ERR
+SET MR7413               ; M/S3 ﾎﾙﾀﾞｻﾌﾞ受けﾋﾟﾝ上下 下降
+CON
+RES MR7412               ; M/S3 ﾎﾙﾀﾞｻﾌﾞ受けﾋﾟﾝ上下 上昇
+CON
+AND R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+MPS
+ANB @MR2002              ; Mainte中
+SET @MR1901              ; Main2 HALT許可
+MPP
+AND @MR2002              ; Mainte中
+SET @MR1900              ; Main1 HALT許可
+CON
+SET @MR1901              ; Main2 HALT許可
+MPP
+LD CR2003                ; 常時OFF
+AND MR13003              ; R1 R16選択記憶
+ANL
+MPS
+ANB MR4510               ; -ERR
+SET MR7512               ; -
+CON
+RES MR7513               ; -
+CON
+AND R4510                ; -
+ANB R4511                ; -
+JMP @MR6003
+MPP
+AND MR4510               ; -ERR
+SET MR7513               ; -
+CON
+RES MR7512               ; -
+CON
+AND R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+MPS
+ANB @MR2002              ; Mainte中
+SET @MR1901              ; Main2 HALT許可
+MPP
+AND @MR2002              ; Mainte中
+SET @MR1900              ; Main1 HALT許可
+CON
+SET @MR1901              ; Main2 HALT許可
+;M_ｽﾗ 1COFｶﾞｲﾄﾞ　前進
+STG @MR6003
+MPS
+AND MR13000              ; R1 R13選択記憶
+MPS
+ANB MR4206               ; M/S1 COFｶﾞｲﾄﾞ前後 ﾜｰｸ保持側ERR
+SET MR7206               ; M/S1 COFｶﾞｲﾄﾞ前後 ﾜｰｸ保持側
+CON
+RES MR7207               ; M/S1 COFｶﾞｲﾄﾞ前後 戻し側
+CON
+AND R4206                ; M/S1 COFｶﾞｲﾄﾞ前後 ﾜｰｸ保持側
+ANB R4207                ; M/S1 COFｶﾞｲﾄﾞ前後 戻し側
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR6110
+MPP
+AND MR4206               ; M/S1 COFｶﾞｲﾄﾞ前後 ﾜｰｸ保持側ERR
+SET MR7207               ; M/S1 COFｶﾞｲﾄﾞ前後 戻し側
+CON
+RES MR7206               ; M/S1 COFｶﾞｲﾄﾞ前後 ﾜｰｸ保持側
+CON
+AND R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+MPS
+ANB @MR2002              ; Mainte中
+SET @MR1901              ; Main2 HALT許可
+MPP
+AND @MR2002              ; Mainte中
+SET @MR1900              ; Main1 HALT許可
+CON
+SET @MR1901              ; Main2 HALT許可
+MRD
+LD CR2003                ; 常時OFF
+AND MR13001              ; R1 R14選択記憶
+ANL
+MPS
+ANB MR4306               ; -ERR
+SET MR7306               ; -
+CON
+RES MR7307               ; -
+CON
+AND R4306                ; -
+ANB R4307                ; -
+JMP @MR6110
+MPP
+AND MR4306               ; -ERR
+SET MR7307               ; -
+CON
+RES MR7306               ; -
+CON
+AND R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+MPS
+ANB @MR2002              ; Mainte中
+SET @MR1901              ; Main2 HALT許可
+MPP
+AND @MR2002              ; Mainte中
+SET @MR1900              ; Main1 HALT許可
+CON
+SET @MR1901              ; Main2 HALT許可
+MRD
+AND MR13002              ; R1 R15選択記憶
+MPS
+ANB MR4406               ; M/S3 COFｶﾞｲﾄﾞ前後 ﾜｰｸ保持側ERR
+SET MR7406               ; M/S3 COFｶﾞｲﾄﾞ前後 ﾜｰｸ保持側
+CON
+RES MR7407               ; M/S3 COFｶﾞｲﾄﾞ前後 戻し側
+CON
+AND R4406                ; M/S3 COFｶﾞｲﾄﾞ前後 ﾜｰｸ保持側
+ANB R4407                ; M/S3 COFｶﾞｲﾄﾞ前後 戻し側
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR6110
+MPP
+AND MR4406               ; M/S3 COFｶﾞｲﾄﾞ前後 ﾜｰｸ保持側ERR
+SET MR7407               ; M/S3 COFｶﾞｲﾄﾞ前後 戻し側
+CON
+RES MR7406               ; M/S3 COFｶﾞｲﾄﾞ前後 ﾜｰｸ保持側
+CON
+AND R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+MPS
+ANB @MR2002              ; Mainte中
+SET @MR1901              ; Main2 HALT許可
+MPP
+AND @MR2002              ; Mainte中
+SET @MR1900              ; Main1 HALT許可
+CON
+SET @MR1901              ; Main2 HALT許可
+MPP
+LD CR2003                ; 常時OFF
+AND MR13003              ; R1 R16選択記憶
+ANL
+MPS
+ANB MR4506               ; -ERR
+SET MR7506               ; -
+CON
+RES MR7507               ; -
+CON
+AND R4506                ; -
+ANB R4507                ; -
+JMP @MR6110
+MPP
+AND MR4506               ; -ERR
+SET MR7507               ; -
+CON
+RES MR7506               ; -
+CON
+AND R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+MPS
+ANB @MR2002              ; Mainte中
+SET @MR1901              ; Main2 HALT許可
+MPP
+AND @MR2002              ; Mainte中
+SET @MR1900              ; Main1 HALT許可
+CON
+SET @MR1901              ; Main2 HALT許可
+;COFｶﾞｲﾄﾞ上昇
+STG @MR6110
+MPS
+AND MR13000              ; R1 R13選択記憶
+MPS
+ANB MR4700               ; M/S1 COFｶﾞｲﾄﾞ上下 上限ERR
+SET MR7300               ; M/S1 COFｶﾞｲﾄﾞ上下 上昇
+CON
+RES MR7301               ; M/S1 COFｶﾞｲﾄﾞ上下 下降
+CON
+AND R4700                ; M/S1 COFｶﾞｲﾄﾞ上下 上限
+ANB R4701                ; M/S1 COFｶﾞｲﾄﾞ上下 下限
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR6111
+MPP
+AND MR4700               ; M/S1 COFｶﾞｲﾄﾞ上下 上限ERR
+SET MR7301               ; M/S1 COFｶﾞｲﾄﾞ上下 下降
+CON
+RES MR7300               ; M/S1 COFｶﾞｲﾄﾞ上下 上昇
+CON
+AND R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+MPS
+ANB @MR2002              ; Mainte中
+SET @MR1901              ; Main2 HALT許可
+MPP
+AND @MR2002              ; Mainte中
+SET @MR1900              ; Main1 HALT許可
+CON
+SET @MR1901              ; Main2 HALT許可
+MRD
+LD CR2003                ; 常時OFF
+AND MR13001              ; R1 R14選択記憶
+ANL
+MPS
+LDB MR4702               ; M/S2 COFｶﾞｲﾄﾞ上下 上限ERR
+AND R4702                ; M/S2 COFｶﾞｲﾄﾞ上下 上限
+ANB R4703                ; M/S2 COFｶﾞｲﾄﾞ上下 下限
+ANL
+JMP @MR6111
+MPP
+LD MR4702                ; M/S2 COFｶﾞｲﾄﾞ上下 上限ERR
+AND R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+ANL
+MPS
+ANB @MR2002              ; Mainte中
+SET @MR1901              ; Main2 HALT許可
+MPP
+AND @MR2002              ; Mainte中
+SET @MR1900              ; Main1 HALT許可
+CON
+SET @MR1901              ; Main2 HALT許可
+MRD
+AND MR13002              ; R1 R15選択記憶
+MPS
+ANB MR4704               ; M/S3 COFｶﾞｲﾄﾞ上下 上限ERR
+SET MR7500               ; M/S3 COFｶﾞｲﾄﾞ上下 上昇
+CON
+RES MR7501               ; M/S3 COFｶﾞｲﾄﾞ上下 下降
+CON
+AND R4704                ; M/S3 COFｶﾞｲﾄﾞ上下 上限
+ANB R4705                ; M/S3 COFｶﾞｲﾄﾞ上下 下限
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR6111
+MPP
+AND MR4704               ; M/S3 COFｶﾞｲﾄﾞ上下 上限ERR
+SET MR7501               ; M/S3 COFｶﾞｲﾄﾞ上下 下降
+CON
+RES MR7500               ; M/S3 COFｶﾞｲﾄﾞ上下 上昇
+CON
+AND R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+MPS
+ANB @MR2002              ; Mainte中
+SET @MR1901              ; Main2 HALT許可
+MPP
+AND @MR2002              ; Mainte中
+SET @MR1900              ; Main1 HALT許可
+CON
+SET @MR1901              ; Main2 HALT許可
+MPP
+LD CR2003                ; 常時OFF
+AND MR13003              ; R1 R16選択記憶
+ANL
+MPS
+LDB MR4706               ; M/S4 COFｶﾞｲﾄﾞ上下 上限ERR
+AND R4706                ; M/S4 COFｶﾞｲﾄﾞ上下 上限
+ANB R4707                ; M/S4 COFｶﾞｲﾄﾞ上下 下限
+ANL
+JMP @MR6111
+MPP
+LD MR4706                ; M/S4 COFｶﾞｲﾄﾞ上下 上限ERR
+AND R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+ANL
+MPS
+ANB @MR2002              ; Mainte中
+SET @MR1901              ; Main2 HALT許可
+MPP
+AND @MR2002              ; Mainte中
+SET @MR1900              ; Main1 HALT許可
+CON
+SET @MR1901              ; Main2 HALT許可
+;M_ｽﾗ COFｶﾞｲﾄﾞ用ﾁｬｯｸ 　閉
+STG @MR6111
+TMR @6 #5
+CON
+AND @T6
+MPS
+AND MR13000              ; R1 R13選択記憶
+MPS
+ANB MR4204               ; M/S1 COFｶﾞｲﾄﾞ用ﾁｬｯｸ 閉限ERR
+SET MR7204               ; M/S1 COFｶﾞｲﾄﾞ用ﾁｬｯｸ 閉
+CON
+RES MR7205               ; -
+CON
+AND R4204                ; M/S1 COFｶﾞｲﾄﾞ用ﾁｬｯｸ 閉限
+ANB R4205                ; M/S1 COFｶﾞｲﾄﾞ用ﾁｬｯｸ 開限
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR6005
+MPP
+AND MR4204               ; M/S1 COFｶﾞｲﾄﾞ用ﾁｬｯｸ 閉限ERR
+RES MR7204               ; M/S1 COFｶﾞｲﾄﾞ用ﾁｬｯｸ 閉
+CON
+SET MR7205               ; -
+CON
+AND R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+MPS
+ANB @MR2002              ; Mainte中
+SET @MR1901              ; Main2 HALT許可
+MPP
+AND @MR2002              ; Mainte中
+SET @MR1900              ; Main1 HALT許可
+CON
+SET @MR1901              ; Main2 HALT許可
+MRD
+LD CR2003                ; 常時OFF
+AND MR13001              ; R1 R14選択記憶
+ANL
+MPS
+ANB MR4304               ; -ERR
+SET MR7304               ; -
+CON
+RES MR7305               ; -
+CON
+AND R4304                ; -
+ANB R4305                ; -
+JMP @MR6005
+MPP
+AND MR4304               ; -ERR
+RES MR7304               ; -
+CON
+SET MR7305               ; -
+CON
+AND R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+MPS
+ANB @MR2002              ; Mainte中
+SET @MR1901              ; Main2 HALT許可
+MPP
+AND @MR2002              ; Mainte中
+SET @MR1900              ; Main1 HALT許可
+CON
+SET @MR1901              ; Main2 HALT許可
+MRD
+AND MR13002              ; R1 R15選択記憶
+MPS
+ANB MR4404               ; M/S3 COFｶﾞｲﾄﾞ用ﾁｬｯｸ 閉限ERR
+SET MR7404               ; M/S3 COFｶﾞｲﾄﾞ用ﾁｬｯｸ 閉
+CON
+RES MR7405               ; -
+CON
+AND R4404                ; M/S3 COFｶﾞｲﾄﾞ用ﾁｬｯｸ 閉限
+ANB R4405                ; M/S3 COFｶﾞｲﾄﾞ用ﾁｬｯｸ 開限
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR6005
+MPP
+AND MR4404               ; M/S3 COFｶﾞｲﾄﾞ用ﾁｬｯｸ 閉限ERR
+RES MR7404               ; M/S3 COFｶﾞｲﾄﾞ用ﾁｬｯｸ 閉
+CON
+SET MR7405               ; -
+CON
+AND R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+MPS
+ANB @MR2002              ; Mainte中
+SET @MR1901              ; Main2 HALT許可
+MPP
+AND @MR2002              ; Mainte中
+SET @MR1900              ; Main1 HALT許可
+CON
+SET @MR1901              ; Main2 HALT許可
+MPP
+LD CR2003                ; 常時OFF
+AND MR13003              ; R1 R16選択記憶
+ANL
+MPS
+ANB MR4504               ; -ERR
+SET MR7504               ; -
+CON
+RES MR7505               ; -
+CON
+AND R4504                ; -
+ANB R4505                ; -
+JMP @MR6005
+MPP
+AND MR4504               ; -ERR
+RES MR7504               ; -
+CON
+SET MR7505               ; -
+CON
+AND R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+MPS
+ANB @MR2002              ; Mainte中
+SET @MR1901              ; Main2 HALT許可
+MPP
+AND @MR2002              ; Mainte中
+SET @MR1900              ; Main1 HALT許可
+CON
+SET @MR1901              ; Main2 HALT許可
+;H_ｻﾌﾞ 供給PP上下 下降
+STG @MR6005
+MPS
+ANB MR4608               ; ﾎﾙﾀﾞｻﾌﾞ供給PP上下 下限ERR
+SET MR7608               ; ﾎﾙﾀﾞｻﾌﾞ供給PP上下 下降
+CON
+RES MR7609               ; ﾎﾙﾀﾞｻﾌﾞ供給PP上下 上昇
+CON
+AND R4608                ; ﾎﾙﾀﾞｻﾌﾞ供給PP上下 下限
+ANB R4609                ; ﾎﾙﾀﾞｻﾌﾞ供給PP上下 上限
+TMR @7 #10
+CON
+AND @T7
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR6006
+MPP
+AND MR4608               ; ﾎﾙﾀﾞｻﾌﾞ供給PP上下 下限ERR
+SET MR7609               ; ﾎﾙﾀﾞｻﾌﾞ供給PP上下 上昇
+CON
+RES MR7608               ; ﾎﾙﾀﾞｻﾌﾞ供給PP上下 下降
+CON
+AND R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+MPS
+ANB @MR2002              ; Mainte中
+SET @MR1901              ; Main2 HALT許可
+MPP
+AND @MR2002              ; Mainte中
+SET @MR1900              ; Main1 HALT許可
+CON
+SET @MR1901              ; Main2 HALT許可
+;M_ｽﾗ COFｶﾞｲﾄ用ﾁｬｯｸ 開
+STG @MR6006
+MPS
+AND MR13000              ; R1 R13選択記憶
+MPS
+ANB MR4205               ; M/S1 COFｶﾞｲﾄﾞ用ﾁｬｯｸ 開限ERR
+RES MR7204               ; M/S1 COFｶﾞｲﾄﾞ用ﾁｬｯｸ 閉
+CON
+SET MR7205               ; -
+CON
+AND R4205                ; M/S1 COFｶﾞｲﾄﾞ用ﾁｬｯｸ 開限
+ANB R4204                ; M/S1 COFｶﾞｲﾄﾞ用ﾁｬｯｸ 閉限
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR6007
+MPP
+LD MR4205                ; M/S1 COFｶﾞｲﾄﾞ用ﾁｬｯｸ 開限ERR
+AND R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+ANL
+MPS
+ANB @MR2002              ; Mainte中
+SET @MR1901              ; Main2 HALT許可
+MPP
+AND @MR2002              ; Mainte中
+SET @MR1900              ; Main1 HALT許可
+CON
+SET @MR1901              ; Main2 HALT許可
+MRD
+LD CR2003                ; 常時OFF
+AND MR13001              ; R1 R14選択記憶
+ANL
+MPS
+ANB MR4305               ; -ERR
+RES MR7304               ; -
+CON
+SET MR7305               ; -
+CON
+AND R4305                ; -
+ANB R4304                ; -
+JMP @MR6007
+MPP
+LD MR4305                ; -ERR
+AND R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+ANL
+MPS
+ANB @MR2002              ; Mainte中
+SET @MR1901              ; Main2 HALT許可
+MPP
+AND @MR2002              ; Mainte中
+SET @MR1900              ; Main1 HALT許可
+CON
+SET @MR1901              ; Main2 HALT許可
+MRD
+AND MR13002              ; R1 R15選択記憶
+MPS
+ANB MR4405               ; M/S3 COFｶﾞｲﾄﾞ用ﾁｬｯｸ 開限ERR
+RES MR7404               ; M/S3 COFｶﾞｲﾄﾞ用ﾁｬｯｸ 閉
+CON
+SET MR7405               ; -
+CON
+AND R4405                ; M/S3 COFｶﾞｲﾄﾞ用ﾁｬｯｸ 開限
+ANB R4404                ; M/S3 COFｶﾞｲﾄﾞ用ﾁｬｯｸ 閉限
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR6007
+MPP
+LD MR4405                ; M/S3 COFｶﾞｲﾄﾞ用ﾁｬｯｸ 開限ERR
+AND R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+ANL
+MPS
+ANB @MR2002              ; Mainte中
+SET @MR1901              ; Main2 HALT許可
+MPP
+AND @MR2002              ; Mainte中
+SET @MR1900              ; Main1 HALT許可
+CON
+SET @MR1901              ; Main2 HALT許可
+MPP
+LD CR2003                ; 常時OFF
+AND MR13003              ; R1 R16選択記憶
+ANL
+MPS
+ANB MR4505               ; -ERR
+RES MR7504               ; -
+CON
+SET MR7505               ; -
+CON
+AND R4505                ; -
+ANB R4504                ; -
+JMP @MR6007
+MPP
+LD MR4505                ; -ERR
+AND R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+ANL
+MPS
+ANB @MR2002              ; Mainte中
+SET @MR1901              ; Main2 HALT許可
+MPP
+AND @MR2002              ; Mainte中
+SET @MR1900              ; Main1 HALT許可
+CON
+SET @MR1901              ; Main2 HALT許可
+;M_ｽﾗ 1COFｶﾞｲﾄﾞ前後　後退
+STG @MR6007
+MPS
+AND MR13000              ; R1 R13選択記憶
+MPS
+ANB MR4207               ; M/S1 COFｶﾞｲﾄﾞ前後 戻し側ERR
+SET MR7207               ; M/S1 COFｶﾞｲﾄﾞ前後 戻し側
+CON
+RES MR7206               ; M/S1 COFｶﾞｲﾄﾞ前後 ﾜｰｸ保持側
+CON
+AND R4207                ; M/S1 COFｶﾞｲﾄﾞ前後 戻し側
+ANB R4206                ; M/S1 COFｶﾞｲﾄﾞ前後 ﾜｰｸ保持側
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR6008
+MPP
+AND MR4207               ; M/S1 COFｶﾞｲﾄﾞ前後 戻し側ERR
+SET MR7206               ; M/S1 COFｶﾞｲﾄﾞ前後 ﾜｰｸ保持側
+CON
+RES MR7207               ; M/S1 COFｶﾞｲﾄﾞ前後 戻し側
+CON
+AND R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+MPS
+ANB @MR2002              ; Mainte中
+SET @MR1901              ; Main2 HALT許可
+MPP
+AND @MR2002              ; Mainte中
+SET @MR1900              ; Main1 HALT許可
+CON
+SET @MR1901              ; Main2 HALT許可
+MRD
+LD CR2003                ; 常時OFF
+AND MR13001              ; R1 R14選択記憶
+ANL
+MPS
+ANB MR4307               ; -ERR
+SET MR7307               ; -
+CON
+RES MR7306               ; -
+CON
+AND R4307                ; -
+ANB R4306                ; -
+JMP @MR6008
+MPP
+AND MR4307               ; -ERR
+SET MR7306               ; -
+CON
+RES MR7307               ; -
+CON
+AND R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+MPS
+ANB @MR2002              ; Mainte中
+SET @MR1901              ; Main2 HALT許可
+MPP
+AND @MR2002              ; Mainte中
+SET @MR1900              ; Main1 HALT許可
+CON
+SET @MR1901              ; Main2 HALT許可
+MRD
+AND MR13002              ; R1 R15選択記憶
+MPS
+ANB MR4407               ; M/S3 COFｶﾞｲﾄﾞ前後 戻し側ERR
+SET MR7407               ; M/S3 COFｶﾞｲﾄﾞ前後 戻し側
+CON
+RES MR7406               ; M/S3 COFｶﾞｲﾄﾞ前後 ﾜｰｸ保持側
+CON
+AND R4407                ; M/S3 COFｶﾞｲﾄﾞ前後 戻し側
+ANB R4406                ; M/S3 COFｶﾞｲﾄﾞ前後 ﾜｰｸ保持側
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR6008
+MPP
+AND MR4407               ; M/S3 COFｶﾞｲﾄﾞ前後 戻し側ERR
+SET MR7406               ; M/S3 COFｶﾞｲﾄﾞ前後 ﾜｰｸ保持側
+CON
+RES MR7407               ; M/S3 COFｶﾞｲﾄﾞ前後 戻し側
+CON
+AND R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+MPS
+ANB @MR2002              ; Mainte中
+SET @MR1901              ; Main2 HALT許可
+MPP
+AND @MR2002              ; Mainte中
+SET @MR1900              ; Main1 HALT許可
+CON
+SET @MR1901              ; Main2 HALT許可
+MPP
+LD CR2003                ; 常時OFF
+AND MR13003              ; R1 R16選択記憶
+ANL
+MPS
+ANB MR4507               ; -ERR
+SET MR7507               ; -
+CON
+RES MR7506               ; -
+CON
+AND R4507                ; -
+ANB R4506                ; -
+JMP @MR6008
+MPP
+AND MR4507               ; -ERR
+SET MR7506               ; -
+CON
+RES MR7507               ; -
+CON
+AND R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+MPS
+ANB @MR2002              ; Mainte中
+SET @MR1901              ; Main2 HALT許可
+MPP
+AND @MR2002              ; Mainte中
+SET @MR1900              ; Main1 HALT許可
+CON
+SET @MR1901              ; Main2 HALT許可
+;H_ｻﾌﾞ 供給PP ﾊﾝﾄﾞ 開
+STG @MR6008
+MPS
+ANB MR4607               ; ﾎﾙﾀﾞｻﾌﾞ供給PP ﾊﾝﾄﾞ 開限ERR
+SET MR7607               ; ﾎﾙﾀﾞｻﾌﾞ供給PP ﾊﾝﾄﾞ 開
+CON
+RES MR7606               ; ﾎﾙﾀﾞｻﾌﾞ供給PP ﾊﾝﾄﾞ 閉
+CON
+AND R4607                ; ﾎﾙﾀﾞｻﾌﾞ供給PP ﾊﾝﾄﾞ 開限
+ANB MR10600              ; ﾎﾙﾀﾞｻﾌﾞ供給PP ﾊﾝﾄﾞ 閉限
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR6009
+MRD
+LD MR4607                ; ﾎﾙﾀﾞｻﾌﾞ供給PP ﾊﾝﾄﾞ 開限ERR
+AND R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+ANL
+MPS
+ANB @MR2002              ; Mainte中
+SET @MR1901              ; Main2 HALT許可
+MPP
+AND @MR2002              ; Mainte中
+SET @MR1900              ; Main1 HALT許可
+CON
+SET @MR1901              ; Main2 HALT許可
+MPP
+@SET @MR6106             ; COFｶﾞｲﾄﾞ下降ｻﾌﾞ
+;ﾎﾙﾀﾞｰｻﾌﾞ減圧
+STG @MR6009
+MPS
+AND MR13000              ; R1 R13選択記憶
+SET MR7210               ; M/S1 ﾎﾙﾀﾞ受ﾋﾟﾝ上下二圧切替 ON
+CON
+RES MR7211               ; M/S1 ﾎﾙﾀﾞ受ﾋﾟﾝ上下二圧切替 OFF
+CON
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR6010
+MRD
+LD MR13001               ; R1 R14選択記憶
+AND CR2003               ; 常時OFF
+ANL
+SET MR7310               ; -
+CON
+RES MR7311               ; -
+CON
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR6010
+MRD
+AND MR13002              ; R1 R15選択記憶
+SET MR7410               ; M/S3 ﾎﾙﾀﾞ受ﾋﾟﾝ上下 二圧切替 ON
+CON
+RES MR7411               ; M/S3 ﾎﾙﾀﾞ受ﾋﾟﾝ上下 二圧切替 OFF
+CON
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR6010
+MPP
+LD MR13003               ; R1 R16選択記憶
+AND CR2003               ; 常時OFF
+ANL
+SET MR7510               ; -
+CON
+RES MR7511               ; -
+CON
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR6010
+;RB4　下降　Pos.4(ﾎﾙﾀﾞｻﾌﾞ組込み前位置)へ
+;※組込み前位置はﾒｲﾝｽﾗｲﾀﾞごとに設けてあるが、ﾒｲﾝｽﾗｲﾀﾞ1用を共用している。
+STG @MR6010
+ANB MR16804              ; RB4ｴﾗｰ検出
+ANB R35300               ; RB4 MOVE
+ANB R35302               ; During RB4 MOVE
+ANB R35301               ; RB4 MOVE END
+MPS
+LD= #4 EM1306            ; RB4Target Pos
+AND MR3003               ; RB4 起動IL　ON=起動可能
+ANL
+SET R35300               ; RB4 MOVE
+CON
+JMP @MR6108
+MPP
+DW #4 EM1306             ; RB4Target Pos
+STG @MR6108
+AND R35301               ; RB4 MOVE END
+MPS
+LDB R35303               ; RB4Alarm
+AND T2063                ; RB4 Pos.4　ﾎﾙﾀﾞｻﾌﾞ組込み前高さ
+ANL
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+RES R35301               ; RB4 MOVE END
+CON
+JMP @MR6109              ; RB4組込み位置へ
+MPP
+AND R35303               ; RB4Alarm
+@SET MR16804             ; RB4ｴﾗｰ検出
+CON
+RES R35301               ; RB4 MOVE END
+CON
+JMP @MR6010
+;<h1/>　　　RB4　下降　Pos.5,7,9,11(ﾎﾙﾀﾞｻﾌﾞ組込み位置)へ
+STG @MR6109              ; RB4組込み位置へ
+MPS
+LDB R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+ANB MR16804              ; RB4ｴﾗｰ検出
+ANB R35300               ; RB4 MOVE
+ANB R35302               ; During RB4 MOVE
+ANB R35301               ; RB4 MOVE END
+ANL
+MPS
+AND MR13000              ; R1 R13選択記憶
+MPS
+LD= #5 EM1306            ; RB4Target Pos
+AND MR3003               ; RB4 起動IL　ON=起動可能
+ANL
+SET R35300               ; RB4 MOVE
+CON
+JMP @MR6011
+MPP
+DW #5 EM1306             ; RB4Target Pos
+MRD
+LD CR2003                ; 常時OFF
+AND MR13001              ; R1 R14選択記憶
+ANL
+MPS
+LD= #7 EM1306            ; RB4Target Pos
+AND MR3003               ; RB4 起動IL　ON=起動可能
+ANL
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+SET R35300               ; RB4 MOVE
+CON
+JMP @MR6011
+MPP
+DW #7 EM1306             ; RB4Target Pos
+MRD
+AND MR13002              ; R1 R15選択記憶
+MPS
+LD= #9 EM1306            ; RB4Target Pos
+AND MR3003               ; RB4 起動IL　ON=起動可能
+ANL
+SET R35300               ; RB4 MOVE
+CON
+JMP @MR6011
+MPP
+DW #9 EM1306             ; RB4Target Pos
+MPP
+LD CR2003                ; 常時OFF
+AND MR13003              ; R1 R16選択記憶
+ANL
+MPS
+LD= #11 EM1306           ; RB4Target Pos
+AND MR3003               ; RB4 起動IL　ON=起動可能
+ANL
+SET R35300               ; RB4 MOVE
+CON
+JMP @MR6011
+MPP
+DW #11 EM1306            ; RB4Target Pos
+MPP
+AND R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+SET @MR1901              ; Main2 HALT許可
+;RB4が移動しながら↓を行う。
+;ﾍｯﾄﾞｻﾌﾞ位置決めﾋﾟﾝ下降
+STG @MR6011
+MPS
+AND MR13000              ; R1 R13選択記憶
+MPS
+LDB MR4208               ; M/S1 ﾍｯﾄﾞｻﾌﾞ位置決めﾋﾟﾝ下限Err
+ANB R4210                ; M/S1 ﾎﾙﾀﾞｻﾌﾞ受けﾋﾟﾝ上下 上限
+ANL
+SET MR7208               ; M/S1 ﾍｯﾄﾞｻﾌﾞ位置決めﾋﾟﾝ上下 下降
+CON
+RES MR7209               ; M/S1 ﾍｯﾄﾞｻﾌﾞ位置決めﾋﾟﾝ上下 上昇
+CON
+AND R4208                ; M/S1 ﾍｯﾄﾞｻﾌﾞ位置決めﾋﾟﾝ上下 下限
+ANB R4209                ; M/S1 ﾍｯﾄﾞｻﾌﾞ位置決めﾋﾟﾝ上下 上限
+JMP @MR6012
+MPP
+AND MR4208               ; M/S1 ﾍｯﾄﾞｻﾌﾞ位置決めﾋﾟﾝ下限Err
+SET MR7209               ; M/S1 ﾍｯﾄﾞｻﾌﾞ位置決めﾋﾟﾝ上下 上昇
+CON
+RES MR7208               ; M/S1 ﾍｯﾄﾞｻﾌﾞ位置決めﾋﾟﾝ上下 下降
+CON
+AND R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+MPS
+ANB @MR2002              ; Mainte中
+SET @MR1901              ; Main2 HALT許可
+MPP
+AND @MR2002              ; Mainte中
+SET @MR1900              ; Main1 HALT許可
+CON
+SET @MR1901              ; Main2 HALT許可
+MRD
+LD CR2003                ; 常時OFF
+AND MR13001              ; R1 R14選択記憶
+ANL
+MPS
+LDB MR4308               ; -ERR
+ANB R4310                ; -
+ANL
+SET MR7308               ; -
+CON
+RES MR7309               ; -
+CON
+AND R4308                ; -
+ANB R4309                ; -
+JMP @MR6012
+MPP
+AND MR4308               ; -ERR
+SET MR7309               ; -
+CON
+RES MR7308               ; -
+CON
+AND R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+MPS
+ANB @MR2002              ; Mainte中
+SET @MR1901              ; Main2 HALT許可
+MPP
+AND @MR2002              ; Mainte中
+SET @MR1900              ; Main1 HALT許可
+CON
+SET @MR1901              ; Main2 HALT許可
+MRD
+AND MR13002              ; R1 R15選択記憶
+MPS
+LDB MR4408               ; M/S3 ﾍｯﾄﾞｻﾌﾞ位置決めﾋﾟﾝ下限Err
+ANB R4410                ; M/S3 ﾎﾙﾀﾞｻﾌﾞ受けﾋﾟﾝ上下 上限
+ANL
+SET MR7408               ; M/S3 ﾍｯﾄﾞｻﾌﾞ位置決めﾋﾟﾝ上下 下降
+CON
+RES MR7409               ; M/S3 ﾍｯﾄﾞｻﾌﾞ位置決めﾋﾟﾝ上下 上昇
+CON
+AND R4408                ; M/S3 ﾍｯﾄﾞｻﾌﾞ位置決めﾋﾟﾝ上下 下限
+ANB R4409                ; M/S3 ﾍｯﾄﾞｻﾌﾞ位置決めﾋﾟﾝ上下 上限
+JMP @MR6012
+MPP
+AND MR4408               ; M/S3 ﾍｯﾄﾞｻﾌﾞ位置決めﾋﾟﾝ下限Err
+SET MR7409               ; M/S3 ﾍｯﾄﾞｻﾌﾞ位置決めﾋﾟﾝ上下 上昇
+CON
+RES MR7408               ; M/S3 ﾍｯﾄﾞｻﾌﾞ位置決めﾋﾟﾝ上下 下降
+CON
+AND R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+MPS
+ANB @MR2002              ; Mainte中
+SET @MR1901              ; Main2 HALT許可
+MPP
+AND @MR2002              ; Mainte中
+SET @MR1900              ; Main1 HALT許可
+CON
+SET @MR1901              ; Main2 HALT許可
+MPP
+LD CR2003                ; 常時OFF
+AND MR13003              ; R1 R16選択記憶
+ANL
+MPS
+LDB MR4508               ; -ERR
+ANB R4510                ; -
+ANL
+SET MR7508               ; -
+CON
+RES MR7509               ; -
+CON
+AND R4508                ; -
+ANB R4509                ; -
+JMP @MR6012
+MPP
+AND MR4508               ; -ERR
+SET MR7509               ; -
+CON
+RES MR7508               ; -
+CON
+AND R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+MPS
+ANB @MR2002              ; Mainte中
+SET @MR1901              ; Main2 HALT許可
+MPP
+AND @MR2002              ; Mainte中
+SET @MR1900              ; Main1 HALT許可
+CON
+SET @MR1901              ; Main2 HALT許可
+;ﾎﾙﾀﾞｰｻﾌﾞ受けﾋﾟﾝ 下降
+;ﾋﾟﾝ下降ﾌﾗｲﾝｸﾞ対策
+STG @MR6012
+MPS
+AND MR13000              ; R1 R13選択記憶
+MPS
+ANB MR4211               ; M/S1 ﾎﾙﾀﾞｻﾌﾞ受けﾋﾟﾝ上下 下限ERR
+TMR @10 #100             ; SL1_ﾋﾟﾝ下降OK
+CON
+LD T2064                 ; RB4 Pos.5　MS1ﾎﾙﾀﾞｻﾌﾞ押込み高さ
+OR @T10                  ; SL1_ﾋﾟﾝ下降OK
+ANL
+SET MR7213               ; M/S1 ﾎﾙﾀﾞｻﾌﾞ受けﾋﾟﾝ上下 下降
+CON
+RES MR7212               ; M/S1 ﾎﾙﾀﾞｻﾌﾞ受けﾋﾟﾝ上下 上昇
+CON
+AND R4211                ; M/S1 ﾎﾙﾀﾞｻﾌﾞ受けﾋﾟﾝ上下 下限
+AND R4211                ; M/S1 ﾎﾙﾀﾞｻﾌﾞ受けﾋﾟﾝ上下 下限
+ANB R4210                ; M/S1 ﾎﾙﾀﾞｻﾌﾞ受けﾋﾟﾝ上下 上限
+JMP @MR6013
+MPP
+LD MR4211                ; M/S1 ﾎﾙﾀﾞｻﾌﾞ受けﾋﾟﾝ上下 下限ERR
+AND R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+ANL
+MPS
+ANB @MR2002              ; Mainte中
+SET @MR1901              ; Main2 HALT許可
+MPP
+AND @MR2002              ; Mainte中
+SET @MR1900              ; Main1 HALT許可
+CON
+SET @MR1901              ; Main2 HALT許可
+MRD
+LD CR2003                ; 常時OFF
+AND MR13001              ; R1 R14選択記憶
+ANL
+MPS
+ANB MR4311               ; -ERR
+TMR @11 #100             ; SL2_ﾋﾟﾝ下降OK
+CON
+LD T2066                 ; RB4 Pos.7　MS2ﾎﾙﾀﾞｻﾌﾞ押込み高さ
+OR @T11                  ; SL2_ﾋﾟﾝ下降OK
+ANL
+AND R4311                ; -
+SET MR7313               ; -
+CON
+RES MR7312               ; -
+CON
+AND R4311                ; -
+ANB R4310                ; -
+JMP @MR6013
+MPP
+LD MR4311                ; -ERR
+AND R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+ANL
+MPS
+ANB @MR2002              ; Mainte中
+SET @MR1901              ; Main2 HALT許可
+MPP
+AND @MR2002              ; Mainte中
+SET @MR1900              ; Main1 HALT許可
+CON
+SET @MR1901              ; Main2 HALT許可
+MRD
+AND MR13002              ; R1 R15選択記憶
+MPS
+ANB MR4411               ; M/S3 ﾎﾙﾀﾞｻﾌﾞ受けﾋﾟﾝ上下 下限ERR
+TMR @12 #100             ; SL3_ﾋﾟﾝ下降OK
+CON
+LD T2068                 ; RB4 Pos.9　MS3ﾎﾙﾀﾞｻﾌﾞ押込み高さ
+OR @T12                  ; SL3_ﾋﾟﾝ下降OK
+ANL
+SET MR7413               ; M/S3 ﾎﾙﾀﾞｻﾌﾞ受けﾋﾟﾝ上下 下降
+CON
+RES MR7412               ; M/S3 ﾎﾙﾀﾞｻﾌﾞ受けﾋﾟﾝ上下 上昇
+CON
+AND R4411                ; M/S3 ﾎﾙﾀﾞｻﾌﾞ受けﾋﾟﾝ上下 下限
+AND R4411                ; M/S3 ﾎﾙﾀﾞｻﾌﾞ受けﾋﾟﾝ上下 下限
+ANB R4410                ; M/S3 ﾎﾙﾀﾞｻﾌﾞ受けﾋﾟﾝ上下 上限
+JMP @MR6013
+MPP
+LD MR4411                ; M/S3 ﾎﾙﾀﾞｻﾌﾞ受けﾋﾟﾝ上下 下限ERR
+AND R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+ANL
+MPS
+ANB @MR2002              ; Mainte中
+SET @MR1901              ; Main2 HALT許可
+MPP
+AND @MR2002              ; Mainte中
+SET @MR1900              ; Main1 HALT許可
+CON
+SET @MR1901              ; Main2 HALT許可
+MPP
+LD CR2003                ; 常時OFF
+AND MR13003              ; R1 R16選択記憶
+ANL
+MPS
+ANB MR4511               ; -ERR
+TMR @13 #100             ; SL4_ﾋﾟﾝ下降OK
+CON
+LD T2070                 ; RB4 Pos.11　MS4ﾎﾙﾀﾞｻﾌﾞ押込み高さ
+OR @T13                  ; SL4_ﾋﾟﾝ下降OK
+ANL
+AND R4511                ; -
+SET MR7513               ; -
+CON
+RES MR7512               ; -
+CON
+AND R4511                ; -
+ANB R4510                ; -
+JMP @MR6013
+MPP
+LD MR4511                ; -ERR
+AND R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+ANL
+MPS
+ANB @MR2002              ; Mainte中
+SET @MR1901              ; Main2 HALT許可
+MPP
+AND @MR2002              ; Mainte中
+SET @MR1900              ; Main1 HALT許可
+CON
+SET @MR1901              ; Main2 HALT許可
+STG @MR6013
+MPS
+LD MR13000               ; R1 R13選択記憶
+AND R4208                ; M/S1 ﾍｯﾄﾞｻﾌﾞ位置決めﾋﾟﾝ上下 下限
+ANB R4209                ; M/S1 ﾍｯﾄﾞｻﾌﾞ位置決めﾋﾟﾝ上下 上限
+AND R4211                ; M/S1 ﾎﾙﾀﾞｻﾌﾞ受けﾋﾟﾝ上下 下限
+ANB R4210                ; M/S1 ﾎﾙﾀﾞｻﾌﾞ受けﾋﾟﾝ上下 上限
+ANL
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR6014
+MRD
+LD CR2003                ; 常時OFF
+AND MR13001              ; R1 R14選択記憶
+AND R4308                ; -
+ANB R4309                ; -
+AND R4311                ; -
+ANB R4310                ; -
+ANL
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR6014
+MRD
+LD MR13002               ; R1 R15選択記憶
+AND R4408                ; M/S3 ﾍｯﾄﾞｻﾌﾞ位置決めﾋﾟﾝ上下 下限
+ANB R4409                ; M/S3 ﾍｯﾄﾞｻﾌﾞ位置決めﾋﾟﾝ上下 上限
+AND R4411                ; M/S3 ﾎﾙﾀﾞｻﾌﾞ受けﾋﾟﾝ上下 下限
+ANB R4410                ; M/S3 ﾎﾙﾀﾞｻﾌﾞ受けﾋﾟﾝ上下 上限
+ANL
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR6014
+MPP
+LD CR2003                ; 常時OFF
+AND MR13003              ; R1 R16選択記憶
+AND R4508                ; -
+ANB R4509                ; -
+AND R4511                ; -
+ANB R4510                ; -
+ANL
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR6014
+;RB4移動完了確認
+STG @MR6014
+AND R35301               ; RB4 MOVE END
+MPS
+ANB R35303               ; RB4Alarm
+RES R35301               ; RB4 MOVE END
+CON
+JMP @MR6100              ; RB4上昇
+MPP
+AND R35303               ; RB4Alarm
+MPS
+AND CR2003               ; 常時OFF
+@SET MR16804             ; RB4ｴﾗｰ検出
+CON
+RES R35301               ; RB4 MOVE END
+CON
+JMP @MR6109              ; RB4組込み位置へ
+MPP
+AND CR2002               ; 常時ON
+@SET MR18600             ; 【ALM】RB4ﾍｯﾄﾞｻﾌﾞ組込み異常
+CON
+RES R35301               ; RB4 MOVE END
+CON
+JMP @MR6107
+STG @MR6107
+MPS
+LDB R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+ANB MR18600              ; 【ALM】RB4ﾍｯﾄﾞｻﾌﾞ組込み異常
+ANL
+MPS
+ANB DM10531.3            ; ALM_異常 RB4
+MPS
+AND MR18601              ; 【SW1】Error_RESET
+JMP @MR6109              ; RB4組込み位置へ
+MPP
+AND MR18602              ; 【SW2】動作継続
+SET MR18603              ; 組込み異常記憶FLG
+CON
+JMP @MR6100              ; RB4上昇
+MPP
+AND DM10531.3            ; ALM_異常 RB4
+MPS
+ANB CR2006               ; 1sｸﾛｯｸﾊﾟﾙｽ
+SET DM10731.3            ; RES(ﾘｾｯﾄ) RB4
+MPP
+AND CR2006               ; 1sｸﾛｯｸﾊﾟﾙｽ
+RES DM10731.3            ; RES(ﾘｾｯﾄ) RB4
+MPP
+AND R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+SET @MR1901              ; Main2 HALT許可
+STG @MR6015
+JMP @MR6100              ; RB4上昇
+;RB4　上昇
+STG @MR6100              ; RB4上昇
+TMR #702 #5
+CON
+AND T702
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+ANB MR16804              ; RB4ｴﾗｰ検出
+MPS
+LD= #2 EM1306            ; RB4Target Pos
+AND MR3003               ; RB4 起動IL　ON=起動可能
+ANL
+SET R35300               ; RB4 MOVE
+CON
+JMP @MR6101
+MPP
+DW #2 EM1306             ; RB4Target Pos
+STG @MR6101
+AND R35301               ; RB4 MOVE END
+MPS
+LDB R35303               ; RB4Alarm
+AND T2061                ; RB4 Pos.2　搬送高さ
+ANL
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+RES R35301               ; RB4 MOVE END
+CON
+JMP @MR6102
+MPP
+AND R35303               ; RB4Alarm
+@SET MR16804             ; RB4ｴﾗｰ検出
+CON
+RES R35301               ; RB4 MOVE END
+CON
+JMP @MR6100              ; RB4上昇
+;ｽﾃｰｼﾞ吸着OFF&ﾎﾙﾀﾞ受けﾋﾟﾝ2圧切替OFF
+STG @MR6102
+MPS
+AND MR13000              ; R1 R13選択記憶
+RES MR8206               ; M/S ｽﾃｰｼﾞ1 吸着ON
+CON
+SET MR8207               ; M/S ｽﾃｰｼﾞ1 吸着OFF
+CON
+SET MR8208               ; M/S ｽﾃｰｼﾞ1 破壊ON
+CON
+SET MR7211               ; M/S1 ﾎﾙﾀﾞ受ﾋﾟﾝ上下二圧切替 OFF
+CON
+RES MR7210               ; M/S1 ﾎﾙﾀﾞ受ﾋﾟﾝ上下二圧切替 ON
+CON
+JMP @MR6103
+MRD
+LD MR13001               ; R1 R14選択記憶
+AND CR2003               ; 常時OFF
+ANL
+RES MR8209               ; M/S ｽﾃｰｼﾞ2 吸着ON
+CON
+SET MR8210               ; M/S ｽﾃｰｼﾞ2 吸着OFF
+CON
+SET MR8211               ; M/S ｽﾃｰｼﾞ2 破壊ON
+CON
+SET MR7311               ; -
+CON
+RES MR7310               ; -
+CON
+JMP @MR6103
+MRD
+AND MR13002              ; R1 R15選択記憶
+RES MR8212               ; M/S ｽﾃｰｼﾞ3 吸着ON
+CON
+SET MR8213               ; M/S ｽﾃｰｼﾞ3 吸着OFF
+CON
+SET MR8214               ; M/S ｽﾃｰｼﾞ3 破壊ON
+CON
+SET MR7411               ; M/S3 ﾎﾙﾀﾞ受ﾋﾟﾝ上下 二圧切替 OFF
+CON
+RES MR7410               ; M/S3 ﾎﾙﾀﾞ受ﾋﾟﾝ上下 二圧切替 ON
+CON
+JMP @MR6103
+MPP
+LD MR13003               ; R1 R16選択記憶
+AND CR2003               ; 常時OFF
+ANL
+RES MR8300               ; M/S ｽﾃｰｼﾞ4 吸着ON
+CON
+SET MR8301               ; M/S ｽﾃｰｼﾞ4 吸着OFF
+CON
+SET MR8302               ; M/S ｽﾃｰｼﾞ4 破壊ON
+CON
+SET MR7511               ; -
+CON
+RES MR7510               ; -
+CON
+JMP @MR6103
+;H_ｻﾌﾞ 供給PP上下 上昇
+STG @MR6103
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+MPS
+ANB MR4609               ; ﾎﾙﾀﾞｻﾌﾞ供給PP上下 上限ERR
+SET MR7609               ; ﾎﾙﾀﾞｻﾌﾞ供給PP上下 上昇
+CON
+RES MR7608               ; ﾎﾙﾀﾞｻﾌﾞ供給PP上下 下降
+CON
+AND R4609                ; ﾎﾙﾀﾞｻﾌﾞ供給PP上下 上限
+ANB R4608                ; ﾎﾙﾀﾞｻﾌﾞ供給PP上下 下限
+JMP @MR6104
+MPP
+LD MR4609                ; ﾎﾙﾀﾞｻﾌﾞ供給PP上下 上限ERR
+AND R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+ANL
+MPS
+ANB @MR2002              ; Mainte中
+SET @MR1901              ; Main2 HALT許可
+MPP
+AND @MR2002              ; Mainte中
+SET @MR1900              ; Main1 HALT許可
+CON
+SET @MR1901              ; Main2 HALT許可
+STG @MR6104
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+MPS
+AND MR13000              ; R1 R13選択記憶
+MPS
+ANB MR4701               ; M/S1 COFｶﾞｲﾄﾞ上下 下限ERR
+RES MR8208               ; M/S ｽﾃｰｼﾞ1 破壊ON
+CON
+JMP @MR6105
+MPP
+LD MR4701                ; M/S1 COFｶﾞｲﾄﾞ上下 下限ERR
+AND R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+ANL
+MPS
+ANB @MR2002              ; Mainte中
+SET @MR1901              ; Main2 HALT許可
+MPP
+AND @MR2002              ; Mainte中
+SET @MR1900              ; Main1 HALT許可
+CON
+SET @MR1901              ; Main2 HALT許可
+MRD
+AND MR13001              ; R1 R14選択記憶
+MPS
+ANB MR4703               ; M/S2 COFｶﾞｲﾄﾞ上下 下限ERR
+RES MR8211               ; M/S ｽﾃｰｼﾞ2 破壊ON
+CON
+JMP @MR6105
+MPP
+LD MR4703                ; M/S2 COFｶﾞｲﾄﾞ上下 下限ERR
+AND R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+ANL
+MPS
+ANB @MR2002              ; Mainte中
+SET @MR1901              ; Main2 HALT許可
+MPP
+AND @MR2002              ; Mainte中
+SET @MR1900              ; Main1 HALT許可
+CON
+SET @MR1901              ; Main2 HALT許可
+MRD
+AND MR13002              ; R1 R15選択記憶
+MPS
+ANB MR4705               ; M/S3 COFｶﾞｲﾄﾞ上下 下限ERR
+RES MR8214               ; M/S ｽﾃｰｼﾞ3 破壊ON
+CON
+JMP @MR6105
+MPP
+LD MR4705                ; M/S3 COFｶﾞｲﾄﾞ上下 下限ERR
+AND R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+ANL
+MPS
+ANB @MR2002              ; Mainte中
+SET @MR1901              ; Main2 HALT許可
+MPP
+AND @MR2002              ; Mainte中
+SET @MR1900              ; Main1 HALT許可
+CON
+SET @MR1901              ; Main2 HALT許可
+MPP
+AND MR13003              ; R1 R16選択記憶
+MPS
+ANB MR4707               ; M/S4 COFｶﾞｲﾄﾞ上下 下限ERR
+RES MR8302               ; M/S ｽﾃｰｼﾞ4 破壊ON
+CON
+JMP @MR6105
+MPP
+LD MR4707                ; M/S4 COFｶﾞｲﾄﾞ上下 下限ERR
+AND R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+ANL
+MPS
+ANB @MR2002              ; Mainte中
+SET @MR1901              ; Main2 HALT許可
+MPP
+AND @MR2002              ; Mainte中
+SET @MR1900              ; Main1 HALT許可
+CON
+SET @MR1901              ; Main2 HALT許可
+STG @MR6105
+JMP @MR6114
+STG @MR6114
+@SET @MR6001             ; ﾎﾙﾀﾞｰSub組込_Sub 実行完了
+CON
+ANB @MR6001              ; ﾎﾙﾀﾞｰSub組込_Sub 実行完了
+RES @MR6002              ; ﾎﾙﾀﾞｰSub組込_Sub　実行中
+CON
+ENDS
+;　COFｶﾞｲﾄﾞ下降
+STG @MR6106              ; COFｶﾞｲﾄﾞ下降ｻﾌﾞ
+MPS
+AND MR13000              ; R1 R13選択記憶
+MPS
+ANB MR4701               ; M/S1 COFｶﾞｲﾄﾞ上下 下限ERR
+SET MR7301               ; M/S1 COFｶﾞｲﾄﾞ上下 下降
+CON
+RES MR7300               ; M/S1 COFｶﾞｲﾄﾞ上下 上昇
+CON
+AND R4701                ; M/S1 COFｶﾞｲﾄﾞ上下 下限
+ANB R4700                ; M/S1 COFｶﾞｲﾄﾞ上下 上限
+ENDS
+MPP
+LD MR4701                ; M/S1 COFｶﾞｲﾄﾞ上下 下限ERR
+AND R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+ANL
+MPS
+ANB @MR2002              ; Mainte中
+SET @MR1901              ; Main2 HALT許可
+MPP
+AND @MR2002              ; Mainte中
+SET @MR1900              ; Main1 HALT許可
+CON
+SET @MR1901              ; Main2 HALT許可
+MPP
+AND MR13002              ; R1 R15選択記憶
+MPS
+ANB MR4705               ; M/S3 COFｶﾞｲﾄﾞ上下 下限ERR
+SET MR7501               ; M/S3 COFｶﾞｲﾄﾞ上下 下降
+CON
+RES MR7500               ; M/S3 COFｶﾞｲﾄﾞ上下 上昇
+CON
+AND R4705                ; M/S3 COFｶﾞｲﾄﾞ上下 下限
+ANB R4704                ; M/S3 COFｶﾞｲﾄﾞ上下 上限
+ENDS
+MPP
+LD MR4705                ; M/S3 COFｶﾞｲﾄﾞ上下 下限ERR
+AND R44200               ; _Grp1 ﾎﾟｰｽﾞ要求
+ANL
+MPS
+ANB @MR2002              ; Mainte中
+SET @MR1901              ; Main2 HALT許可
+MPP
+AND @MR2002              ; Mainte中
+SET @MR1900              ; Main1 HALT許可
+CON
+SET @MR1901              ; Main2 HALT許可
+;<h1/>13_6200
+STG @MR6200
+SET @MR6202              ; _SUB実行中
+CON
+JMP @MR6203
+STG @MR6203
+JMP @MR6204
+STG @MR6204
+JMP @MR6205
+STG @MR6205
+JMP @MR6206
+STG @MR6206
+JMP @MR6207
+STG @MR6207
+JMP @MR6208
+STG @MR6208
+JMP @MR6209
+STG @MR6209
+JMP @MR6210
+STG @MR6210
+JMP @MR6211
+STG @MR6211
+JMP @MR6212
+STG @MR6212
+JMP @MR6213
+STG @MR6213
+JMP @MR6214
+STG @MR6214
+@SET @MR6201             ; ***_Sub　実行完了
+CON
+ANB @MR6201              ; ***_Sub　実行完了
+RES @MR6201              ; ***_Sub　実行完了
+CON
+RES @MR6202              ; _SUB実行中
+CON
+ENDS
+;<h1/>13_6300
+STG @MR6300              ; ***Sub
+SET @MR6302              ; ***_Sub　実行中
+CON
+JMP @MR6303
+STG @MR6303
+JMP @MR6304
+STG @MR6304
+JMP @MR6305
+STG @MR6305
+JMP @MR6306
+STG @MR6306
+JMP @MR6307
+STG @MR6307
+JMP @MR6308
+STG @MR6308
+JMP @MR6309
+STG @MR6309
+JMP @MR6310
+STG @MR6310
+JMP @MR6311
+STG @MR6311
+JMP @MR6312
+STG @MR6312
+JMP @MR6313
+STG @MR6313
+JMP @MR6314
+STG @MR6314
+@SET @MR6301             ; ***_Sub　実行完了
+CON
+ANB @MR6301              ; ***_Sub　実行完了
+RES @MR6302              ; ***_Sub　実行中
+CON
+ENDS
+;<h1/>15_6400
+STG @MR6400              ; ***_Sub
+SET @MR6402              ; ***_Sub　実行中
+CON
+JMP @MR6403
+STG @MR6403
+JMP @MR6404
+STG @MR6404
+JMP @MR6405
+STG @MR6405
+JMP @MR6406
+STG @MR6406
+JMP @MR6407
+STG @MR6407
+JMP @MR6408
+STG @MR6408
+JMP @MR6409
+STG @MR6409
+JMP @MR6410
+STG @MR6410
+JMP @MR6411
+STG @MR6411
+JMP @MR6412
+STG @MR6412
+JMP @MR6413
+STG @MR6413
+JMP @MR6414
+STG @MR6414
+@SET @MR6401             ; ***_Sub実行完了
+CON
+ANB @MR6401              ; ***_Sub実行完了
+RES @MR6402              ; ***_Sub　実行中
+CON
+ENDS
+;<h1/>ﾁｬｯｸ内ﾜｰｸ有無確認
+STG MR12908              ; RB1 ﾁｬｯｸ内ﾜｰｸ有無確認Sub
+ZRES MR12909 MR12911     ; ﾁｬｯｸ内ﾜｰｸ有無確認 Sub_End  RB1 ﾁｬｯｸ内ﾜｰｸ無
+CON
+SET MR7606               ; ﾎﾙﾀﾞｻﾌﾞ供給PP ﾊﾝﾄﾞ 閉
+CON
+RES MR7607               ; ﾎﾙﾀﾞｻﾌﾞ供給PP ﾊﾝﾄﾞ 開
+CON
+JMP @MR901
+STG @MR901
+MPS
+LD MR10600               ; ﾎﾙﾀﾞｻﾌﾞ供給PP ﾊﾝﾄﾞ 閉限
+ANB R4607                ; ﾎﾙﾀﾞｻﾌﾞ供給PP ﾊﾝﾄﾞ 開限
+ANL
+TMR #711 #5
+CON
+AND T711
+SET MR12909              ; ﾁｬｯｸ内ﾜｰｸ有無確認 Sub_End
+CON
+SET MR12910              ; RB1 ﾁｬｯｸ内ﾜｰｸ有
+CON
+ENDS
+MPP
+LDB MR10600              ; ﾎﾙﾀﾞｻﾌﾞ供給PP ﾊﾝﾄﾞ 閉限
+ANB R4607                ; ﾎﾙﾀﾞｻﾌﾞ供給PP ﾊﾝﾄﾞ 開限
+ANL
+TMR @5 #10
+CON
+AND @T5
+SET MR7607               ; ﾎﾙﾀﾞｻﾌﾞ供給PP ﾊﾝﾄﾞ 開
+CON
+RES MR7606               ; ﾎﾙﾀﾞｻﾌﾞ供給PP ﾊﾝﾄﾞ 閉
+CON
+JMP @MR902
+STG @MR902
+AND R4607                ; ﾎﾙﾀﾞｻﾌﾞ供給PP ﾊﾝﾄﾞ 開限
+ANB MR10600              ; ﾎﾙﾀﾞｻﾌﾞ供給PP ﾊﾝﾄﾞ 閉限
+SET MR12909              ; ﾁｬｯｸ内ﾜｰｸ有無確認 Sub_End
+CON
+SET MR12911              ; RB1 ﾁｬｯｸ内ﾜｰｸ無
+CON
+ENDS
+;<h1/>HALT
+LD R44200                ; _Grp1 ﾎﾟｰｽﾞ要求
+LD @MR1900               ; Main1 HALT許可
+OR @MR3002               ; AUTO Main1 Busy
+ANL
+LD @MR1901               ; Main2 HALT許可
+ORB @MR4002              ; Main2 Busy
+LD CR2003                ; 常時OFF
+AND @MR1002              ; HOME中
+ORL
+ANL
+TMR @2 #2
+CON
+AND @T2
+SET R42600               ; _Grp1_Task0_ﾎﾟｰｽﾞ許可
+LD R42600                ; _Grp1_Task0_ﾎﾟｰｽﾞ許可
+RES @MR1900              ; Main1 HALT許可
+CON
+RES @MR1901              ; Main2 HALT許可
+END
+ENDH

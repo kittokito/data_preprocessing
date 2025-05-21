@@ -1,0 +1,2425 @@
+DEVICE:53
+;MODULE:IND3ST3
+;MODULE_TYPE:0
+;SCRIPT_TYPE:
+;***************************************
+; 非常停止
+; Emergency Stop 
+;***************************************
+LD R50010                ; Emergency　Stop
+OR @MR000                ; Emergency STOP
+ZRES @MR001 @MR1915
+CON
+OUT @MR000               ; Emergency STOP
+TMR @39 #5
+LD @T39
+MDSTOP IND3ST3
+;RB動作許可ﾌﾗｸﾞ
+;RB Move permission Flag
+;ﾜｰｸ有無ﾌﾗｸﾞ
+;Work Existence Flag
+LDB R6005                ; IND3 ST3 ﾜｰｸ有無検出
+AND R6006                ; IND3 ST3 ﾜｰｸ浮き検出1(供給孔側)
+AND R6007                ; IND3 ST3 ﾜｰｸ浮き検出2(ﾌｨﾙﾑ側)
+OUT @MR010               ; IND3ST3   全ﾜｰｸ無し
+LD= DM692 #1             ; IND3_ST3 Work Memory
+AND R6005                ; IND3 ST3 ﾜｰｸ有無検出
+LD= DM692 #0             ; IND3_ST3 Work Memory
+ANB R6005                ; IND3 ST3 ﾜｰｸ有無検出
+ORL
+OR R50002                ; STEP
+OUT @MR011               ; ﾜｰｸ状態OK
+;動作ﾊﾟﾗﾒｰﾀ
+;Operation Parameter
+LD LR41100               ; AUTO-0 全ﾕﾆｯﾄ動作
+OR LR41105               ; AUTO-5 IND3 3UT
+OR LR41106               ; AUTO-6
+OUT @MR013               ; IND3 ST3  AUTO Parameter OK
+;***************************************
+; ﾎﾟｰｽﾞ ･ ｴﾗｰ 監視
+; Pause ･ Error Check 
+;***************************************
+LDB R50300               ; Pause
+ANB R51603               ; Err IND3ST3
+ANB R51600               ; Err IND3
+OUT @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+;<h1/>原点復帰動作
+;HOME RETURN OPERATION 
+LD R50003                ; HOME
+ANB R51511               ; IND3 ST3  動作中
+SET R51511               ; IND3 ST3  動作中
+CON
+SET @MR500               ; 原点復帰  開始
+LDB R50003               ; HOME
+ANB R50001               ; AUTO
+ANB R50002               ; STEP
+AND @MR501               ; 原点復帰  終了
+RES R51511               ; IND3 ST3  動作中
+CON
+RES @MR501               ; 原点復帰  終了
+STG @MR500               ; 原点復帰  開始
+SET R50911               ; IND3 ST3  ｻｲｸﾙ動作中
+CON
+JMP @MR503               ; 1003
+STG @MR503               ; 1003
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+RES MR8512               ; IND3 ST3治具 閉じ
+CON
+RES MR8513               ; IND3 ST3治具 開き
+CON
+ZRES R17500 R18215       ; RB4_PSEL_ﾌﾟﾛｸﾞﾗﾑ指定1  RB5_PSEL_
+CON
+ZRES MR12600 MR13115     ; RB41 PSEL原点復帰開始
+CON
+JMP @MR504               ; RB4-5　  電源ON確認
+STG @MR504               ; RB4-5　  電源ON確認
+AND MR26102              ; A-RB4 電源ON
+AND MR26104              ; A-RB5 電源ON
+AND MR18615              ; RB4:DN正常通信中
+AND MR18815              ; RB5:DN正常通信中
+TMR @26 #20
+CON
+AND @T26
+SET R17502               ; RB4_PSEL_ｿﾌﾄｳｴｱﾘｾｯﾄ
+CON
+SET R17902               ; RB5_PSEL_ｿﾌﾄｳｴｱﾘｾｯﾄ
+CON
+SET @MR002               ; BYPASS_RB原点復帰中
+CON
+JMP @MR505               ; RB4 RB5 　電源ON完了
+STG @MR505               ; RB4 RB5 　電源ON完了
+TMR @15 #15
+CON
+AND @T15
+RES R17502               ; RB4_PSEL_ｿﾌﾄｳｴｱﾘｾｯﾄ
+CON
+RES R17902               ; RB5_PSEL_ｿﾌﾄｳｴｱﾘｾｯﾄ
+CON
+JMP @MR506
+STG @MR506
+AND R13100               ; RB4_PSEL_ｱﾗｰﾑ
+AND R13101               ; RB4_PSEL_ﾚﾃﾞｨ
+AND R13106               ; RB4_PSEL_ﾌﾟﾛｸﾞﾗﾑﾚﾃﾞｨ
+AND R13900               ; RB5_PSEL_ｱﾗｰﾑ
+AND R13901               ; RB5_PSEL_ﾚﾃﾞｨ
+AND R13906               ; RB5_PSEL_ﾌﾟﾛｸﾞﾗﾑﾚﾃﾞｨ
+JMP @MR507
+STG @MR507
+SET MR12600              ; RB41 PSEL原点復帰開始
+CON
+SET MR13400              ; RB51 PSEL原点復帰開始
+CON
+JMP @MR511
+STG @MR511
+AND R13104               ; RB4_PSEL_原点復帰完了
+AND MR12601              ; RB41 PSEL原点復帰完了
+AND R13904               ; RB5_PSEL_原点復帰完了
+AND MR13401              ; RB51 PSEL原点復帰完了
+RES @MR002               ; BYPASS_RB原点復帰中
+CON
+RES MR12601              ; RB41 PSEL原点復帰完了
+CON
+RES MR13401              ; RB51 PSEL原点復帰完了
+CON
+JMP @MR512
+STG @MR512
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+RES MR8502               ; 減圧封止 真空引きON
+CON
+RES MR8504               ; ﾊﾞｲﾊﾟｽ封止 減圧ﾉｽﾞﾙ下降
+CON
+RES MR8506               ; ﾊﾞｲﾊﾟｽ封止 ﾜｰｸ押さえ下降
+CON
+ANB R6108                ; ﾊﾞｲﾊﾟｽ ﾜｰｸ押さえ　下降限
+AND R6109                ; ﾊﾞｲﾊﾟｽ ﾜｰｸ押さえ　上昇限
+ANB R6110                ; ﾊﾞｲﾊﾟｽ ﾉｽﾞﾙ下降限
+AND R6111                ; ﾊﾞｲﾊﾟｽ ﾉｽﾞﾙ上昇限
+JMP @MR615               ; 原点復帰終了処理
+STG @MR615               ; 原点復帰終了処理
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+AND MR602                ; IND3      ｻｲｸﾙ動作中
+RES R50911               ; IND3 ST3  ｻｲｸﾙ動作中
+CON
+SET R51503               ; IND3 ST3    1ｻｲｸﾙ終了
+CON
+SET @MR501               ; 原点復帰  終了
+CON
+ENDS
+;<h1/>自動運転
+;AUTO OPERATION
+LD R50001                ; AUTO
+ANB R51511               ; IND3 ST3  動作中
+SET R51511               ; IND3 ST3  動作中
+CON
+SET @MR1000              ; AUTO開始
+CON
+ZRES @MR1800 @MR1815     ; ﾉｽﾞﾙ詰まり確認
+LDB R50003               ; HOME
+ANB R50001               ; AUTO
+ANB R50002               ; STEP
+AND @MR1001              ; AUTO終了
+RES R51511               ; IND3 ST3  動作中
+CON
+RES @MR1001              ; AUTO終了
+; 動作パラメーター確認
+; Operating Parameter Check
+STG @MR1000              ; AUTO開始
+MPS
+AND R51500               ; IND3     動作開始
+SET R50911               ; IND3 ST3  ｻｲｸﾙ動作中
+CON
+MPS
+AND R50210               ; Model OK
+JMP @MR1004
+MPP
+LDB R50210               ; Model OK
+AND R50000               ; HOLD
+ANL
+SET @MR408               ; 溶着ﾃﾞｰﾀ取込完了
+CON
+JMP @MR1700              ; AUTO終了処理
+MPP
+LDB R51500               ; IND3     動作開始
+AND R50000               ; HOLD
+AND R51508               ; IND3     払出し完了
+ANL
+SET @MR408               ; 溶着ﾃﾞｰﾀ取込完了
+CON
+JMP @MR1700              ; AUTO終了処理
+STG @MR1004
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+MPS
+AND @MR013               ; IND3 ST3  AUTO Parameter OK
+JMP @MR1005              ; 初回動作確認
+MPP
+ANB @MR013               ; IND3 ST3  AUTO Parameter OK
+SET @MR408               ; 溶着ﾃﾞｰﾀ取込完了
+CON
+JMP @MR1700              ; AUTO終了処理
+;動作選択
+;Operation selection
+STG @MR1005              ; 初回動作確認
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+MPS
+AND @MR003               ; 2回目以降動作
+JMP @MR1100              ; 3200
+MPP
+ANB @MR003               ; 2回目以降動作
+JMP @MR1006
+;潰し量設定 / Depth Setting
+STG @MR1006
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+SET MR12708              ; RB41 PSEL潰し量設定開始
+CON
+SET MR13508              ; RB51 PSEL潰し量設定開始
+CON
+SET @MR003               ; 2回目以降動作
+CON
+JMP @MR1007
+STG @MR1007
+MPS
+LDB MR10413              ; RB4異常Flag
+ANB MR10414              ; RB5異常Flag
+AND MR12709              ; RB41 PSEL潰し量設定完了
+AND MR13509              ; RB51 PSEL潰し量設定完了
+ANL
+SET MR13008              ; RB42 PSEL潰し量設定開始
+CON
+SET MR13808              ; RB52 PSEL潰し量設定開始
+CON
+JMP @MR1008
+MPP
+LD MR10413               ; RB4異常Flag
+OR MR10414               ; RB5異常Flag
+ANL
+JMP @MR1009
+STG @MR1008
+MPS
+LDB MR10413              ; RB4異常Flag
+ANB MR10414              ; RB5異常Flag
+AND MR13009              ; RB42 PSEL潰し量設定完了
+AND MR13809              ; RB52 PSEL潰し量設定完了
+ANL
+JMP @MR1010
+MPP
+LD MR10413               ; RB4異常Flag
+OR MR10414               ; RB5異常Flag
+ANL
+JMP @MR1009
+STG @MR1009
+AND MR20508              ; RB4_5 Alarm復帰 完了
+JMP @MR1006
+STG @MR1010
+RES MR12709              ; RB41 PSEL潰し量設定完了
+CON
+RES MR13009              ; RB42 PSEL潰し量設定完了
+CON
+RES MR13509              ; RB51 PSEL潰し量設定完了
+CON
+RES MR13809              ; RB52 PSEL潰し量設定完了
+CON
+JMP @MR1100              ; 3200
+;AUTO動作開始
+;AUTO Operation Start
+STG @MR1100              ; 3200
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+RES MR8513               ; IND3 ST3治具 開き
+CON
+SET MR8512               ; IND3 ST3治具 閉じ
+CON
+MPS
+AND @MR011               ; ﾜｰｸ状態OK
+JMP @MR1101
+MPP
+ANB @MR011               ; ﾜｰｸ状態OK
+JMP @MR1102
+STG @MR1101
+MPS
+ANB @MR010               ; IND3ST3   全ﾜｰｸ無し
+MPS
+LD R6006                 ; IND3 ST3 ﾜｰｸ浮き検出1(供給孔側)
+AND R6007                ; IND3 ST3 ﾜｰｸ浮き検出2(ﾌｨﾙﾑ側)
+ANB LR300                ; 搬送ﾃﾞﾊﾞｯｸﾞbit
+ANL
+MPS
+LD= DM3731 #0            ; IND3-ST3 NGﾜｰｸ 0=OK
+OR R50002                ; STEP
+ANL
+JMP @MR1200
+MPP
+LD<> DM3731 #0           ; IND3-ST3 NGﾜｰｸ 0=OK
+ANB R50002               ; STEP
+ANL
+SET @MR408               ; 溶着ﾃﾞｰﾀ取込完了
+CON
+JMP @MR1700              ; AUTO終了処理
+MPP
+LDB R6006                ; IND3 ST3 ﾜｰｸ浮き検出1(供給孔側)
+ORB R6007                ; IND3 ST3 ﾜｰｸ浮き検出2(ﾌｨﾙﾑ側)
+ANL
+TMR @10 #10
+CON
+AND @T10
+SET @MR112               ; Err137
+CON
+RES MR8512               ; IND3 ST3治具 閉じ
+CON
+RES MR8513               ; IND3 ST3治具 開き
+CON
+JMP @MR1105
+MPP
+LD @MR010                ; IND3ST3   全ﾜｰｸ無し
+OR LR300                 ; 搬送ﾃﾞﾊﾞｯｸﾞbit
+ANL
+MPS
+ANB R50002               ; STEP
+SET @MR408               ; 溶着ﾃﾞｰﾀ取込完了
+CON
+JMP @MR1700              ; AUTO終了処理
+MPP
+AND R50002               ; STEP
+JMP @MR808               ; STEP終了処理
+STG @MR1102
+MPS
+SET @MR212               ; Err157-158
+CON
+JMP @MR1103
+MPP
+AND R6005                ; IND3 ST3 ﾜｰｸ有無検出
+SET @MR012               ; ﾜｰｸ有異常
+;Err157,158 ﾜｰｸ検出異常 / Case ditection is abnormaly
+STG @MR1103
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+AND @MR215               ; Err157-158解除完了
+JMP @MR1104
+STG @MR1104
+DW #6 DM3731             ; IND3-ST3 NGﾜｰｸ 0=OK
+CON
+RES @MR215               ; Err157-158解除完了
+CON
+SET @MR408               ; 溶着ﾃﾞｰﾀ取込完了
+CON
+JMP @MR1700              ; AUTO終了処理
+;Err137 ﾜｰｸ浮き / Cartridge Floating
+STG @MR1105
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+AND @MR115               ; Err137解除完了
+JMP @MR1106
+STG @MR1106
+RES @MR115               ; Err137解除完了
+CON
+JMP @MR1100              ; 3200
+;動作前ﾉｽﾞﾙ詰まり確認
+;Nozzle blocked confirmation before it operates
+STG @MR1200
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+MPS
+LDB R50002               ; STEP
+ORB LR40801              ; IND3_ST3 STEP-02
+ANL
+JMP @MR1201
+MPP
+LD R50002                ; STEP
+AND LR40801              ; IND3_ST3 STEP-02
+ANL
+JMP @MR1205              ; 溶着前準備
+STG @MR1201
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+MPS
+AND @MR1801              ; ﾉｽﾞﾙ詰まり確認完了
+RES @MR1801              ; ﾉｽﾞﾙ詰まり確認完了
+CON
+MPS
+ANB @MR1803              ; ﾉｽﾞﾙ詰まり異常
+JMP @MR1204
+MPP
+AND @MR1803              ; ﾉｽﾞﾙ詰まり異常
+JMP @MR1202              ; Err138
+MPP
+LDB @MR1801              ; ﾉｽﾞﾙ詰まり確認完了
+ANB @MR1802              ; ﾉｽﾞﾙ詰まり確認動作中
+ANL
+SET @MR1800              ; ﾉｽﾞﾙ詰まり確認
+;Err138 ﾉｽﾞﾙ詰まり / Nozzle NG
+STG @MR1202              ; Err138
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+RES @MR1803              ; ﾉｽﾞﾙ詰まり異常
+CON
+SET @MR200               ; Err5 ST1 Err5
+CON
+JMP @MR1203
+STG @MR1203
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+AND @MR203               ; Err5 ST1 Err5解除完了
+RES @MR203               ; Err5 ST1 Err5解除完了
+CON
+JMP @MR1201
+;
+STG @MR1204
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+AND R50512               ; ﾊﾞｲﾊﾟｽ封止部ﾋｰﾀｰ適温
+MPS
+JMP @MR1300
+MPP
+LDB LR40802              ; IND3_ST3 STEP-03
+ORB R50002               ; STEP
+ANL
+SET @MR1205              ; 溶着前準備
+;溶着前準備 / Operation before welding
+STG @MR1205              ; 溶着前準備
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+RES MR12609              ; RB41 PSEL移動完了
+CON
+RES MR13409              ; RB51 PSEL移動完了
+CON
+RES MR10402              ; ﾊﾞｲﾊﾟｽ溶着不良
+CON
+RES MR12701              ; RB41 PSELﾎﾟｲﾝﾄ指定完了
+CON
+RES MR13501              ; RB51 PSELﾎﾟｲﾝﾄ指定完了
+CON
+ANB MR12701              ; RB41 PSELﾎﾟｲﾝﾄ指定完了
+ANB MR13501              ; RB51 PSELﾎﾟｲﾝﾄ指定完了
+TMH @11 #2
+CON
+AND @T11
+JMP @MR1206
+STG @MR1206
+MPS
+SET @MR009               ; 溶着中
+CON
+SET MR12700              ; RB41 PSELﾎﾟｲﾝﾄ指定開始
+CON
+SET MR13500              ; RB51 PSELﾎﾟｲﾝﾄ指定開始
+CON
+ENDS
+MRD
+AND MR111                ; Sｻｲｽﾞ
+DW #32 DM7006            ; RB4_PSEL_目標位置No.
+CON
+DW #32 DM7007            ; RB5_PSEL_目標位置No.
+MPP
+AND MR112                ; Lｻｲｽﾞ
+DW #33 DM7006            ; RB4_PSEL_目標位置No.
+CON
+DW #33 DM7007            ; RB5_PSEL_目標位置No.
+;
+STG @MR1300
+SET MR8504               ; ﾊﾞｲﾊﾟｽ封止 減圧ﾉｽﾞﾙ下降
+CON
+SET MR8506               ; ﾊﾞｲﾊﾟｽ封止 ﾜｰｸ押さえ下降
+CON
+MPS
+LDB MR6108               ; Cylinder Error 6108
+ANB MR6110               ; Cylinder Error 6110
+AND R6108                ; ﾊﾞｲﾊﾟｽ ﾜｰｸ押さえ　下降限
+AND R6110                ; ﾊﾞｲﾊﾟｽ ﾉｽﾞﾙ下降限
+ANL
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+JMP @MR1301
+MPP
+LD MR6108                ; Cylinder Error 6108
+OR MR6110                ; Cylinder Error 6110
+ANL
+RES MR8504               ; ﾊﾞｲﾊﾟｽ封止 減圧ﾉｽﾞﾙ下降
+CON
+RES MR8506               ; ﾊﾞｲﾊﾟｽ封止 ﾜｰｸ押さえ下降
+CON
+RES @MR009               ; 溶着中
+CON
+JMP @MR1307
+STG @MR1307
+ANB MR6108               ; Cylinder Error 6108
+ANB MR6110               ; Cylinder Error 6110
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+SET @MR009               ; 溶着中
+CON
+JMP @MR1300
+STG @MR1301
+SET MR8502               ; 減圧封止 真空引きON
+CON
+MPS
+AND R6314                ; 減圧封止圧力計OUT1
+TMR @1 #3
+CON
+AND @T1
+RES @MR411               ; 減圧NG記憶
+CON
+SET @MR410               ; 減圧状況 監視
+CON
+JMP @MR1306              ; RB前進完了確認
+MRD
+LDB MR103                ; Running Dummy I/C
+ANB R6314                ; 減圧封止圧力計OUT1
+ANL
+TMR #240 #9999           ; 減圧到達ﾀｲﾑｱｳﾄ時間
+CON
+AND T240                 ; 減圧到達ﾀｲﾑｱｳﾄ時間
+AND MR12701              ; RB41 PSELﾎﾟｲﾝﾄ指定完了
+AND MR13501              ; RB51 PSELﾎﾟｲﾝﾄ指定完了
+JMP @MR1302
+MPP
+AND MR103                ; Running Dummy I/C
+TMR @3 #3
+CON
+AND @T3
+RES @MR411               ; 減圧NG記憶
+CON
+SET @MR410               ; 減圧状況 監視
+CON
+JMP @MR1306              ; RB前進完了確認
+;Err3 ﾊﾞｲﾊﾟｽ封止前減圧異常 / Vacuuming Error before welding 
+STG @MR1302
+AND MR12701              ; RB41 PSELﾎﾟｲﾝﾄ指定完了
+AND MR13501              ; RB51 PSELﾎﾟｲﾝﾄ指定完了
+RES MR12701              ; RB41 PSELﾎﾟｲﾝﾄ指定完了
+CON
+RES MR13501              ; RB51 PSELﾎﾟｲﾝﾄ指定完了
+CON
+RES @MR009               ; 溶着中
+CON
+SET @MR108               ; Err3 ST1 Err3
+CON
+JMP @MR1303
+STG @MR1303
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+AND @MR111               ; Err3 ST1 Err3解除完了
+DW #6 DM3731             ; IND3-ST3 NGﾜｰｸ 0=OK
+CON
+JMP @MR1304
+STG @MR1304
+ANB MR12701              ; RB41 PSELﾎﾟｲﾝﾄ指定完了
+ANB MR13501              ; RB51 PSELﾎﾟｲﾝﾄ指定完了
+DW #9 DM7006             ; RB4_PSEL_目標位置No.
+CON
+DW #9 DM7007             ; RB5_PSEL_目標位置No.
+CON
+SET MR12700              ; RB41 PSELﾎﾟｲﾝﾄ指定開始
+CON
+SET MR13500              ; RB51 PSELﾎﾟｲﾝﾄ指定開始
+CON
+RES @MR111               ; Err3 ST1 Err3解除完了
+CON
+JMP @MR1305
+STG @MR1305
+AND MR12701              ; RB41 PSELﾎﾟｲﾝﾄ指定完了
+AND MR13501              ; RB51 PSELﾎﾟｲﾝﾄ指定完了
+ZRES @MR410 @MR411       ; 減圧状況 監視  減圧NG記憶
+CON
+RES MR12701              ; RB41 PSELﾎﾟｲﾝﾄ指定完了
+CON
+RES MR13501              ; RB51 PSELﾎﾟｲﾝﾄ指定完了
+CON
+SET @MR408               ; 溶着ﾃﾞｰﾀ取込完了
+CON
+JMP @MR1600              ; 終了前動作
+;
+STG @MR1306              ; RB前進完了確認
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+MPS
+LDB LR40802              ; IND3_ST3 STEP-03
+ORB R50002               ; STEP
+AND MR12701              ; RB41 PSELﾎﾟｲﾝﾄ指定完了
+AND MR13501              ; RB51 PSELﾎﾟｲﾝﾄ指定完了
+ANL
+RES MR12701              ; RB41 PSELﾎﾟｲﾝﾄ指定完了
+CON
+RES MR13501              ; RB51 PSELﾎﾟｲﾝﾄ指定完了
+CON
+JMP @MR1400              ; 封止開始
+MPP
+LD R50002                ; STEP
+AND LR40802              ; IND3_ST3 STEP-03
+ANL
+JMP @MR1400              ; 封止開始
+;溶着 / Welding
+STG @MR1400              ; 封止開始
+MPS
+LDB R50002               ; STEP
+ORB LR40802              ; IND3_ST3 STEP-03
+ANL
+SET MR8502               ; 減圧封止 真空引きON
+CON
+TMR @2 #0
+CON
+AND @T2
+MPS
+LDB R50002               ; STEP
+ORB LR40801              ; IND3_ST3 STEP-02
+ANL
+JMP @MR1401
+MPP
+LD R50002                ; STEP
+AND LR40801              ; IND3_ST3 STEP-02
+ANL
+JMP @MR1401
+MPP
+LD R50002                ; STEP
+AND LR40802              ; IND3_ST3 STEP-03
+ANL
+TMR @0 #2
+CON
+AND @T0
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+ZRES @MR410 @MR411       ; 減圧状況 監視  減圧NG記憶
+CON
+JMP @MR1600              ; 終了前動作
+STG @MR1401
+SET MR10405              ; ﾊﾞｲﾊﾟｽ溶着中
+CON
+SET MR12608              ; RB41 PSEL移動開始
+CON
+SET MR13408              ; RB51 PSEL移動開始
+CON
+JMP @MR1403
+JMP @MR1402
+LD MR10405               ; ﾊﾞｲﾊﾟｽ溶着中
+MPS
+ANB R51700               ; ﾊﾞｲﾊﾟｽ封止1 未使用
+@SET R50502              ; ﾋｰﾀｰ3溶着開始
+MRD
+LDB R51701               ; ﾊﾞｲﾊﾟｽ封止2 未使用
+AND CR2003               ; 常時OFF
+ANL
+@SET R50503              ; ﾋｰﾀｰ4溶着開始
+MRD
+ANB R51702               ; ﾊﾞｲﾊﾟｽ封止3 未使用
+@SET R50504              ; ﾋｰﾀｰ5溶着開始
+MPP
+ANB R51703               ; ﾊﾞｲﾊﾟｽ封止4 未使用
+@SET R50505              ; ﾋｰﾀｰ6溶着開始
+STG @MR1402
+LD R17606                ; RB4_PSEL_作業原点戻り許可
+AND R18006               ; RB5_PSEL_作業原点戻り許可
+OR MR20508               ; RB4_5 Alarm復帰 完了
+ANL
+RES @MR410               ; 減圧状況 監視
+CON
+JMP @MR1600              ; 終了前動作
+STG @MR1403
+LD MR12609               ; RB41 PSEL移動完了
+AND MR13409              ; RB51 PSEL移動完了
+OR MR10402               ; ﾊﾞｲﾊﾟｽ溶着不良
+ANL
+RES @MR009               ; 溶着中
+CON
+@INC DM1102              ; ﾊﾞｲﾊﾟｽCNT
+CON
+RES MR10405              ; ﾊﾞｲﾊﾟｽ溶着中
+CON
+JMP @MR1404              ; 減圧監視 確認
+;減圧監視確認
+;Check decompression monitoring result
+STG @MR1404              ; 減圧監視 確認
+MPS
+ANB @MR411               ; 減圧NG記憶
+JMP @MR1406              ; ﾊﾞｲﾊﾟｽ溶着 回数確認
+MPP
+AND @MR411               ; 減圧NG記憶
+RES @MR411               ; 減圧NG記憶
+CON
+SET @MR208               ; Err7 ST1 溶着中 減圧NG
+CON
+JMP @MR1405
+;Err7 溶着中 減圧NG
+;Err7 Decompressison NG during weld.
+STG @MR1405
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+AND @MR211               ; Err7 ST1 Err7解除完了
+DW #6 DM3731             ; IND3-ST3 NGﾜｰｸ 0=OK
+CON
+RES @MR211               ; Err7 ST1 Err7解除完了
+CON
+JMP @MR1406              ; ﾊﾞｲﾊﾟｽ溶着 回数確認
+;
+;溶着回数確認
+;Check count of welding.
+STG @MR1406              ; ﾊﾞｲﾊﾟｽ溶着 回数確認
+MPS
+AND= DM564 #0            ; ST7 Data04
+JMP @MR1408
+MPP
+AND<> DM564 #0           ; ST7 Data04
+MPS
+AND> DM564 DM1102        ; ST7 Data04  ﾊﾞｲﾊﾟｽCNT
+JMP @MR1408
+MPP
+AND<= DM564 DM1102       ; ST7 Data04  ﾊﾞｲﾊﾟｽCNT
+SET @MR204               ; Err6 ST1 Err6
+CON
+JMP @MR1407
+;ﾋｰﾀｰﾍｯﾄﾞ清掃要求の時
+;At the heater head cleaning demand
+STG @MR1407
+AND @MR207               ; Err6 ST1 Err6解除完了
+RES @MR207               ; Err6 ST1 Err6解除完了
+CON
+JMP @MR1408
+;
+STG @MR1408
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+MPS
+ANB MR10402              ; ﾊﾞｲﾊﾟｽ溶着不良
+RES MR12609              ; RB41 PSEL移動完了
+CON
+RES MR13409              ; RB51 PSEL移動完了
+CON
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+MPS
+LDB R50002               ; STEP
+ORB LR40801              ; IND3_ST3 STEP-02
+ANL
+JMP @MR1500              ; 溶着ﾃﾞｰﾀ取り込み
+MPP
+LD R50002                ; STEP
+AND LR40801              ; IND3_ST3 STEP-02
+ANL
+JMP @MR901
+MPP
+AND MR10402              ; ﾊﾞｲﾊﾟｽ溶着不良
+SET @MR408               ; 溶着ﾃﾞｰﾀ取込完了
+CON
+DW #6 DM3731             ; IND3-ST3 NGﾜｰｸ 0=OK
+CON
+JMP @MR1600              ; 終了前動作
+;溶着ﾃﾞｰﾀ取り込み / Getiing Welding data
+;Bypass 1
+STG @MR1500              ; 溶着ﾃﾞｰﾀ取り込み
+MPS
+ZRES MR3608 MR3907       ; ﾊﾞｲﾊﾟｽ1 接触点位置上限異常  ﾊﾞｲﾊﾟｽ4 押込点時間下限異常
+CON
+RES MR8502               ; 減圧封止 真空引きON
+CON
+JMP @MR1501
+MRD
+FMOV #0 DM10512 #6       ; ﾊﾞｲﾊﾟｽ1 接触点ﾃﾞｰﾀ
+MRD
+FMOV #0 DM10524 #6       ; ﾊﾞｲﾊﾟｽ3 接触点ﾃﾞｰﾀ
+MRD
+ANB R51700               ; ﾊﾞｲﾊﾟｽ封止1 未使用
+SET MR12808              ; RB41 PSEL溶着ﾃﾞｰﾀ読込み
+MPP
+ANB R51702               ; ﾊﾞｲﾊﾟｽ封止3 未使用
+SET MR13608              ; RB51 PSEL溶着ﾃﾞｰﾀ読込み
+STG @MR1501
+LD MR12809               ; RB41 PSEL溶着ﾃﾞｰﾀ読込み完了
+OR R51700                ; ﾊﾞｲﾊﾟｽ封止1 未使用
+ANL
+LD MR13609               ; RB51 PSEL溶着ﾃﾞｰﾀ読込み完了
+OR R51702                ; ﾊﾞｲﾊﾟｽ封止3 未使用
+ANL
+JMP @MR1502
+FMOV #0 DM10518 #6       ; ﾊﾞｲﾊﾟｽ2 接触点ﾃﾞｰﾀ
+FMOV #0 DM10530 #6       ; ﾊﾞｲﾊﾟｽ4 接触点ﾃﾞｰﾀ
+MPS
+ANB R51701               ; ﾊﾞｲﾊﾟｽ封止2 未使用
+SET MR13108              ; RB42 PSEL溶着ﾃﾞｰﾀ読込み
+MPP
+ANB R51703               ; ﾊﾞｲﾊﾟｽ封止4 未使用
+SET MR13908              ; RB52 PSEL溶着ﾃﾞｰﾀ読込み
+STG @MR1502
+LD MR12809               ; RB41 PSEL溶着ﾃﾞｰﾀ読込み完了
+OR R51700                ; ﾊﾞｲﾊﾟｽ封止1 未使用
+ANL
+LD MR13109               ; RB42 PSEL溶着ﾃﾞｰﾀ読込み完了
+OR R51701                ; ﾊﾞｲﾊﾟｽ封止2 未使用
+ANL
+LD MR13609               ; RB51 PSEL溶着ﾃﾞｰﾀ読込み完了
+OR R51702                ; ﾊﾞｲﾊﾟｽ封止3 未使用
+ANL
+LD MR13909               ; RB52 PSEL溶着ﾃﾞｰﾀ読込み完了
+OR R51703                ; ﾊﾞｲﾊﾟｽ封止4 未使用
+ANL
+JMP @MR1503
+STG @MR1503
+RES MR12809              ; RB41 PSEL溶着ﾃﾞｰﾀ読込み完了
+CON
+RES MR13109              ; RB42 PSEL溶着ﾃﾞｰﾀ読込み完了
+CON
+RES MR13609              ; RB51 PSEL溶着ﾃﾞｰﾀ読込み完了
+CON
+RES MR13909              ; RB52 PSEL溶着ﾃﾞｰﾀ読込み完了
+CON
+MPS
+LDB R50002               ; STEP
+AND CR2003               ; 常時OFF
+ANL
+JMP @MR1504
+MPP
+LD R50002                ; STEP
+OR CR2002                ; 常時ON
+ANL
+JMP @MR1515              ; 溶着ﾃﾞｰﾀ取得終了
+STG @MR1504
+MPS
+AND R51700               ; ﾊﾞｲﾊﾟｽ封止1 未使用
+JMP @MR1505
+MPP
+LDB R51700               ; ﾊﾞｲﾊﾟｽ封止1 未使用
+AND @MR400               ; ﾊﾞｲﾊﾟｽ1  確認完了
+ANL
+MPS
+AND @MR401               ; ﾊﾞｲﾊﾟｽ1 　異常無し
+JMP @MR1505
+MPP
+ANB @MR401               ; ﾊﾞｲﾊﾟｽ1 　異常無し
+JMP @MR1508
+;'
+;'★★★ BYPASS 1 ★★★ 
+;'					***　接触点データ確認
+;
+;IF FM2024 <= DM10512 AND CR2003 = ON THEN
+;	SET (MR3608)
+;ELSE IF FM2025 >= DM10512 AND CR2003 = ON THEN
+;	SET (MR3609)
+;
+;'					***　溶融点データ確認
+;
+;ELSE IF FM2026 <= DM10513 THEN
+;	SET (MR3610)
+;ELSE IF FM2027 >= DM10513 THEN
+;	SET (MR3611)
+;
+;'					***　押込点データ確認
+;
+;ELSE IF FM2028 <= DM10514 THEN
+;	SET (MR3612)
+;ELSE IF FM2029 >= DM10514 THEN
+;	SET (MR3613)
+;
+;'					***　接触点時間データ確認
+;
+;ELSE IF FM2030 <= DM10515 THEN
+;	SET (MR3614)
+;ELSE IF FM2031 > DM10515 THEN
+;	SET (MR3615)
+;
+;'					***　溶融点時間データ確認
+;
+;ELSE IF FM2032 <= DM10516 THEN
+;	SET (MR3700)
+;ELSE IF FM2033 > DM10516 THEN
+;	SET (MR3701)
+;	
+;'					***　押込点時間データ確認
+;
+;ELSE IF FM2034 <= DM10517 THEN
+;	SET (MR3702)
+;ELSE IF FM2035 > DM10517 THEN
+;	SET (MR3703)
+;ELSE
+;	SET(@MR401)
+;END IF
+;SET(@MR400)
+LD @MR1504
+ANB R51700               ; ﾊﾞｲﾊﾟｽ封止1 未使用
+NCJ #1000
+;'
+;
+;'★★★ BYPASS 1 ★★★ 
+;
+;'					***　接触点データ確認
+;
+;IF FM2024 <= DM10512 AND CR2003 = ON THEN
+;
+LD<= FM2024 DM10512      ; ﾊﾞｲﾊﾟｽ1 接触点位置上限  ﾊﾞｲﾊﾟｽ1 接触点ﾃﾞｰﾀ
+OUT @VB00
+LD CR2003                ; 常時OFF
+AND @VB00
+NCJ #2000
+;	SET (MR3608)
+;
+LD CR2002                ; 常時ON
+SET MR3608               ; ﾊﾞｲﾊﾟｽ1 接触点位置上限異常
+LD CR2002                ; 常時ON
+CJ #2001
+LABEL #2000
+;ELSE IF FM2025 >= DM10512 AND CR2003 = ON THEN
+;
+LD>= FM2025 DM10512      ; ﾊﾞｲﾊﾟｽ1 接触点位置下限  ﾊﾞｲﾊﾟｽ1 接触点ﾃﾞｰﾀ
+OUT @VB01
+LD CR2003                ; 常時OFF
+AND @VB01
+NCJ #2002
+;	SET (MR3609)
+;
+LD CR2002                ; 常時ON
+SET MR3609               ; ﾊﾞｲﾊﾟｽ1 接触点位置下限異常
+;'					***　溶融点データ確認
+;
+LD CR2002                ; 常時ON
+CJ #2003
+LABEL #2002
+;ELSE IF FM2026 <= DM10513 THEN
+;
+LD<= FM2026 DM10513      ; ﾊﾞｲﾊﾟｽ1 溶融点位置上限  ﾊﾞｲﾊﾟｽ1 溶融点ﾃﾞｰﾀ
+NCJ #2004
+;	SET (MR3610)
+;
+LD CR2002                ; 常時ON
+SET MR3610               ; ﾊﾞｲﾊﾟｽ1 溶融点位置上限異常
+LD CR2002                ; 常時ON
+CJ #2005
+LABEL #2004
+;ELSE IF FM2027 >= DM10513 THEN
+;
+LD>= FM2027 DM10513      ; ﾊﾞｲﾊﾟｽ1 溶融点位置下限  ﾊﾞｲﾊﾟｽ1 溶融点ﾃﾞｰﾀ
+NCJ #2006
+;	SET (MR3611)
+;
+LD CR2002                ; 常時ON
+SET MR3611               ; ﾊﾞｲﾊﾟｽ1 溶融点位置下限異常
+;'					***　押込点データ確認
+;
+LD CR2002                ; 常時ON
+CJ #2007
+LABEL #2006
+;ELSE IF FM2028 <= DM10514 THEN
+;
+LD<= FM2028 DM10514      ; ﾊﾞｲﾊﾟｽ1 押込点位置上限  ﾊﾞｲﾊﾟｽ1 押込み完了点ﾃﾞｰﾀ
+NCJ #2008
+;	SET (MR3612)
+;
+LD CR2002                ; 常時ON
+SET MR3612               ; ﾊﾞｲﾊﾟｽ1 押込点位置上限異常
+LD CR2002                ; 常時ON
+CJ #2009
+LABEL #2008
+;ELSE IF FM2029 >= DM10514 THEN
+;
+LD>= FM2029 DM10514      ; ﾊﾞｲﾊﾟｽ1 押込点位置下限  ﾊﾞｲﾊﾟｽ1 押込み完了点ﾃﾞｰﾀ
+NCJ #2010
+;	SET (MR3613)
+;
+LD CR2002                ; 常時ON
+SET MR3613               ; ﾊﾞｲﾊﾟｽ1 押込点位置下限異常
+;'					***　接触点時間データ確認
+;
+LD CR2002                ; 常時ON
+CJ #2011
+LABEL #2010
+;ELSE IF FM2030 <= DM10515 THEN
+;
+LD<= FM2030 DM10515      ; ﾊﾞｲﾊﾟｽ1 接触点時間上限  ﾊﾞｲﾊﾟｽ1 接触点検出時間
+NCJ #2012
+;	SET (MR3614)
+;
+LD CR2002                ; 常時ON
+SET MR3614               ; ﾊﾞｲﾊﾟｽ1 接触点時間上限異常
+LD CR2002                ; 常時ON
+CJ #2013
+LABEL #2012
+;ELSE IF FM2031 > DM10515 THEN
+;
+LD> FM2031 DM10515       ; ﾊﾞｲﾊﾟｽ1 接触点時間下限  ﾊﾞｲﾊﾟｽ1 接触点検出時間
+NCJ #2014
+;	SET (MR3615)
+;
+LD CR2002                ; 常時ON
+SET MR3615               ; ﾊﾞｲﾊﾟｽ1 接触点時間下限異常
+;'					***　溶融点時間データ確認
+;
+LD CR2002                ; 常時ON
+CJ #2015
+LABEL #2014
+;ELSE IF FM2032 <= DM10516 THEN
+;
+LD<= FM2032 DM10516      ; ﾊﾞｲﾊﾟｽ1 溶融点時間上限  ﾊﾞｲﾊﾟｽ1 溶融点検出時間
+NCJ #2016
+;	SET (MR3700)
+;
+LD CR2002                ; 常時ON
+SET MR3700               ; ﾊﾞｲﾊﾟｽ1 溶融点時間上限異常
+LD CR2002                ; 常時ON
+CJ #2017
+LABEL #2016
+;ELSE IF FM2033 > DM10516 THEN
+;
+LD> FM2033 DM10516       ; ﾊﾞｲﾊﾟｽ1 溶融点時間下限  ﾊﾞｲﾊﾟｽ1 溶融点検出時間
+NCJ #2018
+;	SET (MR3701)
+;
+LD CR2002                ; 常時ON
+SET MR3701               ; ﾊﾞｲﾊﾟｽ1 溶融点時間下限異常
+;'					***　押込点時間データ確認
+;
+LD CR2002                ; 常時ON
+CJ #2019
+LABEL #2018
+;ELSE IF FM2034 <= DM10517 THEN
+;
+LD<= FM2034 DM10517      ; ﾊﾞｲﾊﾟｽ1 押込点時間上限  ﾊﾞｲﾊﾟｽ1 押込み完了点検出時間
+NCJ #2020
+;	SET (MR3702)
+;
+LD CR2002                ; 常時ON
+SET MR3702               ; ﾊﾞｲﾊﾟｽ1 押込点時間上限異常
+LD CR2002                ; 常時ON
+CJ #2021
+LABEL #2020
+;ELSE IF FM2035 > DM10517 THEN
+;
+LD> FM2035 DM10517       ; ﾊﾞｲﾊﾟｽ1 押込点時間下限  ﾊﾞｲﾊﾟｽ1 押込み完了点検出時間
+NCJ #2022
+;	SET (MR3703)
+;
+LD CR2002                ; 常時ON
+SET MR3703               ; ﾊﾞｲﾊﾟｽ1 押込点時間下限異常
+;ELSE
+;
+LD CR2002                ; 常時ON
+CJ #2023
+LABEL #2022
+;	SET(@MR401)
+;
+LD CR2002                ; 常時ON
+SET @MR401               ; ﾊﾞｲﾊﾟｽ1 　異常無し
+;END IF
+;
+LABEL #2023
+LABEL #2021
+LABEL #2019
+LABEL #2017
+LABEL #2015
+LABEL #2013
+LABEL #2011
+LABEL #2009
+LABEL #2007
+LABEL #2005
+LABEL #2003
+LABEL #2001
+;SET(@MR400)
+LD CR2002                ; 常時ON
+SET @MR400               ; ﾊﾞｲﾊﾟｽ1  確認完了
+LABEL #1000
+;
+STG @MR1505
+MPS
+AND R51701               ; ﾊﾞｲﾊﾟｽ封止2 未使用
+JMP @MR1506
+MPP
+LDB R51701               ; ﾊﾞｲﾊﾟｽ封止2 未使用
+AND @MR402               ; ﾊﾞｲﾊﾟｽ2  確認完了
+ANL
+MPS
+AND @MR403               ; ﾊﾞｲﾊﾟｽ2 　異常無し
+JMP @MR1506
+MPP
+ANB @MR403               ; ﾊﾞｲﾊﾟｽ2 　異常無し
+JMP @MR1508
+;'
+;'★★★ BYPASS 2 ★★★  
+;'
+;'
+;'					***　接触点データ確認
+;IF FM2036 <= DM10518 AND CR2003 = ON THEN
+;	SET (MR3704)
+;ELSE IF FM2037 >= DM10518 AND CR2003 = ON THEN
+;	SET (MR3705)
+;
+;'					***　溶融点データ確認
+;
+;ELSE IF FM2038 <= DM10519 THEN
+;	SET (MR3706)
+;ELSE IF FM2039 >= DM10519 THEN
+;	SET (MR3707)
+;
+;'					***　押込点データ確認
+;
+;ELSE IF FM2040 <= DM10520 THEN
+;	SET (MR3708)
+;ELSE IF FM2041 >= DM10520 THEN
+;	SET (MR3709)
+;
+;'					***　接触点時間データ確認
+;
+;ELSE IF FM2042 <= DM10521 THEN
+;	SET (MR3710)
+;ELSE IF FM2043 > DM10521 THEN
+;	SET (MR3711)
+;
+;'					***　溶融点時間データ確認
+;
+;ELSE IF FM2044 <= DM10522 THEN
+;	SET (MR3712)
+;ELSE IF FM2045 > DM10522 THEN
+;	SET (MR3713)
+;	
+;'					***　押込点時間データ確認
+;
+;ELSE IF FM2046 <= DM10523 THEN
+;	SET (MR3714)
+;ELSE IF FM2047 > DM10523 THEN
+;	SET (MR3715)
+;ELSE
+;	SET (@MR403)
+;END IF
+;SET(@MR402)
+LD @MR1505
+ANB R51701               ; ﾊﾞｲﾊﾟｽ封止2 未使用
+NCJ #1001
+;'
+;
+;'★★★ BYPASS 2 ★★★  
+;
+;'
+;
+;'
+;
+;'					***　接触点データ確認
+;
+;IF FM2036 <= DM10518 AND CR2003 = ON THEN
+;
+LD<= FM2036 DM10518      ; ﾊﾞｲﾊﾟｽ2 接触点位置上限  ﾊﾞｲﾊﾟｽ2 接触点ﾃﾞｰﾀ
+OUT @VB02
+LD CR2003                ; 常時OFF
+AND @VB02
+NCJ #2024
+;	SET (MR3704)
+;
+LD CR2002                ; 常時ON
+SET MR3704               ; ﾊﾞｲﾊﾟｽ2 接触点位置上限異常
+LD CR2002                ; 常時ON
+CJ #2025
+LABEL #2024
+;ELSE IF FM2037 >= DM10518 AND CR2003 = ON THEN
+;
+LD>= FM2037 DM10518      ; ﾊﾞｲﾊﾟｽ2 接触点位置下限  ﾊﾞｲﾊﾟｽ2 接触点ﾃﾞｰﾀ
+OUT @VB03
+LD CR2003                ; 常時OFF
+AND @VB03
+NCJ #2026
+;	SET (MR3705)
+;
+LD CR2002                ; 常時ON
+SET MR3705               ; ﾊﾞｲﾊﾟｽ2 接触点位置下限異常
+;'					***　溶融点データ確認
+;
+LD CR2002                ; 常時ON
+CJ #2027
+LABEL #2026
+;ELSE IF FM2038 <= DM10519 THEN
+;
+LD<= FM2038 DM10519      ; ﾊﾞｲﾊﾟｽ2 溶融点位置上限  ﾊﾞｲﾊﾟｽ2 溶融点ﾃﾞｰﾀ
+NCJ #2028
+;	SET (MR3706)
+;
+LD CR2002                ; 常時ON
+SET MR3706               ; ﾊﾞｲﾊﾟｽ2 溶融点位置上限異常
+LD CR2002                ; 常時ON
+CJ #2029
+LABEL #2028
+;ELSE IF FM2039 >= DM10519 THEN
+;
+LD>= FM2039 DM10519      ; ﾊﾞｲﾊﾟｽ2 溶融点位置下限  ﾊﾞｲﾊﾟｽ2 溶融点ﾃﾞｰﾀ
+NCJ #2030
+;	SET (MR3707)
+;
+LD CR2002                ; 常時ON
+SET MR3707               ; ﾊﾞｲﾊﾟｽ2 溶融点位置下限異常
+;'					***　押込点データ確認
+;
+LD CR2002                ; 常時ON
+CJ #2031
+LABEL #2030
+;ELSE IF FM2040 <= DM10520 THEN
+;
+LD<= FM2040 DM10520      ; ﾊﾞｲﾊﾟｽ2 押込点位置上限  ﾊﾞｲﾊﾟｽ2 押込み完了点ﾃﾞｰﾀ
+NCJ #2032
+;	SET (MR3708)
+;
+LD CR2002                ; 常時ON
+SET MR3708               ; ﾊﾞｲﾊﾟｽ2 押込点位置上限異常
+LD CR2002                ; 常時ON
+CJ #2033
+LABEL #2032
+;ELSE IF FM2041 >= DM10520 THEN
+;
+LD>= FM2041 DM10520      ; ﾊﾞｲﾊﾟｽ2 押込点位置下限  ﾊﾞｲﾊﾟｽ2 押込み完了点ﾃﾞｰﾀ
+NCJ #2034
+;	SET (MR3709)
+;
+LD CR2002                ; 常時ON
+SET MR3709               ; ﾊﾞｲﾊﾟｽ2 押込点位置下限異常
+;'					***　接触点時間データ確認
+;
+LD CR2002                ; 常時ON
+CJ #2035
+LABEL #2034
+;ELSE IF FM2042 <= DM10521 THEN
+;
+LD<= FM2042 DM10521      ; ﾊﾞｲﾊﾟｽ2 接触点時間上限  ﾊﾞｲﾊﾟｽ2 接触点検出時間
+NCJ #2036
+;	SET (MR3710)
+;
+LD CR2002                ; 常時ON
+SET MR3710               ; ﾊﾞｲﾊﾟｽ2 接触点時間上限異常
+LD CR2002                ; 常時ON
+CJ #2037
+LABEL #2036
+;ELSE IF FM2043 > DM10521 THEN
+;
+LD> FM2043 DM10521       ; ﾊﾞｲﾊﾟｽ2 接触点時間下限  ﾊﾞｲﾊﾟｽ2 接触点検出時間
+NCJ #2038
+;	SET (MR3711)
+;
+LD CR2002                ; 常時ON
+SET MR3711               ; ﾊﾞｲﾊﾟｽ2 接触点時間下限異常
+;'					***　溶融点時間データ確認
+;
+LD CR2002                ; 常時ON
+CJ #2039
+LABEL #2038
+;ELSE IF FM2044 <= DM10522 THEN
+;
+LD<= FM2044 DM10522      ; ﾊﾞｲﾊﾟｽ2 溶融点時間上限  ﾊﾞｲﾊﾟｽ2 溶融点検出時間
+NCJ #2040
+;	SET (MR3712)
+;
+LD CR2002                ; 常時ON
+SET MR3712               ; ﾊﾞｲﾊﾟｽ2 溶融点時間上限異常
+LD CR2002                ; 常時ON
+CJ #2041
+LABEL #2040
+;ELSE IF FM2045 > DM10522 THEN
+;
+LD> FM2045 DM10522       ; ﾊﾞｲﾊﾟｽ2 溶融点時間下限  ﾊﾞｲﾊﾟｽ2 溶融点検出時間
+NCJ #2042
+;	SET (MR3713)
+;
+LD CR2002                ; 常時ON
+SET MR3713               ; ﾊﾞｲﾊﾟｽ2 溶融点時間下限異常
+;'					***　押込点時間データ確認
+;
+LD CR2002                ; 常時ON
+CJ #2043
+LABEL #2042
+;ELSE IF FM2046 <= DM10523 THEN
+;
+LD<= FM2046 DM10523      ; ﾊﾞｲﾊﾟｽ2 押込点時間上限  ﾊﾞｲﾊﾟｽ2 押込み完了点検出時間
+NCJ #2044
+;	SET (MR3714)
+;
+LD CR2002                ; 常時ON
+SET MR3714               ; ﾊﾞｲﾊﾟｽ2 押込点時間上限異常
+LD CR2002                ; 常時ON
+CJ #2045
+LABEL #2044
+;ELSE IF FM2047 > DM10523 THEN
+;
+LD> FM2047 DM10523       ; ﾊﾞｲﾊﾟｽ2 押込点時間下限  ﾊﾞｲﾊﾟｽ2 押込み完了点検出時間
+NCJ #2046
+;	SET (MR3715)
+;
+LD CR2002                ; 常時ON
+SET MR3715               ; ﾊﾞｲﾊﾟｽ2 押込点時間下限異常
+;ELSE
+;
+LD CR2002                ; 常時ON
+CJ #2047
+LABEL #2046
+;	SET (@MR403)
+;
+LD CR2002                ; 常時ON
+SET @MR403               ; ﾊﾞｲﾊﾟｽ2 　異常無し
+;END IF
+;
+LABEL #2047
+LABEL #2045
+LABEL #2043
+LABEL #2041
+LABEL #2039
+LABEL #2037
+LABEL #2035
+LABEL #2033
+LABEL #2031
+LABEL #2029
+LABEL #2027
+LABEL #2025
+;SET(@MR402)
+LD CR2002                ; 常時ON
+SET @MR402               ; ﾊﾞｲﾊﾟｽ2  確認完了
+LABEL #1001
+;
+STG @MR1506
+MPS
+AND R51702               ; ﾊﾞｲﾊﾟｽ封止3 未使用
+JMP @MR1507
+MPP
+LDB R51702               ; ﾊﾞｲﾊﾟｽ封止3 未使用
+AND @MR404               ; ﾊﾞｲﾊﾟｽ3  確認完了
+ANL
+MPS
+AND @MR405               ; ﾊﾞｲﾊﾟｽ3 　異常無し
+JMP @MR1507
+MPP
+ANB @MR405               ; ﾊﾞｲﾊﾟｽ3 　異常無し
+JMP @MR1508
+;'
+;'★★★ BYPASS 3 ★★★  
+;'
+;'					***　接触点データ確認
+;
+;IF FM2048 <= DM10524 AND CR2003 = ON THEN
+;	SET (MR3800)
+;ELSE IF FM2049 >= DM10524 AND CR2003 = ON THEN
+;	SET (MR3801)
+;
+;'					***　溶融点データ確認
+;
+;ELSE IF FM2050 <= DM10525 THEN
+;	SET (MR3802)
+;ELSE IF FM2051 >= DM10525 THEN
+;	SET (MR3803)
+;
+;'					***　押込点データ確認
+;
+;ELSE IF FM2052 <= DM10526 THEN
+;	SET (MR3804)
+;ELSE IF FM2053 >= DM10526 THEN
+;	SET (MR3805)
+;
+;'					***　接触点時間データ確認
+;
+;ELSE IF FM2054 <= DM10527 THEN
+;	SET (MR3806)
+;ELSE IF FM2055 > DM10527 THEN
+;	SET (MR3807)
+;
+;'					***　溶融点時間データ確認
+;
+;ELSE IF FM2056 <= DM10528 THEN
+;	SET (MR3808)
+;ELSE IF FM2057 > DM10528 THEN
+;	SET (MR3809)
+;	
+;'					***　押込点時間データ確認
+;
+;ELSE IF FM2058 <= DM10529 THEN
+;	SET (MR3810)
+;ELSE IF FM2059 > DM10529 THEN
+;	SET (MR3811)
+;ELSE
+;	SET (@MR405)
+;END IF
+;SET(@MR404)
+LD @MR1506
+ANB R51702               ; ﾊﾞｲﾊﾟｽ封止3 未使用
+NCJ #1002
+;'
+;
+;'★★★ BYPASS 3 ★★★  
+;
+;'
+;
+;'					***　接触点データ確認
+;
+;IF FM2048 <= DM10524 AND CR2003 = ON THEN
+;
+LD<= FM2048 DM10524      ; ﾊﾞｲﾊﾟｽ3 接触点位置上限  ﾊﾞｲﾊﾟｽ3 接触点ﾃﾞｰﾀ
+OUT @VB04
+LD CR2003                ; 常時OFF
+AND @VB04
+NCJ #2048
+;	SET (MR3800)
+;
+LD CR2002                ; 常時ON
+SET MR3800               ; ﾊﾞｲﾊﾟｽ3 接触点位置上限異常
+LD CR2002                ; 常時ON
+CJ #2049
+LABEL #2048
+;ELSE IF FM2049 >= DM10524 AND CR2003 = ON THEN
+;
+LD>= FM2049 DM10524      ; ﾊﾞｲﾊﾟｽ3 接触点位置下限  ﾊﾞｲﾊﾟｽ3 接触点ﾃﾞｰﾀ
+OUT @VB05
+LD CR2003                ; 常時OFF
+AND @VB05
+NCJ #2050
+;	SET (MR3801)
+;
+LD CR2002                ; 常時ON
+SET MR3801               ; ﾊﾞｲﾊﾟｽ3 接触点位置下限異常
+;'					***　溶融点データ確認
+;
+LD CR2002                ; 常時ON
+CJ #2051
+LABEL #2050
+;ELSE IF FM2050 <= DM10525 THEN
+;
+LD<= FM2050 DM10525      ; ﾊﾞｲﾊﾟｽ3 溶融点位置上限  ﾊﾞｲﾊﾟｽ3 溶融点ﾃﾞｰﾀ
+NCJ #2052
+;	SET (MR3802)
+;
+LD CR2002                ; 常時ON
+SET MR3802               ; ﾊﾞｲﾊﾟｽ3 溶融点位置上限異常
+LD CR2002                ; 常時ON
+CJ #2053
+LABEL #2052
+;ELSE IF FM2051 >= DM10525 THEN
+;
+LD>= FM2051 DM10525      ; ﾊﾞｲﾊﾟｽ3 溶融点位置下限  ﾊﾞｲﾊﾟｽ3 溶融点ﾃﾞｰﾀ
+NCJ #2054
+;	SET (MR3803)
+;
+LD CR2002                ; 常時ON
+SET MR3803               ; ﾊﾞｲﾊﾟｽ3 溶融点位置下限異常
+;'					***　押込点データ確認
+;
+LD CR2002                ; 常時ON
+CJ #2055
+LABEL #2054
+;ELSE IF FM2052 <= DM10526 THEN
+;
+LD<= FM2052 DM10526      ; ﾊﾞｲﾊﾟｽ3 押込点位置上限  ﾊﾞｲﾊﾟｽ3 押込み完了点ﾃﾞｰﾀ
+NCJ #2056
+;	SET (MR3804)
+;
+LD CR2002                ; 常時ON
+SET MR3804               ; ﾊﾞｲﾊﾟｽ3 押込点位置上限異常
+LD CR2002                ; 常時ON
+CJ #2057
+LABEL #2056
+;ELSE IF FM2053 >= DM10526 THEN
+;
+LD>= FM2053 DM10526      ; ﾊﾞｲﾊﾟｽ3 押込点位置下限  ﾊﾞｲﾊﾟｽ3 押込み完了点ﾃﾞｰﾀ
+NCJ #2058
+;	SET (MR3805)
+;
+LD CR2002                ; 常時ON
+SET MR3805               ; ﾊﾞｲﾊﾟｽ3 押込点位置下限異常
+;'					***　接触点時間データ確認
+;
+LD CR2002                ; 常時ON
+CJ #2059
+LABEL #2058
+;ELSE IF FM2054 <= DM10527 THEN
+;
+LD<= FM2054 DM10527      ; ﾊﾞｲﾊﾟｽ3 接触点時間上限  ﾊﾞｲﾊﾟｽ3 接触点検出時間
+NCJ #2060
+;	SET (MR3806)
+;
+LD CR2002                ; 常時ON
+SET MR3806               ; ﾊﾞｲﾊﾟｽ3 接触点時間上限異常
+LD CR2002                ; 常時ON
+CJ #2061
+LABEL #2060
+;ELSE IF FM2055 > DM10527 THEN
+;
+LD> FM2055 DM10527       ; ﾊﾞｲﾊﾟｽ3 接触点時間下限  ﾊﾞｲﾊﾟｽ3 接触点検出時間
+NCJ #2062
+;	SET (MR3807)
+;
+LD CR2002                ; 常時ON
+SET MR3807               ; ﾊﾞｲﾊﾟｽ3 接触点時間下限異常
+;'					***　溶融点時間データ確認
+;
+LD CR2002                ; 常時ON
+CJ #2063
+LABEL #2062
+;ELSE IF FM2056 <= DM10528 THEN
+;
+LD<= FM2056 DM10528      ; ﾊﾞｲﾊﾟｽ3 溶融点時間上限  ﾊﾞｲﾊﾟｽ3 溶融点検出時間
+NCJ #2064
+;	SET (MR3808)
+;
+LD CR2002                ; 常時ON
+SET MR3808               ; ﾊﾞｲﾊﾟｽ3 溶融点時間上限異常
+LD CR2002                ; 常時ON
+CJ #2065
+LABEL #2064
+;ELSE IF FM2057 > DM10528 THEN
+;
+LD> FM2057 DM10528       ; ﾊﾞｲﾊﾟｽ3 溶融点時間下限  ﾊﾞｲﾊﾟｽ3 溶融点検出時間
+NCJ #2066
+;	SET (MR3809)
+;
+LD CR2002                ; 常時ON
+SET MR3809               ; ﾊﾞｲﾊﾟｽ3 溶融点時間下限異常
+;'					***　押込点時間データ確認
+;
+LD CR2002                ; 常時ON
+CJ #2067
+LABEL #2066
+;ELSE IF FM2058 <= DM10529 THEN
+;
+LD<= FM2058 DM10529      ; ﾊﾞｲﾊﾟｽ3 押込点時間上限  ﾊﾞｲﾊﾟｽ3 押込み完了点検出時間
+NCJ #2068
+;	SET (MR3810)
+;
+LD CR2002                ; 常時ON
+SET MR3810               ; ﾊﾞｲﾊﾟｽ3 押込点時間上限異常
+LD CR2002                ; 常時ON
+CJ #2069
+LABEL #2068
+;ELSE IF FM2059 > DM10529 THEN
+;
+LD> FM2059 DM10529       ; ﾊﾞｲﾊﾟｽ3 押込点時間下限  ﾊﾞｲﾊﾟｽ3 押込み完了点検出時間
+NCJ #2070
+;	SET (MR3811)
+;
+LD CR2002                ; 常時ON
+SET MR3811               ; ﾊﾞｲﾊﾟｽ3 押込点時間下限異常
+;ELSE
+;
+LD CR2002                ; 常時ON
+CJ #2071
+LABEL #2070
+;	SET (@MR405)
+;
+LD CR2002                ; 常時ON
+SET @MR405               ; ﾊﾞｲﾊﾟｽ3 　異常無し
+;END IF
+;
+LABEL #2071
+LABEL #2069
+LABEL #2067
+LABEL #2065
+LABEL #2063
+LABEL #2061
+LABEL #2059
+LABEL #2057
+LABEL #2055
+LABEL #2053
+LABEL #2051
+LABEL #2049
+;SET(@MR404)
+LD CR2002                ; 常時ON
+SET @MR404               ; ﾊﾞｲﾊﾟｽ3  確認完了
+LABEL #1002
+;
+STG @MR1507
+MPS
+AND R51703               ; ﾊﾞｲﾊﾟｽ封止4 未使用
+JMP @MR1515              ; 溶着ﾃﾞｰﾀ取得終了
+MPP
+LDB R51703               ; ﾊﾞｲﾊﾟｽ封止4 未使用
+AND @MR406               ; ﾊﾞｲﾊﾟｽ4  確認完了
+ANL
+MPS
+AND @MR407               ; ﾊﾞｲﾊﾟｽ4　異常無し
+JMP @MR1515              ; 溶着ﾃﾞｰﾀ取得終了
+MPP
+ANB @MR407               ; ﾊﾞｲﾊﾟｽ4　異常無し
+JMP @MR1508
+;
+;'
+;'★★★ BYPASS 4 ★★★  
+;'
+;'					***　接触点データ確認
+;IF FM2060 <= DM10530 AND CR2003 = ON THEN
+;	SET (MR3812)
+;ELSE IF FM2061 >= DM10530 AND CR2003 = ON THEN
+;	SET (MR3813)
+;
+;'					***　溶融点データ確認
+;
+;ELSE IF FM2062 <= DM10531 THEN
+;	SET (MR3814)
+;ELSE IF FM2063 >= DM10531 THEN
+;	SET (MR3815)
+;
+;'					***　押込点データ確認
+;
+;ELSE IF FM2064 <= DM10532 THEN
+;	SET (MR3900)
+;ELSE IF FM2065 >= DM10532 THEN
+;	SET (MR3901)
+;
+;'					***　接触点時間データ確認
+;
+;ELSE IF FM2066 <= DM10533 THEN
+;	SET (MR3902)
+;ELSE IF FM2067 > DM10533 THEN
+;	SET (MR3903)
+;
+;'					***　溶融点時間データ確認
+;
+;ELSE IF FM2068 <= DM10534 THEN
+;	SET (MR3904)
+;ELSE IF FM2069 > DM10534 THEN
+;	SET (MR3905)
+;	
+;'					***　押込点時間データ確認
+;
+;ELSE IF FM2070 <= DM10535 THEN
+;	SET (MR3906)
+;ELSE IF FM2071 > DM10535 THEN
+;	SET (MR3907)
+;ELSE
+;	SET (@MR407)
+;
+;END IF
+;SET(@MR406)
+LD @MR1507
+ANB R51703               ; ﾊﾞｲﾊﾟｽ封止4 未使用
+NCJ #1003
+;'
+;
+;'★★★ BYPASS 4 ★★★  
+;
+;'
+;
+;'					***　接触点データ確認
+;
+;IF FM2060 <= DM10530 AND CR2003 = ON THEN
+;
+LD<= FM2060 DM10530      ; ﾊﾞｲﾊﾟｽ4 接触点位置上限  ﾊﾞｲﾊﾟｽ4 接触点ﾃﾞｰﾀ
+OUT @VB06
+LD CR2003                ; 常時OFF
+AND @VB06
+NCJ #2072
+;	SET (MR3812)
+;
+LD CR2002                ; 常時ON
+SET MR3812               ; ﾊﾞｲﾊﾟｽ4 接触点位置上限異常
+LD CR2002                ; 常時ON
+CJ #2073
+LABEL #2072
+;ELSE IF FM2061 >= DM10530 AND CR2003 = ON THEN
+;
+LD>= FM2061 DM10530      ; ﾊﾞｲﾊﾟｽ4 接触点位置下限  ﾊﾞｲﾊﾟｽ4 接触点ﾃﾞｰﾀ
+OUT @VB07
+LD CR2003                ; 常時OFF
+AND @VB07
+NCJ #2074
+;	SET (MR3813)
+;
+LD CR2002                ; 常時ON
+SET MR3813               ; ﾊﾞｲﾊﾟｽ4 接触点位置下限異常
+;'					***　溶融点データ確認
+;
+LD CR2002                ; 常時ON
+CJ #2075
+LABEL #2074
+;ELSE IF FM2062 <= DM10531 THEN
+;
+LD<= FM2062 DM10531      ; ﾊﾞｲﾊﾟｽ4 溶融点位置上限  ﾊﾞｲﾊﾟｽ4 溶融点ﾃﾞｰﾀ
+NCJ #2076
+;	SET (MR3814)
+;
+LD CR2002                ; 常時ON
+SET MR3814               ; ﾊﾞｲﾊﾟｽ4 溶融点位置上限異常
+LD CR2002                ; 常時ON
+CJ #2077
+LABEL #2076
+;ELSE IF FM2063 >= DM10531 THEN
+;
+LD>= FM2063 DM10531      ; ﾊﾞｲﾊﾟｽ4 溶融点位置下限  ﾊﾞｲﾊﾟｽ4 溶融点ﾃﾞｰﾀ
+NCJ #2078
+;	SET (MR3815)
+;
+LD CR2002                ; 常時ON
+SET MR3815               ; ﾊﾞｲﾊﾟｽ4 溶融点位置下限異常
+;'					***　押込点データ確認
+;
+LD CR2002                ; 常時ON
+CJ #2079
+LABEL #2078
+;ELSE IF FM2064 <= DM10532 THEN
+;
+LD<= FM2064 DM10532      ; ﾊﾞｲﾊﾟｽ4 押込点位置上限  ﾊﾞｲﾊﾟｽ4 押込み完了点ﾃﾞｰﾀ
+NCJ #2080
+;	SET (MR3900)
+;
+LD CR2002                ; 常時ON
+SET MR3900               ; ﾊﾞｲﾊﾟｽ4 押込点位置上限異常
+LD CR2002                ; 常時ON
+CJ #2081
+LABEL #2080
+;ELSE IF FM2065 >= DM10532 THEN
+;
+LD>= FM2065 DM10532      ; ﾊﾞｲﾊﾟｽ4 押込点位置下限  ﾊﾞｲﾊﾟｽ4 押込み完了点ﾃﾞｰﾀ
+NCJ #2082
+;	SET (MR3901)
+;
+LD CR2002                ; 常時ON
+SET MR3901               ; ﾊﾞｲﾊﾟｽ4 押込点位置下限異常
+;'					***　接触点時間データ確認
+;
+LD CR2002                ; 常時ON
+CJ #2083
+LABEL #2082
+;ELSE IF FM2066 <= DM10533 THEN
+;
+LD<= FM2066 DM10533      ; ﾊﾞｲﾊﾟｽ4 接触点時間上限  ﾊﾞｲﾊﾟｽ4 接触点検出時間
+NCJ #2084
+;	SET (MR3902)
+;
+LD CR2002                ; 常時ON
+SET MR3902               ; ﾊﾞｲﾊﾟｽ4 接触点時間上限異常
+LD CR2002                ; 常時ON
+CJ #2085
+LABEL #2084
+;ELSE IF FM2067 > DM10533 THEN
+;
+LD> FM2067 DM10533       ; ﾊﾞｲﾊﾟｽ4 接触点時間下限  ﾊﾞｲﾊﾟｽ4 接触点検出時間
+NCJ #2086
+;	SET (MR3903)
+;
+LD CR2002                ; 常時ON
+SET MR3903               ; ﾊﾞｲﾊﾟｽ4 接触点時間下限異常
+;'					***　溶融点時間データ確認
+;
+LD CR2002                ; 常時ON
+CJ #2087
+LABEL #2086
+;ELSE IF FM2068 <= DM10534 THEN
+;
+LD<= FM2068 DM10534      ; ﾊﾞｲﾊﾟｽ4 溶融点時間上限  ﾊﾞｲﾊﾟｽ4 溶融点検出時間
+NCJ #2088
+;	SET (MR3904)
+;
+LD CR2002                ; 常時ON
+SET MR3904               ; ﾊﾞｲﾊﾟｽ4 溶融点時間上限異常
+LD CR2002                ; 常時ON
+CJ #2089
+LABEL #2088
+;ELSE IF FM2069 > DM10534 THEN
+;
+LD> FM2069 DM10534       ; ﾊﾞｲﾊﾟｽ4 溶融点時間下限  ﾊﾞｲﾊﾟｽ4 溶融点検出時間
+NCJ #2090
+;	SET (MR3905)
+;
+LD CR2002                ; 常時ON
+SET MR3905               ; ﾊﾞｲﾊﾟｽ4 溶融点時間下限異常
+;'					***　押込点時間データ確認
+;
+LD CR2002                ; 常時ON
+CJ #2091
+LABEL #2090
+;ELSE IF FM2070 <= DM10535 THEN
+;
+LD<= FM2070 DM10535      ; ﾊﾞｲﾊﾟｽ4 押込点時間上限  ﾊﾞｲﾊﾟｽ4 押込み完了点検出時間
+NCJ #2092
+;	SET (MR3906)
+;
+LD CR2002                ; 常時ON
+SET MR3906               ; ﾊﾞｲﾊﾟｽ4 押込点時間上限異常
+LD CR2002                ; 常時ON
+CJ #2093
+LABEL #2092
+;ELSE IF FM2071 > DM10535 THEN
+;
+LD> FM2071 DM10535       ; ﾊﾞｲﾊﾟｽ4 押込点時間下限  ﾊﾞｲﾊﾟｽ4 押込み完了点検出時間
+NCJ #2094
+;	SET (MR3907)
+;
+LD CR2002                ; 常時ON
+SET MR3907               ; ﾊﾞｲﾊﾟｽ4 押込点時間下限異常
+;ELSE
+;
+LD CR2002                ; 常時ON
+CJ #2095
+LABEL #2094
+;	SET (@MR407)
+;
+LD CR2002                ; 常時ON
+SET @MR407               ; ﾊﾞｲﾊﾟｽ4　異常無し
+;END IF
+;
+LABEL #2095
+LABEL #2093
+LABEL #2091
+LABEL #2089
+LABEL #2087
+LABEL #2085
+LABEL #2083
+LABEL #2081
+LABEL #2079
+LABEL #2077
+LABEL #2075
+LABEL #2073
+;SET(@MR406)
+LD CR2002                ; 常時ON
+SET @MR406               ; ﾊﾞｲﾊﾟｽ4  確認完了
+LABEL #1003
+;
+;Err132-135 ﾊﾞｲﾊﾟｽ封止溶着異常 / Bypass sealing Welding Error 
+STG @MR1508
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+SET @MR104               ; Err132-135
+CON
+JMP @MR1509
+STG @MR1509
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+AND @MR107               ; Err132-135解除完了
+RES @MR107               ; Err132-135解除完了
+CON
+DW #6 DM3731             ; IND3-ST3 NGﾜｰｸ 0=OK
+CON
+JMP @MR1510
+STG @MR1510
+MPS
+LD @MR400                ; ﾊﾞｲﾊﾟｽ1  確認完了
+LDB @MR402               ; ﾊﾞｲﾊﾟｽ2  確認完了
+OR R51701                ; ﾊﾞｲﾊﾟｽ封止2 未使用
+ANL
+LDB @MR404               ; ﾊﾞｲﾊﾟｽ3  確認完了
+OR R51702                ; ﾊﾞｲﾊﾟｽ封止3 未使用
+ANL
+LDB @MR406               ; ﾊﾞｲﾊﾟｽ4  確認完了
+OR R51703                ; ﾊﾞｲﾊﾟｽ封止4 未使用
+ANL
+ANL
+JMP @MR1505
+MRD
+LD @MR400                ; ﾊﾞｲﾊﾟｽ1  確認完了
+OR R51700                ; ﾊﾞｲﾊﾟｽ封止1 未使用
+AND @MR402               ; ﾊﾞｲﾊﾟｽ2  確認完了
+LDB @MR404               ; ﾊﾞｲﾊﾟｽ3  確認完了
+OR R51702                ; ﾊﾞｲﾊﾟｽ封止3 未使用
+ANL
+LDB @MR406               ; ﾊﾞｲﾊﾟｽ4  確認完了
+OR R51703                ; ﾊﾞｲﾊﾟｽ封止4 未使用
+ANL
+ANL
+JMP @MR1506
+MRD
+LD @MR400                ; ﾊﾞｲﾊﾟｽ1  確認完了
+OR R51700                ; ﾊﾞｲﾊﾟｽ封止1 未使用
+LD @MR402                ; ﾊﾞｲﾊﾟｽ2  確認完了
+OR R51701                ; ﾊﾞｲﾊﾟｽ封止2 未使用
+ANL
+AND @MR404               ; ﾊﾞｲﾊﾟｽ3  確認完了
+LDB @MR406               ; ﾊﾞｲﾊﾟｽ4  確認完了
+OR R51703                ; ﾊﾞｲﾊﾟｽ封止4 未使用
+ANL
+ANL
+JMP @MR1507
+MPP
+LD @MR400                ; ﾊﾞｲﾊﾟｽ1  確認完了
+OR R51700                ; ﾊﾞｲﾊﾟｽ封止1 未使用
+LD @MR402                ; ﾊﾞｲﾊﾟｽ2  確認完了
+OR R51701                ; ﾊﾞｲﾊﾟｽ封止2 未使用
+ANL
+LD @MR404                ; ﾊﾞｲﾊﾟｽ3  確認完了
+OR R51702                ; ﾊﾞｲﾊﾟｽ封止3 未使用
+ANL
+AND @MR406               ; ﾊﾞｲﾊﾟｽ4  確認完了
+ANL
+JMP @MR1515              ; 溶着ﾃﾞｰﾀ取得終了
+;
+STG @MR1515              ; 溶着ﾃﾞｰﾀ取得終了
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+ZRES @MR400 @MR407       ; ﾊﾞｲﾊﾟｽ1  確認完了  ﾊﾞｲﾊﾟｽ4　異常無し
+CON
+SET @MR408               ; 溶着ﾃﾞｰﾀ取込完了
+CON
+ENDS
+;戻し動作 / Operation after welding
+LD R50001                ; AUTO
+AND @MR1601
+ANB R6108                ; ﾊﾞｲﾊﾟｽ ﾜｰｸ押さえ　下降限
+@SET @MR004
+LD @MR004
+AND R51502               ; IND3 ST2   1ｻｲｸﾙ終了
+AND R51504               ; IND3 ST4   1ｻｲｸﾙ終了
+RES MR8508               ; IND3 ST2治具1(縦) 閉じ
+CON
+RES MR8509               ; IND3 ST2治具1(縦) 開き
+CON
+RES MR8510               ; IND3 ST2治具2(横) 閉じ
+CON
+RES MR8511               ; IND3 ST2治具2(横) 開き
+CON
+RES MR8512               ; IND3 ST3治具 閉じ
+CON
+RES MR8513               ; IND3 ST3治具 開き
+CON
+RES MR8514               ; IND3 ST4治具 閉じ
+CON
+RES MR8515               ; IND3 ST4治具 開き
+CON
+RES MR8410               ; IND3 治具ｴｱｰ供給ﾉｽﾞﾙ 上昇
+CON
+RES @MR004
+STG @MR1600              ; 終了前動作
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+RES MR8502               ; 減圧封止 真空引きON
+CON
+JMP @MR1601
+STG @MR1601
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+RES MR8504               ; ﾊﾞｲﾊﾟｽ封止 減圧ﾉｽﾞﾙ下降
+CON
+RES MR8506               ; ﾊﾞｲﾊﾟｽ封止 ﾜｰｸ押さえ下降
+CON
+AND R6109                ; ﾊﾞｲﾊﾟｽ ﾜｰｸ押さえ　上昇限
+AND R6111                ; ﾊﾞｲﾊﾟｽ ﾉｽﾞﾙ上昇限
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+JMP @MR1602
+STG @MR1602
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+MPS
+ANB R50002               ; STEP
+SET @MR1800              ; ﾉｽﾞﾙ詰まり確認
+CON
+JMP @MR1700              ; AUTO終了処理
+MPP
+AND R50002               ; STEP
+JMP @MR1603
+STG @MR1603
+MPS
+LD LR40800               ; IND3_ST3 STEP-01 通常動作
+OR LR40804               ; IND3_ST3 STEP-05
+OR LR40805               ; IND3_ST3 STEP-06
+OR LR40808               ; IND3_ST3 STEP-09 1Cycle
+OR LR40810               ; ST6 STEP-11 flag
+OR LR40811               ; ST6 STEP-12 flag
+AND @MR408               ; 溶着ﾃﾞｰﾀ取込完了
+ANL
+JMP @MR1604
+MPP
+LDB LR40800              ; IND3_ST3 STEP-01 通常動作
+ANB LR40804              ; IND3_ST3 STEP-05
+ANB LR40805              ; IND3_ST3 STEP-06
+ANB LR40808              ; IND3_ST3 STEP-09 1Cycle
+ANB LR40810              ; ST6 STEP-11 flag
+ANB LR40811              ; ST6 STEP-12 flag
+ANL
+JMP @MR1604
+STG @MR1604
+RES MR12609              ; RB41 PSEL移動完了
+CON
+RES MR13409              ; RB51 PSEL移動完了
+CON
+RES MR10402              ; ﾊﾞｲﾊﾟｽ溶着不良
+CON
+JMP @MR808               ; STEP終了処理
+;AUTO 1ｻｲｸﾙ終了処理
+;AUTO 1Cycle end Operation
+STG @MR1700              ; AUTO終了処理
+AND MR602                ; IND3      ｻｲｸﾙ動作中
+AND @MR408               ; 溶着ﾃﾞｰﾀ取込完了
+RES @MR004
+CON
+RES MR12609              ; RB41 PSEL移動完了
+CON
+RES MR13409              ; RB51 PSEL移動完了
+CON
+RES MR10402              ; ﾊﾞｲﾊﾟｽ溶着不良
+CON
+SET R51503               ; IND3 ST3    1ｻｲｸﾙ終了
+CON
+JMP @MR1701              ; 3902
+STG @MR1701              ; 3902
+RES @MR408               ; 溶着ﾃﾞｰﾀ取込完了
+CON
+RES R50911               ; IND3 ST3  ｻｲｸﾙ動作中
+CON
+ANB R51500               ; IND3     動作開始
+AND R51507               ; IND3      ｻｲｸﾙ完了
+JMP @MR1702
+STG @MR1702
+MPS
+LDB R50000               ; HOLD
+ORB R51508               ; IND3     払出し完了
+ANL
+JMP @MR1000              ; AUTO開始
+MPP
+LD R50000                ; HOLD
+AND R51508               ; IND3     払出し完了
+ANB @MR1802              ; ﾉｽﾞﾙ詰まり確認動作中
+ANL
+RES @MR1801              ; ﾉｽﾞﾙ詰まり確認完了
+CON
+JMP @MR1703
+STG @MR1703
+MPS
+ANB @MR1803              ; ﾉｽﾞﾙ詰まり異常
+JMP @MR1708              ; AUTO終了処理
+MPP
+AND @MR1803              ; ﾉｽﾞﾙ詰まり異常
+JMP @MR1703
+;Err138 ﾉｽﾞﾙ詰まり / Nozzle NG
+STG @MR1704
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+RES @MR1803              ; ﾉｽﾞﾙ詰まり異常
+CON
+SET @MR200               ; Err5 ST1 Err5
+CON
+JMP @MR1705
+STG @MR1705
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+AND @MR203               ; Err5 ST1 Err5解除完了
+RES @MR203               ; Err5 ST1 Err5解除完了
+CON
+JMP @MR1708              ; AUTO終了処理
+;AUTO 終了処理
+;AUTO Finish Operation
+STG @MR1708              ; AUTO終了処理
+RES @MR003               ; 2回目以降動作
+CON
+SET @MR1001              ; AUTO終了
+CON
+ENDS
+;<h1/>ｻﾌﾞﾙｰﾁﾝ
+;Subroutine
+;ﾉｽﾞﾙ詰まり確認
+;Nozzle blocked confirmation 
+STG @MR1800              ; ﾉｽﾞﾙ詰まり確認
+SET @MR1802              ; ﾉｽﾞﾙ詰まり確認動作中
+CON
+JMP @MR1806
+STG @MR1806
+SET MR8502               ; 減圧封止 真空引きON
+CON
+TMR @13 #5
+CON
+AND @T13
+MPS
+AND R6315                ; 減圧封止圧力計OUT2
+RES @MR1803              ; ﾉｽﾞﾙ詰まり異常
+CON
+JMP @MR1807
+MPP
+ANB R6315                ; 減圧封止圧力計OUT2
+TMR @14 #30
+CON
+AND @T14
+SET @MR1803              ; ﾉｽﾞﾙ詰まり異常
+CON
+JMP @MR1807
+STG @MR1807
+RES MR8502               ; 減圧封止 真空引きON
+CON
+RES @MR1802              ; ﾉｽﾞﾙ詰まり確認動作中
+CON
+SET @MR1801              ; ﾉｽﾞﾙ詰まり確認完了
+CON
+ENDS
+;<h1/>Function
+;減圧監視
+;Monitoring Decompression
+LD @MR410                ; 減圧状況 監視
+ANB R6314                ; 減圧封止圧力計OUT1
+TMR #241 #5              ; 減圧監視 ﾁｬﾀﾘﾝｸﾞ防止ﾀｲﾏｰ
+CON
+AND T241                 ; 減圧監視 ﾁｬﾀﾘﾝｸﾞ防止ﾀｲﾏｰ
+SET @MR411               ; 減圧NG記憶
+;<h1/>ｽﾃｯﾌﾟ運転
+;STEP OERATION
+LD R50002                ; STEP
+ANB R51511               ; IND3 ST3  動作中
+SET R51511               ; IND3 ST3  動作中
+CON
+SET @MR800               ; STEP開始
+LDB R50003               ; HOME
+ANB R50001               ; AUTO
+ANB R50002               ; STEP
+AND @MR801               ; STEP終了
+RES R51511               ; IND3 ST3  動作中
+CON
+RES @MR801               ; STEP終了
+LDB LR40800              ; IND3_ST3 STEP-01 通常動作
+ANB LR40801              ; IND3_ST3 STEP-02
+ANB LR40802              ; IND3_ST3 STEP-03
+ANB LR40804              ; IND3_ST3 STEP-05
+ANB LR40805              ; IND3_ST3 STEP-06
+ANB LR40808              ; IND3_ST3 STEP-09 1Cycle
+ANB LR40810              ; ST6 STEP-11 flag
+ANB LR40811              ; ST6 STEP-12 flag
+OUB @MR014               ; STEP Parameter OK
+STG @MR800               ; STEP開始
+AND R51511               ; IND3 ST3  動作中
+MPS
+AND LR40800              ; IND3_ST3 STEP-01 通常動作
+JMP @MR1005              ; 初回動作確認
+MRD
+AND LR40801              ; IND3_ST3 STEP-02
+JMP @MR900
+MRD
+AND LR40802              ; IND3_ST3 STEP-03
+JMP @MR1100              ; 3200
+MRD
+AND LR40804              ; IND3_ST3 STEP-05
+SET R59000               ; ﾊﾞｲﾊﾟｽS1
+CON
+RES R59001               ; ﾊﾞｲﾊﾟｽS2
+CON
+JMP @MR1005              ; 初回動作確認
+MRD
+AND LR40805              ; IND3_ST3 STEP-06
+RES R59000               ; ﾊﾞｲﾊﾟｽS1
+CON
+SET R59001               ; ﾊﾞｲﾊﾟｽS2
+CON
+JMP @MR1005              ; 初回動作確認
+MRD
+AND LR40808              ; IND3_ST3 STEP-09 1Cycle
+SET R50313               ; STEP中CallPost回避
+CON
+JMP @MR1005              ; 初回動作確認
+MRD
+AND LR40810              ; ST6 STEP-11 flag
+SET R59000               ; ﾊﾞｲﾊﾟｽS1
+CON
+RES R59001               ; ﾊﾞｲﾊﾟｽS2
+CON
+SET R50313               ; STEP中CallPost回避
+CON
+JMP @MR1005              ; 初回動作確認
+MRD
+AND LR40811              ; ST6 STEP-12 flag
+RES R59000               ; ﾊﾞｲﾊﾟｽS1
+CON
+SET R59001               ; ﾊﾞｲﾊﾟｽS2
+CON
+SET R50313               ; STEP中CallPost回避
+CON
+JMP @MR1005              ; 初回動作確認
+MPP
+ANB @MR014               ; STEP Parameter OK
+JMP @MR808               ; STEP終了処理
+;STEP 溶着テスト
+;STEP welding test
+STG @MR900
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+SET MR10405              ; ﾊﾞｲﾊﾟｽ溶着中
+CON
+SET MR8512               ; IND3 ST3治具 閉じ
+CON
+RES MR8513               ; IND3 ST3治具 開き
+CON
+JMP @MR901
+STG @MR901
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+MPS
+SET MR12700              ; RB41 PSELﾎﾟｲﾝﾄ指定開始
+CON
+SET MR13500              ; RB51 PSELﾎﾟｲﾝﾄ指定開始
+CON
+JMP @MR902
+MRD
+AND MR111                ; Sｻｲｽﾞ
+DW #32 DM7006            ; RB4_PSEL_目標位置No.
+CON
+DW #32 DM7007            ; RB5_PSEL_目標位置No.
+MPP
+AND MR112                ; Lｻｲｽﾞ
+DW #33 DM7006            ; RB4_PSEL_目標位置No.
+CON
+DW #33 DM7007            ; RB5_PSEL_目標位置No.
+STG @MR902
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+MPS
+LD MR12701               ; RB41 PSELﾎﾟｲﾝﾄ指定完了
+AND MR13501              ; RB51 PSELﾎﾟｲﾝﾄ指定完了
+ANL
+RES MR12701              ; RB41 PSELﾎﾟｲﾝﾄ指定完了
+CON
+RES MR13501              ; RB51 PSELﾎﾟｲﾝﾄ指定完了
+CON
+JMP @MR903
+MPP
+AND MR10402              ; ﾊﾞｲﾊﾟｽ溶着不良
+RES MR12701              ; RB41 PSELﾎﾟｲﾝﾄ指定完了
+CON
+RES MR13501              ; RB51 PSELﾎﾟｲﾝﾄ指定完了
+CON
+JMP @MR907
+STG @MR903
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+JMP @MR904
+STG @MR904
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+SET MR12610              ; RB41 PSEL_STEP
+CON
+SET MR13410              ; RB51 PSEL_STEP
+CON
+SET MR12608              ; RB41 PSEL移動開始
+CON
+SET MR13408              ; RB51 PSEL移動開始
+CON
+JMP @MR905
+STG @MR905
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+TMR @4 #5
+CON
+AND @T4
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+JMP @MR906
+STG @MR906
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+RES MR12610              ; RB41 PSEL_STEP
+CON
+RES MR13410              ; RB51 PSEL_STEP
+CON
+ZRES R17512 R17513       ; RB4_PSEL_予備 Axis 1 TEST用戻し  RB4_PSEL_予備 Axis 2 TEST用戻し
+CON
+ZRES R17912 R17913       ; RB5_PSEL_予備 Axis 1 TEST用戻し  RB5_PSEL_予備 Axis 2 TEST用戻し
+CON
+JMP @MR907
+STG @MR907
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+LD MR12609               ; RB41 PSEL移動完了
+AND MR13409              ; RB51 PSEL移動完了
+OR MR10402               ; ﾊﾞｲﾊﾟｽ溶着不良
+ANL
+JMP @MR908
+STG @MR908
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+RES MR12609              ; RB41 PSEL移動完了
+CON
+RES MR13409              ; RB51 PSEL移動完了
+CON
+RES MR10402              ; ﾊﾞｲﾊﾟｽ溶着不良
+CON
+RES MR10405              ; ﾊﾞｲﾊﾟｽ溶着中
+CON
+RES MR8512               ; IND3 ST3治具 閉じ
+CON
+RES MR8513               ; IND3 ST3治具 開き
+CON
+JMP @MR808               ; STEP終了処理
+;STEP終了処理
+;STEP termination
+STG @MR808               ; STEP終了処理
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+ZRES R59000 R59001       ; ﾊﾞｲﾊﾟｽS1  ﾊﾞｲﾊﾟｽS2
+CON
+RES @MR408               ; 溶着ﾃﾞｰﾀ取込完了
+CON
+RES MR8512               ; IND3 ST3治具 閉じ
+CON
+RES MR8513               ; IND3 ST3治具 開き
+CON
+SET R50009               ; HOLDRQ
+CON
+JMP @MR809               ; 2009
+STG @MR809               ; 2009
+AND @MR015               ; ﾎﾟｰｽﾞ&ｴﾗｰ無
+AND R50000               ; HOLD
+RES @MR003               ; 2回目以降動作
+CON
+SET R51503               ; IND3 ST3    1ｻｲｸﾙ終了
+CON
+RES R50313               ; STEP中CallPost回避
+CON
+SET @MR801               ; STEP終了
+CON
+ENDS
+;<h1/>Err
+;Err132-135 ﾊﾞｲﾊﾟｽ封止溶着異常
+;Err132-135 Bypass sealing Welding Error 
+STG @MR104               ; Err132-135
+ANB R50008               ; Error
+SET R50008               ; Error
+CON
+SET R51603               ; Err IND3ST3
+CON
+JMP @MR105               ; 105
+DW #4606 DM416           ; Err Sensor No.A
+MPS
+LD @MR400                ; ﾊﾞｲﾊﾟｽ1  確認完了
+ANB @MR401               ; ﾊﾞｲﾊﾟｽ1 　異常無し
+ANL
+MOV #132 DM400           ; ﾒｯｾｰｼﾞNo.
+MRD
+LD @MR402                ; ﾊﾞｲﾊﾟｽ2  確認完了
+ANB @MR403               ; ﾊﾞｲﾊﾟｽ2 　異常無し
+ANL
+MOV #133 DM400           ; ﾒｯｾｰｼﾞNo.
+MRD
+LD @MR404                ; ﾊﾞｲﾊﾟｽ3  確認完了
+ANB @MR405               ; ﾊﾞｲﾊﾟｽ3 　異常無し
+ANL
+MOV #134 DM400           ; ﾒｯｾｰｼﾞNo.
+MPP
+LD @MR406                ; ﾊﾞｲﾊﾟｽ4  確認完了
+ANB @MR407               ; ﾊﾞｲﾊﾟｽ4　異常無し
+ANL
+MOV #135 DM400           ; ﾒｯｾｰｼﾞNo.
+STG @MR105               ; 105
+AND R50008               ; Error
+JMP @MR106               ; 106
+STG @MR106               ; 106
+ANB R50008               ; Error
+SET @MR107               ; Err132-135解除完了
+CON
+ENDS
+;Err136 Err3 ﾊﾞｲﾊﾟｽ封止前減圧異常
+;Err136 Vacuuming Error before welding 
+STG @MR108               ; Err3 ST1 Err3
+ANB R50008               ; Error
+SET R50008               ; Error
+CON
+SET R51603               ; Err IND3ST3
+CON
+JMP @MR109               ; 109
+MOV #136 DM400           ; ﾒｯｾｰｼﾞNo.
+STG @MR109               ; 109
+AND R50008               ; Error
+JMP @MR110               ; 110
+STG @MR110               ; 110
+ANB R50008               ; Error
+SET @MR111               ; Err3 ST1 Err3解除完了
+CON
+ENDS
+;Err137 ﾜｰｸ浮き
+;Err137 Catridge Floating
+STG @MR112               ; Err137
+ANB R50008               ; Error
+SET R50008               ; Error
+CON
+SET R51603               ; Err IND3ST3
+CON
+JMP @MR113               ; 113
+MOV #137 DM400           ; ﾒｯｾｰｼﾞNo.
+STG @MR113               ; 113
+AND R50008               ; Error
+JMP @MR114               ; 114
+STG @MR114               ; 114
+ANB R50008               ; Error
+SET @MR115               ; Err137解除完了
+CON
+ENDS
+;Err138 ﾉｽﾞﾙ詰まり 
+;Err138 Nozzle NG
+STG @MR200               ; Err5 ST1 Err5
+ANB R50008               ; Error
+SET R50008               ; Error
+CON
+SET R51603               ; Err IND3ST3
+CON
+JMP @MR201               ; 201
+MOV #138 DM400           ; ﾒｯｾｰｼﾞNo.
+STG @MR201               ; 201
+AND R50008               ; Error
+RES MR8502               ; 減圧封止 真空引きON
+CON
+JMP @MR202               ; 202
+STG @MR202               ; 202
+ANB R50008               ; Error
+SET @MR203               ; Err5 ST1 Err5解除完了
+CON
+ENDS
+;Err107 
+;Err107 
+STG @MR204               ; Err6 ST1 Err6
+ANB R50008               ; Error
+SET R50008               ; Error
+CON
+SET R51603               ; Err IND3ST3
+CON
+JMP @MR205               ; 205
+MOV #107 DM400           ; ﾒｯｾｰｼﾞNo.
+STG @MR205               ; 205
+AND R50008               ; Error
+JMP @MR206               ; 206
+STG @MR206               ; 206
+ANB R50008               ; Error
+DW #0 DM1102             ; ﾊﾞｲﾊﾟｽCNT
+CON
+SET @MR207               ; Err6 ST1 Err6解除完了
+CON
+ENDS
+;Err108 溶着中 減圧NG
+;Err108 Decompressison NG during weld.
+STG @MR208               ; Err7 ST1 溶着中 減圧NG
+ANB R50008               ; Error
+SET R50008               ; Error
+CON
+SET R51603               ; Err IND3ST3
+CON
+SET LR49914              ; ｴﾗｰﾘｾｯﾄｷｰ要求
+CON
+JMP @MR209               ; 209
+MOV #108 DM400           ; ﾒｯｾｰｼﾞNo.
+STG @MR209               ; 209
+AND R50008               ; Error
+JMP @MR210               ; 210
+STG @MR210               ; 210
+ANB R50008               ; Error
+SET @MR211               ; Err7 ST1 Err7解除完了
+CON
+ENDS
+;ﾜｰｸ検出異常
+;Err157-158 ｶｰﾄﾘｯｼﾞ状態NG
+;Err157-158 Cartridge Status NG
+STG @MR212               ; Err157-158
+ANB R50008               ; Error
+SET R50008               ; Error
+CON
+SET R51603               ; Err IND3ST3
+CON
+JMP @MR213               ; 213
+MPS
+ANB @MR012               ; ﾜｰｸ有異常
+MOV #157 DM400           ; ﾒｯｾｰｼﾞNo.
+MPP
+AND @MR012               ; ﾜｰｸ有異常
+MOV #158 DM400           ; ﾒｯｾｰｼﾞNo.
+STG @MR213               ; 213
+AND R50008               ; Error
+JMP @MR214               ; 214
+STG @MR214               ; 214
+ANB R50008               ; Error
+RES @MR012               ; ﾜｰｸ有異常
+CON
+SET @MR215               ; Err157-158解除完了
+CON
+ENDS
+;PACKｾｯﾄ
+;Pack Set
+LD @MR009                ; 溶着中
+OR @MR008                ; 溶着前RB移動中
+OR @MR002                ; BYPASS_RB原点復帰中
+OUT R51609               ; PACK IND3_ST3
+END
+ENDH

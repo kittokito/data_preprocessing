@@ -1,0 +1,367 @@
+DEVICE:53
+;MODULE:DC_Com
+;MODULE_TYPE:0
+;SCRIPT_TYPE:
+;DataCollection　データ収集モジュール
+LD R50000                ; 即停止
+OUT MR50000              ; HOLD
+LD R50001                ; 自動中
+OUT MR50001              ; AUTO
+LD R50002                ; ステップ動作中
+OUT MR50002              ; STEP
+LD R50003                ; 原点復帰中
+OUT MR50003              ; HOME
+LD CR2002                ; 常時ON
+MOV DM462 DM5021         ; L ｻｲｸﾙﾀｲﾑ  Total to panel
+LD CR2002                ; 常時ON
+MOV DM200 DM5000         ; 投入ｶｳﾝﾀ  Input_Count1
+MOV DM201 DM5004         ; 取出ｶｳﾝﾀ  Output_Count1
+;ﾉｰﾄﾞ番号判別
+;Hostからのﾒｯｾｰｼﾞ伝送により自ノード番号を取得、それによりZ9の値を決定する
+LD CR2008                ; 運転開始時1ｽｷｬﾝON
+SET @MR100
+STG @MR100
+MPS
+AND>= W3FFF #10
+@LDA W3FFF
+CON
+@SUB #10
+CON
+@STA DM9900              ; FL番号
+CON
+MPS
+AND> DM9900 #0           ; FL番号
+JMP @MR101
+MPP
+AND<= DM9900 #0          ; FL番号
+DW #0 Z9
+CON
+JMP @MR102
+MPP
+AND< W3FFF #10
+DW #0 Z9
+CON
+JMP @MR102
+STG @MR101
+@LDA DM9900              ; FL番号
+CON
+@MUL #7
+CON
+@MUL #16
+CON
+@STA Z9
+CON
+JMP @MR102
+STG @MR102
+TMR @0 #5
+CON
+AND @T0
+JMP @MR103
+STG @MR103
+TMR @1 #10
+CON
+AND @T1
+JMP @MR100
+;工程判別
+;W3FFEには工程番号が格納される
+LD CR2002                ; 常時ON
+AND>= W3FFE #0           ; FL番号（工程番号）
+LDA W3FFE                ; FL番号（工程番号）
+CON
+MUL #1000
+CON
+ADD W3FFF
+CON
+STA DM10001              ; 送信回数 H
+;Error No. Transfer / エラーNo.転送
+LDP MR50108              ; エラー中
+MOV DM5015 W00           ; Error No
+MOV DM5016 W02           ; ｾﾝｻｰNo  Cylinder No
+MOV DM5017 W04           ; RB No
+;Error Occurs/ エラー発生
+LD MR50108               ; エラー中
+ANB @MR000
+OR B00                   ; Error
+ANB B0A0:Z9
+OUT B00                  ; Error
+CON
+SET @MR000
+LD @MR000
+ANB MR50108              ; エラー中
+RES @MR000
+;Error Release / エラー解除
+LD MR50109               ; エラー解除
+ANB @MR001
+OR B01                   ; Error_Realse
+ANB B0A1:Z9
+OUT B01                  ; Error_Realse
+CON
+SET @MR001
+LDF B0A1:Z9
+ZRES W00 W04             ; Error No  RB No
+LD @MR001
+ANB MR50109              ; エラー解除
+RES @MR001
+;During Error Signal / エラー中信号
+LD MR50108               ; エラー中
+ANB R50002               ; ステップ動作中
+OUT B02                  ; During Error
+;M/C Condition / 装置状態
+LDB MR50007              ; 原点復帰　完了
+ANB MR50003              ; HOME
+ANB MR50300              ; Pause
+ANB MR50008              ; Error
+@MOV #1 W0C              ; Operation_1
+LD MR50003               ; HOME
+ANB MR50300              ; Pause
+ANB MR50008              ; Error
+@MOV #2 W0C              ; Operation_1
+LD MR50007               ; 原点復帰　完了
+ANB MR50001              ; AUTO
+ANB MR50002              ; STEP
+ANB MR50003              ; HOME
+ANB MR50300              ; Pause
+ANB MR50008              ; Error
+@MOV #3 W0C              ; Operation_1
+LD MR50001               ; AUTO
+AND MR50005              ; MC動作中
+ANB MR50300              ; Pause
+ANB MR50008              ; Error
+@MOV #4 W0C              ; Operation_1
+LD MR50001               ; AUTO
+ANB MR50005              ; MC動作中
+ANB MR50300              ; Pause
+ANB MR50008              ; Error
+@MOV #5 W0C              ; Operation_1
+LD MR50002               ; STEP
+ANB MR50300              ; Pause
+ANB MR50008              ; Error
+@MOV #6 W0C              ; Operation_1
+LD MR50300               ; Pause
+ANB MR50008              ; Error
+@MOV #7 W0C              ; Operation_1
+LD MR50008               ; Error
+ANB MR50002              ; STEP
+@MOV #8 W0C              ; Operation_1
+LD<> W0C DM9930          ; Operation_1
+OR B024                  ; 動作状態_1
+ANB B0C4:Z9              ; Operation 1 H/S from Host
+OUT B024                 ; 動作状態_1
+@MOV W0C DM9930          ; Operation_1
+;Cycle Time Output / サイクルタイム出力
+;W000E = DM5021	'Total
+;W000F = DM5031	'1
+;W0010 = DM5033	'2
+;W0011 = DM5035	'3
+;W0012 = DM5037	'4
+;W0013 = DM5039	'5
+;W0014 = DM5041	'6
+;W0015 = DM5043	'7
+;W0016 = DM5045	'8
+;W0017 = DM5047	'9
+;W0018 = DM5049	'10
+LD CR2002                ; 常時ON
+NCJ #1000
+;W000E = DM5021	'Total
+;
+LD CR2002                ; 常時ON
+MOV DM5021 W0E           ; Total to panel  CT_1
+;W000F = DM5031	'1
+;
+LD CR2002                ; 常時ON
+MOV DM5031 W0F           ; CT_1 to Panel  CT_2
+;W0010 = DM5033	'2
+;
+LD CR2002                ; 常時ON
+MOV DM5033 W010          ; CT_2 to Panel  CT_3
+;W0011 = DM5035	'3
+;
+LD CR2002                ; 常時ON
+MOV DM5035 W011          ; CT_3 to Panel  CT_4
+;W0012 = DM5037	'4
+;
+LD CR2002                ; 常時ON
+MOV DM5037 W012          ; CT_4 to Panel  CT_5
+;W0013 = DM5039	'5
+;
+LD CR2002                ; 常時ON
+MOV DM5039 W013          ; CT_5 to Panel  CT_6
+;W0014 = DM5041	'6
+;
+LD CR2002                ; 常時ON
+MOV DM5041 W014          ; CT_6 to Panel  CT_7
+;W0015 = DM5043	'7
+;
+LD CR2002                ; 常時ON
+MOV DM5043 W015          ; CT_7 to Panel  CT_8
+;W0016 = DM5045	'8
+;
+LD CR2002                ; 常時ON
+MOV DM5045 W016          ; CT_8 to Panel  CT_9
+;W0017 = DM5047	'9
+;
+LD CR2002                ; 常時ON
+MOV DM5047 W017          ; CT_9 to Panel  CT_10
+;W0018 = DM5049	'10
+LD CR2002                ; 常時ON
+MOV DM5049 W018          ; CT_10 to Panel
+LABEL #1000
+;
+LDP MR50209              ; 動作開始
+OR B02A                  ; C/T1
+ANB B0CA:Z9              ; C/T1 H/S from Host
+OUT B02A                 ; C/T1
+LD= DM5004 DM9940        ; Output_Count1
+AND CR2005               ; 100msｸﾛｯｸﾊﾟﾙｽ
+@INC DM5048
+LD<> DM5004 DM9940       ; Output_Count1
+MOV DM5048 DM5049        ; CT_10 to Panel
+MOV DM5004 DM9940        ; Output_Count1
+DW #0 DM5048
+;Input & Output & NG Count Output / 投入数・上り数・NG数出力
+LD MR24800               ; DC_Inputカウント1
+@INC DM9905
+CON
+@SET MR24900             ; Inputカウント1
+CON
+RES MR24800              ; DC_Inputカウント1
+LD MR24801               ; DC_Outputカウント1
+@INC DM9909
+CON
+@SET MR24901             ; Outputカウント1
+CON
+RES MR24801              ; DC_Outputカウント1
+LD MR24802               ; DC_NGカウント1
+@INC DM9913
+CON
+@SET MR24902             ; NGカウント1
+CON
+RES MR24802              ; DC_NGカウント1
+;W0005 = DM5000		'Input_lot
+;W0006 = DM9905		'Input_daily
+;W0007 = DM5004		'Output_lot
+;W0008 = DM9909		'Output_daily
+;W0009 = DM5008		'NG_lot
+;W000A = DM9913		'NG_daily
+LD CR2002                ; 常時ON
+NCJ #1001
+;W0005 = DM5000		'Input_lot
+;
+LD CR2002                ; 常時ON
+MOV DM5000 W05           ; Input_Count1  Input
+;W0006 = DM9905		'Input_daily
+;
+LD CR2002                ; 常時ON
+MOV DM9905 W06
+;W0007 = DM5004		'Output_lot
+;
+LD CR2002                ; 常時ON
+MOV DM5004 W07           ; Output_Count1  Output
+;W0008 = DM9909		'Output_daily
+;
+LD CR2002                ; 常時ON
+MOV DM9909 W08
+;W0009 = DM5008		'NG_lot
+;
+LD CR2002                ; 常時ON
+MOV DM5008 W09           ; NG_Count1  NG
+;W000A = DM9913		'NG_daily
+LD CR2002                ; 常時ON
+MOV DM9913 W0A
+LABEL #1001
+;
+LD MR24900               ; Inputカウント1
+OR B06                   ; Input 1 to Host
+ANB B0A6:Z9              ; Input 1 H/S from Host
+OUT B06                  ; Input 1 to Host
+RES MR24900              ; Inputカウント1
+LD MR24901               ; Outputカウント1
+OR B0C                   ; Output 1 to Host
+ANB B0AC:Z9              ; Output 1 H/S from Host
+OUT B0C                  ; Output 1 to Host
+RES MR24901              ; Outputカウント1
+LD MR24902               ; NGカウント1
+OR B012                  ; NG1 to Host
+ANB B0B2:Z9              ; NG 1 H/S from Host
+OUT B012                 ; NG1 to Host
+RES MR24902              ; NGカウント1
+;カウンタークリア出力 / Counter Clear Output
+LD= DM5004 #0            ; Output_Count1
+@SET @MR004
+LD @MR004
+OR B018                  ; CntRstOK 1 to Host
+ANB B0B8:Z9              ; CntRstOK 1 H/S from Host
+OUT B018                 ; CntRstOK 1 to Host
+RES @MR004
+;定時リセット用カウンタークリア要求 / 
+LDP B0BE:Z9              ; CntRstDemand 1 from Host
+DW #0 DM9905
+CON
+DW #0 DM9909
+CON
+DW #0 DM9913
+CON
+SET B01E                 ; CntRstDemand 1 H/S to Host
+CON
+@SET @MR005
+STG @MR005
+MPS
+ANB B0BE:Z9              ; CntRstDemand 1 from Host
+RES B01E                 ; CntRstDemand 1 H/S to Host
+CON
+ENDS
+MPP
+TMR @5 #300
+CON
+AND @T5
+RES B01E                 ; CntRstDemand 1 H/S to Host
+CON
+ENDS
+;プログラム名転送 / Program name transport
+LD CR2002                ; 常時ON
+BMOV CM1740 W01A #16     ; ﾗﾀﾞｰﾌﾟﾛｼﾞｪｸﾄ名  PLC Program Name1
+;LR情報
+;Circuit of communication test / 通信テスト回路
+LD B0D5:Z9               ; ﾃｽﾄ回路開始要求 from Host
+SET B035                 ; ﾃｽﾄ回路開始 to Host
+CON
+RES B0D5:Z9              ; ﾃｽﾄ回路開始要求 from Host
+LD B035                  ; ﾃｽﾄ回路開始 to Host
+MPS
+DW #0 W02D               ; Test DM1
+CON
+ZRES @MR007 @MR009       ; 7  ﾃｽﾄ回路送信
+MPP
+TMR #400 #10
+CON
+AND T400
+@SET @MR006              ; 6
+CON
+RES B035                 ; ﾃｽﾄ回路開始 to Host
+STG @MR006               ; 6
+@INC W02D                ; Test DM1
+CON
+SET @MR009               ; ﾃｽﾄ回路送信
+CON
+JMP @MR007               ; 7
+STG @MR007               ; 7
+AND B0D6:Z9              ; ﾃｽﾄ回路 H/S from Host
+JMP @MR008               ; 8
+STG @MR008               ; 8
+ANB B0D6:Z9              ; ﾃｽﾄ回路 H/S from Host
+MPS
+AND< W02D W013B          ; Test DM1
+TMR #401 #10
+CON
+AND T401
+JMP @MR006               ; 6
+MPP
+AND>= W02D W013B         ; Test DM1
+ENDS
+LD @MR009                ; ﾃｽﾄ回路送信
+OR B036                  ; ﾃｽﾄ回路 to Host
+ANB B0D6:Z9              ; ﾃｽﾄ回路 H/S from Host
+OUT B036                 ; ﾃｽﾄ回路 to Host
+RES @MR009               ; ﾃｽﾄ回路送信
+END
+ENDH

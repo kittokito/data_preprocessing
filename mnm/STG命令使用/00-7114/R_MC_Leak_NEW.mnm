@@ -1,0 +1,916 @@
+DEVICE:53
+;MODULE:R_MC_Leak_NEW
+;MODULE_TYPE:0
+;SCRIPT_TYPE:
+;※MCﾘｰｸ方法変更
+;→待機ﾓｼﾞｭｰﾙ「MC_Leak_NEW」を呼び出す
+;
+;詳細
+;従来：自動時と同様の回路設定でMCﾘｰｸ
+;
+;変更：→「MC_Leak_NEW」
+;①上流-下流を1対1で接続した冶具(A)にて1回路ずつﾘｰｸ検査
+;各回路の結果として記録
+;②上流を封止した冶具(B)にて1回路ずつﾘｰｸ検査
+;各回路の結果として記録
+;
+;①②を複合して補正値として利用する
+;* MC leak method change
+;→ Call standby module "MC_Leak_NEW"
+;
+;Details
+;Conventional: MC leak with the same circuit setting as in automatic operation
+;
+;Change: → "MC_Leak_NEW"
+;① Leak inspection for one circuit at a jig (A) connected upstream - downstream one - to - one
+;Record as a result of each circuit
+;② Leak inspection by one circuit at jig (B) sealed upstream
+;Record as a result of each circuit
+;
+;Combine ① and use it as a correction value
+LDP MR30501              ; RTP)検査強制終了
+ORP MR900                ; 重度異常：電源再投入必要
+MPS
+RES MR403                ; R大気開放中
+CON
+RES MR102                ; Rﾘｰｸ検査中
+CON
+RES MR101                ; R検査動作中
+CON
+ZRES @MR500 @MR3215
+MPP
+MDSTOP R_MC_Leak_NEW
+;<h1/>初期化/Initialize
+LD @CR2008
+SET MR101                ; R検査動作中
+CON
+SET @MR1500
+;<h1/>△ﾘｰｸ検査/Leak inspection
+STG @MR1500
+DW #2 EM554              ; RM/Cﾘｰｸ 状態LP(0未1-2中3良4不
+CON
+DW #1 DM14               ; R現在MCﾘｰｸ番号(1～20)
+CON
+SET MR102                ; Rﾘｰｸ検査中
+CON
+JMP @MR1501
+;検査ﾁｬﾝﾈﾙﾙｰﾌﾟ先頭/Inspection channel loop head
+;上下流ﾊﾞﾙﾌﾞ設定実行/Execution of upstream and downstream valve setting
+STG @MR1501
+ZRES ZF29994 ZF35999     ; Rﾘｰｸ検査1ﾃﾞｰﾀ取得数  Rﾘｰｸ検査6測定中差圧1000
+CON
+LDA DM14                 ; R現在MCﾘｰｸ番号(1～20)
+CON
+SUB #1
+CON
+STA Z1
+CON
+MPS
+ANB @MR000               ; 上流封止検査
+DW #2 EM1290:Z1          ; RMCﾘｰｸ結果(回路1-1) 結果
+CON
+JMP @MR1502
+MPP
+AND @MR000               ; 上流封止検査
+MPS
+ANB @MR001               ; 共通回路ﾁｪｯｸ
+DW #2 EM1310:Z1          ; RMCﾘｰｸ結果(回路1上流封止) 結果
+CON
+JMP @MR1502
+MPP
+AND @MR001               ; 共通回路ﾁｪｯｸ
+DW #2 EM1371             ; R_MCﾘｰｸ結果(共通回路) 結果
+CON
+JMP @MR1502
+STG @MR1502
+ANB MR903                ; R_ｴﾗｰ処理中
+FMOV #0 DM19800 #20      ; R上流側流路ﾊﾞﾙﾌﾞ1 (0=閉/1=開)
+FMOV #0 DM19830 #20      ; R下流側流路ﾊﾞﾙﾌﾞ1 (0=閉/1=開
+MPS
+ANB @MR001               ; 共通回路ﾁｪｯｸ
+LDA DM14                 ; R現在MCﾘｰｸ番号(1～20)
+CON
+SUB #1
+CON
+STA Z1
+CON
+DW #1 DM19800:Z1         ; R上流側流路ﾊﾞﾙﾌﾞ1 (0=閉/1=開)
+CON
+JMP @MR1508
+MPP
+AND @MR001               ; 共通回路ﾁｪｯｸ
+JMP @MR1508
+;EM30031:(RTP)装置ﾘｰｸ検査表示用
+;2：加圧中
+;EM30031:(RTP): (TP) For device leak inspection display
+;2: Under pressurization
+STG @MR1508
+DW #2 EM30031            ; (R_TP)装置ﾘｰｸ検査表示用
+CON
+JMP @MR1509
+;現在のﾘｰｸ検査部位に対応する回路ﾊﾞﾙﾌﾞを開設定する
+;※ﾀｲﾏは検査毎に設定値有り
+;Open the circuit valves corresponding to the current leak inspection site
+;* Timer has setting value for each inspection
+;23：ﾘｰｸﾃｽﾀ入口
+;24：ﾘｰｸﾃｽﾀ出口
+;25：流量ｾﾝｻ入口
+;26：流量ｾﾝｻ出口
+;27：上流大気開放
+;23: Leak tester entrance
+;24: Leak tester exit
+;25: Flow sensor inlet
+;26: Flow sensor outlet
+;27: Upstream air release
+STG @MR1509
+SET MR8704               ; R上流側流路切替ﾊﾞﾙﾌﾞ 23(ON=開)
+CON
+SET MR8705               ; R上流側流路切替ﾊﾞﾙﾌﾞ 24(ON=開)
+CON
+RES MR8706               ; R上流側流路切替ﾊﾞﾙﾌﾞ 25(ON=開)
+CON
+RES MR8707               ; R上流側流路切替ﾊﾞﾙﾌﾞ 26(ON=開)
+CON
+RES MR8708               ; R上流側流路切替ﾊﾞﾙﾌﾞ 27(ON=開)
+CON
+SET MR400                ; 上下流_ﾊﾞﾙﾌﾞ一括切替(OFF全閉
+CON
+MPS
+AND CR2003               ; 常時OFF
+TMR @3 ZF880             ; ﾘｰｸ検査初期加圧時間  R現設定_ﾘｰｸ検査1初期加圧時間
+CON
+AND @T3                  ; ﾘｰｸ検査初期加圧時間
+JMP @MR1510
+MPP
+AND CR2002               ; 常時ON
+JMP @MR1510
+;ﾘｰｸ検査初期加圧安定時間待ち
+;Leak inspection Initial pressurization Waiting for settling time
+STG @MR1510
+TMR @4 ZF892             ; ﾘｰｸ検査初期加圧安定時間  R現設定_ﾘｰｸ検査1初期加圧安定時間
+CON
+AND @T4                  ; ﾘｰｸ検査初期加圧安定時間
+JMP @MR2400
+;<h1/> -ﾘｰｸ検査/Leak inspection
+STG @MR2400
+SET MR20600              ; Rﾘｰｸﾃｽﾀ-実行要求
+CON
+JMP @MR2401
+;EM30031:(RTP)装置ﾘｰｸ検査表示用
+;3：装置体ﾘｰｸ検査中
+;EM30031: (RTP) For device leak inspection display
+;3: Under leak inspection
+LD @MR2401
+DW #3 EM30031            ; (R_TP)装置ﾘｰｸ検査表示用
+;完了待ち/Wait for completion
+STG @MR2401
+AND MR20601              ; Rﾘｰｸﾃｽﾀ-実行完了
+RES MR20601              ; Rﾘｰｸﾃｽﾀ-実行完了
+CON
+JMP @MR2402
+STG @MR2402
+MPS
+ANB MR20602              ; Rﾘｰｸﾃｽﾀｰ処理異常有
+MPS
+AND= DM20021 #1          ; Rﾘｰｸﾃｽﾀｰ結果ｺｰﾄﾞ(1=OK)
+JMP @MR2403
+MPP
+AND<> DM20021 #1         ; Rﾘｰｸﾃｽﾀｰ結果ｺｰﾄﾞ(1=OK)
+LDA DM14                 ; R現在MCﾘｰｸ番号(1～20)
+CON
+SUB #1
+CON
+STA Z1
+CON
+MPS
+ANB @MR000               ; 上流封止検査
+DW.S +32767 EM1250:Z1    ; RMCﾘｰｸ結果(回路1-1) ﾘｰｸ量
+CON
+JMP @MR2406
+MPP
+AND @MR000               ; 上流封止検査
+MPS
+ANB @MR001               ; 共通回路ﾁｪｯｸ
+DW.S +32767 EM1270:Z1    ; RMCﾘｰｸ結果(回路1上流封止) ﾘｰｸ量
+CON
+JMP @MR2406
+MPP
+AND @MR001               ; 共通回路ﾁｪｯｸ
+DW.S +32767 EM1370       ; R_MCﾘｰｸ結果(共通回路) ﾘｰｸ量
+CON
+JMP @MR2406
+MPP
+AND MR20602              ; Rﾘｰｸﾃｽﾀｰ処理異常有
+RES MR20602              ; Rﾘｰｸﾃｽﾀｰ処理異常有
+CON
+JMP @MR2400
+;ﾘｰｸ量(補正後)算出/Leak amount (after correction) calculated
+STG @MR2403
+LDA DM14                 ; R現在MCﾘｰｸ番号(1～20)
+CON
+SUB #1
+CON
+STA Z1
+CON
+LDA.S ZF1138             ; Rﾘｰｸ検査1 ﾘｰｸ量(補正前)
+CON
+MPS
+ANB @MR000               ; 上流封止検査
+STA.S EM1250:Z1          ; RMCﾘｰｸ結果(回路1-1) ﾘｰｸ量
+CON
+JMP @MR2404
+MPP
+AND @MR000               ; 上流封止検査
+MPS
+ANB @MR001               ; 共通回路ﾁｪｯｸ
+STA.S EM1270:Z1          ; RMCﾘｰｸ結果(回路1上流封止) ﾘｰｸ量
+CON
+JMP @MR2404
+MPP
+AND @MR001               ; 共通回路ﾁｪｯｸ
+STA.S EM1370             ; R_MCﾘｰｸ結果(共通回路) ﾘｰｸ量
+CON
+JMP @MR2404
+;ﾘｰｸ検査判断/Leak inspection judgment
+STG @MR2404
+LDA DM14                 ; R現在MCﾘｰｸ番号(1～20)
+CON
+SUB #1
+CON
+STA Z1
+CON
+MPS
+ANB @MR000               ; 上流封止検査
+MPS
+AND<.S EM1250:Z1 EM950:Z1; RMCﾘｰｸ結果(回路1-1) ﾘｰｸ量  RMCﾘｰｸ検査 判定値(ﾘｰｸ量)1-1
+JMP @MR2405
+MPP
+AND>=.S EM1250:Z1 EM950:Z1;RMCﾘｰｸ結果(回路1-1) ﾘｰｸ量  RMCﾘｰｸ検査 判定値(ﾘｰｸ量)1-1
+JMP @MR2406
+MPP
+AND @MR000               ; 上流封止検査
+MPS
+ANB @MR001               ; 共通回路ﾁｪｯｸ
+MPS
+AND<.S EM1270:Z1 EM970:Z1; RMCﾘｰｸ結果(回路1上流封止) ﾘｰｸ量  RMCﾘｰｸ検査 判定値(ﾘｰｸ量)U1
+JMP @MR2405
+MPP
+AND>=.S EM1270:Z1 EM970:Z1;RMCﾘｰｸ結果(回路1上流封止) ﾘｰｸ量  RMCﾘｰｸ検査 判定値(ﾘｰｸ量)U1
+JMP @MR2406
+MPP
+AND @MR001               ; 共通回路ﾁｪｯｸ
+MPS
+AND<.S EM1370 EM1372     ; R_MCﾘｰｸ結果(共通回路) ﾘｰｸ量  R_MCﾘｰｸ検査共通回路判定値(ﾘｰｸ量)
+JMP @MR2405
+MPP
+AND>=.S EM1370 EM1372    ; R_MCﾘｰｸ結果(共通回路) ﾘｰｸ量  R_MCﾘｰｸ検査共通回路判定値(ﾘｰｸ量)
+JMP @MR2406
+;ﾘｰｸ検査OK/Leak inspection OK
+STG @MR2405
+LDA DM14                 ; R現在MCﾘｰｸ番号(1～20)
+CON
+SUB #1
+CON
+STA Z1
+CON
+MPS
+ANB @MR000               ; 上流封止検査
+DW #3 EM1290:Z1          ; RMCﾘｰｸ結果(回路1-1) 結果
+CON
+JMP @MR2600
+MPP
+AND @MR000               ; 上流封止検査
+MPS
+ANB @MR001               ; 共通回路ﾁｪｯｸ
+DW #3 EM1310:Z1          ; RMCﾘｰｸ結果(回路1上流封止) 結果
+CON
+JMP @MR2600
+MPP
+AND @MR001               ; 共通回路ﾁｪｯｸ
+DW #3 EM1371             ; R_MCﾘｰｸ結果(共通回路) 結果
+CON
+JMP @MR2600
+;ﾘｰｸ検査圧異常/Leak inspection pressure error
+STG @MR2406
+MPS
+LDA DM14                 ; R現在MCﾘｰｸ番号(1～20)
+CON
+SUB #1
+CON
+STA Z1
+CON
+MPS
+ANB @MR000               ; 上流封止検査
+DW #4 EM1290:Z1          ; RMCﾘｰｸ結果(回路1-1) 結果
+MPP
+AND @MR000               ; 上流封止検査
+MPS
+ANB @MR001               ; 共通回路ﾁｪｯｸ
+DW #4 EM1310:Z1          ; RMCﾘｰｸ結果(回路1上流封止) 結果
+MPP
+AND @MR001               ; 共通回路ﾁｪｯｸ
+DW #4 EM1371             ; R_MCﾘｰｸ結果(共通回路) 結果
+MRD
+LDA EM30010              ; TP)機種選択番号(1-10)
+CON
+SUB #1
+CON
+MUL #25
+CON
+ADD ZF5                  ; R現在部品番号(1～25）
+CON
+SUB #1
+CON
+STA Z1
+CON
+RES LR000:Z1             ; 機種1部品1装置ﾘｰｸ検査OK
+MPP
+DW #82 EM2               ; RｴﾗｰNo.記憶
+CON
+DW #82 EM3               ; Rｴﾗｰ詳細記憶
+CON
+SET MR33501              ; R_Err82ﾘｰｸ検査 ﾘｰｸNG
+CON
+SET @MR002               ; 終了時NG発報予約
+CON
+JMP @MR2600
+;<h1/> -ﾘｰｸ検査終了処理/Leak inspection end processing
+;EM30031:(RTP)装置ﾘｰｸ検査表示用
+;4：大気開放中
+;EM30031: (RTP) For device leak inspection display
+;4: Under atmosphere opening
+LD @MR2600
+DW #4 EM30031            ; (R_TP)装置ﾘｰｸ検査表示用
+;23：ﾘｰｸﾃｽﾀ入口
+;24：ﾘｰｸﾃｽﾀ出口
+;25：流量ｾﾝｻ入口
+;26：流量ｾﾝｻ出口
+;27：上流大気開放
+;23: Leak tester entrance
+;24: Leak tester exit
+;25: Flow sensor inlet
+;26: Flow sensor outlet
+;27: Upstream air release
+STG @MR2600
+FMOV #1 DM19800 #20      ; R上流側流路ﾊﾞﾙﾌﾞ1 (0=閉/1=開)
+FMOV #1 DM19830 #20      ; R下流側流路ﾊﾞﾙﾌﾞ1 (0=閉/1=開
+SET MR403                ; R大気開放中
+CON
+SET MR401                ; R_上下流_ﾊﾞﾙﾌﾞ一括切替(OFF全閉
+CON
+SET MR8704               ; R上流側流路切替ﾊﾞﾙﾌﾞ 23(ON=開)
+CON
+SET MR8705               ; R上流側流路切替ﾊﾞﾙﾌﾞ 24(ON=開)
+CON
+SET MR8706               ; R上流側流路切替ﾊﾞﾙﾌﾞ 25(ON=開)
+CON
+SET MR8707               ; R上流側流路切替ﾊﾞﾙﾌﾞ 26(ON=開)
+CON
+SET MR8708               ; R上流側流路切替ﾊﾞﾙﾌﾞ 27(ON=開)
+CON
+JMP @MR2601
+STG @MR2601
+TMR @7 #10               ; ﾘｰｸ検査後大気開放ｳｪｲﾄ
+CON
+AND @T7                  ; ﾘｰｸ検査後大気開放ｳｪｲﾄ
+RES MR403                ; R大気開放中
+CON
+RES MR8704               ; R上流側流路切替ﾊﾞﾙﾌﾞ 23(ON=開)
+CON
+RES MR8705               ; R上流側流路切替ﾊﾞﾙﾌﾞ 24(ON=開)
+CON
+RES MR8706               ; R上流側流路切替ﾊﾞﾙﾌﾞ 25(ON=開)
+CON
+RES MR8707               ; R上流側流路切替ﾊﾞﾙﾌﾞ 26(ON=開)
+CON
+JMP @MR2602
+;<h1/> ﾃﾞｰﾀ記録/Data recording
+;ZF410：ﾒﾓﾘｰｶｰﾄﾞ書き込み
+;0bit目 結果書き込み無効
+;1bit目 測定書き込み無効
+;
+;ZF410: Memory card write
+;0 bit Result write invalid
+;1st bit Measurement write invalid
+STG @MR2602
+MPS
+LDB ZF504.0              ; R ﾒﾓﾘｰｶｰﾄﾞ書込_結果ﾃﾞｰﾀ無効(=ON
+ORB ZF504.1              ; R ﾒﾓﾘｰｶｰﾄﾞ書込_測定ﾃﾞｰﾀ無効(=ON
+ANB MR903                ; R_ｴﾗｰ処理中
+ANL
+JMP @MR2603
+MPP
+LD ZF504.0               ; R ﾒﾓﾘｰｶｰﾄﾞ書込_結果ﾃﾞｰﾀ無効(=ON
+AND ZF504.1              ; R ﾒﾓﾘｰｶｰﾄﾞ書込_測定ﾃﾞｰﾀ無効(=ON
+ANL
+JMP @MR2606
+;<h1/>測定ﾃﾞｰﾀ書き込み/Write measurement data
+STG @MR2603
+ANB MR903                ; R_ｴﾗｰ処理中
+AND T0                   ; ﾒﾓﾘｶｰﾄﾞ書込中(排他ﾌﾗｸﾞ）OFF
+SET MR109                ; ﾒﾓﾘｶｰﾄﾞ書込中(排他ﾌﾗｸﾞ）
+CON
+JMP @MR2604
+STG @MR2604
+MPS
+ANB @MR000               ; 上流封止検査
+DW #0 EM40000            ; 検査ﾃﾞｰﾀ書込:①
+MRD
+AND @MR000               ; 上流封止検査
+DW #1 EM40000            ; 検査ﾃﾞｰﾀ書込:①
+MRD
+DW #2 DM9                ; 1=L 2=R
+CON
+MDSTRT MemoryCard_AccessMC
+MPP
+JMP @MR2605
+STG @MR2605
+AND _MemoryCard_AccessMC
+ANF MR111                ; ﾒﾓﾘｶｰﾄﾞ書込中
+MDSTOP MemoryCard_AccessMC
+RES MR109                ; ﾒﾓﾘｶｰﾄﾞ書込中(排他ﾌﾗｸﾞ）
+CON
+JMP @MR2606
+;<h1/>ﾘｰｸ検査全部位(1～16)終了？
+;Leak inspection All parts (1 to 5) end?
+;※検査NG＆NG時終了設定時は終了処理へ
+;* When inspection NG & NG end setting is set to end processing
+STG @MR2606
+MPS
+AND @MR001               ; 共通回路ﾁｪｯｸ
+JMP @MR2700
+MPP
+ANB @MR001               ; 共通回路ﾁｪｯｸ
+MPS
+AND> DM14 #19            ; R現在MCﾘｰｸ番号(1～20)
+JMP @MR2700
+MPP
+AND<= DM14 #19           ; R現在MCﾘｰｸ番号(1～20)
+MPS
+LD< EM30013 #1           ; R判定方法 確認用(1でNG時続行)
+AND MR33501              ; R_Err82ﾘｰｸ検査 ﾘｰｸNG
+ANL
+JMP @MR2700
+MPP
+LD>= EM30013 #1          ; R判定方法 確認用(1でNG時続行)
+ORB MR33501              ; R_Err82ﾘｰｸ検査 ﾘｰｸNG
+ANL
+JMP @MR2607
+STG @MR2607
+INC DM14                 ; R現在MCﾘｰｸ番号(1～20)
+CON
+JMP @MR1501
+;<h1/>上流封止で検査済？/Is it checked with upstream seal?
+STG @MR2700
+MPS
+ANB @MR000               ; 上流封止検査
+JMP @MR2701
+MPP
+AND @MR000               ; 上流封止検査
+MPS
+ANB LR1910               ; R_MCﾘｰｸ共通経路測定有効
+JMP @MR2703
+MPP
+AND LR1910               ; R_MCﾘｰｸ共通経路測定有効
+MPS
+AND @MR001               ; 共通回路ﾁｪｯｸ
+JMP @MR2703
+MPP
+ANB @MR001               ; 共通回路ﾁｪｯｸ
+SET @MR001               ; 共通回路ﾁｪｯｸ
+CON
+JMP @MR1500
+STG @MR2701
+SET @MR000               ; 上流封止検査
+CON
+JMP @MR2702
+;EM30031:(TP)装置ﾘｰｸ検査表示用
+;5：装置ﾘｰｸ治具(上流封止)をｾｯﾄし、
+;ｽﾀｰﾄSWを押して下さい。
+;EM30031: (TP) For device leak inspection display
+;5: Set the sealing jig(Upstream seal)
+;and press start SW.
+STG @MR2702
+DW #5 EM30031            ; (R_TP)装置ﾘｰｸ検査表示用
+CON
+ANB MR903                ; R_ｴﾗｰ処理中
+AND R2008                ; ｽﾀｰﾄSW_R 
+AND R2015                ; 冶具確認ON有_R
+DW #1 EM30031            ; (R_TP)装置ﾘｰｸ検査表示用
+CON
+JMP @MR1500
+;ﾘｰｸ検査総合状態LP書込み/Leak inspection overall state LP writing
+STG @MR2703
+RES MR102                ; Rﾘｰｸ検査中
+CON
+MPS
+LDB MR33501              ; R_Err82ﾘｰｸ検査 ﾘｰｸNG
+ANB @MR002               ; 終了時NG発報予約
+ANL
+DW #3 EM554              ; RM/Cﾘｰｸ 状態LP(0未1-2中3良4不
+CON
+JMP @MR3200
+MPP
+LD MR33501               ; R_Err82ﾘｰｸ検査 ﾘｰｸNG
+OR @MR002                ; 終了時NG発報予約
+ANL
+DW #4 EM554              ; RM/Cﾘｰｸ 状態LP(0未1-2中3良4不
+CON
+JMP @MR3200
+;<h1/>■ﾓｼﾞｭｰﾙ終了/End module
+STG @MR3200
+RES @MR000               ; 上流封止検査
+CON
+RES @MR001               ; 共通回路ﾁｪｯｸ
+CON
+JMP @MR3201
+STG @MR3201
+ANB MR902                ; ｴﾗｰ
+MPS
+ANB @MR002               ; 終了時NG発報予約
+MPS
+LDA EM30010              ; TP)機種選択番号(1-10)
+CON
+SUB #1
+CON
+MUL #25
+CON
+ADD ZF5                  ; R現在部品番号(1～25）
+CON
+SUB #1
+CON
+STA Z1
+CON
+SET LR000:Z1             ; 機種1部品1装置ﾘｰｸ検査OK
+MPP
+JMP @MR3203
+MPP
+AND @MR002               ; 終了時NG発報予約
+DW #80 ZF149             ; Rｴﾗｰ画面詳細ﾒｯｾｰｼﾞ
+CON
+SET MR903                ; R_ｴﾗｰ処理中
+CON
+JMP @MR3202
+;ｴﾗｰ解除待ち/Waiting for error cancellation
+STG @MR3202
+RES @MR002               ; 終了時NG発報予約
+CON
+ANB MR903                ; R_ｴﾗｰ処理中
+RES MR33501              ; R_Err82ﾘｰｸ検査 ﾘｰｸNG
+CON
+JMP @MR3203
+;<h1/>MCﾘｰｸ結果(回路下流算出) ﾘｰｸ量/MC leak result (down) amount
+;EM1330.S = EM1250.S - EM1270.S
+;EM1331.S = EM1251.S - EM1271.S
+;EM1332.S = EM1252.S - EM1272.S
+;EM1333.S = EM1253.S - EM1273.S
+;EM1334.S = EM1254.S - EM1274.S
+;EM1335.S = EM1255.S - EM1275.S
+;EM1336.S = EM1256.S - EM1276.S
+;EM1337.S = EM1257.S - EM1277.S
+;EM1338.S = EM1258.S - EM1278.S
+;EM1339.S = EM1259.S - EM1279.S
+;EM1340.S = EM1260.S - EM1280.S
+;EM1341.S = EM1261.S - EM1281.S
+;EM1342.S = EM1262.S - EM1282.S
+;EM1343.S = EM1263.S - EM1283.S
+;EM1344.S = EM1264.S - EM1284.S
+;EM1345.S = EM1265.S - EM1285.S
+;EM1346.S = EM1266.S - EM1286.S
+;EM1347.S = EM1267.S - EM1287.S
+;EM1348.S = EM1268.S - EM1288.S
+;EM1349.S = EM1269.S - EM1289.S
+LD @MR3203
+NCJ #1000
+;EM1330.S = EM1250.S - EM1270.S
+;
+LD CR2002                ; 常時ON
+LDA.S EM1270             ; RMCﾘｰｸ結果(回路1上流封止) ﾘｰｸ量
+CON
+EXT.S
+CON
+STA.L @VM0
+CON
+LDA.S EM1250             ; RMCﾘｰｸ結果(回路1-1) ﾘｰｸ量
+CON
+EXT.S
+CON
+SUB.L @VM0
+CON
+STA.S EM1330             ; RMCﾘｰｸ結果(回路1下流算出) ﾘｰｸ量
+;EM1331.S = EM1251.S - EM1271.S
+;
+LD CR2002                ; 常時ON
+LDA.S EM1271             ; RMCﾘｰｸ結果(回路2上流封止) ﾘｰｸ量
+CON
+EXT.S
+CON
+STA.L @VM2
+CON
+LDA.S EM1251             ; RMCﾘｰｸ結果(回路2-2) ﾘｰｸ量
+CON
+EXT.S
+CON
+SUB.L @VM2
+CON
+STA.S EM1331             ; RMCﾘｰｸ結果(回路2下流算出) ﾘｰｸ量
+;EM1332.S = EM1252.S - EM1272.S
+;
+LD CR2002                ; 常時ON
+LDA.S EM1272             ; RMCﾘｰｸ結果(回路3上流封止) ﾘｰｸ量
+CON
+EXT.S
+CON
+STA.L @VM4
+CON
+LDA.S EM1252             ; RMCﾘｰｸ結果(回路3-3) ﾘｰｸ量
+CON
+EXT.S
+CON
+SUB.L @VM4
+CON
+STA.S EM1332             ; RMCﾘｰｸ結果(回路3下流算出) ﾘｰｸ量
+;EM1333.S = EM1253.S - EM1273.S
+;
+LD CR2002                ; 常時ON
+LDA.S EM1273             ; RMCﾘｰｸ結果(回路4上流封止) ﾘｰｸ量
+CON
+EXT.S
+CON
+STA.L @VM6
+CON
+LDA.S EM1253             ; RMCﾘｰｸ結果(回路4-4) ﾘｰｸ量
+CON
+EXT.S
+CON
+SUB.L @VM6
+CON
+STA.S EM1333             ; RMCﾘｰｸ結果(回路4下流算出) ﾘｰｸ量
+;EM1334.S = EM1254.S - EM1274.S
+;
+LD CR2002                ; 常時ON
+LDA.S EM1274             ; RMCﾘｰｸ結果(回路5上流封止) ﾘｰｸ量
+CON
+EXT.S
+CON
+STA.L @VM8
+CON
+LDA.S EM1254             ; RMCﾘｰｸ結果(回路5-5) ﾘｰｸ量
+CON
+EXT.S
+CON
+SUB.L @VM8
+CON
+STA.S EM1334             ; RMCﾘｰｸ結果(回路5下流算出) ﾘｰｸ量
+;EM1335.S = EM1255.S - EM1275.S
+;
+LD CR2002                ; 常時ON
+LDA.S EM1275             ; RMCﾘｰｸ結果(回路6上流封止) ﾘｰｸ量
+CON
+EXT.S
+CON
+STA.L @VM10
+CON
+LDA.S EM1255             ; RMCﾘｰｸ結果(回路6-6) ﾘｰｸ量
+CON
+EXT.S
+CON
+SUB.L @VM10
+CON
+STA.S EM1335             ; RMCﾘｰｸ結果(回路6下流算出) ﾘｰｸ量
+;EM1336.S = EM1256.S - EM1276.S
+;
+LD CR2002                ; 常時ON
+LDA.S EM1276             ; RMCﾘｰｸ結果(回路7上流封止) ﾘｰｸ量
+CON
+EXT.S
+CON
+STA.L @VM12
+CON
+LDA.S EM1256             ; RMCﾘｰｸ結果(回路7-7) ﾘｰｸ量
+CON
+EXT.S
+CON
+SUB.L @VM12
+CON
+STA.S EM1336             ; RMCﾘｰｸ結果(回路7下流算出) ﾘｰｸ量
+;EM1337.S = EM1257.S - EM1277.S
+;
+LD CR2002                ; 常時ON
+LDA.S EM1277             ; RMCﾘｰｸ結果(回路8上流封止) ﾘｰｸ量
+CON
+EXT.S
+CON
+STA.L @VM14
+CON
+LDA.S EM1257             ; RMCﾘｰｸ結果(回路8-8) ﾘｰｸ量
+CON
+EXT.S
+CON
+SUB.L @VM14
+CON
+STA.S EM1337             ; RMCﾘｰｸ結果(回路8下流算出) ﾘｰｸ量
+;EM1338.S = EM1258.S - EM1278.S
+;
+LD CR2002                ; 常時ON
+LDA.S EM1278             ; RMCﾘｰｸ結果(回路9上流封止) ﾘｰｸ量
+CON
+EXT.S
+CON
+STA.L @VM16
+CON
+LDA.S EM1258             ; RMCﾘｰｸ結果(回路9-9) ﾘｰｸ量
+CON
+EXT.S
+CON
+SUB.L @VM16
+CON
+STA.S EM1338             ; RMCﾘｰｸ結果(回路9下流算出) ﾘｰｸ量
+;EM1339.S = EM1259.S - EM1279.S
+;
+LD CR2002                ; 常時ON
+LDA.S EM1279             ; RMCﾘｰｸ結果(回路10上流封止) ﾘｰｸ量
+CON
+EXT.S
+CON
+STA.L @VM18
+CON
+LDA.S EM1259             ; RMCﾘｰｸ結果(回路10-10) ﾘｰｸ量
+CON
+EXT.S
+CON
+SUB.L @VM18
+CON
+STA.S EM1339             ; RMCﾘｰｸ結果(回路10下流算出) ﾘｰｸ量
+;EM1340.S = EM1260.S - EM1280.S
+;
+LD CR2002                ; 常時ON
+LDA.S EM1280             ; RMCﾘｰｸ結果(回路11上流封止) ﾘｰｸ量
+CON
+EXT.S
+CON
+STA.L @VM20
+CON
+LDA.S EM1260             ; RMCﾘｰｸ結果(回路11-11) ﾘｰｸ量
+CON
+EXT.S
+CON
+SUB.L @VM20
+CON
+STA.S EM1340             ; RMCﾘｰｸ結果(回路11下流算出) ﾘｰｸ量
+;EM1341.S = EM1261.S - EM1281.S
+;
+LD CR2002                ; 常時ON
+LDA.S EM1281             ; RMCﾘｰｸ結果(回路12上流封止) ﾘｰｸ量
+CON
+EXT.S
+CON
+STA.L @VM22
+CON
+LDA.S EM1261             ; RMCﾘｰｸ結果(回路12-12) ﾘｰｸ量
+CON
+EXT.S
+CON
+SUB.L @VM22
+CON
+STA.S EM1341             ; RMCﾘｰｸ結果(回路12下流算出) ﾘｰｸ量
+;EM1342.S = EM1262.S - EM1282.S
+;
+LD CR2002                ; 常時ON
+LDA.S EM1282             ; RMCﾘｰｸ結果(回路13上流封止) ﾘｰｸ量
+CON
+EXT.S
+CON
+STA.L @VM24
+CON
+LDA.S EM1262             ; RMCﾘｰｸ結果(回路13-13) ﾘｰｸ量
+CON
+EXT.S
+CON
+SUB.L @VM24
+CON
+STA.S EM1342             ; RMCﾘｰｸ結果(回路13下流算出) ﾘｰｸ量
+;EM1343.S = EM1263.S - EM1283.S
+;
+LD CR2002                ; 常時ON
+LDA.S EM1283             ; RMCﾘｰｸ結果(回路14上流封止) ﾘｰｸ量
+CON
+EXT.S
+CON
+STA.L @VM26
+CON
+LDA.S EM1263             ; RMCﾘｰｸ結果(回路14-14) ﾘｰｸ量
+CON
+EXT.S
+CON
+SUB.L @VM26
+CON
+STA.S EM1343             ; RMCﾘｰｸ結果(回路14下流算出) ﾘｰｸ量
+;EM1344.S = EM1264.S - EM1284.S
+;
+LD CR2002                ; 常時ON
+LDA.S EM1284             ; RMCﾘｰｸ結果(回路15上流封止) ﾘｰｸ量
+CON
+EXT.S
+CON
+STA.L @VM28
+CON
+LDA.S EM1264             ; RMCﾘｰｸ結果(回路15-15) ﾘｰｸ量
+CON
+EXT.S
+CON
+SUB.L @VM28
+CON
+STA.S EM1344             ; RMCﾘｰｸ結果(回路15下流算出) ﾘｰｸ量
+;EM1345.S = EM1265.S - EM1285.S
+;
+LD CR2002                ; 常時ON
+LDA.S EM1285             ; RMCﾘｰｸ結果(回路16上流封止) ﾘｰｸ量
+CON
+EXT.S
+CON
+STA.L @VM30
+CON
+LDA.S EM1265             ; RMCﾘｰｸ結果(回路16-16) ﾘｰｸ量
+CON
+EXT.S
+CON
+SUB.L @VM30
+CON
+STA.S EM1345             ; RMCﾘｰｸ結果(回路16下流算出) ﾘｰｸ量
+;EM1346.S = EM1266.S - EM1286.S
+;
+LD CR2002                ; 常時ON
+LDA.S EM1286             ; RMCﾘｰｸ結果(回路17上流封止) ﾘｰｸ量
+CON
+EXT.S
+CON
+STA.L @VM32
+CON
+LDA.S EM1266             ; RMCﾘｰｸ結果(回路17-17) ﾘｰｸ量
+CON
+EXT.S
+CON
+SUB.L @VM32
+CON
+STA.S EM1346             ; RMCﾘｰｸ結果(回路17下流算出) ﾘｰｸ量
+;EM1347.S = EM1267.S - EM1287.S
+;
+LD CR2002                ; 常時ON
+LDA.S EM1287             ; RMCﾘｰｸ結果(回路18上流封止) ﾘｰｸ量
+CON
+EXT.S
+CON
+STA.L @VM34
+CON
+LDA.S EM1267             ; RMCﾘｰｸ結果(回路18-18) ﾘｰｸ量
+CON
+EXT.S
+CON
+SUB.L @VM34
+CON
+STA.S EM1347             ; RMCﾘｰｸ結果(回路18下流算出) ﾘｰｸ量
+;EM1348.S = EM1268.S - EM1288.S
+;
+LD CR2002                ; 常時ON
+LDA.S EM1288             ; RMCﾘｰｸ結果(回路19上流封止) ﾘｰｸ量
+CON
+EXT.S
+CON
+STA.L @VM36
+CON
+LDA.S EM1268             ; RMCﾘｰｸ結果(回路19-19) ﾘｰｸ量
+CON
+EXT.S
+CON
+SUB.L @VM36
+CON
+STA.S EM1348             ; RMCﾘｰｸ結果(回路19下流算出) ﾘｰｸ量
+;EM1349.S = EM1269.S - EM1289.S
+LD CR2002                ; 常時ON
+LDA.S EM1289             ; RMCﾘｰｸ結果(回路20上流封止) ﾘｰｸ量
+CON
+EXT.S
+CON
+STA.L @VM38
+CON
+LDA.S EM1269             ; RMCﾘｰｸ結果(回路20-20) ﾘｰｸ量
+CON
+EXT.S
+CON
+SUB.L @VM38
+CON
+STA.S EM1349             ; RMCﾘｰｸ結果(回路20下流算出) ﾘｰｸ量
+LABEL #1000
+;
+STG @MR3203
+JMP @MR3215
+;終了/end
+STG @MR3215
+RES MR101                ; R検査動作中
+CON
+MDSTOP R_MC_Leak_NEW
+ENDS
+;<h1/>■ｻﾌﾞﾙｰﾁﾝ/Subroutine
+END
+ENDH

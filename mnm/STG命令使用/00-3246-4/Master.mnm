@@ -1,0 +1,568 @@
+DEVICE:53
+;MODULE:Master
+;MODULE_TYPE:0
+;成型部品洗浄機
+;
+;ＩＰアドレス
+;成形部品洗浄機　		：　PLC：192.168.0.13	TP：192.168.0.33
+;
+;
+;Cpu起動時､ﾓｼﾞｭｰﾙ起動
+;Module Starts At The Time Of Cpu Starting
+;
+LD CR2008                ; 運転開始時1ｽｷｬﾝON
+MOV #0 DM3001            ; 切替ﾍﾟｰｼﾞNo.
+LDP T200                 ; 起動遅延
+SET MR004
+CON
+SET R1100                ; ﾎﾟｰﾄ1ﾊﾟﾚｯﾄ搬送ﾛﾎﾞｼﾘﾝﾀﾞEMG(POCN1)
+CON
+SET R1101                ; ﾎﾟｰﾄ2ﾊﾟﾚｯﾄ搬送ﾛﾎﾞｼﾘﾝﾀﾞEMG(POCN2)
+CON
+RES LR200                ; 自動ﾓｰﾄﾞ　 選択
+CON
+RES LR201                ; ﾒﾝﾃﾓｰﾄﾞ　 選択
+CON
+BSET DM11007 #4          ; RB1_制御信号
+CON
+BSET DM11015 #4          ; RB2_制御信号
+CON
+ZRES MR7200 MR7215       ; 給水ﾀﾝｸ 給水
+LD CR2007                ; 運転開始時1ｽｷｬﾝOFF
+ANB R50000               ; 非常停止停止(復帰不可ｴﾗｰ)
+ANB R55003               ; 即停止ｴﾗｰ(復帰不可)
+AND MR001                ; D-NET正常通信
+ANB MR002                ; D-NETｴﾗｰﾉｰﾄﾞ有
+AND MR003                ; ADﾕﾆｯﾄ正常
+ANB DM10807.3            ; ALM
+ANB DM10815.3            ; ALM
+TMR #200 #10             ; 起動遅延
+MDSTRT Unit1
+MDSTRT Unit2
+MDSTRT Tank
+;即停止ｴﾗｰ発生時、ﾓｼﾞｭｰﾙ停止
+;Module Stop At The Time Of Emg Error
+;
+LD R50000                ; 非常停止停止(復帰不可ｴﾗｰ)
+OR R55003                ; 即停止ｴﾗｰ(復帰不可)
+ORB T200                 ; 起動遅延
+MPS
+RES MR1102               ; ﾎﾟﾝﾌﾟON
+CON
+RES R50007               ; 原点復帰　完了
+CON
+BRES DM11007 #4          ; RB1_制御信号
+CON
+BRES DM11015 #4          ; RB2_制御信号
+CON
+ZRES LR200 LR202         ; 自動ﾓｰﾄﾞ　 選択  原点復帰ﾓｰﾄﾞ選択
+CON
+ZRES MR3000 MR3315       ; HALT要求ON
+CON
+ZRES MR7200 MR7215       ; 給水ﾀﾝｸ 給水
+MPP
+ANB R55004               ; PCONｴﾗｰ発生中
+RES R1100                ; ﾎﾟｰﾄ1ﾊﾟﾚｯﾄ搬送ﾛﾎﾞｼﾘﾝﾀﾞEMG(POCN1)
+CON
+RES R1101                ; ﾎﾟｰﾄ2ﾊﾟﾚｯﾄ搬送ﾛﾎﾞｼﾘﾝﾀﾞEMG(POCN2)
+;DeviceNet ﾉｰﾄﾞ確認
+;
+BLD DM10314 #1           ; 正常通信ﾉｰﾄﾞ一覧(0-15)
+BAND DM10314 #2          ; 正常通信ﾉｰﾄﾞ一覧(0-15)
+BAND DM10314 #8          ; 正常通信ﾉｰﾄﾞ一覧(0-15)
+BAND DM10314 #9          ; 正常通信ﾉｰﾄﾞ一覧(0-15)
+BAND DM10314 #10         ; 正常通信ﾉｰﾄﾞ一覧(0-15)
+BAND DM10315 #0          ; 正常通信ﾉｰﾄﾞ一覧(16-31)
+BAND DM10315 #4          ; 正常通信ﾉｰﾄﾞ一覧(16-31)
+SET MR001                ; D-NET正常通信
+CON
+RES MR002                ; D-NETｴﾗｰﾉｰﾄﾞ有
+BLDB DM10318 #1          ; ｴﾗｰﾉｰﾄﾞ一覧(0-15)
+BANB DM10318 #2          ; ｴﾗｰﾉｰﾄﾞ一覧(0-15)
+BANB DM10318 #8          ; ｴﾗｰﾉｰﾄﾞ一覧(0-15)
+BANB DM10318 #9          ; ｴﾗｰﾉｰﾄﾞ一覧(0-15)
+BANB DM10318 #10         ; ｴﾗｰﾉｰﾄﾞ一覧(0-15)
+BANB DM10319 #0          ; ｴﾗｰﾉｰﾄﾞ一覧(16-31)
+BANB DM10319 #4          ; ｴﾗｰﾉｰﾄﾞ一覧(16-31)
+INV
+SET MR002                ; D-NETｴﾗｰﾉｰﾄﾞ有
+CON
+RES MR001                ; D-NET正常通信
+;装置正常状態
+LD T200                  ; 起動遅延
+ANB R34000               ; Teaching
+AND MR001                ; D-NET正常通信
+ANB MR002                ; D-NETｴﾗｰﾉｰﾄﾞ有
+AND MR003                ; ADﾕﾆｯﾄ正常
+AND DM10807.4            ; SV
+AND DM10815.4            ; SV
+ANB DM10807.8            ; RMDS
+ANB DM10815.8            ; RMDS
+OUT MR005                ; 装置正常動作可能
+;STARTｽｲｯﾁ
+;
+LDB B2009                ; ﾒｲﾝよりPAUSE要求
+ANB B200A                ; ﾒｲﾝよりPAUSE許可
+DIFU MR3006              ; ﾒｲﾝよりのPAUSE信号OFF
+LDP R40100               ; START_SW
+OR MR3006                ; ﾒｲﾝよりのPAUSE信号OFF
+LD LR200                 ; 自動ﾓｰﾄﾞ　 選択
+OR LR202                 ; 原点復帰ﾓｰﾄﾞ選択
+ANL
+LDP B2038                ; ﾒｲﾝよりULD反転仮置台昇降ｼﾘﾝﾀﾞ上
+AND LR100                ; OFF:成型部品ON:ﾌﾞｯｼｭｼｰﾙ
+ANB LR000                ; Offline
+AND LR202                ; 原点復帰ﾓｰﾄﾞ選択
+ORL
+ANB MR3005               ; 装置ﾎﾟｰｽﾞ
+OUT MR3001               ; START
+LD LR200                 ; 自動ﾓｰﾄﾞ　 選択
+AND R50010               ; 自動ｽﾀｰﾄ条件
+ANB R50001               ; 自動中
+AND R50207               ; ﾌﾘｯｶｰ
+OR R50001                ; 自動中
+OUT R40103               ; START_LP
+;STOPｽｲｯﾁ
+;
+LDP R40101               ; STOP_SW
+AND LR000                ; Offline
+ORF B200B                ; ﾒｲﾝよりｽﾃｰﾀｽ(AUTO)
+AND LR200                ; 自動ﾓｰﾄﾞ　 選択
+SET MR3002               ; 停止要求ON
+LD MR3002                ; 停止要求ON
+ANB R50001               ; 自動中
+RES MR3002               ; 停止要求ON
+LD MR3002                ; 停止要求ON
+AND R50207               ; ﾌﾘｯｶｰ
+ORB R50001               ; 自動中
+OUT R40104               ; STOP_LP
+;PAUSEｽｲｯﾁ
+;
+LDP R40102               ; PAUSE_SW
+LDP R4207                ; 背面PAUSE_SW
+ANB CR2002               ; 常時ON
+ORL
+SET MR3004               ; 洗浄機ﾎﾟｰｽﾞON
+LDP B2009                ; ﾒｲﾝよりPAUSE要求
+SET MR3000               ; HALT要求ON
+LD MR3000                ; HALT要求ON
+OR MR3004                ; 洗浄機ﾎﾟｰｽﾞON
+OUT MR3005               ; 装置ﾎﾟｰｽﾞ
+LD MR3005                ; 装置ﾎﾟｰｽﾞ
+AND R50207               ; ﾌﾘｯｶｰ
+OR R50009                ; 一時停止中
+OUT R40105               ; PAUSE_LP
+;HOME
+;
+LD LR202                 ; 原点復帰ﾓｰﾄﾞ選択
+ANB R50001               ; 自動中
+ANB R50002               ; 手動中
+ANB R50003               ; 原点復帰中
+AND MR005                ; 装置正常動作可能
+ANB B200A                ; ﾒｲﾝよりPAUSE許可
+AND B2002                ; ﾒｲﾝより給材1ﾗｲﾝ側ｲﾝﾀｰﾛｯｸ信号
+AND B2003                ; ﾒｲﾝより給材2ﾗｲﾝ側ｲﾝﾀｰﾛｯｸ信号
+AND B2004                ; ﾒｲﾝより除材1ﾗｲﾝ側ｲﾝﾀｰﾛｯｸ信号
+AND B2005                ; ﾒｲﾝより除材2ﾗｲﾝ側ｲﾝﾀｰﾛｯｸ信号
+OUT @MR100               ; 原点復帰　 ｽﾀｰﾄ条件
+LD CR2002                ; 常時ON
+ANB R50001               ; 自動中
+ANB R50002               ; 手動中
+ANB R50003               ; 原点復帰中
+AND MR005                ; 装置正常動作可能
+ANB B200A                ; ﾒｲﾝよりPAUSE許可
+AND B2002                ; ﾒｲﾝより給材1ﾗｲﾝ側ｲﾝﾀｰﾛｯｸ信号
+AND B2003                ; ﾒｲﾝより給材2ﾗｲﾝ側ｲﾝﾀｰﾛｯｸ信号
+AND B2004                ; ﾒｲﾝより除材1ﾗｲﾝ側ｲﾝﾀｰﾛｯｸ信号
+AND B2005                ; ﾒｲﾝより除材2ﾗｲﾝ側ｲﾝﾀｰﾛｯｸ信号
+OUT @MR110               ; ﾘﾓｰﾄ　原点復帰　 ｽﾀｰﾄ条件
+LD @MR100                ; 原点復帰　 ｽﾀｰﾄ条件
+ANP MR3001               ; START
+LD @MR110                ; ﾘﾓｰﾄ　原点復帰　 ｽﾀｰﾄ条件
+LDP B203A                ; ﾒｲﾝより原点復帰要求
+ORP MR3015               ; START
+ORP @MR215               ; 原点復帰開始
+ANL
+ORL
+OR R50003                ; 原点復帰中
+ANB R50000               ; 非常停止停止(復帰不可ｴﾗｰ)
+ANB R50012               ; 原点復帰ﾀｲﾑｵｰﾊﾞｰ
+ANB @MR106               ; 原点復帰完了FLG
+MPS
+OUT R50003               ; 原点復帰中
+CON
+DIFU @MR101              ; 原点復帰　 ｽﾀｰﾄ PLS
+MPP
+TMR @0 #600
+CON
+AND @T0
+ANB R50007               ; 原点復帰　完了
+OUT R50012               ; 原点復帰ﾀｲﾑｵｰﾊﾞｰ
+LD @MR101                ; 原点復帰　 ｽﾀｰﾄ PLS
+RES R50007               ; 原点復帰　完了
+CON
+SET @MR102               ; 原点復帰開始
+STG @MR102               ; 原点復帰開始
+MPS
+LD MR3100                ; Unit1_BUSY
+AND MR3200               ; Unit2_BUSY
+ANL
+JMP @MR103               ; 原点復帰中
+MPP
+AND R50012               ; 原点復帰ﾀｲﾑｵｰﾊﾞｰ
+JMP @MR104               ; 原点復帰完了
+STG @MR103               ; 原点復帰中
+MPS
+LD MR3101                ; Unit1_END
+AND MR3201               ; Unit2_END
+AND MR3301               ; Tank_END
+ANL
+JMP @MR104               ; 原点復帰完了
+MPP
+AND R50012               ; 原点復帰ﾀｲﾑｵｰﾊﾞｰ
+JMP @MR104               ; 原点復帰完了
+STG @MR104               ; 原点復帰完了
+SET R50007               ; 原点復帰　完了
+CON
+JMP @MR105               ; 原点復帰　 終了
+STG @MR105               ; 原点復帰　 終了
+RES MR3101               ; Unit1_END
+CON
+RES MR3201               ; Unit2_END
+CON
+RES MR3301               ; Tank_END
+CON
+ANB MR3101               ; Unit1_END
+ANB MR3201               ; Unit2_END
+ANB MR3301               ; Tank_END
+AND R50007               ; 原点復帰　完了
+OUT @MR106               ; 原点復帰完了FLG
+CON
+ENDS
+;ﾓｰﾄﾞ選択
+;Mode Selection
+;
+LD R50101                ; 自動ﾓｰﾄﾞ
+LD B200B                 ; ﾒｲﾝよりｽﾃｰﾀｽ(AUTO)
+ANB LR000                ; Offline
+ORL
+AND R50005               ; 停止中
+AND MR005                ; 装置正常動作可能
+AND R50007               ; 原点復帰　完了
+DIFU @MR200              ; 自動ﾓｰﾄﾞ   SW ON
+LD @MR200                ; 自動ﾓｰﾄﾞ   SW ON
+SET LR200                ; 自動ﾓｰﾄﾞ　 選択
+CON
+RES LR201                ; ﾒﾝﾃﾓｰﾄﾞ　 選択
+CON
+RES LR202                ; 原点復帰ﾓｰﾄﾞ選択
+LD B200D                 ; ﾒｲﾝよりｽﾃｰﾀｽ(MAINTE)
+OR R40106                ; ﾒｲﾝよりﾓｰﾄﾞ無
+ANB LR000                ; Offline
+OR LR000                 ; Offline
+AND R50005               ; 停止中
+AND R50007               ; 原点復帰　完了
+AND R50102               ; 手動ﾓｰﾄﾞ
+AND MR005                ; 装置正常動作可能
+DIFU @MR201              ; 手動ﾓｰﾄﾞ   SW ON
+LD @MR201                ; 手動ﾓｰﾄﾞ   SW ON
+RES LR200                ; 自動ﾓｰﾄﾞ　 選択
+CON
+SET LR201                ; ﾒﾝﾃﾓｰﾄﾞ　 選択
+CON
+RES LR202                ; 原点復帰ﾓｰﾄﾞ選択
+LD R40010                ; 原点復帰SW
+LD B200C                 ; ﾒｲﾝよりｽﾃｰﾀｽ(HOME)
+AND LR100                ; OFF:成型部品ON:ﾌﾞｯｼｭｼｰﾙ
+ORL
+AND MR005                ; 装置正常動作可能
+AND R50005               ; 停止中
+DIFU @MR202              ; 原点ﾓｰﾄﾞSW ON
+LD @MR202                ; 原点ﾓｰﾄﾞSW ON
+RES LR200                ; 自動ﾓｰﾄﾞ　 選択
+CON
+RES LR201                ; ﾒﾝﾃﾓｰﾄﾞ　 選択
+CON
+SET LR202                ; 原点復帰ﾓｰﾄﾞ選択
+LD LR202                 ; 原点復帰ﾓｰﾄﾞ選択
+ANP R50007               ; 原点復帰　完了
+RES LR202                ; 原点復帰ﾓｰﾄﾞ選択
+LD= DM3000 #2            ; _MainTP　表示中ﾍﾟｰｼﾞNo
+ANB R50001               ; 自動中
+ANB R50002               ; 手動中
+ANB R50003               ; 原点復帰中
+OUT B2054                ; ﾒｲﾝへ機種切替可
+LD CR2002                ; 常時ON
+LDA DM8640               ; _TP選択中機種ｺｰﾄﾞ
+CON
+STA W05
+LD B202A                 ; ﾒｲﾝより機種切替要求
+SET @MR208               ; 機種切替開始
+STG @MR208               ; 機種切替開始
+ANB @MR214               ; 機種切替動作中
+LDA W00                  ; 機種No.
+CON
+STA DM8640               ; _TP選択中機種ｺｰﾄﾞ
+CON
+SET @MR214               ; 機種切替動作中
+CON
+JMP @MR209
+STG @MR209
+TMR #150 #2              ; ｳｪｲﾄﾀｲﾏ
+CON
+AND T150                 ; ｳｪｲﾄﾀｲﾏ
+RES R50007               ; 原点復帰　完了
+CON
+SET B2053                ; ﾒｲﾝへ機種切替完了
+CON
+JMP @MR210
+STG @MR210
+ANB B202A                ; ﾒｲﾝより機種切替要求
+RES B2053                ; ﾒｲﾝへ機種切替完了
+CON
+JMP @MR211
+STG @MR211
+SET @MR215               ; 原点復帰開始
+CON
+JMP @MR212
+STG @MR212
+AND R50003               ; 原点復帰中
+RES @MR215               ; 原点復帰開始
+CON
+JMP @MR213
+STG @MR213
+ANB R50003               ; 原点復帰中
+AND R50007               ; 原点復帰　完了
+RES @MR214               ; 機種切替動作中
+CON
+ENDS
+;AUTO
+;
+;自動運転前機種No.確認
+;※MAIN-PLCと洗浄機の機種No.が違う場合は、機種No.をMAIN-PLCに合わせて、原点復帰から
+LDP LR200                ; 自動ﾓｰﾄﾞ　 選択
+ANB LR000                ; Offline
+SET @MR500               ; 自動起動前機種No.確認
+STG @MR500               ; 自動起動前機種No.確認
+MPS
+AND<> DM8640 W00         ; _TP選択中機種ｺｰﾄﾞ  機種No.
+SET R50108               ; 機種No.不一致
+CON
+RES R50007               ; 原点復帰　完了
+CON
+JMP @MR501
+MPP
+AND= DM8640 W00          ; _TP選択中機種ｺｰﾄﾞ  機種No.
+JMP @MR502
+STG @MR501
+LDA W00                  ; 機種No.
+CON
+STA DM8640               ; _TP選択中機種ｺｰﾄﾞ
+CON
+ANB R50007               ; 原点復帰　完了
+JMP @MR502
+STG @MR502
+ENDS
+;自動起動条件
+;
+LD= DM8640 W00           ; _TP選択中機種ｺｰﾄﾞ  機種No.
+ANB R50000               ; 非常停止停止(復帰不可ｴﾗｰ)
+AND R50007               ; 原点復帰　完了
+ANB R50013               ; ｴﾗｰ発生
+AND R50100               ; ﾀﾝｸ状態
+AND MR005                ; 装置正常動作可能
+ANB MR3100               ; Unit1_BUSY
+ANB MR3200               ; Unit2_BUSY
+ANB MR3300               ; Tank_BUSY
+LD B2000                 ; ﾒｲﾝより自PLC電源状態
+AND B2001                ; ﾒｲﾝより非常停止
+ANB B200A                ; ﾒｲﾝよりPAUSE許可
+OR LR000                 ; Offline
+ANL
+LDB LR010                ; 洗浄1動作不可
+ORB LR011                ; 洗浄2動作不可
+ANL
+AND R4106                ; ﾉｽﾞﾙﾕﾆｯﾄ1治具ﾛｯｸｼﾘﾝﾀﾞ1 ﾛｯｸ
+AND R4108                ; ﾉｽﾞﾙﾕﾆｯﾄ1治具ﾛｯｸｼﾘﾝﾀﾞ2 ﾛｯｸ
+AND R4306                ; ﾉｽﾞﾙﾕﾆｯﾄ2治具ﾛｯｸｼﾘﾝﾀﾞ1 ﾛｯｸ
+AND R4308                ; ﾉｽﾞﾙﾕﾆｯﾄ2治具ﾛｯｸｼﾘﾝﾀﾞ2 ﾛｯｸ
+OUT R50010               ; 自動ｽﾀｰﾄ条件
+LDB MR500                ; ﾀﾝｸ水無し
+ANB MR501                ; ﾀﾝｸ小量
+LD MR502                 ; ﾀﾝｸ適量下限
+OR MR503                 ; ﾀﾝｸ適量上限
+ANL
+OR LR002                 ; 搬送ﾓｰﾄﾞ
+OUT R50100               ; ﾀﾝｸ状態
+;自動起動
+;
+LDP MR3001               ; START
+LD B200B                 ; ﾒｲﾝよりｽﾃｰﾀｽ(AUTO)
+ANB LR000                ; Offline
+ORL
+AND R50010               ; 自動ｽﾀｰﾄ条件
+ANB MR3002               ; 停止要求ON
+AND LR200                ; 自動ﾓｰﾄﾞ　 選択
+OR R50001                ; 自動中
+ANB @MR315               ; 自動中終了
+ANB R50000               ; 非常停止停止(復帰不可ｴﾗｰ)
+AND R50007               ; 原点復帰　完了
+OUT R50001               ; 自動中
+LDP R50001               ; 自動中
+SET @MR303               ; 自動ｽﾀｰﾄ確認
+LD B203D
+SET LR300                ; 洗浄ﾕﾆｯﾄ1ﾜｰｸ有
+LD B203E
+SET LR301                ; 洗浄ﾕﾆｯﾄ2ﾜｰｸ有
+LD R50001                ; 自動中
+TMR #600 #5
+CON
+AND T600
+OUT R50500               ; 洗浄機スタート
+STG @MR303               ; 自動ｽﾀｰﾄ確認
+LD MR3100                ; Unit1_BUSY
+OR MR3101                ; Unit1_END
+ANL
+LD MR3200                ; Unit2_BUSY
+OR MR3201                ; Unit2_END
+ANL
+LD MR3300                ; Tank_BUSY
+OR MR3301                ; Tank_END
+ANL
+JMP @MR304               ; 各ﾀｽｸ動作中
+STG @MR304               ; 各ﾀｽｸ動作中
+MPS
+LD MR3002                ; 停止要求ON
+OR R50000                ; 非常停止停止(復帰不可ｴﾗｰ)
+ANB MR3005               ; 装置ﾎﾟｰｽﾞ
+ANL
+JMP @MR305               ; AUTO_STOP
+MPP
+LD MR3005                ; 装置ﾎﾟｰｽﾞ
+ANB R50000               ; 非常停止停止(復帰不可ｴﾗｰ)
+ANB MR3002               ; 停止要求ON
+ANL
+JMP @MR306               ; PAUSE
+STG @MR305               ; AUTO_STOP
+AND MR3101               ; Unit1_END
+AND MR3201               ; Unit2_END
+AND MR3301               ; Tank_END
+JMP @MR310
+STG @MR310
+RES MR3101               ; Unit1_END
+CON
+RES MR3201               ; Unit2_END
+CON
+RES MR3301               ; Tank_END
+CON
+TMR #201 #1
+CON
+AND T201
+JMP @MR311
+STG @MR311
+ANB MR3101               ; Unit1_END
+ANB MR3201               ; Unit2_END
+ANB MR3301               ; Tank_END
+OUT @MR315               ; 自動中終了
+CON
+JMP @MR312
+STG @MR312
+ANB R50001               ; 自動中
+RES LR200                ; 自動ﾓｰﾄﾞ　 選択
+CON
+ENDS
+STG @MR306               ; PAUSE
+AND R50009               ; 一時停止中
+JMP @MR307               ; ﾎﾟｰｽﾞ中
+STG @MR307               ; ﾎﾟｰｽﾞ中
+MPS
+ANP MR3001               ; START
+JMP @MR308               ; 装置再起動
+MPP
+LD R50000                ; 非常停止停止(復帰不可ｴﾗｰ)
+OR MR3002                ; 停止要求ON
+ANL
+JMP @MR305               ; AUTO_STOP
+STG @MR308               ; 装置再起動
+ANB R50009               ; 一時停止中
+ANB MR3102               ; Unit1_HALT
+ANB MR3202               ; Unit2_HALT
+ANB MR3302               ; TANK_HALT
+JMP @MR303               ; 自動ｽﾀｰﾄ確認
+LD LR010                 ; 洗浄1動作不可
+AND LR011                ; 洗浄2動作不可
+RES LR010                ; 洗浄1動作不可
+CON
+RES LR011                ; 洗浄2動作不可
+;MANU
+;
+LDP R50102               ; 手動ﾓｰﾄﾞ
+LD B200D                 ; ﾒｲﾝよりｽﾃｰﾀｽ(MAINTE)
+ANB B200A                ; ﾒｲﾝよりPAUSE許可
+ANB LR000                ; Offline
+ORL
+AND LR201                ; ﾒﾝﾃﾓｰﾄﾞ　 選択
+OR R50002                ; 手動中
+ANB @MR405               ; 手動終了
+ANB R50000               ; 非常停止停止(復帰不可ｴﾗｰ)
+AND R50007               ; 原点復帰　完了
+OUT R50002               ; 手動中
+LD R50002                ; 手動中
+DIFU @MR402              ; 手動ｽﾀｰﾄPLS
+LD @MR402                ; 手動ｽﾀｰﾄPLS
+SET @MR403               ; 手動ｽﾀｰﾄ　 確認
+STG @MR403               ; 手動ｽﾀｰﾄ　 確認
+AND MR3100               ; Unit1_BUSY
+AND MR3200               ; Unit2_BUSY
+AND MR3300               ; Tank_BUSY
+JMP @MR404               ; 各ﾀｽｸ動作中
+LD @MR404                ; 各ﾀｽｸ動作中
+LDF B200D                ; ﾒｲﾝよりｽﾃｰﾀｽ(MAINTE)
+ANB LR000                ; Offline
+OR R40002                ; SET UP戻SW
+LD R44913                ; Setting End
+ANB CR2002               ; 常時ON
+ORL
+ANL
+SET R40008               ; ﾒﾝﾃﾓｰﾄﾞOFF
+LD R40008                ; ﾒﾝﾃﾓｰﾄﾞOFF
+ANP R50102               ; 手動ﾓｰﾄﾞ
+RES R40008               ; ﾒﾝﾃﾓｰﾄﾞOFF
+STG @MR404               ; 各ﾀｽｸ動作中
+LD MR3101                ; Unit1_END
+AND MR3201               ; Unit2_END
+AND MR3301               ; Tank_END
+ORB R50002               ; 手動中
+ANL
+RES LR201                ; ﾒﾝﾃﾓｰﾄﾞ　 選択
+CON
+RES R40008               ; ﾒﾝﾃﾓｰﾄﾞOFF
+CON
+JMP @MR406
+STG @MR406
+RES MR3101               ; Unit1_END
+CON
+RES MR3201               ; Unit2_END
+CON
+RES MR3301               ; Tank_END
+CON
+TMR #202 #10
+CON
+AND T202
+ANB MR3101               ; Unit1_END
+ANB MR3201               ; Unit2_END
+ANB MR3301               ; Tank_END
+OUT @MR405               ; 手動終了
+CON
+ENDS
+;動作中
+;During Operation
+;
+LD R50001                ; 自動中
+OR R50002                ; 手動中
+OR R50003                ; 原点復帰中
+OUT R50004               ; 動作中
+LD R50000                ; 非常停止停止(復帰不可ｴﾗｰ)
+OUT R50105               ; 装置ｴﾗｰ出力off
+END
+ENDH

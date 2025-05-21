@@ -1,0 +1,145 @@
+DEVICE:53
+;MODULE:WARNING_DISP
+;MODULE_TYPE:1
+;OneSystem SupportMacro
+;
+;-----------------------------------------
+;Macro Name 	: 	WARNING_DISP
+;Macro Type	:	Self Holding
+;Function	:	警告画面要求
+;-----------------------------------------
+;
+;Copylight(C) 2011 SEIKO EPSON Corp. All rights reserved.
+;引数：
+;	V0	=	表示ｸﾞﾙｰﾌﾟ番号		#1～8	
+;	V1	=	警告ｴﾗｰ番号			#0～31
+;	V2	=	ﾌﾞｻﾞｰ有無			#0=ﾌﾞｻﾞｰOFF、#1=ﾌﾞｻﾞｰON、#2=ﾌﾞｻﾞｰﾌﾘｯｶ(1s)
+;	V3	=	赤ﾗﾝﾌﾟ点滅			#0=点滅無し、#1=点滅有り
+;	
+;機能：
+;	指定ｸﾞﾙｰﾌﾟTPに指定警告番号の警告画面を表示する
+LD R59915
+LDA V0                   ; Group_No
+CON
+SUB #1
+CON
+MUL #2
+CON
+STA Z8
+CON
+BSET.D DM9000:Z8 V1      ; Warning_No
+CON
+MEND
+;<h1/>Argumant Range Check/引数範囲ﾁｪｯｸ
+LD< V0 #1                ; Group_No
+OR> V0 #8                ; Group_No
+OR< V1 #0                ; Warning_No
+OR> V1 #31               ; Warning_No
+OR< V2 #0                ; Bz_Use
+OR> V2 #2                ; Bz_Use
+OR< V3 #0                ; R_Lamp_ON
+OR> V3 #1                ; R_Lamp_ON
+SET R40008
+CON
+SET @R015
+;<h1/>Init/初期化
+LD @CR2008
+ANB R59915
+MPS
+LDA V1                   ; Warning_No
+CON
+ADD #1
+CON
+STA @EM0
+MRD
+LDA V0                   ; Group_No
+CON
+MUL #10000
+CON
+STA @EM2
+MPP
+LDA @EM2
+CON
+ADD V1                   ; Warning_No
+CON
+STA @EM3
+;<h1/>Exclusive/排他占有
+LDB R59915
+ANB R46104
+LDA V0                   ; Group_No
+CON
+SUB #1
+CON
+STA Z10
+CON
+ANB R48200:Z10
+ANB R53600:Z10
+ANB R53608:Z10
+SET R48200:Z10
+CON
+SET @R001
+;<h1/>Warning Display/警告画面表示
+STG @R001
+MPS
+LDA V0                   ; Group_No
+CON
+SUB #1
+CON
+STA Z10
+MRD
+LDA V0                   ; Group_No
+CON
+SUB #1
+CON
+MUL #4
+CON
+STA Z9
+MRD
+MOV @EM0 DM8148:Z10
+MRD
+AND= V2 #2               ; Bz_Use
+MOV #1 DM2010:Z10
+MRD
+AND<> V2 #2              ; Bz_Use
+MOV #0 DM2010:Z10
+MRD
+AND>= V2 #1              ; Bz_Use
+SET R48208:Z9
+MRD
+AND= V3 #1               ; R_Lamp_ON
+SET R48408:Z9
+MPP
+TMH @0 #5
+CON
+AND @T0
+SET R53600:Z10
+MOV @EM3 DM5180:Z10
+SET R46408:Z10
+JMP @R002
+;<h1/>Status Device Set/Warning_Chkｾｯﾄ
+;表示状態用ﾃﾞﾊﾞｲｽ(Warning_Chk)格納
+STG @R002
+MPS
+LDA V0                   ; Group_No
+CON
+SUB #1
+CON
+MUL #2
+CON
+STA Z8
+CON
+BSET.D DM9000:Z8 V1      ; Warning_No
+MRD
+LDA V0                   ; Group_No
+CON
+SUB #1
+CON
+STA Z10
+CON
+RES R48200:Z10
+MRD
+MEND
+MPP
+ENDS
+END
+ENDH

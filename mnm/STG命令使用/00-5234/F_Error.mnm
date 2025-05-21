@@ -1,0 +1,346 @@
+DEVICE:53
+;MODULE:F_Error
+;MODULE_TYPE:0
+;SCRIPT_TYPE:
+;OneSystem Sub Module
+;---------------------------------------
+;ModuleName	:	F_Error
+;ModuleType	:	Sub Module
+;Function	:	F_Error条件を記入　1~64
+;---------------------------------------
+;RB controller Error
+LD DM11007.3             ; RB1 ALM
+MEP
+AND DM11007.4            ; RB1 SV
+ANB DM11007.0            ; RB1 PEND
+ANB R44308               ; *非常停止出力
+AND DM10515.5            ; ﾉｰﾄﾞ21 通信正常
+MSTRT F_ERROR_DISP #1
+LD DM11015.3             ; RB2 ALM
+MEP
+AND DM11015.4            ; RB2 SV
+ANB DM11015.0            ; RB2 PEND
+ANB R44308               ; *非常停止出力
+AND DM10515.6            ; ﾉｰﾄﾞ22 通信正常
+MSTRT F_ERROR_DISP #2
+LD DM11023.3             ; RB3 ALM
+MEP
+AND DM11023.4            ; RB3 SV
+ANB DM11023.0            ; RB3 PEND
+ANB R44308               ; *非常停止出力
+AND DM10515.7            ; ﾉｰﾄﾞ23 通信正常
+MSTRT F_ERROR_DISP #3
+LD DM11150.3             ; SCRBC1 Error
+MEP
+ANB R44308               ; *非常停止出力
+AND DM10515.15           ; ﾉｰﾄﾞ31 通信正常
+MSTRT F_ERROR_DISP #4
+;Driver Error
+LDB R1110                ; 巻出しﾓｰﾀ異常
+TMR @10 #10
+CON
+ANP @T10
+ANB R44308               ; *非常停止出力
+MSTRT F_ERROR_DISP #5
+LDB R1111                ; 巻取りﾓｰﾀ異常
+TMR @11 #10
+CON
+ANP @T11
+ANB R44308               ; *非常停止出力
+MSTRT F_ERROR_DISP #6
+LDB R1109                ; ﾌｰﾌﾟ送りﾓｰﾀ過昇
+TMR @12 #10
+CON
+ANP @T12
+ANB R44308               ; *非常停止出力
+MSTRT F_ERROR_DISP #7
+LDB R1112                ; M-04 Alarm(過昇)
+TMR @13 #10
+CON
+ANP @T13
+ANB R44308               ; *非常停止出力
+MSTRT F_ERROR_DISP #8
+;Filter搬送RB  干渉検出
+LDB R46112               ; _HOMEﾓｰﾄﾞ選択中
+MPS
+LDB DM11352.0            ; ﾌｰﾌﾟ側干渉外(PLC→RC侵入許可)
+ANB DM11152.0            ; ﾌｰﾌﾟ側干渉外(RC→PLC動作許可)
+AND DM11152.15           ; SCRBC1 動作中
+ANL
+MEP
+ANB R44308               ; *非常停止出力
+AND DM10515.15           ; ﾉｰﾄﾞ31 通信正常
+MSTRT F_ERROR_DISP #10
+MPP
+LDB DM11352.1            ; ﾌﾚｰﾑ搬送側干渉外(PLC→RC侵入許可
+ANB DM11152.1            ; ﾌﾚｰﾑ搬送側干渉外(RC→PLC動作許可
+AND DM11152.15           ; SCRBC1 動作中
+ANL
+MEP
+ANB R44308               ; *非常停止出力
+AND DM10515.15           ; ﾉｰﾄﾞ31 通信正常
+MSTRT F_ERROR_DISP #11
+LD DM10515.15            ; ﾉｰﾄﾞ31 通信正常
+MPS
+AND<=.L DM11157 -36000   ; SCRBC1 X軸現在位置(2ﾜｰﾄﾞ)
+OUT @MR010               ; RCRB 禁止ｴﾘｱ①
+MRD
+LD>=.L DM11157 -3000     ; SCRBC1 X軸現在位置(2ﾜｰﾄﾞ)
+AND>=.L DM11159 +34000   ; SCRBC1 Y軸現在位置(2ﾜｰﾄﾞ)
+ANL
+OUT @MR011               ; RCRB 禁止ｴﾘｱ②
+MRD
+LD>=.L DM11157 +40800    ; SCRBC1 X軸現在位置(2ﾜｰﾄﾞ)
+AND>=.L DM11159 +8400    ; SCRBC1 Y軸現在位置(2ﾜｰﾄﾞ)
+ANL
+OUT @MR013               ; RCRB 禁止ｴﾘｱ④
+MPP
+LD>=.L DM11157 +23600    ; SCRBC1 X軸現在位置(2ﾜｰﾄﾞ)
+AND>=.L DM11159 +32100   ; SCRBC1 Y軸現在位置(2ﾜｰﾄﾞ)
+ANL
+OUT @MR014               ; RCRB 禁止ｴﾘｱ⑤
+;'計算ｴﾗｰ予防の為、近傍ｴﾘｱ内でのみ計算
+;IF (-36000 <= DM11157.L) AND (DM11157.L <= -12000) AND (DM11159.L >= 15000) THEN    
+;  '干渉座標群の近似値 y = 0.3629x + 31563
+; 
+;  'X座標からYの閾値座標算出
+;  @DM0.L = (0.3629 * DM11157.L) + 31563 - 2000
+;
+;  '禁止ｴﾘｱ内かﾁｪｯｸ
+;  IF (DM11159.L > @DM0.L) THEN
+;    SET(@MR12)
+;  ELSE
+;    RES(@MR12)
+;  END IF
+;ELSE
+;  RES(@MR12)                    '禁止ｴﾘｱ近傍ではないのでﾌﾗｸﾞOFF
+;END IF
+LD DM10515.15            ; ﾉｰﾄﾞ31 通信正常
+NCJ #1001
+;'計算ｴﾗｰ予防の為、近傍ｴﾘｱ内でのみ計算
+;
+;IF (-36000 <= DM11157.L) AND (DM11157.L <= -12000) AND (DM11159.L >= 15000) THEN    
+;
+LD>=.L DM11157 -36000    ; SCRBC1 X軸現在位置(2ﾜｰﾄﾞ)
+OUT @VB00
+LD<=.L DM11157 -12000    ; SCRBC1 X軸現在位置(2ﾜｰﾄﾞ)
+AND @VB00
+OUT @VB01
+LD>=.L DM11159 +15000    ; SCRBC1 Y軸現在位置(2ﾜｰﾄﾞ)
+AND @VB01
+NCJ #2000
+;  '干渉座標群の近似値 y = 0.3629x + 31563
+;
+;  'X座標からYの閾値座標算出
+;
+;  @DM0.L = (0.3629 * DM11157.L) + 31563 - 2000
+;
+LD CR2002                ; 常時ON
+LDA.L DM11157            ; SCRBC1 X軸現在位置(2ﾜｰﾄﾞ)
+CON
+FLOAT.L
+CON
+MUL.F +0.3629
+CON
+ADD.F +31563
+CON
+SUB.F +2000
+CON
+INTG.L
+CON
+STA.L @DM0
+;  '禁止ｴﾘｱ内かﾁｪｯｸ
+;
+;  IF (DM11159.L > @DM0.L) THEN
+;
+LD>.L DM11159 @DM0       ; SCRBC1 Y軸現在位置(2ﾜｰﾄﾞ)
+NCJ #2001
+;    SET(@MR12)
+;
+LD CR2002                ; 常時ON
+SET @MR012               ; RCRB 禁止ｴﾘｱ③
+;  ELSE
+;
+LD CR2002                ; 常時ON
+CJ #2002
+LABEL #2001
+;    RES(@MR12)
+;
+LD CR2002                ; 常時ON
+RES @MR012               ; RCRB 禁止ｴﾘｱ③
+;  END IF
+;
+LABEL #2002
+;ELSE
+;
+LD CR2002                ; 常時ON
+CJ #2003
+LABEL #2000
+;  RES(@MR12)                    '禁止ｴﾘｱ近傍ではないのでﾌﾗｸﾞOFF
+;
+LD CR2002                ; 常時ON
+RES @MR012               ; RCRB 禁止ｴﾘｱ③
+;END IF
+LABEL #2003
+LABEL #1001
+;
+LDB DM11152.2            ; SCRBC1 逆手系ｴﾗｰ
+ANB @MR010               ; RCRB 禁止ｴﾘｱ①
+ANB @MR011               ; RCRB 禁止ｴﾘｱ②
+ANB @MR012               ; RCRB 禁止ｴﾘｱ③
+ANB @MR013               ; RCRB 禁止ｴﾘｱ④
+ANB @MR014               ; RCRB 禁止ｴﾘｱ⑤
+INV
+LD<>.L DM11157 +0        ; SCRBC1 X軸現在位置(2ﾜｰﾄﾞ)
+OR<>.L DM11159 +0        ; SCRBC1 Y軸現在位置(2ﾜｰﾄﾞ)
+OR<>.L DM11161 +0        ; SCRBC1 Z軸現在位置(2ﾜｰﾄﾞ)
+OR<>.L DM11163 +0        ; SCRBC1 θ軸現在位置(2ﾜｰﾄﾞ)
+ANL
+AND DM11152.15           ; SCRBC1 動作中
+MEP
+ANB R44308               ; *非常停止出力
+MSTRT F_ERROR_DISP #12
+LD MR7301                ; ﾊﾝﾄﾞ1 上昇
+AND R4501                ; ﾊﾝﾄﾞ1 上昇端
+ANB R4500                ; ﾊﾝﾄﾞ1 下降端
+AND MR7303               ; ﾊﾝﾄﾞ2 上昇
+AND R4503                ; ﾊﾝﾄﾞ2 上昇端
+ANB R4502                ; ﾊﾝﾄﾞ2 下降端
+INV
+AND DM11152.15           ; SCRBC1 動作中
+MEP
+ANB R44308               ; *非常停止出力
+MSTRT F_ERROR_DISP #13
+;ﾌﾚｰﾑ搬送RB Y軸  干渉検出
+LDB R46112               ; _HOMEﾓｰﾄﾞ選択中
+ANB DM11352.1            ; ﾌﾚｰﾑ搬送側干渉外(PLC→RC侵入許可
+ANB DM11152.1            ; ﾌﾚｰﾑ搬送側干渉外(RC→PLC動作許可
+AND DM11007.2            ; RB1 MOVE
+LDB R34000               ; Teaching
+ORB B39B5                ; JISL ON=ｲﾝﾁﾝｸﾞ T.P
+ORB R47500               ; _Group1　ﾒﾝﾃ動作中
+ANL
+MEP
+ANB R44308               ; *非常停止出力
+AND DM10515.5            ; ﾉｰﾄﾞ21 通信正常
+AND DM10515.15           ; ﾉｰﾄﾞ31 通信正常
+MSTRT F_ERROR_DISP #20
+LD>=.L DM11000 +16000    ; RB1現在位置
+AND<=.L DM11000 +42000   ; RB1現在位置
+AND DM11007.2            ; RB1 MOVE
+LDB R34000               ; Teaching
+ORB B39B5                ; JISL ON=ｲﾝﾁﾝｸﾞ T.P
+ORB R47500               ; _Group1　ﾒﾝﾃ動作中
+ANL
+MPS
+LD MR7100                ; 溶着1 下降
+ORB R4101                ; 溶着1 上昇端
+ANL
+MEP
+ANB R44308               ; *非常停止出力
+AND DM10515.5            ; ﾉｰﾄﾞ21 通信正常
+MSTRT F_ERROR_DISP #21
+MPP
+LD MR7102                ; 溶着2 下降
+ORB R4103                ; 溶着2 上昇端
+ANL
+MEP
+ANB R44308               ; *非常停止出力
+AND DM10515.5            ; ﾉｰﾄﾞ21 通信正常
+MSTRT F_ERROR_DISP #22
+LD>.L DM11016 +4000      ; RB3現在位置
+AND DM11007.2            ; RB1 MOVE
+LDB R34000               ; Teaching
+ORB B39B5                ; JISL ON=ｲﾝﾁﾝｸﾞ T.P
+ORB R47500               ; _Group1　ﾒﾝﾃ動作中
+ANL
+MEP
+ANB R44308               ; *非常停止出力
+AND DM10515.5            ; ﾉｰﾄﾞ21 通信正常
+AND DM10515.7            ; ﾉｰﾄﾞ23 通信正常
+MSTRT F_ERROR_DISP #23
+;ﾌﾚｰﾑ搬送RB X軸  干渉検出
+LDB R46112               ; _HOMEﾓｰﾄﾞ選択中
+ANB DM11352.1            ; ﾌﾚｰﾑ搬送側干渉外(PLC→RC侵入許可
+ANB DM11152.1            ; ﾌﾚｰﾑ搬送側干渉外(RC→PLC動作許可
+AND DM11015.2            ; RB2 MOVE
+LDB R34000               ; Teaching
+ORB B39B5                ; JISL ON=ｲﾝﾁﾝｸﾞ T.P
+ORB R47500               ; _Group1　ﾒﾝﾃ動作中
+ANL
+MEP
+ANB R44308               ; *非常停止出力
+AND DM10515.6            ; ﾉｰﾄﾞ22 通信正常
+AND DM10515.15           ; ﾉｰﾄﾞ31 通信正常
+MSTRT F_ERROR_DISP #25
+LD>=.L DM11000 +16000    ; RB1現在位置
+AND<=.L DM11000 +42000   ; RB1現在位置
+AND DM11015.2            ; RB2 MOVE
+LDB R34000               ; Teaching
+ORB B39B5                ; JISL ON=ｲﾝﾁﾝｸﾞ T.P
+ORB R47500               ; _Group1　ﾒﾝﾃ動作中
+ANL
+MPS
+LD MR7100                ; 溶着1 下降
+ORB R4101                ; 溶着1 上昇端
+ANL
+MEP
+ANB R44308               ; *非常停止出力
+AND DM10515.6            ; ﾉｰﾄﾞ22 通信正常
+MSTRT F_ERROR_DISP #26
+MPP
+LD MR7102                ; 溶着2 下降
+ORB R4103                ; 溶着2 上昇端
+ANL
+MEP
+ANB R44308               ; *非常停止出力
+AND DM10515.6            ; ﾉｰﾄﾞ22 通信正常
+MSTRT F_ERROR_DISP #27
+LD>.L DM11016 +4000      ; RB3現在位置
+AND DM11015.2            ; RB2 MOVE
+LDB R34000               ; Teaching
+ORB B39B5                ; JISL ON=ｲﾝﾁﾝｸﾞ T.P
+ORB R47500               ; _Group1　ﾒﾝﾃ動作中
+ANL
+MEP
+ANB R44308               ; *非常停止出力
+AND DM10515.6            ; ﾉｰﾄﾞ22 通信正常
+AND DM10515.7            ; ﾉｰﾄﾞ23 通信正常
+MSTRT F_ERROR_DISP #28
+;ﾌﾚｰﾑ反転RB Z軸  干渉検出
+LD>.L DM11000 +63000     ; RB1現在位置
+AND>.L DM11016 +2000     ; RB3現在位置
+LD DM11007.2             ; RB1 MOVE
+OR DM11015.2             ; RB2 MOVE
+ANL
+AND DM11023.2            ; RB3 MOVE
+MEP
+ANB R44308               ; *非常停止出力
+AND DM10515.5            ; ﾉｰﾄﾞ21 通信正常
+AND DM10515.6            ; ﾉｰﾄﾞ22 通信正常
+AND DM10515.7            ; ﾉｰﾄﾞ23 通信正常
+MSTRT F_ERROR_DISP #30
+LD>.L DM11000 +62000     ; RB1現在位置
+AND>.L DM11016 +3000     ; RB3現在位置
+LD R4304                 ; ﾌﾚｰﾑｾｯﾄ前後1 ｸﾗﾝﾌﾟ側端
+ORB R4305                ; ﾌﾚｰﾑｾｯﾄ前後1 逃げ端
+OR R4306                 ; ﾌﾚｰﾑｾｯﾄ前後2 ｸﾗﾝﾌﾟ側端
+ORB R4307                ; ﾌﾚｰﾑｾｯﾄ前後2 逃げ端
+ORB MR7201               ; ﾌﾚｰﾑｾｯﾄ 後退
+ANL
+AND DM11023.2            ; RB3 MOVE
+MEP
+ANB R44308               ; *非常停止出力
+AND DM10515.5            ; ﾉｰﾄﾞ21 通信正常
+AND DM10515.7            ; ﾉｰﾄﾞ23 通信正常
+MSTRT F_ERROR_DISP #31
+;
+LD MR10000               ; ﾋｰﾀｰ1 過昇温ﾌﾗｸﾞ
+MSTRT F_ERROR_DISP #50
+LD MR10001               ; ﾋｰﾀｰ2 過昇温ﾌﾗｸﾞ
+MSTRT F_ERROR_DISP #51
+;作業者続行不可能選択  (ﾌｨﾙﾀ残り解消不能等)
+LD MR20700               ; 作業者動作続行不可能選択
+MSTRT F_ERROR_DISP #62
+END
+ENDH

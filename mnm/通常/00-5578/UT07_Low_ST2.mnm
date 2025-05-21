@@ -1,0 +1,1548 @@
+DEVICE:53
+;MODULE:UT07_Low_ST2
+;MODULE_TYPE:0
+;SCRIPT_TYPE:
+;<h1/>□_入力受け
+;関連する入力受け(ｾﾝｻのﾃﾞｨﾚｲﾀｲﾏ等)を必要があれば作成する。
+;通常は入力ﾕﾆｯﾄに入力時定数(ﾃﾞｨﾚｲ)があるので直接使用しても問題は無い。
+LD X04                   ; 低温検査安全扉正常まとめ
+OR M37                   ; ｲﾝﾀｰﾛｯｸ解除ﾓｰﾄﾞ
+TMR K701 K5              ; LoST2扉閉
+;ｺﾝﾀｸﾄﾍｯﾄﾞID
+LD X1074                 ; LoST2_部_ｺﾝﾀｸﾄﾍｯﾄﾞID_1
+OUT D4106.0
+LD X1075                 ; LoST2_部_ｺﾝﾀｸﾄﾍｯﾄﾞID_2
+OUT D4106.1
+LD X1076                 ; LoST2_部_ｺﾝﾀｸﾄﾍｯﾄﾞID_4
+OUT D4106.2
+;ﾊﾟﾚｯﾄID
+LD X1077                 ; LoST2_部_ﾊﾟﾚｯﾄID_1
+OUT D4107.0
+LD X1078                 ; LoST2_部_ﾊﾟﾚｯﾄID_2
+OUT D4107.1
+LD X1079                 ; LoST2_部_ﾊﾟﾚｯﾄID_4
+OUT D4107.2
+;ID保持
+LD M71                   ; 自動運転開始BZ
+AND L700                 ; Lo検査ST2_有効状態
+LD M4912                 ; LoST2_ID保持ﾄﾘｶﾞ
+ANB M4910                ; LoST2_無効中
+ORL
+AND M71                  ; 自動運転開始BZ
+OUT M4912                ; LoST2_ID保持ﾄﾘｶﾞ
+;____ｺﾝﾀｸﾄﾍｯﾄﾞID保持
+;※PC送信用は生ﾃﾞｰﾀに変更
+LD L700                  ; Lo検査ST2_有効状態
+MPS
+TMR K706 K5              ; LoST2_ｺﾝﾀｸﾄﾍｯﾄﾞID_更新_DLY
+MPP
+AND T706                 ; LoST2_ｺﾝﾀｸﾄﾍｯﾄﾞID_更新_DLY
+@MOV D4106 D4100         ; LoST2_ｺﾝﾀｸﾄﾍｯﾄﾞID_Copy  LoST2_ｺﾝﾀｸﾄﾍｯﾄﾞID
+LD CR2002                ; 常時ON
+MOV D4106 W0129          ; LoST2_ｺﾝﾀｸﾄﾍｯﾄﾞID_Copy  低温検査ﾃｽﾄﾍｯﾄﾞID#2
+LDB L700                 ; Lo検査ST2_有効状態
+MOV K0 D4100             ; LoST2_ｺﾝﾀｸﾄﾍｯﾄﾞID
+;____ﾊﾟﾚｯﾄID保持
+LD L700                  ; Lo検査ST2_有効状態
+LD M4621                 ; RB6_ﾜｰｸ受取り位置(ID確認位置)
+OR T707                  ; LoST2_ﾊﾟﾚｯﾄID_更新_DLY
+ANL
+TMR K707 K5              ; LoST2_ﾊﾟﾚｯﾄID_更新_DLY
+@MOV D4107 D4101         ; LoST2_ﾊﾟﾚｯﾄID_ｾﾝｻ状態  LoST2_ﾊﾟﾚｯﾄID
+LD CR2002                ; 常時ON
+MOV D4101 W0123          ; LoST2_ﾊﾟﾚｯﾄID  低温検査ﾊﾟﾚｯﾄID#2
+LDB L700                 ; Lo検査ST2_有効状態
+MOV K0 D4101             ; LoST2_ﾊﾟﾚｯﾄID
+;<h1/>__ST_有効/無効選択
+;段取り状態中ﾌﾗｸﾞの追加
+;自動中は段取り状態中に、ST上のﾜｰｸ無、RBﾊﾝﾄﾞﾜｰｸ無し、供給部ﾜｰｸ無しにて無効状態OKとなる
+LDPB X107F               ; ST2電特検査_有効/無効SW
+ANPB B114A               ; LoST2検査_有効/無効_Tpb
+INV
+ANB L700                 ; Lo検査ST2_有効状態
+OR M4904                 ; LoST2検査_有効確認要求
+LD M300                  ; PC通信正常
+OR M3                    ; OFFLINE_MODE
+ANL
+ANB M4905                ; LoST2検査_有効確認OK
+OUT M4904                ; LoST2検査_有効確認要求
+LD M4904                 ; LoST2検査_有効確認要求
+AND W0107.1              ; Lo_ST2ﾁｪｯｶ-確認要求
+LD W07.1                 ; Lo_ST2ﾁｪｯｶ-確認完了
+OR M3                    ; OFFLINE_MODE
+ANL
+OUT M4905                ; LoST2検査_有効確認OK
+LD M4905                 ; LoST2検査_有効確認OK
+ANB W03.2                ; ｽﾃｰｼﾞ#2 無効切替要求
+LDPB X107F               ; ST2電特検査_有効/無効SW
+ANPB B114A               ; LoST2検査_有効/無効_Tpb
+ANB W03.2                ; ｽﾃｰｼﾞ#2 無効切替要求
+ANB B0E8                 ; B0E8_233)LoST2 ﾋｰﾀｰ上昇ﾀｲﾑｱｳﾄ異
+INV
+AND L700                 ; Lo検査ST2_有効状態
+ORL
+OUT M4906                ; LoST2検査_有効/無効要求
+LD M71                   ; 自動運転開始BZ
+LDB M3482                ; ﾊﾝﾄﾞ1_Lo検査未了品
+ANB M3487                ; ﾊﾝﾄﾞ1_Lo検査ST2再検品
+OR M3483                 ; ﾊﾝﾄﾞ1_Lo検査完了品(排出ﾜｰｸ)
+ANL
+LDB M3492                ; ﾊﾝﾄﾞ2_Lo検査未了品
+ANB M3497                ; ﾊﾝﾄﾞ2_Lo検査ST2再検品
+OR M3493                 ; ﾊﾝﾄﾞ2_Lo検査完了品(排出ﾜｰｸ)
+ANL
+AND= D4201 K0            ; LoST2 ﾜｰｸ有無記憶
+LDB M4985                ; U7_起動中
+LD M4501                 ; U07-1_S01_
+ANB M3402                ; 【搬送】搬送→Lo_ST2搬送開始
+ORL
+ANL
+ANB M3532                ; ﾊﾝﾄﾞ1_LoST2給材中ﾌﾗｸﾞ
+ANB M3533                ; ﾊﾝﾄﾞ2_LoST2給材中ﾌﾗｸﾞ
+OUT M4907                ; LoST2_自動中無効条件OK
+LDB M71                  ; 自動運転開始BZ
+OR M4907                 ; LoST2_自動中無効条件OK
+OUT M4908                ; LoST2_無効OK条件
+LD M4909                 ; LoST2_無効予約(自動運転)
+ANB M4910                ; LoST2_無効中
+ANP M4906                ; LoST2検査_有効/無効要求
+OUT M4911                ; LoST2_予約ｷｬﾝｾﾙ
+LDP M4906                ; LoST2検査_有効/無効要求
+AND L700                 ; Lo検査ST2_有効状態
+AND M71                  ; 自動運転開始BZ
+ANB M4909                ; LoST2_無効予約(自動運転)
+LD M4909                 ; LoST2_無効予約(自動運転)
+ANB M4910                ; LoST2_無効中
+ANB M4911                ; LoST2_予約ｷｬﾝｾﾙ
+ORL
+OUT M4909                ; LoST2_無効予約(自動運転)
+LD M4909                 ; LoST2_無効予約(自動運転)
+AND M4908                ; LoST2_無効OK条件
+LDP M4906                ; LoST2検査_有効/無効要求
+ANB M41                  ; ﾕﾆｯﾄ_起動中
+ORL
+LDB B0E2                 ; B0E2_227)LoST2_ﾃｽﾄﾍｯﾄﾞID_不一致
+ANB B0E3                 ; B0E3_228)LoST2_ﾊﾟﾚｯﾄID_不一致
+INV
+MEP
+ORL
+LD M4910                 ; LoST2_無効中
+ANB L700                 ; Lo検査ST2_有効状態
+ORL
+OUT M4910                ; LoST2_無効中
+;<h1/>__ST_有効処理
+LDP M4906                ; LoST2検査_有効/無効要求
+LD<> D4106 K0            ; LoST2_ｺﾝﾀｸﾄﾍｯﾄﾞID_Copy
+AND<> D4107 K0           ; LoST2_ﾊﾟﾚｯﾄID_ｾﾝｻ状態
+AND M4621                ; RB6_ﾜｰｸ受取り位置(ID確認位置)
+LD M35                   ; 空運転ﾓｰﾄﾞ
+AND= D4106 K0            ; LoST2_ｺﾝﾀｸﾄﾍｯﾄﾞID_Copy
+AND= D4107 K0            ; LoST2_ﾊﾟﾚｯﾄID_ｾﾝｻ状態
+ORL
+ANL
+ANB L700                 ; Lo検査ST2_有効状態
+LD L700                  ; Lo検査ST2_有効状態
+ANB M4910                ; LoST2_無効中
+ANB B0E7                 ; B0E7_232)LoST2 ﾋｰﾀｰ過昇異常
+LD M300                  ; PC通信正常
+OR M3                    ; OFFLINE_MODE
+ANL
+ORL
+OUT L700                 ; Lo検査ST2_有効状態
+;JIG_ID一致確認
+LD L700                  ; Lo検査ST2_有効状態
+MPS
+LD= D4100 D3211          ; LoST2_ｺﾝﾀｸﾄﾍｯﾄﾞID  ﾊﾝﾄﾞ1 低温検査ﾃｽﾄﾍｯﾄﾞID
+AND= D4101 D3210         ; LoST2_ﾊﾟﾚｯﾄID  ﾊﾝﾄﾞ1 低温検査ﾊﾟﾚｯﾄID
+LD M35                   ; 空運転ﾓｰﾄﾞ
+AND= D4100 K0            ; LoST2_ｺﾝﾀｸﾄﾍｯﾄﾞID
+AND= D4101 K0            ; LoST2_ﾊﾟﾚｯﾄID
+ORL
+ANL
+OUT M4901                ; LoST2-搬送ﾊﾝﾄﾞ1ID一致ﾌﾗｸﾞ
+MPP
+LD= D4100 D3311          ; LoST2_ｺﾝﾀｸﾄﾍｯﾄﾞID  ﾊﾝﾄﾞ2 低温検査ﾃｽﾄﾍｯﾄﾞID
+AND= D4101 D3310         ; LoST2_ﾊﾟﾚｯﾄID  ﾊﾝﾄﾞ2 低温検査ﾊﾟﾚｯﾄID
+LD M35                   ; 空運転ﾓｰﾄﾞ
+AND= D4100 K0            ; LoST2_ｺﾝﾀｸﾄﾍｯﾄﾞID
+AND= D4101 K0            ; LoST2_ﾊﾟﾚｯﾄID
+ORL
+ANL
+OUT M4902                ; LoST2-搬送ﾊﾝﾄﾞ2ID一致ﾌﾗｸﾞ
+;<h1/>__ｺﾝﾀｸﾄﾍｯﾄﾞﾋｰﾀｰ管理
+LD L700                  ; Lo検査ST2_有効状態
+MPS
+LDB T741                 ; LoST2_温度範囲内保持監視
+LD M126                  ; 低温検査安全扉正常
+OR M37                   ; ｲﾝﾀｰﾛｯｸ解除ﾓｰﾄﾞ
+ANL
+ANL
+TMR K740 D4034           ; LoST2_初期温度上昇ﾀｲﾑｱｳﾄ監視  Lo_ST2_温度上昇時間設定値TP
+MRD
+MOV D4033 D4036          ; Lo_ST2_温度範囲外時間設定値TP
+MRD
+LD<= D4032 D21110        ; Lo_ST2_温度範囲下限設定値TP
+AND>= D4031 D21110       ; Lo_ST2_温度範囲上限設定値TP
+OR M998                  ; 仮運転用
+ANL
+TMR K741 D4036           ; LoST2_温度範囲内保持監視
+INV
+TMR K742 D4036           ; LoST2_温度範囲外監視
+MPP
+LD T741                  ; LoST2_温度範囲内保持監視
+OR M4913                 ; LoST2_温度範囲内到達
+ANB T742                 ; LoST2_温度範囲外監視
+ANL
+OUT M4913                ; LoST2_温度範囲内到達
+;<h1/>__ﾛﾎﾞｯﾄ等機器入力受け
+;<h1/>□_装置状態・動作条件
+;ﾕﾆｯﾄまとめ
+LD M4570                 ; U07-1原点
+AND M4730                ; U07-3原点
+OUT M4980                ; U7_原点
+;□ 非常停止
+LDB M4571                ; U07-1全異常
+ANB M4731                ; U07-3全異常
+INV
+OUT M4981                ; U7_即停止異常
+;□ 起動条件
+LD CR2003                ; 常時OFF
+OUT M4982                ; U7_起動条件
+;□ 起動OFF
+LDB M50                  ; 運転準備
+LD M60                   ; ｴﾗｰ発生
+OR M56                   ; 自動起動停止指令(ｻｲｸﾙ停止)
+AND M4984                ; U7_原点復帰中
+ORL
+OR M4986                 ; U7_CYCLE停止異常
+OR T15                   ; 強制停止
+OUT M4983                ; U7_起動OFF
+;□ 原点復帰
+LD M82                   ; 原点復帰開始
+ANB M4984                ; U7_原点復帰中
+OR M4984                 ; U7_原点復帰中
+ANB M4983                ; U7_起動OFF
+ANB M4991                ; U7_ERR発生
+ANB M4797                ; OriStepEND
+OUT M4984                ; U7_原点復帰中
+;□ 起動中
+LDB M4574                ; U07-1起動中
+ANB M4734                ; U07-3(検査SUB)起動中
+INV
+OUT M4985                ; U7_起動中
+;□ ｻｲｸﾙ停止異常
+LDB M4575                ; U07-1ｻｲｸﾙ停止異常
+ANB M4735                ; U07-3ｻｲｸﾙ停止異常
+INV
+OUT M4986                ; U7_CYCLE停止異常
+;□ 払出停止異常
+LDB CR2003               ; 常時OFF
+INV
+OUT M4987                ; U7_払出停止異常
+;□ 警報補助
+LDB CR2003               ; 常時OFF
+INV
+OUT M4988                ; U7_警報補助
+;□ 機器準備確認
+LD X342C                 ; L2st(RB6)ｻｰﾎﾞ状態_SV
+ANB X3429                ; L2st(RB6)運転ﾓｰﾄﾞ_RMDS
+AND X342D                ; L2st(RB6)非常停止_*EMGS
+AND X342E                ; L2st(RB6)ｱﾗｰﾑ_*ALM
+OUT M4990                ; U7_機器準備完了
+;□ ｴﾗｰ発生　一時停止
+LDB M4576                ; U07-1ｴﾗｰ発生
+ANB M4736                ; U07-3ｴﾗｰ発生
+INV
+OUT M4991                ; U7_ERR発生
+;□ 動作中ﾕﾆｯﾄ無し
+LD M4577                 ; U07-1動作無し
+AND M4737                ; U07-3動作無し
+OUT M4992                ; U7_動作無し確認
+;□ 払出しﾜｰｸ無し
+LDB X1072                ; LoST2_部_ﾜｰｸ確認(ON=有)
+ANB M3482                ; ﾊﾝﾄﾞ1_Lo検査未了品
+ANB M3487                ; ﾊﾝﾄﾞ1_Lo検査ST2再検品
+ANB M3492                ; ﾊﾝﾄﾞ2_Lo検査未了品
+ANB M3497                ; ﾊﾝﾄﾞ2_Lo検査ST2再検品
+AND M4621                ; RB6_ﾜｰｸ受取り位置(ID確認位置)
+TMR K714 K10
+LD T714
+OUT M4993                ; U7_WORK無し
+;□ ｽﾃｯﾌﾟ起動
+LD M30                   ; 自動ﾓｰﾄﾞ
+OR M31                   ; 手動ﾓｰﾄﾞ
+AND T701                 ; LoST2扉閉
+ANB M51                  ; 即停止異常(緊急停止)
+ANB M52                  ; ｻｲｸﾙ停止異常(ｻｲｸﾙ停止)
+ANB M57                  ; 全ﾕﾆｯﾄ払出完了
+ANB M59                  ; 払出停止異常まとめ
+ANB M4991                ; U7_ERR発生
+LDB M140                 ; 全一時停止
+ANB M160                 ; 低温検査一時停止
+ORB M4517                ; U07-1_S17_
+ANL
+OUT M4979                ; U7_STEP動作
+;<h1/>□_自動回路
+;<h1/>◇_状態・動作条件(補助)
+LD X1071                 ; LoST2_部_ﾜｰｸ押_上昇端
+AND M4621                ; RB6_ﾜｰｸ受取り位置(ID確認位置)
+ANB X1072                ; LoST2_部_ﾜｰｸ確認(ON=有)
+AND= D4201 K0            ; LoST2 ﾜｰｸ有無記憶
+OUT M4570                ; U07-1原点
+LDB B0E0                 ; B0E0_225)LoST2ｽﾃｰｼﾞ前後RB異常
+ANB B0E2                 ; B0E2_227)LoST2_ﾃｽﾄﾍｯﾄﾞID_不一致
+ANB B0E3                 ; B0E3_228)LoST2_ﾊﾟﾚｯﾄID_不一致
+ANB B0E4                 ; B0E4_229)LoST2_ﾜｰｸ受取異常
+ANB B0E5                 ; B0E5_230)LoST2_ﾜｰｸ受渡し異常
+ANB B0E6                 ; B0E6_231)LoST2 ﾜｰｸ情報不一致
+ANB B0E7                 ; B0E7_232)LoST2 ﾋｰﾀｰ過昇異常
+INV
+OUT M4571                ; U07-1全異常
+LD M4570                 ; U07-1原点
+ANB M4574                ; U07-1起動中
+AND M4979                ; U7_STEP動作
+LD M4901                 ; LoST2-搬送ﾊﾝﾄﾞ1ID一致ﾌﾗｸﾞ
+OR M4902                 ; LoST2-搬送ﾊﾝﾄﾞ2ID一致ﾌﾗｸﾞ
+ANL
+ANB M4908                ; LoST2_無効OK条件
+OUT M4572                ; U07-1起動条件
+LDB M50                  ; 運転準備
+ORB L700                 ; Lo検査ST2_有効状態
+OR M4986                 ; U7_CYCLE停止異常
+OR T15                   ; 強制停止
+OUT M4573                ; U07-1起動OFF
+LD M73                   ; 各工程起動指令
+AND M4572                ; U07-1起動条件
+ANB B101D                ; 途中投入選択TP(1:単独_0:連動)
+OR M4574                 ; U07-1起動中
+ANB M4573                ; U07-1起動OFF
+ANB M4563                ; U07-1 StepEnd
+OUT M4574                ; U07-1起動中
+;ﾕﾆｯﾄ1-1 ｻｲｸﾙ停止異常
+LDB CR2003               ; 常時OFF
+INV
+OUT M4575                ; U07-1ｻｲｸﾙ停止異常
+;ﾕﾆｯﾄ1-1 ｴﾗｰ発生まとめ
+LDB B0E1                 ; B0E1_226)LoST2ｸﾗﾝﾌﾟ開閉CLS異常
+ANB B0FF                 ; B0FF_256)LoST2ﾜｰｸ検査中
+ANB B0FE                 ; B0FE_255)LoST2ﾜｰｸ除去要求
+INV
+OUT M4576                ; U07-1ｴﾗｰ発生
+;ﾕﾆｯﾄ1-1 停止判定
+LD= D4000 D4005          ; LoST2-1自動運転ｽﾃｯﾌﾟ  LoST2-1動作中判定
+ORB M4574                ; U07-1起動中
+TMR K710 K20             ; 停止完了判定ﾀｲﾏｰ
+LD CR2002                ; 常時ON
+MOV D4000 D4005          ; LoST2-1自動運転ｽﾃｯﾌﾟ  LoST2-1動作中判定
+LD T710                  ; 停止完了判定ﾀｲﾏｰ
+OUT M4577                ; U07-1動作無し
+;□
+;□　ﾕﾆｯﾄ1-1 自動運転ステップ開始
+;□
+LD CR2002                ; 常時ON
+FMOV K0 M4500 K4         ; U07-1_S00_
+LDB M4574                ; U07-1起動中
+MOV K0 D4000             ; LoST2-1自動運転ｽﾃｯﾌﾟ
+LD M4574                 ; U07-1起動中
+MOV D4000 Z1             ; LoST2-1自動運転ｽﾃｯﾌﾟ
+SET M4500:Z1             ; U07-1_S00_
+;ﾜｰｸ有無判定等
+LD M4500                 ; U07-1_S00_
+AND M4979                ; U7_STEP動作
+INC D4000                ; LoST2-1自動運転ｽﾃｯﾌﾟ
+LD M4501                 ; U07-1_S01_
+MPS
+LDB M4993                ; U7_WORK無し
+AND M4913                ; LoST2_温度範囲内到達
+ANL
+MPS
+AND M3402                ; 【搬送】搬送→Lo_ST2搬送開始
+INC D4000                ; LoST2-1自動運転ｽﾃｯﾌﾟ
+MPP
+LD M4901                 ; LoST2-搬送ﾊﾝﾄﾞ1ID一致ﾌﾗｸﾞ
+OR M4902                 ; LoST2-搬送ﾊﾝﾄﾞ2ID一致ﾌﾗｸﾞ
+ANB X1072                ; LoST2_部_ﾜｰｸ確認(ON=有)
+ANL
+OUT M4920                ; LoST2→搬送ﾜｰｸ供給要求
+MPP
+LD M4993                 ; U7_WORK無し
+AND M36                  ; 払出処理
+ANL
+MOV K63 D4000            ; LoST2-1自動運転ｽﾃｯﾌﾟ
+LD M4502                 ; U07-1_S02_
+LD M3406                 ; 【搬送】搬送→Lo_ST2搬送完了
+OR M4922                 ; LoST2→搬送ﾜｰｸ受取り完了
+ANL
+MPS
+LDB M3402                ; 【搬送】搬送→Lo_ST2搬送開始
+ANB M3406                ; 【搬送】搬送→Lo_ST2搬送完了
+ANL
+INC D4000                ; LoST2-1自動運転ｽﾃｯﾌﾟ
+MPP
+OUT M4922                ; LoST2→搬送ﾜｰｸ受取り完了
+LD M4503                 ; U07-1_S03_
+AND M4979                ; U7_STEP動作
+AND= D4201 K1            ; LoST2 ﾜｰｸ有無記憶
+MPS
+LD X1072                 ; LoST2_部_ﾜｰｸ確認(ON=有)
+OR M35                   ; 空運転ﾓｰﾄﾞ
+ANL
+INC D4000                ; LoST2-1自動運転ｽﾃｯﾌﾟ
+MPP
+LDB X1072                ; LoST2_部_ﾜｰｸ確認(ON=有)
+ANB M35                  ; 空運転ﾓｰﾄﾞ
+ANL
+MOV K60 D4000            ; LoST2-1自動運転ｽﾃｯﾌﾟ
+LD M4560                 ; U07-1_S60 LoST2_ﾜｰｸ受取異常
+AND B0E4                 ; B0E4_229)LoST2_ﾜｰｸ受取異常
+MOV K63 D4000            ; LoST2-1自動運転ｽﾃｯﾌﾟ
+;　　ｸﾗﾝﾌﾟ指令
+LD M4504                 ; U07-1_S04_ｸﾗﾝﾌﾟ指令
+AND M4979                ; U7_STEP動作
+AND X1070                ; LoST2_部_ﾜｰｸ押_下降端
+ANB B0E1                 ; B0E1_226)LoST2ｸﾗﾝﾌﾟ開閉CLS異常
+INC D4000                ; LoST2-1自動運転ｽﾃｯﾌﾟ
+;　　Z軸上昇確認
+LD M4505                 ; U07-1_S05_開始確認待ち
+AND T701                 ; LoST2扉閉
+AND M4979                ; U7_STEP動作
+LD L552                  ; Lo搬送高さ移動完了(HIGH)
+OR L551                  ; Lo搬送高さ移動完了(MIDLE)
+ANL
+INC D4000                ; LoST2-1自動運転ｽﾃｯﾌﾟ
+@INC D4020               ; LoST2投入回数
+LD M4506                 ; U07-1_S06_
+INC D4000                ; LoST2-1自動運転ｽﾃｯﾌﾟ
+LD M4507                 ; U07-1_S07_
+INC D4000                ; LoST2-1自動運転ｽﾃｯﾌﾟ
+LD M4508                 ; U07-1_S08_
+INC D4000                ; LoST2-1自動運転ｽﾃｯﾌﾟ
+;　　■電特検査前処理
+LD M4509                 ; U07-1_S09_
+AND M4979                ; U7_STEP動作
+AND M4602                ; RB6_位置決め条件
+MPS
+@MOV D4050 D4040         ; ｺﾈｸﾀ挿入開始位置指令Pos  RB6_指令Pos
+MPP
+AND= D4050 D4040         ; ｺﾈｸﾀ挿入開始位置指令Pos  RB6_指令Pos
+INC D4000                ; LoST2-1自動運転ｽﾃｯﾌﾟ
+LD M4510                 ; U07-1_S10_ﾌﾟﾛｰﾌﾞｱﾌﾟﾛｰﾁ移動指令
+AND M4604                ; RB6_位置決め起動指令
+INC D4000                ; LoST2-1自動運転ｽﾃｯﾌﾟ
+LD M4511                 ; U07-1_S11_到着確認
+ANB M4604                ; RB6_位置決め起動指令
+AND M4622                ; RB6_ｺﾈｸﾀ挿入開始位置
+AND M4979                ; U7_STEP動作
+INC D4000                ; LoST2-1自動運転ｽﾃｯﾌﾟ
+LD M4512                 ; U07-1_S12_起動条件確認
+AND M4979                ; U7_STEP動作
+AND M4602                ; RB6_位置決め条件
+MPS
+@MOV D4051 D4040         ; ｺﾈｸﾀ挿入押込み量※1指令Pos  RB6_指令Pos
+MPP
+AND= D4051 D4040         ; ｺﾈｸﾀ挿入押込み量※1指令Pos  RB6_指令Pos
+INC D4000                ; LoST2-1自動運転ｽﾃｯﾌﾟ
+LD M4513                 ; U07-1_S13_ｺﾈｸﾀ押込位置移動指指令
+AND M4604                ; RB6_位置決め起動指令
+INC D4000                ; LoST2-1自動運転ｽﾃｯﾌﾟ
+LD M4514                 ; U07-1_S14_到着確認
+ANB M4604                ; RB6_位置決め起動指令
+AND M4623                ; RB6_ｺﾈｸﾀ挿入押込み完了位置
+INC D4000                ; LoST2-1自動運転ｽﾃｯﾌﾟ
+;<h1/>__S15_電特検査処理開始
+LD M4515                 ; U07-1_S15_検査SUB動作無確認
+AND M4979                ; U7_STEP動作
+ANB M4734                ; U07-3(検査SUB)起動中
+INC D4000                ; LoST2-1自動運転ｽﾃｯﾌﾟ
+LD M4516                 ; U07-1_S16_検査SUB開始ﾌﾗｸﾞ
+AND M4979                ; U7_STEP動作
+AND M4734                ; U07-3(検査SUB)起動中
+INC D4000                ; LoST2-1自動運転ｽﾃｯﾌﾟ
+LD M4517                 ; U07-1_S17_
+AND M4979                ; U7_STEP動作
+ANB M4734                ; U07-3(検査SUB)起動中
+ANB M140                 ; 全一時停止
+ANB M160                 ; 低温検査一時停止
+INC D4000                ; LoST2-1自動運転ｽﾃｯﾌﾟ
+LD M4518                 ; U07-1_S18_
+AND M4979                ; U7_STEP動作
+AND M4602                ; RB6_位置決め条件
+MPS
+@MOV D4052 D4040         ; ｺﾈｸﾀ抜き位置Pos  RB6_指令Pos
+MPP
+AND= D4052 D4040         ; ｺﾈｸﾀ抜き位置Pos  RB6_指令Pos
+INC D4000                ; LoST2-1自動運転ｽﾃｯﾌﾟ
+LD M4519                 ; U07-1_S19_ｺﾈｸﾀ抜き位置移動指令
+AND M4604                ; RB6_位置決め起動指令
+INC D4000                ; LoST2-1自動運転ｽﾃｯﾌﾟ
+;　　ｽﾃｰｼﾞ後退
+LD M4520                 ; U07-1_S20_到着確認
+ANB M4604                ; RB6_位置決め起動指令
+AND M4624                ; RB6_ｺﾈｸﾀ抜き位置
+INC D4000                ; LoST2-1自動運転ｽﾃｯﾌﾟ
+LD M4521                 ; U07-1_S21_起動条件確認
+AND M4979                ; U7_STEP動作
+AND M4602                ; RB6_位置決め条件
+MPS
+@MOV K1 D4040            ; RB6_指令Pos
+MPP
+AND= K1 D4040            ; RB6_指令Pos
+INC D4000                ; LoST2-1自動運転ｽﾃｯﾌﾟ
+LD M4522                 ; U07-1_S22_ﾜｰｸ受取位置移動指令
+AND M4604                ; RB6_位置決め起動指令
+INC D4000                ; LoST2-1自動運転ｽﾃｯﾌﾟ
+LD M4523                 ; U07-1_S23_到着確認
+ANB M4604                ; RB6_位置決め起動指令
+AND M4621                ; RB6_ﾜｰｸ受取り位置(ID確認位置)
+INC D4000                ; LoST2-1自動運転ｽﾃｯﾌﾟ
+LD M4524                 ; U07-1_S24_
+AND M4979                ; U7_STEP動作
+INC D4000                ; LoST2-1自動運転ｽﾃｯﾌﾟ
+;<h1/>__S25_ﾜｰｸ除材要求
+LDB M3482                ; ﾊﾝﾄﾞ1_Lo検査未了品
+ANB M3487                ; ﾊﾝﾄﾞ1_Lo検査ST2再検品
+ANB M3492                ; ﾊﾝﾄﾞ2_Lo検査未了品
+ANB M3497                ; ﾊﾝﾄﾞ2_Lo検査ST2再検品
+ANB M3522                ; ﾊﾝﾄﾞ1LoST2除材中ﾌﾗｸﾞ
+ANB M3523                ; ﾊﾝﾄﾞ2LoST2除材中ﾌﾗｸﾞ
+ANB M3575                ; Lo_ST1-3 無効予約ｽﾃｰｼﾞ有ﾌﾗｸﾞ
+ANB M3576                ; Lo_ST1-3 温度未到達ｽﾃｰｼﾞ有ﾌﾗｸﾞ
+INV
+OUT M4925                ; LoST2_ﾜｰｸ除去要求発行許可
+;M9　M1304を上流仮置きよりﾜｰｸ除材要求なしに入れ替え
+LD M4525                 ; U07-1_S25_
+MPS
+AND M3412                ; 【搬送】LoST2除材開始
+INC D4000                ; LoST2-1自動運転ｽﾃｯﾌﾟ
+MPP
+LDB M1557                ; U2_S57_受渡可(→検査RB)
+OR M4925                 ; LoST2_ﾜｰｸ除去要求発行許可
+ANL
+OUT M4921                ; LoST2→搬送1除材要求
+LD M4526                 ; U07-1_S26_
+LD M3416                 ; 【搬送】LoST2除材完了
+OR M4923                 ; LoST2→搬送除材完了受取
+ANL
+MPS
+LDB M3412                ; 【搬送】LoST2除材開始
+ANB M3416                ; 【搬送】LoST2除材完了
+ANL
+INC D4000                ; LoST2-1自動運転ｽﾃｯﾌﾟ
+MPP
+OUT M4923                ; LoST2→搬送除材完了受取
+LD M4527                 ; U07-1_S27_
+AND M4979                ; U7_STEP動作
+AND= D4201 K0            ; LoST2 ﾜｰｸ有無記憶
+LD L552                  ; Lo搬送高さ移動完了(HIGH)
+OR L551                  ; Lo搬送高さ移動完了(MIDLE)
+OR L550                  ; ﾜｰｸ入替高さ移動完了(LOW)
+ANL
+MPS
+ANB X1072                ; LoST2_部_ﾜｰｸ確認(ON=有)
+INC D4000                ; LoST2-1自動運転ｽﾃｯﾌﾟ
+MPP
+AND X1072                ; LoST2_部_ﾜｰｸ確認(ON=有)
+OUT M4930                ; LoST2_ﾜｰｸ受渡し異常
+LD M4528                 ; U07-1_S28_
+AND M4979                ; U7_STEP動作
+INC D4000                ; LoST2-1自動運転ｽﾃｯﾌﾟ
+LD M4529                 ; U07-1_S29_
+AND M4979                ; U7_STEP動作
+MOV K63 D4000            ; LoST2-1自動運転ｽﾃｯﾌﾟ
+;ｻｲｸﾙ終了
+LD M4562                 ; U07-1_S62_
+OR CR2003                ; 常時OFF
+@MOV K63 D4000           ; LoST2-1自動運転ｽﾃｯﾌﾟ
+;<h1/>◇_電特検査SUB 状態・動作条件(補助)
+LD CR2002                ; 常時ON
+OUT M4730                ; U07-3原点
+LDB CR2003               ; 常時OFF
+INV
+OUT M4731                ; U07-3全異常
+LD M4730                 ; U07-3原点
+ANB M4734                ; U07-3(検査SUB)起動中
+AND M4979                ; U7_STEP動作
+LD M300                  ; PC通信正常
+OR M3                    ; OFFLINE_MODE
+ANL
+OUT M4732                ; U07-3起動条件
+LDB M50                  ; 運転準備
+OR M4986                 ; U7_CYCLE停止異常
+OR T15                   ; 強制停止
+OUT M4733                ; U07-3起動OFF
+LD M4516                 ; U07-1_S16_検査SUB開始ﾌﾗｸﾞ
+AND M4732                ; U07-3起動条件
+OR M4734                 ; U07-3(検査SUB)起動中
+ANB M4733                ; U07-3起動OFF
+ANB M4723                ; U07-3 StepEnd
+OUT M4734                ; U07-3(検査SUB)起動中
+;tp表示
+LD CR2002                ; 常時ON
+DW K0 D4400              ; Lo検査ST2_ｽﾃｰﾀｽ表示1
+DW K0 D4401              ; Lo検査ST2_ｽﾃｰﾀｽ表示2
+LD M4734                 ; U07-3(検査SUB)起動中
+DW K1 D4400              ; Lo検査ST2_ｽﾃｰﾀｽ表示1
+LD= D4204 K1             ; LoST2 Lo検査結果(1=OK_2=NG)
+DW K2 D4400              ; Lo検査ST2_ｽﾃｰﾀｽ表示1
+LD= D4204 K2             ; LoST2 Lo検査結果(1=OK_2=NG)
+DW K3 D4400              ; Lo検査ST2_ｽﾃｰﾀｽ表示1
+LDB L700                 ; Lo検査ST2_有効状態
+DW K4 D4400              ; Lo検査ST2_ｽﾃｰﾀｽ表示1
+DW K2 D4401              ; Lo検査ST2_ｽﾃｰﾀｽ表示2
+LD L700                  ; Lo検査ST2_有効状態
+ANB M4913                ; LoST2_温度範囲内到達
+DW K5 D4400              ; Lo検査ST2_ｽﾃｰﾀｽ表示1
+DW K1 D4401              ; Lo検査ST2_ｽﾃｰﾀｽ表示2
+;ﾕﾆｯﾄ1-3ｻｲｸﾙ停止異常
+LDB CR2003               ; 常時OFF
+INV
+OUT M4735                ; U07-3ｻｲｸﾙ停止異常
+;ﾕﾆｯﾄ1-3ｴﾗｰ発生まとめ
+LDB CR2003               ; 常時OFF
+INV
+OUT M4736                ; U07-3ｴﾗｰ発生
+;ﾕﾆｯﾄ1-3停止判定
+LD= D4002 D4007          ; LoST2-3自動運転ｽﾃｯﾌﾟ  LoST2-3動作中判定
+TMR K712 K20
+LD CR2002                ; 常時ON
+MOV D4002 D4007          ; LoST2-3自動運転ｽﾃｯﾌﾟ  LoST2-3動作中判定
+LD T712
+ORB M4734                ; U07-3(検査SUB)起動中
+OUT M4737                ; U07-3動作無し
+;□
+;□　ﾕﾆｯﾄ1-3自動運転ステップ開始
+;□
+LD CR2002                ; 常時ON
+FMOV K0 M4660 K4         ; U07-3_S0
+LDB M4734                ; U07-3(検査SUB)起動中
+MOV K0 D4002             ; LoST2-3自動運転ｽﾃｯﾌﾟ
+LD M4734                 ; U07-3(検査SUB)起動中
+MOV D4002 Z1             ; LoST2-3自動運転ｽﾃｯﾌﾟ
+SET M4660:Z1             ; U07-3_S0
+;<h1/>__S0_ﾜｰｸ有無判定
+LD M4660                 ; U07-3_S0
+MPS
+LD T701                  ; LoST2扉閉
+AND M4979                ; U7_STEP動作
+ANB M35                  ; 空運転ﾓｰﾄﾞ
+ANB M3                   ; OFFLINE_MODE
+ANL
+INC D4002                ; LoST2-3自動運転ｽﾃｯﾌﾟ
+MPP
+LD M35                   ; 空運転ﾓｰﾄﾞ
+OR M3                    ; OFFLINE_MODE
+ANL
+MPS
+AND T730                 ; Lo検査時間(仮)
+INC D4002                ; LoST2-3自動運転ｽﾃｯﾌﾟ
+MPP
+TMR K730 K500            ; Lo検査時間(仮)
+LD M4661                 ; U07-3_S1Lo検査ｽﾀｰﾄ要求
+AND W0103.7              ; 電気特性検査開始要求#2
+LD W03.7                 ; 電気特性検査ｽﾃｰｼﾞ状態#2
+ANB W03.12               ; 電気特性検査結果#2
+OR M3                    ; OFFLINE_MODE
+OR M35                   ; 空運転ﾓｰﾄﾞ
+ANL
+INC D4002                ; LoST2-3自動運転ｽﾃｯﾌﾟ
+LD M4662                 ; U07-3_S2
+LDB W03.7                ; 電気特性検査ｽﾃｰｼﾞ状態#2
+OR M3                    ; OFFLINE_MODE
+ANL
+INC D4002                ; LoST2-3自動運転ｽﾃｯﾌﾟ
+LD M4663                 ; U07-3_S3
+MPS
+AND<> D4204 K0           ; LoST2 Lo検査結果(1=OK_2=NG)
+INC D4002                ; LoST2-3自動運転ｽﾃｯﾌﾟ
+MRD
+LDB M35                  ; 空運転ﾓｰﾄﾞ
+ANB M3                   ; OFFLINE_MODE
+ANL
+MPS
+AND W03.12               ; 電気特性検査結果#2
+MOV K1 D4204             ; LoST2 Lo検査結果(1=OK_2=NG)
+MPP
+ANB W03.12               ; 電気特性検査結果#2
+MOV K2 D4204             ; LoST2 Lo検査結果(1=OK_2=NG)
+MPP
+LD M3                    ; OFFLINE_MODE
+OR M35                   ; 空運転ﾓｰﾄﾞ
+ANL
+MPS
+ANB B1038                ; OFF_LINE_検査結果(OFF=OK_ON=NG)
+MOV K1 D4204             ; LoST2 Lo検査結果(1=OK_2=NG)
+MPP
+AND B1038                ; OFF_LINE_検査結果(OFF=OK_ON=NG)
+MOV K2 D4204             ; LoST2 Lo検査結果(1=OK_2=NG)
+LD M4664                 ; U07-3_S4
+INC D4002                ; LoST2-3自動運転ｽﾃｯﾌﾟ
+LD M4665                 ; U07-3_S5
+INC D4002                ; LoST2-3自動運転ｽﾃｯﾌﾟ
+LD M4666                 ; U07-3_S6
+INC D4002                ; LoST2-3自動運転ｽﾃｯﾌﾟ
+LD M4667                 ; U07-3_S7
+INC D4002                ; LoST2-3自動運転ｽﾃｯﾌﾟ
+LD M4668                 ; U07-3_S8
+INC D4002                ; LoST2-3自動運転ｽﾃｯﾌﾟ
+LD M4669                 ; U07-3_S9
+AND T701                 ; LoST2扉閉
+AND M4979                ; U7_STEP動作
+MOV K63 D4002            ; LoST2-3自動運転ｽﾃｯﾌﾟ
+;<h1/>□_原点復帰回路
+LD CR2002                ; 常時ON
+FMOV K0 M4750 K3         ; OriStep0
+LDB M4984                ; U7_原点復帰中
+MOV K0 D4010             ; LoST2 原点復帰ｽﾃｯﾌﾟ
+LD M4984                 ; U7_原点復帰中
+MOV D4010 Z1             ; LoST2 原点復帰ｽﾃｯﾌﾟ
+SET M4750:Z1             ; OriStep0
+;原点復帰ｻｲｸﾙ監視
+LD M4984                 ; U7_原点復帰中
+TMR K700 K200            ; UNIT8原点復帰ﾀｲﾑｱｳﾄ
+;原点復帰ステップ開始
+LD M4750                 ; OriStep0
+AND T701                 ; LoST2扉閉
+AND M4979                ; U7_STEP動作
+AND L552                 ; Lo搬送高さ移動完了(HIGH)
+DW K0 D4020              ; LoST2投入回数
+CON
+INC D4010                ; LoST2 原点復帰ｽﾃｯﾌﾟ
+LD M4751                 ; OriStep1
+AND T701                 ; LoST2扉閉
+AND M4979                ; U7_STEP動作
+ANB W03.7                ; 電気特性検査ｽﾃｰｼﾞ状態#2
+INC D4010                ; LoST2 原点復帰ｽﾃｯﾌﾟ
+LD M4752                 ; OriStep2
+AND T701                 ; LoST2扉閉
+AND M4979                ; U7_STEP動作
+AND X342A                ; L2st(RB6)原点確定_HEND
+INC D4010                ; LoST2 原点復帰ｽﾃｯﾌﾟ
+LD M4753                 ; OriStep3
+AND T701                 ; LoST2扉閉
+AND M4979                ; U7_STEP動作
+AND M4602                ; RB6_位置決め条件
+MPS
+@MOV K1 D4040            ; RB6_指令Pos
+MPP
+AND= K1 D4040            ; RB6_指令Pos
+INC D4010                ; LoST2 原点復帰ｽﾃｯﾌﾟ
+LD M4754                 ; OriStep4_ｽﾃｰｼﾞ戻指令
+AND M4604                ; RB6_位置決め起動指令
+INC D4010                ; LoST2 原点復帰ｽﾃｯﾌﾟ
+LD M4755                 ; OriStep5_
+ANB M4604                ; RB6_位置決め起動指令
+AND M4621                ; RB6_ﾜｰｸ受取り位置(ID確認位置)
+INC D4010                ; LoST2 原点復帰ｽﾃｯﾌﾟ
+LD M4756                 ; OriStep6_
+AND T701                 ; LoST2扉閉
+AND M4979                ; U7_STEP動作
+AND L552                 ; Lo搬送高さ移動完了(HIGH)
+INC D4010                ; LoST2 原点復帰ｽﾃｯﾌﾟ
+LD M4757                 ; OriStep7_ｸﾗﾝﾌﾟ上昇指令
+AND T701                 ; LoST2扉閉
+AND M4979                ; U7_STEP動作
+AND X1071                ; LoST2_部_ﾜｰｸ押_上昇端
+INC D4010                ; LoST2 原点復帰ｽﾃｯﾌﾟ
+;　　ﾜｰｸ有無ﾁｪｯｸ
+LD M4758                 ; OriStep8
+AND T701                 ; LoST2扉閉
+AND M4979                ; U7_STEP動作
+MPS
+ANB X1072                ; LoST2_部_ﾜｰｸ確認(ON=有)
+MOV K10 D4010            ; LoST2 原点復帰ｽﾃｯﾌﾟ
+MPP
+AND X1072                ; LoST2_部_ﾜｰｸ確認(ON=有)
+INC D4010                ; LoST2 原点復帰ｽﾃｯﾌﾟ
+;　　ﾜｰｸ除去要求
+LD M4759                 ; OriStep9_ORGﾜｰｸ除去要求
+AND T701                 ; LoST2扉閉
+AND M4979                ; U7_STEP動作
+AND B0FE                 ; B0FE_255)LoST2ﾜｰｸ除去要求
+MOV K46 D4010            ; LoST2 原点復帰ｽﾃｯﾌﾟ
+;　　
+LD M4760                 ; OriStep10
+MPS
+AND M4980                ; U7_原点
+MOV K46 D4010            ; LoST2 原点復帰ｽﾃｯﾌﾟ
+MPP
+FMOV K0 D4200 K20        ; LoST2 INDEX NO.
+LD M4796                 ; OriStep46
+ANB M82                  ; 原点復帰開始
+MOV K47 D4010            ; LoST2 原点復帰ｽﾃｯﾌﾟ
+;<h1/>□_手動回路
+LD M31                   ; 手動ﾓｰﾄﾞ
+AND M32                  ; ﾒｲﾝ手動操作可能条件
+ANB M4985                ; U7_起動中
+ANB M4984                ; U7_原点復帰中
+LDB W03.7                ; 電気特性検査ｽﾃｰｼﾞ状態#2
+OR M3                    ; OFFLINE_MODE
+ANL
+MC
+LD M4602                 ; RB6_位置決め条件
+LD L550                  ; ﾜｰｸ入替高さ移動完了(LOW)
+OR L551                  ; Lo搬送高さ移動完了(MIDLE)
+OR L552                  ; Lo搬送高さ移動完了(HIGH)
+ANL
+ANB M4830                ; RB6_ﾜｰｸ受取り位置移動指令
+ANB M4831                ; RB6_ｺﾈｸﾀ挿入開始位置移動指令
+ANB M4832                ; RB6_ｺﾈｸﾀ挿入押込み完了位置移動指
+ANB M4833                ; RB6_ｺﾈｸﾀ抜き位置移動指令
+OUT M4820                ; RB6_ﾜｰｸ受取り位置移動OK
+OUT M4821                ; RB6_ｺﾈｸﾀ挿入開始位置移動OK
+OUT M4822                ; RB6_ｺﾈｸﾀ挿入押込み完了位置移動OK
+OUT M4823                ; RB6_ｺﾈｸﾀ抜き位置移動OK
+LDP B1140                ; RB6_ﾜｰｸ受取り位置TP-PB
+AND M4820                ; RB6_ﾜｰｸ受取り位置移動OK
+OR M4830                 ; RB6_ﾜｰｸ受取り位置移動指令
+ANB M4607                ; RB6_位置決め完了
+OUT M4830                ; RB6_ﾜｰｸ受取り位置移動指令
+MOV K1 D4040             ; RB6_指令Pos
+LDP B1141                ; RB6_ｺﾈｸﾀ挿入開始位置TP-PB
+AND M4821                ; RB6_ｺﾈｸﾀ挿入開始位置移動OK
+OR M4831                 ; RB6_ｺﾈｸﾀ挿入開始位置移動指令
+ANB M4607                ; RB6_位置決め完了
+OUT M4831                ; RB6_ｺﾈｸﾀ挿入開始位置移動指令
+MOV D4050 D4040          ; ｺﾈｸﾀ挿入開始位置指令Pos  RB6_指令Pos
+LDP B1142                ; RB6_ｺﾈｸﾀ挿入押込み完了位置TP-PB
+AND M4822                ; RB6_ｺﾈｸﾀ挿入押込み完了位置移動OK
+OR M4832                 ; RB6_ｺﾈｸﾀ挿入押込み完了位置移動指
+ANB M4607                ; RB6_位置決め完了
+OUT M4832                ; RB6_ｺﾈｸﾀ挿入押込み完了位置移動指
+MOV D4051 D4040          ; ｺﾈｸﾀ挿入押込み量※1指令Pos  RB6_指令Pos
+LDP B1143                ; RB6_ｺﾈｸﾀ抜き位置TP-PB
+AND M4823                ; RB6_ｺﾈｸﾀ抜き位置移動OK
+OR M4833                 ; RB6_ｺﾈｸﾀ抜き位置移動指令
+ANB M4607                ; RB6_位置決め完了
+OUT M4833                ; RB6_ｺﾈｸﾀ抜き位置移動指令
+MOV D4052 D4040          ; ｺﾈｸﾀ抜き位置Pos  RB6_指令Pos
+;    ｸﾗﾝﾌﾟ開閉
+LD CR2002                ; 常時ON
+ANB L514                 ; ﾊﾝﾄﾞ1st2部ﾜｰｸ受渡し動作完了
+ANB L515                 ; ﾊﾝﾄﾞ2st2部ﾜｰｸ受取り動作完了
+ANB L516                 ; ﾊﾝﾄﾞ2st2部ﾜｰｸ受渡し動作完了
+ANB L517                 ; ﾊﾝﾄﾞ1st3部ﾜｰｸ受取り動作完了
+ANB L551                 ; Lo搬送高さ移動完了(MIDLE)
+ANB L552                 ; Lo搬送高さ移動完了(HIGH)
+INV
+AND M139                 ; 安全入力OK
+AND M3302                ; U5-3_RCX240起動条件
+AND M3311                ; RCX240動作完了
+AND M4621                ; RB6_ﾜｰｸ受取り位置(ID確認位置)
+ANB M3600                ; Lo搬送XY位置移動
+OUT M4804                ; LoST2ｸﾗﾝﾌﾟ開閉_閉_起動OK
+LDP B1144                ; LoST2ｸﾗﾝﾌﾟ閉_TP-PB
+AND M4804                ; LoST2ｸﾗﾝﾌﾟ開閉_閉_起動OK
+LD M4805                 ; LoST2ｸﾗﾝﾌﾟ開閉_閉_指令
+ANB M4807                ; LoST2ｸﾗﾝﾌﾟ開閉_開__指令
+ORL
+OUT M4805                ; LoST2ｸﾗﾝﾌﾟ開閉_閉_指令
+LD CR2002                ; 常時ON
+ANB W03.7                ; 電気特性検査ｽﾃｰｼﾞ状態#2
+AND M4621                ; RB6_ﾜｰｸ受取り位置(ID確認位置)
+OUT M4806                ; LoST2ｸﾗﾝﾌﾟ開閉_開_起動OK
+LDP B1145                ; LoST2ｸﾗﾝﾌﾟ開_TP-PB
+AND M4806                ; LoST2ｸﾗﾝﾌﾟ開閉_開_起動OK
+LD M4807                 ; LoST2ｸﾗﾝﾌﾟ開閉_開__指令
+ANB M4805                ; LoST2ｸﾗﾝﾌﾟ開閉_閉_指令
+ORL
+OUT M4807                ; LoST2ｸﾗﾝﾌﾟ開閉_開__指令
+MCR
+LDP B1146                ; SWBox_ﾊﾟﾚｯﾄ前後ﾓｰﾄﾞsw
+ANB M4812                ; LoST2SwBoxMode_ﾊﾟﾚｯﾄ前後Flag
+LDPB B1146               ; SWBox_ﾊﾟﾚｯﾄ前後ﾓｰﾄﾞsw
+AND M4812                ; LoST2SwBoxMode_ﾊﾟﾚｯﾄ前後Flag
+ANB M6312                ; Hi_RBﾁｬｯｸ開可
+ANB M4813                ; LoST2SwBoxMode_ｸﾗﾝﾌﾟ&ﾊﾟﾚｯﾄFlag
+ORL
+AND= D50 K201            ; TpM-K_表示中ページNo.
+AND M31                  ; 手動ﾓｰﾄﾞ
+ANB M81                  ; 原点復帰動作中
+AND M50                  ; 運転準備
+AND M29                  ; 未使用
+OUT M4812                ; LoST2SwBoxMode_ﾊﾟﾚｯﾄ前後Flag
+LDP B1147                ; SWBox_ｸﾗﾝﾌﾟ&ﾊﾟﾚｯﾄﾓｰﾄﾞsw
+ANB M4813                ; LoST2SwBoxMode_ｸﾗﾝﾌﾟ&ﾊﾟﾚｯﾄFlag
+LDPB B1147               ; SWBox_ｸﾗﾝﾌﾟ&ﾊﾟﾚｯﾄﾓｰﾄﾞsw
+AND M4813                ; LoST2SwBoxMode_ｸﾗﾝﾌﾟ&ﾊﾟﾚｯﾄFlag
+ANB M4812                ; LoST2SwBoxMode_ﾊﾟﾚｯﾄ前後Flag
+ANB M6312                ; Hi_RBﾁｬｯｸ開可
+ORL
+AND= D50 K201            ; TpM-K_表示中ページNo.
+AND M31                  ; 手動ﾓｰﾄﾞ
+ANB M81                  ; 原点復帰動作中
+AND M50                  ; 運転準備
+AND M29                  ; 未使用
+OUT M4813                ; LoST2SwBoxMode_ｸﾗﾝﾌﾟ&ﾊﾟﾚｯﾄFlag
+;<h1/>▽_検査ｽﾃｰｼﾞRB移動ｻﾌﾞﾙｰﾁﾝ
+;　　移動POS
+LD X342A                 ; L2st(RB6)原点確定_HEND
+AND X342B                ; L2st(RB6)位置決め完了_PEND
+MPS
+AND X3420                ; L2st(RB6)完了Pos_PM1
+OUT D4044.0
+MRD
+AND X3421                ; L2st(RB6)完了Pos_PM2
+OUT D4044.1
+MRD
+AND X3422                ; L2st(RB6)完了Pos_PM4
+OUT D4044.2
+MRD
+AND X3423                ; L2st(RB6)完了Pos_PM8
+OUT D4044.3
+MRD
+AND X3424                ; L2st(RB6)完了Pos_PM16
+OUT D4044.4
+MRD
+AND X3425                ; L2st(RB6)完了Pos_PM32
+OUT D4044.5
+MRD
+AND X3426                ; L2st(RB6)完了Pos_PM64
+OUT D4044.6
+MRD
+AND X3427                ; L2st(RB6)完了Pos_PM128
+OUT D4044.7
+MPP
+INV
+MOV K0 D4044             ; RB6_完了Pos
+;'RB6 POS MANUAL JIG SETTING
+;IF D250 < K1 THEN
+;   D250 = K1
+;END IF
+;D4050 = (D250 - K1)*3 + 51   'ｺﾈｸﾀ挿入開始
+;D4051 = (D250 - K1)*3 + 52   'ｺﾈｸﾀ挿入開始
+;D4052 = (D250 - K1)*3 + 53   'ｺﾈｸﾀ挿入開始
+LD M31                   ; 手動ﾓｰﾄﾞ
+NCJ K1000
+;'RB6 POS MANUAL JIG SETTING
+;
+;IF D250 < K1 THEN
+;
+LD< D250 K1              ; 手動_JIG_NO.指定
+NCJ K2000
+;   D250 = K1
+;
+LD CR2002                ; 常時ON
+MOV K1 D250              ; 手動_JIG_NO.指定
+;END IF
+;
+LABEL K2000
+;D4050 = (D250 - K1)*3 + 51   'ｺﾈｸﾀ挿入開始
+;
+LD CR2002                ; 常時ON
+LDA D250                 ; 手動_JIG_NO.指定
+CON
+EXT
+CON
+SUB.L +1
+CON
+MUL.L +3
+CON
+ADD.L +51
+CON
+STA D4050                ; ｺﾈｸﾀ挿入開始位置指令Pos
+;D4051 = (D250 - K1)*3 + 52   'ｺﾈｸﾀ挿入開始
+;
+LD CR2002                ; 常時ON
+LDA D250                 ; 手動_JIG_NO.指定
+CON
+EXT
+CON
+SUB.L +1
+CON
+MUL.L +3
+CON
+ADD.L +52
+CON
+STA D4051                ; ｺﾈｸﾀ挿入押込み量※1指令Pos
+;D4052 = (D250 - K1)*3 + 53   'ｺﾈｸﾀ挿入開始
+LD CR2002                ; 常時ON
+LDA D250                 ; 手動_JIG_NO.指定
+CON
+EXT
+CON
+SUB.L +1
+CON
+MUL.L +3
+CON
+ADD.L +53
+CON
+STA D4052                ; ｺﾈｸﾀ抜き位置Pos
+LABEL K1000
+;
+;'RB6 POS AUTO JIG SETTING
+;D4050 = (D4215 - K1)*3 + 51   'ｺﾈｸﾀ挿入開始
+;D4051 = (D4215 - K1)*3 + 52   'ｺﾈｸﾀ挿入開始
+;D4052 = (D4215 - K1)*3 + 53   'ｺﾈｸﾀ挿入開始
+LD M30                   ; 自動ﾓｰﾄﾞ
+NCJ K1001
+;'RB6 POS AUTO JIG SETTING
+;
+;D4050 = (D4215 - K1)*3 + 51   'ｺﾈｸﾀ挿入開始
+;
+LD CR2002                ; 常時ON
+LDA D4215                ; LoST2 低温検査ﾛﾎﾞｯﾄNo.
+CON
+EXT
+CON
+SUB.L +1
+CON
+MUL.L +3
+CON
+ADD.L +51
+CON
+STA D4050                ; ｺﾈｸﾀ挿入開始位置指令Pos
+;D4051 = (D4215 - K1)*3 + 52   'ｺﾈｸﾀ挿入開始
+;
+LD CR2002                ; 常時ON
+LDA D4215                ; LoST2 低温検査ﾛﾎﾞｯﾄNo.
+CON
+EXT
+CON
+SUB.L +1
+CON
+MUL.L +3
+CON
+ADD.L +52
+CON
+STA D4051                ; ｺﾈｸﾀ挿入押込み量※1指令Pos
+;D4052 = (D4215 - K1)*3 + 53   'ｺﾈｸﾀ挿入開始
+LD CR2002                ; 常時ON
+LDA D4215                ; LoST2 低温検査ﾛﾎﾞｯﾄNo.
+CON
+EXT
+CON
+SUB.L +1
+CON
+MUL.L +3
+CON
+ADD.L +53
+CON
+STA D4052                ; ｺﾈｸﾀ抜き位置Pos
+LABEL K1001
+;
+LD= D4044 K1             ; RB6_完了Pos
+AND<> D4044 K0           ; RB6_完了Pos
+OUT M4621                ; RB6_ﾜｰｸ受取り位置(ID確認位置)
+LD= D4044 D4050          ; RB6_完了Pos  ｺﾈｸﾀ挿入開始位置指令Pos
+AND<> D4044 K0           ; RB6_完了Pos
+OUT M4622                ; RB6_ｺﾈｸﾀ挿入開始位置
+LD= D4044 D4051          ; RB6_完了Pos  ｺﾈｸﾀ挿入押込み量※1指令Pos
+AND<> D4044 K0           ; RB6_完了Pos
+OUT M4623                ; RB6_ｺﾈｸﾀ挿入押込み完了位置
+LD= D4044 D4052          ; RB6_完了Pos  ｺﾈｸﾀ抜き位置Pos
+AND<> D3544 K0           ; RB5_完了Pos
+OUT M4624                ; RB6_ｺﾈｸﾀ抜き位置
+;	検査ｽﾗｲﾀﾞ位置決め処理
+LD X342C                 ; L2st(RB6)ｻｰﾎﾞ状態_SV
+ANB X3429                ; L2st(RB6)運転ﾓｰﾄﾞ_RMDS
+LD X342A                 ; L2st(RB6)原点確定_HEND
+OR CR2002                ; 常時ON
+ANL
+AND X342D                ; L2st(RB6)非常停止_*EMGS
+AND X342E                ; L2st(RB6)ｱﾗｰﾑ_*ALM
+OUT M4600                ; RB6_状態OK
+LD M50                   ; 運転準備
+ANB M51                  ; 即停止異常(緊急停止)
+AND M4600                ; RB6_状態OK
+ANB M4604                ; RB6_位置決め起動指令
+OUT M4602                ; RB6_位置決め条件
+LDB M4510                ; U07-1_S10_ﾌﾟﾛｰﾌﾞｱﾌﾟﾛｰﾁ移動指令
+ANB M4513                ; U07-1_S13_ｺﾈｸﾀ押込位置移動指指令
+ANB M4519                ; U07-1_S19_ｺﾈｸﾀ抜き位置移動指令
+ANB M4522                ; U07-1_S22_ﾜｰｸ受取位置移動指令
+ANB M4754                ; OriStep4_ｽﾃｰｼﾞ戻指令
+INV
+LDB M4830                ; RB6_ﾜｰｸ受取り位置移動指令
+ANB M4831                ; RB6_ｺﾈｸﾀ挿入開始位置移動指令
+ANB M4832                ; RB6_ｺﾈｸﾀ挿入押込み完了位置移動指
+ANB M4833                ; RB6_ｺﾈｸﾀ抜き位置移動指令
+INV
+ORL
+OUT M4603                ; RB6_位置決め起動指令(まとめ)
+LD M4603                 ; RB6_位置決め起動指令(まとめ)
+AND M4602                ; RB6_位置決め条件
+OR M4604                 ; RB6_位置決め起動指令
+AND M50                  ; 運転準備
+ANB M4608                ; RB6_位置決め動作完了
+AND X342D                ; L2st(RB6)非常停止_*EMGS
+AND X342E                ; L2st(RB6)ｱﾗｰﾑ_*ALM
+OUT M4604                ; RB6_位置決め起動指令
+LD M4604                 ; RB6_位置決め起動指令
+@MOV D4040 D4042         ; RB6_指令Pos  RB6_ｺﾝﾄﾛｰﾗｰ指令POS
+TMH K750 K5              ; RB6ﾃﾞｰﾀ転送ﾃﾞｨﾚｲ
+LD T750                  ; RB6ﾃﾞｰﾀ転送ﾃﾞｨﾚｲ
+OR M4605                 ; RB6_位置決めｽﾀｰﾄ指令
+AND M4604                ; RB6_位置決め起動指令
+ANB T751                 ; RB6位置決め再ｽﾀｰﾄ指令
+OUT M4605                ; RB6_位置決めｽﾀｰﾄ指令
+LD M4605                 ; RB6_位置決めｽﾀｰﾄ指令
+AND Y442D                ; L2st(RB6)ｽﾀｰﾄ_CSTR
+ANB X342B                ; L2st(RB6)位置決め完了_PEND
+OR M4606                 ; RB6_位置決め起動確認
+AND M4605                ; RB6_位置決めｽﾀｰﾄ指令
+OUT M4606                ; RB6_位置決め起動確認
+LD M4606                 ; RB6_位置決め起動確認
+ANB Y442D                ; L2st(RB6)ｽﾀｰﾄ_CSTR
+AND X342B                ; L2st(RB6)位置決め完了_PEND
+AND= D4042 D4044         ; RB6_ｺﾝﾄﾛｰﾗｰ指令POS  RB6_完了Pos
+OR M4607                 ; RB6_位置決め完了
+AND M4605                ; RB6_位置決めｽﾀｰﾄ指令
+OUT M4607                ; RB6_位置決め完了
+LD M4606                 ; RB6_位置決め起動確認
+ANB Y442D                ; L2st(RB6)ｽﾀｰﾄ_CSTR
+AND X342B                ; L2st(RB6)位置決め完了_PEND
+AND<> D4042 D4044        ; RB6_ｺﾝﾄﾛｰﾗｰ指令POS  RB6_完了Pos
+TMR K751 K30             ; RB6位置決め再ｽﾀｰﾄ指令
+LD M4607                 ; RB6_位置決め完了
+ANPB M4607               ; RB6_位置決め完了
+OUT M4608                ; RB6_位置決め動作完了
+;<h1/>□_出力回路
+;ソレノイドバルブ出力
+LDB L700                 ; Lo検査ST2_有効状態
+ANB B0E7                 ; B0E7_232)LoST2 ﾋｰﾀｰ過昇異常
+TMR K720 K1800           ; Lo検査ST2ﾋｰﾀｰｴｱｰ停止ﾃﾞｨﾚｲ
+LDB T720                 ; Lo検査ST2ﾋｰﾀｰｴｱｰ停止ﾃﾞｨﾚｲ
+OR CR2002                ; 常時ON
+OUT Y2108                ; Lo検査ST2ﾋｰﾀｰｴｱｰ供給
+LDB Y2108                ; Lo検査ST2ﾋｰﾀｰｴｱｰ供給
+OUT Y2109                ; Lo検査ST2ﾋｰﾀｰｴｱｰ供給OFF
+LD L700                  ; Lo検査ST2_有効状態
+AND Y2108                ; Lo検査ST2ﾋｰﾀｰｴｱｰ供給
+AND X03                  ; 圧空元圧正常
+LD M126                  ; 低温検査安全扉正常
+OR M41                   ; ﾕﾆｯﾄ_起動中
+OR M37                   ; ｲﾝﾀｰﾛｯｸ解除ﾓｰﾄﾞ
+ANL
+OUT Y2019                ; LoST2 Heater ON
+;ｸﾗﾝﾌﾟ/ｱﾝｸﾗﾝﾌﾟ
+LD M4805                 ; LoST2ｸﾗﾝﾌﾟ開閉_閉_指令
+AND M4804                ; LoST2ｸﾗﾝﾌﾟ開閉_閉_起動OK
+OR M3455                 ; LoST2 ｸﾗﾝﾌﾟ指令(Lo給材)
+OR M4504                 ; U07-1_S04_ｸﾗﾝﾌﾟ指令
+LD Y2102                 ; LoST2ﾜｰｸ押さえ下降
+ANB Y2103                ; LoST2ﾜｰｸ押さえ上昇
+ORL
+AND M50                  ; 運転準備
+OUT Y2102                ; LoST2ﾜｰｸ押さえ下降
+LD M4807                 ; LoST2ｸﾗﾝﾌﾟ開閉_開__指令
+AND M4806                ; LoST2ｸﾗﾝﾌﾟ開閉_開_起動OK
+OR M3465                 ; LoST2_ｱﾝｸﾗﾝﾌﾟ指令(Lo除材)
+OR M4757                 ; OriStep7_ｸﾗﾝﾌﾟ上昇指令
+LD Y2103                 ; LoST2ﾜｰｸ押さえ上昇
+ANB Y2102                ; LoST2ﾜｰｸ押さえ下降
+ORL
+AND M50                  ; 運転準備
+OUT Y2103                ; LoST2ﾜｰｸ押さえ上昇
+;<h1/>____▼_検査ｽﾗｲﾀﾞ出力
+LD CR2002                ; 常時ON
+MPS
+AND D4042.0
+OUT Y4420                ; L2st(RB6)指令pos_PC1
+MRD
+AND D4042.1
+OUT Y4421                ; L2st(RB6)指令pos_PC2
+MRD
+AND D4042.2
+OUT Y4422                ; L2st(RB6)指令pos_PC4
+MRD
+AND D4042.3
+OUT Y4423                ; L2st(RB6)指令pos_PC8
+MRD
+AND D4042.4
+OUT Y4424                ; L2st(RB6)指令pos_PC16
+MRD
+AND D4042.5
+OUT Y4425                ; L2st(RB6)指令pos_PC32
+MRD
+AND D4042.6
+OUT Y4426                ; L2st(RB6)指令pos_PC64
+MPP
+AND D4042.7
+OUT Y4427                ; L2st(RB6)指令pos_PC128
+LD B114F                 ; ﾏﾆｭｱﾙﾓｰﾄﾞ切替SW(1：ﾏﾆｭｱﾙ)
+OUT Y442A                ; L2st(RB6)運転ﾓｰﾄﾞ_RMOD
+LD<> D50 K204            ; TpM-K_表示中ページNo.
+AND<> D70 K204           ; TpM-K_表示中ページNo.
+AND<> D90 K204           ; TpM-K_表示中ページNo.
+AND<> D110 K204          ; TpM-K_表示中ページNo.
+RES B114F                ; ﾏﾆｭｱﾙﾓｰﾄﾞ切替SW(1：ﾏﾆｭｱﾙ)
+LD M4752                 ; OriStep2
+ANB X342A                ; L2st(RB6)原点確定_HEND
+OUT Y442B                ; L2st(RB6)原点復帰_HOME
+LD M126                  ; 低温検査安全扉正常
+OR M37                   ; ｲﾝﾀｰﾛｯｸ解除ﾓｰﾄﾞ
+OUT Y442C                ; L2st(RB6)一時停止_*STP
+LD M4605                 ; RB6_位置決めｽﾀｰﾄ指令
+ANB M4606                ; RB6_位置決め起動確認
+OUT Y442D                ; L2st(RB6)ｽﾀｰﾄ_CSTR
+LD M16                   ; ﾘｾｯﾄPB
+ANB X342E                ; L2st(RB6)ｱﾗｰﾑ_*ALM
+OUT Y442E                ; L2st(RB6)ﾘｾｯﾄ_RES
+LD T10                   ; 運転準備ﾃﾞｨﾚｲ
+OR M4623                 ; RB6_ｺﾈｸﾀ挿入押込み完了位置
+LD W03.7                 ; 電気特性検査ｽﾃｰｼﾞ状態#2
+ANB M3                   ; OFFLINE_MODE
+ORL
+OUT Y442F                ; L2st(RB6)ｻｰﾎﾞON_SON
+;■その他制御出力
+LD M4661                 ; U07-3_S1Lo検査ｽﾀｰﾄ要求
+OUT W0103.7              ; 電気特性検査開始要求#2
+LD L700                  ; Lo検査ST2_有効状態
+ANB M4909                ; LoST2_無効予約(自動運転)
+OUT W0103.12             ; 電気特性検査ｽﾃｰｼﾞ有効/無効#2
+LD M4904                 ; LoST2検査_有効確認要求
+OUT W0107.1              ; Lo_ST2ﾁｪｯｶ-確認要求
+LD L700                  ; Lo検査ST2_有効状態
+LD M4913                 ; LoST2_温度範囲内到達
+LDB M4913                ; LoST2_温度範囲内到達
+AND T1                   ; 0.3Secｸﾛｯｸ
+ORL
+ANL
+ANB M4909                ; LoST2_無効予約(自動運転)
+LD M4909                 ; LoST2_無効予約(自動運転)
+AND CR2006               ; 1sｸﾛｯｸﾊﾟﾙｽ
+ORL
+OUT Y2091                ; LoST2__有効/無効表示
+OUT B164A                ; LoST2__有効/無効表示
+;□□　　パネル表示　　□□
+LD M4830                 ; RB6_ﾜｰｸ受取り位置移動指令
+AND CR2006               ; 1sｸﾛｯｸﾊﾟﾙｽ
+OR M4621                 ; RB6_ﾜｰｸ受取り位置(ID確認位置)
+OUT B1640                ; UNIT7-1-1 TP-PL
+LD M4831                 ; RB6_ｺﾈｸﾀ挿入開始位置移動指令
+AND CR2006               ; 1sｸﾛｯｸﾊﾟﾙｽ
+OR M4622                 ; RB6_ｺﾈｸﾀ挿入開始位置
+OUT B1641                ; UNIT7-1-2 TP-PL
+LD M4832                 ; RB6_ｺﾈｸﾀ挿入押込み完了位置移動指
+AND CR2006               ; 1sｸﾛｯｸﾊﾟﾙｽ
+OR M4623                 ; RB6_ｺﾈｸﾀ挿入押込み完了位置
+OUT B1642                ; UNIT7-1-3 TP-PL
+LD M4833                 ; RB6_ｺﾈｸﾀ抜き位置移動指令
+AND CR2006               ; 1sｸﾛｯｸﾊﾟﾙｽ
+OR M4624                 ; RB6_ｺﾈｸﾀ抜き位置
+OUT B1643                ; UNIT7-1-4 TP-PL
+LD Y2102                 ; LoST2ﾜｰｸ押さえ下降
+AND CR2006               ; 1sｸﾛｯｸﾊﾟﾙｽ
+OR X1070                 ; LoST2_部_ﾜｰｸ押_下降端
+OUT B1644                ; UNIT7-1-5 TP-PL
+LD Y2103                 ; LoST2ﾜｰｸ押さえ上昇
+AND CR2006               ; 1sｸﾛｯｸﾊﾟﾙｽ
+OR X1071                 ; LoST2_部_ﾜｰｸ押_上昇端
+OUT B1645                ; UNIT7-1-6 TP-PL
+LD M4812                 ; LoST2SwBoxMode_ﾊﾟﾚｯﾄ前後Flag
+OUT B1646                ; UNIT7-1-7 TP-PL
+LD M4813                 ; LoST2SwBoxMode_ｸﾗﾝﾌﾟ&ﾊﾟﾚｯﾄFlag
+OUT B1647                ; UNIT7-1-8 TP-PL
+;<h1/>□_異常検出
+;□□    異常検出    □□
+;B100(K257)--B10F(K272)  B110(K273)--B11F(K288)
+LDB X342E                ; L2st(RB6)ｱﾗｰﾑ_*ALM
+AND T12                  ; 運転準備ONﾃﾞｨﾚｲ(3S)
+LD CR2003                ; 常時OFF
+ANB B05E0                ; B0E0_225)Bz停止
+ORB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B0E0                 ; B0E0_225)LoST2ｽﾃｰｼﾞ前後RB異常
+ORL
+OUT B0E0                 ; B0E0_225)LoST2ｽﾃｰｼﾞ前後RB異常
+LDP B0E0                 ; B0E0_225)LoST2ｽﾃｰｼﾞ前後RB異常
+AND< D900 K64            ; FIFO_DATA_VALUE
+MOV H00E1 D0             ; エラーコード
+FIFOW D0 D900            ; エラーコード  FIFO_DATA_VALUE
+LD M110                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B05E0                 ; B0E0_225)Bz停止
+AND B0E0                 ; B0E0_225)LoST2ｽﾃｰｼﾞ前後RB異常
+OUT B05E0                ; B0E0_225)Bz停止
+;　　
+LD Y2102                 ; LoST2ﾜｰｸ押さえ下降
+ANB X1070                ; LoST2_部_ﾜｰｸ押_下降端
+LD Y2103                 ; LoST2ﾜｰｸ押さえ上昇
+ANB X1071                ; LoST2_部_ﾜｰｸ押_上昇端
+ORL
+LD X1070                 ; LoST2_部_ﾜｰｸ押_下降端
+AND X1071                ; LoST2_部_ﾜｰｸ押_上昇端
+ORL
+LD CR2003                ; 常時OFF
+ANB B05E1                ; B0E1_226)Bz停止
+ORB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B0E1                 ; B0E1_226)LoST2ｸﾗﾝﾌﾟ開閉CLS異常
+ORL
+MPS
+AND T791                 ; CLSﾀｲﾑｱｳﾄ
+OUT B0E1                 ; B0E1_226)LoST2ｸﾗﾝﾌﾟ開閉CLS異常
+MPP
+TMR K791 K100            ; CLSﾀｲﾑｱｳﾄ
+LDP B0E1                 ; B0E1_226)LoST2ｸﾗﾝﾌﾟ開閉CLS異常
+AND< D900 K64            ; FIFO_DATA_VALUE
+MOV H00E2 D0             ; エラーコード
+FIFOW D0 D900            ; エラーコード  FIFO_DATA_VALUE
+LD M110                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B05E1                 ; B0E1_226)Bz停止
+AND B0E1                 ; B0E1_226)LoST2ｸﾗﾝﾌﾟ開閉CLS異常
+OUT B05E1                ; B0E1_226)Bz停止
+;
+LD T706                  ; LoST2_ｺﾝﾀｸﾄﾍｯﾄﾞID_更新_DLY
+AND L700                 ; Lo検査ST2_有効状態
+AND<> D4100 D4106        ; LoST2_ｺﾝﾀｸﾄﾍｯﾄﾞID  LoST2_ｺﾝﾀｸﾄﾍｯﾄﾞID_Copy
+LD CR2003                ; 常時OFF
+ANB B05E2                ; B0E2_227)Bz停止
+ORB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B0E2                 ; B0E2_227)LoST2_ﾃｽﾄﾍｯﾄﾞID_不一致
+ORL
+MPS
+AND T792                 ; ﾃｽﾄﾍｯﾄﾞID変化確認ﾀｲﾏ
+OUT B0E2                 ; B0E2_227)LoST2_ﾃｽﾄﾍｯﾄﾞID_不一致
+MPP
+TMR K792 K5              ; ﾃｽﾄﾍｯﾄﾞID変化確認ﾀｲﾏ
+LDP B0E2                 ; B0E2_227)LoST2_ﾃｽﾄﾍｯﾄﾞID_不一致
+AND< D900 K64            ; FIFO_DATA_VALUE
+MOV H00E3 D0             ; エラーコード
+FIFOW D0 D900            ; エラーコード  FIFO_DATA_VALUE
+LD M110                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B05E2                 ; B0E2_227)Bz停止
+AND B0E2                 ; B0E2_227)LoST2_ﾃｽﾄﾍｯﾄﾞID_不一致
+OUT B05E2                ; B0E2_227)Bz停止
+;
+LD T707                  ; LoST2_ﾊﾟﾚｯﾄID_更新_DLY
+AND L700                 ; Lo検査ST2_有効状態
+AND<> D4101 D4107        ; LoST2_ﾊﾟﾚｯﾄID  LoST2_ﾊﾟﾚｯﾄID_ｾﾝｻ状態
+AND M4621                ; RB6_ﾜｰｸ受取り位置(ID確認位置)
+LD CR2003                ; 常時OFF
+ANB B05E3                ; B0E3_228)Bz停止
+ORB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B0E3                 ; B0E3_228)LoST2_ﾊﾟﾚｯﾄID_不一致
+ORL
+MPS
+AND T793                 ; ﾊﾟﾚｯﾄID変化確認ﾀｲﾏ
+OUT B0E3                 ; B0E3_228)LoST2_ﾊﾟﾚｯﾄID_不一致
+MPP
+TMR K793 K5              ; ﾊﾟﾚｯﾄID変化確認ﾀｲﾏ
+LDP B0E3                 ; B0E3_228)LoST2_ﾊﾟﾚｯﾄID_不一致
+AND< D900 K64            ; FIFO_DATA_VALUE
+MOV H00E4 D0             ; エラーコード
+FIFOW D0 D900            ; エラーコード  FIFO_DATA_VALUE
+LD M110                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B05E3                 ; B0E3_228)Bz停止
+AND B0E3                 ; B0E3_228)LoST2_ﾊﾟﾚｯﾄID_不一致
+OUT B05E3                ; B0E3_228)Bz停止
+;
+LD M4560                 ; U07-1_S60 LoST2_ﾜｰｸ受取異常
+LD CR2003                ; 常時OFF
+ANB B05E4                ; B0E4_229)Bz停止
+ORB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B0E4                 ; B0E4_229)LoST2_ﾜｰｸ受取異常
+ORL
+OUT B0E4                 ; B0E4_229)LoST2_ﾜｰｸ受取異常
+LDP B0E4                 ; B0E4_229)LoST2_ﾜｰｸ受取異常
+AND< D900 K64            ; FIFO_DATA_VALUE
+MOV H00E5 D0             ; エラーコード
+FIFOW D0 D900            ; エラーコード  FIFO_DATA_VALUE
+LD M110                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B05E4                 ; B0E4_229)Bz停止
+AND B0E4                 ; B0E4_229)LoST2_ﾜｰｸ受取異常
+OUT B05E4                ; B0E4_229)Bz停止
+;
+LD M4930                 ; LoST2_ﾜｰｸ受渡し異常
+LD CR2003                ; 常時OFF
+ANB B05E5                ; B0E5_230)Bz停止
+ORB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B0E5                 ; B0E5_230)LoST2_ﾜｰｸ受渡し異常
+ORL
+OUT B0E5                 ; B0E5_230)LoST2_ﾜｰｸ受渡し異常
+LDP B0E5                 ; B0E5_230)LoST2_ﾜｰｸ受渡し異常
+AND< D900 K64            ; FIFO_DATA_VALUE
+MOV H00E6 D0             ; エラーコード
+FIFOW D0 D900            ; エラーコード  FIFO_DATA_VALUE
+LD M110                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B05E5                 ; B0E5_230)Bz停止
+AND B0E5                 ; B0E5_230)LoST2_ﾜｰｸ受渡し異常
+OUT B05E5                ; B0E5_230)Bz停止
+;
+LD D4201.0
+ANB X1072                ; LoST2_部_ﾜｰｸ確認(ON=有)
+LDB D4201.0
+AND X1072                ; LoST2_部_ﾜｰｸ確認(ON=有)
+ORL
+ANB M3402                ; 【搬送】搬送→Lo_ST2搬送開始
+ANB M3406                ; 【搬送】搬送→Lo_ST2搬送完了
+ANB M3412                ; 【搬送】LoST2除材開始
+ANB M3416                ; 【搬送】LoST2除材完了
+ANB M4553                ; U07-1_S53_
+ANB M4554                ; U07-1_S54_
+AND L700                 ; Lo検査ST2_有効状態
+AND M71                  ; 自動運転開始BZ
+LD CR2003                ; 常時OFF
+ANB B05E6                ; B0E6_231)Bz停止
+ORB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B0E6                 ; B0E6_231)LoST2 ﾜｰｸ情報不一致
+ORL
+ANB M35                  ; 空運転ﾓｰﾄﾞ
+OUT B0E6                 ; B0E6_231)LoST2 ﾜｰｸ情報不一致
+LDP B0E6                 ; B0E6_231)LoST2 ﾜｰｸ情報不一致
+AND< D900 K64            ; FIFO_DATA_VALUE
+MOV H00E7 D0             ; エラーコード
+FIFOW D0 D900            ; エラーコード  FIFO_DATA_VALUE
+LD M110                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B05E6                 ; B0E6_231)Bz停止
+AND B0E6                 ; B0E6_231)LoST2 ﾜｰｸ情報不一致
+OUT B05E6                ; B0E6_231)Bz停止
+;　　
+LD<= D4030 D21110        ; Lo_ST2_過昇設定値TP
+LD CR2003                ; 常時OFF
+ANB B05E7                ; B0E7_232)LoST1 ﾋｰﾀｰ過昇異Bz停止
+ORB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B0E7                 ; B0E7_232)LoST2 ﾋｰﾀｰ過昇異常
+ORL
+AND CR2003               ; 常時OFF
+OUT B0E7                 ; B0E7_232)LoST2 ﾋｰﾀｰ過昇異常
+MOV H00E8 D0             ; エラーコード
+FIFOW D0 D900            ; エラーコード  FIFO_DATA_VALUE
+LD M110                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B05E7                 ; B0E7_232)LoST1 ﾋｰﾀｰ過昇異Bz停止
+AND B0E7                 ; B0E7_232)LoST2 ﾋｰﾀｰ過昇異常
+OUT B05E7                ; B0E7_232)LoST1 ﾋｰﾀｰ過昇異Bz停止
+LD T740                  ; LoST2_初期温度上昇ﾀｲﾑｱｳﾄ監視
+ANB M35                  ; 空運転ﾓｰﾄﾞ
+LD CR2003                ; 常時OFF
+ANB B05E8                ; B0E8_233)Bz停止
+ORB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B0E8                 ; B0E8_233)LoST2 ﾋｰﾀｰ上昇ﾀｲﾑｱｳﾄ異
+ORL
+OUT B0E8                 ; B0E8_233)LoST2 ﾋｰﾀｰ上昇ﾀｲﾑｱｳﾄ異
+MOV H00E9 D0             ; エラーコード
+FIFOW D0 D900            ; エラーコード  FIFO_DATA_VALUE
+LD M110                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B05E8                 ; B0E8_233)Bz停止
+AND B0E8                 ; B0E8_233)LoST2 ﾋｰﾀｰ上昇ﾀｲﾑｱｳﾄ異
+OUT B05E8                ; B0E8_233)Bz停止
+;
+LD M4759                 ; OriStep9_ORGﾜｰｸ除去要求
+LD CR2003                ; 常時OFF
+ANB B05FE                ; B0FE_255)Bz停止
+ORB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B0FE                 ; B0FE_255)LoST2ﾜｰｸ除去要求
+ORL
+OUT B0FE                 ; B0FE_255)LoST2ﾜｰｸ除去要求
+LD M110                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B05FE                 ; B0FE_255)Bz停止
+AND B0FE                 ; B0FE_255)LoST2ﾜｰｸ除去要求
+OUT B05FE                ; B0FE_255)Bz停止
+;電特検査中
+LD W03.7                 ; 電気特性検査ｽﾃｰｼﾞ状態#2
+AND M31                  ; 手動ﾓｰﾄﾞ
+AND M4751                ; OriStep1
+LD CR2003                ; 常時OFF
+ANB B05FF                ; B0FF_256)Bz停止
+ORB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B0FF                 ; B0FF_256)LoST2ﾜｰｸ検査中
+ORL
+OUT B0FF                 ; B0FF_256)LoST2ﾜｰｸ検査中
+LD M110                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B05FF                 ; B0FF_256)Bz停止
+AND B0FF                 ; B0FF_256)LoST2ﾜｰｸ検査中
+OUT B05FF                ; B0FF_256)Bz停止
+;異常ﾌﾞｻﾞｰまとめ
+LDB B0E0                 ; B0E0_225)LoST2ｽﾃｰｼﾞ前後RB異常
+OR B05E0                 ; B0E0_225)Bz停止
+LDB B0E1                 ; B0E1_226)LoST2ｸﾗﾝﾌﾟ開閉CLS異常
+OR B05E1                 ; B0E1_226)Bz停止
+ANL
+LDB B0E2                 ; B0E2_227)LoST2_ﾃｽﾄﾍｯﾄﾞID_不一致
+OR B05E2                 ; B0E2_227)Bz停止
+ANL
+LDB B0E3                 ; B0E3_228)LoST2_ﾊﾟﾚｯﾄID_不一致
+OR B05E3                 ; B0E3_228)Bz停止
+ANL
+LDB B0E4                 ; B0E4_229)LoST2_ﾜｰｸ受取異常
+OR B05E4                 ; B0E4_229)Bz停止
+ANL
+LDB B0E5                 ; B0E5_230)LoST2_ﾜｰｸ受渡し異常
+OR B05E5                 ; B0E5_230)Bz停止
+ANL
+LDB B0E6                 ; B0E6_231)LoST2 ﾜｰｸ情報不一致
+OR B05E6                 ; B0E6_231)Bz停止
+ANL
+LDB B0E7                 ; B0E7_232)LoST2 ﾋｰﾀｰ過昇異常
+OR B05E7                 ; B0E7_232)LoST1 ﾋｰﾀｰ過昇異Bz停止
+ANL
+LDB B0E8                 ; B0E8_233)LoST2 ﾋｰﾀｰ上昇ﾀｲﾑｱｳﾄ異
+OR B05E8                 ; B0E8_233)Bz停止
+ANL
+LDB B0E9                 ; B0E9_234)
+OR B05E9                 ; B0E9_234)Bz停止
+ANL
+LDB B0EA                 ; B0EA_235)
+OR B05EA                 ; B0EA_235)Bz停止
+ANL
+LDB B0EB                 ; B0EB_236)
+OR B05EB                 ; B0EB_236)Bz停止
+ANL
+LDB B0EC                 ; B0EC_237)
+OR B05EC                 ; B0EC_237)Bz停止
+ANL
+LDB B0ED                 ; B0ED_238)
+OR B05ED                 ; B0ED_238)Bz停止
+ANL
+LDB B0EE                 ; B0EE_239)
+OR B05EE                 ; B0EE_239)Bz停止
+ANL
+LDB B0EF                 ; B0EF_240)
+OR B05EF                 ; B0EF_240)Bz停止
+ANL
+LDB B0F0                 ; B0F0_241)
+OR B05F0                 ; B0F0_241)Bz停止
+ANL
+LDB B0F1                 ; B0F1_242)
+OR B05F1                 ; B0F1_242)Bz停止
+ANL
+LDB B0F2                 ; B0F2_243)
+OR B05F2                 ; B0F2_243)Bz停止
+ANL
+LDB B0F3                 ; B0F3_244)
+OR B05F3                 ; B0F3_244)Bz停止
+ANL
+LDB B0F4                 ; B0F4_245)
+OR B05F4                 ; B0F4_245)Bz停止
+ANL
+LDB B0F5                 ; B0F5_246)
+OR B05F5                 ; B0F5_246)Bz停止
+ANL
+LDB B0F6                 ; B0F6_247)
+OR B05F6                 ; B0F6_247)Bz停止
+ANL
+LDB B0F7                 ; B0F7_248)
+OR B05F7                 ; B0F7_248)Bz停止
+ANL
+LDB B0F8                 ; B0F8_249)
+OR B05F8                 ; B0F8_249)Bz停止
+ANL
+LDB B0F9                 ; B0F9_250)
+OR B05F9                 ; B0F9_250)Bz停止
+ANL
+LDB B0FA                 ; B0FA_251)
+OR B05FA                 ; B0FA_251)Bz停止
+ANL
+LDB B0FB                 ; B0FB_252)
+OR B05FB                 ; B0FB_252)Bz停止
+ANL
+LDB B0FC                 ; B0FC_253)
+OR B05FC                 ; B0FC_253)Bz停止
+ANL
+LDB B0FD                 ; B0FD_254)
+OR B05FD                 ; B0FD_254)Bz停止
+ANL
+LDB B0FE                 ; B0FE_255)LoST2ﾜｰｸ除去要求
+OR B05FE                 ; B0FE_255)Bz停止
+ANL
+LDB B0FF                 ; B0FF_256)LoST2ﾜｰｸ検査中
+OR B05FF                 ; B0FF_256)Bz停止
+ANL
+LDB B0FE                 ; B0FE_255)LoST2ﾜｰｸ除去要求
+OR B05FE                 ; B0FE_255)Bz停止
+ANL
+LDB B0FF                 ; B0FF_256)LoST2ﾜｰｸ検査中
+OR B05FF                 ; B0FF_256)Bz停止
+ANL
+INV
+OUT M4989                ; U7_異常BZ補助
+END
+ENDH

@@ -1,0 +1,195 @@
+DEVICE:53
+;MODULE:OneSystem_IO
+;MODULE_TYPE:0
+;OneSystem UserOpen-Module
+;
+;-----------------------------------------
+;ModuleName	:	OneSystem_IO
+;ModuleType	:	User Open Module
+;Function	:	OneSystem-Standard I/O
+;-----------------------------------------
+;
+;Copylight(C) 2011 SEIKO EPSON Corp. All rights reserved.
+;<本ﾓｼﾞｭｰﾙの使用方法>
+;OneSystemPLC標準I/O(操作BOXのI/O、安全回路基板の接続I/O)はﾃﾞﾊﾞｲｽ番号(R)を任意に設定する事ができます。
+;
+;本ﾓｼﾞｭｰﾙに記述されている入力/出力条件は全てﾀﾞﾐｰ信号となっている為、
+;入力/出力条件のﾃﾞﾊﾞｲｽ番号を実際の装置に割り付けられたﾃﾞﾊﾞｲｽ番号に置き換える事により使用可能となります。
+;OneSystem内ではﾗﾍﾞﾙ定義されたﾃﾞﾊﾞｲｽ(MR)を制御しています。
+LD CR2002                ; 常時ON
+FLIK #15 #15 MR000       ; 早めﾌｯﾘｶ
+LD CR2002                ; 常時ON
+FLIK #10 #10 MR001
+LD R59915                ; _運転ﾓｰﾄﾞ指定
+CJ #0
+;<h1/>*Input/入力
+;<入力信号>
+;・左側に記述されているﾀﾞﾐｰ接点を装置図面やI/Oﾏｯﾌﾟのﾃﾞﾊﾞｲｽ番号に変更して下さい。(接点論理考慮の事)
+;・未使用機能は変更不要です。(現在のﾀﾞﾐｰ接点で良い)
+;・未使用ｸﾞﾙｰﾌﾟは変更不要です。
+;<h1/>Common Input/共通入力
+;Emergency Stop SW/非常停止SW(N.C)
+LD R001                  ; 非常停止
+OUT R44300               ; *非常停止ｽｲｯﾁ
+LD R001                  ; 非常停止
+ANB MR18515              ; 搬送ｽﾗｲﾀﾞRB ｱﾗｰﾑ発生中
+ANB MR18715              ; ｴﾚﾍﾞｰﾀRB ｱﾗｰﾑ発生中
+OUT R507                 ; 非常停止要求(RB)
+;Emergency Stop Sig/非常停止状態(N.C)
+LDB R001                 ; 非常停止
+OUT R44301               ; *非常停止状態
+;<h1/>Group1 Input/ｸﾞﾙｰﾌﾟ1入力
+;Start Sw/ｽﾀｰﾄｽｲｯﾁ(N.O)
+LD R002                  ; 操作ﾊﾟﾈﾙ "START" ｽｲｯﾁ
+OR MR24508               ; 原点復帰開始
+LD R46200                ; _安全ｶﾊﾞｰ1開中
+AND R4008                ; SW-BOX4 START Switch
+ORL
+OUT R44400               ; *Group1　ｽﾀｰﾄSW
+;Stop Sw/ｽﾄｯﾌﾟｽｲｯﾁ(N.O)
+LD R003                  ; 操作ﾊﾟﾈﾙ "STOP" ｽｲｯﾁ
+ANB R39004               ; ｴﾗｰ中
+TMR #0 #5                ; _Grp1_StopSW_Delay
+CON
+AND T0                   ; _Grp1_StopSW_Delay
+OUT R44401               ; *Group1　ｽﾄｯﾌﾟSW
+;Cover Open Sw/ｶﾊﾞｰ開要求ｽｲｯﾁ(N.O)
+LD R004                  ; 操作ﾊﾟﾈﾙ "COVER" ｽｲｯﾁ
+ORP B200E                ; ﾒｲﾝよりｽﾃｰﾀｽ(PAUSE)
+ORF B2001                ; ﾒｲﾝより非常停止
+OR R4009                 ; SW-BOX4 PAUSE Switch
+OUT R44402               ; *Group1　ｶﾊﾞｰ開要求SW
+;Buzzer Off Sw/ﾌﾞｻﾞｰｵﾌｽｲｯﾁ(N.O)
+LD R005                  ; 操作ﾊﾟﾈﾙ "BzOFF" ｽｲｯﾁ
+RES MR6000               ; 逆入れ　ﾒｯｾｰｼﾞ要求
+CON
+RES MR6001               ; 過積載　ﾒｯｾｰｼﾞ要求
+CON
+OUT R44403               ; *Group1　ﾌﾞｻﾞｰｵﾌSW
+;Area Sensor Continue Sw1/ｴﾘｱｾﾝｻ継続実行ｽｲｯﾁ1(N.O)
+LD @R004
+OUT R44404               ; *Group1　ｴﾘｱｾﾝｻ継続実行SW1
+;Area Sensor Continue Sw2/ｴﾘｱｾﾝｻ継続実行ｽｲｯﾁ2(N.O)
+LD @R005
+OUT R44405               ; *Group1　ｴﾘｱｾﾝｻ継続実行SW2
+;Air Pressure Detect/ｴｱｰ元圧検出(N.C)
+LD R006                  ; 元圧空検出
+OUT R44302               ; *Group1　ｴｱｰ元圧検出
+;Safety Cover Lock Sig/安全ｶﾊﾞｰﾛｯｸ入力(N.O)
+LD R007                  ; ｾｰﾌﾃｨｶﾊﾞｰ
+OUT R44303               ; *Group1　安全ｶﾊﾞｰ入力
+;Area Sensor /ｴﾘｱｾﾝｻ(N.C)
+LD CR2002                ; 常時ON
+OUT R44304               ; *Group1　ｴﾘｱｾﾝｻ入力
+;Continue Start Sw/ｶﾊﾞｰ継続実行ｽｲｯﾁ(N.O)
+LD @R006
+OUT R44406               ; *Group1　ｶﾊﾞｰ継続実行SW
+;<h1/>*Output/出力
+;<出力信号>
+;・右側に記述されているﾀﾞﾐｰ出力ｺｲﾙについて装置図面やI/Oﾏｯﾌﾟのﾃﾞﾊﾞｲｽ番号に変更して下さい。
+;・未使用機能は変更不要です。(現在のﾀﾞﾐｰｺｲﾙのままで良い)
+;・未使用ｸﾞﾙｰﾌﾟは変更不要です。
+;<h1/>Common Output/共通出力
+;Estop Sig to Safety Circuit Board/安全回路基板への非常停止出力
+LD R44308                ; *非常停止出力
+OUT @R800
+;<h1/>Group1 Output/ｸﾞﾙｰﾌﾟ1出力
+;Start Sw Lamp/ｽﾀｰﾄｽｲｯﾁﾗﾝﾌﾟ
+LD R46100                ; _自動運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+AND MR20206              ; 空ﾄﾚｲ交換準備可表示用
+OUT @R010
+LD R44500                ; *Group1　ｽﾀｰﾄSWﾗﾝﾌﾟ
+ANB MR16011              ; 扉開
+ANB @R010
+LD @R010
+OR MR16011               ; 扉開
+AND CR2006               ; 1sｸﾛｯｸﾊﾟﾙｽ
+ORL
+OUT R501                 ; 操作ﾊﾟﾈﾙ "START" 表示灯
+LD R506                  ; ｶﾊﾞｰ開
+AND R44500               ; *Group1　ｽﾀｰﾄSWﾗﾝﾌﾟ
+OUT R7012                ; SW-BOX4 START SW LP
+;Stop Sw Lamp/ｽﾄｯﾌﾟｽｲｯﾁﾗﾝﾌﾟ
+LD R44501                ; *Group1　ｽﾄｯﾌﾟSWﾗﾝﾌﾟ
+OUT R502                 ; 操作ﾊﾟﾈﾙ "STOP" 表示灯
+;Cover Sw Lamp/ｶﾊﾞｰ開ｽｲｯﾁﾗﾝﾌﾟ
+LD R44502                ; *Group1　ｶﾊﾞｰ開要求SWﾗﾝﾌﾟ
+OUT R7013                ; SW-BOX4 PAUSE SW LP
+CON
+OUT R503                 ; 操作ﾊﾟﾈﾙ "COVER" 表示灯
+;Buzzer Off Sw Lamp/ﾌﾞｻﾞｰｵﾌｽｲｯﾁﾗﾝﾌﾟ
+LD R44503                ; *Group1　ﾌﾞｻﾞｰｵﾌSWﾗﾝﾌﾟ
+LD MR6000                ; 逆入れ　ﾒｯｾｰｼﾞ要求
+OR MR6001                ; 過積載　ﾒｯｾｰｼﾞ要求
+AND CR2006               ; 1sｸﾛｯｸﾊﾟﾙｽ
+ORL
+OUT R504                 ; 操作ﾊﾟﾈﾙ "BzOFF" 表示灯
+;Buzzer/ﾌﾞｻﾞｰ
+LD R44504                ; *Group1　ﾌﾞｻﾞｰ
+LD MR6000                ; 逆入れ　ﾒｯｾｰｼﾞ要求
+OR MR6001                ; 過積載　ﾒｯｾｰｼﾞ要求
+AND CR2002               ; 常時ON
+ORL
+LD CR2003                ; 常時OFF
+AND MR18900              ; ｴﾘｱｾﾝｻ遮光
+AND MR000                ; 早めﾌｯﾘｶ
+ORL
+OUT R505                 ; 操作ﾊﾟﾈﾙ Buzzer
+LDP R44403               ; *Group1　ﾌﾞｻﾞｰｵﾌSW
+RES MR20205              ; 空ﾄﾚｲ交換準備可
+;Area Sensor Continue Sw1 Lamp/ｴﾘｱｾﾝｻ継続ｽｲｯﾁ1ﾗﾝﾌﾟ
+LD R44505                ; *Group1　ｴﾘｱｾﾝｻ継続実行SW1ﾗﾝﾌﾟ
+OUT @R905
+;Area Sensor Continue Sw2 Lamp/ｴﾘｱｾﾝｻ継続ｽｲｯﾁ2ﾗﾝﾌﾟ
+LD R44506                ; *Group1　ｴﾘｱｾﾝｻ継続実行SW2ﾗﾝﾌﾟ
+OUT @R906
+;Air Pressure Latch Cancel Sig/ｴｱｰ元圧検出ﾗｯﾁ解除
+LD R44309                ; *Group1　ｴｱｰ元圧検出ﾗｯﾁ解除
+OUT @R907
+;Safety Cover Lock Sig/安全ｶﾊﾞｰﾛｯｸ
+LDB R44310               ; *Group1　安全ｶﾊﾞｰﾛｯｸ
+OUT R506                 ; ｶﾊﾞｰ開
+;Area Sensor Latch Cancel Sig/ｴﾘｱｾﾝｻﾗｯﾁ解除
+LD R44311                ; *Group1　ｴﾘｱｾﾝｻﾗｯﾁ解除
+OUT @R909
+;Tower Lamp(R)/ﾀﾜｰﾗﾝﾌﾟ赤
+LD R44507                ; *Group1　ﾀﾜｰﾗﾝﾌﾟ赤
+LD R46100                ; _自動運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+ANB R46208               ; _Group1　ｴﾗｰ発生中
+ANB MR15505              ; 上段ﾄﾚｲ有り
+AND MR000                ; 早めﾌｯﾘｶ
+ORL
+OUT R7000                ; ｼｸﾞﾅﾙﾀﾜｰ RED
+;Tower Lamp(G)/ﾀﾜｰﾗﾝﾌﾟ緑
+LD R44508                ; *Group1　ﾀﾜｰﾗﾝﾌﾟ緑
+OUT R7003                ; ｼｸﾞﾅﾙﾀﾜｰ BUZZER-1
+CON
+OUT R7002                ; ｼｸﾞﾅﾙﾀﾜｰ GREEN
+;Tower Lamp(Y)/ﾀﾜｰﾗﾝﾌﾟ黄
+LD R44509                ; *Group1　ﾀﾜｰﾗﾝﾌﾟ黄
+ANB MR18900              ; ｴﾘｱｾﾝｻ遮光
+LD MR18900               ; ｴﾘｱｾﾝｻ遮光
+AND MR000                ; 早めﾌｯﾘｶ
+ORL
+OUT R7001                ; ｼｸﾞﾅﾙﾀﾜｰ YELLOW
+;Continue Start Sw Lamp/ｶﾊﾞｰ継続実行ｽｲｯﾁﾗﾝﾌﾟ
+LD R44510                ; *Group1　ｶﾊﾞｰ継続実行SWﾗﾝﾌﾟ
+OUT @R913
+;Cover Open Sw Lamp(Triple SW)/3連ｶﾊﾞｰ開要求ｽｲｯﾁﾗﾝﾌﾟ
+LD R44511                ; *Group1　3連ｶﾊﾞｰ開要求SWﾗﾝﾌﾟ
+OUT @R914
+LABEL #0
+LDB R41000               ; _Grp1_Task0_起動中ﾌﾗｸﾞ
+RES R42600               ; _Grp1_Task0_ﾎﾟｰｽﾞ許可
+LDB R41001               ; _Grp1_Task1_起動中ﾌﾗｸﾞ
+RES R42601               ; _Grp1_Task1_ﾎﾟｰｽﾞ許可
+LDB R41002               ; _Grp1_Task2_起動中ﾌﾗｸﾞ
+RES R42602               ; _Grp1_Task2_ﾎﾟｰｽﾞ許可
+LDB R41003               ; _Grp1_Task3_起動中ﾌﾗｸﾞ
+RES R42603               ; _Grp1_Task3_ﾎﾟｰｽﾞ許可
+LDB R41004               ; _Grp1_Task4_起動中ﾌﾗｸﾞ
+RES R42604               ; _Grp1_Task4_ﾎﾟｰｽﾞ許可
+LDB R41005               ; _Grp1_Task5_起動中ﾌﾗｸﾞ
+RES R42605               ; _Grp1_Task5_ﾎﾟｰｽﾞ許可
+END
+ENDH

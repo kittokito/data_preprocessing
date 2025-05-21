@@ -1,0 +1,1665 @@
+DEVICE:53
+;MODULE:Parameter
+;MODULE_TYPE:0
+;SCRIPT_TYPE:
+LD CR2008                ; 運転開始時1ｽｷｬﾝON
+SET R41608               ; T&C&D ST1 SW
+LD CR2002                ; 常時ON
+AND= DM4000 #3           ; TP 現在表示中画面
+@DW #1 LR41100           ; AUTO PARA01 flag_通常動作
+CON
+@DW #1 LR44100           ; AUTO PARA01 memory
+CON
+@DW #0 DM5060            ; ﾊﾟﾗﾒｰﾀNo 格納
+CON
+@DW #7 DM5061            ; ﾊﾟﾗﾒｰﾀ ﾃｷｽﾄNo.
+;***** AUTO Parameter Control *****
+LD CR2002                ; 常時ON
+AND= DM4000 #321         ; TP 現在表示中画面
+AND<> #0 R41100          ; AUTO PARA01 SW
+SET R41707               ; Parameter変更有り
+CON
+@MOV R41100 LR41100      ; AUTO PARA01 SW  AUTO PARA01 flag_通常動作
+@MOV R41100 R44100       ; AUTO PARA01 SW  AUTO PARA01
+LDP R41708               ; TPﾖﾘ AUTO Parameter 決定SW
+MPS
+AND R41707               ; Parameter変更有り
+@LDA R44100              ; AUTO PARA01
+CON
+@DMX
+CON
+@STA DM5060              ; ﾊﾟﾗﾒｰﾀNo 格納
+CON
+@DW #7 DM5061            ; ﾊﾟﾗﾒｰﾀ ﾃｷｽﾄNo.
+CON
+RES R41707               ; Parameter変更有り
+CON
+@MOV R44100 LR44100      ; AUTO PARA01  AUTO PARA01 memory
+MPP
+ANB R41707               ; Parameter変更有り
+@LDA LR44100             ; AUTO PARA01 memory
+CON
+@STA R44100              ; AUTO PARA01
+CON
+@LDA R44100              ; AUTO PARA01
+CON
+@DMX
+CON
+@STA DM5060              ; ﾊﾟﾗﾒｰﾀNo 格納
+CON
+@DW #7 DM5061            ; ﾊﾟﾗﾒｰﾀ ﾃｷｽﾄNo.
+CON
+@MOV R44100 LR44100      ; AUTO PARA01  AUTO PARA01 memory
+LDP R41709               ; TPﾖﾘ AUTO Parameter 戻る SW
+RES R41707               ; Parameter変更有り
+CON
+@MOV LR44100 LR41100     ; AUTO PARA01 memory  AUTO PARA01 flag_通常動作
+;***** STEP Parameter Control *****
+LD<> R40100 #0           ; STEP ST1選択 SW
+@MOV R40100 LR40100      ; STEP ST1選択 SW  STEP ST1 選択 flag
+LDP R41713               ; STEP Stage選択 戻る SW
+@MOV LR43100 LR40100     ; STEP ST1選択 memory  STEP ST1 選択 flag
+LDP R41714               ; STEP Parameter 決定SW
+@MOV LR40100 LR43100     ; STEP ST1 選択 flag  STEP ST1選択 memory
+;**** Step-parameter ****    変数宣言 Zs:Offset STEP Parameter
+LD<> LR40100 #0          ; STEP ST1 選択 flag
+ENCO LR40100 #15         ; STEP ST1 選択 flag
+CON
+ADD #1
+CON
+STA DM5048               ; Setting Offset Step Parameter
+;IF LR40100:(Zs-1) = On THEN
+;	IF DM4000 >= 401 + (Zs*10) AND DM4000 < 403 + (Zs*10) AND R40200.U:((Zs-1)*16) <> 0 THEN
+;		SET(R41707)
+;		LR40100.U:(Zs*16) = R40100.U:(Zs*16)
+;		R43100.U:(Zs*16) =R40100.U:(Zs*16)
+;	END IF
+;END IF 
+LD CR2002                ; 常時ON
+NCJ #1000
+;IF LR40100:(Zs-1) = On THEN
+;
+LD CR2002                ; 常時ON
+LDA.S DM5048             ; Setting Offset Step Parameter
+CON
+EXT.S
+CON
+SUB.L +1
+CON
+STA.L Z12
+LD LR40100:Z12           ; STEP ST1 選択 flag
+NCJ #2000
+;	IF DM4000 >= 401 + (Zs*10) AND DM4000 < 403 + (Zs*10) AND R40200.U:((Zs-1)*16) <> 0 THEN
+;
+LD CR2002                ; 常時ON
+LDA.S DM5048             ; Setting Offset Step Parameter
+CON
+EXT.S
+CON
+MUL.L +10
+CON
+ADD.L +401
+CON
+STA.L @VM0
+CON
+LDA DM4000               ; TP 現在表示中画面
+CON
+EXT
+CON
+CMP.L @VM0
+LDB CR2009               ; 演算結果が負
+OUT @VB00
+LD CR2002                ; 常時ON
+LDA.S DM5048             ; Setting Offset Step Parameter
+CON
+EXT.S
+CON
+MUL.L +10
+CON
+ADD.L +403
+CON
+STA.L @VM2
+CON
+LDA DM4000               ; TP 現在表示中画面
+CON
+EXT
+CON
+CMP.L @VM2
+LD CR2009                ; 演算結果が負
+AND @VB00
+OUT @VB01
+LD CR2002                ; 常時ON
+LDA.S DM5048             ; Setting Offset Step Parameter
+CON
+EXT.S
+CON
+SUB.L +1
+CON
+MUL.L +16
+CON
+STA.L Z12
+LD<> R40200:Z12 #0       ; STEP ST1-01 SW
+AND @VB01
+NCJ #2001
+;		SET(R41707)
+;
+LD CR2002                ; 常時ON
+SET R41707               ; Parameter変更有り
+;		LR40100.U:(Zs*16) = R40100.U:(Zs*16)
+;
+LD CR2002                ; 常時ON
+LDA.S DM5048             ; Setting Offset Step Parameter
+CON
+EXT.S
+CON
+MUL.L +16
+CON
+STA.L Z11
+CON
+LDA.S DM5048             ; Setting Offset Step Parameter
+CON
+EXT.S
+CON
+MUL.L +16
+CON
+STA.L Z12
+CON
+MOV R40100:Z12 LR40100:Z11;STEP ST1選択 SW  STEP ST1 選択 flag
+;		R43100.U:(Zs*16) =R40100.U:(Zs*16)
+;
+LD CR2002                ; 常時ON
+LDA.S DM5048             ; Setting Offset Step Parameter
+CON
+EXT.S
+CON
+MUL.L +16
+CON
+STA.L Z11
+CON
+LDA.S DM5048             ; Setting Offset Step Parameter
+CON
+EXT.S
+CON
+MUL.L +16
+CON
+STA.L Z12
+CON
+MOV R40100:Z12 R43100:Z11; STEP ST1選択 SW  STEP ST1 選択
+;	END IF
+;
+LABEL #2001
+;END IF 
+LABEL #2000
+LABEL #1000
+;
+;DM5060 =DMX(R43100.U:(Zs*16))
+;LR43100.U:(Zs*16) = R43100.U:(Zs*16)
+;RES(R41707)
+LDP R41714               ; STEP Parameter 決定SW
+DW #10 DM5061            ; ﾊﾟﾗﾒｰﾀ ﾃｷｽﾄNo.
+CON
+AND R41707               ; Parameter変更有り
+NCJ #1001
+;DM5060 =DMX(R43100.U:(Zs*16))
+;
+LD CR2002                ; 常時ON
+LDA.S DM5048             ; Setting Offset Step Parameter
+CON
+EXT.S
+CON
+MUL.L +16
+CON
+STA.L Z12
+CON
+LDA R43100:Z12           ; STEP ST1 選択
+CON
+DMX
+CON
+STA DM5060               ; ﾊﾟﾗﾒｰﾀNo 格納
+;LR43100.U:(Zs*16) = R43100.U:(Zs*16)
+;
+LD CR2002                ; 常時ON
+LDA.S DM5048             ; Setting Offset Step Parameter
+CON
+EXT.S
+CON
+MUL.L +16
+CON
+STA.L Z11
+CON
+LDA.S DM5048             ; Setting Offset Step Parameter
+CON
+EXT.S
+CON
+MUL.L +16
+CON
+STA.L Z12
+CON
+MOV R43100:Z12 LR43100:Z11;STEP ST1 選択  STEP ST1選択 memory
+;RES(R41707)
+LD CR2002                ; 常時ON
+RES R41707               ; Parameter変更有り
+LABEL #1001
+;
+;
+;LR43000.U = 1
+;R43000.U = LR43100.U:(Zs * 16) or LR43000.U
+;
+;
+;R43100:(Zs * 16) = LR43100:(Zs * 16)
+;DM5060 =DMX(R43000.U)
+;LR43100:(Zs * 16) = R43100:(Zs * 16)
+;
+LDP R41714               ; STEP Parameter 決定SW
+ORP R45002               ; STEP 動作中
+DW #10 DM5061            ; ﾊﾟﾗﾒｰﾀ ﾃｷｽﾄNo.
+CON
+ANB R41707               ; Parameter変更有り
+NCJ #1002
+;LR43000.U = 1
+;
+LD CR2002                ; 常時ON
+MOV #1 LR43000
+;R43000.U = LR43100.U:(Zs * 16) or LR43000.U
+;
+LD CR2002                ; 常時ON
+LDA.S DM5048             ; Setting Offset Step Parameter
+CON
+EXT.S
+CON
+MUL.L +16
+CON
+STA.L Z12
+CON
+LDA LR43100:Z12          ; STEP ST1選択 memory
+CON
+ORA LR43000
+CON
+STA R43000               ; STEP Parameter選択
+;R43100:(Zs * 16) = LR43100:(Zs * 16)
+;
+LD CR2002                ; 常時ON
+LDA.S DM5048             ; Setting Offset Step Parameter
+CON
+EXT.S
+CON
+MUL.L +16
+CON
+STA.L Z11
+CON
+LDA.S DM5048             ; Setting Offset Step Parameter
+CON
+EXT.S
+CON
+MUL.L +16
+CON
+STA.L Z12
+LD LR43100:Z12           ; STEP ST1選択 memory
+OUT R43100:Z11           ; STEP ST1 選択
+;DM5060 =DMX(R43000.U)
+;
+LD CR2002                ; 常時ON
+LDA R43000               ; STEP Parameter選択
+CON
+DMX
+CON
+STA DM5060               ; ﾊﾟﾗﾒｰﾀNo 格納
+;LR43100:(Zs * 16) = R43100:(Zs * 16)
+;
+LD CR2002                ; 常時ON
+LDA.S DM5048             ; Setting Offset Step Parameter
+CON
+EXT.S
+CON
+MUL.L +16
+CON
+STA.L Z11
+CON
+LDA.S DM5048             ; Setting Offset Step Parameter
+CON
+EXT.S
+CON
+MUL.L +16
+CON
+STA.L Z12
+LD R43100:Z12            ; STEP ST1 選択
+OUT LR43100:Z11          ; STEP ST1選択 memory
+LABEL #1002
+;
+;IF LR40100:(Zs-1) = On THEN
+;	LR40100.U:(Zs*16) = LR43100.U:(Zs*16)
+;END IF
+LDP R41715               ; STEP Parameter 戻る SW
+RES R41707               ; Parameter変更有り
+CON
+NCJ #1003
+;IF LR40100:(Zs-1) = On THEN
+;
+LD CR2002                ; 常時ON
+LDA.S DM5048             ; Setting Offset Step Parameter
+CON
+EXT.S
+CON
+SUB.L +1
+CON
+STA.L Z12
+LD LR40100:Z12           ; STEP ST1 選択 flag
+NCJ #2002
+;	LR40100.U:(Zs*16) = LR43100.U:(Zs*16)
+;
+LD CR2002                ; 常時ON
+LDA.S DM5048             ; Setting Offset Step Parameter
+CON
+EXT.S
+CON
+MUL.L +16
+CON
+STA.L Z11
+CON
+LDA.S DM5048             ; Setting Offset Step Parameter
+CON
+EXT.S
+CON
+MUL.L +16
+CON
+STA.L Z12
+CON
+MOV LR43100:Z12 LR40100:Z11;STEP ST1選択 memory  STEP ST1 選択 flag
+;END IF
+LABEL #2002
+LABEL #1003
+;
+;***** Touch Panel Prameter部への表示ﾃﾞｰﾀｾｯﾄ *****
+LD CR2002                ; 常時ON
+ANB R50008               ; Error
+LDA DM5060               ; ﾊﾟﾗﾒｰﾀNo 格納
+CON
+ADD #1
+CON
+MUL #3
+CON
+SUB #2
+CON
+STA DM5062               ; ﾊﾟﾗﾒｰﾀ ﾃｷｽﾄ表示行
+LD= DM4000 #4            ; TP 現在表示中画面
+AND<> DM5071 #2          ; TP Mode切替
+@LDA LR44100             ; AUTO PARA01 memory
+CON
+STA R44100               ; AUTO PARA01
+CON
+@LDA R44100              ; AUTO PARA01
+CON
+@DMX
+CON
+@STA DM5060              ; ﾊﾟﾗﾒｰﾀNo 格納
+CON
+@DW #7 DM5061            ; ﾊﾟﾗﾒｰﾀ ﾃｷｽﾄNo.
+CON
+@MOV R44100 LR41100      ; AUTO PARA01  AUTO PARA01 flag_通常動作
+LD= DM4000 #5            ; TP 現在表示中画面
+@LDA LR44100             ; AUTO PARA01 memory
+CON
+STA R44100               ; AUTO PARA01
+CON
+@LDA R44100              ; AUTO PARA01
+CON
+@DMX
+CON
+@STA DM5060              ; ﾊﾟﾗﾒｰﾀNo 格納
+CON
+@DW #7 DM5061            ; ﾊﾟﾗﾒｰﾀ ﾃｷｽﾄNo.
+CON
+@MOV R44100 LR41100      ; AUTO PARA01  AUTO PARA01 flag_通常動作
+;R43100.U = LR43100.U
+;IF LR40100:(Zs-1) = On THEN
+;	R43100.U:(Zs*16) = LR43100.U:(Zs*16)
+;	DM5060 = DMX(R43100.U:(Zs*16))
+;	DM5061 = 10 + (Zs-1)
+;	LR40100:(Zs*16) = R43100:(Zs*16)
+;END IF
+LD= DM4000 #4            ; TP 現在表示中画面
+AND= DM5071 #2           ; TP Mode切替
+TMH @5 #5
+CON
+AND @T5
+NCJ #1004
+;R43100.U = LR43100.U
+;
+LD CR2002                ; 常時ON
+MOV LR43100 R43100       ; STEP ST1選択 memory  STEP ST1 選択
+;IF LR40100:(Zs-1) = On THEN
+;
+LD CR2002                ; 常時ON
+LDA.S DM5048             ; Setting Offset Step Parameter
+CON
+EXT.S
+CON
+SUB.L +1
+CON
+STA.L Z12
+LD LR40100:Z12           ; STEP ST1 選択 flag
+NCJ #2003
+;	R43100.U:(Zs*16) = LR43100.U:(Zs*16)
+;
+LD CR2002                ; 常時ON
+LDA.S DM5048             ; Setting Offset Step Parameter
+CON
+EXT.S
+CON
+MUL.L +16
+CON
+STA.L Z11
+CON
+LDA.S DM5048             ; Setting Offset Step Parameter
+CON
+EXT.S
+CON
+MUL.L +16
+CON
+STA.L Z12
+CON
+MOV LR43100:Z12 R43100:Z11;STEP ST1選択 memory  STEP ST1 選択
+;	DM5060 = DMX(R43100.U:(Zs*16))
+;
+LD CR2002                ; 常時ON
+LDA.S DM5048             ; Setting Offset Step Parameter
+CON
+EXT.S
+CON
+MUL.L +16
+CON
+STA.L Z12
+CON
+LDA R43100:Z12           ; STEP ST1 選択
+CON
+DMX
+CON
+STA DM5060               ; ﾊﾟﾗﾒｰﾀNo 格納
+;	DM5061 = 10 + (Zs-1)
+;
+LD CR2002                ; 常時ON
+LDA.S DM5048             ; Setting Offset Step Parameter
+CON
+EXT.S
+CON
+SUB.L +1
+CON
+ADD.L +10
+CON
+STA DM5061               ; ﾊﾟﾗﾒｰﾀ ﾃｷｽﾄNo.
+;	LR40100:(Zs*16) = R43100:(Zs*16)
+;
+LD CR2002                ; 常時ON
+LDA.S DM5048             ; Setting Offset Step Parameter
+CON
+EXT.S
+CON
+MUL.L +16
+CON
+STA.L Z11
+CON
+LDA.S DM5048             ; Setting Offset Step Parameter
+CON
+EXT.S
+CON
+MUL.L +16
+CON
+STA.L Z12
+LD R43100:Z12            ; STEP ST1 選択
+OUT LR40100:Z11          ; STEP ST1 選択 flag
+;END IF
+LABEL #2003
+LABEL #1004
+;
+;***** Action Parameter Control *****
+LD R41400                ; Action PARA 表示用隠しSW1
+AND R41401               ; Action PARA 表示用隠しSW2
+OR R41402                ; Action PARA SW表示
+AND= DM4000 #9           ; TP 現在表示中画面
+OUT R41402               ; Action PARA SW表示
+LD<>.D LR41400 #0        ; Action Parameter 00
+AND CR2006               ; 1sｸﾛｯｸﾊﾟﾙｽ
+OUT R41403               ; Action PARA 使用中
+;タイマー可変管理
+LD R41500                ; Timer Setting 変更用隠しSW1
+AND R41501               ; Timer Setting 変更用隠しSW2
+OR R41502                ; Timer変更可能
+AND= DM4000 #350         ; TP 現在表示中画面
+OUT R41502               ; Timer変更可能
+;変更値入力後決定にてTimer値変更
+;DM5044 = DM5040
+;FM0:DM5044 =DM5050 'ﾀｲﾏｰ変更値を各番号へ格納
+;RES (R41503)
+;
+LD R41503                ; Timer値入力完了
+ANP R41504               ; Timer値変更決定SW
+NCJ #1005
+;DM5044 = DM5040
+;
+LD CR2002                ; 常時ON
+MOV DM5040 DM5044        ; Timer Counter Data No.
+;FM0:DM5044 =DM5050 'ﾀｲﾏｰ変更値を各番号へ格納
+;
+LD CR2002                ; 常時ON
+LDA DM5044
+CON
+EXT
+CON
+STA.L Z11
+CON
+MOV DM5050 FM0:Z11       ; 変更値格納ｱﾄﾞﾚｽ  供給口溶着時間[ms]
+;RES (R41503)
+;
+LD CR2002                ; 常時ON
+RES R41503               ; Timer値入力完了
+LABEL #1005
+;
+;ｾｷｭﾘﾃｨﾚﾍﾞﾙにより選択できるTimer番号を制御　　変数宣言：Zt(DM5048) 'Offset use for Station SW  
+LD CR2002                ; 常時ON
+AND>= R41600 #256        ; Data Setting 変更用隠しSW1
+ENCO R41608 #8           ; T&C&D ST1 SW
+CON
+ADD #1
+CON
+STA DM5047               ; Setting Offset
+LD<> DM5047 DM5049       ; Setting Offset
+MOV DM5047 DM5049        ; Setting Offset
+MPS
+LDA DM5047               ; Setting Offset
+CON
+@MUL #20
+CON
+STA TM1
+MPP
+LDA DM5040               ; Timer Counter Data No.
+CON
+@ADD TM1
+CON
+STA DM5040               ; Timer Counter Data No.
+LD R41712                ; Setting Station 切替
+@SET R41612              ; T&C&D ST5 SW
+CON
+ZRES R41608 R41611       ; T&C&D ST1 SW  T&C&D ST4 SW
+LDB R41712               ; Setting Station 切替
+@SET R41608              ; T&C&D ST1 SW
+CON
+ZRES R41612 R41615       ; T&C&D ST5 SW  T&C&D ST8 SW
+;IF DM5040 >= 40 * Zt  THEN
+;	DM5040 = 40 * Zt - 40
+;ELSE IF DM5040 < 40 * Zt - 40 THEN
+;	DM5040 = 39 + (Zt * 40) - 40
+;END IF
+LD R41505                ; ｾｷｭﾘﾃｨﾚﾍﾞﾙ1
+AND= DM4000 #350         ; TP 現在表示中画面
+NCJ #1006
+;IF DM5040 >= 40 * Zt  THEN
+;
+LD CR2002                ; 常時ON
+LDA.S DM5047             ; Setting Offset
+CON
+EXT.S
+CON
+MUL.L +40
+CON
+STA.L @VM4
+CON
+LDA DM5040               ; Timer Counter Data No.
+CON
+EXT
+CON
+CMP.L @VM4
+LDB CR2009               ; 演算結果が負
+NCJ #2004
+;	DM5040 = 40 * Zt - 40
+;
+LD CR2002                ; 常時ON
+LDA.S DM5047             ; Setting Offset
+CON
+EXT.S
+CON
+MUL.L +40
+CON
+SUB.L +40
+CON
+STA DM5040               ; Timer Counter Data No.
+LD CR2002                ; 常時ON
+CJ #2005
+LABEL #2004
+;ELSE IF DM5040 < 40 * Zt - 40 THEN
+;
+LD CR2002                ; 常時ON
+LDA.S DM5047             ; Setting Offset
+CON
+EXT.S
+CON
+MUL.L +40
+CON
+SUB.L +40
+CON
+STA.L @VM6
+CON
+LDA DM5040               ; Timer Counter Data No.
+CON
+EXT
+CON
+CMP.L @VM6
+LD CR2009                ; 演算結果が負
+NCJ #2006
+;	DM5040 = 39 + (Zt * 40) - 40
+;
+LD CR2002                ; 常時ON
+LDA.S DM5047             ; Setting Offset
+CON
+EXT.S
+CON
+MUL.L +40
+CON
+ADD.L +39
+CON
+SUB.L +40
+CON
+STA DM5040               ; Timer Counter Data No.
+;END IF
+LABEL #2006
+LABEL #2005
+LABEL #1006
+;
+;IF DM5040.S >= 40 * Zt -20 THEN
+;	DM5040 = 0 + (40 * Zt) - 40
+;ELSE IF DM5040.S < (40 * Zt) - 40 THEN
+;	DM5040 = 9 + (40 * Zt) - 40
+;END IF
+LD R41506                ; ｾｷｭﾘﾃｨﾚﾍﾞﾙ2
+AND= DM4000 #350         ; TP 現在表示中画面
+NCJ #1007
+;IF DM5040.S >= 40 * Zt -20 THEN
+;
+LD CR2002                ; 常時ON
+LDA.S DM5047             ; Setting Offset
+CON
+EXT.S
+CON
+MUL.L +40
+CON
+SUB.L +20
+CON
+STA.L @VM8
+CON
+LDA.S DM5040             ; Timer Counter Data No.
+CON
+EXT.S
+CON
+CMP.L @VM8
+LDB CR2009               ; 演算結果が負
+NCJ #2007
+;	DM5040 = 0 + (40 * Zt) - 40
+;
+LD CR2002                ; 常時ON
+LDA.S DM5047             ; Setting Offset
+CON
+EXT.S
+CON
+MUL.L +40
+CON
+ADD.L +0
+CON
+SUB.L +40
+CON
+STA DM5040               ; Timer Counter Data No.
+LD CR2002                ; 常時ON
+CJ #2008
+LABEL #2007
+;ELSE IF DM5040.S < (40 * Zt) - 40 THEN
+;
+LD CR2002                ; 常時ON
+LDA.S DM5047             ; Setting Offset
+CON
+EXT.S
+CON
+MUL.L +40
+CON
+SUB.L +40
+CON
+STA.L @VM10
+CON
+LDA.S DM5040             ; Timer Counter Data No.
+CON
+EXT.S
+CON
+CMP.L @VM10
+LD CR2009                ; 演算結果が負
+NCJ #2009
+;	DM5040 = 9 + (40 * Zt) - 40
+;
+LD CR2002                ; 常時ON
+LDA.S DM5047             ; Setting Offset
+CON
+EXT.S
+CON
+MUL.L +40
+CON
+ADD.L +9
+CON
+SUB.L +40
+CON
+STA DM5040               ; Timer Counter Data No.
+;END IF
+LABEL #2009
+LABEL #2008
+LABEL #1007
+;
+;IF DM5040.S >= 40 * Zt THEN
+;	DM5040 = 0 + (40 * Zt) - 40
+;ELSE IF DM5040.S < 0 + (40 * Zt) - 40 THEN
+;	DM5040 = 39 + (40 * Zt) - 40
+;END IF
+LD R41507                ; 表示モード
+AND= DM4000 #350         ; TP 現在表示中画面
+NCJ #1008
+;IF DM5040.S >= 40 * Zt THEN
+;
+LD CR2002                ; 常時ON
+LDA.S DM5047             ; Setting Offset
+CON
+EXT.S
+CON
+MUL.L +40
+CON
+STA.L @VM12
+CON
+LDA.S DM5040             ; Timer Counter Data No.
+CON
+EXT.S
+CON
+CMP.L @VM12
+LDB CR2009               ; 演算結果が負
+NCJ #2010
+;	DM5040 = 0 + (40 * Zt) - 40
+;
+LD CR2002                ; 常時ON
+LDA.S DM5047             ; Setting Offset
+CON
+EXT.S
+CON
+MUL.L +40
+CON
+ADD.L +0
+CON
+SUB.L +40
+CON
+STA DM5040               ; Timer Counter Data No.
+LD CR2002                ; 常時ON
+CJ #2011
+LABEL #2010
+;ELSE IF DM5040.S < 0 + (40 * Zt) - 40 THEN
+;
+LD CR2002                ; 常時ON
+LDA.S DM5047             ; Setting Offset
+CON
+EXT.S
+CON
+MUL.L +40
+CON
+ADD.L +0
+CON
+SUB.L +40
+CON
+STA.L @VM14
+CON
+LDA.S DM5040             ; Timer Counter Data No.
+CON
+EXT.S
+CON
+CMP.L @VM14
+LD CR2009                ; 演算結果が負
+NCJ #2012
+;	DM5040 = 39 + (40 * Zt) - 40
+;
+LD CR2002                ; 常時ON
+LDA.S DM5047             ; Setting Offset
+CON
+EXT.S
+CON
+MUL.L +40
+CON
+ADD.L +39
+CON
+SUB.L +40
+CON
+STA DM5040               ; Timer Counter Data No.
+;END IF
+LABEL #2012
+LABEL #2011
+LABEL #1008
+;
+;Timer値　DM -> T へ格納
+LD CR2002                ; 常時ON
+MOV.S +0 Z1
+FOR #160
+LD CR2002                ; 常時ON
+MPS
+LDA FM0:Z1               ; 供給口溶着時間[ms]
+CON
+EXT
+CON
+STA.D T0:Z1              ; 供給口溶着時間[ms]
+MPP
+INC Z1
+NEXT
+;カウンタ可変管理
+LD R41508                ; Counter Setting 変更用隠しSW1
+AND R41509               ; Counter Setting 変更用隠しSW2
+OR R41510                ; Counter変更可能
+AND= DM4000 #352         ; TP 現在表示中画面
+OUT R41510               ; Counter変更可能
+;変更値入力後決定にてCounter値変更
+;DM5044 = DM5040
+;FM200:DM5044 =DM5050 'ｶｳﾝﾀｰｰ変更値を各番号へ格納
+;RES (R41511)
+;
+LD R41511                ; Counter値入力完了
+ANP R41512               ; Counter値変更決定SW
+NCJ #1009
+;DM5044 = DM5040
+;
+LD CR2002                ; 常時ON
+MOV DM5040 DM5044        ; Timer Counter Data No.
+;FM200:DM5044 =DM5050 'ｶｳﾝﾀｰｰ変更値を各番号へ格納
+;
+LD CR2002                ; 常時ON
+LDA DM5044
+CON
+EXT
+CON
+STA.L Z11
+CON
+MOV DM5050 FM200:Z11     ; 変更値格納ｱﾄﾞﾚｽ  CNT00設定値
+;RES (R41511)
+;
+LD CR2002                ; 常時ON
+RES R41511               ; Counter値入力完了
+LABEL #1009
+;
+;ｾｷｭﾘﾃｨﾚﾍﾞﾙにより選択できるCounter番号を制御　　変数宣言：Zt(DM5048) 'Offset use for Station SW 
+;IF DM5040 >= 40 * Zt  THEN
+;	DM5040 = 40 * Zt - 20
+;ELSE IF DM5040 < 40 * Zt - 20 THEN
+;	DM5040 = 39 + (Zt * 40) - 40
+;END IF
+LD R41505                ; ｾｷｭﾘﾃｨﾚﾍﾞﾙ1
+AND= DM4000 #352         ; TP 現在表示中画面
+NCJ #1010
+;IF DM5040 >= 40 * Zt  THEN
+;
+LD CR2002                ; 常時ON
+LDA.S DM5047             ; Setting Offset
+CON
+EXT.S
+CON
+MUL.L +40
+CON
+STA.L @VM16
+CON
+LDA DM5040               ; Timer Counter Data No.
+CON
+EXT
+CON
+CMP.L @VM16
+LDB CR2009               ; 演算結果が負
+NCJ #2013
+;	DM5040 = 40 * Zt - 20
+;
+LD CR2002                ; 常時ON
+LDA.S DM5047             ; Setting Offset
+CON
+EXT.S
+CON
+MUL.L +40
+CON
+SUB.L +20
+CON
+STA DM5040               ; Timer Counter Data No.
+LD CR2002                ; 常時ON
+CJ #2014
+LABEL #2013
+;ELSE IF DM5040 < 40 * Zt - 20 THEN
+;
+LD CR2002                ; 常時ON
+LDA.S DM5047             ; Setting Offset
+CON
+EXT.S
+CON
+MUL.L +40
+CON
+SUB.L +20
+CON
+STA.L @VM18
+CON
+LDA DM5040               ; Timer Counter Data No.
+CON
+EXT
+CON
+CMP.L @VM18
+LD CR2009                ; 演算結果が負
+NCJ #2015
+;	DM5040 = 39 + (Zt * 40) - 40
+;
+LD CR2002                ; 常時ON
+LDA.S DM5047             ; Setting Offset
+CON
+EXT.S
+CON
+MUL.L +40
+CON
+ADD.L +39
+CON
+SUB.L +40
+CON
+STA DM5040               ; Timer Counter Data No.
+;END IF
+LABEL #2015
+LABEL #2014
+LABEL #1010
+;
+;IF DM5040.S >= 40 * Zt -10 THEN
+;	DM5040 = 0 + (40 * Zt) - 40
+;ELSE IF DM5040.S < (40 * Zt) - 40 THEN
+;	DM5040 = 9 + (40 * Zt) - 40
+;END IF
+LD R41506                ; ｾｷｭﾘﾃｨﾚﾍﾞﾙ2
+AND= DM4000 #352         ; TP 現在表示中画面
+NCJ #1011
+;IF DM5040.S >= 40 * Zt -10 THEN
+;
+LD CR2002                ; 常時ON
+LDA.S DM5047             ; Setting Offset
+CON
+EXT.S
+CON
+MUL.L +40
+CON
+SUB.L +10
+CON
+STA.L @VM20
+CON
+LDA.S DM5040             ; Timer Counter Data No.
+CON
+EXT.S
+CON
+CMP.L @VM20
+LDB CR2009               ; 演算結果が負
+NCJ #2016
+;	DM5040 = 0 + (40 * Zt) - 40
+;
+LD CR2002                ; 常時ON
+LDA.S DM5047             ; Setting Offset
+CON
+EXT.S
+CON
+MUL.L +40
+CON
+ADD.L +0
+CON
+SUB.L +40
+CON
+STA DM5040               ; Timer Counter Data No.
+LD CR2002                ; 常時ON
+CJ #2017
+LABEL #2016
+;ELSE IF DM5040.S < (40 * Zt) - 40 THEN
+;
+LD CR2002                ; 常時ON
+LDA.S DM5047             ; Setting Offset
+CON
+EXT.S
+CON
+MUL.L +40
+CON
+SUB.L +40
+CON
+STA.L @VM22
+CON
+LDA.S DM5040             ; Timer Counter Data No.
+CON
+EXT.S
+CON
+CMP.L @VM22
+LD CR2009                ; 演算結果が負
+NCJ #2018
+;	DM5040 = 9 + (40 * Zt) - 40
+;
+LD CR2002                ; 常時ON
+LDA.S DM5047             ; Setting Offset
+CON
+EXT.S
+CON
+MUL.L +40
+CON
+ADD.L +9
+CON
+SUB.L +40
+CON
+STA DM5040               ; Timer Counter Data No.
+;END IF
+LABEL #2018
+LABEL #2017
+LABEL #1011
+;
+;IF DM5040.S >= 40 * Zt THEN
+;	DM5040 = 0 + (40 * Zt) - 40
+;ELSE IF DM5040.S < 0 + (40 * Zt) - 40 THEN
+;	DM5040 = 39 + (40 * Zt) - 40
+;END IF
+LD R41507                ; 表示モード
+AND= DM4000 #352         ; TP 現在表示中画面
+NCJ #1012
+;IF DM5040.S >= 40 * Zt THEN
+;
+LD CR2002                ; 常時ON
+LDA.S DM5047             ; Setting Offset
+CON
+EXT.S
+CON
+MUL.L +40
+CON
+STA.L @VM24
+CON
+LDA.S DM5040             ; Timer Counter Data No.
+CON
+EXT.S
+CON
+CMP.L @VM24
+LDB CR2009               ; 演算結果が負
+NCJ #2019
+;	DM5040 = 0 + (40 * Zt) - 40
+;
+LD CR2002                ; 常時ON
+LDA.S DM5047             ; Setting Offset
+CON
+EXT.S
+CON
+MUL.L +40
+CON
+ADD.L +0
+CON
+SUB.L +40
+CON
+STA DM5040               ; Timer Counter Data No.
+LD CR2002                ; 常時ON
+CJ #2020
+LABEL #2019
+;ELSE IF DM5040.S < 0 + (40 * Zt) - 40 THEN
+;
+LD CR2002                ; 常時ON
+LDA.S DM5047             ; Setting Offset
+CON
+EXT.S
+CON
+MUL.L +40
+CON
+ADD.L +0
+CON
+SUB.L +40
+CON
+STA.L @VM26
+CON
+LDA.S DM5040             ; Timer Counter Data No.
+CON
+EXT.S
+CON
+CMP.L @VM26
+LD CR2009                ; 演算結果が負
+NCJ #2021
+;	DM5040 = 39 + (40 * Zt) - 40
+;
+LD CR2002                ; 常時ON
+LDA.S DM5047             ; Setting Offset
+CON
+EXT.S
+CON
+MUL.L +40
+CON
+ADD.L +39
+CON
+SUB.L +40
+CON
+STA DM5040               ; Timer Counter Data No.
+;END IF
+LABEL #2021
+LABEL #2020
+LABEL #1012
+;
+;Counter値　DM -> C へ格納
+LD CR2002                ; 常時ON
+MOV.S +200 Z2
+FOR #160
+LD CR2002                ; 常時ON
+MPS
+LDA FM0:Z2               ; 供給口溶着時間[ms]
+CON
+EXT
+CON
+STA.L C0:Z2
+MPP
+INC Z2
+NEXT
+;データ可変管理
+LD R41600                ; Data Setting 変更用隠しSW1
+AND R41601               ; Data Setting 変更用隠しSW2
+OR R41602                ; Data変更可能
+AND= DM4000 #354         ; TP 現在表示中画面
+OUT R41602               ; Data変更可能
+;変更値入力後決定にてData値変更
+;DM500:DM5040 =DM5050 'ﾃﾞｰﾀ変更値を各番号へ格納
+;RES (R41603)
+;
+LD R41603                ; Data値入力完了
+ANP R41604               ; Data値変更決定SW
+NCJ #1013
+;DM500:DM5040 =DM5050 'ﾃﾞｰﾀ変更値を各番号へ格納
+;
+LD CR2002                ; 常時ON
+LDA DM5040               ; Timer Counter Data No.
+CON
+EXT
+CON
+STA.L Z11
+CON
+MOV DM5050 DM500:Z11     ; 変更値格納ｱﾄﾞﾚｽ  吸着不可判定回数
+;RES (R41603)
+;
+LD CR2002                ; 常時ON
+RES R41603               ; Data値入力完了
+LABEL #1013
+;
+;選択できるData番号を制御
+;IF DM5040.S >= 20 * Zt THEN
+;	DM5040 = 0 + (Zt * 20) - 20
+;ELSE IF DM5040.S < 0 + (Zt * 10) - 10 THEN
+;	DM5040 = 9 + (Zt * 20) - 10
+;END IF
+LD R41505                ; ｾｷｭﾘﾃｨﾚﾍﾞﾙ1
+OR R41506                ; ｾｷｭﾘﾃｨﾚﾍﾞﾙ2
+OR R41507                ; 表示モード
+AND= DM4000 #354         ; TP 現在表示中画面
+NCJ #1014
+;IF DM5040.S >= 20 * Zt THEN
+;
+LD CR2002                ; 常時ON
+LDA.S DM5047             ; Setting Offset
+CON
+EXT.S
+CON
+MUL.L +20
+CON
+STA.L @VM28
+CON
+LDA.S DM5040             ; Timer Counter Data No.
+CON
+EXT.S
+CON
+CMP.L @VM28
+LDB CR2009               ; 演算結果が負
+NCJ #2022
+;	DM5040 = 0 + (Zt * 20) - 20
+;
+LD CR2002                ; 常時ON
+LDA.S DM5047             ; Setting Offset
+CON
+EXT.S
+CON
+MUL.L +20
+CON
+ADD.L +0
+CON
+SUB.L +20
+CON
+STA DM5040               ; Timer Counter Data No.
+LD CR2002                ; 常時ON
+CJ #2023
+LABEL #2022
+;ELSE IF DM5040.S < 0 + (Zt * 10) - 10 THEN
+;
+LD CR2002                ; 常時ON
+LDA.S DM5047             ; Setting Offset
+CON
+EXT.S
+CON
+MUL.L +10
+CON
+ADD.L +0
+CON
+SUB.L +10
+CON
+STA.L @VM30
+CON
+LDA.S DM5040             ; Timer Counter Data No.
+CON
+EXT.S
+CON
+CMP.L @VM30
+LD CR2009                ; 演算結果が負
+NCJ #2024
+;	DM5040 = 9 + (Zt * 20) - 10
+;
+LD CR2002                ; 常時ON
+LDA.S DM5047             ; Setting Offset
+CON
+EXT.S
+CON
+MUL.L +20
+CON
+ADD.L +9
+CON
+SUB.L +10
+CON
+STA DM5040               ; Timer Counter Data No.
+;END IF
+LABEL #2024
+LABEL #2023
+LABEL #1014
+;
+;設定画面を抜けたらビットクリア
+LDB R41502               ; Timer変更可能
+ANB R41510               ; Counter変更可能
+ANB R41602               ; Data変更可能
+AND<> DM4000 #350        ; TP 現在表示中画面
+AND<> DM4000 #352        ; TP 現在表示中画面
+AND<> DM4000 #354        ; TP 現在表示中画面
+AND<> DM4000 #800        ; TP 現在表示中画面
+@ZRES DM5051 DM5059      ; ﾊﾟｽﾜｰﾄﾞ格納ｱﾄﾞﾚｽ
+CON
+@ZRES R41500 R41607      ; Timer Setting 変更用隠しSW1  Data Setting Select
+;Timer,Counter,Dataでの表示するﾃｷｽﾄ番号を指定
+LD= DM4000 #350          ; TP 現在表示中画面
+@MOV #1 DM5041           ; Timer Counter Data ﾃｷｽﾄNo.
+LD= DM4000 #352          ; TP 現在表示中画面
+@MOV #2 DM5041           ; Timer Counter Data ﾃｷｽﾄNo.
+LD= DM4000 #354          ; TP 現在表示中画面
+@MOV #3 DM5041           ; Timer Counter Data ﾃｷｽﾄNo.
+;Timer,Counter,Data設定画面に表示させる Station(ST)-Name
+LD CR2002                ; 常時ON
+AND>= R41600 #256        ; Data Setting 変更用隠しSW1
+@DW #5 DM5045            ; Station ﾃｷｽﾄNo.
+CON
+@MOV DM5047 DM5046       ; Setting Offset  Station ﾃｷｽﾄ表示行
+;Timer,Counter,Data設定画面に表示させる Timer(TM)-Name
+;IF DM4000 = #350 THEN
+;	DM5043 = DM5040
+;	DM5042 = DM5043 + 1
+;ELSE IF DM4000 = #352 THEN
+;	DM5043 = DM5040
+;	DM5042 = DM5043 + 1
+;ELSE IF DM4000 = #354 THEN
+;	DM5043 = DM5040
+;	DM5042 = DM5043 + 1
+;END IF
+LD CR2002                ; 常時ON
+NCJ #1015
+;IF DM4000 = #350 THEN
+;
+LD= DM4000 #350          ; TP 現在表示中画面
+NCJ #2025
+;	DM5043 = DM5040
+;
+LD CR2002                ; 常時ON
+MOV DM5040 DM5043        ; Timer Counter Data No.  設定値表示用ｵﾌｾｯﾄｱﾄﾞﾚｽ
+;	DM5042 = DM5043 + 1
+;
+LD CR2002                ; 常時ON
+LDA DM5043               ; 設定値表示用ｵﾌｾｯﾄｱﾄﾞﾚｽ
+CON
+EXT
+CON
+ADD.L +1
+CON
+STA DM5042               ; Timer Counter Data ﾃｷｽﾄ表示行
+LD CR2002                ; 常時ON
+CJ #2026
+LABEL #2025
+;ELSE IF DM4000 = #352 THEN
+;
+LD= DM4000 #352          ; TP 現在表示中画面
+NCJ #2027
+;	DM5043 = DM5040
+;
+LD CR2002                ; 常時ON
+MOV DM5040 DM5043        ; Timer Counter Data No.  設定値表示用ｵﾌｾｯﾄｱﾄﾞﾚｽ
+;	DM5042 = DM5043 + 1
+;
+LD CR2002                ; 常時ON
+LDA DM5043               ; 設定値表示用ｵﾌｾｯﾄｱﾄﾞﾚｽ
+CON
+EXT
+CON
+ADD.L +1
+CON
+STA DM5042               ; Timer Counter Data ﾃｷｽﾄ表示行
+LD CR2002                ; 常時ON
+CJ #2028
+LABEL #2027
+;ELSE IF DM4000 = #354 THEN
+;
+LD= DM4000 #354          ; TP 現在表示中画面
+NCJ #2029
+;	DM5043 = DM5040
+;
+LD CR2002                ; 常時ON
+MOV DM5040 DM5043        ; Timer Counter Data No.  設定値表示用ｵﾌｾｯﾄｱﾄﾞﾚｽ
+;	DM5042 = DM5043 + 1
+;
+LD CR2002                ; 常時ON
+LDA DM5043               ; 設定値表示用ｵﾌｾｯﾄｱﾄﾞﾚｽ
+CON
+EXT
+CON
+ADD.L +1
+CON
+STA DM5042               ; Timer Counter Data ﾃｷｽﾄ表示行
+;END IF
+LABEL #2029
+LABEL #2028
+LABEL #2026
+LABEL #1015
+;
+;Timer,Counter,Data Password処理
+;SELECT CASE DM5056
+;CASE 0 
+;	DM5051 = DM5055	'入力された値を格納
+;	DM5052 = $2A00 'ｱｽﾀﾘｽｸ表示
+;	DM5056 = DM5056 + 1
+;CASE 1 
+;	DM5051 = DM5051 * 10 + DM5055 '入力された値を格納BIN 左ｼﾌﾄ
+;	DM5052 = DM5052 + $002A	'ｱｽﾀﾘｽｸ表示
+;	DM5056 = DM5056 + 1
+;CASE 2
+;	DM5051 = DM5051 * 10 + DM5055 '入力された値を格納BIN 左ｼﾌﾄ
+;'    DM5052.L = RLA(DM5052.L,16)		   '*右ﾛｰﾃｰﾄ
+;    DM5053 = DM5053 + $2A00 
+;	DM5056 = DM5056 + 1				   '
+;CASE 3
+;	DM5051 = DM5051 * 10 + DM5055 '入力された値を格納BIN 左ｼﾌﾄ
+;	DM5053 = DM5053 + $002A	'ｱｽﾀﾘｽｸ表示
+;	DM5056 = DM5056 + 1
+;CASE ELSE
+;	DM5053 = $0000
+;	DM5052 = $4E47
+;	DM5051 = 0
+;END SELECT	
+;DM5055 = 0
+;
+LDP R41514               ; Password Input
+NCJ #1016
+;SELECT CASE DM5056
+;
+LD CR2002                ; 常時ON
+MOV DM5056 @VM32         ; Temporaly address
+;CASE 0 
+;
+LD= @VM32 #0
+NCJ #2030
+;	DM5051 = DM5055	'入力された値を格納
+;
+LD CR2002                ; 常時ON
+MOV DM5055 DM5051        ; Temporaly address  ﾊﾟｽﾜｰﾄﾞ格納ｱﾄﾞﾚｽ
+;	DM5052 = $2A00 'ｱｽﾀﾘｽｸ表示
+;
+LD CR2002                ; 常時ON
+MOV $2A00 DM5052         ; [*]格納ｱﾄﾞﾚｽ
+;	DM5056 = DM5056 + 1
+;
+LD CR2002                ; 常時ON
+LDA DM5056               ; Temporaly address
+CON
+EXT
+CON
+ADD.L +1
+CON
+STA DM5056               ; Temporaly address
+LD CR2002                ; 常時ON
+CJ #2031
+LABEL #2030
+;CASE 1 
+;
+LD= @VM32 #1
+NCJ #2032
+;	DM5051 = DM5051 * 10 + DM5055 '入力された値を格納BIN 左ｼﾌﾄ
+;
+LD CR2002                ; 常時ON
+LDA DM5051               ; ﾊﾟｽﾜｰﾄﾞ格納ｱﾄﾞﾚｽ
+CON
+EXT
+CON
+MUL.L +10
+CON
+STA.L @VM33
+CON
+LDA DM5055               ; Temporaly address
+CON
+EXT
+CON
+ADD.L @VM33
+CON
+STA DM5051               ; ﾊﾟｽﾜｰﾄﾞ格納ｱﾄﾞﾚｽ
+;	DM5052 = DM5052 + $002A	'ｱｽﾀﾘｽｸ表示
+;
+LD CR2002                ; 常時ON
+LDA DM5052               ; [*]格納ｱﾄﾞﾚｽ
+CON
+EXT
+CON
+ADD.L $0000002A
+CON
+STA DM5052               ; [*]格納ｱﾄﾞﾚｽ
+;	DM5056 = DM5056 + 1
+;
+LD CR2002                ; 常時ON
+LDA DM5056               ; Temporaly address
+CON
+EXT
+CON
+ADD.L +1
+CON
+STA DM5056               ; Temporaly address
+LD CR2002                ; 常時ON
+CJ #2033
+LABEL #2032
+;CASE 2
+;
+LD= @VM32 #2
+NCJ #2034
+;	DM5051 = DM5051 * 10 + DM5055 '入力された値を格納BIN 左ｼﾌﾄ
+;
+LD CR2002                ; 常時ON
+LDA DM5051               ; ﾊﾟｽﾜｰﾄﾞ格納ｱﾄﾞﾚｽ
+CON
+EXT
+CON
+MUL.L +10
+CON
+STA.L @VM35
+CON
+LDA DM5055               ; Temporaly address
+CON
+EXT
+CON
+ADD.L @VM35
+CON
+STA DM5051               ; ﾊﾟｽﾜｰﾄﾞ格納ｱﾄﾞﾚｽ
+;'    DM5052.L = RLA(DM5052.L,16)		   '*右ﾛｰﾃｰﾄ
+;
+;    DM5053 = DM5053 + $2A00 
+;
+LD CR2002                ; 常時ON
+LDA DM5053               ; [*]格納ｱﾄﾞﾚｽ
+CON
+EXT
+CON
+ADD.L $00002A00
+CON
+STA DM5053               ; [*]格納ｱﾄﾞﾚｽ
+;	DM5056 = DM5056 + 1				   '
+;
+LD CR2002                ; 常時ON
+LDA DM5056               ; Temporaly address
+CON
+EXT
+CON
+ADD.L +1
+CON
+STA DM5056               ; Temporaly address
+LD CR2002                ; 常時ON
+CJ #2035
+LABEL #2034
+;CASE 3
+;
+LD= @VM32 #3
+NCJ #2036
+;	DM5051 = DM5051 * 10 + DM5055 '入力された値を格納BIN 左ｼﾌﾄ
+;
+LD CR2002                ; 常時ON
+LDA DM5051               ; ﾊﾟｽﾜｰﾄﾞ格納ｱﾄﾞﾚｽ
+CON
+EXT
+CON
+MUL.L +10
+CON
+STA.L @VM37
+CON
+LDA DM5055               ; Temporaly address
+CON
+EXT
+CON
+ADD.L @VM37
+CON
+STA DM5051               ; ﾊﾟｽﾜｰﾄﾞ格納ｱﾄﾞﾚｽ
+;	DM5053 = DM5053 + $002A	'ｱｽﾀﾘｽｸ表示
+;
+LD CR2002                ; 常時ON
+LDA DM5053               ; [*]格納ｱﾄﾞﾚｽ
+CON
+EXT
+CON
+ADD.L $0000002A
+CON
+STA DM5053               ; [*]格納ｱﾄﾞﾚｽ
+;	DM5056 = DM5056 + 1
+;
+LD CR2002                ; 常時ON
+LDA DM5056               ; Temporaly address
+CON
+EXT
+CON
+ADD.L +1
+CON
+STA DM5056               ; Temporaly address
+LD CR2002                ; 常時ON
+CJ #2037
+LABEL #2036
+;CASE ELSE
+;
+;	DM5053 = $0000
+;
+LD CR2002                ; 常時ON
+MOV $0000 DM5053         ; [*]格納ｱﾄﾞﾚｽ
+;	DM5052 = $4E47
+;
+LD CR2002                ; 常時ON
+MOV $4E47 DM5052         ; [*]格納ｱﾄﾞﾚｽ
+;	DM5051 = 0
+;
+LD CR2002                ; 常時ON
+MOV #0 DM5051            ; ﾊﾟｽﾜｰﾄﾞ格納ｱﾄﾞﾚｽ
+;END SELECT	
+;
+LABEL #2037
+LABEL #2035
+LABEL #2033
+LABEL #2031
+;DM5055 = 0
+;
+LD CR2002                ; 常時ON
+MOV #0 DM5055            ; Temporaly address
+LABEL #1016
+;
+LD R41515                ; Password Input OK
+MPS
+AND R41605               ; Timer Setting Select
+MPS
+AND= #123 DM5051         ; ﾊﾟｽﾜｰﾄﾞ格納ｱﾄﾞﾚｽ
+DW #350 DM4008           ; TP 切り替え画面No
+CON
+SET R41505               ; ｾｷｭﾘﾃｨﾚﾍﾞﾙ1
+MRD
+AND= #6069 DM5051        ; ﾊﾟｽﾜｰﾄﾞ格納ｱﾄﾞﾚｽ
+DW #350 DM4008           ; TP 切り替え画面No
+CON
+SET R41506               ; ｾｷｭﾘﾃｨﾚﾍﾞﾙ2
+MPP
+LD<> #123 DM5051         ; ﾊﾟｽﾜｰﾄﾞ格納ｱﾄﾞﾚｽ
+AND<> #6069 DM5051       ; ﾊﾟｽﾜｰﾄﾞ格納ｱﾄﾞﾚｽ
+ANL
+DW #0 DM5051             ; ﾊﾟｽﾜｰﾄﾞ格納ｱﾄﾞﾚｽ
+CON
+DW $4E47 DM5052          ; [*]格納ｱﾄﾞﾚｽ
+CON
+DW $0000 DM5053          ; [*]格納ｱﾄﾞﾚｽ
+MRD
+AND R41606               ; Counter Setting Select
+MPS
+AND= #123 DM5051         ; ﾊﾟｽﾜｰﾄﾞ格納ｱﾄﾞﾚｽ
+DW #352 DM4008           ; TP 切り替え画面No
+CON
+SET R41505               ; ｾｷｭﾘﾃｨﾚﾍﾞﾙ1
+MRD
+AND= #6069 DM5051        ; ﾊﾟｽﾜｰﾄﾞ格納ｱﾄﾞﾚｽ
+DW #352 DM4008           ; TP 切り替え画面No
+CON
+SET R41506               ; ｾｷｭﾘﾃｨﾚﾍﾞﾙ2
+MPP
+LD<> #123 DM5051         ; ﾊﾟｽﾜｰﾄﾞ格納ｱﾄﾞﾚｽ
+AND<> #6069 DM5051       ; ﾊﾟｽﾜｰﾄﾞ格納ｱﾄﾞﾚｽ
+ANL
+DW #0 DM5051             ; ﾊﾟｽﾜｰﾄﾞ格納ｱﾄﾞﾚｽ
+CON
+DW $4E47 DM5052          ; [*]格納ｱﾄﾞﾚｽ
+CON
+DW $0000 DM5053          ; [*]格納ｱﾄﾞﾚｽ
+MRD
+AND R41607               ; Data Setting Select
+MPS
+AND= #123 DM5051         ; ﾊﾟｽﾜｰﾄﾞ格納ｱﾄﾞﾚｽ
+DW #354 DM4008           ; TP 切り替え画面No
+CON
+SET R41505               ; ｾｷｭﾘﾃｨﾚﾍﾞﾙ1
+MRD
+AND= #6069 DM5051        ; ﾊﾟｽﾜｰﾄﾞ格納ｱﾄﾞﾚｽ
+DW #354 DM4008           ; TP 切り替え画面No
+CON
+SET R41506               ; ｾｷｭﾘﾃｨﾚﾍﾞﾙ2
+MPP
+LD<> #123 DM5051         ; ﾊﾟｽﾜｰﾄﾞ格納ｱﾄﾞﾚｽ
+AND<> #6069 DM5051       ; ﾊﾟｽﾜｰﾄﾞ格納ｱﾄﾞﾚｽ
+ANL
+DW #0 DM5051             ; ﾊﾟｽﾜｰﾄﾞ格納ｱﾄﾞﾚｽ
+CON
+DW $4E47 DM5052          ; [*]格納ｱﾄﾞﾚｽ
+CON
+DW $0000 DM5053          ; [*]格納ｱﾄﾞﾚｽ
+MPP
+AND R41700               ; Model setting　select
+MPS
+AND= #123 DM5051         ; ﾊﾟｽﾜｰﾄﾞ格納ｱﾄﾞﾚｽ
+DW #331 DM4008           ; TP 切り替え画面No
+CON
+SET R41505               ; ｾｷｭﾘﾃｨﾚﾍﾞﾙ1
+MPP
+AND<> #123 DM5051        ; ﾊﾟｽﾜｰﾄﾞ格納ｱﾄﾞﾚｽ
+DW #0 DM5051             ; ﾊﾟｽﾜｰﾄﾞ格納ｱﾄﾞﾚｽ
+CON
+DW $4E47 DM5052          ; [*]格納ｱﾄﾞﾚｽ
+CON
+DW $0000 DM5053          ; [*]格納ｱﾄﾞﾚｽ
+;
+END
+ENDH

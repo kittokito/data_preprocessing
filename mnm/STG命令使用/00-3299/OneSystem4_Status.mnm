@@ -1,0 +1,657 @@
+DEVICE:53
+;MODULE:OneSystem4_Status
+;MODULE_TYPE:0
+;OneSystem Master-Module
+;
+;-----------------------------------------
+;ModuleName	:	OneSystem4_Status
+;ModuleType	:	Master Module
+;Function	:	Status Control
+;-----------------------------------------
+;
+;Copylight(C) 2011 SEIKO EPSON Corp. All rights reserved.
+;<h1/>Emergency Stop/非常停止処理
+;非常停止要求発生待ち
+;・非常停止SW押下
+;・優先ｴﾗｰ(F_ERROR_DISP)
+;・ｼｽﾃﾑｴﾗｰ
+LDB TRAPDO               ; _非常停止中　ﾓｰﾄﾞﾌﾗｸﾞ
+MPS
+ANB ESTOP_SW             ; *非常停止ｽｲｯﾁ
+BSET Estop_Factor #0     ; _非常停止要因
+MRD
+AND ESTOP_FERR           ; _優先ｴﾗｰ発生要求
+BSET Estop_Factor #1     ; _非常停止要因
+MRD
+AND SystemErr            ; _OneSystem優先ｴﾗｰ要求
+BSET Estop_Factor #2     ; _非常停止要因
+MPP
+AND CR2003               ; 常時OFF
+BSET Estop_Factor #3     ; _非常停止要因
+BSET Estop_Factor #4     ; _非常停止要因
+;非常停止処理
+;優先ｴﾗｰｺｰﾄﾞ転送
+;・非常停止SW押下時優先ｴﾗｰ画面出力(ｴﾗｰ番号は#64固定)
+;・ｼｽﾃﾑｴﾗｰはｴﾗｰｺｰﾄﾞ確認
+LD<> Estop_Factor #0     ; _非常停止要因
+MPS
+BAND Estop_Factor #0     ; _非常停止要因
+MOV #64 KtoV_FERR_ERR    ; _優先ｴﾗｰ　ｴﾗｰ番号
+MOV #64 KtoV_FERR_MSG    ; _優先ｴﾗｰ　ﾒｯｾｰｼﾞ番号
+SET KtoV_FERR_OPN        ; _優先ｴﾗｰ画面表示
+MRD
+BAND Estop_Factor #2     ; _非常停止要因
+MOV SysErrorCode KtoV_FERR_ERR;_ｼｽﾃﾑｴﾗｰｺｰﾄﾞ  _優先ｴﾗｰ　ｴﾗｰ番号
+MOV SysErrorCode KtoV_FERR_MSG;_ｼｽﾃﾑｴﾗｰｺｰﾄﾞ  _優先ｴﾗｰ　ﾒｯｾｰｼﾞ番号
+SET KtoV_FERR_OPN        ; _優先ｴﾗｰ画面表示
+MPP
+SET TRAPDO               ; _非常停止中　ﾓｰﾄﾞﾌﾗｸﾞ
+;非常停止時初期化処理
+;・ﾒｲﾝﾓｼﾞｭｰﾙ停止
+;・非常停止要因によるﾃﾞﾊﾞｲｽ初期化
+;・Estop_Handle
+LDP TRAPDO               ; _非常停止中　ﾓｰﾄﾞﾌﾗｸﾞ
+MPS
+AND _BringDown_Standby
+MDSTOP BringDown_Standby
+MRD
+AND GROUPDO1             ; _Group1起動中ﾌﾗｸﾞ
+SET MD_Stop              ; _Group1　ﾒｲﾝﾓｼﾞｭｰﾙ停止要求
+MRD
+RES AUTODO               ; _自動運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+CON
+RES HOMEDO               ; _原点復帰中　ﾓｰﾄﾞﾌﾗｸﾞ
+CON
+RES MAINTEDO             ; _ﾒﾝﾃﾅﾝｽ運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+CON
+RES PARADO               ; _ﾊﾟﾗﾒｰﾀ編集中　ﾓｰﾄﾞﾌﾗｸﾞ
+CON
+RES CYCLEDO              ; _装置ｻｲｸﾙﾀｲﾑ計測中
+CON
+RES HOLD                 ; _定停止移行中
+CON
+RES HOLDRQ               ; _定停止要求
+MRD
+ZRES HOLDm1 HOLDm8       ; _Group1　ﾒﾝﾃ動作定停止移行中  _Group8　ﾒﾝﾃ動作定停止移行中
+CON
+ZRES HOLDRQm1 HOLDRQm8   ; _Group1　ﾒﾝﾃ動作定停止要求  _Group8　ﾒﾝﾃ動作定停止要求
+CON
+ZRES GROUPDO1 GROUPDO8   ; _Group1起動中ﾌﾗｸﾞ  _Group8起動中ﾌﾗｸﾞ
+CON
+ZRES TASKDO1 R42515      ; _Grp1_Task0_起動中ﾌﾗｸﾞ
+CON
+ZRES MAINTE_IN1 MAINTE_IN8;_Group1　ﾒﾝﾃ動作中  _Group8　ﾒﾝﾃ動作中
+CON
+ZRES Task_Start1 LR9915  ; _Grp1_Task0_Start.STG  _Grp8_Task31_MAINTE.STG
+CON
+ZRES OVERF1 OVERF8       ; _Group1　ｵｰﾊﾞｰﾌﾛｰ宣言  _Group8　ｵｰﾊﾞｰﾌﾛｰ宣言
+MRD
+ZRES ERROR1 ERROR8       ; _Group1　ｴﾗｰ発生中  _Group8　ｴﾗｰ発生中
+CON
+ZRES HALT1 R44015        ; _Grp1_Task0_ﾎﾟｰｽﾞ許可  _Grp8_Task15_ﾎﾟｰｽﾞ許可
+CON
+ZRES PAUSE1 PAUSE8       ; _Grp1 ﾎﾟｰｽﾞ要求  _Grp8 ﾎﾟｰｽﾞ要求
+CON
+ZRES AREADO1 AREADO8     ; _Group1　ｴﾘｱｾﾝｻ遮断中  _Group8　ｴﾘｱｾﾝｻ遮断中
+CON
+ZRES SYSEXC_ERR1 SYSEXC_BBS8;_Group1　ｴﾗｰ処理排他  _Group8　BBS排他
+CON
+ZRES SYS_Bz1_RQ1 SYS_Bz8_RQ4;_Group1　ｼｽﾃﾑﾌﾞｻﾞｰ要求1  _Group8　ｼｽﾃﾑﾌﾞｻﾞｰ要求4
+CON
+ZRES SYS_RLMP1_RQ1 SYS_RLMP8_RQ4;_Group1　ﾗﾝﾌﾟ赤点滅要求1  _Group8　ﾗﾝﾌﾟ赤点滅要求4
+MRD
+ZRES VtoK_MODE_AUTO VtoK_MODE_MAINTE;_AUTOﾓｰﾄﾞ押下  _MAINTEﾓｰﾄﾞ押下
+CON
+ZRES KtoV_ERR1_OPN KtoV_ERR8_DSP4;_通常ｴﾗｰ画面表示  _復帰SW4表示／非表示
+CON
+ZRES KtoV_MSG1_OPN VtoK_WRN8_CLS;_MSG画面表示  _WARN画面消去
+CON
+ZRES KtoV_YN1_OPN VtoK_PASS_CHANGE;_Y/N画面表示  _ｵﾍﾟﾚﾍﾞ変更確認
+CON
+ZRES KtoV_MDL_NumFull KtoV_MDL_NewMdlNG;_機種数Full  _新機種作成不可
+CON
+ZRES KtoV_TERR1_OPN KtoV_ACT8_DSP4;_ﾀｲﾑｱｯﾌﾟｴﾗｰ表示要求  _ACT選択ﾎﾞﾀﾝ表示／非表示
+CON
+ZRES VtoK_DT_CmnSetEnd KtoV_DT_MemCard;_機種ﾃﾞｰﾀ設定終了  _ﾒﾓﾘｰｶｰﾄﾞｱｸｾｽ禁止
+MRD
+ZRES Power_On Data_Distribut;_運転開始ﾕｰｻﾞｰSTG  _ﾊﾟﾗﾒｰﾀ変更後ﾕｰｻﾞｰSTG
+CON
+ZRES ModeOut_Handle Area8_After;_ﾓｰﾄﾞOUTﾕｰｻﾞｰSTG  _ｴﾘｱｾﾝｻ8復帰ﾕｰｻﾞｰSTG
+MRD
+MOV #0 Air_Factor        ; _ｴｱｰ圧低下時ﾀｽｸ起動状態
+MRD
+FMOV #0 KtoV_ERR_ALM #256; _通常ｴﾗｰ(ID0)ｱﾗｰﾑ検出ﾜｰﾄﾞﾋﾞｯﾄ
+MRD
+FMOV #0 KtoV_TERR_ALM #256;_ﾀｲﾑｱｯﾌﾟｴﾗｰ(ID1)ｱﾗｰﾑ検出ﾜｰﾄﾞﾋﾞｯﾄ
+MRD
+FMOV #0 KtoV_ERR1_ERR #100;_通常ｴﾗｰ　ｴﾗｰ番号
+MPP
+FMOV #0 KtoV_YN1_MSG #222; _Y_Nﾒｯｾｰｼﾞ番号
+;Task全終了後、Estop_Handle実行
+LD TRAPDO                ; _非常停止中　ﾓｰﾄﾞﾌﾗｸﾞ
+ANB _BringDown_Standby
+@SET Estop_Handle        ; _非常停止ﾕｰｻﾞｰSTG
+;非常停止復帰待ち
+;・非常停止SW解除
+;・優先ｴﾗｰ画面消去
+LD TRAPDO                ; _非常停止中　ﾓｰﾄﾞﾌﾗｸﾞ
+ANB Estop_Handle         ; _非常停止ﾕｰｻﾞｰSTG
+MPS
+BLD Estop_Factor #0      ; _非常停止要因
+AND ESTOP_SW             ; *非常停止ｽｲｯﾁ
+ANP VtoK_FERR_CLS        ; _優先ｴﾗｰ画面消去
+ANL
+RES KtoV_FERR_OPN        ; _優先ｴﾗｰ画面表示
+CON
+BRES Estop_Factor #0     ; _非常停止要因
+MRD
+BLD Estop_Factor #1      ; _非常停止要因
+ANP VtoK_FERR_CLS        ; _優先ｴﾗｰ画面消去
+ANL
+RES ESTOP_FERR           ; _優先ｴﾗｰ発生要求
+CON
+RES KtoV_FERR_OPN        ; _優先ｴﾗｰ画面表示
+CON
+BRES Estop_Factor #1     ; _非常停止要因
+MRD
+BLD Estop_Factor #2      ; _非常停止要因
+ANP VtoK_FERR_CLS        ; _優先ｴﾗｰ画面消去
+ANL
+RES SystemErr            ; _OneSystem優先ｴﾗｰ要求
+CON
+RES KtoV_FERR_OPN        ; _優先ｴﾗｰ画面表示
+CON
+BRES Estop_Factor #2     ; _非常停止要因
+MRD
+BAND Estop_Factor #3     ; _非常停止要因
+BRES Estop_Factor #3     ; _非常停止要因
+MPP
+BAND Estop_Factor #4     ; _非常停止要因
+BRES Estop_Factor #4     ; _非常停止要因
+;非常停止要因解除処理
+;・安全回路非常停止出力解除
+;・TRAPDO解除
+;・Estop_Revival
+LD TRAPDO                ; _非常停止中　ﾓｰﾄﾞﾌﾗｸﾞ
+AND= Estop_Factor #0     ; _非常停止要因
+RES F_ESTOP              ; *非常停止出力
+CON
+TMR @0 OS_relay_delay    ; 安全回路ﾘﾚｰ反応時間  _安全回路ﾘﾚｰ反応時間
+CON
+AND @T0                  ; 安全回路ﾘﾚｰ反応時間
+RES TRAPDO               ; _非常停止中　ﾓｰﾄﾞﾌﾗｸﾞ
+LDF TRAPDO               ; _非常停止中　ﾓｰﾄﾞﾌﾗｸﾞ
+MPS
+SET STOPDO               ; _停止中　ﾓｰﾄﾞﾌﾗｸﾞ
+MPP
+LDB TRAPDO               ; _非常停止中　ﾓｰﾄﾞﾌﾗｸﾞ
+AND STOPDO               ; _停止中　ﾓｰﾄﾞﾌﾗｸﾞ
+ANL
+SET Estop_Revival        ; _非常停止復帰ﾕｰｻﾞｰSTG
+CON
+SET @R001                ; EstopRevival終了待ち
+STG @R001                ; EstopRevival終了待ち
+ANB Estop_Revival        ; _非常停止復帰ﾕｰｻﾞｰSTG
+ENDS
+;<h1/>Air Pressure/ｴｱｰ元圧処理
+;<h1/>common/共通処理
+;ｴｱｰ元圧低下中非常停止復帰時ﾓｼﾞｭｰﾙ未起動処理
+;・ｴｱｰ圧低下中の非常停止発生にてAir_Factorをｸﾘｱして復帰時にﾓｼﾞｭｰﾙ起動させない
+LDP TRAPDO               ; _非常停止中　ﾓｰﾄﾞﾌﾗｸﾞ
+MOV #0 Air_Factor        ; _ｴｱｰ圧低下時ﾀｽｸ起動状態
+;<ｴｱｰ元圧低下状態まとめ>
+;1CPU/ｸﾞﾙｰﾌﾟ毎に係わらず各ｸﾞﾙｰﾌﾟのｴｱｰ元圧状態をAirState*に格納
+;→OneSystemが使用する(AIR_LOW*だと他の箇所での確認が複雑になるので)
+;・1CPU1系統の場合→AIR_LOW状態をAirStateに出力
+;・ｸﾞﾙｰﾌﾟ毎の場合→各ｸﾞﾙｰﾌﾟのAIR_LOW状態をAirStateに出力
+LD= AirPress_Sys #0      ; _ｴｱｰ元圧系統設定
+OR= AirPress_Sys #1      ; _ｴｱｰ元圧系統設定
+AND AIR_LOW              ; _Group1 ｴｱｰ圧低下状態
+OUT AirState1            ; _Group1 ｴｱｰ元圧状態
+LD= AirPress_Sys #0      ; _ｴｱｰ元圧系統設定
+AND AIR_LOW              ; _Group1 ｴｱｰ圧低下状態
+LD= AirPress_Sys #1      ; _ｴｱｰ元圧系統設定
+AND AIR_LOW2             ; _Group2 ｴｱｰ圧低下状態
+ORL
+OUT AirState2            ; _Group2 ｴｱｰ元圧状態
+LD= AirPress_Sys #0      ; _ｴｱｰ元圧系統設定
+AND AIR_LOW              ; _Group1 ｴｱｰ圧低下状態
+LD= AirPress_Sys #1      ; _ｴｱｰ元圧系統設定
+AND AIR_LOW3             ; _Group3 ｴｱｰ圧低下状態
+ORL
+OUT AirState3            ; _Group3 ｴｱｰ元圧状態
+;<ｴｱｰ元圧検出監視設定機能>
+;	・常時監視(AirPress_Moni=0)
+;	・安全ｶﾊﾞｰ開中のみ監視無効(AirPress_Moni=1)←本選択されている場合の処理
+;監視無効条件まとめ
+;・AirPress_Moni=1(安全ｶﾊﾞｰ開処理中監視無効)に設定されている
+;・元圧検出が1CPU1系統の場合はいずれかの安全ｶﾊﾞｰ開処理中が成立したらｷｬﾝｾﾙ可能
+;・元圧検出が1ｸﾞﾙｰﾌﾟ1系統の場合は自系統安全ｶﾊﾞｰ開処理中が成立したらｷｬﾝｾﾙ可能
+;安全ｶﾊﾞｰ開処理開始にて監視無効処理開始
+LD= AirPress_Moni #1     ; _ｴｱｰ元圧監視設定
+MPS
+AND= AirPress_Sys #0     ; _ｴｱｰ元圧系統設定
+LDA PACKED1              ; _安全ｶﾊﾞｰ1開処理中
+CON
+ANDA $00FF
+CON
+CMP #0
+CON
+AND CR2011               ; 演算結果が正
+MEP
+SET Air1_Invalid         ; _元圧検出1無効宣言
+CON
+SET @R1900               ; 安全ｶﾊﾞｰ開待ち
+MPP
+AND= AirPress_Sys #1     ; _ｴｱｰ元圧系統設定
+MPS
+ANP PACKED1              ; _安全ｶﾊﾞｰ1開処理中
+SET Air1_Invalid         ; _元圧検出1無効宣言
+CON
+SET @R1900               ; 安全ｶﾊﾞｰ開待ち
+MRD
+ANP PACKED2              ; _安全ｶﾊﾞｰ2開処理中
+SET Air2_Invalid         ; _元圧検出2無効宣言
+CON
+SET @R1908               ; 安全ｶﾊﾞｰ開待ち
+MPP
+ANP PACKED3              ; _安全ｶﾊﾞｰ3開処理中
+SET Air3_Invalid         ; _元圧検出3無効宣言
+CON
+SET @R2000               ; 安全ｶﾊﾞｰ開待ち
+;<Group1> or <全系統>
+;安全ｶﾊﾞｰ開待ち
+STG @R1900               ; 安全ｶﾊﾞｰ開待ち
+MPS
+AND= AirPress_Sys #0     ; _ｴｱｰ元圧系統設定
+LDA OPEN1                ; _安全ｶﾊﾞｰ1開中
+CON
+ANDA $00FF
+CON
+CMP #0
+CON
+AND CR2011               ; 演算結果が正
+JMP @R1901               ; 安全ｶﾊﾞｰﾛｯｸ待ち
+MPP
+LD= AirPress_Sys #1      ; _ｴｱｰ元圧系統設定
+AND OPEN1                ; _安全ｶﾊﾞｰ1開中
+ANL
+JMP @R1901               ; 安全ｶﾊﾞｰﾛｯｸ待ち
+;安全ｶﾊﾞｰ閉待ち
+STG @R1901               ; 安全ｶﾊﾞｰﾛｯｸ待ち
+MPS
+AND= AirPress_Sys #0     ; _ｴｱｰ元圧系統設定
+LDA OPEN1                ; _安全ｶﾊﾞｰ1開中
+CON
+ANDA $00FF
+CON
+CMP #0
+CON
+AND CR2010               ; 演算結果がｾﾞﾛ
+JMP @R1902               ; ﾛｯｸ後元圧低下確認
+MPP
+LD= AirPress_Sys #1      ; _ｴｱｰ元圧系統設定
+ANB OPEN1                ; _安全ｶﾊﾞｰ1開中
+ANL
+JMP @R1902               ; ﾛｯｸ後元圧低下確認
+;元圧低下していたらﾗｯﾁ解除、それでも復帰しなければ元圧低下処理へ
+STG @R1902               ; ﾛｯｸ後元圧低下確認
+MPS
+ANB AIR_PRES1            ; *Group1　ｴｱｰ元圧検出
+JMP @R1903               ; ﾗｯﾁ解除
+MPP
+AND AIR_PRES1            ; *Group1　ｴｱｰ元圧検出
+RES Air1_Invalid         ; _元圧検出1無効宣言
+CON
+ENDS
+STG @R1903               ; ﾗｯﾁ解除
+SET AIR_RST1             ; *Group1　ｴｱｰ元圧検出ﾗｯﾁ解除
+CON
+TMR @40 OS_air_wait      ; ｴｱｰﾗｯﾁ解除確認時間  _ｴｱｰﾗｯﾁ解除確認時間
+CON
+AND @T40                 ; ｴｱｰﾗｯﾁ解除確認時間
+JMP @R1904               ; 元圧復帰確認
+STG @R1904               ; 元圧復帰確認
+RES AIR_RST1             ; *Group1　ｴｱｰ元圧検出ﾗｯﾁ解除
+CON
+MPS
+AND AIR_PRES1            ; *Group1　ｴｱｰ元圧検出
+RES Air1_Invalid         ; _元圧検出1無効宣言
+CON
+ENDS
+MPP
+ANB AIR_PRES1            ; *Group1　ｴｱｰ元圧検出
+RES Air1_Invalid         ; _元圧検出1無効宣言
+CON
+MPS
+AND= AirPress_Sys #0     ; _ｴｱｰ元圧系統設定
+SET @R110                ; 元圧復帰異常
+CON
+ENDS
+MPP
+AND= AirPress_Sys #1     ; _ｴｱｰ元圧系統設定
+SET @R1800               ; 元圧復帰異常
+CON
+ENDS
+;●Ver0.10～
+;ｴｱｰ元圧系統を1CPU/ｸﾞﾙｰﾌﾟ毎管理選択可能とする(AirPress_Sys =0:1CPU1系統、=1:ｸﾞﾙｰﾌﾟ毎系統)
+;<h1/>case 1CPU-1System Proc/1CPU1系統処理
+;【1CPU1系統の場合】AirPress_Sys = #0
+LD= AirPress_Sys #0      ; _ｴｱｰ元圧系統設定
+MC
+;運転開始時ﾗｯﾁ解除処理
+;・元圧低下していたら低下状態へ移行
+LD CR2008                ; 運転開始時1ｽｷｬﾝON
+MPS
+ANB AIR_PRES1            ; *Group1　ｴｱｰ元圧検出
+SET AIR_LOW              ; _Group1 ｴｱｰ圧低下状態
+MPP
+SET @R104                ; ｴｱｰﾗｯﾁ解除
+;ｴｱｰ元圧低下監視
+;・(通常)監視有効状態でｴｱｰ元圧検出(AIR_PRES)がOFFした場合
+;・監視無効状態が終了した時ｴｱｰ元圧検出がOFFしていた場合
+LDB AIR_LOW              ; _Group1 ｴｱｰ圧低下状態
+LDB Air1_Invalid         ; _元圧検出1無効宣言
+ANF AIR_PRES1            ; *Group1　ｴｱｰ元圧検出
+ORP @R110                ; 元圧復帰異常
+ANL
+MPS
+RES @R110                ; 元圧復帰異常
+CON
+SET @R100                ; Task停止確認
+MRD
+AND<>.D TASKDO1 #0       ; _Grp1_Task0_起動中ﾌﾗｸﾞ
+BSET Air_Factor #0       ; _ｴｱｰ圧低下時ﾀｽｸ起動状態
+CON
+SET MD_Stop:#0           ; _Group1　ﾒｲﾝﾓｼﾞｭｰﾙ停止要求
+MRD
+AND<>.D R41200 #0        ; TASK0 PAUSE 
+BSET Air_Factor #1       ; _ｴｱｰ圧低下時ﾀｽｸ起動状態
+CON
+SET MD_Stop:#1           ; _Group2　ﾒｲﾝﾓｼﾞｭｰﾙ停止要求
+MRD
+AND<>.D TASKDO3 #0
+BSET Air_Factor #2       ; _ｴｱｰ圧低下時ﾀｽｸ起動状態
+CON
+SET MD_Stop:#2           ; _Group3　ﾒｲﾝﾓｼﾞｭｰﾙ停止要求
+MPP
+AND _BringDown_Standby
+BSET Air_Factor #8       ; _ｴｱｰ圧低下時ﾀｽｸ起動状態
+CON
+MDSTOP BringDown_Standby
+;Task停止待ち
+;・起動Taskの全停止待ち
+STG @R100                ; Task停止確認
+ANB _BringDown_Standby
+LDA MD_Stop              ; _Group1　ﾒｲﾝﾓｼﾞｭｰﾙ停止要求
+CON
+ANDA $00FF
+CON
+CMP #0
+CON
+AND CR2010               ; 演算結果がｾﾞﾛ
+SET AIR_LOW              ; _Group1 ｴｱｰ圧低下状態
+CON
+SET Air_Before           ; _ｴｱｰ元圧低下1ﾕｰｻﾞｰSTG
+CON
+JMP @R101                ; Air_Before終了待ち
+STG @R101                ; Air_Before終了待ち
+ANB Air_Before           ; _ｴｱｰ元圧低下1ﾕｰｻﾞｰSTG
+JMP @R102                ; 安全ｶﾊﾞｰ開未処理待ち
+;ｴｱｰ元圧解除処理
+;・安全ｶﾊﾞｰ未処理+STARTｽｲｯﾁでｴｱｰﾗｯﾁ解除処理へ
+;(安全ｶﾊﾞｰが開いていたら最初のSTARTｽｲｯﾁは安全ｶﾊﾞｰを閉める)
+LDB START_SW1            ; *Group1　ｽﾀｰﾄSW
+ANB START_SW2            ; *Group2　ｽﾀｰﾄSW
+ANB START_SW3            ; *Group3　ｽﾀｰﾄSW
+ANB START_SW4            ; *Group4　ｽﾀｰﾄSW
+ANB START_SW5            ; *Group5　ｽﾀｰﾄSW
+ANB START_SW6            ; *Group6　ｽﾀｰﾄSW
+ANB START_SW7            ; *Group7　ｽﾀｰﾄSW
+ANB START_SW8            ; *Group8　ｽﾀｰﾄSW
+OUT StartSwOFF           ; 全ｽﾀｰﾄSWｵﾌ状態
+STG @R102                ; 安全ｶﾊﾞｰ開未処理待ち
+LDA PACKED1              ; _安全ｶﾊﾞｰ1開処理中
+CON
+ANDA $00FF
+CON
+CMP #0
+CON
+AND CR2010               ; 演算結果がｾﾞﾛ
+AND StartSwOFF           ; 全ｽﾀｰﾄSWｵﾌ状態
+JMP @R103                ; STARTｽｲｯﾁ待ち
+STG @R103                ; STARTｽｲｯﾁ待ち
+ANP START_SW1            ; *Group1　ｽﾀｰﾄSW
+JMP @R104                ; ｴｱｰﾗｯﾁ解除
+;・AIRﾗｯﾁ解除～元圧ｾﾝｻ復帰待ち
+STG @R104                ; ｴｱｰﾗｯﾁ解除
+SET AIR_RST1             ; *Group1　ｴｱｰ元圧検出ﾗｯﾁ解除
+CON
+TMR @1 OS_air_wait       ; ｴｱｰﾗｯﾁ解除確認時間  _ｴｱｰﾗｯﾁ解除確認時間
+CON
+AND @T1                  ; ｴｱｰﾗｯﾁ解除確認時間
+JMP @R105                ; 元圧検出復帰待ち
+STG @R105                ; 元圧検出復帰待ち
+RES AIR_RST1             ; *Group1　ｴｱｰ元圧検出ﾗｯﾁ解除
+CON
+MPS
+AND AIR_PRES1            ; *Group1　ｴｱｰ元圧検出
+JMP @R106                ; 元圧状態解除
+MPP
+ANB AIR_PRES1            ; *Group1　ｴｱｰ元圧検出
+JMP @R102                ; 安全ｶﾊﾞｰ開未処理待ち
+;・ﾒｲﾝﾓｼﾞｭｰﾙ再開処理
+STG @R106                ; 元圧状態解除
+SET Air_After            ; _ｴｱｰ元圧低下1解除ﾕｰｻﾞｰSTG
+CON
+JMP @R107                ; Air_After終了待ち
+STG @R107                ; Air_After終了待ち
+ANB Air_After            ; _ｴｱｰ元圧低下1解除ﾕｰｻﾞｰSTG
+RES AIR_LOW              ; _Group1 ｴｱｰ圧低下状態
+CON
+JMP @R108                ; Task継続実行開始
+STG @R108                ; Task継続実行開始
+ANB TRAPDO               ; _非常停止中　ﾓｰﾄﾞﾌﾗｸﾞ
+MPS
+JMP @R109                ; Task継続実行待ち
+MPP
+BAND Air_Factor #0       ; _ｴｱｰ圧低下時ﾀｽｸ起動状態
+SET MD_Start             ; _Group1　ﾒｲﾝﾓｼﾞｭｰﾙ起動要求
+STG @R109                ; Task継続実行待ち
+BLDB Air_Factor #0       ; _ｴｱｰ圧低下時ﾀｽｸ起動状態
+OR GROUPDO1              ; _Group1起動中ﾌﾗｸﾞ
+ANL
+BLDB Air_Factor #8       ; _ｴｱｰ圧低下時ﾀｽｸ起動状態
+OR _BringDown_Standby
+ANL
+MOV #0 Air_Factor        ; _ｴｱｰ圧低下時ﾀｽｸ起動状態
+ENDS
+MCR
+;<h1/>case 1Group-1System Proc/1Group1系統処理
+;【各ｸﾞﾙｰﾌﾟ1系統】AirPress_Sys = #1
+LD= AirPress_Sys #1      ; _ｴｱｰ元圧系統設定
+MC
+;Group1
+LD CR2008                ; 運転開始時1ｽｷｬﾝON
+MPS
+ANB AIR_PRES1            ; *Group1　ｴｱｰ元圧検出
+SET AIR_LOW              ; _Group1 ｴｱｰ圧低下状態
+MPP
+SET @R1004               ; ｴｱｰﾗｯﾁ解除
+LDB Air1_Invalid         ; _元圧検出1無効宣言
+ANB AIR_LOW              ; _Group1 ｴｱｰ圧低下状態
+LDB Air1_Invalid         ; _元圧検出1無効宣言
+ANF AIR_PRES1            ; *Group1　ｴｱｰ元圧検出
+ORP @R1800               ; 元圧復帰異常
+ANL
+MPS
+RES @R1800               ; 元圧復帰異常
+CON
+SET @R1000               ; Task停止確認
+MPP
+AND<>.D TASKDO1 #0       ; _Grp1_Task0_起動中ﾌﾗｸﾞ
+BSET Air_Factor #0       ; _ｴｱｰ圧低下時ﾀｽｸ起動状態
+CON
+SET MD_Stop              ; _Group1　ﾒｲﾝﾓｼﾞｭｰﾙ停止要求
+STG @R1000               ; Task停止確認
+ANB MD_Stop              ; _Group1　ﾒｲﾝﾓｼﾞｭｰﾙ停止要求
+SET AIR_LOW              ; _Group1 ｴｱｰ圧低下状態
+CON
+SET Air_Before           ; _ｴｱｰ元圧低下1ﾕｰｻﾞｰSTG
+CON
+JMP @R1001               ; Air_Before終了待ち
+STG @R1001               ; Air_Before終了待ち
+ANB Air_Before           ; _ｴｱｰ元圧低下1ﾕｰｻﾞｰSTG
+JMP @R1002               ; 安全ｶﾊﾞｰ開未処理待ち
+STG @R1002               ; 安全ｶﾊﾞｰ開未処理待ち
+ANB PACKED1              ; _安全ｶﾊﾞｰ1開処理中
+ANB START_SW1            ; *Group1　ｽﾀｰﾄSW
+JMP @R1003               ; STARTｽｲｯﾁ待ち
+STG @R1003               ; STARTｽｲｯﾁ待ち
+ANP START_SW1            ; *Group1　ｽﾀｰﾄSW
+JMP @R1004               ; ｴｱｰﾗｯﾁ解除
+STG @R1004               ; ｴｱｰﾗｯﾁ解除
+SET AIR_RST1             ; *Group1　ｴｱｰ元圧検出ﾗｯﾁ解除
+CON
+TMR @30 OS_air_wait      ; ｴｱｰﾗｯﾁ解除確認時間  _ｴｱｰﾗｯﾁ解除確認時間
+CON
+AND @T30                 ; ｴｱｰﾗｯﾁ解除確認時間
+JMP @R1005               ; 元圧検出復帰待ち
+STG @R1005               ; 元圧検出復帰待ち
+RES AIR_RST1             ; *Group1　ｴｱｰ元圧検出ﾗｯﾁ解除
+CON
+MPS
+AND AIR_PRES1            ; *Group1　ｴｱｰ元圧検出
+JMP @R1006               ; 元圧状態解除
+MPP
+ANB AIR_PRES1            ; *Group1　ｴｱｰ元圧検出
+JMP @R1002               ; 安全ｶﾊﾞｰ開未処理待ち
+STG @R1006               ; 元圧状態解除
+SET Air_After            ; _ｴｱｰ元圧低下1解除ﾕｰｻﾞｰSTG
+CON
+JMP @R1007               ; Air_After終了待ち
+STG @R1007               ; Air_After終了待ち
+ANB Air_After            ; _ｴｱｰ元圧低下1解除ﾕｰｻﾞｰSTG
+RES AIR_LOW              ; _Group1 ｴｱｰ圧低下状態
+CON
+JMP @R1008               ; Task継続実行開始
+STG @R1008               ; Task継続実行開始
+ANB TRAPDO               ; _非常停止中　ﾓｰﾄﾞﾌﾗｸﾞ
+MPS
+JMP @R1009               ; Task継続実行待ち
+MPP
+BAND Air_Factor #0       ; _ｴｱｰ圧低下時ﾀｽｸ起動状態
+SET MD_Start             ; _Group1　ﾒｲﾝﾓｼﾞｭｰﾙ起動要求
+STG @R1009               ; Task継続実行待ち
+BLDB Air_Factor #0       ; _ｴｱｰ圧低下時ﾀｽｸ起動状態
+OR GROUPDO1              ; _Group1起動中ﾌﾗｸﾞ
+ANL
+BRES Air_Factor #0       ; _ｴｱｰ圧低下時ﾀｽｸ起動状態
+CON
+ENDS
+MCR
+;<h1/>Area Sensor/ｴﾘｱｾﾝｻ処理
+;Group1
+;ｴﾘｱｾﾝｻ有効出力
+;・ｸﾞﾙｰﾌﾟ有効ﾀｽｸ有り AND ｴﾘｱｾﾝｻ有効でｴﾘｱｾﾝｻ使用出力
+;運転開始時ﾗｯﾁ解除
+LD>= EntryTask #1        ; _Group1ﾀｽｸ登録数
+AND EntryAreaSen         ; _ｴﾘｱｾﾝｻ1使用有無
+MPS
+OUT AreaSenUse           ; _ｴﾘｱｾﾝｻ1使用時出力
+MPP
+AND CR2008               ; 運転開始時1ｽｷｬﾝON
+SET @R202                ; ｴﾘｱｾﾝｻﾗｯﾁ解除
+;ｴﾘｱｾﾝｻ遮断監視
+;・非常停止、定停止中は検出しない
+;・遮断検知したら遮断中ﾌﾗｸﾞSET
+;・ﾕｰｻﾞｰ解放ﾌｧﾝｸｼｮﾝSET
+LD AreaSenUse            ; _ｴﾘｱｾﾝｻ1使用時出力
+ANB TRAPDO               ; _非常停止中　ﾓｰﾄﾞﾌﾗｸﾞ
+ANB STOPDO               ; _停止中　ﾓｰﾄﾞﾌﾗｸﾞ
+ANB AREADO1              ; _Group1　ｴﾘｱｾﾝｻ遮断中
+AND Area1_Valid          ; _Group1 ｴﾘｱｾﾝｻ無効宣言
+ANB AREA_SENS1           ; *Group1　ｴﾘｱｾﾝｻ入力
+SET AREADO1              ; _Group1　ｴﾘｱｾﾝｻ遮断中
+CON
+SET Area1_Before         ; _ｴﾘｱｾﾝｻ1遮断ﾕｰｻﾞｰSTG
+CON
+SET @R200                ; ﾕｰｻﾞｰSTG終了待ち
+STG @R200                ; ﾕｰｻﾞｰSTG終了待ち
+ANB Area1_Before         ; _ｴﾘｱｾﾝｻ1遮断ﾕｰｻﾞｰSTG
+JMP @R201                ; ｴﾘｱｾﾝｻ復帰SW待ち
+;ｴﾘｱｾﾝｻ復帰SW待ち
+;・使用SWが1個の場合、復帰SW1が押されたらﾗｯﾁ解除へ
+;・使用SWが2個の場合、0.5秒以内に両方のSWが押されたらﾗｯﾁ解除へ
+STG @R201                ; ｴﾘｱｾﾝｻ復帰SW待ち
+MPS
+LD= AreaSen_Sw #1        ; _ｴﾘｱｾﾝｻ1復帰SW数
+AND ASTART1_SW1          ; *Group1　ｴﾘｱｾﾝｻ継続実行SW1
+ANL
+JMP @R202                ; ｴﾘｱｾﾝｻﾗｯﾁ解除
+MPP
+LD= AreaSen_Sw #2        ; _ｴﾘｱｾﾝｻ1復帰SW数
+AND @R208                ; 復帰SW1押下
+AND @R209                ; 復帰SW2押下
+ANL
+JMP @R202                ; ｴﾘｱｾﾝｻﾗｯﾁ解除
+;ｴﾘｱｾﾝｻ復帰SW2個押し処理
+;・SWが押されて0.5秒経過したら押下記憶RES
+LD @R201                 ; ｴﾘｱｾﾝｻ復帰SW待ち
+MPS
+LDP ASTART1_SW1          ; *Group1　ｴﾘｱｾﾝｻ継続実行SW1
+ANB @T10                 ; 復帰SW1 Off Delay
+ANL
+SET @R208                ; 復帰SW1押下
+MRD
+LDP ASTART1_SW2          ; *Group1　ｴﾘｱｾﾝｻ継続実行SW2
+ANB @T11                 ; 復帰SW2 Off Delay
+ANL
+SET @R209                ; 復帰SW2押下
+MRD
+AND @R208                ; 復帰SW1押下
+TMR @10 #5               ; 復帰SW1 Off Delay
+CON
+AND @T10                 ; 復帰SW1 Off Delay
+RES @R208                ; 復帰SW1押下
+MPP
+AND @R209                ; 復帰SW2押下
+TMR @11 #5               ; 復帰SW2 Off Delay
+CON
+AND @T11                 ; 復帰SW2 Off Delay
+RES @R209                ; 復帰SW2押下
+;ｴﾘｱｾﾝｻﾗｯﾁ解除
+STG @R202                ; ｴﾘｱｾﾝｻﾗｯﾁ解除
+SET AREA_RST1            ; *Group1　ｴﾘｱｾﾝｻﾗｯﾁ解除
+CON
+TMR @2 OS_area_wait      ; ｴﾘｱｾﾝｻ1ﾗｯﾁ解除  _ｴﾘｱｾﾝｻﾗｯﾁ解除確認時間
+CON
+AND @T2                  ; ｴﾘｱｾﾝｻ1ﾗｯﾁ解除
+JMP @R203                ; ｴﾘｱｾﾝｻ入力復帰待ち
+;ｴﾘｱｾﾝｻ入力復帰待ち
+STG @R203                ; ｴﾘｱｾﾝｻ入力復帰待ち
+RES @R208                ; 復帰SW1押下
+CON
+RES @R209                ; 復帰SW2押下
+CON
+RES AREA_RST1            ; *Group1　ｴﾘｱｾﾝｻﾗｯﾁ解除
+CON
+MPS
+AND AREA_SENS1           ; *Group1　ｴﾘｱｾﾝｻ入力
+SET Area1_After          ; _ｴﾘｱｾﾝｻ1復帰ﾕｰｻﾞｰSTG
+CON
+JMP @R204                ; ﾕｰｻﾞｰSTG終了待ち
+MPP
+ANB AREA_SENS1           ; *Group1　ｴﾘｱｾﾝｻ入力
+JMP @R201                ; ｴﾘｱｾﾝｻ復帰SW待ち
+STG @R204                ; ﾕｰｻﾞｰSTG終了待ち
+ANB Area1_After          ; _ｴﾘｱｾﾝｻ1復帰ﾕｰｻﾞｰSTG
+RES AREADO1              ; _Group1　ｴﾘｱｾﾝｻ遮断中
+CON
+ENDS
+;定停止中ONで解除
+LDP STOPDO               ; _停止中　ﾓｰﾄﾞﾌﾗｸﾞ
+ZRES Area1_Valid Area8_Valid;_Group1 ｴﾘｱｾﾝｻ無効宣言  _Group8 ｴﾘｱｾﾝｻ無効宣言
+;
+END
+ENDH

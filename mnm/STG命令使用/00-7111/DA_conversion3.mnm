@@ -1,0 +1,115 @@
+DEVICE:53
+;MODULE:DA_conversion3
+;MODULE_TYPE:0
+;<h1/>真空値記録/Vacuum value recording
+LD CR2002                ; always on
+DW #0 @DM1               ; Display format specification
+CON
+DW #6 @DM2               ; All digits
+CON
+DW #1 @DM3               ; Decimal part digits
+LD CR2002                ; always on
+LDA.S DM10602            ; A-A/D1_3 Vacuum pump pressure
+CON
+FLOAT
+CON
+MUL.F +0.083
+CON
+SUB.F +148.31
+CON
+STA.F @DM5               ; Vacuum value. F
+CON
+FASC @DM1 @DM5 @DM7      ; Display format specification  Vacuum value. F  Vacuum value .ASC
+;小数点位置切替/Decimal point position switching
+LD CR2003                ; always off
+DW #1 @DM27              ; >. Cutting start position
+CON
+DW #1 @DM28              ; >. Number of cutout characters
+CON
+DW #3 @DM29              ; <. Cutting start position
+CON
+DW #3 @DM30              ; <. Number of cutting characters
+CON
+DW #1000 @DM31           ; MUL
+CON
+OUT @MR000               ; 0.000
+LD CR2003                ; always off
+DW #1 @DM27              ; >. Cutting start position
+CON
+DW #2 @DM28              ; >. Number of cutout characters
+CON
+DW #4 @DM29              ; <. Cutting start position
+CON
+DW #2 @DM30              ; <. Number of cutting characters
+CON
+DW #100 @DM31            ; MUL
+CON
+OUT @MR001               ; 00.00
+LD CR2002                ; always on
+DW #1 @DM27              ; >. Cutting start position
+CON
+DW #3 @DM28              ; >. Number of cutout characters
+CON
+DW #5 @DM29              ; <. Cutting start position
+CON
+DW #1 @DM30              ; <. Number of cutting characters
+CON
+DW #10 @DM31             ; MUL
+CON
+OUT @MR002               ; 000.0
+LD CR2003                ; always off
+DW #0 @DM26              ; Vacuum value (numerical value <.
+CON
+DW #1 @DM27              ; >. Cutting start position
+CON
+DW #4 @DM28              ; >. Number of cutout characters
+CON
+DW #0 @DM29              ; <. Cutting start position
+CON
+DW #0 @DM30              ; <. Number of cutting characters
+CON
+DW #1 @DM31              ; MUL
+CON
+OUT @MR003               ; 0000.
+;.Sに変換/Convert to .S
+LD CR2002                ; always on
+SMID @DM7 @DM32 #0 #1    ; Vacuum value .ASC  A sign
+SMID @DM7 @DM21 @DM27 @DM28;Vacuum value .ASC  Vacuum value (numerical ASC>.  >. Cutting start position  >. Number of cutout characters
+MPS
+ANB @MR003               ; 0000.
+SMID @DM7 @DM23 @DM29 @DM30;Vacuum value .ASC  Vacuum value (numerical ASC <.  <. Cutting start position  <. Number of cutting characters
+MRD
+RDASC.S @DM21 @DM25      ; Vacuum value (numerical ASC>.  Vacuum value (numerical value>.
+MRD
+ANB @MR003               ; 0000.
+RDASC.S @DM23 @DM26      ; Vacuum value (numerical ASC <.  Vacuum value (numerical value <.
+MRD
+SCMP @DM32 "+"           ; A sign
+CON
+AND CR2010               ; 0 result
+LDA.S @DM25              ; Vacuum value (numerical value>.
+CON
+MUL.S @DM31              ; MUL
+CON
+ADD.S @DM26              ; Vacuum value (numerical value <.
+CON
+STA.S @DM34              ; Vacuum value (Numeric value: S
+MPP
+SCMP @DM32 "-"           ; A sign
+CON
+AND CR2010               ; 0 result
+LDA.S @DM25              ; Vacuum value (numerical value>.
+CON
+MUL.S @DM31              ; MUL
+CON
+ADD.S @DM26              ; Vacuum value (numerical value <.
+CON
+MUL.S -1
+CON
+STA.S @DM34              ; Vacuum value (Numeric value: S
+LD CR2002                ; always on
+LDA.S @DM34              ; Vacuum value (Numeric value: S
+CON
+STA.S DM45               ; Present value of vacuum pump
+END
+ENDH

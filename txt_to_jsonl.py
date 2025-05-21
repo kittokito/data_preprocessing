@@ -65,13 +65,13 @@ def txt_files_to_jsonl(input_dirs, output_dir, output_filename, category, id_pre
 
 # 使用例
 input_directories = [
-    "./txt/txt_splitted_h1",
-    "./txt/txt_splitted_semicolon"
+    "./txt/txt_sft",
+
 ]
 
-category = "STG"  # "normal" または "STG"
-id_prefix = "01"     # バージョン番号
-output_directory = "./jsonl/jsonl_filtered"  # 出力ディレクトリ
-output_filename = f"plc_{category}_01.jsonl"  # 出力ファイル名
+category = "sft"  
+id_prefix = "sample"     # バージョン番号
+output_directory = "./jsonl/jsonl_sft/sample"  # 出力ディレクトリ
+output_filename = f"plc_{category}_{id_prefix}.jsonl"  # 出力ファイル名
 
 txt_files_to_jsonl(input_directories, output_directory, output_filename, category, id_prefix)

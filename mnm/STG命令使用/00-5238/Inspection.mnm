@@ -1,0 +1,2004 @@
+DEVICE:52
+;MODULE:Inspection
+;MODULE_TYPE:0
+;SCRIPT_TYPE:
+LD @CR2008
+FMOV #0 EM1 #99          ; 日付〔year〕
+FMOV #0 EM1000 #1000     ; 初期圧
+FMOV #0 EM10000 #15000   ; ﾘｰｸ検査 圧力ﾃﾞｰﾀ
+FMOV #0 EM39999 #15001   ; ﾒﾓﾘｰｶｰﾄﾞ書込みデータ回数
+FMOV #0 FM0 #15000
+MPS
+ZRES @MR500 @MR2500      ; 検査NGフラグ
+CON
+DW #0 DM315              ; ﾘｰｸ検査ｴﾗｰ位置記憶
+MPP
+SET @MR1000
+LD MR30001               ; (TP)手動画面表示中
+MPS
+ANB EM30097.0
+OUT @MR001
+MRD
+ANB EM30097.1
+OUT @MR002
+MRD
+ANB EM30097.2
+OUT @MR003
+MRD
+ANB EM30097.3
+OUT @MR004
+MRD
+ANB EM30097.4
+OUT @MR005
+MPP
+ANB EM30097.5
+OUT @MR006
+LD EM30014.0
+OUT @MR000               ; ｴﾗｰ表示遅延ﾌﾗｸﾞ
+LDP MR109                ; 検査強制終了
+DW #500 EM30001          ; (TP)ﾍﾟｰｼﾞ画面切替用No.
+CON
+RES MR110                ; 検査中
+CON
+ZRES @MR500 @MR2500      ; 検査NGフラグ
+;<<リーク検査>>
+;<<Leake Inspection>>
+STG @MR1000
+JMP @MR1001
+STG @MR1001
+MPS
+AND= EM30080 #0          ; 機種番号
+MPS
+LD R1009                 ; 機種判別センサ-1 (手前)
+AND R1010                ; 機種判別センサ-2 (奥)
+ANL
+JMP @MR1002
+MPP
+LDB R1009                ; 機種判別センサ-1 (手前)
+ORB R1010                ; 機種判別センサ-2 (奥)
+ANL
+SET MR312                ; 治具違いエラー
+CON
+ENDS
+MPP
+AND= EM30080 #1          ; 機種番号
+MPS
+AND R1009                ; 機種判別センサ-1 (手前)
+JMP @MR1002
+MPP
+ANB R1009                ; 機種判別センサ-1 (手前)
+SET MR312                ; 治具違いエラー
+CON
+ENDS
+STG @MR1002
+MPS
+AND= EM30080 #0          ; 機種番号
+MPS
+ANB MR107                ; 全データ取得フラグ
+JMP @MR1100
+MPP
+AND MR107                ; 全データ取得フラグ
+SET @MR2000
+CON
+JMP @MR1100
+MPP
+AND= EM30080 #1          ; 機種番号
+MPS
+ANB MR107                ; 全データ取得フラグ
+JMP @MR1300
+MPP
+AND MR107                ; 全データ取得フラグ
+SET @MR2000
+CON
+JMP @MR1300
+;<h1/>1.廃液Box成型後検査
+;経路加圧
+STG @MR1100
+DW #3 EM30050            ; (TP)Step1 初期圧判定
+CON
+RES MR1100               ; 60kPa　検査圧切替え
+CON
+SET MR1101               ; 20kPa　検査圧切替え
+CON
+RES MR1102               ; 供給圧　大気解放 
+CON
+SET MR1103               ; 検査ノズル　大気解放 
+CON
+TMH @2 DM1000            ; 経路加圧待ち  経路加圧待ち時間
+CON
+AND @T2                  ; 経路加圧待ち
+JMP @MR1101
+;加圧終了
+STG @MR1101
+RES MR1100               ; 60kPa　検査圧切替え
+CON
+RES MR1101               ; 20kPa　検査圧切替え
+CON
+RES MR1102               ; 供給圧　大気解放 
+CON
+SET MR1103               ; 検査ノズル　大気解放 
+CON
+JMP @MR1102
+;安定待ち
+STG @MR1102
+RES MR1100               ; 60kPa　検査圧切替え
+CON
+RES MR1101               ; 20kPa　検査圧切替え
+CON
+RES MR1102               ; 供給圧　大気解放 
+CON
+SET MR1103               ; 検査ノズル　大気解放 
+CON
+TMH @3 DM1002            ; 安定待ち  安定待ち時間
+CON
+AND @T3                  ; 安定待ち
+JMP @MR1103
+;初期圧確認
+STG @MR1103
+MPS
+ANB MR107                ; 全データ取得フラグ
+SET @MR2100              ; 初期圧確認
+CON
+JMP @MR1104
+MPP
+AND MR107                ; 全データ取得フラグ
+JMP @MR1113
+STG @MR1104
+AND @MR2101              ; 初期圧確認完了
+RES @MR2101              ; 初期圧確認完了
+CON
+JMP @MR1105
+STG @MR1105
+MPS
+ANB MR304                ; ｴﾗｰﾌﾗｸﾞ
+JMP @MR1106
+MPP
+AND MR304                ; ｴﾗｰﾌﾗｸﾞ
+ENDS
+;EM13.S = EM1001.S
+;EM11.S = DM1004.S
+;if EM13.S >= EM11.S then
+;	EM30050 = 1	'OK
+;else
+;	set(1,@MR500)
+;	EM30050 = 2	'NG
+;end if
+;EM30030.S = EM13.S
+;set(1,@MR1107)
+LD @MR1106
+NCJ #1008
+;EM13.S = EM1001.S
+;
+LD CR2002                ; 常時ON
+MOV.S EM1001 EM13        ; 初期圧  Step1 初期圧
+;EM11.S = DM1004.S
+;
+LD CR2002                ; 常時ON
+MOV.S DM1004 EM11        ; 初期圧規格値  Step1 規格値(初期圧)
+;if EM13.S >= EM11.S then
+;
+LD>=.S EM13 EM11         ; Step1 初期圧  Step1 規格値(初期圧)
+NCJ #2000
+;	EM30050 = 1	'OK
+;
+LD CR2002                ; 常時ON
+MOV #1 EM30050           ; (TP)Step1 初期圧判定
+;else
+;
+LD CR2002                ; 常時ON
+CJ #2001
+LABEL #2000
+;	set(1,@MR500)
+;
+LD CR2002                ; 常時ON
+SET @MR500               ; 検査NGフラグ
+;	EM30050 = 2	'NG
+;
+LD CR2002                ; 常時ON
+MOV #2 EM30050           ; (TP)Step1 初期圧判定
+;end if
+;
+LABEL #2001
+;EM30030.S = EM13.S
+;
+LD CR2002                ; 常時ON
+MOV.S EM13 EM30030       ; Step1 初期圧  (TP)Step1 初期圧
+;set(1,@MR1107)
+LD CR2002                ; 常時ON
+SET @MR1107
+LABEL #1008
+;
+STG @MR1106
+AND @MR1107
+MPS
+LD= EM30050 #1           ; (TP)Step1 初期圧判定
+OR @MR000                ; ｴﾗｰ表示遅延ﾌﾗｸﾞ
+ANL
+JMP @MR1108
+MPP
+LD= EM30050 #2           ; (TP)Step1 初期圧判定
+ANB @MR000               ; ｴﾗｰ表示遅延ﾌﾗｸﾞ
+ANL
+SET MR306                ; 検査NG
+CON
+ENDS
+;圧力監視
+STG @MR1108
+DW #3 EM30051            ; (TP)Step1 リーク量判定
+CON
+MOV DM1006 @DM74         ; 実検査時間  データ取得時間
+MOV DM1008 @DM40         ; 算出検査時間  測定点t
+SET @MR2200              ; 圧力監視
+CON
+JMP @MR1109
+STG @MR1109
+AND @MR2201              ; 圧力監視完了
+RES @MR2201              ; 圧力監視完了
+CON
+JMP @MR1110
+STG @MR1110
+MPS
+ANB MR304                ; ｴﾗｰﾌﾗｸﾞ
+JMP @MR1111
+MPP
+AND MR304                ; ｴﾗｰﾌﾗｸﾞ
+ENDS
+;EM12.S = DM1010.S
+;EM15.S = @DM42.S
+;EM14.S = @DM46.S
+;if EM14.S > EM12.S then
+;	set(1,@MR500)
+;	EM30051 = 2
+;else
+;	EM30051 = 1
+;end if
+;EM30031.S = EM14.S
+;set(1,@MR1112)
+;
+;FM0:(EM39999 * 1000) = @DM74 / EM30020
+;bmov(1,EM10000,FM1:(EM39999 * 1000),1000)
+;EM39999 = EM39999 + 1
+LDP @MR1111
+NCJ #1003
+;EM12.S = DM1010.S
+;
+LD CR2002                ; 常時ON
+MOV.S DM1010 EM12        ; リーク量規格値  Step1 規格値(ﾘｰｸ量)
+;EM15.S = @DM42.S
+;
+LD CR2002                ; 常時ON
+MOV.S @DM42 EM15         ; 圧力値(測定最終)  Step1 終了圧
+;EM14.S = @DM46.S
+;
+LD CR2002                ; 常時ON
+MOV.S @DM46 EM14         ; リーク量kPa/sec  Step1 ﾘｰｸ量
+;if EM14.S > EM12.S then
+;
+LD>.S EM14 EM12          ; Step1 ﾘｰｸ量  Step1 規格値(ﾘｰｸ量)
+NCJ #2002
+;	set(1,@MR500)
+;
+LD CR2002                ; 常時ON
+SET @MR500               ; 検査NGフラグ
+;	EM30051 = 2
+;
+LD CR2002                ; 常時ON
+MOV #2 EM30051           ; (TP)Step1 リーク量判定
+;else
+;
+LD CR2002                ; 常時ON
+CJ #2003
+LABEL #2002
+;	EM30051 = 1
+;
+LD CR2002                ; 常時ON
+MOV #1 EM30051           ; (TP)Step1 リーク量判定
+;end if
+;
+LABEL #2003
+;EM30031.S = EM14.S
+;
+LD CR2002                ; 常時ON
+MOV.S EM14 EM30031       ; Step1 ﾘｰｸ量  (TP)Step1 リーク量
+;set(1,@MR1112)
+;
+LD CR2002                ; 常時ON
+SET @MR1112
+;FM0:(EM39999 * 1000) = @DM74 / EM30020
+;
+;;Warning[1103]: "=": (符号付き32ビット整数型->符号無し16ビット整数型) 代入によりデータが欠落する可能性があります。
+LD CR2002                ; 常時ON
+LDA EM39999              ; ﾒﾓﾘｰｶｰﾄﾞ書込みデータ回数
+CON
+EXT
+CON
+MUL.L +1000
+CON
+STA.L Z11
+CON
+LDA EM30020              ; (TP)サンプリング
+CON
+EXT
+CON
+STA.L @VM0
+CON
+LDA @DM74                ; データ取得時間
+CON
+EXT
+CON
+EXT.L
+CON
+DIV.L @VM0
+CON
+STA FM0:Z11
+;bmov(1,EM10000,FM1:(EM39999 * 1000),1000)
+;
+LD CR2002                ; 常時ON
+LDA EM39999              ; ﾒﾓﾘｰｶｰﾄﾞ書込みデータ回数
+CON
+EXT
+CON
+MUL.L +1000
+CON
+STA.L Z12
+LD CR2002                ; 常時ON
+BMOV EM10000 FM1:Z12 #1000;ﾘｰｸ検査 圧力ﾃﾞｰﾀ
+;EM39999 = EM39999 + 1
+;;Warning[1103]: "=": (符号付き32ビット整数型->符号無し16ビット整数型) 代入によりデータが欠落する可能性があります。
+LD CR2002                ; 常時ON
+LDA EM39999              ; ﾒﾓﾘｰｶｰﾄﾞ書込みデータ回数
+CON
+EXT
+CON
+ADD.L +1
+CON
+STA EM39999              ; ﾒﾓﾘｰｶｰﾄﾞ書込みデータ回数
+LABEL #1003
+;
+STG @MR1111
+AND @MR1112
+MPS
+LD= EM30051 #1           ; (TP)Step1 リーク量判定
+OR @MR000                ; ｴﾗｰ表示遅延ﾌﾗｸﾞ
+ANL
+JMP @MR1114
+MPP
+LD= EM30051 #2           ; (TP)Step1 リーク量判定
+ANB @MR000               ; ｴﾗｰ表示遅延ﾌﾗｸﾞ
+ANL
+RES @MR500               ; 検査NGフラグ
+CON
+SET MR306                ; 検査NG
+CON
+ENDS
+;全データ取得時ウェイト
+STG @MR1113
+TMH @6 DM1006            ; 全データ取得ウェイト  実検査時間
+CON
+AND @T6                  ; 全データ取得ウェイト
+JMP @MR1114
+;大気開放
+STG @MR1114
+RES MR1100               ; 60kPa　検査圧切替え
+CON
+RES MR1101               ; 20kPa　検査圧切替え
+CON
+SET MR1102               ; 供給圧　大気解放 
+CON
+SET MR1103               ; 検査ノズル　大気解放 
+CON
+TMH @4 DM1012            ; 大気開放  大気開放時間
+CON
+AND @T4                  ; 大気開放
+JMP @MR1115
+STG @MR1115
+JMP @MR1700
+;<h1/>2.接続部品組立後検査
+STG @MR1300
+MPS
+ANB @MR001
+SET @MR2300
+CON
+JMP @MR1301
+MPP
+AND @MR001
+JMP @MR1304
+STG @MR1301
+AND @MR2301
+RES @MR2301
+CON
+JMP @MR1302
+STG @MR1302
+BMOV DM17004 EM37 DM17002; 出力データ  code  出力データ桁数
+JMP @MR1303
+STG @MR1303
+MPS
+ANB @MR2315
+JMP @MR1304
+MPP
+AND @MR2315
+SET MR313                ; CODE読み取りエラー
+CON
+ENDS
+;～ゴアフィルムフィルム有無検査～
+;経路加圧
+STG @MR1304
+MPS
+ANB @MR002
+DW #3 EM30050            ; (TP)Step1 初期圧判定
+CON
+SET MR1100               ; 60kPa　検査圧切替え
+CON
+RES MR1101               ; 20kPa　検査圧切替え
+CON
+RES MR1102               ; 供給圧　大気解放 
+CON
+SET MR1103               ; 検査ノズル　大気解放 
+CON
+TMH @10 DM1100           ; 経路加圧待ち  経路加圧待ち時間
+CON
+AND @T10                 ; 経路加圧待ち
+JMP @MR1305
+MPP
+AND @MR002
+JMP @MR1312
+;安定待ち
+STG @MR1305
+RES MR1100               ; 60kPa　検査圧切替え
+CON
+RES MR1101               ; 20kPa　検査圧切替え
+CON
+RES MR1102               ; 供給圧　大気解放 
+CON
+SET MR1103               ; 検査ノズル　大気解放 
+CON
+TMH @11 DM1102           ; 安定待ち  安定待ち時間
+CON
+AND @T11                 ; 安定待ち
+JMP @MR1306
+;有無判定
+STG @MR1306
+MPS
+ANB MR107                ; 全データ取得フラグ
+SET @MR2100              ; 初期圧確認
+CON
+JMP @MR1307
+MPP
+AND MR107                ; 全データ取得フラグ
+JMP @MR1311
+STG @MR1307
+AND @MR2101              ; 初期圧確認完了
+RES @MR2101              ; 初期圧確認完了
+CON
+JMP @MR1308
+STG @MR1308
+MPS
+ANB MR304                ; ｴﾗｰﾌﾗｸﾞ
+JMP @MR1309
+MPP
+AND MR304                ; ｴﾗｰﾌﾗｸﾞ
+ENDS
+;EM13.S = EM1001.S
+;EM11.S = DM1104.S
+;if EM13.S >= EM11.S then
+;	EM30050 = 1	'OK
+;else
+;	set(1,@MR500)
+;	EM30050 = 2	'NG
+;end if
+;EM30030.S = EM13.S
+;set(1,@MR1310)
+LD @MR1309
+NCJ #1009
+;EM13.S = EM1001.S
+;
+LD CR2002                ; 常時ON
+MOV.S EM1001 EM13        ; 初期圧  Step1 初期圧
+;EM11.S = DM1104.S
+;
+LD CR2002                ; 常時ON
+MOV.S DM1104 EM11        ; フィルム有無判定値  Step1 規格値(初期圧)
+;if EM13.S >= EM11.S then
+;
+LD>=.S EM13 EM11         ; Step1 初期圧  Step1 規格値(初期圧)
+NCJ #2004
+;	EM30050 = 1	'OK
+;
+LD CR2002                ; 常時ON
+MOV #1 EM30050           ; (TP)Step1 初期圧判定
+;else
+;
+LD CR2002                ; 常時ON
+CJ #2005
+LABEL #2004
+;	set(1,@MR500)
+;
+LD CR2002                ; 常時ON
+SET @MR500               ; 検査NGフラグ
+;	EM30050 = 2	'NG
+;
+LD CR2002                ; 常時ON
+MOV #2 EM30050           ; (TP)Step1 初期圧判定
+;end if
+;
+LABEL #2005
+;EM30030.S = EM13.S
+;
+LD CR2002                ; 常時ON
+MOV.S EM13 EM30030       ; Step1 初期圧  (TP)Step1 初期圧
+;set(1,@MR1310)
+LD CR2002                ; 常時ON
+SET @MR1310
+LABEL #1009
+;
+STG @MR1309
+AND @MR1310
+MPS
+LD= EM30050 #1           ; (TP)Step1 初期圧判定
+OR @MR000                ; ｴﾗｰ表示遅延ﾌﾗｸﾞ
+ANL
+JMP @MR1311
+MPP
+LD= EM30050 #2           ; (TP)Step1 初期圧判定
+ANB @MR000               ; ｴﾗｰ表示遅延ﾌﾗｸﾞ
+ANL
+SET MR306                ; 検査NG
+CON
+ENDS
+;経路大気開放
+STG @MR1311
+RES MR1100               ; 60kPa　検査圧切替え
+CON
+RES MR1101               ; 20kPa　検査圧切替え
+CON
+SET MR1102               ; 供給圧　大気解放 
+CON
+SET MR1103               ; 検査ノズル　大気解放 
+CON
+TMH @12 DM1106           ; 大気開放待ち  大気開放待ち時間
+CON
+AND @T12                 ; 大気開放待ち
+JMP @MR1312
+;～外部リーク検査逆止弁クローズ検査～
+;抜き待ち
+STG @MR1312
+MPS
+ANB @MR003
+OUT MR409                ; 抜き待ち
+CON
+ANB R1005                ; ユニット前後　前進端
+AND R1006                ; ユニット前後　後退端
+MPS
+LD R1009                 ; 機種判別センサ-1 (手前)
+ANB R1010                ; 機種判別センサ-2 (奥)
+ANL
+OUT MR411                ; スタート待ち
+CON
+ANP MR1008               ; StartSW
+JMP @MR1314
+MPP
+LDB R1009                ; 機種判別センサ-1 (手前)
+OR R1010                 ; 機種判別センサ-2 (奥)
+ANL
+SET MR312                ; 治具違いエラー
+CON
+ENDS
+MPP
+AND @MR003
+JMP @MR1414
+;経路加圧
+STG @MR1314
+DW #3 EM30052            ; (TP)Step2 初期圧判定
+CON
+RES MR1100               ; 60kPa　検査圧切替え
+CON
+SET MR1101               ; 20kPa　検査圧切替え
+CON
+RES MR1102               ; 供給圧　大気解放 
+CON
+RES MR1103               ; 検査ノズル　大気解放 
+CON
+TMH @13 DM1108           ; 経路加圧待ち  経路加圧待ち時間
+CON
+AND @T13                 ; 経路加圧待ち
+JMP @MR1315
+;安定待ち
+STG @MR1315
+RES MR1100               ; 60kPa　検査圧切替え
+CON
+RES MR1101               ; 20kPa　検査圧切替え
+CON
+RES MR1102               ; 供給圧　大気解放 
+CON
+RES MR1103               ; 検査ノズル　大気解放 
+CON
+TMH @14 DM1110           ; 安定待ち  安定待ち時間
+CON
+AND @T14                 ; 安定待ち
+JMP @MR1400
+;初期圧確認
+STG @MR1400
+MPS
+ANB MR107                ; 全データ取得フラグ
+SET @MR2100              ; 初期圧確認
+CON
+JMP @MR1401
+MPP
+AND MR107                ; 全データ取得フラグ
+JMP @MR1410
+STG @MR1401
+AND @MR2101              ; 初期圧確認完了
+RES @MR2101              ; 初期圧確認完了
+CON
+JMP @MR1402
+STG @MR1402
+MPS
+ANB MR304                ; ｴﾗｰﾌﾗｸﾞ
+JMP @MR1403
+MPP
+AND MR304                ; ｴﾗｰﾌﾗｸﾞ
+ENDS
+;EM19.S = EM1001.S
+;EM17.S = DM1112.S
+;if EM19.S >= EM17.S then
+;	EM30052 = 1	'OK
+;else
+;	set(1,@MR500)
+;	EM30052 = 2	'NG
+;end if
+;EM30032.S = EM19.S
+;set(1,@MR1404)
+;
+LD @MR1403
+NCJ #1010
+;EM19.S = EM1001.S
+;
+LD CR2002                ; 常時ON
+MOV.S EM1001 EM19        ; 初期圧  Step2 初期圧
+;EM17.S = DM1112.S
+;
+LD CR2002                ; 常時ON
+MOV.S DM1112 EM17        ; 初期圧規格値  Step2 規格値(初期圧)
+;if EM19.S >= EM17.S then
+;
+LD>=.S EM19 EM17         ; Step2 初期圧  Step2 規格値(初期圧)
+NCJ #2006
+;	EM30052 = 1	'OK
+;
+LD CR2002                ; 常時ON
+MOV #1 EM30052           ; (TP)Step2 初期圧判定
+;else
+;
+LD CR2002                ; 常時ON
+CJ #2007
+LABEL #2006
+;	set(1,@MR500)
+;
+LD CR2002                ; 常時ON
+SET @MR500               ; 検査NGフラグ
+;	EM30052 = 2	'NG
+;
+LD CR2002                ; 常時ON
+MOV #2 EM30052           ; (TP)Step2 初期圧判定
+;end if
+;
+LABEL #2007
+;EM30032.S = EM19.S
+;
+LD CR2002                ; 常時ON
+MOV.S EM19 EM30032       ; Step2 初期圧  (TP)Step2 初期圧
+;set(1,@MR1404)
+;
+LD CR2002                ; 常時ON
+SET @MR1404
+LABEL #1010
+;
+STG @MR1403
+AND @MR1404
+MPS
+LD= EM30052 #1           ; (TP)Step2 初期圧判定
+OR @MR000                ; ｴﾗｰ表示遅延ﾌﾗｸﾞ
+ANL
+JMP @MR1405
+MPP
+LD= EM30052 #2           ; (TP)Step2 初期圧判定
+ANB @MR000               ; ｴﾗｰ表示遅延ﾌﾗｸﾞ
+ANL
+SET MR306                ; 検査NG
+CON
+ENDS
+;圧力監視
+STG @MR1405
+DW #3 EM30053            ; (TP)Step2 リーク量判定
+CON
+MOV DM1114 @DM74         ; 実検査時間  データ取得時間
+MOV DM1116 @DM40         ; 算出検査時間  測定点t
+SET @MR2200              ; 圧力監視
+CON
+JMP @MR1406
+STG @MR1406
+AND @MR2201              ; 圧力監視完了
+RES @MR2201              ; 圧力監視完了
+CON
+JMP @MR1407
+STG @MR1407
+MPS
+ANB MR304                ; ｴﾗｰﾌﾗｸﾞ
+JMP @MR1408
+MPP
+AND MR304                ; ｴﾗｰﾌﾗｸﾞ
+ENDS
+;EM18.S = DM1118.S'リーク量規格値
+;EM21.S = @DM42.S
+;EM20.S = @DM46.S
+;if EM20.S > EM18.S then
+;	set(1,@MR500)
+;	EM30053 = 2
+;else
+;	EM30053 = 1
+;end if
+;EM30033 = EM20.S
+;set(1,@MR1409)
+;
+;FM0:(EM39999 * 1000) = @DM74 / EM30020
+;bmov(1,EM10000,FM1:(EM39999 * 1000),1000)
+;EM39999 = EM39999 + 1
+LDP @MR1408
+NCJ #1004
+;EM18.S = DM1118.S'リーク量規格値
+;
+LD CR2002                ; 常時ON
+MOV.S DM1118 EM18        ; リーク量規格値  Step2 規格値(ﾘｰｸ量)
+;EM21.S = @DM42.S
+;
+LD CR2002                ; 常時ON
+MOV.S @DM42 EM21         ; 圧力値(測定最終)  Step2 終了圧
+;EM20.S = @DM46.S
+;
+LD CR2002                ; 常時ON
+MOV.S @DM46 EM20         ; リーク量kPa/sec  Step2 ﾘｰｸ量
+;if EM20.S > EM18.S then
+;
+LD>.S EM20 EM18          ; Step2 ﾘｰｸ量  Step2 規格値(ﾘｰｸ量)
+NCJ #2008
+;	set(1,@MR500)
+;
+LD CR2002                ; 常時ON
+SET @MR500               ; 検査NGフラグ
+;	EM30053 = 2
+;
+LD CR2002                ; 常時ON
+MOV #2 EM30053           ; (TP)Step2 リーク量判定
+;else
+;
+LD CR2002                ; 常時ON
+CJ #2009
+LABEL #2008
+;	EM30053 = 1
+;
+LD CR2002                ; 常時ON
+MOV #1 EM30053           ; (TP)Step2 リーク量判定
+;end if
+;
+LABEL #2009
+;EM30033 = EM20.S
+;
+;;Warning[1103]: "=": (符号付き16ビット整数型->符号無し16ビット整数型) 代入によりデータが欠落する可能性があります。
+LD CR2002                ; 常時ON
+MOV EM20 EM30033         ; Step2 ﾘｰｸ量  (TP)Step2 リーク量
+;set(1,@MR1409)
+;
+LD CR2002                ; 常時ON
+SET @MR1409
+;FM0:(EM39999 * 1000) = @DM74 / EM30020
+;
+;;Warning[1103]: "=": (符号付き32ビット整数型->符号無し16ビット整数型) 代入によりデータが欠落する可能性があります。
+LD CR2002                ; 常時ON
+LDA EM39999              ; ﾒﾓﾘｰｶｰﾄﾞ書込みデータ回数
+CON
+EXT
+CON
+MUL.L +1000
+CON
+STA.L Z11
+CON
+LDA EM30020              ; (TP)サンプリング
+CON
+EXT
+CON
+STA.L @VM2
+CON
+LDA @DM74                ; データ取得時間
+CON
+EXT
+CON
+EXT.L
+CON
+DIV.L @VM2
+CON
+STA FM0:Z11
+;bmov(1,EM10000,FM1:(EM39999 * 1000),1000)
+;
+LD CR2002                ; 常時ON
+LDA EM39999              ; ﾒﾓﾘｰｶｰﾄﾞ書込みデータ回数
+CON
+EXT
+CON
+MUL.L +1000
+CON
+STA.L Z12
+LD CR2002                ; 常時ON
+BMOV EM10000 FM1:Z12 #1000;ﾘｰｸ検査 圧力ﾃﾞｰﾀ
+;EM39999 = EM39999 + 1
+;;Warning[1103]: "=": (符号付き32ビット整数型->符号無し16ビット整数型) 代入によりデータが欠落する可能性があります。
+LD CR2002                ; 常時ON
+LDA EM39999              ; ﾒﾓﾘｰｶｰﾄﾞ書込みデータ回数
+CON
+EXT
+CON
+ADD.L +1
+CON
+STA EM39999              ; ﾒﾓﾘｰｶｰﾄﾞ書込みデータ回数
+LABEL #1004
+;
+STG @MR1408
+AND @MR1409
+MPS
+LD= EM30053 #1           ; (TP)Step2 リーク量判定
+OR @MR000                ; ｴﾗｰ表示遅延ﾌﾗｸﾞ
+ANL
+JMP @MR1411
+MPP
+LD= EM30053 #2           ; (TP)Step2 リーク量判定
+ANB @MR000               ; ｴﾗｰ表示遅延ﾌﾗｸﾞ
+ANL
+RES @MR500               ; 検査NGフラグ
+CON
+SET MR306                ; 検査NG
+CON
+ENDS
+;全データ取得時ウェイト
+STG @MR1410
+TMH @15 DM1114           ; 全データ取得時ウェイト  実検査時間
+CON
+AND @T15                 ; 全データ取得時ウェイト
+JMP @MR1411
+;OUT経路接続待ち
+STG @MR1411
+OUT MR410                ; 差し待ち
+CON
+MPS
+LD R1005                 ; ユニット前後　前進端
+ANB R1006                ; ユニット前後　後退端
+ANL
+OUT MR411                ; スタート待ち
+CON
+ANP MR1008               ; StartSW
+JMP @MR1414
+MPP
+LD R1006                 ; ユニット前後　後退端
+LDB R1009                ; 機種判別センサ-1 (手前)
+OR R1010                 ; 機種判別センサ-2 (奥)
+ANL
+ANL
+SET MR312                ; 治具違いエラー
+CON
+ENDS
+;～シール部逆流検査～
+;経路再加圧
+STG @MR1414
+MPS
+ANB @MR004
+DW #3 EM30054            ; (TP)Step3 初期圧判定
+CON
+RES MR1100               ; 60kPa　検査圧切替え
+CON
+SET MR1101               ; 20kPa　検査圧切替え
+CON
+RES MR1102               ; 供給圧　大気解放 
+CON
+RES MR1103               ; 検査ノズル　大気解放 
+CON
+TMH @16 DM1120           ; 経路再加圧待ち  経路再加圧待ち時間
+CON
+AND @T16                 ; 経路再加圧待ち
+JMP @MR1415
+MPP
+AND @MR004
+JMP @MR1511
+;安定待ち
+STG @MR1415
+RES MR1100               ; 60kPa　検査圧切替え
+CON
+RES MR1101               ; 20kPa　検査圧切替え
+CON
+RES MR1102               ; 供給圧　大気解放 
+CON
+RES MR1103               ; 検査ノズル　大気解放 
+CON
+TMH @17 DM1122           ; 安定待ち  安定待ち時間
+CON
+AND @T17                 ; 安定待ち
+JMP @MR1500
+;初期圧確認
+STG @MR1500
+MPS
+ANB MR107                ; 全データ取得フラグ
+SET @MR2100              ; 初期圧確認
+CON
+JMP @MR1501
+MPP
+AND MR107                ; 全データ取得フラグ
+JMP @MR1510
+STG @MR1501
+AND @MR2101              ; 初期圧確認完了
+RES @MR2101              ; 初期圧確認完了
+CON
+JMP @MR1502
+STG @MR1502
+MPS
+ANB MR304                ; ｴﾗｰﾌﾗｸﾞ
+JMP @MR1503
+MPP
+AND MR304                ; ｴﾗｰﾌﾗｸﾞ
+ENDS
+;EM25.S = EM1001.S
+;EM23.S = DM1124.S
+;if EM25.S >= EM23.S then
+;	EM30054 = 1	'OK
+;else
+;	set(1,@MR500)
+;	EM30054 = 2	'NG
+;end if
+;EM30034.S = EM25.S
+;set(1,@MR1504)
+LD @MR1503
+NCJ #1011
+;EM25.S = EM1001.S
+;
+LD CR2002                ; 常時ON
+MOV.S EM1001 EM25        ; 初期圧  Step3 初期圧
+;EM23.S = DM1124.S
+;
+LD CR2002                ; 常時ON
+MOV.S DM1124 EM23        ; 初期圧規格値  Step3 規格値(初期圧)
+;if EM25.S >= EM23.S then
+;
+LD>=.S EM25 EM23         ; Step3 初期圧  Step3 規格値(初期圧)
+NCJ #2010
+;	EM30054 = 1	'OK
+;
+LD CR2002                ; 常時ON
+MOV #1 EM30054           ; (TP)Step3 初期圧判定
+;else
+;
+LD CR2002                ; 常時ON
+CJ #2011
+LABEL #2010
+;	set(1,@MR500)
+;
+LD CR2002                ; 常時ON
+SET @MR500               ; 検査NGフラグ
+;	EM30054 = 2	'NG
+;
+LD CR2002                ; 常時ON
+MOV #2 EM30054           ; (TP)Step3 初期圧判定
+;end if
+;
+LABEL #2011
+;EM30034.S = EM25.S
+;
+LD CR2002                ; 常時ON
+MOV.S EM25 EM30034       ; Step3 初期圧  (TP)Step3 初期圧
+;set(1,@MR1504)
+LD CR2002                ; 常時ON
+SET @MR1504
+LABEL #1011
+;
+STG @MR1503
+AND @MR1504
+MPS
+LD= EM30054 #1           ; (TP)Step3 初期圧判定
+OR @MR000                ; ｴﾗｰ表示遅延ﾌﾗｸﾞ
+ANL
+JMP @MR1505
+MPP
+LD= EM30054 #2           ; (TP)Step3 初期圧判定
+ANB @MR000               ; ｴﾗｰ表示遅延ﾌﾗｸﾞ
+ANL
+SET MR306                ; 検査NG
+CON
+ENDS
+;圧力監視
+STG @MR1505
+DW #3 EM30055            ; (TP)Step3 リーク量判定
+CON
+MOV DM1126 @DM74         ; 実検査時間  データ取得時間
+MOV DM1128 @DM40         ; 算出検査時間  測定点t
+SET @MR2200              ; 圧力監視
+CON
+JMP @MR1506
+STG @MR1506
+AND @MR2201              ; 圧力監視完了
+RES @MR2201              ; 圧力監視完了
+CON
+JMP @MR1507
+STG @MR1507
+MPS
+ANB MR304                ; ｴﾗｰﾌﾗｸﾞ
+JMP @MR1508
+MPP
+AND MR304                ; ｴﾗｰﾌﾗｸﾞ
+ENDS
+;EM24.S = DM1130.S
+;EM27.S = @DM42.S
+;EM26.S = @DM46.S
+;if EM26.S > EM24.S then
+;	set(1,@MR500)
+;	EM30055 = 2
+;else
+;	EM30055 = 1
+;end if
+;EM30035.S = EM26.S
+;set(1,@MR1509)
+;
+;FM0:(EM39999 * 1000) = @DM74 / EM30020
+;bmov(1,EM10000,FM1:(EM39999 * 1000),1000)
+;EM39999 = EM39999 + 1
+LDP @MR1508
+NCJ #1007
+;EM24.S = DM1130.S
+;
+LD CR2002                ; 常時ON
+MOV.S DM1130 EM24        ; リーク量規格値  Step3 規格値(ﾘｰｸ量)
+;EM27.S = @DM42.S
+;
+LD CR2002                ; 常時ON
+MOV.S @DM42 EM27         ; 圧力値(測定最終)  Step3 終了圧
+;EM26.S = @DM46.S
+;
+LD CR2002                ; 常時ON
+MOV.S @DM46 EM26         ; リーク量kPa/sec  Step3 ﾘｰｸ量
+;if EM26.S > EM24.S then
+;
+LD>.S EM26 EM24          ; Step3 ﾘｰｸ量  Step3 規格値(ﾘｰｸ量)
+NCJ #2012
+;	set(1,@MR500)
+;
+LD CR2002                ; 常時ON
+SET @MR500               ; 検査NGフラグ
+;	EM30055 = 2
+;
+LD CR2002                ; 常時ON
+MOV #2 EM30055           ; (TP)Step3 リーク量判定
+;else
+;
+LD CR2002                ; 常時ON
+CJ #2013
+LABEL #2012
+;	EM30055 = 1
+;
+LD CR2002                ; 常時ON
+MOV #1 EM30055           ; (TP)Step3 リーク量判定
+;end if
+;
+LABEL #2013
+;EM30035.S = EM26.S
+;
+LD CR2002                ; 常時ON
+MOV.S EM26 EM30035       ; Step3 ﾘｰｸ量  (TP)Step3 リーク量
+;set(1,@MR1509)
+;
+LD CR2002                ; 常時ON
+SET @MR1509
+;FM0:(EM39999 * 1000) = @DM74 / EM30020
+;
+;;Warning[1103]: "=": (符号付き32ビット整数型->符号無し16ビット整数型) 代入によりデータが欠落する可能性があります。
+LD CR2002                ; 常時ON
+LDA EM39999              ; ﾒﾓﾘｰｶｰﾄﾞ書込みデータ回数
+CON
+EXT
+CON
+MUL.L +1000
+CON
+STA.L Z11
+CON
+LDA EM30020              ; (TP)サンプリング
+CON
+EXT
+CON
+STA.L @VM4
+CON
+LDA @DM74                ; データ取得時間
+CON
+EXT
+CON
+EXT.L
+CON
+DIV.L @VM4
+CON
+STA FM0:Z11
+;bmov(1,EM10000,FM1:(EM39999 * 1000),1000)
+;
+LD CR2002                ; 常時ON
+LDA EM39999              ; ﾒﾓﾘｰｶｰﾄﾞ書込みデータ回数
+CON
+EXT
+CON
+MUL.L +1000
+CON
+STA.L Z12
+LD CR2002                ; 常時ON
+BMOV EM10000 FM1:Z12 #1000;ﾘｰｸ検査 圧力ﾃﾞｰﾀ
+;EM39999 = EM39999 + 1
+;;Warning[1103]: "=": (符号付き32ビット整数型->符号無し16ビット整数型) 代入によりデータが欠落する可能性があります。
+LD CR2002                ; 常時ON
+LDA EM39999              ; ﾒﾓﾘｰｶｰﾄﾞ書込みデータ回数
+CON
+EXT
+CON
+ADD.L +1
+CON
+STA EM39999              ; ﾒﾓﾘｰｶｰﾄﾞ書込みデータ回数
+LABEL #1007
+;
+STG @MR1508
+AND @MR1509
+MPS
+LD= EM30055 #1           ; (TP)Step3 リーク量判定
+OR @MR000                ; ｴﾗｰ表示遅延ﾌﾗｸﾞ
+ANL
+JMP @MR1511
+MPP
+LD= EM30055 #2           ; (TP)Step3 リーク量判定
+ANB @MR000               ; ｴﾗｰ表示遅延ﾌﾗｸﾞ
+ANL
+RES @MR500               ; 検査NGフラグ
+CON
+SET MR306                ; 検査NG
+CON
+ENDS
+;全データ取得時ウェイト
+STG @MR1510
+TMH @18 DM1126           ; 全データ取得時ウェイト  実検査時間
+CON
+AND @T18                 ; 全データ取得時ウェイト
+JMP @MR1511
+;～逆止弁オープン検査～
+;大気開放
+STG @MR1511
+MPS
+ANB @MR005
+DW #3 EM30056            ; (TP)Step4 初期圧判定
+CON
+RES MR1100               ; 60kPa　検査圧切替え
+CON
+RES MR1101               ; 20kPa　検査圧切替え
+CON
+RES MR1102               ; 供給圧　大気解放 
+CON
+SET MR1103               ; 検査ノズル　大気解放 
+CON
+TMH @19 DM1132           ; 大気開放待ち  大気開放待ち時間
+CON
+AND @T19                 ; 大気開放待ち
+JMP @MR1512
+MPP
+AND @MR005
+JMP @MR1700
+;大気開放判定
+STG @MR1512
+MPS
+ANB MR107                ; 全データ取得フラグ
+SET @MR2100              ; 初期圧確認
+CON
+JMP @MR1513
+MPP
+AND MR107                ; 全データ取得フラグ
+JMP @MR1601
+STG @MR1513
+AND @MR2101              ; 初期圧確認完了
+RES @MR2101              ; 初期圧確認完了
+CON
+JMP @MR1514
+STG @MR1514
+MPS
+ANB MR304                ; ｴﾗｰﾌﾗｸﾞ
+JMP @MR1515
+MPP
+AND MR304                ; ｴﾗｰﾌﾗｸﾞ
+ENDS
+;EM31.S = EM1001.S
+;EM29.S = DM1134.S
+;if EM31.S <= EM29.S then
+;	EM30056 = 1	'OK
+;else
+;	set(1,@MR500)
+;	EM30056 = 2	'NG
+;end if
+;EM30036.S = EM31.S
+;set(1,@MR1600)
+LD @MR1515
+NCJ #1012
+;EM31.S = EM1001.S
+;
+LD CR2002                ; 常時ON
+MOV.S EM1001 EM31        ; 初期圧  Step4 初期圧
+;EM29.S = DM1134.S
+;
+LD CR2002                ; 常時ON
+MOV.S DM1134 EM29        ; 大気開放規定値  Step4 規格値(初期圧)
+;if EM31.S <= EM29.S then
+;
+LD<=.S EM31 EM29         ; Step4 初期圧  Step4 規格値(初期圧)
+NCJ #2014
+;	EM30056 = 1	'OK
+;
+LD CR2002                ; 常時ON
+MOV #1 EM30056           ; (TP)Step4 初期圧判定
+;else
+;
+LD CR2002                ; 常時ON
+CJ #2015
+LABEL #2014
+;	set(1,@MR500)
+;
+LD CR2002                ; 常時ON
+SET @MR500               ; 検査NGフラグ
+;	EM30056 = 2	'NG
+;
+LD CR2002                ; 常時ON
+MOV #2 EM30056           ; (TP)Step4 初期圧判定
+;end if
+;
+LABEL #2015
+;EM30036.S = EM31.S
+;
+LD CR2002                ; 常時ON
+MOV.S EM31 EM30036       ; Step4 初期圧  (TP)Step4 初期圧
+;set(1,@MR1600)
+LD CR2002                ; 常時ON
+SET @MR1600
+LABEL #1012
+;
+STG @MR1515
+AND @MR1600
+MPS
+LD= EM30056 #1           ; (TP)Step4 初期圧判定
+OR @MR000                ; ｴﾗｰ表示遅延ﾌﾗｸﾞ
+ANL
+JMP @MR1601
+MPP
+LD= EM30056 #2           ; (TP)Step4 初期圧判定
+ANB @MR000               ; ｴﾗｰ表示遅延ﾌﾗｸﾞ
+ANL
+SET MR306                ; 検査NG
+CON
+ENDS
+;大気開放
+STG @MR1601
+RES MR1100               ; 60kPa　検査圧切替え
+CON
+RES MR1101               ; 20kPa　検査圧切替え
+CON
+RES MR1102               ; 供給圧　大気解放 
+CON
+SET MR1103               ; 検査ノズル　大気解放 
+CON
+TMH @20 DM1136           ; 大気開放待ち  大気開放待ち時間
+CON
+AND @T20                 ; 大気開放待ち
+JMP @MR1700
+;～プリズム検査～
+STG @MR1700
+MPS
+LDB @MR006
+ANB MR107                ; 全データ取得フラグ
+ANL
+DW #3 EM30058            ; (TP)プリズム判定
+CON
+JMP @MR1701
+MPP
+LD MR107                 ; 全データ取得フラグ
+OR @MR006
+ANL
+JMP @MR1800
+STG @MR1701
+MPS
+AND R1007                ; プリズムセンサユニット前進確認
+JMP @MR1703
+MPP
+ANB R1007                ; プリズムセンサユニット前進確認
+JMP @MR1702
+STG @MR1702
+OUT MR408                ; プリズム前進要求
+CON
+AND R1007                ; プリズムセンサユニット前進確認
+OUT MR411                ; スタート待ち
+CON
+ANP MR1008               ; StartSW
+JMP @MR1703
+;安定待ち
+STG @MR1703
+SET MR500                ; センサ発光用電源
+CON
+TMH @21 DM1138           ; プリズム安定待ち
+CON
+AND @T21
+JMP @MR1704
+;比較
+;EM35.S = DM1140.S
+;EM36.S = DM18003.S
+;if EM36.S <= EM35.S then
+;	EM30058 = 1	'OK
+;else
+;	set(1,@MR500)
+;	EM30058 = 2	'NG
+;end if
+;EM30038.S = EM36.S
+;set(1,@MR1705)
+LD @MR1704
+NCJ #1013
+;EM35.S = DM1140.S
+;
+LD CR2002                ; 常時ON
+MOV.S DM1140 EM35        ; プリズム検査規格値  Step5 規格値
+;EM36.S = DM18003.S
+;
+LD CR2002                ; 常時ON
+MOV.S DM18003 EM36       ; プリズム電圧  Step5 電圧
+;if EM36.S <= EM35.S then
+;
+LD<=.S EM36 EM35         ; Step5 電圧  Step5 規格値
+NCJ #2016
+;	EM30058 = 1	'OK
+;
+LD CR2002                ; 常時ON
+MOV #1 EM30058           ; (TP)プリズム判定
+;else
+;
+LD CR2002                ; 常時ON
+CJ #2017
+LABEL #2016
+;	set(1,@MR500)
+;
+LD CR2002                ; 常時ON
+SET @MR500               ; 検査NGフラグ
+;	EM30058 = 2	'NG
+;
+LD CR2002                ; 常時ON
+MOV #2 EM30058           ; (TP)プリズム判定
+;end if
+;
+LABEL #2017
+;EM30038.S = EM36.S
+;
+LD CR2002                ; 常時ON
+MOV.S EM36 EM30038       ; Step5 電圧  (TP)プリズム
+;set(1,@MR1705)
+LD CR2002                ; 常時ON
+SET @MR1705
+LABEL #1013
+;
+STG @MR1704
+AND @MR1705
+MPS
+LD= EM30058 #1           ; (TP)プリズム判定
+OR @MR000                ; ｴﾗｰ表示遅延ﾌﾗｸﾞ
+ANL
+JMP @MR1800
+MPP
+LD= EM30058 #2           ; (TP)プリズム判定
+ANB @MR000               ; ｴﾗｰ表示遅延ﾌﾗｸﾞ
+ANL
+SET MR306                ; 検査NG
+CON
+ENDS
+;<h1/>終了
+STG @MR1800
+RES MR500                ; センサ発光用電源
+CON
+MPS
+ANB MR107                ; 全データ取得フラグ
+MPS
+ANB @MR500               ; 検査NGフラグ
+SET MR200                ; 検査OK
+CON
+RES MR110                ; 検査中
+CON
+ENDS
+MPP
+AND @MR500               ; 検査NGフラグ
+SET MR306                ; 検査NG
+CON
+ENDS
+MPP
+AND MR107                ; 全データ取得フラグ
+OUT @MR902               ; 終了フラグ
+CON
+ANB @MR2015              ; 検査ﾃﾞｰﾀ取得開始ﾌﾗｸﾞ
+SET MR200                ; 検査OK
+CON
+RES MR110                ; 検査中
+CON
+ENDS
+;<h1/>初期圧取得
+STG @MR2100              ; 初期圧確認
+SET @MR2102
+CON
+JMP @MR2103
+;@DM70 = 1	'チャンネル番号
+;@DM71 = 100	'タイムアウト
+;@DM72 = 10	'データ取得時間(未使用)
+;@DM73 = EM30020	'データ取得周期
+LDP @MR2103
+NCJ #1001
+;@DM70 = 1	'チャンネル番号
+;
+LD CR2002                ; 常時ON
+MOV #1 @DM70             ; (検査)通信ﾁｬﾝﾈﾙ番号
+;@DM71 = 100	'タイムアウト
+;
+LD CR2002                ; 常時ON
+MOV #100 @DM71           ; (検査)通信ﾀｲﾑｱｳﾄ
+;@DM72 = 10	'データ取得時間(未使用)
+;
+LD CR2002                ; 常時ON
+MOV #10 @DM72            ; (検査)ﾃﾞｰﾀ取得時間
+;@DM73 = EM30020	'データ取得周期
+LD CR2002                ; 常時ON
+MOV EM30020 @DM73        ; (TP)サンプリング  (検査)ﾃﾞｰﾀ取得周期
+LABEL #1001
+;
+STG @MR2103
+DW #0 EM1000             ; 初期圧
+CON
+DW #0 EM1001             ; 初期圧
+CON
+JMP @MR2104
+STG @MR2104
+SET @MR2115
+CON
+JMP @MR2105
+LDP @MR2115
+MSTRT INSPECT_DATA_1 #3 @DM70 EM1000 @MR901 DM145 @MR2115;(検査)通信ﾁｬﾝﾈﾙ番号  初期圧  ｴﾗｰﾌﾗｸﾞ  詳細ｴﾗｰｺｰﾄﾞ
+LD @MR2115
+AND>= EM1000 #1          ; 初期圧
+RES @MR2115
+STG @MR2105
+ANF _INSPECT_DATA_1
+MPS
+ANB @MR901               ; ｴﾗｰﾌﾗｸﾞ
+JMP @MR2106
+MPP
+AND @MR901               ; ｴﾗｰﾌﾗｸﾞ
+SET MR310                ; 通信ｴﾗｰ
+CON
+ENDS
+STG @MR2106
+JMP @MR2107
+STG @MR2107
+TMH @5 #5                ; 値取得後ディレイ
+CON
+AND @T5                  ; 値取得後ディレイ
+JMP @MR2108
+STG @MR2108
+JMP @MR2109
+STG @MR2109
+SET @MR2101              ; 初期圧確認完了
+CON
+RES @MR2102
+CON
+ENDS
+;<h1/>圧力監視
+STG @MR2200              ; 圧力監視
+SET @MR2202
+CON
+JMP @MR2203
+;@DM70 = 1	'チャンネル番号
+;@DM71 = 100'タイムアウト
+;@DM72 = 100	'データ取得時間(マクロ内未使用)
+;@DM73 = EM30020	'データ取得周期
+;
+LDP @MR2203
+NCJ #1002
+;@DM70 = 1	'チャンネル番号
+;
+LD CR2002                ; 常時ON
+MOV #1 @DM70             ; (検査)通信ﾁｬﾝﾈﾙ番号
+;@DM71 = 100'タイムアウト
+;
+LD CR2002                ; 常時ON
+MOV #100 @DM71           ; (検査)通信ﾀｲﾑｱｳﾄ
+;@DM72 = 100	'データ取得時間(マクロ内未使用)
+;
+LD CR2002                ; 常時ON
+MOV #100 @DM72           ; (検査)ﾃﾞｰﾀ取得時間
+;@DM73 = EM30020	'データ取得周期
+;
+LD CR2002                ; 常時ON
+MOV EM30020 @DM73        ; (TP)サンプリング  (検査)ﾃﾞｰﾀ取得周期
+LABEL #1002
+;
+STG @MR2203
+JMP @MR2204
+STG @MR2204
+SET @MR2215
+CON
+JMP @MR2205
+LDP @MR2215
+MSTRT INSPECT_DATA_2 #3 @DM70 EM10000 @MR901 DM145 @MR2215;(検査)通信ﾁｬﾝﾈﾙ番号  ﾘｰｸ検査 圧力ﾃﾞｰﾀ  ｴﾗｰﾌﾗｸﾞ  詳細ｴﾗｰｺｰﾄﾞ
+LD _INSPECT_DATA_2
+TMH @1 @DM74             ; データ取得時間
+CON
+AND @T1
+RES @MR2215
+STG @MR2205
+ANF _INSPECT_DATA_2
+MPS
+ANB @MR901               ; ｴﾗｰﾌﾗｸﾞ
+JMP @MR2206
+MPP
+AND @MR901               ; ｴﾗｰﾌﾗｸﾞ
+SET MR310                ; 通信ｴﾗｰ
+CON
+JMP @MR2213
+;計算
+;'最小二乗法による近似直線の算出
+;'
+;'    (Σx)(Σy)－(Σ1)(Σxy)
+;'a＝------------------------
+;'    (Σx)^2－(Σ1)(Σx^2)
+;'
+;'    (Σx)(Σxy)－(Σy)(Σx^2)
+;'b＝--------------------------
+;'      (Σx)^2－(Σ1)(Σx^2)
+;
+;'初期化
+;x = 0	'Σx
+;y = 0	'Σy
+;xx = 0	'Σx^2
+;xy = 0	'Σxy
+;'Σの計算
+;for i = 1 to EM10000
+;	x = x + float(@DM73)*0.01*i
+;	y = y + float(EM10000.S:i) * 0.01
+;	xx = xx + (float(@DM73)*0.01*i) ^ 2
+;	xy = xy + (float(@DM73)*0.01*i) * (EM10000.S:i) * 0.01
+;next
+;'近似直線算出
+;slope = (x * y - EM10000.S * xy) / (x ^ 2 - EM10000.S * xx)	'傾き
+;intercept = (x * xy - y * xx) / (x ^ 2 - EM10000.S * xx)	'切片
+;
+;
+;'*************************************
+;'実際に測定した最終値
+;@DM42.S = EM10000.S:EM10000
+;
+;'t秒後の圧力値
+;'@DM44.f = slope * float(@DM40)*0.01 + intercept
+;'@DM46.S = int(@DM44.f + 0.5)
+;@DM44.f = slope * (-1)
+;@DM46.S = int((@DM44.f + 0.0005) * 1000)
+;set(@MR2214)
+LDP @MR2206
+NCJ #1000
+;'最小二乗法による近似直線の算出
+;
+;'
+;
+;'    (Σx)(Σy)－(Σ1)(Σxy)
+;
+;'a＝------------------------
+;
+;'    (Σx)^2－(Σ1)(Σx^2)
+;
+;'
+;
+;'    (Σx)(Σxy)－(Σy)(Σx^2)
+;
+;'b＝--------------------------
+;
+;'      (Σx)^2－(Σ1)(Σx^2)
+;
+;'初期化
+;
+;x = 0	'Σx
+;
+LD CR2002                ; 常時ON
+MOV.F +0 x               ; Σx
+;y = 0	'Σy
+;
+LD CR2002                ; 常時ON
+MOV.F +0 y               ; Σy
+;xx = 0	'Σx^2
+;
+LD CR2002                ; 常時ON
+MOV.F +0 xx              ; Σx^2
+;xy = 0	'Σxy
+;
+LD CR2002                ; 常時ON
+MOV.F +0 xy              ; Σxy
+;'Σの計算
+;
+;for i = 1 to EM10000
+;
+LD CR2002                ; 常時ON
+MOV #1 i
+LABEL #2018
+LD> i EM10000            ; ﾘｰｸ検査 圧力ﾃﾞｰﾀ
+CJ #2019
+;	x = x + float(@DM73)*0.01*i
+;
+LD CR2002                ; 常時ON
+LDA @DM73                ; (検査)ﾃﾞｰﾀ取得周期
+CON
+FLOAT
+CON
+MUL.F +0.01
+CON
+STA.F @VM6
+CON
+LDA i
+CON
+FLOAT
+CON
+MUL.F @VM6
+CON
+ADD.F x                  ; Σx
+CON
+STA.F x                  ; Σx
+;	y = y + float(EM10000.S:i) * 0.01
+;
+LD CR2002                ; 常時ON
+LDA i
+CON
+EXT
+CON
+STA.L Z12
+CON
+LDA.S EM10000:Z12        ; ﾘｰｸ検査 圧力ﾃﾞｰﾀ
+CON
+FLOAT.S
+CON
+MUL.F +0.01
+CON
+ADD.F y                  ; Σy
+CON
+STA.F y                  ; Σy
+;	xx = xx + (float(@DM73)*0.01*i) ^ 2
+;
+LD CR2002                ; 常時ON
+LDA @DM73                ; (検査)ﾃﾞｰﾀ取得周期
+CON
+FLOAT
+CON
+MUL.F +0.01
+CON
+STA.F @VM8
+CON
+LDA i
+CON
+FLOAT
+CON
+MUL.F @VM8
+CON
+STA.F @VM10
+LD CR2002                ; 常時ON
+LDA.F +1
+FOR #2
+LD CR2002                ; 常時ON
+MUL.F @VM10
+NEXT
+LD CR2002                ; 常時ON
+ADD.F xx                 ; Σx^2
+CON
+STA.F xx                 ; Σx^2
+;	xy = xy + (float(@DM73)*0.01*i) * (EM10000.S:i) * 0.01
+;
+LD CR2002                ; 常時ON
+LDA i
+CON
+EXT
+CON
+STA.L Z12
+CON
+LDA @DM73                ; (検査)ﾃﾞｰﾀ取得周期
+CON
+FLOAT
+CON
+MUL.F +0.01
+CON
+STA.F @VM12
+CON
+LDA i
+CON
+FLOAT
+CON
+MUL.F @VM12
+CON
+STA.F @VM14
+CON
+LDA.S EM10000:Z12        ; ﾘｰｸ検査 圧力ﾃﾞｰﾀ
+CON
+FLOAT.S
+CON
+MUL.F @VM14
+CON
+MUL.F +0.01
+CON
+ADD.F xy                 ; Σxy
+CON
+STA.F xy                 ; Σxy
+;next
+;
+LD CR2002                ; 常時ON
+INC i
+LDB CR2009               ; 演算結果が負
+CJ #2018
+LABEL #2019
+;'近似直線算出
+;
+;slope = (x * y - EM10000.S * xy) / (x ^ 2 - EM10000.S * xx)	'傾き
+;
+LD CR2002                ; 常時ON
+LDA.S EM10000            ; ﾘｰｸ検査 圧力ﾃﾞｰﾀ
+CON
+FLOAT.S
+CON
+MUL.F xx                 ; Σx^2
+CON
+STA.F @VM16
+LD CR2002                ; 常時ON
+LDA.F +1
+FOR #2
+LD CR2002                ; 常時ON
+MUL.F x                  ; Σx
+NEXT
+LD CR2002                ; 常時ON
+SUB.F @VM16
+CON
+STA.F @VM18
+CON
+LDA.S EM10000            ; ﾘｰｸ検査 圧力ﾃﾞｰﾀ
+CON
+FLOAT.S
+CON
+MUL.F xy                 ; Σxy
+CON
+STA.F @VM20
+CON
+LDA.F x                  ; Σx
+CON
+MUL.F y                  ; Σy
+CON
+SUB.F @VM20
+CON
+DIV.F @VM18
+CON
+STA.F slope              ; 傾き
+;intercept = (x * xy - y * xx) / (x ^ 2 - EM10000.S * xx)	'切片
+;
+LD CR2002                ; 常時ON
+LDA.S EM10000            ; ﾘｰｸ検査 圧力ﾃﾞｰﾀ
+CON
+FLOAT.S
+CON
+MUL.F xx                 ; Σx^2
+CON
+STA.F @VM22
+LD CR2002                ; 常時ON
+LDA.F +1
+FOR #2
+LD CR2002                ; 常時ON
+MUL.F x                  ; Σx
+NEXT
+LD CR2002                ; 常時ON
+SUB.F @VM22
+CON
+STA.F @VM24
+CON
+LDA.F y                  ; Σy
+CON
+MUL.F xx                 ; Σx^2
+CON
+STA.F @VM26
+CON
+LDA.F x                  ; Σx
+CON
+MUL.F xy                 ; Σxy
+CON
+SUB.F @VM26
+CON
+DIV.F @VM24
+CON
+STA.F intercept          ; 切片
+;'*************************************
+;
+;'実際に測定した最終値
+;
+;@DM42.S = EM10000.S:EM10000
+;
+LD CR2002                ; 常時ON
+LDA EM10000              ; ﾘｰｸ検査 圧力ﾃﾞｰﾀ
+CON
+EXT
+CON
+STA.L Z12
+CON
+MOV.S EM10000:Z12 @DM42  ; ﾘｰｸ検査 圧力ﾃﾞｰﾀ  圧力値(測定最終)
+;'t秒後の圧力値
+;
+;'@DM44.f = slope * float(@DM40)*0.01 + intercept
+;
+;'@DM46.S = int(@DM44.f + 0.5)
+;
+;@DM44.f = slope * (-1)
+;
+LD CR2002                ; 常時ON
+LDA.F slope              ; 傾き
+CON
+MUL.F -1
+CON
+STA.F @DM44              ; 圧力値(t秒後)float
+;@DM46.S = int((@DM44.f + 0.0005) * 1000)
+;
+;;Warning[1103]: "=": (符号付き32ビット整数型->符号付き16ビット整数型) 代入によりデータが欠落する可能性があります。
+LD CR2002                ; 常時ON
+LDA.F @DM44              ; 圧力値(t秒後)float
+CON
+ADD.F +0.0005
+CON
+MUL.F +1000
+CON
+INTG.L
+CON
+STA.S @DM46              ; リーク量kPa/sec
+;set(@MR2214)
+LD CR2002                ; 常時ON
+SET @MR2214
+LABEL #1000
+;
+STG @MR2206
+AND @MR2214
+JMP @MR2212
+STG @MR2212
+SET @MR2201              ; 圧力監視完了
+CON
+RES @MR2202
+CON
+ENDS
+;<h1/>QRコード読み取り
+STG @MR2300
+ZRES @MR2313 @MR2315
+CON
+SET @MR2202
+CON
+JMP @MR2303
+STG @MR2303
+FMOV #0 DM17004 #100     ; 出力データ
+JMP @MR2304
+STG @MR2304
+DW #0 DM17000            ; 読み取りバンク指示
+CON
+DW #0 DM17001            ; ID指示
+CON
+JMP @MR2305
+STG @MR2305
+SET R100                 ; PLCタイミングエリア
+CON
+JMP @MR2306
+LD @MR2306
+MPS
+ANP R200                 ; PLCタイミング入力応答
+SET @MR2314
+MPP
+ANF R204                 ; リアルタイム処理データ書き込み中
+SET @MR2313
+STG @MR2306
+TMR @30 #20              ; codeリーダタイムアウト
+CON
+MPS
+LD @MR2314
+AND @MR2313
+ANL
+RES R100                 ; PLCタイミングエリア
+CON
+JMP @MR2307
+MPP
+AND @T30                 ; codeリーダタイムアウト
+RES R100                 ; PLCタイミングエリア
+CON
+SET @MR2315
+CON
+JMP @MR2308
+STG @MR2307
+ANB R200                 ; PLCタイミング入力応答
+JMP @MR2308
+STG @MR2308
+RES @MR2302
+CON
+SET @MR2301
+CON
+ENDS
+;<h1/>検査データ全取得モード
+STG @MR2000
+JMP @MR2001
+;@DM70 = 1	'チャンネル番号
+;@DM71 = 100	'タイムアウト
+;@DM72 = 10	'データ取得時間(未使用)
+;@DM73 = EM30020	'データ取得周期
+;EM30070 = 0
+LDP @MR2001
+NCJ #1006
+;@DM70 = 1	'チャンネル番号
+;
+LD CR2002                ; 常時ON
+MOV #1 @DM70             ; (検査)通信ﾁｬﾝﾈﾙ番号
+;@DM71 = 100	'タイムアウト
+;
+LD CR2002                ; 常時ON
+MOV #100 @DM71           ; (検査)通信ﾀｲﾑｱｳﾄ
+;@DM72 = 10	'データ取得時間(未使用)
+;
+LD CR2002                ; 常時ON
+MOV #10 @DM72            ; (検査)ﾃﾞｰﾀ取得時間
+;@DM73 = EM30020	'データ取得周期
+;
+LD CR2002                ; 常時ON
+MOV EM30020 @DM73        ; (TP)サンプリング  (検査)ﾃﾞｰﾀ取得周期
+;EM30070 = 0
+LD CR2002                ; 常時ON
+MOV #0 EM30070           ; (TP)検証動作表示用
+LABEL #1006
+;
+STG @MR2001
+JMP @MR2002
+STG @MR2002
+TMS @7 #2
+CON
+AND @T7
+SET @MR2015              ; 検査ﾃﾞｰﾀ取得開始ﾌﾗｸﾞ
+CON
+JMP @MR2003
+LDP @MR2015              ; 検査ﾃﾞｰﾀ取得開始ﾌﾗｸﾞ
+MSTRT INSPECT_DATA_3 #3 @DM70 FM0 @MR901 DM145 @MR2015;(検査)通信ﾁｬﾝﾈﾙ番号  ｴﾗｰﾌﾗｸﾞ  詳細ｴﾗｰｺｰﾄﾞ  検査ﾃﾞｰﾀ取得開始ﾌﾗｸﾞ
+STG @MR2003
+MPS
+LDB @MR901               ; ｴﾗｰﾌﾗｸﾞ
+AND @MR902               ; 終了フラグ
+ANL
+RES @MR2015              ; 検査ﾃﾞｰﾀ取得開始ﾌﾗｸﾞ
+CON
+ENDS
+MPP
+AND @MR901               ; ｴﾗｰﾌﾗｸﾞ
+SET MR310                ; 通信ｴﾗｰ
+CON
+ENDS
+;EM30070 = (FM0 -1) / 10 * 10
+;
+LD @MR2003
+AND<> FM0 #0
+NCJ #1005
+;EM30070 = (FM0 -1) / 10 * 10
+;
+;;Warning[1103]: "=": (符号付き32ビット整数型->符号無し16ビット整数型) 代入によりデータが欠落する可能性があります。
+LD CR2002                ; 常時ON
+LDA FM0
+CON
+EXT
+CON
+SUB.L +1
+CON
+EXT.L
+CON
+DIV.L +10
+CON
+MUL.L +10
+CON
+STA EM30070              ; (TP)検証動作表示用
+LABEL #1005
+;
+END
+ENDH

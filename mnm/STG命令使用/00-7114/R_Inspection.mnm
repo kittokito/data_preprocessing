@@ -1,0 +1,1532 @@
+DEVICE:53
+;MODULE:R_Inspection
+;MODULE_TYPE:0
+;検査ﾓｼﾞｭｰﾙ強制終了条件/Inspection module forced termination condition
+LDP MR30501              ; RTP)検査強制終了
+ORP MR900                ; 重度異常：電源再投入必要
+MPS
+RES MR403                ; R大気開放中
+CON
+RES MR102                ; Rﾘｰｸ検査中
+CON
+RES MR105                ; R逆止弁検査中
+CON
+RES MR013                ; R閉塞検査中
+CON
+RES MR015                ; R誤配管検査中
+CON
+RES MR101                ; R検査動作中
+CON
+ZRES @MR000 @MR3215      ; ﾜｰｸ無し誤配管検査ﾊﾟｽ
+MPP
+MDSTOP R_Inspection
+;<h1/>初期化/Initialize
+LD @CR2008
+DW #0 EM0                ; ｴﾗｰNo.記憶
+CON
+DW #0 EM1                ; ｴﾗｰ詳細記憶
+CON
+ZRES ZF29994 ZF35999     ; Rﾘｰｸ検査1ﾃﾞｰﾀ取得数  Rﾘｰｸ検査6測定中差圧1000
+CON
+SET MR101                ; R検査動作中
+CON
+SET @MR400
+STG @MR400
+JMP @MR500
+;<h1/>△誤配管検査/Channel confirmation
+;誤配管検査有効？/Channel confirmation effective?
+;EM10:Z1誤配管検査回路結果=1 無効
+;EM 10: Z 1 Misconductive piping test result = 1 invalid
+STG @MR500
+MPS
+LDB ZF820.0              ; R検査_流路確認(誤配管(ON=有
+OR MR107                 ; Rﾒﾝﾃ_装置ﾘｰｸ検査中
+ANL
+FMOV #1 ZF1000 #20       ; R誤配管検査回路1結果
+DW #1 EM552              ; R誤配管検査総ﾗﾝﾌﾟ_0未2動作3OK4NG
+CON
+JMP @MR1400
+MPP
+LD ZF820.0               ; R検査_流路確認(誤配管(ON=有
+ANB MR107                ; Rﾒﾝﾃ_装置ﾘｰｸ検査中
+ANL
+SET MR015                ; R誤配管検査中
+CON
+DW #1 EM561              ; R誤配管検査回数(1～20)
+CON
+DW #2 EM552              ; R誤配管検査総ﾗﾝﾌﾟ_0未2動作3OK4NG
+CON
+JMP @MR501
+;検査回数ﾙｰﾌﾟ先頭/Inspection count loop head
+STG @MR501
+DW #1 EM562              ; R誤配管検査出口側切替No.(1-5)
+CON
+JMP @MR502
+;検査ﾁｬﾝﾈﾙﾙｰﾌﾟ先頭/Inspection channel loop head
+;上下流ﾊﾞﾙﾌﾞ設定実行/Execution of upstream and downstream valve setting
+STG @MR502
+ANB MR903                ; R_ｴﾗｰ処理中
+MDSTRT R_Set
+JMP @MR503
+STG @MR503
+ANF _R_Set
+JMP @MR504
+;ZF1000:Z1誤配管検査回路結果
+;=1 無効
+;=2 実行中
+;ZF1000: Z 1 mis-piping inspection circuit result
+;= 1 invalid
+;= 2 Running
+STG @MR504
+MPS
+LD<> EM570 #0            ; R誤配管検査入口側 流路 No.
+AND<> EM571 #0           ; R誤配管検査出口側 流路 No.
+ANL
+JMP @MR505
+MPP
+LD= EM570 #0             ; R誤配管検査入口側 流路 No.
+OR= EM571 #0             ; R誤配管検査出口側 流路 No.
+ANL
+MPS
+LDA EM561                ; R誤配管検査回数(1～20)
+CON
+SUB #1
+CON
+STA Z1
+CON
+AND= ZF1000:Z1 #0        ; R誤配管検査回路1結果
+DW #1 ZF1000:Z1          ; R誤配管検査回路1結果
+MPP
+JMP @MR602
+STG @MR505
+JMP @MR507
+;ZF1000:Z1誤配管検査回路結果
+;=2 実行中
+;ZF1000:Z1 mis-piping inspection circuit result
+;= 2 Running
+STG @MR507
+LDA EM561                ; R誤配管検査回数(1～20)
+CON
+SUB #1
+CON
+STA Z1
+CON
+DW #2 ZF1000:Z1          ; R誤配管検査回路1結果
+CON
+JMP @MR508
+;回路ﾊﾞﾙﾌﾞ開閉処理/Circuit valve opening / closing process
+;23：ﾘｰｸﾃｽﾀ入口
+;24：ﾘｰｸﾃｽﾀ出口
+;25：流量ｾﾝｻ入口
+;26：流量ｾﾝｻ出口
+;27：上流大気開放
+;23: Leak tester entrance
+;24: Leak tester exit
+;25: Flow sensor inlet
+;26: Flow sensor outlet
+;27: Upstream air release
+STG @MR508
+RES MR8704               ; R上流側流路切替ﾊﾞﾙﾌﾞ 23(ON=開)
+CON
+RES MR8705               ; R上流側流路切替ﾊﾞﾙﾌﾞ 24(ON=開)
+CON
+SET MR8706               ; R上流側流路切替ﾊﾞﾙﾌﾞ 25(ON=開)
+CON
+SET MR8707               ; R上流側流路切替ﾊﾞﾙﾌﾞ 26(ON=開)
+CON
+RES MR8708               ; R上流側流路切替ﾊﾞﾙﾌﾞ 27(ON=開)
+CON
+SET MR401                ; R_上下流_ﾊﾞﾙﾌﾞ一括切替(OFF全閉
+CON
+TMR @0 ZF845             ; 誤配管検査初期充填時間  R現設定_誤配管検査初期充填時間
+CON
+AND @T0                  ; 誤配管検査初期充填時間
+JMP @MR509
+;安定待ち&流量値書込み/Stabilization wait & flow value write
+STG @MR509
+TMR @1 ZF847             ; 誤配管検査安定待ち時間  R現設定_誤配管検査安定待ち時間
+CON
+AND @T1                  ; 誤配管検査安定待ち時間
+JMP @MR510
+STG @MR510
+MPS
+AND>.S DM10601 +0        ; A-A/D1_2流量ｾﾝｻR値
+LDA.S DM10601            ; A-A/D1_2流量ｾﾝｻR値
+CON
+MUL.S +10
+CON
+DIV.S +592
+CON
+STA.S @DM6               ; 誤配管流量計ｱﾅﾛｸﾞﾃﾞｰﾀ変換値
+CON
+JMP @MR511
+MPP
+AND<=.S DM10601 +0       ; A-A/D1_2流量ｾﾝｻR値
+DW #0 @DM6               ; 誤配管流量計ｱﾅﾛｸﾞﾃﾞｰﾀ変換値
+CON
+JMP @MR511
+STG @MR511
+LDA EM561                ; R誤配管検査回数(1～20)
+CON
+SUB #1
+CON
+MUL #5
+CON
+ADD EM562                ; R誤配管検査出口側切替No.(1-5)
+CON
+SUB #1
+CON
+STA Z1
+CON
+LDA.S @DM6               ; 誤配管流量計ｱﾅﾛｸﾞﾃﾞｰﾀ変換値
+CON
+STA.S ZF1020:Z1          ; R誤配管検査回路1-1流量値
+CON
+JMP @MR600
+;流量値判定/Flow rate value determination
+STG @MR600
+MPS
+LD>=.S ZF840 @DM6        ; R現設定_誤配管検査_判定値上  誤配管流量計ｱﾅﾛｸﾞﾃﾞｰﾀ変換値
+AND<=.S ZF841 @DM6       ; R現設定_誤配管検査_判定値下  誤配管流量計ｱﾅﾛｸﾞﾃﾞｰﾀ変換値
+ANL
+JMP @MR602
+MPP
+LD<.S ZF840 @DM6         ; R現設定_誤配管検査_判定値上  誤配管流量計ｱﾅﾛｸﾞﾃﾞｰﾀ変換値
+OR>.S ZF841 @DM6         ; R現設定_誤配管検査_判定値下  誤配管流量計ｱﾅﾛｸﾞﾃﾞｰﾀ変換値
+ANL
+JMP @MR601
+;誤配管検査NGﾌﾗｸﾞ書込み/Mis-piping inspection NG flag write
+;EM10:Z1誤配管検査回路結果
+;=4 NG
+;EM 10: Z 1 mis-piping inspection circuit result
+;= 4 NG
+STG @MR601
+MPS
+LDA EM561                ; R誤配管検査回数(1～20)
+CON
+SUB #1
+CON
+STA Z1
+CON
+DW #4 ZF1000:Z1          ; R誤配管検査回路1結果
+MRD
+AND MR107                ; Rﾒﾝﾃ_装置ﾘｰｸ検査中
+LDA EM30010              ; TP)機種選択番号(1-10)
+CON
+SUB #1
+CON
+MUL #25
+CON
+ADD ZF5                  ; R現在部品番号(1～25）
+CON
+SUB #1
+CON
+STA Z1
+CON
+RES LR2000:Z1            ; R機種1部品1装置ﾘｰｸ検査OK
+MPP
+DW #84 EM2               ; RｴﾗｰNo.記憶
+CON
+DW #84 EM3               ; Rｴﾗｰ詳細記憶
+CON
+DW #4 EM552              ; R誤配管検査総ﾗﾝﾌﾟ_0未2動作3OK4NG
+CON
+SET MR33503              ; R_Err84誤配管検査 NG
+CON
+SET @MR002               ; 終了時NG発報予約
+CON
+JMP @MR602
+;検査chﾁｪｯｸ/Check Channel confirmation counter
+;※検査NG＆NG時終了設定時は終了処理へ
+;* When inspection NG & NG end setting is set to end processing
+STG @MR602
+MPS
+AND< EM562 #5            ; R誤配管検査出口側切替No.(1-5)
+MPS
+LD>= EM30013 #1          ; R判定方法 確認用(1でNG時続行)
+ORB MR33503              ; R_Err84誤配管検査 NG
+ANL
+JMP @MR603
+MPP
+LD< EM30013 #1           ; R判定方法 確認用(1でNG時続行)
+AND MR33503              ; R_Err84誤配管検査 NG
+ANL
+JMP @MR700
+MPP
+AND>= EM562 #5           ; R誤配管検査出口側切替No.(1-5)
+JMP @MR604
+STG @MR603
+INC EM562                ; R誤配管検査出口側切替No.(1-5)
+CON
+JMP @MR502
+;誤配管検査OK/Mis-piping inspection OK
+;EM10:Z1誤配管検査回路結果
+;=3 OK
+;EM 10: Z 1 mis-piping inspection circuit result
+;= 3 OK
+STG @MR604
+MPS
+LDA EM561                ; R誤配管検査回数(1～20)
+CON
+SUB #1
+CON
+STA Z1
+CON
+AND<> ZF1000:Z1 #4       ; R誤配管検査回路1結果
+AND<> ZF1000:Z1 #1       ; R誤配管検査回路1結果
+DW #3 ZF1000:Z1          ; R誤配管検査回路1結果
+MPP
+JMP @MR605
+;検査回数ﾁｪｯｸ/Check Channel confirmation counter
+;※検査NG＆NG時終了設定時は終了処理へ
+;* When inspection NG & NG end setting is set to end processing
+STG @MR605
+MPS
+AND< EM561 #20           ; R誤配管検査回数(1～20)
+JMP @MR606
+MPP
+AND>= EM561 #20          ; R誤配管検査回数(1～20)
+JMP @MR700
+STG @MR606
+INC EM561                ; R誤配管検査回数(1～20)
+CON
+JMP @MR501
+;誤配管検査終了/Misdiagnosed piping inspection end
+;検査回路大気開放
+;流量ｾﾝｻ入口閉、上流1～20は全閉、上流側大気開放開
+;下流1～20は全開
+;Inspection circuit Atmospheric release
+;Flow sensor inlet closed, upstream 1 - 20 fully closed, upstream atmospheric open open
+;Downstream 1 - 20 are fully open
+;23：ﾘｰｸﾃｽﾀ入口
+;24：ﾘｰｸﾃｽﾀ出口
+;25：流量ｾﾝｻ入口
+;26：流量ｾﾝｻ出口
+;27：上流大気開放
+;23: Leak tester entrance
+;24: Leak tester exit
+;25: Flow sensor inlet
+;26: Flow sensor outlet
+;27: Upstream air release
+STG @MR700
+FMOV #0 DM19800 #20      ; R上流側流路ﾊﾞﾙﾌﾞ1 (0=閉/1=開)
+FMOV #1 DM19830 #20      ; R下流側流路ﾊﾞﾙﾌﾞ1 (0=閉/1=開
+RES MR8704               ; R上流側流路切替ﾊﾞﾙﾌﾞ 23(ON=開)
+CON
+RES MR8705               ; R上流側流路切替ﾊﾞﾙﾌﾞ 24(ON=開)
+CON
+RES MR8706               ; R上流側流路切替ﾊﾞﾙﾌﾞ 25(ON=開)
+CON
+SET MR8707               ; R上流側流路切替ﾊﾞﾙﾌﾞ 26(ON=開)
+CON
+SET MR8708               ; R上流側流路切替ﾊﾞﾙﾌﾞ 27(ON=開)
+CON
+SET MR401                ; R_上下流_ﾊﾞﾙﾌﾞ一括切替(OFF全閉
+CON
+JMP @MR701
+STG @MR701
+TMR @2 ZF843             ; 誤配管検査大気開放時間  R現設定_誤配管検査大気開放時間
+CON
+AND @T2                  ; 誤配管検査大気開放時間
+JMP @MR702
+STG @MR702
+RES MR8707               ; R上流側流路切替ﾊﾞﾙﾌﾞ 26(ON=開)
+CON
+RES MR401                ; R_上下流_ﾊﾞﾙﾌﾞ一括切替(OFF全閉
+CON
+JMP @MR703
+LD @MR703
+ANB MR107                ; Rﾒﾝﾃ_装置ﾘｰｸ検査中
+SET TM91.1
+STG @MR703
+RES MR015                ; R誤配管検査中
+CON
+MPS
+AND= EM552 #2            ; R誤配管検査総ﾗﾝﾌﾟ_0未2動作3OK4NG
+MPS
+AND MR33503              ; R_Err84誤配管検査 NG
+DW #4 EM552              ; R誤配管検査総ﾗﾝﾌﾟ_0未2動作3OK4NG
+MPP
+ANB MR33503              ; R_Err84誤配管検査 NG
+DW #3 EM552              ; R誤配管検査総ﾗﾝﾌﾟ_0未2動作3OK4NG
+MRD
+LD>= EM30013 #1          ; R判定方法 確認用(1でNG時続行)
+ORB MR33503              ; R_Err84誤配管検査 NG
+ANL
+JMP @MR1400
+MPP
+LD< EM30013 #1           ; R判定方法 確認用(1でNG時続行)
+AND MR33503              ; R_Err84誤配管検査 NG
+ANL
+JMP @MR3000
+;<h1/>△閉塞有無検査/Check for obstruction
+;※閉塞→ﾘｰｸ検査の順に変更
+;* Change in order of blockage → leak check
+STG @MR1400
+MPS
+LD MR107                 ; Rﾒﾝﾃ_装置ﾘｰｸ検査中
+OR MR209                 ; Rﾒﾝﾃ_ﾘｰｸﾃｽﾀNG調整中
+ANL
+JMP @MR1500
+MPP
+LDB MR107                ; Rﾒﾝﾃ_装置ﾘｰｸ検査中
+ANB MR209                ; Rﾒﾝﾃ_ﾘｰｸﾃｽﾀNG調整中
+ANL
+MPS
+ANB ZF820.5              ; R検査_閉塞有無(ON=有
+FMOV #1 ZF1175 #7        ; R閉塞検査1結果(0未1-2中3良4不
+DW #1 EM556              ; R閉塞検査ﾗﾝﾌﾟ_0未2動作3OK4NG
+CON
+JMP @MR1500
+MPP
+AND ZF820.5              ; R検査_閉塞有無(ON=有
+SET MR013                ; R閉塞検査中
+CON
+DW #1 EM563              ; R閉塞検査回数(1～7)
+CON
+DW #2 EM556              ; R閉塞検査ﾗﾝﾌﾟ_0未2動作3OK4NG
+CON
+JMP @MR1401
+;検査回数ﾙｰﾌﾟ先頭/Inspection count loop head
+;上下流ﾊﾞﾙﾌﾞ設定実行/Execution of upstream and downstream valve setting
+STG @MR1401
+ANB MR902                ; ｴﾗｰ
+MDSTRT R_Set
+JMP @MR1402
+STG @MR1402
+ANF _R_Set
+JMP @MR1403
+;=1 無効
+;= 1 invalid
+;=2 実行中
+;= 2 Running
+STG @MR1403
+MPS
+AND<> EM572 #0           ; R閉塞検査入口側 流路 No.
+LDA EM563                ; R閉塞検査回数(1～7)
+CON
+SUB #1
+CON
+STA Z1
+CON
+DW #2 ZF1175:Z1          ; R閉塞検査1結果(0未1-2中3良4不
+CON
+JMP @MR1404
+MPP
+AND= EM572 #0            ; R閉塞検査入口側 流路 No.
+LDA EM563                ; R閉塞検査回数(1～7)
+CON
+SUB #1
+CON
+STA Z1
+CON
+DW #1 ZF1175:Z1          ; R閉塞検査1結果(0未1-2中3良4不
+CON
+JMP @MR1411
+;回路ﾊﾞﾙﾌﾞ開閉処理/Circuit valve opening / closing process
+;23：ﾘｰｸﾃｽﾀ入口
+;24：ﾘｰｸﾃｽﾀ出口
+;25：流量ｾﾝｻ入口
+;26：流量ｾﾝｻ出口
+;27：上流大気開放
+;23: Leak tester entrance
+;24: Leak tester exit
+;25: Flow sensor inlet
+;26: Flow sensor outlet
+;27: Upstream air release
+STG @MR1404
+RES MR8704               ; R上流側流路切替ﾊﾞﾙﾌﾞ 23(ON=開)
+CON
+RES MR8705               ; R上流側流路切替ﾊﾞﾙﾌﾞ 24(ON=開)
+CON
+SET MR8706               ; R上流側流路切替ﾊﾞﾙﾌﾞ 25(ON=開)
+CON
+SET MR8707               ; R上流側流路切替ﾊﾞﾙﾌﾞ 26(ON=開)
+CON
+RES MR8708               ; R上流側流路切替ﾊﾞﾙﾌﾞ 27(ON=開)
+CON
+SET MR401                ; R_上下流_ﾊﾞﾙﾌﾞ一括切替(OFF全閉
+CON
+JMP @MR1405
+;安定待ち&流量値書込み/Stabilization wait & flow value write
+STG @MR1405
+LDA EM563                ; R閉塞検査回数(1～7)
+CON
+SUB #1
+CON
+MUL #2
+CON
+STA Z1
+CON
+TMR @9 ZF986:Z1          ; 閉塞検査安定待ち時間  R現設定_閉塞検査1安定待ち時間
+CON
+AND @T9                  ; 閉塞検査安定待ち時間
+JMP @MR1406
+STG @MR1406
+MPS
+AND>.S DM10601 +0        ; A-A/D1_2流量ｾﾝｻR値
+LDA.S DM10601            ; A-A/D1_2流量ｾﾝｻR値
+CON
+MUL.S +10
+CON
+DIV.S +592
+CON
+STA.S @DM8               ; 閉塞流量計ｱﾅﾛｸﾞﾃﾞｰﾀ変換値
+CON
+JMP @MR1407
+MPP
+AND<=.S DM10601 +0       ; A-A/D1_2流量ｾﾝｻR値
+DW #0 @DM8               ; 閉塞流量計ｱﾅﾛｸﾞﾃﾞｰﾀ変換値
+CON
+JMP @MR1407
+STG @MR1407
+LDA EM563                ; R閉塞検査回数(1～7)
+CON
+SUB #1
+CON
+STA Z1
+CON
+LDA.S @DM8               ; 閉塞流量計ｱﾅﾛｸﾞﾃﾞｰﾀ変換値
+CON
+STA.S ZF1182:Z1          ; R閉塞検査1流量値
+CON
+JMP @MR1408
+;流量値判定/Flow rate value determination
+STG @MR1408
+LDA EM563                ; R閉塞検査回数(1～7)
+CON
+SUB #1
+CON
+MUL #2
+CON
+STA Z1
+CON
+MPS
+LD>=.S @DM8 ZF966:Z1     ; 閉塞流量計ｱﾅﾛｸﾞﾃﾞｰﾀ変換値  R現設定_閉塞検査1_判定値下
+AND<=.S @DM8 ZF965:Z1    ; 閉塞流量計ｱﾅﾛｸﾞﾃﾞｰﾀ変換値  R現設定_閉塞検査1_判定値上
+ANL
+JMP @MR1409
+MPP
+LD<.S @DM8 ZF966:Z1      ; 閉塞流量計ｱﾅﾛｸﾞﾃﾞｰﾀ変換値  R現設定_閉塞検査1_判定値下
+OR>.S @DM8 ZF965:Z1      ; 閉塞流量計ｱﾅﾛｸﾞﾃﾞｰﾀ変換値  R現設定_閉塞検査1_判定値上
+ANL
+JMP @MR1410
+;閉塞検査OKﾌﾗｸﾞ書込み/Occlusion test OK flag write
+;=3 OK
+STG @MR1409
+LDA EM563                ; R閉塞検査回数(1～7)
+CON
+SUB #1
+CON
+STA Z1
+CON
+DW #3 ZF1175:Z1          ; R閉塞検査1結果(0未1-2中3良4不
+CON
+JMP @MR1411
+;閉塞検査NGﾌﾗｸﾞ書込み/Occlusion test NG flag write
+;=4 NG
+STG @MR1410
+MPS
+LDA EM563                ; R閉塞検査回数(1～7)
+CON
+SUB #1
+CON
+STA Z1
+CON
+DW #4 ZF1175:Z1          ; R閉塞検査1結果(0未1-2中3良4不
+MPP
+DW #87 EM2               ; RｴﾗｰNo.記憶
+CON
+DW #87 EM3               ; Rｴﾗｰ詳細記憶
+CON
+DW #4 EM556              ; R閉塞検査ﾗﾝﾌﾟ_0未2動作3OK4NG
+CON
+SET MR33506              ; R_Err87閉塞検査NG
+CON
+SET @MR002               ; 終了時NG発報予約
+CON
+JMP @MR1411
+;検査回数ﾁｪｯｸ/Check Channel confirmation counter
+;※検査NG＆NG時終了設定時は終了処理へ
+;* When inspection NG & NG end setting is set to end processing
+STG @MR1411
+MPS
+AND> EM563 #6            ; R閉塞検査回数(1～7)
+JMP @MR1413
+MPP
+AND<= EM563 #6           ; R閉塞検査回数(1～7)
+MPS
+LD>= EM30013 #1          ; R判定方法 確認用(1でNG時続行)
+ORB MR33506              ; R_Err87閉塞検査NG
+ANL
+JMP @MR1412
+MPP
+LD< EM30013 #1           ; R判定方法 確認用(1でNG時続行)
+AND MR33506              ; R_Err87閉塞検査NG
+ANL
+JMP @MR1413
+STG @MR1412
+INC EM563                ; R閉塞検査回数(1～7)
+CON
+JMP @MR1401
+;閉塞検査終了/Occlusion test end
+;検査回路大気開放
+;流量ｾﾝｻ入口閉、上流1～20は全閉、上流側大気開放開
+;下流1～20は全開
+;Inspection circuit Atmospheric release
+;Flow sensor inlet closed, upstream 1 - 20 fully closed, upstream atmospheric open open
+;Downstream 1 - 20 are fully open
+;23：ﾘｰｸﾃｽﾀ入口
+;24：ﾘｰｸﾃｽﾀ出口
+;25：流量ｾﾝｻ入口
+;26：流量ｾﾝｻ出口
+;27：上流大気開放
+;23: Leak tester entrance
+;24: Leak tester exit
+;25: Flow sensor inlet
+;26: Flow sensor outlet
+;27: Upstream air release
+STG @MR1413
+FMOV #0 DM19800 #20      ; R上流側流路ﾊﾞﾙﾌﾞ1 (0=閉/1=開)
+FMOV #1 DM19830 #20      ; R下流側流路ﾊﾞﾙﾌﾞ1 (0=閉/1=開
+RES MR8704               ; R上流側流路切替ﾊﾞﾙﾌﾞ 23(ON=開)
+CON
+RES MR8705               ; R上流側流路切替ﾊﾞﾙﾌﾞ 24(ON=開)
+CON
+RES MR8706               ; R上流側流路切替ﾊﾞﾙﾌﾞ 25(ON=開)
+CON
+SET MR8707               ; R上流側流路切替ﾊﾞﾙﾌﾞ 26(ON=開)
+CON
+SET MR8708               ; R上流側流路切替ﾊﾞﾙﾌﾞ 27(ON=開)
+CON
+SET MR401                ; R_上下流_ﾊﾞﾙﾌﾞ一括切替(OFF全閉
+CON
+JMP @MR1414
+STG @MR1414
+TMR @10 #5               ; wait
+CON
+AND @T10                 ; wait
+RES MR8707               ; R上流側流路切替ﾊﾞﾙﾌﾞ 26(ON=開)
+CON
+RES MR401                ; R_上下流_ﾊﾞﾙﾌﾞ一括切替(OFF全閉
+CON
+JMP @MR1415
+LD @MR1415
+SET TM91.5
+STG @MR1415
+RES MR013                ; R閉塞検査中
+CON
+MPS
+AND= EM556 #2            ; R閉塞検査ﾗﾝﾌﾟ_0未2動作3OK4NG
+MPS
+AND MR33506              ; R_Err87閉塞検査NG
+DW #4 EM556              ; R閉塞検査ﾗﾝﾌﾟ_0未2動作3OK4NG
+MPP
+ANB MR33506              ; R_Err87閉塞検査NG
+DW #3 EM556              ; R閉塞検査ﾗﾝﾌﾟ_0未2動作3OK4NG
+MPP
+JMP @MR1500
+;<h1/>△ﾘｰｸ検査/Leak inspection
+;<h1/> -ﾘｰｸ検査前初期加圧動作/Initial pressure application before leak test
+;ﾘｰｸ検査有効？/Leak inspection effective?
+STG @MR1500
+MPS
+ANB ZF820.1              ; R検査_ﾘｰｸ検査(ON=有
+FMOV #1 ZF1120 #5        ; Rﾘｰｸ検査部位1結果(0未1-2中3良4不
+DW #1 EM550              ; Rﾘｰｸ検査総状態LP(0未1-2中3良4不
+CON
+JMP @MR2700
+MPP
+AND ZF820.1              ; R検査_ﾘｰｸ検査(ON=有
+DW #1 EM560              ; R現在ﾘｰｸ検査部位数(1-6)
+CON
+SET MR102                ; Rﾘｰｸ検査中
+CON
+MPS
+ANB MR107                ; Rﾒﾝﾃ_装置ﾘｰｸ検査中
+DW #2 EM550              ; Rﾘｰｸ検査総状態LP(0未1-2中3良4不
+CON
+JMP @MR1502
+MPP
+AND MR107                ; Rﾒﾝﾃ_装置ﾘｰｸ検査中
+DW #2 EM554              ; RM/Cﾘｰｸ 状態LP(0未1-2中3良4不
+CON
+JMP @MR1502
+STG @MR1501
+JMP @MR1502
+;検査ﾁｬﾝﾈﾙﾙｰﾌﾟ先頭/Inspection channel loop head
+;上下流ﾊﾞﾙﾌﾞ設定実行/Execution of upstream and downstream valve setting
+STG @MR1502
+ANB MR903                ; R_ｴﾗｰ処理中
+MDSTRT R_Set
+JMP @MR1503
+STG @MR1503
+ANF _R_Set
+JMP @MR1504
+;現在のﾘｰｸ検査部位で有効な回路設定があったか？
+;Have there been valid circuit settings at the current leak inspection site?
+STG @MR1504
+MPS
+AND MR510                ; R現ﾘｰｸ検査部位 有効回路無し
+LDA EM560                ; R現在ﾘｰｸ検査部位数(1-6)
+CON
+SUB #1
+CON
+STA Z1
+CON
+MPS
+ANB MR107                ; Rﾒﾝﾃ_装置ﾘｰｸ検査中
+DW #1 ZF1120:Z1          ; Rﾘｰｸ検査部位1結果(0未1-2中3良4不
+CON
+JMP @MR2602
+MPP
+AND MR107                ; Rﾒﾝﾃ_装置ﾘｰｸ検査中
+DW #1 EM1200:Z1          ; R_MCﾘｰｸ1結果(0未1-2中3良4不
+CON
+JMP @MR2602
+MPP
+ANB MR510                ; R現ﾘｰｸ検査部位 有効回路無し
+JMP @MR1505
+STG @MR1505
+JMP @MR1507
+;ﾘｰｸ検査状態ﾗﾝﾌﾟ書込み：実行中/Leak inspection status lamp write: running
+STG @MR1507
+LDA EM560                ; R現在ﾘｰｸ検査部位数(1-6)
+CON
+SUB #1
+CON
+STA Z1
+CON
+MPS
+ANB MR107                ; Rﾒﾝﾃ_装置ﾘｰｸ検査中
+DW #2 ZF1120:Z1          ; Rﾘｰｸ検査部位1結果(0未1-2中3良4不
+CON
+JMP @MR1508
+MPP
+AND MR107                ; Rﾒﾝﾃ_装置ﾘｰｸ検査中
+DW #2 EM1200:Z1          ; R_MCﾘｰｸ1結果(0未1-2中3良4不
+CON
+JMP @MR1508
+;EM30031:(TP)装置ﾘｰｸ検査表示用
+;2：加圧中
+;EM30031: (TP) For device leak inspection display
+;2: Under pressurization
+LD @MR1508
+AND MR107                ; Rﾒﾝﾃ_装置ﾘｰｸ検査中
+ANB MR209                ; Rﾒﾝﾃ_ﾘｰｸﾃｽﾀNG調整中
+DW #2 EM30031            ; (R_TP)装置ﾘｰｸ検査表示用
+;現在のﾘｰｸ検査部位に対応する回路ﾊﾞﾙﾌﾞを開設定する
+;※ﾀｲﾏは検査毎に設定値有り
+;Open the circuit valves corresponding to the current leak inspection site
+;* Timer has setting value for each inspection
+;23：ﾘｰｸﾃｽﾀ入口
+;24：ﾘｰｸﾃｽﾀ出口
+;25：流量ｾﾝｻ入口
+;26：流量ｾﾝｻ出口
+;27：上流大気開放
+;23: Leak tester entrance
+;24: Leak tester exit
+;25: Flow sensor inlet
+;26: Flow sensor outlet
+;27: Upstream air release
+STG @MR1508
+SET MR8704               ; R上流側流路切替ﾊﾞﾙﾌﾞ 23(ON=開)
+CON
+SET MR8705               ; R上流側流路切替ﾊﾞﾙﾌﾞ 24(ON=開)
+CON
+RES MR8706               ; R上流側流路切替ﾊﾞﾙﾌﾞ 25(ON=開)
+CON
+RES MR8707               ; R上流側流路切替ﾊﾞﾙﾌﾞ 26(ON=開)
+CON
+RES MR8708               ; R上流側流路切替ﾊﾞﾙﾌﾞ 27(ON=開)
+CON
+SET MR401                ; R_上下流_ﾊﾞﾙﾌﾞ一括切替(OFF全閉
+CON
+MPS
+AND CR2003               ; 常時OFF
+LDA EM560                ; R現在ﾘｰｸ検査部位数(1-6)
+CON
+SUB #1
+CON
+MUL #2
+CON
+STA Z1
+CON
+TMR @3 ZF880:Z1          ; ﾘｰｸ検査初期加圧時間  R現設定_ﾘｰｸ検査1初期加圧時間
+CON
+AND @T3                  ; ﾘｰｸ検査初期加圧時間
+JMP @MR1509
+MPP
+AND CR2002               ; 常時ON
+JMP @MR1509
+;ﾘｰｸ検査初期加圧安定時間待ち
+;※ﾀｲﾏは検査毎に設定値有り
+;Leak inspection Initial pressurization Waiting for settling time
+;* Timer has setting value for each inspection
+STG @MR1509
+LDA EM560                ; R現在ﾘｰｸ検査部位数(1-6)
+CON
+SUB #1
+CON
+MUL #2
+CON
+STA Z1
+CON
+TMR @4 ZF892:Z1          ; ﾘｰｸ検査初期加圧安定時間  R現設定_ﾘｰｸ検査1初期加圧安定時間
+CON
+AND @T4                  ; ﾘｰｸ検査初期加圧安定時間
+JMP @MR1510
+STG @MR1510
+MPS
+LDA EM560                ; R現在ﾘｰｸ検査部位数(1-6)
+CON
+SUB #1
+CON
+STA Z1
+CON
+MPS
+ANB MR107                ; Rﾒﾝﾃ_装置ﾘｰｸ検査中
+LDA ZF874:Z1             ; R現設定_ﾘｰｸ検査1検査圧力設定値
+CON
+STA ZF1126:Z1            ; Rﾘｰｸ検査1 初期圧
+MPP
+AND MR107                ; Rﾒﾝﾃ_装置ﾘｰｸ検査中
+MPS
+AND CR2003               ; 常時OFF
+LDA EM1162:Z1            ; MCﾘｰｸ検査1 検査圧
+CON
+STA EM1206:Z1            ; R_MCﾘｰｸ結果 基準圧1
+MPP
+AND CR2002               ; 常時ON
+LDA ZF874:Z1             ; R現設定_ﾘｰｸ検査1検査圧力設定値
+CON
+STA EM1206:Z1            ; R_MCﾘｰｸ結果 基準圧1
+MPP
+JMP @MR2400
+;<h1/> -ﾘｰｸ検査/Leak inspection
+STG @MR2400
+SET MR20600              ; Rﾘｰｸﾃｽﾀ-実行要求
+CON
+JMP @MR2401
+;EM30031:(TP)装置ﾘｰｸ検査表示用
+;3：装置体ﾘｰｸ検査中
+;EM30031: (TP) For device leak inspection display
+;3: Under leak inspection
+LD @MR2401
+AND MR107                ; Rﾒﾝﾃ_装置ﾘｰｸ検査中
+ANB MR209                ; Rﾒﾝﾃ_ﾘｰｸﾃｽﾀNG調整中
+DW #3 EM30031            ; (R_TP)装置ﾘｰｸ検査表示用
+;完了待ち/Wait for completion
+STG @MR2401
+AND MR20601              ; Rﾘｰｸﾃｽﾀ-実行完了
+RES MR20601              ; Rﾘｰｸﾃｽﾀ-実行完了
+CON
+JMP @MR2402
+STG @MR2402
+MPS
+ANB MR20602              ; Rﾘｰｸﾃｽﾀｰ処理異常有
+MPS
+AND= DM20021 #1          ; Rﾘｰｸﾃｽﾀｰ結果ｺｰﾄﾞ(1=OK)
+JMP @MR2403
+MPP
+AND<> DM20021 #1         ; Rﾘｰｸﾃｽﾀｰ結果ｺｰﾄﾞ(1=OK)
+LDA EM560                ; R現在ﾘｰｸ検査部位数(1-6)
+CON
+SUB #1
+CON
+STA Z1
+CON
+MPS
+ANB MR107                ; Rﾒﾝﾃ_装置ﾘｰｸ検査中
+DW.S +32767 ZF1144:Z1    ; Rﾘｰｸ検査1 ﾘｰｸ量(補正後)
+CON
+JMP @MR2406
+MPP
+AND MR107                ; Rﾒﾝﾃ_装置ﾘｰｸ検査中
+DW.S +32767 EM1218:Z1    ; R_MCﾘｰｸ結果 ﾘｰｸ量1
+CON
+JMP @MR2406
+MPP
+AND MR20602              ; Rﾘｰｸﾃｽﾀｰ処理異常有
+RES MR20602              ; Rﾘｰｸﾃｽﾀｰ処理異常有
+CON
+JMP @MR2400
+;ﾘｰｸ量(補正後)算出/Leak amount (after correction) calculated
+STG @MR2403
+LDA EM560                ; R現在ﾘｰｸ検査部位数(1-6)
+CON
+SUB #1
+CON
+STA Z1
+CON
+LDA.S ZF1138:Z1          ; Rﾘｰｸ検査1 ﾘｰｸ量(補正前)
+CON
+MPS
+ANB MR107                ; Rﾒﾝﾃ_装置ﾘｰｸ検査中
+SUB.S ZF868:Z1           ; R現設定_Rﾘｰｸ検査1補正量
+CON
+STA.S ZF1144:Z1          ; Rﾘｰｸ検査1 ﾘｰｸ量(補正後)
+CON
+JMP @MR2404
+MPP
+AND MR107                ; Rﾒﾝﾃ_装置ﾘｰｸ検査中
+STA.S EM1218:Z1          ; R_MCﾘｰｸ結果 ﾘｰｸ量1
+CON
+JMP @MR2404
+;ﾘｰｸ検査判断/Leak inspection judgment
+STG @MR2404
+LDA EM560                ; R現在ﾘｰｸ検査部位数(1-6)
+CON
+SUB #1
+CON
+STA Z1
+CON
+MPS
+ANB MR107                ; Rﾒﾝﾃ_装置ﾘｰｸ検査中
+MPS
+AND<.S ZF1144:Z1 ZF856:Z1; Rﾘｰｸ検査1 ﾘｰｸ量(補正後)  R現設定_ﾘｰｸ検査1判定値(ﾘｰｸ量)
+JMP @MR2405
+MPP
+AND>=.S ZF1144:Z1 ZF856:Z1;Rﾘｰｸ検査1 ﾘｰｸ量(補正後)  R現設定_ﾘｰｸ検査1判定値(ﾘｰｸ量)
+JMP @MR2406
+MPP
+AND MR107                ; Rﾒﾝﾃ_装置ﾘｰｸ検査中
+MPS
+AND<.S EM1218:Z1 EM1156:Z1;R_MCﾘｰｸ結果 ﾘｰｸ量1  MCﾘｰｸ検査1 判定値(ﾘｰｸ量)
+JMP @MR2405
+MPP
+AND>=.S EM1218:Z1 EM1156:Z1;R_MCﾘｰｸ結果 ﾘｰｸ量1  MCﾘｰｸ検査1 判定値(ﾘｰｸ量)
+JMP @MR2406
+;ﾘｰｸ検査OK/Leak inspection OK
+STG @MR2405
+LDA EM560                ; R現在ﾘｰｸ検査部位数(1-6)
+CON
+SUB #1
+CON
+STA Z1
+CON
+MPS
+ANB MR107                ; Rﾒﾝﾃ_装置ﾘｰｸ検査中
+DW #3 ZF1120:Z1          ; Rﾘｰｸ検査部位1結果(0未1-2中3良4不
+CON
+JMP @MR2600
+MPP
+AND MR107                ; Rﾒﾝﾃ_装置ﾘｰｸ検査中
+DW #3 EM1200:Z1          ; R_MCﾘｰｸ1結果(0未1-2中3良4不
+CON
+JMP @MR2600
+;ﾘｰｸ検査圧異常/Leak inspection pressure error
+;ZF(1156+(X-1)):ﾘｰｸ検査Xの異常履歴
+;bit6:ﾘｰｸ検査圧異常
+;ZF(1156+ (X - 1)): Anomaly history of leakage inspection X
+;bit 6: leak inspection pressure abnormality
+STG @MR2406
+MPS
+LDA EM560                ; R現在ﾘｰｸ検査部位数(1-6)
+CON
+SUB #1
+CON
+STA Z1
+CON
+MPS
+ANB MR107                ; Rﾒﾝﾃ_装置ﾘｰｸ検査中
+DW #4 ZF1120:Z1          ; Rﾘｰｸ検査部位1結果(0未1-2中3良4不
+CON
+BSET ZF1156:Z1 #6        ; Rﾘｰｸ検査1 異常履歴(bit参照)
+MPP
+AND MR107                ; Rﾒﾝﾃ_装置ﾘｰｸ検査中
+DW #4 EM1200:Z1          ; R_MCﾘｰｸ1結果(0未1-2中3良4不
+CON
+BSET EM1224:Z1 #6        ; R_MCﾘｰｸ検査1 異常履歴(bit参照)
+MRD
+ANB MR107                ; Rﾒﾝﾃ_装置ﾘｰｸ検査中
+DW #4 EM550              ; Rﾘｰｸ検査総状態LP(0未1-2中3良4不
+MRD
+AND MR107                ; Rﾒﾝﾃ_装置ﾘｰｸ検査中
+LDA EM30010              ; TP)機種選択番号(1-10)
+CON
+SUB #1
+CON
+MUL #25
+CON
+ADD ZF5                  ; R現在部品番号(1～25）
+CON
+SUB #1
+CON
+STA Z1
+CON
+RES LR2000:Z1            ; R機種1部品1装置ﾘｰｸ検査OK
+MPP
+DW #82 EM2               ; RｴﾗｰNo.記憶
+CON
+DW #82 EM3               ; Rｴﾗｰ詳細記憶
+CON
+SET MR33501              ; R_Err82ﾘｰｸ検査 ﾘｰｸNG
+CON
+SET @MR002               ; 終了時NG発報予約
+CON
+JMP @MR2600
+;<h1/> -ﾘｰｸ検査終了処理/Leak inspection end processing
+;EM30031:(TP)装置ﾘｰｸ検査表示用
+;4：大気開放中
+;EM30031: (TP) For device leak inspection display
+;4: Under atmosphere opening
+LD @MR2600
+AND MR107                ; Rﾒﾝﾃ_装置ﾘｰｸ検査中
+ANB MR209                ; Rﾒﾝﾃ_ﾘｰｸﾃｽﾀNG調整中
+DW #4 EM30031            ; (R_TP)装置ﾘｰｸ検査表示用
+;23：ﾘｰｸﾃｽﾀ入口
+;24：ﾘｰｸﾃｽﾀ出口
+;25：流量ｾﾝｻ入口
+;26：流量ｾﾝｻ出口
+;27：上流大気開放
+;23: Leak tester entrance
+;24: Leak tester exit
+;25: Flow sensor inlet
+;26: Flow sensor outlet
+;27: Upstream air release
+STG @MR2600
+FMOV #1 DM19800 #20      ; R上流側流路ﾊﾞﾙﾌﾞ1 (0=閉/1=開)
+FMOV #1 DM19830 #20      ; R下流側流路ﾊﾞﾙﾌﾞ1 (0=閉/1=開
+SET MR403                ; R大気開放中
+CON
+SET MR401                ; R_上下流_ﾊﾞﾙﾌﾞ一括切替(OFF全閉
+CON
+SET MR8704               ; R上流側流路切替ﾊﾞﾙﾌﾞ 23(ON=開)
+CON
+SET MR8705               ; R上流側流路切替ﾊﾞﾙﾌﾞ 24(ON=開)
+CON
+SET MR8706               ; R上流側流路切替ﾊﾞﾙﾌﾞ 25(ON=開)
+CON
+SET MR8707               ; R上流側流路切替ﾊﾞﾙﾌﾞ 26(ON=開)
+CON
+SET MR8708               ; R上流側流路切替ﾊﾞﾙﾌﾞ 27(ON=開)
+CON
+JMP @MR2601
+STG @MR2601
+TMR @7 #10               ; ﾘｰｸ検査後大気開放ｳｪｲﾄ
+CON
+AND @T7                  ; ﾘｰｸ検査後大気開放ｳｪｲﾄ
+RES MR403                ; R大気開放中
+CON
+RES MR8704               ; R上流側流路切替ﾊﾞﾙﾌﾞ 23(ON=開)
+CON
+RES MR8705               ; R上流側流路切替ﾊﾞﾙﾌﾞ 24(ON=開)
+CON
+RES MR8706               ; R上流側流路切替ﾊﾞﾙﾌﾞ 25(ON=開)
+CON
+RES MR8707               ; R上流側流路切替ﾊﾞﾙﾌﾞ 26(ON=開)
+CON
+JMP @MR2602
+;ﾘｰｸ検査全部位(1～6)終了？
+;Leak inspection All parts (1 to 6) end?
+;※検査NG＆NG時終了設定時は終了処理へ
+;* When inspection NG & NG end setting is set to end processing
+STG @MR2602
+MPS
+AND> EM560 #5            ; R現在ﾘｰｸ検査部位数(1-6)
+JMP @MR2604
+MPP
+AND<= EM560 #5           ; R現在ﾘｰｸ検査部位数(1-6)
+MPS
+LD< EM30013 #1           ; R判定方法 確認用(1でNG時続行)
+LD MR33500               ; R_Err81ﾘｰｸ検査 基準圧NG
+OR MR33501               ; R_Err82ﾘｰｸ検査 ﾘｰｸNG
+OR MR33502               ; R_Err83ﾘｰｸ検査 大気開放NG
+ANL
+ANL
+JMP @MR2604
+MPP
+LD>= EM30013 #1          ; R判定方法 確認用(1でNG時続行)
+LDB MR33500              ; R_Err81ﾘｰｸ検査 基準圧NG
+ANB MR33501              ; R_Err82ﾘｰｸ検査 ﾘｰｸNG
+ANB MR33502              ; R_Err83ﾘｰｸ検査 大気開放NG
+ORL
+ANL
+JMP @MR2603
+STG @MR2603
+INC EM560                ; R現在ﾘｰｸ検査部位数(1-6)
+CON
+JMP @MR1502
+;ﾘｰｸ検査総合状態LP書込み/Leak inspection overall state LP writing
+LD @MR2604
+ANB MR107                ; Rﾒﾝﾃ_装置ﾘｰｸ検査中
+SET TM91.2
+STG @MR2604
+RES MR102                ; Rﾘｰｸ検査中
+CON
+MPS
+LDB MR33500              ; R_Err81ﾘｰｸ検査 基準圧NG
+ANB MR33501              ; R_Err82ﾘｰｸ検査 ﾘｰｸNG
+ANB MR33502              ; R_Err83ﾘｰｸ検査 大気開放NG
+ANL
+MPS
+ANB MR107                ; Rﾒﾝﾃ_装置ﾘｰｸ検査中
+DW #3 EM550              ; Rﾘｰｸ検査総状態LP(0未1-2中3良4不
+CON
+JMP @MR2605
+MPP
+AND MR107                ; Rﾒﾝﾃ_装置ﾘｰｸ検査中
+DW #3 EM554              ; RM/Cﾘｰｸ 状態LP(0未1-2中3良4不
+CON
+JMP @MR2605
+MPP
+LD MR33500               ; R_Err81ﾘｰｸ検査 基準圧NG
+OR MR33501               ; R_Err82ﾘｰｸ検査 ﾘｰｸNG
+OR MR33502               ; R_Err83ﾘｰｸ検査 大気開放NG
+ANL
+MPS
+ANB MR107                ; Rﾒﾝﾃ_装置ﾘｰｸ検査中
+DW #4 EM550              ; Rﾘｰｸ検査総状態LP(0未1-2中3良4不
+MRD
+AND MR107                ; Rﾒﾝﾃ_装置ﾘｰｸ検査中
+DW #4 EM554              ; RM/Cﾘｰｸ 状態LP(0未1-2中3良4不
+MRD
+AND< EM30013 #1          ; R判定方法 確認用(1でNG時続行)
+JMP @MR3000
+MPP
+AND>= EM30013 #1         ; R判定方法 確認用(1でNG時続行)
+JMP @MR2605
+STG @MR2605
+JMP @MR2700
+;<h1/>△逆止弁検査/Check reverse valve
+;※本装置は無し/NO USE
+STG @MR2700
+MPS
+AND CR2002               ; 常時ON
+JMP @MR2800
+MPP
+AND CR2003               ; 常時OFF
+MPS
+AND MR107                ; Rﾒﾝﾃ_装置ﾘｰｸ検査中
+JMP @MR2800
+MPP
+ANB MR107                ; Rﾒﾝﾃ_装置ﾘｰｸ検査中
+MPS
+ANB ZF820.3              ; R検査_逆止弁検査(ON=有
+FMOV #1 ZF1162 #5        ; R逆止弁検査部1結果(0未1-2中3良4
+DW #1 EM553              ; R逆止弁検査総ﾗﾝﾌﾟ_0未2動作3OK4NG
+CON
+JMP @MR2800
+MPP
+AND ZF820.3              ; R検査_逆止弁検査(ON=有
+SET MR105                ; R逆止弁検査中
+CON
+DW #1 ZF21               ; R現在逆止弁検査部位(1-6)
+CON
+JMP @MR2701
+STG @MR2701
+JMP @MR2704
+;検査部位に応じた流路準備/Flow path preparation according to the inspection site
+;検査ﾙｰﾌﾟ先頭/Inspection loop head
+;上下流流路切替ﾊﾞﾙﾌﾞ設定をｸﾘｱ(全て閉設定に初期化)
+;Clear upstream / downstream flow path switching valve setting (initialized to closed setting all)
+STG @MR2704
+ANB MR903                ; R_ｴﾗｰ処理中
+ZRES DM19800 DM19849     ; R上流側流路ﾊﾞﾙﾌﾞ1 (0=閉/1=開)  R下流側流路ﾊﾞﾙﾌﾞ20 (0=閉/1=開
+CON
+JMP @MR2705
+STG @MR2705
+LDA ZF21                 ; R現在逆止弁検査部位(1-6)
+CON
+SUB #1
+CON
+STA Z1
+CON
+DW #1 DM19800:Z1         ; R上流側流路ﾊﾞﾙﾌﾞ1 (0=閉/1=開)
+CON
+JMP @MR2706
+;回路ﾊﾞﾙﾌﾞ開閉処理/Circuit valve opening / closing process
+;23：ﾘｰｸﾃｽﾀ入口
+;24：ﾘｰｸﾃｽﾀ出口
+;25：流量ｾﾝｻ入口
+;26：流量ｾﾝｻ出口
+;27：上流大気開放
+;23: Leak tester entrance
+;24: Leak tester exit
+;25: Flow sensor inlet
+;26: Flow sensor outlet
+;27: Upstream air release
+STG @MR2706
+RES MR8704               ; R上流側流路切替ﾊﾞﾙﾌﾞ 23(ON=開)
+CON
+RES MR8705               ; R上流側流路切替ﾊﾞﾙﾌﾞ 24(ON=開)
+CON
+SET MR8706               ; R上流側流路切替ﾊﾞﾙﾌﾞ 25(ON=開)
+CON
+SET MR8707               ; R上流側流路切替ﾊﾞﾙﾌﾞ 26(ON=開)
+CON
+RES MR8708               ; R上流側流路切替ﾊﾞﾙﾌﾞ 27(ON=開)
+CON
+SET MR401                ; R_上下流_ﾊﾞﾙﾌﾞ一括切替(OFF全閉
+CON
+JMP @MR2707
+STG @MR2707
+LDA ZF21                 ; R現在逆止弁検査部位(1-6)
+CON
+SUB #1
+CON
+MUL #2
+CON
+STA Z1
+CON
+TMR @8 ZF946:Z1          ; 逆止弁検査安定時間  R現設定_逆止弁検査1安定時間
+CON
+AND @T8                  ; 逆止弁検査安定時間
+JMP @MR2708
+;流量値書込み/Flow value write
+STG @MR2708
+MPS
+AND>.S DM10601 +0        ; A-A/D1_2流量ｾﾝｻR値
+LDA.S DM10601            ; A-A/D1_2流量ｾﾝｻR値
+CON
+MUL.S +10
+CON
+DIV.S +592
+CON
+STA.S @DM7               ; 逆止弁流量計ｱﾅﾛｸﾞﾃﾞｰﾀ変換値
+CON
+JMP @MR2709
+MPP
+AND<=.S DM10601 +0       ; A-A/D1_2流量ｾﾝｻR値
+DW #0 @DM7               ; 逆止弁流量計ｱﾅﾛｸﾞﾃﾞｰﾀ変換値
+CON
+JMP @MR2709
+STG @MR2709
+LDA ZF21                 ; R現在逆止弁検査部位(1-6)
+CON
+SUB #1
+CON
+STA Z1
+CON
+LDA.S @DM7               ; 逆止弁流量計ｱﾅﾛｸﾞﾃﾞｰﾀ変換値
+CON
+STA.S ZF1168:Z1          ; R逆止弁検査部位1流量値
+CON
+JMP @MR2710
+;逆止弁判定/reverse valve judgment
+STG @MR2710
+LDA ZF21                 ; R現在逆止弁検査部位(1-6)
+CON
+SUB #1
+CON
+MUL #2
+CON
+STA Z1
+CON
+MPS
+LD>=.S ZF934 @DM7        ; R現設定_逆止弁検査1_判定値上  逆止弁流量計ｱﾅﾛｸﾞﾃﾞｰﾀ変換値
+AND<=.S ZF945 @DM7       ; R現設定_逆止弁検査6_判定値下  逆止弁流量計ｱﾅﾛｸﾞﾃﾞｰﾀ変換値
+ANL
+JMP @MR2711
+MPP
+LD<.S ZF934 @DM7         ; R現設定_逆止弁検査1_判定値上  逆止弁流量計ｱﾅﾛｸﾞﾃﾞｰﾀ変換値
+OR>.S ZF945 @DM7         ; R現設定_逆止弁検査6_判定値下  逆止弁流量計ｱﾅﾛｸﾞﾃﾞｰﾀ変換値
+ANL
+JMP @MR2712
+;逆止弁検査OK/reverse valve judgment OK
+;ZF1162:Z1逆止弁検査回路結果
+;=3 OK
+;ZF1162:Z1 Rcheck valve chk part1 sts
+;= 3 OK
+STG @MR2711
+LDA ZF21                 ; R現在逆止弁検査部位(1-6)
+CON
+SUB #1
+CON
+STA Z1
+CON
+DW #3 ZF1162:Z1          ; R逆止弁検査部1結果(0未1-2中3良4
+CON
+JMP @MR2713
+;逆止弁検査NGﾌﾗｸﾞ書込み
+;Check valve check NG flag write
+;ZF1162:Z1逆止弁検査回路結果
+;=4 NG
+;ZF1162:Z1 Rcheck valve chk part1 sts
+;=4 NG
+STG @MR2712
+MPS
+LDA ZF21                 ; R現在逆止弁検査部位(1-6)
+CON
+SUB #1
+CON
+STA Z1
+CON
+DW #4 ZF1162:Z1          ; R逆止弁検査部1結果(0未1-2中3良4
+MPP
+DW #85 EM2               ; RｴﾗｰNo.記憶
+CON
+DW #85 EM3               ; Rｴﾗｰ詳細記憶
+CON
+DW #4 EM553              ; R逆止弁検査総ﾗﾝﾌﾟ_0未2動作3OK4NG
+CON
+SET MR33504              ; R_Err85逆止弁検査NG
+CON
+SET @MR002               ; 終了時NG発報予約
+CON
+JMP @MR2713
+;検査回数ﾁｪｯｸ/Check Channel confirmation counter
+;※検査NG＆NG時終了設定時は終了処理へ
+;* When inspection NG & NG end setting is set to end processing
+STG @MR2713
+MPS
+AND<= ZF21 #5            ; R現在逆止弁検査部位(1-6)
+MPS
+LD>= EM30013 #1          ; R判定方法 確認用(1でNG時続行)
+ORB MR33504              ; R_Err85逆止弁検査NG
+ANL
+JMP @MR2714
+MPP
+LD< EM30013 #1           ; R判定方法 確認用(1でNG時続行)
+AND MR33504              ; R_Err85逆止弁検査NG
+ANL
+JMP @MR2715
+MPP
+AND> ZF21 #5             ; R現在逆止弁検査部位(1-6)
+JMP @MR2715
+STG @MR2714
+INC ZF21                 ; R現在逆止弁検査部位(1-6)
+CON
+JMP @MR2703
+;逆止弁検査終了/End:reverse valve check
+STG @MR2715
+SET TM91.3
+CON
+RES MR105                ; R逆止弁検査中
+CON
+MPS
+AND MR33504              ; R_Err85逆止弁検査NG
+DW #4 EM553              ; R逆止弁検査総ﾗﾝﾌﾟ_0未2動作3OK4NG
+MPS
+AND>= EM30013 #1         ; R判定方法 確認用(1でNG時続行)
+JMP @MR2800
+MPP
+AND< EM30013 #1          ; R判定方法 確認用(1でNG時続行)
+JMP @MR3000
+MPP
+ANB MR33504              ; R_Err85逆止弁検査NG
+DW #3 EM553              ; R逆止弁検査総ﾗﾝﾌﾟ_0未2動作3OK4NG
+JMP @MR2800
+;<h1/>△漏液ｾﾝｻ検査/Leak sensor inspection
+STG @MR2800
+MPS
+AND MR107                ; Rﾒﾝﾃ_装置ﾘｰｸ検査中
+JMP @MR2900
+MPP
+ANB MR107                ; Rﾒﾝﾃ_装置ﾘｰｸ検査中
+MPS
+ANB ZF820.4              ; R検査_漏液ｾﾝｻ検査(ON=有
+DW #1 EM555              ; R漏液ｾﾝｻ検査ﾗﾝﾌﾟ_0未2動作3OK4NG
+CON
+JMP @MR2900
+MPP
+AND ZF820.4              ; R検査_漏液ｾﾝｻ検査(ON=有
+DW #2 EM555              ; R漏液ｾﾝｻ検査ﾗﾝﾌﾟ_0未2動作3OK4NG
+CON
+JMP @MR2801
+;漏液ｾﾝｻ確認指示/Instruction to check liquid leak sensor
+STG @MR2801
+ANB MR903                ; R_ｴﾗｰ処理中
+JMP @MR2810
+STG @MR2810
+MPS
+AND R2013                ; 漏液ｾﾝｻ導通確認_R
+JMP @MR2812
+MPP
+ANB R2013                ; 漏液ｾﾝｻ導通確認_R
+JMP @MR2811
+STG @MR2811
+ANB MR903                ; R_ｴﾗｰ処理中
+MPS
+@SET MR415               ; RﾌﾞｻﾞｰON要求
+CON
+DW #900 EM29997          ; (R_TP)ﾍﾟｰｼﾞ画面切替用No.
+MPP
+AND MR603                ; R_TP漏液ｾﾝｻ確定sw
+RES MR415                ; RﾌﾞｻﾞｰON要求
+CON
+DW #500 EM29997          ; (R_TP)ﾍﾟｰｼﾞ画面切替用No.
+CON
+MPS
+AND R2013                ; 漏液ｾﾝｻ導通確認_R
+JMP @MR2812
+MPP
+ANB R2013                ; 漏液ｾﾝｻ導通確認_R
+JMP @MR2813
+;漏液検査OKﾌﾗｸﾞ書込み
+;Leakage inspection OK flag write
+STG @MR2812
+DW #3 ZF1174             ; R漏液ｾﾝｻ検査結果(0未1-2中3良4不
+CON
+DW #4 EM555              ; R漏液ｾﾝｻ検査ﾗﾝﾌﾟ_0未2動作3OK4NG
+CON
+JMP @MR2814
+;漏液検査NGﾌﾗｸﾞ書込み
+;Leakage inspection NG flag write
+STG @MR2813
+DW #4 ZF1174             ; R漏液ｾﾝｻ検査結果(0未1-2中3良4不
+CON
+DW #4 EM555              ; R漏液ｾﾝｻ検査ﾗﾝﾌﾟ_0未2動作3OK4NG
+CON
+DW #86 EM2               ; RｴﾗｰNo.記憶
+CON
+DW #86 EM3               ; Rｴﾗｰ詳細記憶
+CON
+SET MR33505              ; R_Err86漏液検査NG
+CON
+SET @MR002               ; 終了時NG発報予約
+CON
+JMP @MR2814
+;漏液ｾﾝｻ検査終了/End:Leakage sensor inspection
+STG @MR2814
+SET TM91.4
+CON
+JMP @MR2815
+;※検査NG＆NG時終了設定時は終了処理へ
+;* When inspection NG & NG end setting is set to end processing
+STG @MR2815
+MPS
+LD>= EM30013 #1          ; R判定方法 確認用(1でNG時続行)
+ORB MR33505              ; R_Err86漏液検査NG
+ANL
+JMP @MR2900
+MPP
+LD< EM30013 #1           ; R判定方法 確認用(1でNG時続行)
+AND MR33505              ; R_Err86漏液検査NG
+ANL
+JMP @MR3000
+;<h1/>Free
+STG @MR2900
+JMP @MR3000
+;<h1/>△良品ﾏｰｷﾝｸﾞ/Good product marking
+STG @MR3000
+MPS
+AND MR107                ; Rﾒﾝﾃ_装置ﾘｰｸ検査中
+JMP @MR3200
+MPP
+ANB MR107                ; Rﾒﾝﾃ_装置ﾘｰｸ検査中
+MPS
+LDB ZF824.1
+ANB ZF824.2
+ANB ZF824.3
+ANL
+JMP @MR3200
+MPP
+LD ZF824.1
+OR ZF824.2
+OR ZF824.3
+ANL
+JMP @MR3102
+;※装置ﾘｰｸはﾏｰｷﾝｸﾞ動作無し/※ There is no marking operation for equipment leak
+;NGﾜｰｸでない？/NG products?
+STG @MR3102
+MPS
+AND @MR002               ; 終了時NG発報予約
+JMP @MR3200
+MPP
+ANB @MR002               ; 終了時NG発報予約
+JMP @MR3103
+;ﾏｰｷﾝｸﾞ前進/Advance marking
+STG @MR3103
+ANB MR903                ; R_ｴﾗｰ処理中
+SET MR9000               ; ﾏｰｷﾝｸﾞ ﾍﾟﾝR前進
+CON
+RES MR9001               ; ﾏｰｷﾝｸﾞ ﾍﾟﾝR後退
+CON
+AND R2214                ; ﾏｰｷﾝｸﾞ ﾍﾟﾝR前進
+ANB R2215                ; ﾏｰｷﾝｸﾞ ﾍﾟﾝR後退
+JMP @MR3106
+;ﾏｰｷﾝｸﾞ時間/Marking time
+STG @MR3106
+TMR @15 #10              ; ﾏｰｷﾝｸﾞ時間
+CON
+AND @T15                 ; ﾏｰｷﾝｸﾞ時間
+JMP @MR3107
+;ﾏｰｷﾝｸﾞﾍﾟﾝ後退/Marking pen back
+STG @MR3107
+ANB MR903                ; R_ｴﾗｰ処理中
+RES MR9000               ; ﾏｰｷﾝｸﾞ ﾍﾟﾝR前進
+CON
+SET MR9001               ; ﾏｰｷﾝｸﾞ ﾍﾟﾝR後退
+CON
+ANB R2214                ; ﾏｰｷﾝｸﾞ ﾍﾟﾝR前進
+AND R2215                ; ﾏｰｷﾝｸﾞ ﾍﾟﾝR後退
+JMP @MR3108
+STG @MR3108
+ANB MR903                ; R_ｴﾗｰ処理中
+JMP @MR3200
+;<h1/>■ﾓｼﾞｭｰﾙ終了/End module
+STG @MR3200
+JMP @MR3201
+;ﾜｰｸ良品？/Good product？
+;TP520：検査結果/TP 520: Inspection result
+STG @MR3201
+ANB MR903                ; R_ｴﾗｰ処理中
+MPS
+ANB @MR002               ; 終了時NG発報予約
+MPS
+AND MR107                ; Rﾒﾝﾃ_装置ﾘｰｸ検査中
+MPS
+LDA EM30010              ; TP)機種選択番号(1-10)
+CON
+SUB #1
+CON
+MUL #25
+CON
+ADD ZF5                  ; R現在部品番号(1～25）
+CON
+SUB #1
+CON
+STA Z1
+MPP
+SET LR2000:Z1            ; R機種1部品1装置ﾘｰｸ検査OK
+MRD
+ANB MR107                ; Rﾒﾝﾃ_装置ﾘｰｸ検査中
+DW #520 EM29997          ; (R_TP)ﾍﾟｰｼﾞ画面切替用No.
+CON
+SET MR010                ; Rﾜｰｸ良品
+MPP
+JMP @MR3203
+MPP
+AND @MR002               ; 終了時NG発報予約
+MPS
+ANB MR107                ; Rﾒﾝﾃ_装置ﾘｰｸ検査中
+SET MR011                ; Rﾜｰｸ不良品
+CON
+SET MR912                ; R検査NG（ｷｰsw解除必要Err）
+MPP
+SET MR903                ; R_ｴﾗｰ処理中
+CON
+JMP @MR3202
+;ｴﾗｰ解除待ち/Waiting for error cancellation
+STG @MR3202
+RES @MR002               ; 終了時NG発報予約
+CON
+ANB MR903                ; R_ｴﾗｰ処理中
+RES MR33500              ; R_Err81ﾘｰｸ検査 基準圧NG
+CON
+RES MR33501              ; R_Err82ﾘｰｸ検査 ﾘｰｸNG
+CON
+RES MR33502              ; R_Err83ﾘｰｸ検査 大気開放NG
+CON
+RES MR33503              ; R_Err84誤配管検査 NG
+CON
+RES MR33504              ; R_Err85逆止弁検査NG
+CON
+RES MR33505              ; R_Err86漏液検査NG
+CON
+RES MR33506              ; R_Err87閉塞検査NG
+CON
+JMP @MR3203
+STG @MR3203
+JMP @MR3205
+;終了/end
+STG @MR3205
+RES MR101                ; R検査動作中
+CON
+MDSTOP R_Inspection
+ENDS
+;<h1/>■ｻﾌﾞﾙｰﾁﾝ/Subroutine
+END
+ENDH

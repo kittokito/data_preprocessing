@@ -1,0 +1,639 @@
+DEVICE:53
+;MODULE:UT09_High_Shuttle
+;MODULE_TYPE:0
+;<h1/>/ 入力受け
+;□□    入力受け    □□
+LD X1340                 ; 高温槽搬送ｼｬﾄﾙ受取ﾜｰｸ確認
+TMH K911 K10             ; 高温槽搬送ｼｬﾄﾙ受取ﾜｰｸ有
+LDB X1340                ; 高温槽搬送ｼｬﾄﾙ受取ﾜｰｸ確認
+TMH K912 K10             ; 高温槽搬送ｼｬﾄﾙ受取ﾜｰｸ無
+LD X1341                 ; 高温槽搬送ｼｬﾄﾙ取出ﾜｰｸ確認
+TMH K913 K10             ; 高温槽搬送ｼｬﾄﾙ取出ﾜｰｸ有
+LDB X1341                ; 高温槽搬送ｼｬﾄﾙ取出ﾜｰｸ確認
+TMH K914 K10             ; 高温槽搬送ｼｬﾄﾙ取出ﾜｰｸ無
+;[] ｾｯﾄ治具ID
+;Set JIG ID
+LD CR2002                ; 常時ON
+MPS
+AND X1343                ; 高温検査前ｼｬﾄﾙﾊﾟﾚｯﾄ_ID1
+OUT D5052.0
+MRD
+AND X1344                ; 高温検査前ｼｬﾄﾙﾊﾟﾚｯﾄ_ID2
+OUT D5052.1
+MPP
+AND X1345                ; 高温検査前ｼｬﾄﾙﾊﾟﾚｯﾄ_ID3
+OUT D5052.2
+LD<> D5050 D5052         ; 高温槽搬送ｼｬﾄﾙﾊﾟﾚｯﾄID  高温槽搬送ｼｬﾄﾙﾊﾟﾚｯﾄID_Copy
+AND M5971                ; RB8_ﾜｰｸ投入位置(待機位置)
+MPS
+TMR K906 K5              ; ﾊﾟﾚｯﾄID_変更有り
+MPP
+AND T906                 ; ﾊﾟﾚｯﾄID_変更有り
+MOV D5052 D5050          ; 高温槽搬送ｼｬﾄﾙﾊﾟﾚｯﾄID_Copy  高温槽搬送ｼｬﾄﾙﾊﾟﾚｯﾄID
+;高温槽搬送ｼｬﾄﾙ現在値
+LD X360A                 ; Hｼｬﾄﾙ(RB8)原点確定_HEND
+AND X360B                ; Hｼｬﾄﾙ(RB8)位置決め完了_PEND
+MPS
+AND X3600                ; Hｼｬﾄﾙ(RB8)完了Pos_PM1
+OUT D5028.0
+MRD
+AND X3601                ; Hｼｬﾄﾙ(RB8)完了Pos_PM2
+OUT D5028.1
+MRD
+AND X3602                ; Hｼｬﾄﾙ(RB8)完了Pos_PM4
+OUT D5028.2
+MRD
+AND X3603                ; Hｼｬﾄﾙ(RB8)完了Pos_PM8
+OUT D5028.3
+MRD
+AND X3604                ; Hｼｬﾄﾙ(RB8)完了Pos_PM16
+OUT D5028.4
+MRD
+AND X3605                ; Hｼｬﾄﾙ(RB8)完了Pos_PM32
+OUT D5028.5
+MRD
+AND X3606                ; Hｼｬﾄﾙ(RB8)完了Pos_PM64
+OUT D5028.6
+MRD
+AND X3607                ; Hｼｬﾄﾙ(RB8)完了Pos_PM128
+OUT D5028.7
+MPP
+INV
+MOV K0 D5028             ; 高温槽搬送ｼｬﾄﾙ_RB_完了POS
+LD= D5028 K1             ; 高温槽搬送ｼｬﾄﾙ_RB_完了POS
+OUT M5971                ; RB8_ﾜｰｸ投入位置(待機位置)
+LD= D5028 K3             ; 高温槽搬送ｼｬﾄﾙ_RB_完了POS
+OUT M5973                ; RB8_ﾜｰｸ取出位置
+;<h1/>/ 装置状態･条件
+;ﾕﾆｯﾄ原点
+LDB X1340                ; 高温槽搬送ｼｬﾄﾙ受取ﾜｰｸ確認
+ANB X1341                ; 高温槽搬送ｼｬﾄﾙ取出ﾜｰｸ確認
+AND M5971                ; RB8_ﾜｰｸ投入位置(待機位置)
+OUT M5980                ; U9_原点
+;非常停止
+LDB B0120                ; B120_289)RBC8 ｺﾝﾄﾛｰﾗｰ異常
+ANB B0121                ; B121_290)高温槽搬送JIG_ID異常
+ANB B0122                ; B122_291)高温槽ｼｬﾄﾙ受取異常
+ANB B0123                ; B123_292)高温槽ｼｬﾄﾙ取出異常
+INV
+OUT M5981                ; U9_即停止異常
+;起動条件
+LD M5980                 ; U9_原点
+LDB M36                  ; 払出処理
+LD M36                   ; 払出処理
+ANB M3993                ; U5_WORK無し
+ORL
+ANL
+OUT M5982                ; U9_起動条件
+;起動OFF
+LDB M50                  ; 運転準備
+LD M60                   ; ｴﾗｰ発生
+OR M56                   ; 自動起動停止指令(ｻｲｸﾙ停止)
+AND M5984                ; U9_原点復帰中
+ORL
+OR M5986                 ; U9_CYCLE停止異常
+OR T15                   ; 強制停止
+OUT M5983                ; U9_起動OFF
+;原点復帰
+LD M82                   ; 原点復帰開始
+LDB M82                  ; 原点復帰開始
+ANP B1199                ; Hiｼｬﾄﾙ原点復帰_TP-PB
+ORL
+ANB M5984                ; U9_原点復帰中
+OR M5984                 ; U9_原点復帰中
+ANB M5983                ; U9_起動OFF
+ANB M5991                ; U9_ERR発生
+ANB M5799                ; U9_原点復帰完了確認
+MPS
+OUT M5984                ; U9_原点復帰中
+MPP
+AND CR2006               ; 1sｸﾛｯｸﾊﾟﾙｽ
+OUT B1699                ; UNIT9-2-10 TP-PL
+;起動中
+LD M73                   ; 各工程起動指令
+AND M5982                ; U9_起動条件
+ANB B101D                ; 途中投入選択TP(1:単独_0:連動)
+OR M5985                 ; U9_起動中
+ANB M5983                ; U9_起動OFF
+ANB M5549                ; U9ｻｲｸﾙ終了
+OUT M5985                ; U9_起動中
+;ｻｲｸﾙ停止異常
+LDB CR2003               ; 常時OFF
+INV
+OUT M5986                ; U9_CYCLE停止異常
+;払出停止異常
+LDB CR2003               ; 常時OFF
+INV
+OUT M5987                ; U9_払出停止異常
+;警報補助
+LDB B0124                ; B124_293)高温槽ｼｬﾄﾙﾜｰｸ有除去要求
+INV
+OUT M5988                ; U9_警報補助
+;機器準備確認
+LD CR2002                ; 常時ON
+OUT M5990                ; U9_機器準備完了
+;ｴﾗｰ発生  一時停止
+LDB CR2003               ; 常時OFF
+INV
+OUT M5991                ; U9_ERR発生
+;動作中ﾕﾆｯﾄ無し
+LD CR2002                ; 常時ON
+ORB M5985                ; U9_起動中
+ANB M5984                ; U9_原点復帰中
+TMR K901 K20             ; U9_動作無し判定
+LD CR2002                ; 常時ON
+MOV D5000 D5005          ; U9_自動運転ｽﾃｯﾌﾟ  U9_動作中判定
+LD T901                  ; U9_動作無し判定
+OUT M5992                ; U9_動作無し確認
+;払出しﾜｰｸ無し
+LD= D5100 K0             ; Hiｼｬﾄﾙ 低温検査ﾊﾟﾚｯﾄID
+AND= D5101 K0            ; Hiｼｬﾄﾙ 低温検査ﾃｽﾄﾍｯﾄﾞID
+AND= D5102 K0            ; Hiｼｬﾄﾙ 低温検査部排出ﾊﾟﾚｯﾄID
+AND= D5103 K0            ; Hiｼｬﾄﾙ 低温検査搬送ﾛﾎﾞｯﾄNo.
+AND= D5104 K0            ; Hiｼｬﾄﾙ 低温検査Skip(0:ｼﾅ/1:ｽﾙ)
+AND= D5105 K0            ; Hiｼｬﾄﾙ 低温検査ﾛﾎﾞｯﾄNo.
+AND= D5106 K0            ; Hiｼｬﾄﾙ 高温槽投入ﾛﾎﾞｯﾄNo.
+ANB X1340                ; 高温槽搬送ｼｬﾄﾙ受取ﾜｰｸ確認
+ANB X1341                ; 高温槽搬送ｼｬﾄﾙ取出ﾜｰｸ確認
+AND M5971                ; RB8_ﾜｰｸ投入位置(待機位置)
+TMR K905 K10             ; U9_払出処理ﾜｰｸ無
+LD T905                  ; U9_払出処理ﾜｰｸ無
+OUT M5993                ; U9_WORK無し
+;ｽﾃｯﾌﾟ起動
+LD M30                   ; 自動ﾓｰﾄﾞ
+OR M31                   ; 手動ﾓｰﾄﾞ
+AND M128                 ; 高温検査安全扉正常
+ANB M60                  ; ｴﾗｰ発生
+ANB M140                 ; 全一時停止
+ANB M160                 ; 低温検査一時停止
+ANB M180                 ; 高温検査一時停止
+OUT M5979                ; U9_STEP動作
+;<h1/>■自動
+;/ ﾌﾚｰﾑ供給
+LD CR2002                ; 常時ON
+ZRES M5500 M5549         ; U9-S0_ｼｬﾄﾙｽﾃｯﾌﾟ開始  U9ｻｲｸﾙ終了
+LDB M5985                ; U9_起動中
+MOV K0 D5000             ; U9_自動運転ｽﾃｯﾌﾟ
+LD M5985                 ; U9_起動中
+MOV D5000 Z1             ; U9_自動運転ｽﾃｯﾌﾟ
+OUT M5500:Z1             ; U9-S0_ｼｬﾄﾙｽﾃｯﾌﾟ開始
+;ﾜｰｸ無確認
+LD M5500                 ; U9-S0_ｼｬﾄﾙｽﾃｯﾌﾟ開始
+AND T912                 ; 高温槽搬送ｼｬﾄﾙ受取ﾜｰｸ無
+@INC D5000               ; U9_自動運転ｽﾃｯﾌﾟ
+;<h1/>/供給要求(→Low_Transfer)
+LD M5501                 ; U9-S1_ｼｬﾄﾙ投入可(→検査搬送RB)
+AND M3423                ; 【搬送】搬送→下流供給完了
+@INC D5000               ; U9_自動運転ｽﾃｯﾌﾟ
+LD M5502                 ; U9-S2_ｼｬﾄﾙﾜｰｸ完了確認
+ANB M3423                ; 【搬送】搬送→下流供給完了
+MOV K10 D5000            ; U9_自動運転ｽﾃｯﾌﾟ
+;投入完了ﾜｰｸ確認
+LD M5510                 ; U9-S10_ﾜｰｸ投入完了
+LD T911                  ; 高温槽搬送ｼｬﾄﾙ受取ﾜｰｸ有
+OR M35                   ; 空運転ﾓｰﾄﾞ
+ANL
+@INC D5000               ; U9_自動運転ｽﾃｯﾌﾟ
+;取出位置移動
+LD M5511                 ; U9-S11_ﾜｰｸ確認OK
+AND M5979                ; U9_STEP動作
+ANB X3640                ; Hi_RB_給材取出侵入中(800)
+INC D5000                ; U9_自動運転ｽﾃｯﾌﾟ
+LD M5512                 ; U9-S12_取出側RB干渉確認
+AND M5979                ; U9_STEP動作
+AND X360B                ; Hｼｬﾄﾙ(RB8)位置決め完了_PEND
+MPS
+MOV K3 D5024             ; 高温槽搬送ｼｬﾄﾙ_RB_POS_確定
+MPP
+AND= D5024 K3            ; 高温槽搬送ｼｬﾄﾙ_RB_POS_確定
+INC D5000                ; U9_自動運転ｽﾃｯﾌﾟ
+LD M5513                 ; U9-S13_ｼｬﾄﾙ取出位置移動
+ANB X360B                ; Hｼｬﾄﾙ(RB8)位置決め完了_PEND
+@INC D5000               ; U9_自動運転ｽﾃｯﾌﾟ
+LD M5514                 ; U9-S14_位置決め完了OFF確認
+AND X360B                ; Hｼｬﾄﾙ(RB8)位置決め完了_PEND
+AND M5973                ; RB8_ﾜｰｸ取出位置
+@INC D5000               ; U9_自動運転ｽﾃｯﾌﾟ
+;ﾜｰｸ確認
+LD M5515                 ; U9-S15_取出位置ﾜｰｸ確認
+LD T913                  ; 高温槽搬送ｼｬﾄﾙ取出ﾜｰｸ有
+OR M35                   ; 空運転ﾓｰﾄﾞ
+ANL
+MOV K20 D5000            ; U9_自動運転ｽﾃｯﾌﾟ
+;<h1/>/取出要求(→High_Sup_RB)
+LD M5520                 ; U9-S20_ﾜｰｸ取出可(→High_Sup_RB)
+MPS
+AND M6090                ; Hi_取出完了確認
+@INC D5000               ; U9_自動運転ｽﾃｯﾌﾟ
+@FMOV K0 D5100 K10       ; Hiｼｬﾄﾙ 低温検査ﾊﾟﾚｯﾄID
+MPP
+LDB M6485                ; U10_起動中
+ANB X3621                ; Hi_Sup_RB_RUN
+AND CR2003               ; 常時OFF
+ANL
+MOV K49 D5000            ; U9_自動運転ｽﾃｯﾌﾟ
+LD M5521                 ; U9-S21_ﾜｰｸ取出完了確認
+ANB M6090                ; Hi_取出完了確認
+ANB X3640                ; Hi_RB_給材取出侵入中(800)
+@INC D5000               ; U9_自動運転ｽﾃｯﾌﾟ
+LD M5522                 ; U9-S22_取出済ﾜｰｸ確認
+AND T914                 ; 高温槽搬送ｼｬﾄﾙ取出ﾜｰｸ無
+@INC D5000               ; U9_自動運転ｽﾃｯﾌﾟ
+;<h1/>/投入位置戻
+LD M5523                 ; U9-S23_ﾌﾚｰﾑ無確認完了
+AND M5979                ; U9_STEP動作
+AND X360B                ; Hｼｬﾄﾙ(RB8)位置決め完了_PEND
+MPS
+MOV K1 D5024             ; 高温槽搬送ｼｬﾄﾙ_RB_POS_確定
+MPP
+AND= D5024 K1            ; 高温槽搬送ｼｬﾄﾙ_RB_POS_確定
+INC D5000                ; U9_自動運転ｽﾃｯﾌﾟ
+LD M5524                 ; U9-S24_ｼｬﾄﾙ供給位置移動
+ANB X360B                ; Hｼｬﾄﾙ(RB8)位置決め完了_PEND
+@INC D5000               ; U9_自動運転ｽﾃｯﾌﾟ
+LD M5525                 ; U9-S25_位置決め完了OFF確認
+AND X360B                ; Hｼｬﾄﾙ(RB8)位置決め完了_PEND
+AND M5971                ; RB8_ﾜｰｸ投入位置(待機位置)
+@MOV K49 D5000           ; U9_自動運転ｽﾃｯﾌﾟ
+;ｻｲｸﾙ停止処理
+;Cycle end check
+LD M56                   ; 自動起動停止指令(ｻｲｸﾙ停止)
+AND M5501                ; U9-S1_ｼｬﾄﾙ投入可(→検査搬送RB)
+ANB M3985                ; U5_起動中
+MOV K48 D5000            ; U9_自動運転ｽﾃｯﾌﾟ
+;ｻｲｸﾙ終了
+LD M5548                 ; U9ｻｲｸﾙ停止
+@MOV K49 D5000           ; U9_自動運転ｽﾃｯﾌﾟ
+;<h1/>■工程処理 PLC→PC I/F
+;ﾊﾟﾚｯﾄID
+LD CR2002                ; 常時ON
+MPS
+AND D5050.0
+OUT W0130.0              ; 高温槽搬送ｼｬﾄﾙﾊﾟﾚｯﾄ_ID_0
+MRD
+AND D5050.1
+OUT W0130.1              ; 高温槽搬送ｼｬﾄﾙﾊﾟﾚｯﾄ_ID_1
+MPP
+AND D5050.2
+OUT W0130.2              ; 高温槽搬送ｼｬﾄﾙﾊﾟﾚｯﾄ_ID_2
+;<h1/>■原点復帰回路
+;[][][][][][][][][][][][][][][]
+;[][]    UNIT9 原点復帰    [][]
+;[][][][][][][][][][][][][][][]
+LD CR2002                ; 常時ON
+ZRES M5750 M5799         ; U9原点復帰開始  U9_原点復帰完了確認
+LDB M5984                ; U9_原点復帰中
+MOV K0 D5010             ; U9_原点復帰ｽﾃｯﾌﾟ
+LD M5984                 ; U9_原点復帰中
+MOV D5010 Z1             ; U9_原点復帰ｽﾃｯﾌﾟ
+OUT M5750:Z1             ; U9原点復帰開始
+;原点復帰ｻｲｸﾙ監視
+;Origin cycle monitoring
+LD M5984                 ; U9_原点復帰中
+AND CR2003               ; 常時OFF
+TMR K900 K300            ; U9_原点復帰ﾀｲﾑｱｳﾄ
+;原点復帰ステップ開始
+;Origin step start
+LD M5750                 ; U9原点復帰開始
+AND M5979                ; U9_STEP動作
+AND M3980                ; U5_原点
+AND M6480                ; U10_原点
+@INC D5010               ; U9_原点復帰ｽﾃｯﾌﾟ
+@FMOV K0 D5100 K10       ; Hiｼｬﾄﾙ 低温検査ﾊﾟﾚｯﾄID
+LD M5751                 ; U5.6原点確認
+AND M5979                ; U9_STEP動作
+AND X360B                ; Hｼｬﾄﾙ(RB8)位置決め完了_PEND
+MPS
+MOV K1 D5024             ; 高温槽搬送ｼｬﾄﾙ_RB_POS_確定
+MPP
+AND= D5024 K1            ; 高温槽搬送ｼｬﾄﾙ_RB_POS_確定
+@INC D5010               ; U9_原点復帰ｽﾃｯﾌﾟ
+LD M5752                 ; ｼｬﾄﾙ供給位置移動
+ANB X360B                ; Hｼｬﾄﾙ(RB8)位置決め完了_PEND
+@INC D5010               ; U9_原点復帰ｽﾃｯﾌﾟ
+LD M5753                 ; 位置決め完了OFF確認
+AND X360B                ; Hｼｬﾄﾙ(RB8)位置決め完了_PEND
+AND M5971                ; RB8_ﾜｰｸ投入位置(待機位置)
+@INC D5010               ; U9_原点復帰ｽﾃｯﾌﾟ
+LD M5754                 ; ﾜｰｸ有無確認
+AND M5979                ; U9_STEP動作
+MPS
+AND X1340                ; 高温槽搬送ｼｬﾄﾙ受取ﾜｰｸ確認
+@INC D5010               ; U9_原点復帰ｽﾃｯﾌﾟ
+MPP
+ANB X1340                ; 高温槽搬送ｼｬﾄﾙ受取ﾜｰｸ確認
+MOV K6 D5010             ; U9_原点復帰ｽﾃｯﾌﾟ
+LD M5755                 ; ﾜｰｸ有取出要求
+AND M5979                ; U9_STEP動作
+ANB X1340                ; 高温槽搬送ｼｬﾄﾙ受取ﾜｰｸ確認
+@INC D5010               ; U9_原点復帰ｽﾃｯﾌﾟ
+;原点復帰終了
+;Origin end
+LD M5756                 ; ﾜｰｸ無確認
+AND M5980                ; U9_原点
+@MOV K48 D5010           ; U9_原点復帰ｽﾃｯﾌﾟ
+LD M5798                 ; U9_原点復帰完了
+ANB M82                  ; 原点復帰開始
+@MOV K49 D5010           ; U9_原点復帰ｽﾃｯﾌﾟ
+;<h1/>■手動回路
+;[][][][][][][][][][][][][][][]
+;[] 　　   UNIT1 手動　      []
+;[][][][][][][][][][][][][][][]
+LD M31                   ; 手動ﾓｰﾄﾞ
+AND M32                  ; ﾒｲﾝ手動操作可能条件
+ANB M5985                ; U9_起動中
+ANB M5984                ; U9_原点復帰中
+ANB M5860                ; RB8_MANUAL_ON
+MC
+;供給位置移動
+LD X360B                 ; Hｼｬﾄﾙ(RB8)位置決め完了_PEND
+LD M3980                 ; U5_原点
+OR L550                  ; ﾜｰｸ入替高さ移動完了(LOW)
+OR L551                  ; Lo搬送高さ移動完了(MIDLE)
+OR L552                  ; Lo搬送高さ移動完了(HIGH)
+ANL
+AND M6480                ; U10_原点
+ANB M6341                ; Hi_供給1ｻｲｸﾙ(手動)
+ANB M5801                ; 供給位置移動
+ANB M5811                ; 受渡位置移動
+OUT M5800                ; 供給位置移動可
+LD B1180                 ; Hiｼｬﾄﾙ供給位置移動_TP-PB
+AND M5800                ; 供給位置移動可
+OR M5801                 ; 供給位置移動
+ANB M5804                ; 位置決め完了
+OUT M5801                ; 供給位置移動
+MPS
+MOV K1 D5024             ; 高温槽搬送ｼｬﾄﾙ_RB_POS_確定
+MPP
+LD= D5024 K1             ; 高温槽搬送ｼｬﾄﾙ_RB_POS_確定
+ANB M5803                ; 位置決め完了OFF確認
+ANL
+OUT M5802                ; 供給位置移動要求
+LD M5801                 ; 供給位置移動
+ANB X360B                ; Hｼｬﾄﾙ(RB8)位置決め完了_PEND
+OR M5803                 ; 位置決め完了OFF確認
+AND M5801                ; 供給位置移動
+OUT M5803                ; 位置決め完了OFF確認
+LD M5803                 ; 位置決め完了OFF確認
+AND X360B                ; Hｼｬﾄﾙ(RB8)位置決め完了_PEND
+AND M5971                ; RB8_ﾜｰｸ投入位置(待機位置)
+OR M5804                 ; 位置決め完了
+AND M5801                ; 供給位置移動
+OUT M5804                ; 位置決め完了
+;受渡位置移動
+LD X360B                 ; Hｼｬﾄﾙ(RB8)位置決め完了_PEND
+LD M3980                 ; U5_原点
+OR L550                  ; ﾜｰｸ入替高さ移動完了(LOW)
+OR L551                  ; Lo搬送高さ移動完了(MIDLE)
+OR L552                  ; Lo搬送高さ移動完了(HIGH)
+ANL
+AND M6480                ; U10_原点
+ANB M6341                ; Hi_供給1ｻｲｸﾙ(手動)
+ANB M5801                ; 供給位置移動
+ANB M5811                ; 受渡位置移動
+OUT M5810                ; 受渡位置移動可
+LD B1182                 ; Hiｼｬﾄﾙ取出位置移動_TP-PB
+AND M5810                ; 受渡位置移動可
+OR M5811                 ; 受渡位置移動
+ANB M5814                ; 位置決め完了
+OUT M5811                ; 受渡位置移動
+MPS
+MOV K3 D5024             ; 高温槽搬送ｼｬﾄﾙ_RB_POS_確定
+MPP
+LD= D5024 K3             ; 高温槽搬送ｼｬﾄﾙ_RB_POS_確定
+ANB M5813                ; 位置決め完了OFF確認
+ANL
+OUT M5812                ; 受渡位置移動要求
+LD M5812                 ; 受渡位置移動要求
+ANB X360B                ; Hｼｬﾄﾙ(RB8)位置決め完了_PEND
+OR M5813                 ; 位置決め完了OFF確認
+AND M5811                ; 受渡位置移動
+OUT M5813                ; 位置決め完了OFF確認
+LD M5813                 ; 位置決め完了OFF確認
+AND X360B                ; Hｼｬﾄﾙ(RB8)位置決め完了_PEND
+AND M5973                ; RB8_ﾜｰｸ取出位置
+OR M5814                 ; 位置決め完了
+AND M5811                ; 受渡位置移動
+OUT M5814                ; 位置決め完了
+MCR
+;<h1/>■出力回路
+;ROBOT AUTO/MANU
+LDP B119F                ; ﾏﾆｭｱﾙﾓｰﾄﾞ切替SW(1：ﾏﾆｭｱﾙ)
+LD<> D50 K201            ; TpM-K_表示中ページNo.
+AND<> D50 K205           ; TpM-K_表示中ページNo.
+MEP
+ORL
+LD<> D70 K201            ; TpM-K_表示中ページNo.
+AND<> D70 K205           ; TpM-K_表示中ページNo.
+MEP
+ORL
+LD<> D90 K201            ; TpM-K_表示中ページNo.
+AND<> D90 K205           ; TpM-K_表示中ページNo.
+MEP
+ORL
+LD<> D110 K201           ; TpM-K_表示中ページNo.
+AND<> D110 K205          ; TpM-K_表示中ページNo.
+MEP
+ORL
+AND M5860                ; RB8_MANUAL_ON
+OUT M5861                ; RB8_MANUAL_OFF
+LDP B119F                ; ﾏﾆｭｱﾙﾓｰﾄﾞ切替SW(1：ﾏﾆｭｱﾙ)
+ANB M5860                ; RB8_MANUAL_ON
+OR M5860                 ; RB8_MANUAL_ON
+ANB M5861                ; RB8_MANUAL_OFF
+AND M31                  ; 手動ﾓｰﾄﾞ
+OUT M5860                ; RB8_MANUAL_ON
+;ｼｬﾄﾙRB
+LDB M5513                ; U9-S13_ｼｬﾄﾙ取出位置移動
+ANB M5524                ; U9-S24_ｼｬﾄﾙ供給位置移動
+ANB M5752                ; ｼｬﾄﾙ供給位置移動
+INV
+LDB M5802                ; 供給位置移動要求
+ANB M5812                ; 受渡位置移動要求
+INV
+ORL
+MOV D5024 D5026          ; 高温槽搬送ｼｬﾄﾙ_RB_POS_確定  高温槽搬送ｼｬﾄﾙ_RB_指令POS
+MPS
+TMH K991 K5              ; 高温槽搬送ｼｬﾄﾙRB_POS確定ﾃﾞｨﾚｲ
+MPP
+AND T991                 ; 高温槽搬送ｼｬﾄﾙRB_POS確定ﾃﾞｨﾚｲ
+OUT Y460D                ; Hｼｬﾄﾙ(RB8)ｽﾀｰﾄ_CSTR
+LD CR2002                ; 常時ON
+MPS
+AND D5026.0
+OUT Y4600                ; Hｼｬﾄﾙ(RB8)指令pos_PC1
+MRD
+AND D5026.1
+OUT Y4601                ; Hｼｬﾄﾙ(RB8)指令pos_PC2
+MRD
+AND D5026.2
+OUT Y4602                ; Hｼｬﾄﾙ(RB8)指令pos_PC4
+MRD
+AND D5026.3
+OUT Y4603                ; Hｼｬﾄﾙ(RB8)指令pos_PC8
+MRD
+AND D5026.4
+OUT Y4604                ; Hｼｬﾄﾙ(RB8)指令pos_PC16
+MRD
+AND D5026.5
+OUT Y4605                ; Hｼｬﾄﾙ(RB8)指令pos_PC32
+MRD
+AND D5026.6
+OUT Y4606                ; Hｼｬﾄﾙ(RB8)指令pos_PC64
+MPP
+AND D5026.7
+OUT Y4607                ; Hｼｬﾄﾙ(RB8)指令pos_PC128
+LD M5860                 ; RB8_MANUAL_ON
+OUT Y460A                ; Hｼｬﾄﾙ(RB8)運転ﾓｰﾄﾞ_RMOD
+LDB CR2003               ; 常時OFF
+INV
+OUT Y460B                ; Hｼｬﾄﾙ(RB8)原点復帰_HOME
+LD M126                  ; 低温検査安全扉正常
+AND M127                 ; 高温槽ｼｬﾄﾙｶﾊﾞｰ正常
+AND M128                 ; 高温検査安全扉正常
+OR M5860                 ; RB8_MANUAL_ON
+OR M37                   ; ｲﾝﾀｰﾛｯｸ解除ﾓｰﾄﾞ
+OUT Y460C                ; Hｼｬﾄﾙ(RB8)一時停止_*STP
+LD M16                   ; ﾘｾｯﾄPB
+ANB X360E                ; Hｼｬﾄﾙ(RB8)ｱﾗｰﾑ_*ALM
+OUT Y460E                ; Hｼｬﾄﾙ(RB8)ﾘｾｯﾄ_RES
+LD M50                   ; 運転準備
+OUT Y460F                ; Hｼｬﾄﾙ(RB8)ｻｰﾎﾞON_SON
+;ﾛﾎﾞｯﾄｻｰﾎﾞ電源
+LD M121                  ; 非常停止正常
+OUT Y2322                ; 高温槽搬送ｼｬﾄﾙRB電源
+;<h1/>■表示
+;□□　　パネル表示　　□□
+LD M5971                 ; RB8_ﾜｰｸ投入位置(待機位置)
+LD M5801                 ; 供給位置移動
+AND CR2006               ; 1sｸﾛｯｸﾊﾟﾙｽ
+ORL
+OUT B1680                ; UNIT9-1-1 TP-PL
+LD CR2003                ; 常時OFF
+LD CR2003                ; 常時OFF
+AND CR2006               ; 1sｸﾛｯｸﾊﾟﾙｽ
+ORL
+OUT B1681                ; UNIT9-1-2 TP-PL
+LD M5973                 ; RB8_ﾜｰｸ取出位置
+LD M5811                 ; 受渡位置移動
+AND CR2006               ; 1sｸﾛｯｸﾊﾟﾙｽ
+ORL
+OUT B1682                ; UNIT9-1-3 TP-PL
+;<h1/>■異常
+;□□    異常検出    □□
+;B120--B12F  B130--B13F
+LDB X360E                ; Hｼｬﾄﾙ(RB8)ｱﾗｰﾑ_*ALM
+LDB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B0120                ; B120_289)RBC8 ｺﾝﾄﾛｰﾗｰ異常
+ORL
+OUT B0120                ; B120_289)RBC8 ｺﾝﾄﾛｰﾗｰ異常
+LDP B0120                ; B120_289)RBC8 ｺﾝﾄﾛｰﾗｰ異常
+AND< D900 K64            ; FIFO_DATA_VALUE
+DW H0121 D0              ; エラーコード
+CON
+FIFOW D0 D900            ; エラーコード  FIFO_DATA_VALUE
+LD M110                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B0620                 ; B120_289)Bz停止
+AND B0120                ; B120_289)RBC8 ｺﾝﾄﾛｰﾗｰ異常
+OUT B0620                ; B120_289)Bz停止
+LD M5503                 ; U9-S3_
+OUT B0121                ; B121_290)高温槽搬送JIG_ID異常
+LDP B0121                ; B121_290)高温槽搬送JIG_ID異常
+AND< D900 K64            ; FIFO_DATA_VALUE
+DW H0122 D0              ; エラーコード
+CON
+FIFOW D0 D900            ; エラーコード  FIFO_DATA_VALUE
+LD M110                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B0621                 ; B121_290)Bz停止
+AND B0121                ; B121_290)高温槽搬送JIG_ID異常
+OUT B0621                ; B121_290)Bz停止
+LD M5510                 ; U9-S10_ﾜｰｸ投入完了
+AND T912                 ; 高温槽搬送ｼｬﾄﾙ受取ﾜｰｸ無
+LDB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B0122                ; B122_291)高温槽ｼｬﾄﾙ受取異常
+ORL
+ANB M35                  ; 空運転ﾓｰﾄﾞ
+OUT B0122                ; B122_291)高温槽ｼｬﾄﾙ受取異常
+LDP B0122                ; B122_291)高温槽ｼｬﾄﾙ受取異常
+AND< D900 K64            ; FIFO_DATA_VALUE
+DW H0123 D0              ; エラーコード
+CON
+FIFOW D0 D900            ; エラーコード  FIFO_DATA_VALUE
+LD M110                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B0622                 ; B122_291)Bz停止
+AND B0122                ; B122_291)高温槽ｼｬﾄﾙ受取異常
+OUT B0622                ; B122_291)Bz停止
+LD M5522                 ; U9-S22_取出済ﾜｰｸ確認
+AND T913                 ; 高温槽搬送ｼｬﾄﾙ取出ﾜｰｸ有
+LDB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B0123                ; B123_292)高温槽ｼｬﾄﾙ取出異常
+ORL
+ANB M35                  ; 空運転ﾓｰﾄﾞ
+OUT B0123                ; B123_292)高温槽ｼｬﾄﾙ取出異常
+LDP B0123                ; B123_292)高温槽ｼｬﾄﾙ取出異常
+AND< D900 K64            ; FIFO_DATA_VALUE
+DW H0124 D0              ; エラーコード
+CON
+FIFOW D0 D900            ; エラーコード  FIFO_DATA_VALUE
+LD M110                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B0623                 ; B123_292)Bz停止
+AND B0123                ; B123_292)高温槽ｼｬﾄﾙ取出異常
+OUT B0623                ; B123_292)Bz停止
+LD M5755                 ; ﾜｰｸ有取出要求
+LDB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B0124                ; B124_293)高温槽ｼｬﾄﾙﾜｰｸ有除去要求
+ORL
+OUT B0124                ; B124_293)高温槽ｼｬﾄﾙﾜｰｸ有除去要求
+LDP B0124                ; B124_293)高温槽ｼｬﾄﾙﾜｰｸ有除去要求
+AND< D900 K64            ; FIFO_DATA_VALUE
+DW H0125 D0              ; エラーコード
+CON
+FIFOW D0 D900            ; エラーコード  FIFO_DATA_VALUE
+LD M110                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B0624                 ; B124_293)Bz停止
+AND B0124                ; B124_293)高温槽ｼｬﾄﾙﾜｰｸ有除去要求
+OUT B0624                ; B124_293)Bz停止
+LD CR2003                ; 常時OFF
+LDB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B0125                ; B125_294)
+ORL
+OUT B0125                ; B125_294)
+LDP B0125                ; B125_294)
+AND< D900 K64            ; FIFO_DATA_VALUE
+DW H0126 D0              ; エラーコード
+CON
+FIFOW D0 D900            ; エラーコード  FIFO_DATA_VALUE
+LD M110                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B0625                 ; B125_294)Bz停止
+AND B0125                ; B125_294)
+OUT B0625                ; B125_294)Bz停止
+LD CR2003                ; 常時OFF
+LDB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B0126                ; B126_295)
+ORL
+OUT B0126                ; B126_295)
+LDP B0126                ; B126_295)
+AND< D900 K64            ; FIFO_DATA_VALUE
+DW H0127 D0              ; エラーコード
+CON
+FIFOW D0 D900            ; エラーコード  FIFO_DATA_VALUE
+LD M110                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B0626                 ; B126_295)Bz停止
+AND B0126                ; B126_295)
+OUT B0626                ; B126_295)Bz停止
+;異常ﾌﾞｻﾞｰまとめ
+LDB B0120                ; B120_289)RBC8 ｺﾝﾄﾛｰﾗｰ異常
+OR B0620                 ; B120_289)Bz停止
+LDB B0122                ; B122_291)高温槽ｼｬﾄﾙ受取異常
+OR B0622                 ; B122_291)Bz停止
+ANL
+LDB B0123                ; B123_292)高温槽ｼｬﾄﾙ取出異常
+OR B0623                 ; B123_292)Bz停止
+ANL
+LDB B0124                ; B124_293)高温槽ｼｬﾄﾙﾜｰｸ有除去要求
+OR B0624                 ; B124_293)Bz停止
+ANL
+INV
+OUT M5989                ; U9_異常BZ補助
+END
+ENDH

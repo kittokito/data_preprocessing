@@ -1,0 +1,144 @@
+DEVICE:53
+;MODULE:QRID1_Product
+;MODULE_TYPE:0
+;<共用ﾗｲﾌﾞﾗﾘｰ>
+;QRID読込照合 SR-750,1000 EtherNetI/P 
+;
+;<説明>
+;  ①マクロ宣言にてマクロ引数を設定してください
+;  ②SERIAL_COM設定に値を入れてください。
+;<Shared library>
+;QRID reading collation SR - 750, 1000 EtherNet I / P
+;
+;<Description>
+;   ① Please set macro argument in macro declaration
+;   ② Enter a value in the SERIAL_COM setting.
+;マクロ宣言
+; IN先頭B:		EthernetI/Pに割り当てた入力ﾃﾞﾊﾞｲｽB先頭番地(64bit)
+; OUT先頭B:		EthernetI/Pに割り当てた出力ﾃﾞﾊﾞｲｽB先頭番地(64bit)
+; IN先頭W:		EthernetI/Pに割り当てた入力ﾃﾞﾊﾞｲｽW先頭番地(82word)
+; OUT先頭W:		EthernetI/Pに割り当てた出力ﾃﾞﾊﾞｲｽW先頭番地(36word)
+; 受信先頭@DM: 	ｺﾏﾝﾄﾞ、ﾃﾞｰﾀの受信内容を格納
+; Result_Code:	マクロ起動結果内容を格納
+; I/F Bit:		#0	:Prog->Macro	:QRID読取開始
+;				#1	:Macro->Prog	:QRID読取完了
+;				#2	:Macro->Prog	:QRID読取中
+;				#3	:Macro->Prog	:
+;				#4	:Prog->Macro	:
+;				#5	:Prog->Macro	:
+;				#6	:Prog->Macro	:
+;				#7	:Prog->Macro	:ﾏｸﾛ強制終了
+;Macro declaration
+;  IN Start B: Input device B assigned to Ethernet I / P Start address B (64 bits)
+;  OUT head B: output device B start address assigned to Ethernet I / P Start address (64 bits)
+;  IN Start W: Input device assigned to Ethernet I / P W Start address (82 words)
+;  OUT first W: output device assigned to Ethernet I / P W start address (36 words)
+;  Receive first @ DM: Store command / data reception contents
+;  Result_Code: Store macro start result contents
+;  I / F Bit: # 0: Prog -> Macro: Start reading QRID
+;# 1: Macro -> Prog: QRID reading is completed
+;# 2: Macro -> Prog: QRID reading in progress
+;# 3: Macro -> Prog:
+;# 4: Prog -> Macro:
+;# 5: Prog -> Macro:
+;# 6: Prog -> Macro:
+;# 7: Prog -> Macro: Kill Macro
+LD CR2002                ; always on
+ANB @MR007
+MSTRT QRID_SR_COM B00 B040 W00 W052 @DM50 @DM0 @MR000;SR-750 Series[1]error  SR-750 Series[1]matching level  SR-750 Series[1]bank number  SR Series data(0000)
+;QRID読取ﾒｲﾝｲﾝﾀｰﾌｪｲｽ
+;[bit]
+;MR20200:ﾜｰｸBCR_読取開始
+;MR20201:ﾜｰｸBCR_読取完了
+;MR20202:ﾜｰｸBCR_読取中
+;MR20215:ﾜｰｸBCR_読取通信異常
+;[word]
+;DM20030～DM20049:Tｺｰﾄﾞ  (20ﾜｰﾄﾞ)
+;DM20050:ﾏｯﾁﾝｸﾞﾚﾍﾞﾙ  (1ﾜｰﾄﾞ)
+;DM20051:ISOIECｸﾞﾚｰﾄﾞ  (1ﾜｰﾄﾞ)
+;DM:AIMDPMｸﾞﾚｰﾄﾞ  (1ﾜｰﾄﾞ)
+;QRID reading main interface
+;[bit]
+;MR20200: Work BCR_ reading starts
+;MR 20201: work BCR_ reading is completed
+;MR 20202: Work BCR_ reading is in progress
+;MR20215: Work BCR_ reading communication abnormality
+;[word]
+;DM 20030 to DM 2004: T code (20 words)
+;DM20050: matching level (1 word)
+;DM 2005: ISOIEC grade (1 word)
+;DM: AIMDPM grade (1 word)
+;MAIN
+STG MR20200              ; product BCR_read start
+ANB @MR002
+SET MR20202              ; product BCR_read during
+CON
+JMP @MR100
+;Memory clear
+STG @MR100
+RES MR20215              ; product BCR_read comm err
+CON
+RES MR20201              ; product BCR_read completion
+CON
+ZRES DM20030 DM20052     ; SR T code data  SR AIMDPM Grade
+CON
+ZRES @DM0 @DM9
+CON
+ZRES @DM50 @DM149        ; SR Series data(0000)
+CON
+JMP @MR101
+;<h1/>汎用通信/General purpose communication
+STG @MR101
+DW #0 @DM0
+CON
+SET @MR000
+CON
+JMP @MR102
+;※ﾜｰｸ読取 20秒読取無かったらERR扱い/※ Product reading 20 seconds Reading ERR treatment
+STG @MR102
+MPS
+AND @MR001
+RES @MR001
+CON
+JMP @MR104
+MPP
+ANB @MR001
+TMR @0 #200
+CON
+AND @T0
+SET MR20214              ; product BCR_read time out
+CON
+SET @MR006
+CON
+JMP @MR103
+STG @MR103
+ANB @MR002
+RES @MR006
+CON
+JMP @MR105
+STG @MR104
+MPS
+AND= @DM0 #20
+JMP @MR105
+MPP
+LD<> @DM0 #20
+AND<> @DM0 #0
+ANL
+SET MR20215              ; product BCR_read comm err
+CON
+JMP @MR105
+LD CR2002                ; always on
+BMOV @DM50 DM20030 #20   ; SR Series data(0000)  SR T code data
+MOV @DM120 DM20050       ; SR Matching level  SR Matching level
+MOV @DM121 DM20051       ; SR ISOIEC Grade  SR ISOIEC Grade
+MOV @DM122 DM20052       ; SR AIMDPM Grade  SR AIMDPM Grade
+STG @MR105
+RES @MR000
+CON
+RES MR20202              ; product BCR_read during
+CON
+SET MR20201              ; product BCR_read completion
+CON
+ENDS
+END
+ENDH

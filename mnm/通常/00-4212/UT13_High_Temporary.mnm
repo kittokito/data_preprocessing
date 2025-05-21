@@ -1,0 +1,430 @@
+DEVICE:53
+;MODULE:UT13_High_Temporary
+;MODULE_TYPE:0
+;[][]    Received input    [][]
+LD X1420                 ; 高温検査前仮置ﾜｰｸ確認
+TMR K1310 K5             ; 高温検査前仮置台ﾜｰｸ有
+LD CR2003                ; 常時OFF
+TMR K1311 K3
+LD CR2003                ; 常時OFF
+TMR K1312 K3
+LD CR2003                ; 常時OFF
+TMR K1313 K3
+;[] ｾｯﾄ治具ID
+;Set JIG ID
+LD CR2002                ; 常時ON
+MPS
+AND X1043                ; 低温検査前仮置ﾊﾟﾚｯﾄ_ID1
+OUT D7550.0              ; 高温検査前仮置ﾊﾟﾚｯﾄ_ID_0
+MRD
+AND X1044                ; 低温検査前仮置ﾊﾟﾚｯﾄ_ID2
+OUT D7550.1              ; 高温検査前仮置ﾊﾟﾚｯﾄ_ID_1
+MPP
+AND X1045                ; 低温検査前仮置ﾊﾟﾚｯﾄ_ID3
+OUT D7550.2              ; 高温検査前仮置ﾊﾟﾚｯﾄ_ID_2
+;□
+;□□ 装置状態・動作条件 □□
+;□
+;□ ﾕﾆｯﾄ原点
+LDB CR2003               ; 常時OFF
+OUT M7980                ; ﾕﾆｯﾄ13原点
+;[] 非常停止
+;Emergency stop
+LDB CR2003               ; 常時OFF
+INV
+OUT M7981                ; ﾕﾆｯﾄ13全異常
+;[] 起動条件
+;Start-up conditions
+LD M7980                 ; ﾕﾆｯﾄ13原点
+LDB M130                 ; 一時停止
+OR X1420                 ; 高温検査前仮置ﾜｰｸ確認
+ANL
+OUT M7982                ; ﾕﾆｯﾄ13起動条件
+;[] 起動OFF
+;Start OFF
+LDB M50                  ; 運転準備
+LD M60                   ; ｴﾗｰ発生
+OR M56                   ; 自動起動停止指令(ｻｲｸﾙ停止)
+AND M7984                ; ﾕﾆｯﾄ13原点復帰中
+ORL
+OR M7986                 ; ﾕﾆｯﾄ13ｻｲｸﾙ停止異常
+OR T15                   ; 強制停止
+OUT M7983                ; ﾕﾆｯﾄ13起動OFF
+;[] 原点復帰
+;Origin
+LD M82                   ; 原点復帰開始
+ANB M7984                ; ﾕﾆｯﾄ13原点復帰中
+OR M7984                 ; ﾕﾆｯﾄ13原点復帰中
+ANB M7983                ; ﾕﾆｯﾄ13起動OFF
+ANB M7991                ; ﾕﾆｯﾄ13ｴﾗｰ発生
+ANB M7799                ; ﾕﾆｯﾄ13原点終了
+OUT M7984                ; ﾕﾆｯﾄ13原点復帰中
+;[] 起動中
+;Running
+LD M73                   ; 各工程起動指令
+AND M7982                ; ﾕﾆｯﾄ13起動条件
+OR M7985                 ; ﾕﾆｯﾄ13起動中
+ANB M7599                ; ﾕﾆｯﾄ13ｻｲｸﾙ終了
+ANB M7983                ; ﾕﾆｯﾄ13起動OFF
+ANB M7984                ; ﾕﾆｯﾄ13原点復帰中
+OUT M7985                ; ﾕﾆｯﾄ13起動中
+;[] ｻｲｸﾙ停止異常
+;Cycle stop error
+LDB B01A1                ; UNIT13異常2
+ANB B01A2                ; UNIT13異常3
+ANB B01A3                ; UNIT13異常4
+ANB B01A4                ; UNIT13異常5
+ANB B01A5                ; UNIT13異常6
+ANB B01A6                ; UNIT13異常7
+ANB B01A7                ; UNIT13異常8
+ANB B01A8                ; UNIT13異常9
+INV
+OUT M7986                ; ﾕﾆｯﾄ13ｻｲｸﾙ停止異常
+;[] 払出停止異常
+;Payout stop error
+LDB CR2003               ; 常時OFF
+INV
+OUT M7987                ; ﾕﾆｯﾄ13払出停止異常
+;[] 警報補助
+;Auxiliary alarm
+LDB CR2003               ; 常時OFF
+INV
+OUT M7988                ; ﾕﾆｯﾄ13警報補助
+;[] 機器準備確認
+;Equipment ready
+LDB CR2003               ; 常時OFF
+OUT M7990                ; ﾕﾆｯﾄ13機器準備完了
+;[] ｴﾗｰ発生　一時停止
+;Error, pause
+LDB B01A0                ; 高温検査前仮置ﾜｰｸ取出要求
+INV
+OUT M7991                ; ﾕﾆｯﾄ13ｴﾗｰ発生
+;[] 動作中ﾕﾆｯﾄ無し
+;No action unit
+LDB M7985                ; ﾕﾆｯﾄ13起動中
+ANB M7984                ; ﾕﾆｯﾄ13原点復帰中
+TMR K1301 K20            ; ﾕﾆｯﾄ13動作無し判定ﾀｲﾏ
+LD CR2002                ; 常時ON
+MOV D7000 D7006          ; ﾕﾆｯﾄ13自動運転ｽﾃｯﾌﾟ  ﾕﾆｯﾄ13動作中判定
+LD T1301                 ; ﾕﾆｯﾄ13動作無し判定ﾀｲﾏ
+OUT M7992                ; ﾕﾆｯﾄ13動作無し確認
+;[] 払出しﾜｰｸ無し
+;Without paying out work
+LDB X1420                ; 高温検査前仮置ﾜｰｸ確認
+TMR K1305 K10            ; UNIT13払出処理ﾜｰｸ無し
+LD T1305                 ; UNIT13払出処理ﾜｰｸ無し
+OUT M7993                ; ﾕﾆｯﾄ13ﾜｰｸ無し
+;[] ｽﾃｯﾌﾟ起動
+;Step start-up
+LD M30                   ; 自動ﾓｰﾄﾞ
+OR M31                   ; 手動ﾓｰﾄﾞ
+AND M123                 ; 安全扉正常
+ANB M7991                ; ﾕﾆｯﾄ13ｴﾗｰ発生
+OUT M7997                ; ﾕﾆｯﾄ13ｽﾃｯﾌﾟ起動
+;[][][][][][][][][][][][][][][]
+;[]  UNIT13 Auto operation   []
+;[][][][][][][][][][][][][][][]
+;運転開始・ステッパ初期化・補助接点へ展開
+LD CR2002                ; 常時ON
+ZRES M7500 M7599         ; ﾕﾆｯﾄ13ｽﾃｯﾌﾟ開始  ﾕﾆｯﾄ13ｻｲｸﾙ終了
+LDB M7985                ; ﾕﾆｯﾄ13起動中
+MOV K0 D7000             ; ﾕﾆｯﾄ13自動運転ｽﾃｯﾌﾟ
+LD M7985                 ; ﾕﾆｯﾄ13起動中
+MOV D7000 Z1             ; ﾕﾆｯﾄ13自動運転ｽﾃｯﾌﾟ
+OUT M7500:Z1             ; ﾕﾆｯﾄ13ｽﾃｯﾌﾟ開始
+;自動運転ステップ開始
+;Automatic operation start step
+LD M7500                 ; ﾕﾆｯﾄ13ｽﾃｯﾌﾟ開始
+AND M7997                ; ﾕﾆｯﾄ13ｽﾃｯﾌﾟ起動
+MPS
+LDB T1310                ; 高温検査前仮置台ﾜｰｸ有
+ANB M8575                ; Hi_ST1-4 無効予約ｽﾃｰｼﾞ有ﾌﾗｸﾞ
+ANL
+@INC D7000               ; ﾕﾆｯﾄ13自動運転ｽﾃｯﾌﾟ
+MPP
+AND T1310                ; 高温検査前仮置台ﾜｰｸ有
+MOV K3 D7000             ; ﾕﾆｯﾄ13自動運転ｽﾃｯﾌﾟ
+LD M7501                 ; 高温検査前仮置台ﾜｰｸ供給可
+MPS
+AND M6047                ; Hi_検査前仮置給材完了
+@INC D7000               ; ﾕﾆｯﾄ13自動運転ｽﾃｯﾌﾟ
+MPP
+LDB M6485                ; ﾕﾆｯﾄ10起動中
+AND M56                  ; 自動起動停止指令(ｻｲｸﾙ停止)
+ANL
+@MOV K99 D7000           ; ﾕﾆｯﾄ13自動運転ｽﾃｯﾌﾟ
+LD M7502                 ; ﾜｰｸ供給完了確認
+ANB M6047                ; Hi_検査前仮置給材完了
+@INC D7000               ; ﾕﾆｯﾄ13自動運転ｽﾃｯﾌﾟ
+;ｽｷｬﾅ読込
+LD M7503                 ; 高温検査前ｽｷｬﾅ読込
+LD W0104.10              ; 高温槽投入部読込要求
+AND W04.10               ; 高温槽投入部読込完了
+OR M3                    ; OFFLINE_MODE
+ANL
+MPS
+AND W04.11               ; 高温槽投入部読込ｴﾗｰ
+@INC D7000               ; ﾕﾆｯﾄ13自動運転ｽﾃｯﾌﾟ
+MPP
+ANB W04.11               ; 高温槽投入部読込ｴﾗｰ
+MPS
+AND M3                   ; OFFLINE_MODE
+DW K7 D7100              ; 仮置台_高温検査ﾊﾟﾚｯﾄID
+CON
+DW K7 D7101              ; 仮置台_高温検査ﾃｽﾄﾍｯﾄﾞID
+CON
+DW K7 D7102              ; 仮置台_高温検査部排出ﾊﾟﾚｯﾄID
+CON
+DW K7 D7103              ; 仮置台_検査搬送ﾛﾎﾞｯﾄNo.
+MPP
+MOV K10 D7000            ; ﾕﾆｯﾄ13自動運転ｽﾃｯﾌﾟ
+;読込ｴﾗｰ処理選択(ﾀﾞｲｱﾛｸﾞ表示)
+LD M7504                 ; 高温検査前読取ｴﾗｰ
+AND M7997                ; ﾕﾆｯﾄ13ｽﾃｯﾌﾟ起動
+AND= D200 K0             ; ｴﾗｰｺｰﾄﾞNo.
+DW K1300 D200            ; ｴﾗｰｺｰﾄﾞNo.
+CON
+@INC D7000               ; ﾕﾆｯﾄ13自動運転ｽﾃｯﾌﾟ
+LD M7505                 ; 高温検査前読取ｴﾗｰ中
+AND M7997                ; ﾕﾆｯﾄ13ｽﾃｯﾌﾟ起動
+AND<> D200 K0            ; ｴﾗｰｺｰﾄﾞNo.
+MPS
+AND B1020                ; ﾀﾞｲｱﾛｸﾞ選択PB1
+DW K0 D200               ; ｴﾗｰｺｰﾄﾞNo.
+CON
+MOV K3 D7000             ; ﾕﾆｯﾄ13自動運転ｽﾃｯﾌﾟ
+MPP
+AND B1021                ; ﾀﾞｲｱﾛｸﾞ選択PB2
+MPS
+ANB T1310                ; 高温検査前仮置台ﾜｰｸ有
+DW K0 D200               ; ｴﾗｰｺｰﾄﾞNo.
+CON
+@INC D7000               ; ﾕﾆｯﾄ13自動運転ｽﾃｯﾌﾟ
+MPP
+AND T1310                ; 高温検査前仮置台ﾜｰｸ有
+DW K0 D200               ; ｴﾗｰｺｰﾄﾞNo.
+CON
+MOV K20 D7000            ; ﾕﾆｯﾄ13自動運転ｽﾃｯﾌﾟ
+LD M7520                 ; ﾜｰｸ取出未完了
+AND M7997                ; ﾕﾆｯﾄ13ｽﾃｯﾌﾟ起動
+MPS
+TMH K1320 K20            ; ﾜｰｸ取出未完了ﾘﾄﾗｲ
+MPP
+AND T1320                ; ﾜｰｸ取出未完了ﾘﾄﾗｲ
+MOV K4 D7000             ; ﾕﾆｯﾄ13自動運転ｽﾃｯﾌﾟ
+;ﾜｰｸ取出選択 ﾜｰｸ取出確認
+LD M7506                 ; ﾜｰｸ取出選択
+AND M7997                ; ﾕﾆｯﾄ13ｽﾃｯﾌﾟ起動
+AND W0104.14             ; 高温槽仮置ﾜｰｸﾃﾞｰﾀｸﾘｱ要求
+AND W04.14               ; 高温槽仮置ﾜｰｸﾃﾞｰﾀｸﾘｱ完了
+@INC D7000               ; ﾕﾆｯﾄ13自動運転ｽﾃｯﾌﾟ
+LD M7507                 ; ﾜｰｸ取出完了
+AND M7997                ; ﾕﾆｯﾄ13ｽﾃｯﾌﾟ起動
+ANB W0104.14             ; 高温槽仮置ﾜｰｸﾃﾞｰﾀｸﾘｱ要求
+ANB W04.14               ; 高温槽仮置ﾜｰｸﾃﾞｰﾀｸﾘｱ完了
+MOV K49 D7000            ; ﾕﾆｯﾄ13自動運転ｽﾃｯﾌﾟ
+;読込正常･低温検査搬送へ取出可ON
+LD M7510                 ; ｽｷｬﾅ読込正常
+AND M7997                ; ﾕﾆｯﾄ13ｽﾃｯﾌﾟ起動
+ANB W0104.10             ; 高温槽投入部読込要求
+ANB W04.10               ; 高温槽投入部読込完了
+@INC D7000               ; ﾕﾆｯﾄ13自動運転ｽﾃｯﾌﾟ
+LD M7511                 ; 仮置き台ﾜｰｸ取出可
+AND M7997                ; ﾕﾆｯﾄ13ｽﾃｯﾌﾟ起動
+AND M8421                ; 【搬送】搬送→供給 取出完了
+@INC D7000               ; ﾕﾆｯﾄ13自動運転ｽﾃｯﾌﾟ
+LD M7512                 ; 高温検査前ﾜｰｸ取出完了確認
+AND M7997                ; ﾕﾆｯﾄ13ｽﾃｯﾌﾟ起動
+ANB M8421                ; 【搬送】搬送→供給 取出完了
+AND= D5610 K0            ; ﾜｰｸ有取出中(検査搬送抑制ﾌﾗｸﾞ)
+@INC D7000               ; ﾕﾆｯﾄ13自動運転ｽﾃｯﾌﾟ
+;サイクル停止処理
+;Cycle end check
+LD M7597                 ; ｻｲｸﾙ終了
+AND CR2003               ; 常時OFF
+@MOV K98 D7000           ; ﾕﾆｯﾄ13自動運転ｽﾃｯﾌﾟ
+;終了
+LD M7513                 ; 高温検査前ﾜｰｸ取出完了OFF確認
+OR M7598                 ; ﾕﾆｯﾄ13ｻｲｸﾙ停止
+@MOV K99 D7000           ; ﾕﾆｯﾄ13自動運転ｽﾃｯﾌﾟ
+;<h1/>[] PLC→PC I/F
+;動作ｽﾃｰﾀｽ
+LDB M7503                ; 高温検査前ｽｷｬﾅ読込
+INV
+OUT W0104.10             ; 高温槽投入部読込要求
+LDB M7506                ; ﾜｰｸ取出選択
+INV
+OUT W0104.14             ; 高温槽仮置ﾜｰｸﾃﾞｰﾀｸﾘｱ要求
+LD CR2002                ; 常時ON
+MOV D7550 W0122          ; 高温検査前仮置ﾊﾟﾚｯﾄ_ID  低温検査部投入ﾊﾟﾚｯﾄID
+;<h1/>■原点復帰回路
+;[][][][][][][][][][][][][][][]
+;[][]    UNIT5 原点復帰    [][]
+;[][][][][][][][][][][][][][][]
+LD CR2002                ; 常時ON
+ZRES M7750 M7799         ; 原点復帰開始  ﾕﾆｯﾄ13原点終了
+LDB M7984                ; ﾕﾆｯﾄ13原点復帰中
+MOV K0 D7010             ; ﾕﾆｯﾄ13原点復帰ｽﾃｯﾌﾟ
+LD M7984                 ; ﾕﾆｯﾄ13原点復帰中
+MOV D7010 Z1             ; ﾕﾆｯﾄ13原点復帰ｽﾃｯﾌﾟ
+OUT M7750:Z1             ; 原点復帰開始
+;原点復帰ステップ開始
+;Origin step start
+LD M7750                 ; 原点復帰開始
+AND M123                 ; 安全扉正常
+@INC D7010               ; ﾕﾆｯﾄ13原点復帰ｽﾃｯﾌﾟ
+;ﾜｰｸ有無確認
+LD M7751                 ; Hi_検査前仮置ﾜｰｸ有無確認
+AND M123                 ; 安全扉正常
+MPS
+AND X1420                ; 高温検査前仮置ﾜｰｸ確認
+@INC D7010               ; ﾕﾆｯﾄ13原点復帰ｽﾃｯﾌﾟ
+MPP
+ANB X1420                ; 高温検査前仮置ﾜｰｸ確認
+@MOV K3 D7010            ; ﾕﾆｯﾄ13原点復帰ｽﾃｯﾌﾟ
+LD M7752                 ; Hi_検査前仮置ﾜｰｸ取出要求
+AND M123                 ; 安全扉正常
+AND B01A0                ; 高温検査前仮置ﾜｰｸ取出要求
+@MOV K0 D7010            ; ﾕﾆｯﾄ13原点復帰ｽﾃｯﾌﾟ
+;原点復帰終了
+;Origin end
+LD M7753                 ; Hi_検査前仮置ﾜｰｸ無確認
+AND M7980                ; ﾕﾆｯﾄ13原点
+@MOV K48 D7010           ; ﾕﾆｯﾄ13原点復帰ｽﾃｯﾌﾟ
+LD M7798                 ; ﾕﾆｯﾄ13原点確認
+ANB M82                  ; 原点復帰開始
+@MOV K49 D7010           ; ﾕﾆｯﾄ13原点復帰ｽﾃｯﾌﾟ
+;<h1/>[] Tuch Panel Display
+;[][]    Panel Display    [][]
+LD CR2003                ; 常時OFF
+LD CR2003                ; 常時OFF
+AND CR2006               ; 1sｸﾛｯｸﾊﾟﾙｽ
+ORL
+OUT B1700                ; UNIT13-1-1 TP-PL
+LD CR2003                ; 常時OFF
+LD CR2003                ; 常時OFF
+AND CR2006               ; 1sｸﾛｯｸﾊﾟﾙｽ
+ORL
+OUT B1701                ; UNIT13-1-2 TP-PL
+LD CR2003                ; 常時OFF
+LD CR2003                ; 常時OFF
+AND CR2006               ; 1sｸﾛｯｸﾊﾟﾙｽ
+ORL
+OUT B1702                ; UNIT13-1-3 TP-PL
+LD CR2003                ; 常時OFF
+LD CR2003                ; 常時OFF
+AND CR2006               ; 1sｸﾛｯｸﾊﾟﾙｽ
+ORL
+OUT B1703                ; UNIT13-1-4 TP-PL
+LD CR2003                ; 常時OFF
+LD CR2003                ; 常時OFF
+AND CR2006               ; 1sｸﾛｯｸﾊﾟﾙｽ
+ORL
+OUT B1704                ; UNIT13-1-5 TP-PL
+LD CR2003                ; 常時OFF
+LD CR2003                ; 常時OFF
+AND CR2006               ; 1sｸﾛｯｸﾊﾟﾙｽ
+ORL
+OUT B1705                ; UNIT13-1-6 TP-PL
+LD CR2003                ; 常時OFF
+LD CR2003                ; 常時OFF
+AND CR2006               ; 1sｸﾛｯｸﾊﾟﾙｽ
+ORL
+OUT B1706                ; UNIT13-1-7 TP-PL
+LD CR2003                ; 常時OFF
+LD CR2003                ; 常時OFF
+AND CR2006               ; 1sｸﾛｯｸﾊﾟﾙｽ
+ORL
+OUT B1710                ; UNIT13-2-1 TP-PL
+LD CR2003                ; 常時OFF
+LD CR2003                ; 常時OFF
+AND CR2006               ; 1sｸﾛｯｸﾊﾟﾙｽ
+ORL
+OUT B1711                ; UNIT13-2-2 TP-PL
+LD CR2003                ; 常時OFF
+LD CR2003                ; 常時OFF
+AND CR2006               ; 1sｸﾛｯｸﾊﾟﾙｽ
+ORL
+OUT B1712                ; UNIT13-2-3 TP-PL
+LD CR2003                ; 常時OFF
+LD CR2003                ; 常時OFF
+AND CR2006               ; 1sｸﾛｯｸﾊﾟﾙｽ
+ORL
+OUT B1713                ; UNIT13-2-4 TP-PL
+LD CR2003                ; 常時OFF
+LD CR2003                ; 常時OFF
+AND CR2006               ; 1sｸﾛｯｸﾊﾟﾙｽ
+ORL
+OUT B171F                ; UNIT13-2-16 TP-PL
+;<h1/>[] Error
+;[][]    Error Detect    [][]
+;B1A0(K417)--B1AF(K432)  B1B0(K433)--B1BF(K448)
+LD M7752                 ; Hi_検査前仮置ﾜｰｸ取出要求
+LDB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B01A0                ; 高温検査前仮置ﾜｰｸ取出要求
+ORL
+OUT B01A0                ; 高温検査前仮置ﾜｰｸ取出要求
+LDP B01A0                ; 高温検査前仮置ﾜｰｸ取出要求
+AND< D900 K64            ; FIFO_DATA_VALUE
+DW K417 D0               ; エラーコード
+CON
+FIFOW D0 D900            ; エラーコード  FIFO_DATA_VALUE
+LD M110                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B06A0
+AND B01A0                ; 高温検査前仮置ﾜｰｸ取出要求
+OUT B06A0
+;異常ﾌﾞｻﾞｰまとめ
+LDB B01A0                ; 高温検査前仮置ﾜｰｸ取出要求
+OR B06A0
+LDB B01A1                ; UNIT13異常2
+OR B06A1
+ANL
+LDB B01A2                ; UNIT13異常3
+OR B06A2
+ANL
+LDB B01A3                ; UNIT13異常4
+OR B06A3
+ANL
+LDB B01A4                ; UNIT13異常5
+OR B06A4
+ANL
+LDB B01A5                ; UNIT13異常6
+OR B06A5
+ANL
+LDB B01A6                ; UNIT13異常7
+OR B06A6
+ANL
+LDB B01A7                ; UNIT13異常8
+OR B06A7
+ANL
+LDB B01A8                ; UNIT13異常9
+OR B06A8
+ANL
+LDB B01A9                ; UNIT13異常10
+OR B06A9
+ANL
+LDB B01AA                ; UNIT13異常11
+OR B06AA
+ANL
+LDB B01AB                ; UNIT13異常12
+OR B06AB
+ANL
+LDB B01B0                ; UNIT13異常17
+OR B06B0
+ANL
+LDB B01B1                ; UNIT13異常18
+OR B06B1
+ANL
+LDB B01B4                ; UNIT13異常21
+OR B06B4
+ANL
+LDB B01B5                ; UNIT13異常22
+OR B06B5
+ANL
+LDB B01B6                ; UNIT13異常23
+OR B06B6
+ANL
+INV
+OUT M7989                ; ﾕﾆｯﾄ13異常BZ補助
+END
+ENDH

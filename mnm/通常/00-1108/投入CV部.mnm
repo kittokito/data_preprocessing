@@ -1,0 +1,310 @@
+DEVICE:51
+;MODULE:投入CV部
+;MODULE_TYPE:0
+;非常停止
+LD R50010                ; 非常停止
+ORB R1203                ; 装置電源ON
+OR R49900                ; 非常停止2
+OR @MR001                ; 001
+ZRES @MR002 @MR2915
+CON
+ZRES MR2600 MR2601       ; ﾎｯﾊﾟﾓｰﾀ　CW回転  ﾎｯﾊﾟﾓｰﾀ　解除入力
+CON
+ZRES MR2603 MR2604       ; 生地管搬送ﾓｰﾀ　回転  生地管搬送ﾓｰﾀ　回転
+CON
+OUT @MR001               ; 001
+TMR @0 #5                ; Wait timer00
+LD @T0                   ; Wait timer00
+MDSTOP 投入CV部
+;ﾒｲﾝ動作
+;
+LD R50001                ; 自動運転中
+AND MR2000               ; 投入CV部動作要求
+@LDA #1
+CON
+@STA @DM1                ; 搬送CV　停止要求後動作回数
+CON
+@SET @MR1000             ; 投入CV動作開始
+STG @MR1000              ; 投入CV動作開始
+ANB R50008               ; 全体ERROR
+MPS
+LDB @MR005               ; 初回のみ動作ﾌﾗｸﾞ
+ANB @MR1005
+ANL
+JMP @MR1002
+MPP
+LD @MR005                ; 初回のみ動作ﾌﾗｸﾞ
+ANB @MR1002
+ANL
+JMP @MR1005
+STG @MR1002
+TMR @1 #5
+CON
+AND @T1
+MPS
+ANB T1117                ; 生地管到着（P&P側）補助Ｔ
+SET @MR005               ; 初回のみ動作ﾌﾗｸﾞ
+CON
+ANB @MR1003
+ANB @MR1003
+JMP @MR1000              ; 投入CV動作開始
+MPP
+LD T1117                 ; 生地管到着（P&P側）補助Ｔ
+ANB @MR1000              ; 投入CV動作開始
+ANB @MR1000              ; 投入CV動作開始
+ANL
+JMP @MR1003
+STG @MR1003
+SET MR9500               ; 生地管有り　除材要求
+CON
+SET @MR005               ; 初回のみ動作ﾌﾗｸﾞ
+CON
+JMP @MR1200
+STG @MR1005
+SET @MR1007              ; 生地管投入動作中
+CON
+JMP @MR1008
+STG @MR1008
+MPS
+LD T1104                 ; 生地管検出（ﾎｯﾊﾟｰ側）補助Ｔ
+ANB @MR1010
+ANL
+JMP @MR1100
+MPP
+LD T1116                 ; 生地管検出（ﾎｯﾊﾟｰ側）補助Ｔ
+ANB @MR1100
+ANL
+JMP @MR1010
+STG @MR1010
+SET @MR2100              ; 搬送CV1回転要求
+CON
+JMP @MR1011
+STG @MR1011
+AND MR2603               ; 生地管搬送ﾓｰﾀ　回転
+AND MR2604               ; 生地管搬送ﾓｰﾀ　回転
+JMP @MR1012
+STG @MR1012
+ANB MR2603               ; 生地管搬送ﾓｰﾀ　回転
+ANB MR2604               ; 生地管搬送ﾓｰﾀ　回転
+MPS
+LDB T1117                ; 生地管到着（P&P側）補助Ｔ
+ANB @MR1200
+ANL
+JMP @MR1008
+MPP
+AND T1117                ; 生地管到着（P&P側）補助Ｔ
+RES @MR1007              ; 生地管投入動作中
+CON
+SET MR9500               ; 生地管有り　除材要求
+CON
+ANB @MR1008
+JMP @MR1200
+STG @MR1100
+MPS
+ANB MR1300               ; 投入CV停止要求ﾌﾗｸﾞ
+JMP @MR1008
+MPP
+AND MR1300               ; 投入CV停止要求ﾌﾗｸﾞ
+LDA #0
+CON
+STA @DM1                 ; 搬送CV　停止要求後動作回数
+CON
+JMP @MR1101
+STG @MR1101
+SET @MR2100              ; 搬送CV1回転要求
+CON
+JMP @MR1102
+STG @MR1102
+AND MR2603               ; 生地管搬送ﾓｰﾀ　回転
+AND MR2604               ; 生地管搬送ﾓｰﾀ　回転
+JMP @MR1103
+STG @MR1103
+ANB MR2603               ; 生地管搬送ﾓｰﾀ　回転
+ANB MR2604               ; 生地管搬送ﾓｰﾀ　回転
+MPS
+ANB T1117                ; 生地管到着（P&P側）補助Ｔ
+@INC @DM1                ; 搬送CV　停止要求後動作回数
+CON
+ANB @MR1200
+JMP @MR1104
+MPP
+AND T1117                ; 生地管到着（P&P側）補助Ｔ
+RES @MR1007              ; 生地管投入動作中
+CON
+SET MR9500               ; 生地管有り　除材要求
+CON
+ANB @MR1104
+JMP @MR1200
+STG @MR1104
+MPS
+AND<= DM200 @DM1         ; CUNT00設定値  搬送CV　停止要求後動作回数
+RES @MR005               ; 初回のみ動作ﾌﾗｸﾞ
+CON
+RES @MR1007              ; 生地管投入動作中
+CON
+RES MR1300               ; 投入CV停止要求ﾌﾗｸﾞ
+CON
+SET MR1301               ; 投入CV停止完了
+CON
+ENDS
+MPP
+AND> DM200 @DM1          ; CUNT00設定値  搬送CV　停止要求後動作回数
+JMP @MR1101
+STG @MR1200
+AND MR9501               ; PP除材動作中
+RES MR9500               ; 生地管有り　除材要求
+CON
+JMP @MR1201
+STG @MR1201
+ANB MR9501               ; PP除材動作中
+AND MR9502               ; PP除材完了
+RES MR9502               ; PP除材完了
+CON
+JMP @MR1202
+STG @MR1202
+MPS
+ANB T1105                ; 生地管到着（P&P側）補助Ｔ
+SET @MR100               ; 生地管除材失敗
+CON
+ANB @MR1000              ; 投入CV動作開始
+JMP @MR1204
+MPP
+AND T1105                ; 生地管到着（P&P側）補助Ｔ
+MPS
+LDB MR1300               ; 投入CV停止要求ﾌﾗｸﾞ
+ANB @MR1204
+ANL
+JMP @MR1000              ; 投入CV動作開始
+MPP
+AND MR1300               ; 投入CV停止要求ﾌﾗｸﾞ
+RES @MR005               ; 初回のみ動作ﾌﾗｸﾞ
+CON
+RES @MR1007              ; 生地管投入動作中
+CON
+RES MR1300               ; 投入CV停止要求ﾌﾗｸﾞ
+CON
+SET MR1301               ; 投入CV停止完了
+CON
+ENDS
+STG @MR1204
+AND @MR107               ; ｴﾗｰ03　解除
+RES @MR107               ; ｴﾗｰ03　解除
+CON
+JMP @MR1202
+;ﾎｯﾊﾟﾓｰﾀ停止要求動作
+;
+LDB MR1300               ; 投入CV停止要求ﾌﾗｸﾞ
+ANB R50008               ; 全体ERROR
+AND @MR1007              ; 生地管投入動作中
+MPS
+ANB T1104                ; 生地管検出（ﾎｯﾊﾟｰ側）補助Ｔ
+TMR #5 #9999             ; 生地管到着後ﾎｯﾊﾟ停止ﾀｲﾏ
+CON
+AND T5                   ; 生地管到着後ﾎｯﾊﾟ停止ﾀｲﾏ
+RES MR2600               ; ﾎｯﾊﾟﾓｰﾀ　CW回転
+MPP
+AND T1104                ; 生地管検出（ﾎｯﾊﾟｰ側）補助Ｔ
+TMR #6 #9999             ; 生地管搬送後ﾎｯﾊﾟ回転ﾀｲﾏ
+CON
+AND T6                   ; 生地管搬送後ﾎｯﾊﾟ回転ﾀｲﾏ
+SET MR2600               ; ﾎｯﾊﾟﾓｰﾀ　CW回転
+LD MR1300                ; 投入CV停止要求ﾌﾗｸﾞ
+ORB @MR1007              ; 生地管投入動作中
+RES MR2600               ; ﾎｯﾊﾟﾓｰﾀ　CW回転
+;搬送ﾓｰﾀ1回転動作
+;
+STG @MR2100              ; 搬送CV1回転要求
+SET MR2603               ; 生地管搬送ﾓｰﾀ　回転
+CON
+SET MR2604               ; 生地管搬送ﾓｰﾀ　回転
+CON
+SET @MR007               ; 搬送ﾓｰﾀﾟ動作時間監視
+CON
+JMP @MR2101
+STG @MR2101
+ANP R1106                ; 給材ｺﾝﾍﾞｱﾓｰﾀ停止ｾﾝｻ
+RES @MR007               ; 搬送ﾓｰﾀﾟ動作時間監視
+CON
+RES MR2603               ; 生地管搬送ﾓｰﾀ　回転
+CON
+RES MR2604               ; 生地管搬送ﾓｰﾀ　回転
+CON
+ENDS
+;ｴﾗｰ処理
+;
+;ｴﾗｰ01　　ﾎｯﾊﾟ動作ﾀｲﾑｵｰﾊﾞｰ
+LD R50001                ; 自動運転中
+AND MR2600               ; ﾎｯﾊﾟﾓｰﾀ　CW回転
+TMR #1 #9999             ; ﾎｯﾊﾟ回転時　生地管到着ﾀｲﾑｵｰﾊﾞｰ
+CON
+AND T1                   ; ﾎｯﾊﾟ回転時　生地管到着ﾀｲﾑｵｰﾊﾞｰ
+@SET @MR108
+STG @MR108
+ANB R50008               ; 全体ERROR
+RES MR2600               ; ﾎｯﾊﾟﾓｰﾀ　CW回転
+CON
+SET R50008               ; 全体ERROR
+CON
+SET R50111               ; Err ﾎｯﾊﾟ_搬送PP部
+CON
+SET R51001               ; ﾎｯﾊﾟ_搬送PP部
+CON
+SET R50501               ; ERR01
+CON
+JMP @MR109
+MOV #1 DM400             ; ﾒｯｾｰｼﾞNo.
+STG @MR109
+AND R50008               ; 全体ERROR
+JMP @MR110
+STG @MR110
+ANB R50008               ; 全体ERROR
+SET MR2600               ; ﾎｯﾊﾟﾓｰﾀ　CW回転
+CON
+ENDS
+;ｴﾗｰ02　　搬送ﾓｰﾀ動作ﾀｲﾑｵｰﾊﾞｰ
+LD @MR007                ; 搬送ﾓｰﾀﾟ動作時間監視
+TMR #2 #9999             ; 搬送ﾓｰﾀ回転時　動作ﾀｲﾑｵｰﾊﾞｰ
+CON
+AND T2                   ; 搬送ﾓｰﾀ回転時　動作ﾀｲﾑｵｰﾊﾞｰ
+@SET @MR200
+STG @MR200
+ANB R50008               ; 全体ERROR
+SET R50008               ; 全体ERROR
+CON
+SET R50111               ; Err ﾎｯﾊﾟ_搬送PP部
+CON
+SET R51001               ; ﾎｯﾊﾟ_搬送PP部
+CON
+SET R50502               ; ERR02
+CON
+JMP @MR201
+MOV #2 DM400             ; ﾒｯｾｰｼﾞNo.
+STG @MR201
+AND R50008               ; 全体ERROR
+JMP @MR202
+STG @MR202
+ANB R50008               ; 全体ERROR
+ENDS
+;ｴﾗｰ03　　生地管除材失敗
+STG @MR100               ; 生地管除材失敗
+ANB R50008               ; 全体ERROR
+SET R50008               ; 全体ERROR
+CON
+SET R50111               ; Err ﾎｯﾊﾟ_搬送PP部
+CON
+SET R51001               ; ﾎｯﾊﾟ_搬送PP部
+CON
+SET R50503               ; ERR03
+CON
+JMP @MR101
+MOV #3 DM400             ; ﾒｯｾｰｼﾞNo.
+STG @MR101
+AND R50008               ; 全体ERROR
+JMP @MR102
+STG @MR102
+ANB R50008               ; 全体ERROR
+SET @MR107               ; ｴﾗｰ03　解除
+CON
+ENDS
+END
+ENDH

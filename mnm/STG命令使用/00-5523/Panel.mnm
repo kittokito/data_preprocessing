@@ -1,0 +1,934 @@
+DEVICE:51
+;MODULE:Panel
+;MODULE_TYPE:0
+;SCRIPT_TYPE:
+;ﾌﾘｯｶｰ
+;Flicker Timer
+LD CR2002                ; 常時ON
+FLIK #100 #100 @MR000
+;電源投入時 ﾀｯﾁﾊﾟﾈﾙ表示制御
+LD CR2008                ; 運転開始時1ｽｷｬﾝON
+DW #0 DM4000             ; 現在表示中画面
+CON
+@MOV #1 DM4008           ; ﾍﾟｰｼﾞ切替え                     
+LD= DM4000 #1            ; 現在表示中画面
+TMR @0 #20
+CON
+AND @T0
+@MOV #2 DM4008           ; ﾍﾟｰｼﾞ切替え                     
+;HOME
+LD= DM4000 #2            ; 現在表示中画面
+OUT R45004               ; HOME画面 表示中
+LD= DM4008 #19           ; ﾍﾟｰｼﾞ切替え                     
+ANB R50010               ; Emergency　Stop
+@MOV #2 DM4008           ; ﾍﾟｰｼﾞ切替え                     
+LD R50003                ; HOME
+ANB R50008               ; Error
+ANB R50300               ; Pause
+@MOV #3 DM4008           ; ﾍﾟｰｼﾞ切替え                     
+;STOP
+LD= DM4000 #4            ; 現在表示中画面
+OUT R45100               ; STOP画面　表示中
+LD R50007                ; 原点復帰　完了
+ANB R50008               ; Error
+MPS
+LDB R50004               ; TASKDO
+ANB R45101               ; [ON-LINE]AUTO画面　表示中
+ANB R45102               ; STEP画面　表示中
+ANB R1001                ; ｽﾀｰﾄ ｽｲｯﾁ(左)
+ANB R1002                ; ｽﾀｰﾄ ｽｲｯﾁ(右)
+ANL
+OUT R45000               ; 停止中
+MPP
+ANB R50300               ; Pause
+@MOV #4 DM4008           ; ﾍﾟｰｼﾞ切替え                     
+;AUTO
+LD R1001                 ; ｽﾀｰﾄ ｽｲｯﾁ(左)
+ANB R50010               ; Emergency　Stop
+AND R50007               ; 原点復帰　完了
+OR R50001                ; AUTO
+MPS
+AND CR2003               ; 常時OFF
+OUT R45101               ; [ON-LINE]AUTO画面　表示中
+MPP
+ANB R50008               ; Error
+OUT R45001               ; AUTO 選択中
+LD<> R45000 #0           ; 停止中
+ENCO R45000 #8           ; 停止中
+CON
+STA DM5071               ; TP Mode切替
+;STEP
+LD R50604                ; TP STEP選択
+ANB R41808               ; TPﾖﾘ 手動動作中
+LD R45102                ; STEP画面　表示中
+AND R50004               ; TASKDO
+ORL
+ANB R50010               ; Emergency　Stop
+AND R50007               ; 原点復帰　完了
+OUT R45102               ; STEP画面　表示中
+LD R45102                ; STEP画面　表示中
+MPS
+LDB R50004               ; TASKDO
+ANB R50008               ; Error
+ANB R50300               ; Pause
+ANL
+@MOV #400 DM4008         ; ﾍﾟｰｼﾞ切替え                     
+MRD
+ANB R50008               ; Error
+OUT R45002               ; STEP 動作中
+MPP
+AND R50004               ; TASKDO
+@MOV #4 DM4008           ; ﾍﾟｰｼﾞ切替え                     
+LD R41808                ; TPﾖﾘ 手動動作中
+MPS
+LD>= DM4000 #500         ; 現在表示中画面
+AND<= DM4000 #589        ; 現在表示中画面
+ANL
+MOV DM4000 DM4500        ; 現在表示中画面
+MRD
+LD= DM4000 #11           ; 現在表示中画面
+ANB R50004               ; TASKDO
+ANL
+OUT R42015               ; Output Control 中 Pause or Error
+MPP
+LD R42015                ; Output Control 中 Pause or Error
+ANB R50008               ; Error
+ANB R50300               ; Pause
+ANL
+RES R42015               ; Output Control 中 Pause or Error
+CON
+MOV DM4500 DM4008        ; ﾍﾟｰｼﾞ切替え                     
+;Operation Status Control
+LDB R50001               ; AUTO
+ANB R50002               ; STEP
+MPS
+ANB R50300               ; Pause
+OUT R42800               ; STOP表示
+MPP
+OUT R42900               ; Setup SW 表示
+LD R50001                ; AUTO
+ANB R50300               ; Pause
+OUT R42801               ; AUTO RUN表示
+LD R50002                ; STEP
+ANB R50300               ; Pause
+OUT R42802               ; STEP RUN表示
+LD R50300                ; Pause
+MPS
+OUT R42803               ; PAUSE表示
+MPP
+LDB R41800               ; TPﾖﾘ ｴﾗｰ表示SW1
+AND @MR000
+ANL
+OUT R42208               ; ｴﾗｰ中 PAUSE表示
+LD>= R42800 #1           ; STOP表示
+LDA R42800               ; STOP表示
+CON
+DMX
+CON
+STA DM5070               ; TP 装置状態表示
+;PAUSE
+LD R50300                ; Pause
+OUT R45003               ; ﾎﾟｰｽﾞ中
+LDB R41800               ; TPﾖﾘ ｴﾗｰ表示SW1
+ANB R42015               ; Output Control 中 Pause or Error
+AND CR2003               ; 常時OFF
+@MOV #11 DM4008          ; ﾍﾟｰｼﾞ切替え                     
+LD= DM4000 #11           ; 現在表示中画面
+OUT R45104               ; PAUSE画面　表示中
+;Emargency Stop1
+LD R50010                ; Emergency　Stop
+ANB R50012               ; TRAP       Interlock
+ANB R50013               ; Interlock  表示
+MOV #19 DM4008           ; ﾍﾟｰｼﾞ切替え                     
+;Emargency Stop2
+LD R50010                ; Emergency　Stop
+AND R50013               ; Interlock  表示
+@MOV #12 DM4008          ; ﾍﾟｰｼﾞ切替え                     
+;Error / エラー
+LD CR2002                ; 常時ON
+MPS
+LD R50008                ; Error
+AND R50108               ; ｴﾗｰ中
+ANB R50300               ; Pause
+ANL
+@MOV #14 DM4008          ; ﾍﾟｰｼﾞ切替え                     
+MPP
+ANB R50008               ; Error
+MPS
+LDB R50004               ; TASKDO
+ANB R50007               ; 原点復帰　完了
+ANB R50010               ; Emergency　Stop
+ANB R50012               ; TRAP       Interlock
+ANB R50300               ; Pause
+ANL
+MPS
+ANB R41808               ; TPﾖﾘ 手動動作中
+@MOV #2 DM4008           ; ﾍﾟｰｼﾞ切替え                     
+MPP
+AND R41808               ; TPﾖﾘ 手動動作中
+@MOV DM4500 DM4008       ; ﾍﾟｰｼﾞ切替え                     
+MRD
+ANB R50012               ; TRAP       Interlock
+@DW #0 DM400             ; ﾒｯｾｰｼﾞNo.
+CON
+@DW #0 DM409             ; ｾﾝｻｰｴﾗｰ No.
+MPP
+RES R50015               ; ｴﾗｰﾘｾｯﾄSW ON
+LDP R50105               ; ｽﾀｰﾄSW ON
+AND LR49914              ; ｴﾗｰﾘｾｯﾄｷｰ要求
+AND LR49915              ; ｴﾗｰﾘｾｯﾄｷｰ動作OK
+RES LR49914              ; ｴﾗｰﾘｾｯﾄｷｰ要求
+CON
+RES LR49915              ; ｴﾗｰﾘｾｯﾄｷｰ動作OK
+;ﾎﾟｰｽﾞ画面でのｴﾗｰ内容表示
+LD R41800                ; TPﾖﾘ ｴﾗｰ表示SW1
+ANB R41703               ; Language Change
+ANB R41802               ; Error Text Scroll Down SW
+ANB R41803               ; Error Text Scroll Up SW
+TMR @1 #30
+CON
+MPS
+@MOV #14 DM4008          ; ﾍﾟｰｼﾞ切替え                     
+MPP
+AND @T1
+RES R41800               ; TPﾖﾘ ｴﾗｰ表示SW1
+;ｼﾘﾝﾀﾞｰ、ｾﾝｻｰｴﾗｰ分岐
+LD= DM400 #1             ; ﾒｯｾｰｼﾞNo.
+OR= DM400 #31            ; ﾒｯｾｰｼﾞNo.
+OR= DM400 #61            ; ﾒｯｾｰｼﾞNo.
+OR= DM400 #170           ; ﾒｯｾｰｼﾞNo.
+OUT R42200               ; ｼﾘﾝﾀﾞｰｴﾗｰ
+;DM409へ格納ｼﾘﾝﾀﾞｰｾﾝｻｰｴﾗｰNoをﾀｯﾁﾊﾟﾈﾙ表示DM401へ格納
+;DM409へ格納するのは表示したいｾﾝｻの
+;ch数下1桁*16+ｾﾝｻの下2桁+1
+;例
+;SQ-4314=3*16+14+1=63
+;'ｾﾝｻ番号を100で割り、-40して、ch数を算出、16倍して表示行数計算
+;@DM0 = ((DM409 / 100)-40)*16
+;'ｾﾝｻ番号を100で割った余り
+;@DM2 = DM409 MOD 100
+;'上記2つを足し、ﾃｷｽﾄ表示ｵﾌｾｯﾄ(0行目が無いので)+1してTPへ送る
+;DM401 = @DM0+@DM2+1 
+;
+LD<> DM409 #0            ; ｾﾝｻｰｴﾗｰ No.
+AND R42200               ; ｼﾘﾝﾀﾞｰｴﾗｰ
+@MOV #50 DM420           ; TPﾍ ｾﾝｻｰｴﾗｰｳｨﾝﾄﾞｳ表示
+NCJ #1000
+;'ｾﾝｻ番号を100で割り、-40して、ch数を算出、16倍して表示行数計算
+;
+;@DM0 = ((DM409 / 100)-40)*16
+;
+;;Warning[1103]: "=": (符号付き32ビット整数型->符号無し16ビット整数型) 代入によりデータが欠落する可能性があります。
+LD CR2002                ; 常時ON
+LDA DM409                ; ｾﾝｻｰｴﾗｰ No.
+CON
+EXT
+CON
+EXT.L
+CON
+DIV.L +100
+CON
+SUB.L +40
+CON
+MUL.L +16
+CON
+STA @DM0
+;'ｾﾝｻ番号を100で割った余り
+;
+;@DM2 = DM409 MOD 100
+;
+;;Warning[1103]: "=": (符号付き32ビット整数型->符号無し16ビット整数型) 代入によりデータが欠落する可能性があります。
+LD CR2002                ; 常時ON
+LDA DM409                ; ｾﾝｻｰｴﾗｰ No.
+CON
+EXT
+CON
+EXT.L
+CON
+DIV.L +100
+CON
+LDA.L TM2
+CON
+STA @DM2
+;'上記2つを足し、ﾃｷｽﾄ表示ｵﾌｾｯﾄ(0行目が無いので)+1してTPへ送る
+;
+;DM401 = @DM0+@DM2+1 
+;
+;;Warning[1103]: "=": (符号付き32ビット整数型->符号無し16ビット整数型) 代入によりデータが欠落する可能性があります。
+LD CR2002                ; 常時ON
+LDA @DM2
+CON
+EXT
+CON
+STA.L @VM0
+CON
+LDA @DM0
+CON
+EXT
+CON
+ADD.L @VM0
+CON
+ADD.L +1
+CON
+STA DM401                ; TPへ CY Err No.
+LABEL #1000
+;
+LDF R50108               ; ｴﾗｰ中
+ZRES DM401 DM408         ; TPへ CY Err No.
+LD R50010                ; Emergency　Stop
+ZRES DM401 DM409         ; TPへ CY Err No.  ｾﾝｻｰｴﾗｰ No.
+;ｴﾗｰ時関連ｾﾝｻｰNo.をﾀｯﾁﾊﾟﾈﾙ表示DM416～DM419
+;IF DM416 <> 0 THEN
+;	@DM10 = ((DM416 / 100)-40)*16
+;	@DM12 = DM416 MOD 100
+;	DM421 = @DM10+@DM12+1 
+;END IF
+;
+;IF DM417 <> 0 THEN
+;	@DM14 = ((DM417 / 100)-40)*16
+;	@DM16 = DM417 MOD 100
+;	DM422 = @DM14+@DM16+1 
+;END IF
+;
+;IF DM418 <> 0 THEN
+;	@DM18 = ((DM418 / 100)-40)*16
+;	@DM20 = DM418 MOD 100
+;	DM423 = @DM18+@DM20+1 
+;END IF
+;
+;IF DM419 <> 0 THEN
+;	@DM22 = ((DM419 / 100)-40)*16
+;	@DM24 = DM419 MOD 100
+;	DM424 = @DM22+@DM24+1 
+;END IF
+LD<> DM416 #0            ; Err Sensor No.A
+OR<> DM417 #0            ; Err Sensor No.B
+OR<> DM418 #0            ; Err Sensor No.C
+OR<> DM419 #0            ; Err Sensor No.D
+AND R42201               ; Err Sensor No.表示
+ANB R42200               ; ｼﾘﾝﾀﾞｰｴﾗｰ
+@MOV #50 DM420           ; TPﾍ ｾﾝｻｰｴﾗｰｳｨﾝﾄﾞｳ表示
+NCJ #1001
+;IF DM416 <> 0 THEN
+;
+LD<> DM416 #0            ; Err Sensor No.A
+NCJ #2000
+;	@DM10 = ((DM416 / 100)-40)*16
+;
+;;Warning[1103]: "=": (符号付き32ビット整数型->符号無し16ビット整数型) 代入によりデータが欠落する可能性があります。
+LD CR2002                ; 常時ON
+LDA DM416                ; Err Sensor No.A
+CON
+EXT
+CON
+EXT.L
+CON
+DIV.L +100
+CON
+SUB.L +40
+CON
+MUL.L +16
+CON
+STA @DM10
+;	@DM12 = DM416 MOD 100
+;
+;;Warning[1103]: "=": (符号付き32ビット整数型->符号無し16ビット整数型) 代入によりデータが欠落する可能性があります。
+LD CR2002                ; 常時ON
+LDA DM416                ; Err Sensor No.A
+CON
+EXT
+CON
+EXT.L
+CON
+DIV.L +100
+CON
+LDA.L TM2
+CON
+STA @DM12
+;	DM421 = @DM10+@DM12+1 
+;
+;;Warning[1103]: "=": (符号付き32ビット整数型->符号無し16ビット整数型) 代入によりデータが欠落する可能性があります。
+LD CR2002                ; 常時ON
+LDA @DM12
+CON
+EXT
+CON
+STA.L @VM2
+CON
+LDA @DM10
+CON
+EXT
+CON
+ADD.L @VM2
+CON
+ADD.L +1
+CON
+STA DM421                ; TP Err Sensor No.A
+;END IF
+;
+LABEL #2000
+;IF DM417 <> 0 THEN
+;
+LD<> DM417 #0            ; Err Sensor No.B
+NCJ #2001
+;	@DM14 = ((DM417 / 100)-40)*16
+;
+;;Warning[1103]: "=": (符号付き32ビット整数型->符号無し16ビット整数型) 代入によりデータが欠落する可能性があります。
+LD CR2002                ; 常時ON
+LDA DM417                ; Err Sensor No.B
+CON
+EXT
+CON
+EXT.L
+CON
+DIV.L +100
+CON
+SUB.L +40
+CON
+MUL.L +16
+CON
+STA @DM14
+;	@DM16 = DM417 MOD 100
+;
+;;Warning[1103]: "=": (符号付き32ビット整数型->符号無し16ビット整数型) 代入によりデータが欠落する可能性があります。
+LD CR2002                ; 常時ON
+LDA DM417                ; Err Sensor No.B
+CON
+EXT
+CON
+EXT.L
+CON
+DIV.L +100
+CON
+LDA.L TM2
+CON
+STA @DM16
+;	DM422 = @DM14+@DM16+1 
+;
+;;Warning[1103]: "=": (符号付き32ビット整数型->符号無し16ビット整数型) 代入によりデータが欠落する可能性があります。
+LD CR2002                ; 常時ON
+LDA @DM16
+CON
+EXT
+CON
+STA.L @VM4
+CON
+LDA @DM14
+CON
+EXT
+CON
+ADD.L @VM4
+CON
+ADD.L +1
+CON
+STA DM422                ; TP Err Sensor No.B
+;END IF
+;
+LABEL #2001
+;IF DM418 <> 0 THEN
+;
+LD<> DM418 #0            ; Err Sensor No.C
+NCJ #2002
+;	@DM18 = ((DM418 / 100)-40)*16
+;
+;;Warning[1103]: "=": (符号付き32ビット整数型->符号無し16ビット整数型) 代入によりデータが欠落する可能性があります。
+LD CR2002                ; 常時ON
+LDA DM418                ; Err Sensor No.C
+CON
+EXT
+CON
+EXT.L
+CON
+DIV.L +100
+CON
+SUB.L +40
+CON
+MUL.L +16
+CON
+STA @DM18
+;	@DM20 = DM418 MOD 100
+;
+;;Warning[1103]: "=": (符号付き32ビット整数型->符号無し16ビット整数型) 代入によりデータが欠落する可能性があります。
+LD CR2002                ; 常時ON
+LDA DM418                ; Err Sensor No.C
+CON
+EXT
+CON
+EXT.L
+CON
+DIV.L +100
+CON
+LDA.L TM2
+CON
+STA @DM20
+;	DM423 = @DM18+@DM20+1 
+;
+;;Warning[1103]: "=": (符号付き32ビット整数型->符号無し16ビット整数型) 代入によりデータが欠落する可能性があります。
+LD CR2002                ; 常時ON
+LDA @DM20
+CON
+EXT
+CON
+STA.L @VM6
+CON
+LDA @DM18
+CON
+EXT
+CON
+ADD.L @VM6
+CON
+ADD.L +1
+CON
+STA DM423                ; TP Err Sensor No.C
+;END IF
+;
+LABEL #2002
+;IF DM419 <> 0 THEN
+;
+LD<> DM419 #0            ; Err Sensor No.D
+NCJ #2003
+;	@DM22 = ((DM419 / 100)-40)*16
+;
+;;Warning[1103]: "=": (符号付き32ビット整数型->符号無し16ビット整数型) 代入によりデータが欠落する可能性があります。
+LD CR2002                ; 常時ON
+LDA DM419                ; Err Sensor No.D
+CON
+EXT
+CON
+EXT.L
+CON
+DIV.L +100
+CON
+SUB.L +40
+CON
+MUL.L +16
+CON
+STA @DM22
+;	@DM24 = DM419 MOD 100
+;
+;;Warning[1103]: "=": (符号付き32ビット整数型->符号無し16ビット整数型) 代入によりデータが欠落する可能性があります。
+LD CR2002                ; 常時ON
+LDA DM419                ; Err Sensor No.D
+CON
+EXT
+CON
+EXT.L
+CON
+DIV.L +100
+CON
+LDA.L TM2
+CON
+STA @DM24
+;	DM424 = @DM22+@DM24+1 
+;
+;;Warning[1103]: "=": (符号付き32ビット整数型->符号無し16ビット整数型) 代入によりデータが欠落する可能性があります。
+LD CR2002                ; 常時ON
+LDA @DM24
+CON
+EXT
+CON
+STA.L @VM8
+CON
+LDA @DM22
+CON
+EXT
+CON
+ADD.L @VM8
+CON
+ADD.L +1
+CON
+STA DM424                ; TP Err Sensor No.D
+;END IF
+LABEL #2003
+LABEL #1001
+;
+LDF R50108               ; ｴﾗｰ中
+OR R50010                ; Emergency　Stop
+RES R42201               ; Err Sensor No.表示
+CON
+ZRES DM416 DM424         ; Err Sensor No.A  TP Err Sensor No.D
+;ｴﾗｰ中言語切替（ｴﾗｰﾘｾｯﾄ後元の言語へ戻す）
+;SELECT CASE DM4100
+;CASE 1
+;	DM4100 = 2
+;CASE 2
+;	DM4100 = 3
+;CASE 3 
+;	DM4100 = 4
+;CASE 4
+;	DM4100 = 1
+;END SELECT
+LD= DM4000 #14           ; 現在表示中画面
+ANP R41703               ; Language Change
+NCJ #1002
+;SELECT CASE DM4100
+;
+LD CR2002                ; 常時ON
+MOV DM4100 @VM10
+;CASE 1
+;
+LD= @VM10 #1
+NCJ #2004
+;	DM4100 = 2
+;
+LD CR2002                ; 常時ON
+MOV #2 DM4100
+LD CR2002                ; 常時ON
+CJ #2005
+LABEL #2004
+;CASE 2
+;
+LD= @VM10 #2
+NCJ #2006
+;	DM4100 = 3
+;
+LD CR2002                ; 常時ON
+MOV #3 DM4100
+LD CR2002                ; 常時ON
+CJ #2007
+LABEL #2006
+;CASE 3 
+;
+LD= @VM10 #3
+NCJ #2008
+;	DM4100 = 4
+;
+LD CR2002                ; 常時ON
+MOV #4 DM4100
+LD CR2002                ; 常時ON
+CJ #2009
+LABEL #2008
+;CASE 4
+;
+LD= @VM10 #4
+NCJ #2010
+;	DM4100 = 1
+;
+LD CR2002                ; 常時ON
+MOV #1 DM4100
+;END SELECT
+LABEL #2010
+LABEL #2009
+LABEL #2007
+LABEL #2005
+LABEL #1002
+;
+LDP R50108               ; ｴﾗｰ中
+MOV DM4100 DM5069        ; Err時言語設定記憶
+LDF R50108               ; ｴﾗｰ中
+MOV DM5069 DM4100        ; Err時言語設定記憶
+;Err34
+;IC書込ｴﾗｰ詳細Window表示用 
+;DM433 = DM430 +1	'ｴﾗｰｺｰﾄﾞをTEXT表示行へ
+;
+;DM435 = DM430 * 16 + DM431 -15 	'ｻﾌﾞｺｰﾄﾞをTEXT表示行へ
+;
+LD= DM4000 #14           ; 現在表示中画面
+LD= DM400 #14            ; ﾒｯｾｰｼﾞNo.
+OR= DM400 #16            ; ﾒｯｾｰｼﾞNo.
+ANL
+ANB R42200               ; ｼﾘﾝﾀﾞｰｴﾗｰ
+OUT R42202               ; CSICｴﾗｰ表示
+@MOV #15 DM432           ; CSICｴﾗｰｺｰﾄﾞTEXTNo.
+@MOV #16 DM434           ; CSICｻﾌﾞｺｰﾄﾞTEXTNo.
+NCJ #1003
+;DM433 = DM430 +1	'ｴﾗｰｺｰﾄﾞをTEXT表示行へ
+;
+;;Warning[1103]: "=": (符号付き32ビット整数型->符号無し16ビット整数型) 代入によりデータが欠落する可能性があります。
+LD CR2002                ; 常時ON
+LDA DM430                ; CSICｴﾗｰｺｰﾄﾞ
+CON
+EXT
+CON
+ADD.L +1
+CON
+STA DM433                ; CSICｴﾗｰｺｰﾄﾞTEXT表示行
+;DM435 = DM430 * 16 + DM431 -15 	'ｻﾌﾞｺｰﾄﾞをTEXT表示行へ
+;
+;;Warning[1103]: "=": (符号付き32ビット整数型->符号無し16ビット整数型) 代入によりデータが欠落する可能性があります。
+LD CR2002                ; 常時ON
+LDA DM430                ; CSICｴﾗｰｺｰﾄﾞ
+CON
+EXT
+CON
+MUL.L +16
+CON
+STA.L @VM11
+CON
+LDA DM431                ; CSICｻﾌﾞｺｰﾄﾞ
+CON
+EXT
+CON
+ADD.L @VM11
+CON
+SUB.L +15
+CON
+STA DM435                ; CSICｻﾌﾞｺｰﾄﾞTEXT表示行
+LABEL #1003
+;
+;Alarm Position表示
+;***** Touch Panel ｴﾗｰ詳細表示部への表示ﾃﾞｰﾀｾｯﾄ *****
+LDP R50008               ; Error
+MPS
+AND R50110               ; Err INDEX
+DW #1 DM5066             ; TP Err ST表示用
+MRD
+AND R50111               ; Err ST1
+DW #2 DM5066             ; TP Err ST表示用
+MRD
+AND R50112               ; Err ST2
+DW #3 DM5066             ; TP Err ST表示用
+MRD
+AND R50113               ; Err ST3
+DW #4 DM5066             ; TP Err ST表示用
+MPP
+DW #100 DM5064           ; TP Err ST表示ﾃｷｽﾄNo.
+CON
+LDA DM400                ; ﾒｯｾｰｼﾞNo.
+CON
+ADD #100
+CON
+STA DM5081               ; TPへ ｴﾗｰ表示ﾃｷｽﾄNo.
+CON
+DW #1 DM5082             ; TPへ ｴﾗｰ表示開始行No.
+LD= DM4000 #14           ; 現在表示中画面
+MPS
+ANP R41802               ; Error Text Scroll Down SW
+@LDA DM5082              ; TPへ ｴﾗｰ表示開始行No.
+CON
+@ADD #1
+CON
+@STA DM5082              ; TPへ ｴﾗｰ表示開始行No.
+MPP
+LDP R41803               ; Error Text Scroll Up SW
+AND> DM5082 #1           ; TPへ ｴﾗｰ表示開始行No.
+ANL
+DW #1 DM5082             ; TPへ ｴﾗｰ表示開始行No.
+;ｶｳﾝﾀｰ
+LD R50001                ; AUTO
+MPS
+AND R50309               ; 入力ｶｳﾝﾄ
+@INC DM5000              ; Input数
+CON
+SET MR20008              ; 生産管理用?
+CON
+SET MR20200              ; 生産管理用?
+CON
+RES R50309               ; 入力ｶｳﾝﾄ
+MRD
+AND R50310               ; 出力ｶｳﾝﾄ
+@INC DM5001              ; Output数
+CON
+SET MR20100              ; 生産管理用?
+CON
+SET MR20201              ; 生産管理用?
+CON
+RES R50310               ; 出力ｶｳﾝﾄ
+MPP
+AND R50311               ; NGｶｳﾝﾄ
+SET MR20108              ; 生産管理用?
+CON
+SET R20202               ; FLﾒｯｾｰｼﾞ伝送要求?
+CON
+@INC DM5002              ; NG数
+CON
+RES R50311               ; NGｶｳﾝﾄ
+LD R50008                ; Error
+@INC DM5003              ; TPへ Err回数積算
+LD R40007                ; 生産数    ResetSW
+@MOV #0 DM5000           ; Input数
+@MOV #0 DM5001           ; Output数
+ZRES DM5090 DM5093       ; TPﾍ 稼働率表示  TPﾍ 歩留まり表示
+CON
+@MOV #0 DM5002           ; NG数
+LD R40008                ; ｴﾗｰ回数   ResetSW
+OR R40007                ; 生産数    ResetSW
+@MOV #0 DM5003           ; TPへ Err回数積算
+LD CR2002                ; 常時ON
+ANB @MR010
+RES @MR011
+CON
+TMR @10 #100
+;Z8 = 0
+;FOR Z8 = 0 TO 9 STEP 1
+;PMOV(DM319:Z8,#8,DM5319:Z8,#0,#8)
+;PMOV(DM319:Z8,#0,DM5329:Z8,#0,#8)
+;NEXT
+;SET(@MR011)
+;
+LD @T10
+OR @MR010
+ANB @MR011
+OUT @MR010
+CON
+NCJ #1004
+;Z8 = 0
+;
+LD CR2002                ; 常時ON
+MOV.L +0 Z8
+;FOR Z8 = 0 TO 9 STEP 1
+;
+LD CR2002                ; 常時ON
+MOV.L +0 Z8
+LABEL #2011
+LD>.L Z8 +9
+CJ #2012
+;PMOV(DM319:Z8,#8,DM5319:Z8,#0,#8)
+;
+LD CR2002                ; 常時ON
+PMOV DM319:Z8 #8 DM5319:Z8 #0 #8
+;PMOV(DM319:Z8,#0,DM5329:Z8,#0,#8)
+;
+LD CR2002                ; 常時ON
+PMOV DM319:Z8 #0 DM5329:Z8 #0 #8
+;NEXT
+;
+LD CR2002                ; 常時ON
+INC.L Z8
+LDB CR2009               ; 演算結果が負
+CJ #2011
+LABEL #2012
+;SET(@MR011)
+;
+LD CR2002                ; 常時ON
+SET @MR011
+LABEL #1004
+;
+;Panel Back light Red/Orange Change
+LD R50008                ; Error
+AND R50108               ; ｴﾗｰ中
+ANB R50015               ; ｴﾗｰﾘｾｯﾄSW ON
+FLIK #100 #100 R41705    ; Back Light Color
+;ｼﾘﾝﾀﾞｰｴﾗｰ時 Window(START&PAUSE SW) 表示用Switch 制御 
+LD= DM4000 #14           ; 現在表示中画面
+ANB R41800               ; TPﾖﾘ ｴﾗｰ表示SW1
+AND R42200               ; ｼﾘﾝﾀﾞｰｴﾗｰ
+AND R50015               ; ｴﾗｰﾘｾｯﾄSW ON
+OUT R42010               ; Switch 表示(ｴﾗｰ画面)
+;Error Reset SW 表示制御 
+LD= DM4000 #14           ; 現在表示中画面
+ANB R41800               ; TPﾖﾘ ｴﾗｰ表示SW1
+OUT R42011               ; Error Reset 表示(ｴﾗｰ画面)
+LD= DM4000 #13           ; 現在表示中画面
+OUT R42012               ; Error Reset 表示(ﾎﾟｰｽﾞ中ｴﾗｰ画面)
+;STEP Start-SW選択 (Touch Panel Start-SWによるSTEP運転 / SW-BOX Start-SWによるSTEP運転)
+LD R41706                ; STEP Start-SW Select SW
+OUT R42901               ; STEP　Start-SW select Lamp
+;歩留まり&稼働率計算
+;INC(DM5004.D)		'OPRATION TIME
+;IF DM5004.D >= #60 THEN
+;	DM5006.D = DM5004.D / 5.6 * 4  'TARGET QTY
+;	DM5090.D = DM5001.U * 1000/ DM5006.D   'PRESENT OPERATION RATE
+;	DM5092.D = DM5001.U * 1000/ DM5000.U   'YIELD
+;END IF
+;
+LD R50001                ; AUTO
+ANP CR2006               ; 1sｸﾛｯｸﾊﾟﾙｽ
+NCJ #1005
+;INC(DM5004.D)		'OPRATION TIME
+;
+LD CR2002                ; 常時ON
+INC.D DM5004             ; 稼動時間
+;IF DM5004.D >= #60 THEN
+;
+LD>=.D DM5004 #60        ; 稼動時間
+NCJ #2013
+;	DM5006.D = DM5004.D / 5.6 * 4  'TARGET QTY
+;
+;;Warning[1104]: "/": (符号無し32ビット整数型->単精度浮動小数点型) 演算によりデータが欠落する可能性があります。
+;;Warning[1103]: "=": (単精度浮動小数点型->符号無し32ビット整数型) 代入によりデータが欠落する可能性があります。
+LD CR2002                ; 常時ON
+LDA.D DM5004             ; 稼動時間
+CON
+FLOAT.D
+CON
+DIV.F +5.6
+CON
+MUL.F +4
+CON
+INTG.D
+CON
+STA.D DM5006             ; 理論生産数
+;	DM5090.D = DM5001.U * 1000/ DM5006.D   'PRESENT OPERATION RATE
+;
+;;Warning[1104]: "DM5006": (符号無し32ビット整数型->符号付き32ビット整数型) 演算によりデータが欠落する可能性があります。
+;;Warning[1103]: "=": (符号付き32ビット整数型->符号無し32ビット整数型) 代入によりデータが欠落する可能性があります。
+LD CR2002                ; 常時ON
+LDA DM5001               ; Output数
+CON
+EXT
+CON
+MUL.L +1000
+CON
+DIV.L DM5006             ; 理論生産数
+CON
+STA.D DM5090             ; TPﾍ 稼働率表示
+;	DM5092.D = DM5001.U * 1000/ DM5000.U   'YIELD
+;
+;;Warning[1103]: "=": (符号付き32ビット整数型->符号無し32ビット整数型) 代入によりデータが欠落する可能性があります。
+LD CR2002                ; 常時ON
+LDA DM5000               ; Input数
+CON
+EXT
+CON
+STA.L @VM13
+CON
+LDA DM5001               ; Output数
+CON
+EXT
+CON
+MUL.L +1000
+CON
+DIV.L @VM13
+CON
+STA.D DM5092             ; TPﾍ 歩留まり表示
+;END IF
+;
+LABEL #2013
+LABEL #1005
+;
+;IF DM236 = $4800 THEN
+;	DM280.T = "----"
+;ELSE IF DM236 = $4100 THEN
+;	DM280.T = "----"
+;ELSE
+;	DM280.T = "Unknown"
+;END IF
+LD CR2002                ; 常時ON
+NCJ #1006
+;IF DM236 = $4800 THEN
+;
+LD= DM236 $4800
+NCJ #2014
+;	DM280.T = "----"
+;
+LD CR2002                ; 常時ON
+SMOV "----" DM280
+LD CR2002                ; 常時ON
+CJ #2015
+LABEL #2014
+;ELSE IF DM236 = $4100 THEN
+;
+LD= DM236 $4100
+NCJ #2016
+;	DM280.T = "----"
+;
+LD CR2002                ; 常時ON
+SMOV "----" DM280
+;ELSE
+;
+LD CR2002                ; 常時ON
+CJ #2017
+LABEL #2016
+;	DM280.T = "Unknown"
+;
+LD CR2002                ; 常時ON
+SMOV "Unknown" DM280
+;END IF
+LABEL #2017
+LABEL #2015
+LABEL #1006
+;
+;
+END
+ENDH

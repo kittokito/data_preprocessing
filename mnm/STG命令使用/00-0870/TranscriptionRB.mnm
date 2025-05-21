@@ -1,0 +1,362 @@
+DEVICE:52
+;MODULE:TranscriptionRB
+;MODULE_TYPE:0
+LD R50000                ; 即停止
+OR R50900                ; TRAP
+OR R50914                ; HOMEsw ON
+ZRES @MR000 @MR1315
+;動作許可OFFでﾄﾞﾗｲﾊﾞｰｱﾗｰﾑが帰ってくるが
+;動作許可ONのｱﾗｰﾑが自動でOFFになってくれるか確認
+LD R001                  ; 安全ｶﾊﾞｰ     入力
+OR R31502                ; 仮　NAT 2
+OUT MR11200              ; X1 動作許可
+OUT MR11500              ; Y1 動作許可
+OUT MR11800              ; X2 動作許可
+OUT MR12100              ; Y2 動作許可
+LD R10000                ; X1 動作可能
+AND R10300               ; Y1 動作可能
+AND R10600               ; X2 動作可能
+AND R10900               ; Y2 動作可能
+OUT R9915                ; 転写RB全軸運転準備完了
+LD R2006                 ; (L)ABS転送ﾓｰﾄﾞ
+MPS
+AND R1003                ; （L)ABS bit0
+OUT @MR400               ; (L)ABS bit1
+MPP
+AND R1004                ; DRV-12 ﾊﾞｯﾃﾘ警告/(L)ABS bit1
+OUT @MR401               ; (L)ABS bit2
+LD R2008                 ; (R)ABS転送ﾓｰﾄﾞ
+MPS
+AND R1006                ; （R)ABS bit0
+OUT @MR600               ; (R)ABS bit1
+MPP
+AND R1007                ; DRV-22 ﾊﾞｯﾃﾘ警告/(R)ABS bit1
+OUT @MR601               ; (R)ABS bit2
+;*****　RBパラメータ変更許可  /  RB Parameter Change Demand　*****
+LD R42400                ; RBﾊﾟﾗﾒｰﾀ2点押sw1
+AND R42401               ; RBﾊﾟﾗﾒｰﾀ2点押sw2
+TMR #203 #20
+LD T203
+OR R42403                ; RB ﾊﾟﾗﾒｰﾀ変更許可
+AND R42404               ; RBﾊﾟﾗﾒｰﾀ変更中
+OUT R42403               ; RB ﾊﾟﾗﾒｰﾀ変更許可
+;*****　(L)現在位置取得　*****
+;＜開始処理＞
+STG R51700               ; (L)ABSﾃﾞｰﾀ取込
+ANB R51714               ; (L)現在位置取得中
+SET MR11210              ; X1 Servo ON
+CON
+DW.D #1 DM1059           ; （L)ﾃﾞｰﾀｼﾌﾄ用ﾃﾞｰﾀ
+CON
+DW #0 DM1030             ; (L)転送ﾃﾞｰﾀNo.
+CON
+ZRES DM1040 DM1048       ; （L)ABSﾃﾞｰﾀ  (計算用領域)
+CON
+SET MR2006               ; (L)ABS転送ﾓｰﾄﾞ
+CON
+SET R51714               ; (L)現在位置取得中
+CON
+JMP @MR000
+;＜現在位置データ＞
+STG @MR000
+AND R1005                ; (L)送信ﾃﾞｰﾀ準備完了
+INC DM1030               ; (L)転送ﾃﾞｰﾀNo.
+CON
+SET MR2007               ; (L)ABS要求
+CON
+JMP @MR001
+STG @MR001
+ANB R1005                ; (L)送信ﾃﾞｰﾀ準備完了
+JMP @MR002
+CAL+ DM1044 @MR400 DM1044; (L)ﾁｪｯｸｻﾑ照合用ﾃﾞｰﾀ  (L)ABS bit1  (L)ﾁｪｯｸｻﾑ照合用ﾃﾞｰﾀ
+CAL*.D @MR400 DM1059 DM1063;(L)ABS bit1  （L)ﾃﾞｰﾀｼﾌﾄ用ﾃﾞｰﾀ  （L)ABS_取込値
+CAL+.D DM1040 DM1063 DM1040;（L)ABSﾃﾞｰﾀ  （L)ABS_取込値  （L)ABSﾃﾞｰﾀ
+CAL*.D DM1059 #4 DM1059  ; （L)ﾃﾞｰﾀｼﾌﾄ用ﾃﾞｰﾀ  （L)ﾃﾞｰﾀｼﾌﾄ用ﾃﾞｰﾀ
+STG @MR002
+RES MR2007               ; (L)ABS要求
+CON
+MPS
+AND< DM1030 #16          ; (L)転送ﾃﾞｰﾀNo.
+JMP @MR000
+MPP
+AND= DM1030 #16          ; (L)転送ﾃﾞｰﾀNo.
+DW.D #1 DM1059           ; （L)ﾃﾞｰﾀｼﾌﾄ用ﾃﾞｰﾀ
+CON
+DW #0 DM1030             ; (L)転送ﾃﾞｰﾀNo.
+CON
+JMP @MR003
+;＜チェックサムデータ＞
+STG @MR003
+AND R1005                ; (L)送信ﾃﾞｰﾀ準備完了
+INC DM1030               ; (L)転送ﾃﾞｰﾀNo.
+CON
+SET MR2007               ; (L)ABS要求
+CON
+JMP @MR004
+STG @MR004
+ANB R1005                ; (L)送信ﾃﾞｰﾀ準備完了
+JMP @MR005
+CAL*.D @MR400 DM1059 DM1063;(L)ABS bit1  （L)ﾃﾞｰﾀｼﾌﾄ用ﾃﾞｰﾀ  （L)ABS_取込値
+CAL+.D DM1045 DM1063 DM1045;（L)ﾁｪｯｸｻﾑﾃﾞｰﾀ  （L)ABS_取込値  （L)ﾁｪｯｸｻﾑﾃﾞｰﾀ
+CAL*.D DM1059 #4 DM1059  ; （L)ﾃﾞｰﾀｼﾌﾄ用ﾃﾞｰﾀ  （L)ﾃﾞｰﾀｼﾌﾄ用ﾃﾞｰﾀ
+STG @MR005
+RES MR2007               ; (L)ABS要求
+CON
+MPS
+AND< DM1030 #3           ; (L)転送ﾃﾞｰﾀNo.
+JMP @MR003
+MPP
+AND= DM1030 #3           ; (L)転送ﾃﾞｰﾀNo.
+DW #0 DM1030             ; (L)転送ﾃﾞｰﾀNo.
+CON
+JMP @MR006
+;＜終了処理＞
+STG @MR006
+DW.D #0 DM11060          ; Y1 現在座標変更（下位）
+CON
+LDA.D DM1040             ; （L)ABSﾃﾞｰﾀ
+CON
+NEG.D
+CON
+STA.D DM11052            ; X1 現在座標変更（下位）
+CON
+JMP @MR007
+STG @MR007
+SET MR11306              ; X1 現在座標書込み要求
+CON
+JMP @MR008
+STG @MR008
+AND R10106               ; X1現在座標書込み完了
+RES MR11306              ; X1 現在座標書込み要求
+CON
+JMP @MR009
+STG @MR009
+SET MR11606              ; Y1 現在座標書込み要求
+CON
+JMP @MR010
+STG @MR010
+AND R10406               ; Y1現在座標書込み完了
+RES MR11606              ; Y1 現在座標書込み要求
+CON
+JMP @MR011
+STG @MR011
+AND R1005                ; (L)送信ﾃﾞｰﾀ準備完了
+RES MR2006               ; (L)ABS転送ﾓｰﾄﾞ
+CON
+JMP @MR012
+STG @MR012
+ANB R1005                ; (L)送信ﾃﾞｰﾀ準備完了
+RES R51714               ; (L)現在位置取得中
+CON
+JMP @MR013
+STG @MR013
+MPS
+AND= DM1044 DM1045       ; (L)ﾁｪｯｸｻﾑ照合用ﾃﾞｰﾀ  （L)ﾁｪｯｸｻﾑﾃﾞｰﾀ
+RES @MR015               ; ﾘﾄﾗｲ
+CON
+SET R51715               ; (L)ABSﾃﾞｰﾀ取込完了
+CON
+ENDS
+MPP
+AND<> DM1045 DM1044      ; （L)ﾁｪｯｸｻﾑﾃﾞｰﾀ  (L)ﾁｪｯｸｻﾑ照合用ﾃﾞｰﾀ
+TMR @1 #5
+CON
+AND @T1
+RES MR11210              ; X1 Servo ON
+CON
+MPS
+ANB @MR015               ; ﾘﾄﾗｲ
+JMP @MR101
+MPP
+AND @MR015               ; ﾘﾄﾗｲ
+SET MR303                ; RB(L)ABSﾃﾞｰﾀ転送異常
+CON
+JMP @MR101
+;転送ｴﾗｰ処理(TRAP処理に変更かも)
+STG @MR100
+SET @MR015               ; ﾘﾄﾗｲ
+CON
+TMR @2 #10
+CON
+AND @T2
+JMP R51700               ; (L)ABSﾃﾞｰﾀ取込
+STG @MR101
+ANB MR303                ; RB(L)ABSﾃﾞｰﾀ転送異常
+AND R50110               ; Err 転写(L)UT
+AND R50014               ; 異常発生ｴﾗｰﾘｾｯﾄsw ON
+SET R51006               ; 治具(L)ｽﾀｰﾄﾗﾝﾌﾟ点滅
+CON
+JMP @MR102
+STG @MR102
+AND R51301               ; 治具(L)ｴﾗｰﾘｾｯﾄsw ON
+JMP @MR103
+STG @MR103
+ANB R50110               ; Err 転写(L)UT
+ANB R50014               ; 異常発生ｴﾗｰﾘｾｯﾄsw ON
+ANB R51301               ; 治具(L)ｴﾗｰﾘｾｯﾄsw ON
+RES @MR015               ; ﾘﾄﾗｲ
+CON
+SET R51007               ; 治具(L)ｽﾀｰﾄﾗﾝﾌﾟ点灯
+CON
+JMP R51700               ; (L)ABSﾃﾞｰﾀ取込
+;*****　(R)現在位置取得　*****
+;＜開始処理＞
+STG R52700               ; (R)ABSﾃﾞｰﾀ取込
+ANB R52714               ; (R)現在位置取得中
+SET MR11810              ; X2 Servo ON
+CON
+DW.D #1 DM1068           ; （R)ﾃﾞｰﾀｼﾌﾄ用ﾃﾞｰﾀ
+CON
+DW #0 DM1031             ; (R)転送ﾃﾞｰﾀNo.
+CON
+ZRES DM1050 DM1058       ; （R)ABSﾃﾞｰﾀ  (計算用領域)
+CON
+SET MR2008               ; (R)ABS転送ﾓｰﾄﾞ
+CON
+SET R52714               ; (R)現在位置取得中
+CON
+JMP @MR200
+;＜現在位置データ＞
+STG @MR200
+AND R1008                ; (R)送信ﾃﾞｰﾀ準備完了
+INC DM1031               ; (R)転送ﾃﾞｰﾀNo.
+CON
+SET MR2009               ; (R)ABS要求
+CON
+JMP @MR201
+STG @MR201
+ANB R1008                ; (R)送信ﾃﾞｰﾀ準備完了
+JMP @MR202
+CAL+ DM1054 @MR600 DM1054; (R)ﾁｪｯｸｻﾑ照合用ﾃﾞｰﾀ  (R)ABS bit1  (R)ﾁｪｯｸｻﾑ照合用ﾃﾞｰﾀ
+CAL*.D @MR600 DM1068 DM1072;(R)ABS bit1  （R)ﾃﾞｰﾀｼﾌﾄ用ﾃﾞｰﾀ  （R)ABS_取込値
+CAL+.D DM1050 DM1072 DM1050;（R)ABSﾃﾞｰﾀ  （R)ABS_取込値  （R)ABSﾃﾞｰﾀ
+CAL*.D DM1068 #4 DM1068  ; （R)ﾃﾞｰﾀｼﾌﾄ用ﾃﾞｰﾀ  （R)ﾃﾞｰﾀｼﾌﾄ用ﾃﾞｰﾀ
+STG @MR202
+RES MR2009               ; (R)ABS要求
+CON
+MPS
+AND< DM1031 #16          ; (R)転送ﾃﾞｰﾀNo.
+JMP @MR200
+MPP
+AND= DM1031 #16          ; (R)転送ﾃﾞｰﾀNo.
+DW.D #1 DM1068           ; （R)ﾃﾞｰﾀｼﾌﾄ用ﾃﾞｰﾀ
+CON
+DW #0 DM1031             ; (R)転送ﾃﾞｰﾀNo.
+CON
+JMP @MR203
+;＜チェックサムデータ＞
+STG @MR203
+AND R1008                ; (R)送信ﾃﾞｰﾀ準備完了
+INC DM1031               ; (R)転送ﾃﾞｰﾀNo.
+CON
+SET MR2009               ; (R)ABS要求
+CON
+JMP @MR204
+STG @MR204
+ANB R1008                ; (R)送信ﾃﾞｰﾀ準備完了
+JMP @MR205
+CAL*.D @MR600 DM1068 DM1072;(R)ABS bit1  （R)ﾃﾞｰﾀｼﾌﾄ用ﾃﾞｰﾀ  （R)ABS_取込値
+CAL+.D DM1055 DM1072 DM1055;（R)ﾁｪｯｸｻﾑﾃﾞｰﾀ  （R)ABS_取込値  （R)ﾁｪｯｸｻﾑﾃﾞｰﾀ
+CAL*.D DM1068 #4 DM1068  ; （R)ﾃﾞｰﾀｼﾌﾄ用ﾃﾞｰﾀ  （R)ﾃﾞｰﾀｼﾌﾄ用ﾃﾞｰﾀ
+STG @MR205
+RES MR2009               ; (R)ABS要求
+CON
+MPS
+AND< DM1031 #3           ; (R)転送ﾃﾞｰﾀNo.
+JMP @MR203
+MPP
+AND= DM1031 #3           ; (R)転送ﾃﾞｰﾀNo.
+DW #0 DM1031             ; (R)転送ﾃﾞｰﾀNo.
+CON
+JMP @MR206
+;＜終了処理＞
+STG @MR206
+LDA.D DM1050             ; （R)ABSﾃﾞｰﾀ
+CON
+NEG.D
+CON
+STA.D DM11068            ; X2 現在座標変更（下位）
+CON
+DW.D #0 DM11076          ; Y2 現在座標変更（下位）
+CON
+JMP @MR207
+STG @MR207
+SET MR11906              ; X2 現在座標書込み要求
+CON
+JMP @MR208
+STG @MR208
+AND R10706               ; X2現在座標書込み完了
+RES MR11906              ; X2 現在座標書込み要求
+CON
+JMP @MR209
+STG @MR209
+SET MR12206              ; Y2 現在座標書込み要求
+CON
+JMP @MR210
+STG @MR210
+AND R11006               ; Y2現在座標書込み完了
+RES MR12206              ; Y2 現在座標書込み要求
+CON
+JMP @MR211
+STG @MR211
+AND R1008                ; (R)送信ﾃﾞｰﾀ準備完了
+RES MR2008               ; (R)ABS転送ﾓｰﾄﾞ
+CON
+JMP @MR212
+STG @MR212
+ANB R1008                ; (R)送信ﾃﾞｰﾀ準備完了
+RES R52714               ; (R)現在位置取得中
+CON
+JMP @MR213
+STG @MR213
+MPS
+AND= DM1054 DM1055       ; (R)ﾁｪｯｸｻﾑ照合用ﾃﾞｰﾀ  （R)ﾁｪｯｸｻﾑﾃﾞｰﾀ
+RES @MR215               ; ﾘﾄﾗｲ
+CON
+SET R52715               ; (R)ABSﾃﾞｰﾀ取込完了
+CON
+ENDS
+MPP
+AND<> DM1055 DM1054      ; （R)ﾁｪｯｸｻﾑﾃﾞｰﾀ  (R)ﾁｪｯｸｻﾑ照合用ﾃﾞｰﾀ
+TMR @0 #5
+CON
+AND @T0
+RES MR11810              ; X2 Servo ON
+CON
+MPS
+ANB @MR215               ; ﾘﾄﾗｲ
+JMP @MR300
+MPP
+AND @MR215               ; ﾘﾄﾗｲ
+SET MR601                ; RB(R)ABSﾃﾞｰﾀ転送異常
+CON
+JMP @MR301
+;転送ｴﾗｰ処理(TRAP処理に変更かも)
+STG @MR300
+SET @MR215               ; ﾘﾄﾗｲ
+CON
+TMR @3 #10
+CON
+AND @T3
+JMP R52700               ; (R)ABSﾃﾞｰﾀ取込
+STG @MR301
+ANB MR601                ; RB(R)ABSﾃﾞｰﾀ転送異常
+AND R50113               ; Err 転写(R)UT
+AND R50014               ; 異常発生ｴﾗｰﾘｾｯﾄsw ON
+SET R52006               ; 治具(R)ｽﾀｰﾄﾗﾝﾌﾟ点滅
+CON
+JMP @MR302
+STG @MR302
+AND R52301               ; 治具(R)ｴﾗｰﾘｾｯﾄsw ON
+JMP @MR303
+STG @MR303
+ANB R50113               ; Err 転写(R)UT
+ANB R50014               ; 異常発生ｴﾗｰﾘｾｯﾄsw ON
+ANB R52301               ; 治具(R)ｴﾗｰﾘｾｯﾄsw ON
+RES @MR215               ; ﾘﾄﾗｲ
+CON
+SET R52007               ; 治具(R)ｽﾀｰﾄﾗﾝﾌﾟ点灯
+CON
+JMP R52700               ; (R)ABSﾃﾞｰﾀ取込
+END
+ENDH

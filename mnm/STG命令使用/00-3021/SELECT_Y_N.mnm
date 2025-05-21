@@ -1,0 +1,227 @@
+DEVICE:53
+;MODULE:SELECT_Y_N
+;MODULE_TYPE:1
+;OneSystem SupportMacro
+;
+;-----------------------------------------
+;Macro Name 	: 	SELECT_Y_N
+;Macro Type	:	Self Holding
+;Function	:	Yes/No選択画面表示
+;-----------------------------------------
+;
+;Copylight(C) 2011 SEIKO EPSON Corp. All rights reserved.
+;引数：
+;	V0	=	表示ｸﾞﾙｰﾌﾟ番号			#1～8
+;	V1	=	ﾀｽｸ番号					#0～31	
+;	V2	=	画面番号				#0～31
+;	V3	=	ﾌﾞｻﾞｰ有無				#0=ﾌﾞｻﾞｰ無し、#1=ﾌﾞｻﾞｰ有り
+;	P9	=	Yes/No選択肢			#1=Yesが選択、#2=Noが選択		(戻り値)
+;	
+;機能：
+;	指定TPに指定画面番号のYes/No選択画面を表示し、選択肢番号を戻り値として格納する
+LD R59915                ; _運転ﾓｰﾄﾞ指定
+MOV #0 P9                ; Yes/No
+MEND
+LD R46104                ; _非常停止中　ﾓｰﾄﾞﾌﾗｸﾞ
+ZRES @R000 @R015         ; ﾏｸﾛ実行中  ﾏｸﾛ異常発生
+CON
+MEND
+;<h1/>Argumant Range Check/引数範囲ﾁｪｯｸ
+LD< V0 #1                ; Group_No
+OR> V0 #8                ; Group_No
+OR< V1 #0                ; Task_No
+OR> V1 #100              ; Task_No
+LD> V1 #31               ; Task_No
+AND< V1 #100             ; Task_No
+ORL
+OR< V2 #0                ; Screen_No
+OR> V2 #31               ; Screen_No
+OR< V3 #0                ; Bz_Use
+OR> V3 #1                ; Bz_Use
+SET R40008               ; _ｻﾎﾟｰﾄﾏｸﾛ引数異常発生
+CON
+SET @R015                ; ﾏｸﾛ異常発生
+;<h1/>Init/初期化
+LD @CR2008
+ORB @R000                ; ﾏｸﾛ実行中
+ANB R59915               ; _運転ﾓｰﾄﾞ指定
+MOV #0 P9                ; Yes/No
+MOV #0 @EM0              ; Y/N選択肢
+;<h1/>Pause Request/ﾎﾟｰｽﾞ要求
+;・ﾏｸﾛ実行中にPAUSE要求にてHALT実施
+LDB R59915               ; _運転ﾓｰﾄﾞ指定
+AND<> V1 #100            ; Task_No
+MPS
+LDA V0                   ; Group_No
+CON
+SUB #1
+CON
+MUL #32
+CON
+ADD V1                   ; Task_No
+CON
+STA Z9
+MRD
+LDA V0                   ; Group_No
+CON
+SUB #1
+CON
+STA Z10
+MPP
+AND R44200:Z10           ; _Grp1     ﾎﾟｰｽﾞ要求
+SET R42600:Z9            ; _Grp1_Task0_ﾎﾟｰｽﾞ許可
+;<h1/>Exclusive/排他占有
+;・優先ｴﾗｰ、通常ｴﾗｰ解除待ち
+;・Input系とSelect系は同一排他(画面表示領域が同じなので)解除待ち
+LDB R59915               ; _運転ﾓｰﾄﾞ指定
+LDA V0                   ; Group_No
+CON
+SUB #1
+CON
+STA Z10
+CON
+ANB R46104               ; _非常停止中　ﾓｰﾄﾞﾌﾗｸﾞ
+ANB R46208:Z10           ; _Group1　ｴﾗｰ発生中
+ANB R48008:Z10           ; _Group1　画面処理排他
+SET R48008:Z10           ; _Group1　画面処理排他
+SET @R000                ; ﾏｸﾛ実行中
+CON
+SET @R001                ; YN画面表示
+;<h1/>Select Yes No Display/YesNo選択画面表示
+STG @R001                ; YN画面表示
+MPS
+LDA V0                   ; Group_No
+CON
+SUB #1
+CON
+MUL #2
+CON
+STA Z8
+MRD
+LDA V0                   ; Group_No
+CON
+SUB #1
+CON
+MUL #4
+CON
+STA Z9
+MRD
+LDA V0                   ; Group_No
+CON
+SUB #1
+CON
+STA Z10
+MRD
+MOV V2 DM8156:Z8         ; Screen_No  _Y_Nﾒｯｾｰｼﾞ番号
+MRD
+AND= V3 #1               ; Bz_Use
+SET R48210:Z9            ; _Group1　ｼｽﾃﾑﾌﾞｻﾞｰ要求3
+MPP
+TMH @0 #5                ; 表示ﾃﾞｨﾚｲ
+CON
+AND @T0                  ; 表示ﾃﾞｨﾚｲ
+SET R53700:Z10           ; _Y/N画面表示
+CON
+JMP @R002                ; YN選択肢待ち
+;<h1/>YesNo Choice Waiting/YesNo選択待ち
+LD @R002                 ; YN選択肢待ち
+MPS
+LDA V0                   ; Group_No
+CON
+SUB #1
+CON
+MUL #2
+CON
+STA Z8
+MRD
+LDA V0                   ; Group_No
+CON
+SUB #1
+CON
+STA Z10
+MPP
+LDB R44200:Z10           ; _Grp1     ﾎﾟｰｽﾞ要求
+AND<> DM8157:Z8 #0       ; _Y_N選択肢
+ANL
+MOV DM8157:Z8 @EM0       ; _Y_N選択肢  Y/N選択肢
+;Error発生中はｴﾗｰ画面表示優先でY/N画面は消去
+;Error解除待ち
+STG @R002                ; YN選択肢待ち
+MPS
+LDA V0                   ; Group_No
+CON
+SUB #1
+CON
+STA Z10
+MRD
+AND R46208:Z10           ; _Group1　ｴﾗｰ発生中
+RES R53700:Z10           ; _Y/N画面表示
+MRD
+ANB R46208:Z10           ; _Group1　ｴﾗｰ発生中
+SET R53700:Z10           ; _Y/N画面表示
+MPP
+AND<> @EM0 #0            ; Y/N選択肢
+RES R53700:Z10           ; _Y/N画面表示
+CON
+JMP @R003                ; YN排他開放
+;<h1/>End Process/終了処理
+STG @R003                ; YN排他開放
+MPS
+LDA V0                   ; Group_No
+CON
+SUB #1
+CON
+MUL #20
+CON
+STA Z10
+MRD
+LDA V0                   ; Group_No
+CON
+SUB #1
+CON
+MUL #2
+CON
+STA Z8
+MRD
+LDA V0                   ; Group_No
+CON
+SUB #1
+CON
+MUL #4
+CON
+STA Z9
+MRD
+LDA V0                   ; Group_No
+CON
+SUB #1
+CON
+MUL #32
+CON
+ADD #1
+CON
+STA Z7
+MPP
+AND<> DM3000:Z10 #1110   ; _MainTP　表示中ﾍﾟｰｼﾞNo
+FMOV #0 DM8156:Z8 #2     ; _Y_Nﾒｯｾｰｼﾞ番号
+MPS
+RES R48210:Z9            ; _Group1　ｼｽﾃﾑﾌﾞｻﾞｰ要求3
+CON
+RES R42600:Z7            ; _Grp1_Task0_ﾎﾟｰｽﾞ許可
+MRD
+LDA V0                   ; Group_No
+CON
+SUB #1
+CON
+STA Z10
+CON
+RES R48008:Z10           ; _Group1　画面処理排他
+MRD
+MOV @EM0 P9              ; Y/N選択肢  Yes/No
+MRD
+MEND
+MPP
+RES @R000                ; ﾏｸﾛ実行中
+CON
+ENDS
+END
+ENDH

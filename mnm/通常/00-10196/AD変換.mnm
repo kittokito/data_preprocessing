@@ -1,0 +1,39 @@
+DEVICE:128
+;MODULE:AD変換
+;MODULE_TYPE:0
+LD CR2002                ; 常時ON
+FLIK K20 K20 M5          ; 0.4sec
+LD M0                    ; 常時ON
+MPS
+LDA.S D10001             ; ch0 特殊ﾃﾞｰﾀ
+CON
+EXT.S
+CON
+STA.L D2010              ; CH0_ﾃﾞｼﾞﾀﾙ値
+MRD
+MOV.L +3125 D2012        ; 真空圧演算値(1000000/3200)
+MRD
+CAL*.L D2010 D2012 D2014 ; CH0_ﾃﾞｼﾞﾀﾙ値  真空圧演算値(1000000/3200)  真空圧演算値(Pa値)
+MRD
+CAL/.L D2014 +1000 D2020 ; 真空圧演算値(Pa値)  真空圧演算値(kPa値)
+MRD
+BMOV.D D25002 D25004 K15 ; 移動平均ﾃﾞｰﾀ1  移動平均ﾃﾞｰﾀ2
+MRD
+MOV.L D2020 D25002       ; 真空圧演算値(kPa値)  移動平均ﾃﾞｰﾀ1
+MRD
+AVG.L D25002 K15         ; 移動平均ﾃﾞｰﾀ1
+CON
+STA.L D25000             ; 移動平均真空圧値(kPa)
+MRD
+ANP M5                   ; 0.4sec
+MOV.L D25000 D2024       ; 移動平均真空圧値(kPa)  TP表示用真空圧演算値(kPa値)
+MPP
+LD<=.L D25000 D504       ; 移動平均真空圧値(kPa)  大気圧誤差設定値(＋)
+AND>=.L D25000 D506      ; 移動平均真空圧値(kPa)  大気圧誤差設定値(－)
+ANL
+OUT M350                 ; 大気圧
+LD M25                   ; 手動選択中
+AND M350                 ; 大気圧
+OUT M351                 ; 手動操作中大気圧
+END
+ENDH

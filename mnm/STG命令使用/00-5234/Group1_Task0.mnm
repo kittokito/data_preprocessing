@@ -1,0 +1,4463 @@
+DEVICE:53
+;MODULE:Group1_Task0
+;MODULE_TYPE:0
+;SCRIPT_TYPE:
+;OneSystem Main-Module
+;
+;-----------------------------------------
+;ModuleName	:	Group1_Task0
+;ModuleType	:	Main Module
+;Line		:	E252V Valve assy
+;Cell		: 	Filter Blanking & welding
+;Function	:	SCARA RB 
+;-----------------------------------------
+;<<Task LocalDevice>>
+;/*項目			/*割付ｴﾘｱ				/*備考
+;---------------------------------------------------------------------			
+;Emergency		@MR000～@MR015			Emergency処理時RESET禁止ｴﾘｱ
+;Free			@MR100～@MR915			ﾕｰｻﾞｰﾌﾘｰｴﾘｱ
+;HOME			@MR1000～@MR1515		HOME動作時使用ｴﾘｱ
+;MAINTENANCE		@MR2000～@MR2915		MAINTE動作時使用ｴﾘｱ
+;AUTO(Main1)		@MR3000～@MR3915		AUTO(Main1)動作時使用ｴﾘｱ
+;	(Main2)		@MR4000～@MR4415		AUTO(Main2)動作時使用ｴﾘｱ
+;SubRoutine		@MR4500～@MR6415		ｻﾌﾞﾙｰﾁﾝ共通動作使用ｴﾘｱ　※状況により増設してください。
+;----------------------------------------------------------------------
+;<h1/>Device_Init/ﾃﾞﾊﾞｲｽ初期化
+;[内容]
+;・非常停止、優先ｴﾗｰ発生時に初期化したいﾃﾞﾊﾞｲｽを指定して下さい
+;※本Taskで使用するﾛｰｶﾙﾃﾞﾊﾞｲｽなど
+;※STG～JMPにて使用しているﾃﾞﾊﾞｲｽは必須
+LDP R46104               ; _非常停止中　ﾓｰﾄﾞﾌﾗｸﾞ
+ZRES @MR100 @MR6815      ; Task0 ERROR  終了
+;<h1/>Task_Monitor/ﾀｽｸﾓﾆﾀｰ
+LD CR2002                ; 常時ON
+FLIK #50 #50 @MR000
+LD= DM60000 MyTask       ; TaskNo /ERROR_DISP  自ﾀｽｸ番号
+AND R46208               ; _Group1　ｴﾗｰ発生中
+OUT @MR001               ; TASK0 ERROR
+;ON STG Main1
+;TYPE EM600.U,EM601.U,@MR000.U,@MR3000.U
+;
+;FOR EM600 = EM600 TO 160 STEP 16
+;	IF @MR3000:EM600 <> 0 THEN
+;		BREAK
+;	END IF	
+;NEXT
+;	
+;IF EM600 < 160 THEN
+;	EM601 = (EM600 / 16) * 100 + DMX(@MR3000:EM600) + #3000
+;END IF		
+;		
+;EM600 = EM600 + 16		
+;IF EM600 > 160 THEN		
+;	EM600 = 0	
+;END IF
+LDP @MR000
+NCJ #1000
+;TYPE EM600.U,EM601.U,@MR000.U,@MR3000.U
+;
+;FOR EM600 = EM600 TO 160 STEP 16
+;
+LD CR2002                ; 常時ON
+MOV EM600 EM600          ; Task0 Main1@MR  Task0 Main1@MR
+LABEL #2000
+LD> EM600 #160           ; Task0 Main1@MR
+CJ #2001
+;	IF @MR3000:EM600 <> 0 THEN
+;
+LD CR2002                ; 常時ON
+LDA EM600                ; Task0 Main1@MR
+CON
+EXT
+CON
+STA.L Z12
+LD<> @MR3000:Z12 #0      ; AUTO Main1
+NCJ #2002
+;		BREAK
+;
+LD CR2002                ; 常時ON
+CJ #2003
+;	END IF	
+;
+LABEL #2002
+;NEXT
+;
+LD CR2002                ; 常時ON
+LDA EM600                ; Task0 Main1@MR
+CON
+ADD #16
+CON
+STA EM600                ; Task0 Main1@MR
+LDB CR2009               ; 演算結果が負
+CJ #2000
+LABEL #2003
+LABEL #2001
+;IF EM600 < 160 THEN
+;
+LD< EM600 #160           ; Task0 Main1@MR
+NCJ #2004
+;	EM601 = (EM600 / 16) * 100 + DMX(@MR3000:EM600) + #3000
+;
+LD CR2002                ; 常時ON
+LDA EM600                ; Task0 Main1@MR
+CON
+EXT
+CON
+STA.L Z12
+CON
+LDA @MR3000:Z12          ; AUTO Main1
+CON
+DMX
+CON
+STA @VM0
+CON
+LDA EM600                ; Task0 Main1@MR
+CON
+EXT
+CON
+EXT.L
+CON
+DIV.L +16
+CON
+MUL.L +100
+CON
+STA.L @VM1
+CON
+LDA @VM0
+CON
+EXT
+CON
+ADD.L @VM1
+CON
+ADD.L +3000
+CON
+STA EM601                ; Task0 Main1@MR
+;END IF		
+;
+LABEL #2004
+;EM600 = EM600 + 16		
+;
+LD CR2002                ; 常時ON
+LDA EM600                ; Task0 Main1@MR
+CON
+EXT
+CON
+ADD.L +16
+CON
+STA EM600                ; Task0 Main1@MR
+;IF EM600 > 160 THEN		
+;
+LD> EM600 #160           ; Task0 Main1@MR
+NCJ #2005
+;	EM600 = 0	
+;
+LD CR2002                ; 常時ON
+MOV #0 EM600             ; Task0 Main1@MR
+;END IF
+LABEL #2005
+LABEL #1000
+;
+;ON STG Main2
+;TYPE EM602.U,EM603.U,@MR4000.U
+;
+;FOR EM602 = EM602 TO 80 STEP 16
+;	IF @MR4000:EM602 <> 0 THEN
+;		BREAK
+;	END IF	
+;NEXT	
+;
+;IF EM602 < 80 THEN
+;	EM603 = (EM602 / 16) * 100 + DMX(@MR4000:EM602) + #4000
+;END IF
+;
+;EM602 = EM602 + 16		
+;
+;IF EM602 > 80 THEN
+;	EM602 = 0	
+;END IF
+LDP @MR000
+NCJ #1001
+;TYPE EM602.U,EM603.U,@MR4000.U
+;
+;FOR EM602 = EM602 TO 80 STEP 16
+;
+LD CR2002                ; 常時ON
+MOV EM602 EM602          ; Task0 Main2@MR  Task0 Main2@MR
+LABEL #2006
+LD> EM602 #80            ; Task0 Main2@MR
+CJ #2007
+;	IF @MR4000:EM602 <> 0 THEN
+;
+LD CR2002                ; 常時ON
+LDA EM602                ; Task0 Main2@MR
+CON
+EXT
+CON
+STA.L Z12
+LD<> @MR4000:Z12 #0      ; AUTO Main2
+NCJ #2008
+;		BREAK
+;
+LD CR2002                ; 常時ON
+CJ #2009
+;	END IF	
+;
+LABEL #2008
+;NEXT	
+;
+LD CR2002                ; 常時ON
+LDA EM602                ; Task0 Main2@MR
+CON
+ADD #16
+CON
+STA EM602                ; Task0 Main2@MR
+LDB CR2009               ; 演算結果が負
+CJ #2006
+LABEL #2009
+LABEL #2007
+;IF EM602 < 80 THEN
+;
+LD< EM602 #80            ; Task0 Main2@MR
+NCJ #2010
+;	EM603 = (EM602 / 16) * 100 + DMX(@MR4000:EM602) + #4000
+;
+LD CR2002                ; 常時ON
+LDA EM602                ; Task0 Main2@MR
+CON
+EXT
+CON
+STA.L Z12
+CON
+LDA @MR4000:Z12          ; AUTO Main2
+CON
+DMX
+CON
+STA @VM3
+CON
+LDA EM602                ; Task0 Main2@MR
+CON
+EXT
+CON
+EXT.L
+CON
+DIV.L +16
+CON
+MUL.L +100
+CON
+STA.L @VM4
+CON
+LDA @VM3
+CON
+EXT
+CON
+ADD.L @VM4
+CON
+ADD.L +4000
+CON
+STA EM603                ; Task0 Main2@MR
+;END IF
+;
+LABEL #2010
+;EM602 = EM602 + 16		
+;
+LD CR2002                ; 常時ON
+LDA EM602                ; Task0 Main2@MR
+CON
+EXT
+CON
+ADD.L +16
+CON
+STA EM602                ; Task0 Main2@MR
+;IF EM602 > 80 THEN
+;
+LD> EM602 #80            ; Task0 Main2@MR
+NCJ #2011
+;	EM602 = 0	
+;
+LD CR2002                ; 常時ON
+MOV #0 EM602             ; Task0 Main2@MR
+;END IF
+LABEL #2011
+LABEL #1001
+;
+;ON STG SubRoutine
+;TYPE EM604.U,EM605.U,@MR4500.U
+;	
+;FOR EM604 = EM604 TO 320 STEP 16
+;	IF @MR4500:EM604 <> 0 THEN
+;		BREAK
+;	END IF	
+;NEXT
+;		
+;IF EM604 < 320 THEN
+;	EM605 = (EM604 / 16) * 100 + DMX(@MR4500:EM604) + #4500
+;END IF
+;		
+;EM604 = EM604 + 16	
+;
+;IF EM604 > 320 THEN
+;   EM604 = 0
+;END IF
+LDP @MR000
+NCJ #1002
+;TYPE EM604.U,EM605.U,@MR4500.U
+;
+;FOR EM604 = EM604 TO 320 STEP 16
+;
+LD CR2002                ; 常時ON
+MOV EM604 EM604          ; Task0 Sub@MR  Task0 Sub@MR
+LABEL #2012
+LD> EM604 #320           ; Task0 Sub@MR
+CJ #2013
+;	IF @MR4500:EM604 <> 0 THEN
+;
+LD CR2002                ; 常時ON
+LDA EM604                ; Task0 Sub@MR
+CON
+EXT
+CON
+STA.L Z12
+LD<> @MR4500:Z12 #0      ; ﾌｰﾌﾟ1/2ﾌｨﾙﾀ取出
+NCJ #2014
+;		BREAK
+;
+LD CR2002                ; 常時ON
+CJ #2015
+;	END IF	
+;
+LABEL #2014
+;NEXT
+;
+LD CR2002                ; 常時ON
+LDA EM604                ; Task0 Sub@MR
+CON
+ADD #16
+CON
+STA EM604                ; Task0 Sub@MR
+LDB CR2009               ; 演算結果が負
+CJ #2012
+LABEL #2015
+LABEL #2013
+;IF EM604 < 320 THEN
+;
+LD< EM604 #320           ; Task0 Sub@MR
+NCJ #2016
+;	EM605 = (EM604 / 16) * 100 + DMX(@MR4500:EM604) + #4500
+;
+LD CR2002                ; 常時ON
+LDA EM604                ; Task0 Sub@MR
+CON
+EXT
+CON
+STA.L Z12
+CON
+LDA @MR4500:Z12          ; ﾌｰﾌﾟ1/2ﾌｨﾙﾀ取出
+CON
+DMX
+CON
+STA @VM6
+CON
+LDA EM604                ; Task0 Sub@MR
+CON
+EXT
+CON
+EXT.L
+CON
+DIV.L +16
+CON
+MUL.L +100
+CON
+STA.L @VM7
+CON
+LDA @VM6
+CON
+EXT
+CON
+ADD.L @VM7
+CON
+ADD.L +4500
+CON
+STA EM605                ; Task0 Sub@MR
+;END IF
+;
+LABEL #2016
+;EM604 = EM604 + 16	
+;
+LD CR2002                ; 常時ON
+LDA EM604                ; Task0 Sub@MR
+CON
+EXT
+CON
+ADD.L +16
+CON
+STA EM604                ; Task0 Sub@MR
+;IF EM604 > 320 THEN
+;
+LD> EM604 #320           ; Task0 Sub@MR
+NCJ #2017
+;   EM604 = 0
+;
+LD CR2002                ; 常時ON
+MOV #0 EM604             ; Task0 Sub@MR
+;END IF
+LABEL #2017
+LABEL #1002
+;
+;<h1/>Task_Init/ﾀｽｸ初期化
+;[本STG内容]
+;・本Task起動時に必要な初期化処理を記述して下さい
+;・起動Taskの全Init処理終了後、Task_StartのSTGが起動します
+STG LR800                ; _Grp1_Task0_Init.STG
+ENDS
+MOV.D #10 @DM10          ; ﾍｯﾄﾞ除材確認時間
+MOV.D #10 @DM12          ; ﾘﾘｰｽｳｪｲﾄ
+MOV.D #3 @DM14           ; 取出し上空時確認ｳｪｲﾄ
+;<h1/>Task_Start/ﾀｽｸ開始
+;[本STG内容]
+;・Task起動後、以下運転ﾓｰﾄﾞに従い、各STGにJMPします
+;【HOME】	→	LR5200
+;【AUTO】	→	LR5400
+;【MAINTE】	→	LR5600
+;・本STGは追記、修正不要です
+STG LR400                ; _Grp1_Task0_Start.STG
+MPS
+AND R46101               ; _原点復帰中　ﾓｰﾄﾞﾌﾗｸﾞ
+JMP LR5200               ; _Grp1_Task0_HOME.STG
+MRD
+AND R46100               ; _自動運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+JMP LR5400               ; _Grp1_Task0_AUTO.STG
+MPP
+AND R46102               ; _ﾒﾝﾃﾅﾝｽ運転中　ﾓｰﾄﾞﾌﾗｸﾞ
+JMP LR5600               ; _Grp1_Task0_MAINTE.STG
+;<h1/>Task_Finish/ﾀｽｸ終了
+;[本STG内容]
+;・各Taskの終了STGになります
+;・運転ﾓｰﾄﾞに係わらず終了時は本STGを経由して終了して下さい
+;・本STGは追記、修正不要です
+STG LR600                ; _Grp1_Task0_Fin.STG
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+ANB @MR001               ; TASK0 ERROR
+ANL
+RES R42600               ; Grp1_Task0_ﾎﾟｰｽﾞ許可
+CON
+RES R41000               ; _Grp1_Task0_起動中ﾌﾗｸﾞ
+CON
+ENDS
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+;<h1/>HOME/原点復帰
+;[本STG内容]
+;・STG @MR1000の続きから各Taskの原点復帰動作を記述する
+;・動作終了時は@MR1515にJMPする事
+STG LR5200               ; _Grp1_Task0_HOME.STG
+JMP @MR1000              ; HOME
+STG @MR1000              ; HOME
+ZRES @MR801 @MR802       ; ﾌｨﾙﾀ残ﾁｪｯｸ完了  ﾍｯﾄﾞ2ﾌｨﾙﾀ残ﾁｪｯｸ完了
+CON
+SET @MR1002              ; HOME中
+CON
+JMP @MR1005
+;ﾍｯﾄﾞ 上昇
+STG @MR1005
+RES MR7300               ; ﾊﾝﾄﾞ1 下降
+CON
+SET MR7301               ; ﾊﾝﾄﾞ1 上昇
+CON
+RES MR7302               ; ﾊﾝﾄﾞ2 下降
+CON
+SET MR7303               ; ﾊﾝﾄﾞ2 上昇
+CON
+MPS
+LDB MR4501               ; ﾊﾝﾄﾞ1 上昇端異常
+ANB MR4503               ; ﾊﾝﾄﾞ2 上昇端異常
+ANB R4500                ; ﾊﾝﾄﾞ1 下降端
+AND R4501                ; ﾊﾝﾄﾞ1 上昇端
+ANB R4502                ; ﾊﾝﾄﾞ2 下降端
+AND R4503                ; ﾊﾝﾄﾞ2 上昇端
+ANL
+JMP @MR1006
+MPP
+LD MR4501                ; ﾊﾝﾄﾞ1 上昇端異常
+OR MR4503                ; ﾊﾝﾄﾞ2 上昇端異常
+AND R41200               ; TASK0 PAUSE 要求
+ANL
+SET @MR1900              ; Main1 HALT許可
+;ﾌｨﾙﾀ残確認
+STG @MR1006
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+RES MR7501               ; ﾊﾝﾄﾞ1 大気解放
+CON
+SET MR7500               ; ﾊﾝﾄﾞ1 吸引
+CON
+RES MR7503               ; ﾊﾝﾄﾞ2 大気解放
+CON
+SET MR7502               ; ﾊﾝﾄﾞ2 吸引
+CON
+MPS
+LD R4505                 ; ﾊﾝﾄﾞ1吸着   OUT2
+AND R4507                ; ﾊﾝﾄﾞ2吸着   OUT2
+ANL
+TMR @4 #10
+CON
+AND @T4
+SET @MR801               ; ﾌｨﾙﾀ残ﾁｪｯｸ完了
+CON
+JMP @MR1007
+MPP
+LDB R4505                ; ﾊﾝﾄﾞ1吸着   OUT2
+ORB R4507                ; ﾊﾝﾄﾞ2吸着   OUT2
+ANL
+TMR @5 #20
+CON
+AND @T5
+JMP @MR1100
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+;ﾍｯﾄﾞ1吸着OFF
+STG @MR1007
+RES MR7500               ; ﾊﾝﾄﾞ1 吸引
+CON
+RES MR7501               ; ﾊﾝﾄﾞ1 大気解放
+CON
+RES MR7502               ; ﾊﾝﾄﾞ2 吸引
+CON
+RES MR7503               ; ﾊﾝﾄﾞ2 大気解放
+CON
+JMP @MR1100
+;ﾌｨﾙﾀ搬送RB ｻｰﾎﾞON
+STG @MR1100
+SET MR2009               ; SCARA RB 非常停止
+CON
+JMP @MR1101
+LD DM10515.15            ; ﾉｰﾄﾞ31 通信正常
+AND MR2009               ; SCARA RB 非常停止
+TMR @12 #30
+STG @MR1101
+AND @T12
+RES DM11350.0            ; SCRBC1 Start
+CON
+RES DM11350.8            ; SCRBC1 SetMotorsOn
+CON
+RES DM11350.9            ; SCRBC1 SetMotorsOff
+CON
+JMP @MR1102
+STG @MR1102
+SET DM11350.4            ; SCRBC1 Stop 
+CON
+TMR @7 #5
+CON
+AND @T7
+ANB DM11150.1            ; SCRBC1 Running
+RES DM11350.4            ; SCRBC1 Stop 
+CON
+JMP @MR1103
+STG @MR1103
+MPS
+AND DM11150.0            ; SCRBC1 Ready
+SET DM11350.7            ; SCRBC1 Rest 
+CON
+JMP @MR1104
+MPP
+ANB DM11150.0            ; SCRBC1 Ready
+TMR @8 #200
+CON
+AND @T8
+JMP @MR1108
+STG @MR1104
+MPS
+ANB DM11150.4            ; SCRBC1 EstopOn
+RES DM11350.7            ; SCRBC1 Rest 
+CON
+JMP @MR1105
+MPP
+AND DM11150.4            ; SCRBC1 EstopOn
+TMR @9 #200
+CON
+AND @T9
+RES DM11350.7            ; SCRBC1 Rest 
+CON
+JMP @MR1108
+STG @MR1105
+MPS
+LDB DM11150.3            ; SCRBC1 Error
+ANB DM11150.6            ; SCRBC1 SError
+ANL
+SET DM11350.8            ; SCRBC1 SetMotorsOn
+CON
+AND DM11150.8            ; SCRBC1 MotorsOn
+RES DM11350.7            ; SCRBC1 Rest 
+CON
+JMP @MR1106
+MPP
+TMR @10 #100
+CON
+AND @T10
+RES DM11350.8            ; SCRBC1 SetMotorsOn
+CON
+RES DM11350.7            ; SCRBC1 Rest 
+CON
+JMP @MR1108
+STG @MR1106
+SET DM11350.0            ; SCRBC1 Start
+CON
+MPS
+AND DM11150.1            ; SCRBC1 Running
+SET DM11350.6            ; SCRBC1 Continue
+CON
+ANB DM11150.2            ; SCRBC1 Paused
+RES DM11350.6            ; SCRBC1 Continue
+CON
+JMP @MR1200
+MPP
+ANB DM11150.1            ; SCRBC1 Running
+MPS
+LD DM11150.3             ; SCRBC1 Error
+OR DM11150.6             ; SCRBC1 SError
+ANL
+RES DM11350.8            ; SCRBC1 SetMotorsOn
+CON
+SET DM11350.9            ; SCRBC1 SetMotorsOff
+CON
+RES DM11350.0            ; SCRBC1 Start
+CON
+JMP @MR1108
+MPP
+TMR @11 #100
+CON
+AND @T11
+RES DM11350.8            ; SCRBC1 SetMotorsOn
+CON
+SET DM11350.9            ; SCRBC1 SetMotorsOff
+CON
+RES DM11350.0            ; SCRBC1 Start
+CON
+JMP @MR1108
+;ERR60 ﾌｨﾙﾀ搬送RBｺﾝﾄﾛｰﾗ異常
+STG @MR1108
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+ANB R39004               ; ｴﾗｰ中
+ANL
+SET R39004               ; ｴﾗｰ中
+CON
+DW #60 @DM1              ; ErrorNo /ERROR_DISP
+CON
+DW #4004 @DM2            ; SensorNo /ERROR_DISP
+CON
+DW $1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+SET @MR100               ; Task0 ERROR
+CON
+JMP @MR1109
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR1109
+SET @MR1900              ; Main1 HALT許可
+CON
+AND @MR101               ; Task0 ｴﾗｰ完了
+RES @MR101               ; Task0 ｴﾗｰ完了
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+JMP @MR1101
+;ﾌｨﾙﾀ搬送RB 待機位置
+STG @MR1200
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+DW #1 DM12010            ; SCARA目標ﾎﾟｼﾞｼｮﾝ
+CON
+SET MR20900              ; RC7 移動
+CON
+JMP @MR1201
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR1201
+AND MR20901              ; RC7 移動完了
+RES MR20901              ; RC7 移動完了
+CON
+JMP @MR1202
+;ﾌｨﾙﾀ残ﾁｪｯｸ
+STG @MR1202
+MPS
+AND @MR801               ; ﾌｨﾙﾀ残ﾁｪｯｸ完了
+JMP @MR1300
+MPP
+ANB @MR801               ; ﾌｨﾙﾀ残ﾁｪｯｸ完了
+JMP @MR1203
+;ﾌｨﾙﾀ排出
+STG @MR1203
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+SET @MR6500              ; ﾌﾚｰﾑ排出動作
+CON
+JMP @MR1204
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR1204
+AND @MR6501              ; ﾌﾚｰﾑ排出動作完了
+RES @MR6501              ; ﾌﾚｰﾑ排出動作完了
+CON
+JMP @MR1300
+;ﾀﾞｲｾｯﾄ内ﾌｨﾙﾀ除材
+STG @MR1300
+MPS
+LD R7009                 ; ﾌｨﾙﾀ切断 下降
+AND R4411                ; ﾌｨﾙﾀ切断 下降端
+ANL
+JMP @MR1400
+MPP
+LDB R7009                ; ﾌｨﾙﾀ切断 下降
+ORB R4411                ; ﾌｨﾙﾀ切断 下降端
+ANL
+JMP @MR1301
+STG @MR1301
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+SET @MR800               ; TASK1H/S無しﾌｨﾙﾀ取出し
+CON
+SET @MR4500              ; ﾌｰﾌﾟ1/2ﾌｨﾙﾀ取出
+CON
+JMP @MR1302
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR1302
+AND @MR4501              ; ﾌｰﾌﾟ1/2ﾌｨﾙﾀ取出完了
+RES @MR4501              ; ﾌｰﾌﾟ1/2ﾌｨﾙﾀ取出完了
+CON
+JMP @MR1303
+STG @MR1303
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+SET @MR6500              ; ﾌﾚｰﾑ排出動作
+CON
+JMP @MR1304
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR1304
+AND @MR6501              ; ﾌﾚｰﾑ排出動作完了
+RES @MR6501              ; ﾌﾚｰﾑ排出動作完了
+CON
+JMP @MR1308
+STG @MR1308
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+SET @MR4700              ; ﾌｰﾌﾟ3/4ﾌｨﾙﾀ取出
+CON
+JMP @MR1309
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR1309
+AND @MR4701              ; ﾌｰﾌﾟ3/4ﾌｨﾙﾀ取出完了
+RES @MR800               ; TASK1H/S無しﾌｨﾙﾀ取出し
+CON
+RES @MR4701              ; ﾌｰﾌﾟ3/4ﾌｨﾙﾀ取出完了
+CON
+JMP @MR1310
+STG @MR1310
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+SET @MR6500              ; ﾌﾚｰﾑ排出動作
+CON
+JMP @MR1311
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR1311
+AND @MR6501              ; ﾌﾚｰﾑ排出動作完了
+RES @MR6501              ; ﾌﾚｰﾑ排出動作完了
+CON
+JMP @MR1400
+;ﾌｨﾙﾀ搬送RB 待機位置
+STG @MR1400
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+DW #2 DM12010            ; SCARA目標ﾎﾟｼﾞｼｮﾝ
+CON
+SET MR20900              ; RC7 移動
+CON
+JMP @MR1401
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR1401
+AND MR20901              ; RC7 移動完了
+RES MR20901              ; RC7 移動完了
+CON
+JMP @MR1500
+;HOME end
+STG @MR1500
+ZRES @MR801 @MR802       ; ﾌｨﾙﾀ残ﾁｪｯｸ完了  ﾍｯﾄﾞ2ﾌｨﾙﾀ残ﾁｪｯｸ完了
+CON
+JMP @MR1515              ; HOME END
+STG @MR1515              ; HOME END
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+ANB @MR001               ; TASK0 ERROR
+ANL
+RES @MR1002              ; HOME中
+CON
+JMP LR600                ; _Grp1_Task0_Fin.STG
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+;<h1/>AUTO/自動動作
+STG LR5400               ; _Grp1_Task0_AUTO.STG
+JMP @MR3000              ; AUTO Main1
+;<h1/>Auto-Main1/Autoﾒｲﾝﾙｰﾁﾝ1
+;[本STG内容]
+;・各TaskのAUTO動作を記述して下さい
+;・動作ﾓｰﾄﾞは「AUTOAC」に格納されています(1～32)
+;・@MR3000:AUTO_Main1開始、@MR3001:AUTO_Main1完了、@MR3002:AUTO_Main1動作中
+STG @MR3000              ; AUTO Main1
+MPS
+LDB R47800               ; _Group1　ﾒﾝﾃ動作定停止移行中
+AND= DM5010 #1           ; _AUTO動作番号
+ANB DM2000.3             ; ﾌｨﾙﾀｾｯﾄ無し
+ANL
+MPS
+ANB R57300               ; Task0 停止要求
+SET @MR3002              ; AUTO Main1 Busy
+CON
+SET @MR800               ; TASK1H/S無しﾌｨﾙﾀ取出し
+CON
+JMP @MR3003
+MPP
+AND R57300               ; Task0 停止要求
+JMP @MR3900              ; 終了準備
+MPP
+LD R47800                ; _Group1　ﾒﾝﾃ動作定停止移行中
+OR<> DM5010 #1           ; _AUTO動作番号
+OR DM2000.3              ; ﾌｨﾙﾀｾｯﾄ無し
+ANL
+JMP @MR3915              ; AUTO END
+;初回ﾌｨﾙﾀ除材動作
+STG @MR3003
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+MPS
+ANB @MR811               ; ﾌｰﾌﾟ1/2取出しOK
+SET @MR4500              ; ﾌｰﾌﾟ1/2ﾌｨﾙﾀ取出
+CON
+JMP @MR3004
+MPP
+AND @MR811               ; ﾌｰﾌﾟ1/2取出しOK
+MPS
+ANB @MR812               ; ﾌｰﾌﾟ3/4取出しOK
+SET @MR4700              ; ﾌｰﾌﾟ3/4ﾌｨﾙﾀ取出
+CON
+JMP @MR3005
+MPP
+AND @MR812               ; ﾌｰﾌﾟ3/4取出しOK
+JMP @MR3008
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+;ﾌｰﾌﾟ1/2取出し
+STG @MR3004
+AND @MR4501              ; ﾌｰﾌﾟ1/2ﾌｨﾙﾀ取出完了
+SET @MR811               ; ﾌｰﾌﾟ1/2取出しOK
+CON
+RES @MR4501              ; ﾌｰﾌﾟ1/2ﾌｨﾙﾀ取出完了
+CON
+JMP @MR3006
+;ﾌｰﾌﾟ3/4取出し
+STG @MR3005
+AND @MR4701              ; ﾌｰﾌﾟ3/4ﾌｨﾙﾀ取出完了
+SET @MR812               ; ﾌｰﾌﾟ3/4取出しOK
+CON
+RES @MR4701              ; ﾌｰﾌﾟ3/4ﾌｨﾙﾀ取出完了
+CON
+JMP @MR3006
+;ﾌｨﾙﾀ廃棄
+STG @MR3006
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+SET @MR6500              ; ﾌﾚｰﾑ排出動作
+CON
+JMP @MR3007
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR3007
+AND @MR6501              ; ﾌﾚｰﾑ排出動作完了
+RES @MR6501              ; ﾌﾚｰﾑ排出動作完了
+CON
+JMP @MR3003
+STG @MR3008
+RES @MR800               ; TASK1H/S無しﾌｨﾙﾀ取出し
+CON
+RES @MR811               ; ﾌｰﾌﾟ1/2取出しOK
+CON
+RES @MR812               ; ﾌｰﾌﾟ3/4取出しOK
+CON
+JMP @MR3009
+;ﾌｨﾙﾀ搬送RB 待機位置
+STG @MR3009
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+DW #2 DM12010            ; SCARA目標ﾎﾟｼﾞｼｮﾝ
+CON
+SET MR20900              ; RC7 移動
+CON
+JMP @MR3010
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR3010
+AND MR20901              ; RC7 移動完了
+RES MR20901              ; RC7 移動完了
+CON
+JMP @MR3011
+;//ﾌｨﾙﾀ除材_Y_N
+STG @MR3011
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+ANB R39104               ; SELECT_Y_N Interlock
+ANL
+SET R39104               ; SELECT_Y_N Interlock
+CON
+DW #0 @DM21              ; ScreenNo /SELECT_Y_N
+CON
+DW #0 @DM22              ; Bz_Use /SELECT_Y_N
+CON
+SET @MR300               ; Task0 SELECT_Y_N
+CON
+JMP @MR3012
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR3012
+SET @MR1900              ; Main1 HALT許可
+CON
+AND @MR301               ; Task0 Y/N END
+RES @MR301               ; Task0 Y/N END
+CON
+RES R39104               ; SELECT_Y_N Interlock
+CON
+MPS
+AND @MR306               ; Task0 Y/N
+JMP @MR3013
+MPP
+ANB @MR306               ; Task0 Y/N
+JMP @MR3911              ; 初期異常終了
+MCALL HOLD_REQUEST MyGroup;自ｸﾞﾙｰﾌﾟ番号
+;to Task1 H/S
+STG @MR3013
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+SET MR20605              ; Task0→1 初回除材完了
+CON
+JMP @MR3014
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR3014
+AND MR20602              ; Task1→0 初回除材完了受信
+RES MR20605              ; Task0→1 初回除材完了
+CON
+JMP @MR3015
+;to Task1 H/S
+STG @MR3015
+MPS
+ANB R41203               ; TASK3 PAUSE 要求
+MPS
+AND MR20604              ; Task1→0・3 初期H厚さ・材質OK
+SET MR20601              ; Task0→1 初期H厚さ・材質OK受信
+CON
+JMP @MR3100
+MPP
+LDB MR20604              ; Task1→0・3 初期H厚さ・材質OK
+AND R57300               ; Task0 停止要求
+ANL
+JMP @MR3912
+MPP
+AND R41203               ; TASK3 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR3100
+ANB MR20604              ; Task1→0・3 初期H厚さ・材質OK
+RES MR20601              ; Task0→1 初期H厚さ・材質OK受信
+CON
+JMP @MR3110              ; Main
+;<h1/>  AUTO Main
+;ﾌｰﾌﾟ取出し要求確認
+STG @MR3110              ; Main
+MPS
+LD MR20000               ; Task1→0 ﾌｰﾌﾟ①②取出し要求
+OR MR20004               ; Task1→0 ﾌｰﾌﾟ③④取出し要求
+ANL
+JMP @MR3200
+MPP
+LDB MR20000              ; Task1→0 ﾌｰﾌﾟ①②取出し要求
+ANB MR20004              ; Task1→0 ﾌｰﾌﾟ③④取出し要求
+ANL
+MPS
+ANB R57300               ; Task0 停止要求
+JMP @MR3111
+MPP
+AND R57300               ; Task0 停止要求
+JMP @MR3900              ; 終了準備
+;ﾌｨﾙﾀ搬送RB ①②取出し上空位置
+STG @MR3111
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+DW #15 DM12010           ; SCARA目標ﾎﾟｼﾞｼｮﾝ
+CON
+SET MR20900              ; RC7 移動
+CON
+JMP @MR3112
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR3112
+AND MR20901              ; RC7 移動完了
+RES MR20901              ; RC7 移動完了
+CON
+JMP @MR3200
+;<h1/>  ﾌｰﾌﾟよりﾌｨﾙﾀ取出し
+;ﾌｰﾌﾟ取出し要求待ち
+STG @MR3200
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+MPS
+ANB R57300               ; Task0 停止要求
+MPS
+AND MR20000              ; Task1→0 ﾌｰﾌﾟ①②取出し要求
+JMP @MR3201
+MRD
+LDB MR20000              ; Task1→0 ﾌｰﾌﾟ①②取出し要求
+AND MR20004              ; Task1→0 ﾌｰﾌﾟ③④取出し要求
+ANL
+JMP @MR3205
+MPP
+AND R46106               ; _定停止移行中
+MPS
+AND MR20608              ; ﾌﾚｰﾑ搬送 ﾌｨﾙﾀ要求有りFLG.
+SET MR20003              ; Task0→1 ﾌｰﾌﾟ再切出要求
+MPP
+AND MR20610              ; ﾀﾞｲｾｯﾄ動作異常停止中
+OUT MR20611              ; RB ﾌｨﾙﾀ供給不可
+MPP
+AND R57300               ; Task0 停止要求
+JMP @MR3900              ; 終了準備
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+;ﾌｨﾙﾀ①②取出し
+STG @MR3201
+RES MR20003              ; Task0→1 ﾌｰﾌﾟ再切出要求
+CON
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+SET @MR4500              ; ﾌｰﾌﾟ1/2ﾌｨﾙﾀ取出
+CON
+JMP @MR3202
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR3202
+AND @MR4501              ; ﾌｰﾌﾟ1/2ﾌｨﾙﾀ取出完了
+RES @MR4501              ; ﾌｰﾌﾟ1/2ﾌｨﾙﾀ取出完了
+CON
+MPS
+ANB @MR4503              ; ﾌｰﾌﾟ1/2ﾌｨﾙﾀ取出NG
+MPS
+ANB R57300               ; Task0 停止要求
+SET MR20603              ; Task0→1 ﾌｰﾌﾟ切出抑制中
+CON
+JMP @MR3212
+MPP
+AND R57300               ; Task0 停止要求
+JMP @MR3800              ; ★ﾌｨﾙﾀ排出
+MPP
+AND @MR4503              ; ﾌｰﾌﾟ1/2ﾌｨﾙﾀ取出NG
+JMP @MR3207
+;ﾌｨﾙﾀ③④取出し
+STG @MR3205
+RES MR20003              ; Task0→1 ﾌｰﾌﾟ再切出要求
+CON
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+SET @MR4700              ; ﾌｰﾌﾟ3/4ﾌｨﾙﾀ取出
+CON
+JMP @MR3206
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR3206
+AND @MR4701              ; ﾌｰﾌﾟ3/4ﾌｨﾙﾀ取出完了
+RES @MR4701              ; ﾌｰﾌﾟ3/4ﾌｨﾙﾀ取出完了
+CON
+MPS
+ANB @MR4703              ; ﾌｰﾌﾟ3/4ﾌｨﾙﾀ取出NG
+MPS
+ANB R57300               ; Task0 停止要求
+SET MR20603              ; Task0→1 ﾌｰﾌﾟ切出抑制中
+CON
+JMP @MR3212
+MPP
+AND R57300               ; Task0 停止要求
+JMP @MR3800              ; ★ﾌｨﾙﾀ排出
+MPP
+AND @MR4703              ; ﾌｰﾌﾟ3/4ﾌｨﾙﾀ取出NG
+JMP @MR3207
+;取出しNG → 除材へ
+STG @MR3207
+RES @MR4503              ; ﾌｰﾌﾟ1/2ﾌｨﾙﾀ取出NG
+CON
+RES @MR4703              ; ﾌｰﾌﾟ3/4ﾌｨﾙﾀ取出NG
+CON
+JMP @MR3800              ; ★ﾌｨﾙﾀ排出
+;<h1/>  ｶｽ吸引
+STG @MR3212
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+SET @MR6700              ; ｶｽ吸引動作
+CON
+JMP @MR3213
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR3213
+AND @MR6701              ; ｶｽ吸引完了
+RES @MR6701              ; ｶｽ吸引完了
+CON
+MPS
+ANB @MR6703              ; ｶｽ吸引NG(除材)
+MPS
+ANB R57300               ; Task0 停止要求
+JMP @MR3300
+MPP
+AND R57300               ; Task0 停止要求
+JMP @MR3800              ; ★ﾌｨﾙﾀ排出
+MPP
+AND @MR6703              ; ｶｽ吸引NG(除材)
+JMP @MR3214
+STG @MR3214
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+RES @MR6703              ; ｶｽ吸引NG(除材)
+CON
+JMP @MR3800              ; ★ﾌｨﾙﾀ排出
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+;<h1/>   仮置へﾌｨﾙﾀｾｯﾄ
+STG @MR3300
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+MPS
+AND MR20008              ; Task2→0 仮置①②給材要求
+JMP @MR3304
+MPP
+ANB MR20008              ; Task2→0 仮置①②給材要求
+JMP @MR3302
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+;ﾌｨﾙﾀ搬送RB 仮置き①②位置
+STG @MR3302
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+DW #31 DM12010           ; SCARA目標ﾎﾟｼﾞｼｮﾝ
+CON
+SET MR20900              ; RC7 移動
+CON
+JMP @MR3303
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR3303
+AND MR20901              ; RC7 移動完了
+RES MR20901              ; RC7 移動完了
+CON
+JMP @MR3304
+;仮置き①②ﾌｨﾙﾀ給材
+STG @MR3304
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+AND MR20008              ; Task2→0 仮置①②給材要求
+ANL
+SET @MR4900              ; 仮置き1/2ﾌｨﾙﾀｾｯﾄ
+CON
+JMP @MR3305
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR3305
+AND @MR4901              ; 仮置き1/2ﾌｨﾙﾀｾｯﾄ完了
+RES @MR4901              ; 仮置き1/2ﾌｨﾙﾀｾｯﾄ完了
+CON
+MPS
+ANB @MR4903              ; 仮置き1/2ﾌｨﾙﾀｾｯﾄNG
+SET @MR803               ; 仮置①②給材OK
+CON
+JMP @MR3400
+MPP
+AND @MR4903              ; 仮置き1/2ﾌｨﾙﾀｾｯﾄNG
+JMP @MR3306
+STG @MR3306
+RES MR20603              ; Task0→1 ﾌｰﾌﾟ切出抑制中
+CON
+RES @MR4903              ; 仮置き1/2ﾌｨﾙﾀｾｯﾄNG
+CON
+JMP @MR3800              ; ★ﾌｨﾙﾀ排出
+;<h1/>  ﾌﾚｰﾑへﾌｨﾙﾀｾｯﾄ
+;<h1/>   仮置よりﾌｨﾙﾀ取出し
+STG @MR3400
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+MPS
+LD MR20200               ; Task2→0 仮置①②取出し要求
+OR R57300                ; Task0 停止要求
+ANL
+JMP @MR3403
+MPP
+LDB MR20200              ; Task2→0 仮置①②取出し要求
+ANB R57300               ; Task0 停止要求
+ANL
+JMP @MR3401
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+;ﾌｨﾙﾀ搬送RB 仮置き①②取出し位置
+STG @MR3401
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+DW #35 DM12010           ; SCARA目標ﾎﾟｼﾞｼｮﾝ
+CON
+SET MR20900              ; RC7 移動
+CON
+JMP @MR3402
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR3402
+AND MR20901              ; RC7 移動完了
+RES MR20901              ; RC7 移動完了
+CON
+JMP @MR3403
+;仮置き①②ﾌｨﾙﾀ取出し
+STG @MR3403
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+MPS
+LD MR20200               ; Task2→0 仮置①②取出し要求
+LD MR20608               ; ﾌﾚｰﾑ搬送 ﾌｨﾙﾀ要求有りFLG.
+OR R57300                ; Task0 停止要求
+ANL
+ANL
+SET @MR5300              ; 仮置き1/2ﾌｨﾙﾀ取出
+CON
+JMP @MR3404
+MPP
+LDB MR20200              ; Task2→0 仮置①②取出し要求
+AND MR20008              ; Task2→0 仮置①②給材要求
+ANL
+MPS
+ANB R57300               ; Task0 停止要求
+RES MR20603              ; Task0→1 ﾌｰﾌﾟ切出抑制中
+CON
+RES @MR803               ; 仮置①②給材OK
+CON
+JMP @MR3110              ; Main
+MPP
+AND R57300               ; Task0 停止要求
+JMP @MR3711              ; 余りﾌｨﾙﾀ排出
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR3404
+AND @MR5301              ; 仮置き1/2ﾌｨﾙﾀ取出完了
+RES @MR5301              ; 仮置き1/2ﾌｨﾙﾀ取出完了
+CON
+MPS
+ANB @MR5303              ; 仮置き1/2ﾌｨﾙﾀ取出NG
+JMP @MR3408
+MPP
+AND @MR5303              ; 仮置き1/2ﾌｨﾙﾀ取出NG
+JMP @MR3405
+STG @MR3405
+RES @MR803               ; 仮置①②給材OK
+CON
+RES @MR5303              ; 仮置き1/2ﾌｨﾙﾀ取出NG
+CON
+JMP @MR3800              ; ★ﾌｨﾙﾀ排出
+;ﾌｨﾙﾀ搬送RB ﾌﾚｰﾑ①上空位置
+STG @MR3408
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+MPS
+AND= DM12001 #1          ; ﾌﾚｰﾑA面
+DW #45 DM12010           ; SCARA目標ﾎﾟｼﾞｼｮﾝ
+MRD
+AND= DM12001 #0          ; ﾌﾚｰﾑA面
+DW #46 DM12010           ; SCARA目標ﾎﾟｼﾞｼｮﾝ
+MPP
+SET MR20900              ; RC7 移動
+CON
+JMP @MR3409
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR3409
+AND MR20901              ; RC7 移動完了
+RES MR20901              ; RC7 移動完了
+CON
+JMP @MR3410              ; 次給材判断
+;A/B給材要求待ち
+STG @MR3410              ; 次給材判断
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+MPS
+LD R57300                ; Task0 停止要求
+LD @MR805                ; ﾌﾚｰﾑ①ｾｯﾄOK
+AND @MR806               ; ﾌﾚｰﾑ②ｾｯﾄOK
+ORL
+ANL
+JMP @MR3711              ; 余りﾌｨﾙﾀ排出
+MRD
+AND MR20300              ; Task3→0 ﾌﾚｰﾑ①給材要求
+JMP @MR3500
+MRD
+ANB MR20300              ; Task3→0 ﾌﾚｰﾑ①給材要求
+MPS
+AND MR20304              ; Task3→0 ﾌﾚｰﾑ②給材要求
+JMP @MR3600
+MPP
+LDB MR20304              ; Task3→0 ﾌﾚｰﾑ②給材要求
+AND MR20500              ; Task3→0 ﾌｨﾙﾀ破棄要求
+ANL
+SET MR20502              ; Task0→3 ﾌｨﾙﾀ破棄受信
+CON
+JMP @MR3411
+MPP
+OUT MR20503              ; Task0→3 ②挿入待ち中
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+;溶着NG時、次ﾌｨﾙﾀ準備
+STG @MR3411
+ANB MR20500              ; Task3→0 ﾌｨﾙﾀ破棄要求
+RES MR20502              ; Task0→3 ﾌｨﾙﾀ破棄受信
+CON
+JMP @MR3711              ; 余りﾌｨﾙﾀ排出
+;<h1/>    ﾌﾚｰﾑA面へﾌｨﾙﾀｾｯﾄ
+;ﾌﾚｰﾑ①ﾌｨﾙﾀ給材
+STG @MR3500
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+SET @MR5700              ; ﾌﾚｰﾑA面ﾌｨﾙﾀｾｯﾄ
+CON
+JMP @MR3501
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR3501
+AND @MR5701              ; ﾌﾚｰﾑA面ﾌｨﾙﾀｾｯﾄ完了
+RES @MR5701              ; ﾌﾚｰﾑA面ﾌｨﾙﾀｾｯﾄ完了
+CON
+MPS
+ANB @MR5703              ; ﾌﾚｰﾑA面ﾌｨﾙﾀｾｯﾄNG
+JMP @MR3503
+MPP
+AND @MR5703              ; ﾌﾚｰﾑA面ﾌｨﾙﾀｾｯﾄNG
+JMP @MR3502
+STG @MR3502
+RES MR20603              ; Task0→1 ﾌｰﾌﾟ切出抑制中
+CON
+RES @MR803               ; 仮置①②給材OK
+CON
+RES @MR5703              ; ﾌﾚｰﾑA面ﾌｨﾙﾀｾｯﾄNG
+CON
+JMP @MR3800              ; ★ﾌｨﾙﾀ排出
+STG @MR3503
+SET @MR805               ; ﾌﾚｰﾑ①ｾｯﾄOK
+CON
+MPS
+AND @MR806               ; ﾌﾚｰﾑ②ｾｯﾄOK
+JMP @MR3410              ; 次給材判断
+MPP
+ANB @MR806               ; ﾌﾚｰﾑ②ｾｯﾄOK
+JMP @MR3504
+;ﾌｨﾙﾀ搬送RB ﾌﾚｰﾑ②上空位置  先行動作
+STG @MR3504
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+DW #46 DM12010           ; SCARA目標ﾎﾟｼﾞｼｮﾝ
+CON
+SET MR20900              ; RC7 移動
+CON
+JMP @MR3505
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR3505
+AND MR20901              ; RC7 移動完了
+RES MR20901              ; RC7 移動完了
+CON
+JMP @MR3410              ; 次給材判断
+;<h1/>    ﾌﾚｰﾑB面へﾌｨﾙﾀｾｯﾄ
+;ﾌﾚｰﾑ②ﾌｨﾙﾀ給材
+STG @MR3600
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+SET @MR5900              ; ﾌﾚｰﾑB面ﾌｨﾙﾀｾｯﾄ
+CON
+JMP @MR3601
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR3601
+AND @MR5901              ; ﾌﾚｰﾑB面ﾌｨﾙﾀｾｯﾄ完了
+RES @MR5901              ; ﾌﾚｰﾑB面ﾌｨﾙﾀｾｯﾄ完了
+CON
+MPS
+ANB @MR5903              ; ﾌﾚｰﾑB面ﾌｨﾙﾀｾｯﾄNG
+JMP @MR3603
+MPP
+AND @MR5903              ; ﾌﾚｰﾑB面ﾌｨﾙﾀｾｯﾄNG
+JMP @MR3602
+STG @MR3602
+RES MR20603              ; Task0→1 ﾌｰﾌﾟ切出抑制中
+CON
+RES @MR803               ; 仮置①②給材OK
+CON
+RES @MR5903              ; ﾌﾚｰﾑB面ﾌｨﾙﾀｾｯﾄNG
+CON
+JMP @MR3800              ; ★ﾌｨﾙﾀ排出
+STG @MR3603
+SET @MR806               ; ﾌﾚｰﾑ②ｾｯﾄOK
+CON
+MPS
+AND @MR805               ; ﾌﾚｰﾑ①ｾｯﾄOK
+JMP @MR3410              ; 次給材判断
+MPP
+ANB @MR805               ; ﾌﾚｰﾑ①ｾｯﾄOK
+JMP @MR3604
+;ﾌｨﾙﾀ搬送RB ﾌﾚｰﾑ①上空位置
+STG @MR3604
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+DW #45 DM12010           ; SCARA目標ﾎﾟｼﾞｼｮﾝ
+CON
+SET MR20900              ; RC7 移動
+CON
+JMP @MR3605
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR3605
+AND MR20901              ; RC7 移動完了
+RES MR20901              ; RC7 移動完了
+CON
+JMP @MR3410              ; 次給材判断
+;<h1/>    余りﾌｨﾙﾀ排出(有れば)
+STG @MR3711              ; 余りﾌｨﾙﾀ排出
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+MPS
+LDB R7500                ; ﾊﾝﾄﾞ1 吸引
+ANB R7502                ; ﾊﾝﾄﾞ2 吸引
+ANL
+JMP @MR3715
+MPP
+LD R7500                 ; ﾊﾝﾄﾞ1 吸引
+OR R7502                 ; ﾊﾝﾄﾞ2 吸引
+ANL
+SET @MR6500              ; ﾌﾚｰﾑ排出動作
+CON
+JMP @MR3712
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR3712
+AND @MR6501              ; ﾌﾚｰﾑ排出動作完了
+RES @MR6501              ; ﾌﾚｰﾑ排出動作完了
+CON
+JMP @MR3715
+STG @MR3715
+RES MR20603              ; Task0→1 ﾌｰﾌﾟ切出抑制中
+CON
+ZRES @MR803 @MR808       ; 仮置①②給材OK  ﾌﾚｰﾑ④ｾｯﾄOK
+CON
+JMP @MR3110              ; Main
+;<h1/>  ★NGﾌｨﾙﾀ排出
+;///ﾌｨﾙﾀ排出  →  再取り出しへ
+STG @MR3800              ; ★ﾌｨﾙﾀ排出
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+RES MR20603              ; Task0→1 ﾌｰﾌﾟ切出抑制中
+CON
+SET @MR6500              ; ﾌﾚｰﾑ排出動作
+CON
+JMP @MR3801
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR3801
+AND @MR6501              ; ﾌﾚｰﾑ排出動作完了
+RES @MR6501              ; ﾌﾚｰﾑ排出動作完了
+CON
+JMP @MR3110              ; Main
+;<h1/>Auto終了処理
+STG @MR3900              ; 終了準備
+RES MR20003              ; Task0→1 ﾌｰﾌﾟ再切出要求
+CON
+JMP @MR3901              ; 取り出し要求確認
+STG @MR3901              ; 取り出し要求確認
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+MPS
+ANB MR20610              ; ﾀﾞｲｾｯﾄ動作異常停止中
+MPS
+AND MR20000              ; Task1→0 ﾌｰﾌﾟ①②取出し要求
+JMP @MR3902
+MPP
+ANB MR20000              ; Task1→0 ﾌｰﾌﾟ①②取出し要求
+MPS
+AND MR20004              ; Task1→0 ﾌｰﾌﾟ③④取出し要求
+JMP @MR3904
+MPP
+LDB MR20004              ; Task1→0 ﾌｰﾌﾟ③④取出し要求
+AND MR20609              ; ﾀﾞｲｾｯﾄ切出し待機中
+ANL
+TMR @6 #10
+CON
+AND @T6
+JMP @MR3912
+MPP
+AND MR20610              ; ﾀﾞｲｾｯﾄ動作異常停止中
+JMP @MR3912
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+;ﾀﾞｲｾｯﾄ①②除材
+STG @MR3902
+SET @MR4500              ; ﾌｰﾌﾟ1/2ﾌｨﾙﾀ取出
+CON
+JMP @MR3903
+STG @MR3903
+AND @MR4501              ; ﾌｰﾌﾟ1/2ﾌｨﾙﾀ取出完了
+RES @MR4501              ; ﾌｰﾌﾟ1/2ﾌｨﾙﾀ取出完了
+CON
+JMP @MR3906
+;ﾀﾞｲｾｯﾄ③④除材
+STG @MR3904
+SET @MR4700              ; ﾌｰﾌﾟ3/4ﾌｨﾙﾀ取出
+CON
+JMP @MR3905
+STG @MR3905
+AND @MR4701              ; ﾌｰﾌﾟ3/4ﾌｨﾙﾀ取出完了
+RES @MR4701              ; ﾌｰﾌﾟ3/4ﾌｨﾙﾀ取出完了
+CON
+JMP @MR3906
+;不要ﾌｨﾙﾀ廃棄
+STG @MR3906
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+SET @MR6500              ; ﾌﾚｰﾑ排出動作
+CON
+JMP @MR3907
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR3907
+AND @MR6501              ; ﾌﾚｰﾑ排出動作完了
+RES @MR6501              ; ﾌﾚｰﾑ排出動作完了
+CON
+JMP @MR3901              ; 取り出し要求確認
+;初期異常停止
+STG @MR3911              ; 初期異常終了
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+AND R57300               ; Task0 停止要求
+ANL
+JMP @MR3912
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+;ﾌｨﾙﾀ搬送RB 待機位置
+STG @MR3912
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+DW #2 DM12010            ; SCARA目標ﾎﾟｼﾞｼｮﾝ
+CON
+SET MR20900              ; RC7 移動
+CON
+JMP @MR3913
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR3913
+AND MR20901              ; RC7 移動完了
+RES MR20901              ; RC7 移動完了
+CON
+JMP @MR3914
+STG @MR3914
+RES MR20003              ; Task0→1 ﾌｰﾌﾟ再切出要求
+CON
+RES MR20603              ; Task0→1 ﾌｰﾌﾟ切出抑制中
+CON
+ZRES @MR803 @MR808       ; 仮置①②給材OK  ﾌﾚｰﾑ④ｾｯﾄOK
+CON
+JMP @MR3915              ; AUTO END
+STG @MR3915              ; AUTO END
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+ANB @MR001               ; TASK0 ERROR
+ANB @MR4002              ; Main2 Busy
+ANL
+RES @MR3002              ; AUTO Main1 Busy
+CON
+JMP LR600                ; _Grp1_Task0_Fin.STG
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+;<h1/>Auto-Main2/Autoﾒｲﾝﾙｰﾁﾝ2
+;[本STG内容]
+;・@MR4000の起動はMain1にて行う事
+;・@MR4000:AUTO_Main2開始、@MR4001:AUTO_Main2完了、@MR4002:AUTO_Main2動作中
+STG @MR4000              ; AUTO Main2
+SET @MR4002              ; Main2 Busy
+CON
+JMP @MR4003
+STG @MR4003
+JMP @MR4415              ; Main2 END
+STG @MR4415              ; Main2 END
+SET @MR4001              ; Main2 END
+CON
+RES @MR4002              ; Main2 Busy
+CON
+ENDS
+;<h1/>MAINTE/ﾒﾝﾃﾅﾝｽ動作
+;[本STG内容]
+;・各TaskのMAINTE動作を記述して下さい
+;・動作ﾓｰﾄﾞは「MAINTEAC*」に格納されています(1～32)
+;・動作終了時は@MR2915にJMPして下さい
+STG LR5600               ; _Grp1_Task0_MAINTE.STG
+JMP @MR2000
+STG @MR2000
+SET @MR2002              ; ﾒﾝﾃ中
+CON
+JMP @MR2003
+STG @MR2003
+MPS
+LD= DM4110 #2            ; _Group1　ﾒﾝﾃ動作番号
+OR= DM4110 #3            ; _Group1　ﾒﾝﾃ動作番号
+OR= DM4110 #5            ; _Group1　ﾒﾝﾃ動作番号
+OR= DM4110 #6            ; _Group1　ﾒﾝﾃ動作番号
+OR= DM4110 #9            ; _Group1　ﾒﾝﾃ動作番号
+OR= DM4110 #11           ; _Group1　ﾒﾝﾃ動作番号
+ANL
+JMP @MR2004
+MRD
+AND= DM4110 #17          ; _Group1　ﾒﾝﾃ動作番号
+JMP @MR2400
+MRD
+AND= DM4110 #18          ; _Group1　ﾒﾝﾃ動作番号
+JMP @MR2408
+MPP
+LD<> DM4110 #2           ; _Group1　ﾒﾝﾃ動作番号
+AND<> DM4110 #3          ; _Group1　ﾒﾝﾃ動作番号
+AND<> DM4110 #5          ; _Group1　ﾒﾝﾃ動作番号
+AND<> DM4110 #6          ; _Group1　ﾒﾝﾃ動作番号
+AND<> DM4110 #9          ; _Group1　ﾒﾝﾃ動作番号
+AND<> DM4110 #11         ; _Group1　ﾒﾝﾃ動作番号
+AND<> DM4110 #17         ; _Group1　ﾒﾝﾃ動作番号
+AND<> DM4110 #18         ; _Group1　ﾒﾝﾃ動作番号
+ANL
+JMP @MR2915              ; Mainte END
+;ｽﾃｯﾌﾟor通常　か選択
+STG @MR2004
+MPS
+MSTRT SELECT_POST #1 MyTask #0 @MR2005;自ﾀｽｸ番号
+MPP
+AND @MR2005
+RES @MR2005
+CON
+MPS
+LD= DM4110 #2            ; _Group1　ﾒﾝﾃ動作番号
+OR= DM4110 #3            ; _Group1　ﾒﾝﾃ動作番号
+OR= DM4110 #11           ; _Group1　ﾒﾝﾃ動作番号
+ANL
+JMP @MR2008
+MRD
+AND= DM4110 #5           ; _Group1　ﾒﾝﾃ動作番号
+JMP @MR2200
+MRD
+AND= DM4110 #6           ; _Group1　ﾒﾝﾃ動作番号
+JMP @MR2900              ; ☆ﾌｨﾙﾀ排出
+MPP
+AND= DM4110 #9           ; _Group1　ﾒﾝﾃ動作番号
+JMP @MR2300
+;取出し前吸着確認
+STG @MR2008
+MPS
+LDB R7500                ; ﾊﾝﾄﾞ1 吸引
+ANB R7502                ; ﾊﾝﾄﾞ2 吸引
+ANL
+JMP @MR2011
+MPP
+LD R7500                 ; ﾊﾝﾄﾞ1 吸引
+OR R7502                 ; ﾊﾝﾄﾞ2 吸引
+ANL
+JMP @MR2009
+;///ﾌｨﾙﾀ排出
+STG @MR2009
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+SET @MR6500              ; ﾌﾚｰﾑ排出動作
+CON
+JMP @MR2010
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR2010
+AND @MR6501              ; ﾌﾚｰﾑ排出動作完了
+RES @MR6501              ; ﾌﾚｰﾑ排出動作完了
+CON
+JMP @MR2011
+;各取出し動作へ分岐
+STG @MR2011
+MPS
+AND= DM4110 #2           ; _Group1　ﾒﾝﾃ動作番号
+JMP @MR2100
+MRD
+AND= DM4110 #3           ; _Group1　ﾒﾝﾃ動作番号
+JMP @MR2108
+MPP
+AND= DM4110 #11          ; _Group1　ﾒﾝﾃ動作番号
+JMP @MR2308
+;<h1/> MT2：ﾀﾞｲｾｯﾄﾌｨﾙﾀ①②取出し
+STG @MR2100
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+MPS
+AND MR20000              ; Task1→0 ﾌｰﾌﾟ①②取出し要求
+SET @MR4500              ; ﾌｰﾌﾟ1/2ﾌｨﾙﾀ取出
+CON
+JMP @MR2101
+MPP
+LDB MR20000              ; Task1→0 ﾌｰﾌﾟ①②取出し要求
+ANB R41001               ; _Grp1_Task1_起動中ﾌﾗｸﾞ
+ANL
+JMP @MR2914              ; Mainte Fin.
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR2101
+AND @MR4501              ; ﾌｰﾌﾟ1/2ﾌｨﾙﾀ取出完了
+RES @MR4501              ; ﾌｰﾌﾟ1/2ﾌｨﾙﾀ取出完了
+CON
+MPS
+ANB @MR4503              ; ﾌｰﾌﾟ1/2ﾌｨﾙﾀ取出NG
+JMP @MR2914              ; Mainte Fin.
+MPP
+AND @MR4503              ; ﾌｰﾌﾟ1/2ﾌｨﾙﾀ取出NG
+JMP @MR2102
+STG @MR2102
+RES @MR4503              ; ﾌｰﾌﾟ1/2ﾌｨﾙﾀ取出NG
+CON
+JMP @MR2900              ; ☆ﾌｨﾙﾀ排出
+;<h1/> MT3：ﾀﾞｲｾｯﾄﾌｨﾙﾀ③④取出し
+STG @MR2108
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+MPS
+AND MR20004              ; Task1→0 ﾌｰﾌﾟ③④取出し要求
+SET @MR4700              ; ﾌｰﾌﾟ3/4ﾌｨﾙﾀ取出
+CON
+JMP @MR2109
+MPP
+LDB MR20004              ; Task1→0 ﾌｰﾌﾟ③④取出し要求
+ANB R41001               ; _Grp1_Task1_起動中ﾌﾗｸﾞ
+ANL
+JMP @MR2914              ; Mainte Fin.
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR2109
+AND @MR4701              ; ﾌｰﾌﾟ3/4ﾌｨﾙﾀ取出完了
+RES @MR4701              ; ﾌｰﾌﾟ3/4ﾌｨﾙﾀ取出完了
+CON
+MPS
+ANB @MR4703              ; ﾌｰﾌﾟ3/4ﾌｨﾙﾀ取出NG
+JMP @MR2914              ; Mainte Fin.
+MPP
+AND @MR4703              ; ﾌｰﾌﾟ3/4ﾌｨﾙﾀ取出NG
+JMP @MR2110
+STG @MR2110
+RES @MR4703              ; ﾌｰﾌﾟ3/4ﾌｨﾙﾀ取出NG
+CON
+JMP @MR2900              ; ☆ﾌｨﾙﾀ排出
+;<h1/> MT5：ｶｽ吸引
+STG @MR2200
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+SET @MR6700              ; ｶｽ吸引動作
+CON
+JMP @MR2201
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR2201
+AND @MR6701              ; ｶｽ吸引完了
+RES @MR6701              ; ｶｽ吸引完了
+CON
+MPS
+ANB @MR6703              ; ｶｽ吸引NG(除材)
+JMP @MR2914              ; Mainte Fin.
+MPP
+AND @MR6703              ; ｶｽ吸引NG(除材)
+JMP @MR2202
+STG @MR2202
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+RES @MR6703              ; ｶｽ吸引NG(除材)
+CON
+JMP @MR2900              ; ☆ﾌｨﾙﾀ排出
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+;<h1/> MT9：ｱﾗｲﾒﾝﾄ①②ﾌｨﾙﾀｾｯﾄ
+STG @MR2300
+MPS
+LD R7500                 ; ﾊﾝﾄﾞ1 吸引
+AND R7502                ; ﾊﾝﾄﾞ2 吸引
+ANL
+JMP @MR2301
+MPP
+LDB R7500                ; ﾊﾝﾄﾞ1 吸引
+ORB R7502                ; ﾊﾝﾄﾞ2 吸引
+ANL
+JMP @MR2914              ; Mainte Fin.
+STG @MR2301
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+MPS
+AND MR20008              ; Task2→0 仮置①②給材要求
+SET @MR4900              ; 仮置き1/2ﾌｨﾙﾀｾｯﾄ
+CON
+JMP @MR2302
+MPP
+LDB MR20008              ; Task2→0 仮置①②給材要求
+ANB R41002               ; _Grp1_Task2_起動中ﾌﾗｸﾞ
+ANL
+JMP @MR2914              ; Mainte Fin.
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR2302
+AND @MR4901              ; 仮置き1/2ﾌｨﾙﾀｾｯﾄ完了
+RES @MR4901              ; 仮置き1/2ﾌｨﾙﾀｾｯﾄ完了
+CON
+MPS
+ANB @MR4903              ; 仮置き1/2ﾌｨﾙﾀｾｯﾄNG
+JMP @MR2914              ; Mainte Fin.
+MPP
+AND @MR4903              ; 仮置き1/2ﾌｨﾙﾀｾｯﾄNG
+JMP @MR2303
+STG @MR2303
+RES @MR4903              ; 仮置き1/2ﾌｨﾙﾀｾｯﾄNG
+CON
+JMP @MR2900              ; ☆ﾌｨﾙﾀ排出
+;<h1/> MT11：ｱﾗｲﾒﾝﾄ①②ﾌｨﾙﾀ取出し
+STG @MR2308
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+MPS
+AND MR20200              ; Task2→0 仮置①②取出し要求
+SET @MR5300              ; 仮置き1/2ﾌｨﾙﾀ取出
+CON
+JMP @MR2309
+MPP
+LDB MR20200              ; Task2→0 仮置①②取出し要求
+ANB R41002               ; _Grp1_Task2_起動中ﾌﾗｸﾞ
+ANL
+JMP @MR2914              ; Mainte Fin.
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR2309
+AND @MR5301              ; 仮置き1/2ﾌｨﾙﾀ取出完了
+RES @MR5301              ; 仮置き1/2ﾌｨﾙﾀ取出完了
+CON
+MPS
+ANB @MR5303              ; 仮置き1/2ﾌｨﾙﾀ取出NG
+JMP @MR2914              ; Mainte Fin.
+MPP
+AND @MR5303              ; 仮置き1/2ﾌｨﾙﾀ取出NG
+JMP @MR2309
+STG @MR2310
+RES @MR5303              ; 仮置き1/2ﾌｨﾙﾀ取出NG
+CON
+JMP @MR2900              ; ☆ﾌｨﾙﾀ排出
+;<h1/> MT17：ﾌﾚｰﾑA面ﾌｨﾙﾀｾｯﾄ
+STG @MR2400
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+MPS
+AND MR20300              ; Task3→0 ﾌﾚｰﾑ①給材要求
+SET @MR5700              ; ﾌﾚｰﾑA面ﾌｨﾙﾀｾｯﾄ
+CON
+JMP @MR2401
+MPP
+LDB MR20300              ; Task3→0 ﾌﾚｰﾑ①給材要求
+ANB R41003               ; _Grp1_Task3_起動中ﾌﾗｸﾞ
+ANL
+JMP @MR2914              ; Mainte Fin.
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR2401
+AND @MR5701              ; ﾌﾚｰﾑA面ﾌｨﾙﾀｾｯﾄ完了
+RES @MR5701              ; ﾌﾚｰﾑA面ﾌｨﾙﾀｾｯﾄ完了
+CON
+MPS
+ANB @MR5703              ; ﾌﾚｰﾑA面ﾌｨﾙﾀｾｯﾄNG
+JMP @MR2914              ; Mainte Fin.
+MPP
+AND @MR5703              ; ﾌﾚｰﾑA面ﾌｨﾙﾀｾｯﾄNG
+JMP @MR2402
+STG @MR2402
+RES @MR5703              ; ﾌﾚｰﾑA面ﾌｨﾙﾀｾｯﾄNG
+CON
+JMP @MR2900              ; ☆ﾌｨﾙﾀ排出
+;<h1/> MT18：ﾌﾚｰﾑB面ﾌｨﾙﾀｾｯﾄ
+STG @MR2408
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+MPS
+AND MR20304              ; Task3→0 ﾌﾚｰﾑ②給材要求
+SET @MR5900              ; ﾌﾚｰﾑB面ﾌｨﾙﾀｾｯﾄ
+CON
+JMP @MR2409
+MPP
+LDB MR20304              ; Task3→0 ﾌﾚｰﾑ②給材要求
+ANB R41003               ; _Grp1_Task3_起動中ﾌﾗｸﾞ
+ANL
+JMP @MR2914              ; Mainte Fin.
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR2409
+AND @MR5901              ; ﾌﾚｰﾑB面ﾌｨﾙﾀｾｯﾄ完了
+RES @MR5901              ; ﾌﾚｰﾑB面ﾌｨﾙﾀｾｯﾄ完了
+CON
+MPS
+ANB @MR5903              ; ﾌﾚｰﾑB面ﾌｨﾙﾀｾｯﾄNG
+JMP @MR2914              ; Mainte Fin.
+MPP
+AND @MR5903              ; ﾌﾚｰﾑB面ﾌｨﾙﾀｾｯﾄNG
+JMP @MR2410
+STG @MR2410
+RES @MR5903              ; ﾌﾚｰﾑB面ﾌｨﾙﾀｾｯﾄNG
+CON
+JMP @MR2900              ; ☆ﾌｨﾙﾀ排出
+;<h1/> MT6：ﾌｨﾙﾀ排出 (ｴﾗｰ時排出も含む)
+STG @MR2900              ; ☆ﾌｨﾙﾀ排出
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+SET @MR6500              ; ﾌﾚｰﾑ排出動作
+CON
+JMP @MR2901
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR2901
+AND @MR6501              ; ﾌﾚｰﾑ排出動作完了
+RES @MR6501              ; ﾌﾚｰﾑ排出動作完了
+CON
+JMP @MR2914              ; Mainte Fin.
+;Maintenance 終了
+STG @MR2914              ; Mainte Fin.
+MCALL MODE_INDI #2
+MCALL HOLD_REQUEST MyGroup;自ｸﾞﾙｰﾌﾟ番号
+ZRES @MR803 @MR808       ; 仮置①②給材OK  ﾌﾚｰﾑ④ｾｯﾄOK
+CON
+JMP @MR2915              ; Mainte END
+STG @MR2915              ; Mainte END
+MPS
+LD R41200                ; TASK0 PAUSE 要求
+ANB @MR001               ; TASK0 ERROR
+ANL
+SET @MR1900              ; Main1 HALT許可
+MPP
+ANB R41200               ; TASK0 PAUSE 要求
+RES @MR2002              ; ﾒﾝﾃ中
+CON
+JMP LR600                ; _Grp1_Task0_Fin.STG
+;<h1/>SubRoutines/ｻﾌﾞﾙｰﾁﾝ
+;<h1/> ﾌｰﾌﾟ1/2ﾌｨﾙﾀ取出 @MR4500
+STG @MR4500              ; ﾌｰﾌﾟ1/2ﾌｨﾙﾀ取出
+SET R47000               ; _処理時間1計測開始
+CON
+SET @MR4502              ; ﾌｰﾌﾟ1/2ﾌｨﾙﾀ取出中
+CON
+JMP @MR4505
+;to Task1 H/S start
+STG @MR4505
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+LD MR20000               ; Task1→0 ﾌｰﾌﾟ①②取出し要求
+OR @MR800                ; TASK1H/S無しﾌｨﾙﾀ取出し
+ANL
+ANL
+SET MR20002              ; Task0→1 ﾌｰﾌﾟ①②取出し動作中
+CON
+JMP @MR4506
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+;ﾌｨﾙﾀ搬送RB ①②取出し位置
+STG @MR4506
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+DW #11 DM12010           ; SCARA目標ﾎﾟｼﾞｼｮﾝ
+CON
+SET MR20900              ; RC7 移動
+CON
+JMP @MR4507
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR4507
+AND MR20901              ; RC7 移動完了
+RES MR20901              ; RC7 移動完了
+CON
+JMP @MR4508
+;ﾍｯﾄﾞ 下降
+STG @MR4508
+RES MR7301               ; ﾊﾝﾄﾞ1 上昇
+CON
+SET MR7300               ; ﾊﾝﾄﾞ1 下降
+CON
+RES MR7303               ; ﾊﾝﾄﾞ2 上昇
+CON
+SET MR7302               ; ﾊﾝﾄﾞ2 下降
+CON
+MPS
+LDB MR4500               ; ﾊﾝﾄﾞ1 下降端異常
+ANB MR4502               ; ﾊﾝﾄﾞ2 下降端異常
+ANB R4501                ; ﾊﾝﾄﾞ1 上昇端
+AND R4500                ; ﾊﾝﾄﾞ1 下降端
+ANB R4503                ; ﾊﾝﾄﾞ2 上昇端
+AND R4502                ; ﾊﾝﾄﾞ2 下降端
+ANL
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR4509
+MPP
+LD MR4500                ; ﾊﾝﾄﾞ1 下降端異常
+OR MR4502                ; ﾊﾝﾄﾞ2 下降端異常
+AND R41200               ; TASK0 PAUSE 要求
+ANL
+SET @MR1900              ; Main1 HALT許可
+;ﾌｨﾙﾀ吸着
+STG @MR4509
+RES MR7501               ; ﾊﾝﾄﾞ1 大気解放
+CON
+SET MR7500               ; ﾊﾝﾄﾞ1 吸引
+CON
+RES MR7503               ; ﾊﾝﾄﾞ2 大気解放
+CON
+SET MR7502               ; ﾊﾝﾄﾞ2 吸引
+CON
+MPS
+LD R4504                 ; ﾊﾝﾄﾞ1吸着   OUT1
+AND R4506                ; ﾊﾝﾄﾞ2吸着   OUT1
+ANL
+TMH @43 #30
+CON
+AND @T43
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR4510
+MPP
+LDB R4504                ; ﾊﾝﾄﾞ1吸着   OUT1
+ORB R4506                ; ﾊﾝﾄﾞ2吸着   OUT1
+ANL
+TMR @48 #20
+CON
+AND @T48
+JMP @MR4510
+;ﾍｯﾄﾞ 上昇
+STG @MR4510
+RES MR7300               ; ﾊﾝﾄﾞ1 下降
+CON
+SET MR7301               ; ﾊﾝﾄﾞ1 上昇
+CON
+RES MR7302               ; ﾊﾝﾄﾞ2 下降
+CON
+SET MR7303               ; ﾊﾝﾄﾞ2 上昇
+CON
+MPS
+LDB MR4501               ; ﾊﾝﾄﾞ1 上昇端異常
+ANB MR4503               ; ﾊﾝﾄﾞ2 上昇端異常
+ANB R4500                ; ﾊﾝﾄﾞ1 下降端
+AND R4501                ; ﾊﾝﾄﾞ1 上昇端
+ANB R4502                ; ﾊﾝﾄﾞ2 下降端
+AND R4503                ; ﾊﾝﾄﾞ2 上昇端
+ANL
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR4511
+MPP
+LD MR4501                ; ﾊﾝﾄﾞ1 上昇端異常
+OR MR4503                ; ﾊﾝﾄﾞ2 上昇端異常
+AND R41200               ; TASK0 PAUSE 要求
+ANL
+SET @MR1900              ; Main1 HALT許可
+;ﾌｨﾙﾀ吸着確認
+STG @MR4511
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+MPS
+LD R4504                 ; ﾊﾝﾄﾞ1吸着   OUT1
+AND R4506                ; ﾊﾝﾄﾞ2吸着   OUT1
+OR DM2000.12             ; ﾄﾞﾗｲ運転
+OR @MR800                ; TASK1H/S無しﾌｨﾙﾀ取出し
+ANL
+TMR @47 @DM14            ; 取出し上空時確認ｳｪｲﾄ
+CON
+AND @T47
+JMP @MR4614
+MPP
+LDB DM2000.12            ; ﾄﾞﾗｲ運転
+ANB @MR800               ; TASK1H/S無しﾌｨﾙﾀ取出し
+ANL
+TMR @49 #20
+CON
+AND @T49
+LDB R4504                ; ﾊﾝﾄﾞ1吸着   OUT1
+ORB R4506                ; ﾊﾝﾄﾞ2吸着   OUT1
+ANL
+JMP @MR4512
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+;吸着ｴﾗｰ時  ﾌｨﾙﾀ搬送RB 上空位置
+STG @MR4512
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+DW #3 DM12010            ; SCARA目標ﾎﾟｼﾞｼｮﾝ
+CON
+SET MR20900              ; RC7 移動
+CON
+JMP @MR4513
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR4513
+AND MR20901              ; RC7 移動完了
+RES MR20901              ; RC7 移動完了
+CON
+JMP @MR4514
+;上空退避後、再吸着確認
+STG @MR4514
+MPS
+LD R4504                 ; ﾊﾝﾄﾞ1吸着   OUT1
+AND R4506                ; ﾊﾝﾄﾞ2吸着   OUT1
+ANL
+JMP @MR4614
+MRD
+ANB R4504                ; ﾊﾝﾄﾞ1吸着   OUT1
+JMP @MR4515
+MPP
+LD R4504                 ; ﾊﾝﾄﾞ1吸着   OUT1
+ANB R4506                ; ﾊﾝﾄﾞ2吸着   OUT1
+ANL
+JMP @MR4600
+;ERR63 ﾍｯﾄﾞ1吸着Error
+STG @MR4515
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+ANB R39004               ; ｴﾗｰ中
+ANL
+SET R39004               ; ｴﾗｰ中
+CON
+DW #63 @DM1              ; ErrorNo /ERROR_DISP
+CON
+DW #4504 @DM2            ; SensorNo /ERROR_DISP
+CON
+DW $2400 @DM9            ; ReturnSW /ERROR_DISP
+CON
+SET @MR100               ; Task0 ERROR
+CON
+JMP @MR4601
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+;ERR67 ﾍｯﾄﾞ2吸着異常
+STG @MR4600
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+ANB R39004               ; ｴﾗｰ中
+ANL
+SET R39004               ; ｴﾗｰ中
+CON
+DW #67 @DM1              ; ErrorNo /ERROR_DISP
+CON
+DW #4506 @DM2            ; SensorNo /ERROR_DISP
+CON
+DW $2400 @DM9            ; ReturnSW /ERROR_DISP
+CON
+SET @MR100               ; Task0 ERROR
+CON
+JMP @MR4601
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR4601
+SET @MR1900              ; Main1 HALT許可
+CON
+AND @MR101               ; Task0 ｴﾗｰ完了
+RES @MR101               ; Task0 ｴﾗｰ完了
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+MPS
+AND @MR105               ; SW1
+JMP @MR4511
+MPP
+AND @MR106               ; SW2
+SET @MR4503              ; ﾌｰﾌﾟ1/2ﾌｨﾙﾀ取出NG
+CON
+JMP @MR4602
+;除材選択時  ﾌｨﾙﾀ搬送RB 待機位置
+STG @MR4602
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+DW #2 DM12010            ; SCARA目標ﾎﾟｼﾞｼｮﾝ
+CON
+SET MR20900              ; RC7 移動
+CON
+JMP @MR4603
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR4603
+AND MR20901              ; RC7 移動完了
+RES MR20901              ; RC7 移動完了
+CON
+JMP @MR4604
+;ERR70 ﾀﾞｲｾｯﾄ内ﾌｨﾙﾀ除材確認
+STG @MR4604
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+ANB R39004               ; ｴﾗｰ中
+ANL
+SET R39004               ; ｴﾗｰ中
+CON
+DW #70 @DM1              ; ErrorNo /ERROR_DISP
+CON
+DW #4504 @DM2            ; SensorNo /ERROR_DISP
+CON
+DW $1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+SET @MR100               ; Task0 ERROR
+CON
+JMP @MR4605
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR4605
+SET @MR1900              ; Main1 HALT許可
+CON
+AND @MR101               ; Task0 ｴﾗｰ完了
+RES @MR101               ; Task0 ｴﾗｰ完了
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+JMP @MR4614
+;to Task1 H/S end
+STG @MR4614
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+ANB MR20000              ; Task1→0 ﾌｰﾌﾟ①②取出し要求
+ANL
+RES MR20002              ; Task0→1 ﾌｰﾌﾟ①②取出し動作中
+CON
+JMP @MR4615
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR4615
+RES R47000               ; _処理時間1計測開始
+CON
+RES @MR4502              ; ﾌｰﾌﾟ1/2ﾌｨﾙﾀ取出中
+CON
+SET @MR4501              ; ﾌｰﾌﾟ1/2ﾌｨﾙﾀ取出完了
+CON
+ENDS
+;<h1/> ﾌｰﾌﾟ3/4ﾌｨﾙﾀ取出 @MR4700
+STG @MR4700              ; ﾌｰﾌﾟ3/4ﾌｨﾙﾀ取出
+SET R47000               ; _処理時間1計測開始
+CON
+SET @MR4702              ; ﾌｰﾌﾟ3/4ﾌｨﾙﾀ取出中
+CON
+JMP @MR4705
+;to Task1 H/S start
+STG @MR4705
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+LD MR20004               ; Task1→0 ﾌｰﾌﾟ③④取出し要求
+OR @MR800                ; TASK1H/S無しﾌｨﾙﾀ取出し
+ANL
+ANL
+SET MR20006              ; Task0→1 ﾌｰﾌﾟ③④取出し動作中
+CON
+JMP @MR4706
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+;ﾌｨﾙﾀ搬送RB ③④取出し位置
+STG @MR4706
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+DW #12 DM12010           ; SCARA目標ﾎﾟｼﾞｼｮﾝ
+CON
+SET MR20900              ; RC7 移動
+CON
+JMP @MR4707
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR4707
+AND MR20901              ; RC7 移動完了
+RES MR20901              ; RC7 移動完了
+CON
+JMP @MR4708
+;ﾍｯﾄﾞ 下降
+STG @MR4708
+RES MR7301               ; ﾊﾝﾄﾞ1 上昇
+CON
+SET MR7300               ; ﾊﾝﾄﾞ1 下降
+CON
+RES MR7303               ; ﾊﾝﾄﾞ2 上昇
+CON
+SET MR7302               ; ﾊﾝﾄﾞ2 下降
+CON
+MPS
+LDB MR4500               ; ﾊﾝﾄﾞ1 下降端異常
+ANB MR4502               ; ﾊﾝﾄﾞ2 下降端異常
+ANB R4501                ; ﾊﾝﾄﾞ1 上昇端
+AND R4500                ; ﾊﾝﾄﾞ1 下降端
+ANB R4503                ; ﾊﾝﾄﾞ2 上昇端
+AND R4502                ; ﾊﾝﾄﾞ2 下降端
+ANL
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR4709
+MPP
+LD MR4500                ; ﾊﾝﾄﾞ1 下降端異常
+OR MR4502                ; ﾊﾝﾄﾞ2 下降端異常
+AND R41200               ; TASK0 PAUSE 要求
+ANL
+SET @MR1900              ; Main1 HALT許可
+;ﾌｨﾙﾀ吸着
+STG @MR4709
+RES MR7501               ; ﾊﾝﾄﾞ1 大気解放
+CON
+SET MR7500               ; ﾊﾝﾄﾞ1 吸引
+CON
+RES MR7503               ; ﾊﾝﾄﾞ2 大気解放
+CON
+SET MR7502               ; ﾊﾝﾄﾞ2 吸引
+CON
+MPS
+LD R4504                 ; ﾊﾝﾄﾞ1吸着   OUT1
+AND R4506                ; ﾊﾝﾄﾞ2吸着   OUT1
+ANL
+TMH @44 #30
+CON
+AND @T44
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR4710
+MPP
+LDB R4504                ; ﾊﾝﾄﾞ1吸着   OUT1
+ORB R4506                ; ﾊﾝﾄﾞ2吸着   OUT1
+ANL
+TMR @50 #20
+CON
+AND @T50
+JMP @MR4710
+;ﾍｯﾄﾞ 上昇
+STG @MR4710
+RES MR7300               ; ﾊﾝﾄﾞ1 下降
+CON
+SET MR7301               ; ﾊﾝﾄﾞ1 上昇
+CON
+RES MR7302               ; ﾊﾝﾄﾞ2 下降
+CON
+SET MR7303               ; ﾊﾝﾄﾞ2 上昇
+CON
+MPS
+LDB MR4501               ; ﾊﾝﾄﾞ1 上昇端異常
+ANB MR4503               ; ﾊﾝﾄﾞ2 上昇端異常
+ANB R4500                ; ﾊﾝﾄﾞ1 下降端
+AND R4501                ; ﾊﾝﾄﾞ1 上昇端
+ANB R4502                ; ﾊﾝﾄﾞ2 下降端
+AND R4503                ; ﾊﾝﾄﾞ2 上昇端
+ANL
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR4711
+MPP
+LD MR4501                ; ﾊﾝﾄﾞ1 上昇端異常
+OR MR4503                ; ﾊﾝﾄﾞ2 上昇端異常
+AND R41200               ; TASK0 PAUSE 要求
+ANL
+SET @MR1900              ; Main1 HALT許可
+;ﾌｨﾙﾀ吸着確認
+STG @MR4711
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+MPS
+LD R4504                 ; ﾊﾝﾄﾞ1吸着   OUT1
+AND R4506                ; ﾊﾝﾄﾞ2吸着   OUT1
+OR DM2000.12             ; ﾄﾞﾗｲ運転
+OR @MR800                ; TASK1H/S無しﾌｨﾙﾀ取出し
+ANL
+TMR @46 @DM14            ; 取出し上空時確認ｳｪｲﾄ
+CON
+AND @T46
+JMP @MR4814
+MPP
+LDB DM2000.12            ; ﾄﾞﾗｲ運転
+ANB @MR800               ; TASK1H/S無しﾌｨﾙﾀ取出し
+ANL
+TMR @51 #20
+CON
+AND @T51
+LDB R4504                ; ﾊﾝﾄﾞ1吸着   OUT1
+OR R4504                 ; ﾊﾝﾄﾞ1吸着   OUT1
+ANL
+JMP @MR4712
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+;吸着ｴﾗｰ時  ﾌｨﾙﾀ搬送RB 上空位置
+STG @MR4712
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+DW #3 DM12010            ; SCARA目標ﾎﾟｼﾞｼｮﾝ
+CON
+SET MR20900              ; RC7 移動
+CON
+JMP @MR4713
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR4713
+AND MR20901              ; RC7 移動完了
+RES MR20901              ; RC7 移動完了
+CON
+JMP @MR4714
+;上空退避後、再吸着確認
+STG @MR4714
+MPS
+LD R4504                 ; ﾊﾝﾄﾞ1吸着   OUT1
+AND R4506                ; ﾊﾝﾄﾞ2吸着   OUT1
+ANL
+JMP @MR4814
+MRD
+ANB R4504                ; ﾊﾝﾄﾞ1吸着   OUT1
+JMP @MR4715
+MPP
+LD R4504                 ; ﾊﾝﾄﾞ1吸着   OUT1
+ANB R4506                ; ﾊﾝﾄﾞ2吸着   OUT1
+ANL
+JMP @MR4800
+;ERR63 ﾍｯﾄﾞ1吸着Error
+STG @MR4715
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+ANB R39004               ; ｴﾗｰ中
+ANL
+SET R39004               ; ｴﾗｰ中
+CON
+DW #63 @DM1              ; ErrorNo /ERROR_DISP
+CON
+DW #4504 @DM2            ; SensorNo /ERROR_DISP
+CON
+DW $2400 @DM9            ; ReturnSW /ERROR_DISP
+CON
+SET @MR100               ; Task0 ERROR
+CON
+JMP @MR4801
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+;ERR67 ﾍｯﾄﾞ2吸着異常
+STG @MR4800
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+ANB R39004               ; ｴﾗｰ中
+ANL
+SET R39004               ; ｴﾗｰ中
+CON
+DW #67 @DM1              ; ErrorNo /ERROR_DISP
+CON
+DW #4506 @DM2            ; SensorNo /ERROR_DISP
+CON
+DW $2400 @DM9            ; ReturnSW /ERROR_DISP
+CON
+SET @MR100               ; Task0 ERROR
+CON
+JMP @MR4801
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR4801
+SET @MR1900              ; Main1 HALT許可
+CON
+AND @MR101               ; Task0 ｴﾗｰ完了
+RES @MR101               ; Task0 ｴﾗｰ完了
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+MPS
+AND @MR105               ; SW1
+JMP @MR4711
+MPP
+AND @MR106               ; SW2
+SET @MR4703              ; ﾌｰﾌﾟ3/4ﾌｨﾙﾀ取出NG
+CON
+JMP @MR4802
+;除材選択時  ﾌｨﾙﾀ搬送RB 待機位置
+STG @MR4802
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+DW #2 DM12010            ; SCARA目標ﾎﾟｼﾞｼｮﾝ
+CON
+SET MR20900              ; RC7 移動
+CON
+JMP @MR4803
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR4803
+AND MR20901              ; RC7 移動完了
+RES MR20901              ; RC7 移動完了
+CON
+JMP @MR4804
+;ERR70 ﾀﾞｲｾｯﾄ内ﾌｨﾙﾀ除材確認
+STG @MR4804
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+ANB R39004               ; ｴﾗｰ中
+ANL
+SET R39004               ; ｴﾗｰ中
+CON
+DW #70 @DM1              ; ErrorNo /ERROR_DISP
+CON
+DW #4504 @DM2            ; SensorNo /ERROR_DISP
+CON
+DW $1000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+SET @MR100               ; Task0 ERROR
+CON
+JMP @MR4805
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR4805
+SET @MR1900              ; Main1 HALT許可
+CON
+AND @MR101               ; Task0 ｴﾗｰ完了
+RES @MR101               ; Task0 ｴﾗｰ完了
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+JMP @MR4814
+;to Task1 H/S end
+STG @MR4814
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+ANB MR20004              ; Task1→0 ﾌｰﾌﾟ③④取出し要求
+ANL
+RES MR20006              ; Task0→1 ﾌｰﾌﾟ③④取出し動作中
+CON
+JMP @MR4815
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR4815
+RES R47000               ; _処理時間1計測開始
+CON
+RES @MR4702              ; ﾌｰﾌﾟ3/4ﾌｨﾙﾀ取出中
+CON
+SET @MR4701              ; ﾌｰﾌﾟ3/4ﾌｨﾙﾀ取出完了
+CON
+ENDS
+;<h1/> 仮置1/2ﾌｨﾙﾀｾｯﾄ @MR4900
+STG @MR4900              ; 仮置き1/2ﾌｨﾙﾀｾｯﾄ
+SET @MR4902              ; 仮置き1/2ﾌｨﾙﾀｾｯﾄ中
+CON
+JMP @MR4909
+;ﾌｨﾙﾀ搬送RB 仮置き①②ｾｯﾄ位置
+STG @MR4909
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+DW #31 DM12010           ; SCARA目標ﾎﾟｼﾞｼｮﾝ
+CON
+SET MR20900              ; RC7 移動
+CON
+JMP @MR4910
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR4910
+AND MR20901              ; RC7 移動完了
+RES MR20901              ; RC7 移動完了
+CON
+JMP @MR4911
+;ﾌｨﾙﾀ吸着ﾁｪｯｸ
+STG @MR4911
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+MPS
+LD R4504                 ; ﾊﾝﾄﾞ1吸着   OUT1
+AND R4506                ; ﾊﾝﾄﾞ2吸着   OUT1
+OR DM2000.12             ; ﾄﾞﾗｲ運転
+ANL
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR5000
+MPP
+ANB DM2000.12            ; ﾄﾞﾗｲ運転
+TMR @52 #20
+CON
+AND @T52
+MPS
+ANB R4504                ; ﾊﾝﾄﾞ1吸着   OUT1
+JMP @MR4912
+MPP
+LD R4504                 ; ﾊﾝﾄﾞ1吸着   OUT1
+ANB R4506                ; ﾊﾝﾄﾞ2吸着   OUT1
+ANL
+JMP @MR4913
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+;ERR63 ﾍｯﾄﾞ1吸着Error
+STG @MR4912
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+ANB R39004               ; ｴﾗｰ中
+ANL
+SET R39004               ; ｴﾗｰ中
+CON
+DW #63 @DM1              ; ErrorNo /ERROR_DISP
+CON
+DW #4504 @DM2            ; SensorNo /ERROR_DISP
+CON
+DW $2400 @DM9            ; ReturnSW /ERROR_DISP
+CON
+SET @MR100               ; Task0 ERROR
+CON
+JMP @MR4914
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+;ERR67 ﾍｯﾄﾞ2吸着異常
+STG @MR4913
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+ANB R39004               ; ｴﾗｰ中
+ANL
+SET R39004               ; ｴﾗｰ中
+CON
+DW #67 @DM1              ; ErrorNo /ERROR_DISP
+CON
+DW #4506 @DM2            ; SensorNo /ERROR_DISP
+CON
+DW $2400 @DM9            ; ReturnSW /ERROR_DISP
+CON
+SET @MR100               ; Task0 ERROR
+CON
+JMP @MR4914
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR4914
+SET @MR1900              ; Main1 HALT許可
+CON
+AND @MR101               ; Task0 ｴﾗｰ完了
+RES @MR101               ; Task0 ｴﾗｰ完了
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+MPS
+AND @MR105               ; SW1
+JMP @MR4911
+MPP
+AND @MR106               ; SW2
+SET @MR4903              ; 仮置き1/2ﾌｨﾙﾀｾｯﾄNG
+CON
+JMP @MR5014
+;to Task2 H/S start
+STG @MR5000
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+AND MR20008              ; Task2→0 仮置①②給材要求
+ANL
+SET MR20011              ; Task0→2 仮置①②給材動作中
+CON
+JMP @MR5001
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+;ﾍｯﾄﾞ 下降
+STG @MR5001
+RES MR7301               ; ﾊﾝﾄﾞ1 上昇
+CON
+SET MR7300               ; ﾊﾝﾄﾞ1 下降
+CON
+RES MR7303               ; ﾊﾝﾄﾞ2 上昇
+CON
+SET MR7302               ; ﾊﾝﾄﾞ2 下降
+CON
+MPS
+LDB MR4500               ; ﾊﾝﾄﾞ1 下降端異常
+ANB MR4502               ; ﾊﾝﾄﾞ2 下降端異常
+ANB R4501                ; ﾊﾝﾄﾞ1 上昇端
+AND R4500                ; ﾊﾝﾄﾞ1 下降端
+ANB R4503                ; ﾊﾝﾄﾞ2 上昇端
+AND R4502                ; ﾊﾝﾄﾞ2 下降端
+ANL
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR5002
+MPP
+LD MR4500                ; ﾊﾝﾄﾞ1 下降端異常
+OR MR4502                ; ﾊﾝﾄﾞ2 下降端異常
+AND R41200               ; TASK0 PAUSE 要求
+ANL
+SET @MR1900              ; Main1 HALT許可
+;ﾌｨﾙﾀ ﾘﾘｰｽ
+STG @MR5002
+RES MR7500               ; ﾊﾝﾄﾞ1 吸引
+CON
+SET MR7501               ; ﾊﾝﾄﾞ1 大気解放
+CON
+RES MR7502               ; ﾊﾝﾄﾞ2 吸引
+CON
+SET MR7503               ; ﾊﾝﾄﾞ2 大気解放
+CON
+SET MR20012              ; Task0→2 仮置①②吸着要求
+CON
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR5003
+;仮置き①②吸着要求
+STG @MR5003
+AND MR20009              ; Task2→0 仮置①②吸着中
+RES MR20012              ; Task0→2 仮置①②吸着要求
+CON
+JMP @MR5004
+STG @MR5004
+ANB MR20009              ; Task2→0 仮置①②吸着中
+JMP @MR5005
+;ﾌｨﾙﾀﾘﾘｰｽ確認
+STG @MR5005
+MPS
+ANB R4504                ; ﾊﾝﾄﾞ1吸着   OUT1
+TMR @53 @DM12            ; ﾘﾘｰｽｳｪｲﾄ
+CON
+AND @T53
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR5006
+MPP
+TMR @54 #20
+CON
+AND @T54
+AND R4504                ; ﾊﾝﾄﾞ1吸着   OUT1
+ANB R47600               ; _Group1　動作区切り開始
+JMP @MR5006
+;ﾍｯﾄﾞ 上昇
+STG @MR5006
+RES MR7300               ; ﾊﾝﾄﾞ1 下降
+CON
+SET MR7301               ; ﾊﾝﾄﾞ1 上昇
+CON
+RES MR7302               ; ﾊﾝﾄﾞ2 下降
+CON
+SET MR7303               ; ﾊﾝﾄﾞ2 上昇
+CON
+MPS
+LDB MR4501               ; ﾊﾝﾄﾞ1 上昇端異常
+ANB MR4503               ; ﾊﾝﾄﾞ2 上昇端異常
+ANB R4500                ; ﾊﾝﾄﾞ1 下降端
+AND R4501                ; ﾊﾝﾄﾞ1 上昇端
+ANB R4502                ; ﾊﾝﾄﾞ2 下降端
+AND R4503                ; ﾊﾝﾄﾞ2 上昇端
+ANL
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR5007
+MPP
+LD MR4501                ; ﾊﾝﾄﾞ1 上昇端異常
+OR MR4503                ; ﾊﾝﾄﾞ2 上昇端異常
+AND R41200               ; TASK0 PAUSE 要求
+ANL
+SET @MR1900              ; Main1 HALT許可
+;ﾌｨﾙﾀ残確認
+STG @MR5007
+RES MR7501               ; ﾊﾝﾄﾞ1 大気解放
+CON
+SET MR7500               ; ﾊﾝﾄﾞ1 吸引
+CON
+RES MR7503               ; ﾊﾝﾄﾞ2 大気解放
+CON
+SET MR7502               ; ﾊﾝﾄﾞ2 吸引
+CON
+MPS
+LD R4505                 ; ﾊﾝﾄﾞ1吸着   OUT2
+AND R4507                ; ﾊﾝﾄﾞ2吸着   OUT2
+ANL
+TMR @55 @DM10            ; ﾍｯﾄﾞ除材確認時間
+CON
+AND @T55
+JMP @MR5011
+MPP
+TMR @56 #40
+CON
+AND @T56
+MPS
+ANB R4505                ; ﾊﾝﾄﾞ1吸着   OUT2
+JMP @MR5008
+MPP
+LD R4505                 ; ﾊﾝﾄﾞ1吸着   OUT2
+ANB R4507                ; ﾊﾝﾄﾞ2吸着   OUT2
+ANL
+JMP @MR5009
+;ERR62 ﾍｯﾄﾞ1ﾌｨﾙﾀ残
+STG @MR5008
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+ANB R39004               ; ｴﾗｰ中
+ANL
+SET R39004               ; ｴﾗｰ中
+CON
+DW #62 @DM1              ; ErrorNo /ERROR_DISP
+CON
+DW #4505 @DM2            ; SensorNo /ERROR_DISP
+CON
+DW $2700 @DM9            ; ReturnSW /ERROR_DISP
+CON
+SET @MR100               ; Task0 ERROR
+CON
+JMP @MR5010
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+;ERR66 ﾍｯﾄﾞ2ﾌｨﾙﾀ残
+STG @MR5009
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+ANB R39004               ; ｴﾗｰ中
+ANL
+SET R39004               ; ｴﾗｰ中
+CON
+DW #66 @DM1              ; ErrorNo /ERROR_DISP
+CON
+DW #4507 @DM2            ; SensorNo /ERROR_DISP
+CON
+DW $2700 @DM9            ; ReturnSW /ERROR_DISP
+CON
+SET @MR100               ; Task0 ERROR
+CON
+JMP @MR5010
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR5010
+SET @MR1900              ; Main1 HALT許可
+CON
+AND @MR101               ; Task0 ｴﾗｰ完了
+RES @MR101               ; Task0 ｴﾗｰ完了
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+MPS
+AND @MR105               ; SW1
+JMP @MR5007
+MPP
+AND @MR106               ; SW2
+SET MR20013              ; Task0→2 仮置①②給材NG
+CON
+SET @MR4903              ; 仮置き1/2ﾌｨﾙﾀｾｯﾄNG
+CON
+JMP @MR5012
+;吸着OFF
+STG @MR5011
+ZRES MR7500 MR7503       ; ﾊﾝﾄﾞ1 吸引  ﾊﾝﾄﾞ2 大気解放
+CON
+JMP @MR5012
+;to Task2 H/S end
+STG @MR5012
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+ANB MR20008              ; Task2→0 仮置①②給材要求
+ANL
+RES MR20011              ; Task0→2 仮置①②給材動作中
+CON
+JMP @MR5013
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR5013
+MPS
+ANB MR20013              ; Task0→2 仮置①②給材NG
+JMP @MR5014
+MPP
+AND MR20010              ; Task2→0 仮置①②NG受信
+RES MR20013              ; Task0→2 仮置①②給材NG
+STG @MR5014
+RES @MR4902              ; 仮置き1/2ﾌｨﾙﾀｾｯﾄ中
+CON
+SET @MR4901              ; 仮置き1/2ﾌｨﾙﾀｾｯﾄ完了
+CON
+ENDS
+;<h1/> 仮置1/2ﾌｨﾙﾀ取出 @MR5300
+STG @MR5300              ; 仮置き1/2ﾌｨﾙﾀ取出
+SET @MR5302              ; 仮置き1/2ﾌｨﾙﾀ取出中
+CON
+JMP @MR5308
+;ﾌｨﾙﾀ搬送RB 仮置き①②取出し位置
+STG @MR5308
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+DW #35 DM12010           ; SCARA目標ﾎﾟｼﾞｼｮﾝ
+CON
+SET MR20900              ; RC7 移動
+CON
+JMP @MR5309
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR5309
+AND MR20901              ; RC7 移動完了
+RES MR20901              ; RC7 移動完了
+CON
+JMP @MR5310
+STG @MR5310
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR5311
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+;to Task2 H/S start
+STG @MR5311
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+AND MR20200              ; Task2→0 仮置①②取出し要求
+ANL
+SET MR20202              ; Task0→2 仮置①②取出し動作中
+CON
+JMP @MR5312
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+;ﾍｯﾄﾞ 下降
+STG @MR5312
+RES MR7301               ; ﾊﾝﾄﾞ1 上昇
+CON
+SET MR7300               ; ﾊﾝﾄﾞ1 下降
+CON
+RES MR7303               ; ﾊﾝﾄﾞ2 上昇
+CON
+SET MR7302               ; ﾊﾝﾄﾞ2 下降
+CON
+MPS
+LDB MR4500               ; ﾊﾝﾄﾞ1 下降端異常
+ANB MR4502               ; ﾊﾝﾄﾞ2 下降端異常
+ANB R4501                ; ﾊﾝﾄﾞ1 上昇端
+AND R4500                ; ﾊﾝﾄﾞ1 下降端
+ANB R4503                ; ﾊﾝﾄﾞ2 上昇端
+AND R4502                ; ﾊﾝﾄﾞ2 下降端
+ANL
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR5313
+MPP
+LD MR4500                ; ﾊﾝﾄﾞ1 下降端異常
+OR MR4502                ; ﾊﾝﾄﾞ2 下降端異常
+AND R41200               ; TASK0 PAUSE 要求
+ANL
+SET @MR1900              ; Main1 HALT許可
+;ﾌｨﾙﾀ吸着
+STG @MR5313
+RES MR7501               ; ﾊﾝﾄﾞ1 大気解放
+CON
+SET MR7500               ; ﾊﾝﾄﾞ1 吸引
+CON
+RES MR7503               ; ﾊﾝﾄﾞ2 大気解放
+CON
+SET MR7502               ; ﾊﾝﾄﾞ2 吸引
+CON
+SET MR20203              ; Task0→2 仮置①②ﾘﾘｰｽ要求
+CON
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR5314
+;仮置き①②吸着解除要求
+STG @MR5314
+AND MR20201              ; Task2→0 仮置①②ﾘﾘｰｽ中
+RES MR20203              ; Task0→2 仮置①②ﾘﾘｰｽ要求
+CON
+JMP @MR5315
+STG @MR5315
+ANB MR20201              ; Task2→0 仮置①②ﾘﾘｰｽ中
+JMP @MR5400
+;ﾌｨﾙﾀ吸着
+STG @MR5400
+MPS
+LD R4504                 ; ﾊﾝﾄﾞ1吸着   OUT1
+AND R4506                ; ﾊﾝﾄﾞ2吸着   OUT1
+ANL
+JMP @MR5401
+MPP
+TMR @62 #20
+CON
+AND @T62
+JMP @MR5401
+;ﾍｯﾄﾞ 上昇
+STG @MR5401
+RES MR7300               ; ﾊﾝﾄﾞ1 下降
+CON
+SET MR7301               ; ﾊﾝﾄﾞ1 上昇
+CON
+RES MR7302               ; ﾊﾝﾄﾞ2 下降
+CON
+SET MR7303               ; ﾊﾝﾄﾞ2 上昇
+CON
+MPS
+LDB MR4501               ; ﾊﾝﾄﾞ1 上昇端異常
+ANB MR4503               ; ﾊﾝﾄﾞ2 上昇端異常
+ANB R4500                ; ﾊﾝﾄﾞ1 下降端
+AND R4501                ; ﾊﾝﾄﾞ1 上昇端
+ANB R4502                ; ﾊﾝﾄﾞ2 下降端
+AND R4503                ; ﾊﾝﾄﾞ2 上昇端
+ANL
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR5402
+MPP
+LD MR4501                ; ﾊﾝﾄﾞ1 上昇端異常
+OR MR4503                ; ﾊﾝﾄﾞ2 上昇端異常
+AND R41200               ; TASK0 PAUSE 要求
+ANL
+SET @MR1900              ; Main1 HALT許可
+;ﾌｨﾙﾀ吸着確認
+STG @MR5402
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+MPS
+LD R4504                 ; ﾊﾝﾄﾞ1吸着   OUT1
+AND R4506                ; ﾊﾝﾄﾞ2吸着   OUT1
+OR DM2000.12             ; ﾄﾞﾗｲ運転
+ANL
+TMR @45 @DM14            ; 取出し上空時確認ｳｪｲﾄ
+CON
+AND @T45
+JMP @MR5408
+MPP
+ANB DM2000.12            ; ﾄﾞﾗｲ運転
+TMR @63 #20
+CON
+AND @T63
+MPS
+ANB R4504                ; ﾊﾝﾄﾞ1吸着   OUT1
+JMP @MR5403
+MPP
+LD R4504                 ; ﾊﾝﾄﾞ1吸着   OUT1
+ANB R4506                ; ﾊﾝﾄﾞ2吸着   OUT1
+ANL
+JMP @MR5404
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+;ERR63 ﾍｯﾄﾞ1吸着Error
+STG @MR5403
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+ANB R39004               ; ｴﾗｰ中
+ANL
+SET R39004               ; ｴﾗｰ中
+CON
+DW #63 @DM1              ; ErrorNo /ERROR_DISP
+CON
+DW #4504 @DM2            ; SensorNo /ERROR_DISP
+CON
+DW $2400 @DM9            ; ReturnSW /ERROR_DISP
+CON
+SET @MR100               ; Task0 ERROR
+CON
+JMP @MR5405
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+;ERR67 ﾍｯﾄﾞ2吸着異常
+STG @MR5404
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+ANB R39004               ; ｴﾗｰ中
+ANL
+SET R39004               ; ｴﾗｰ中
+CON
+DW #67 @DM1              ; ErrorNo /ERROR_DISP
+CON
+DW #4506 @DM2            ; SensorNo /ERROR_DISP
+CON
+DW $2400 @DM9            ; ReturnSW /ERROR_DISP
+CON
+SET @MR100               ; Task0 ERROR
+CON
+JMP @MR5405
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR5405
+SET @MR1900              ; Main1 HALT許可
+CON
+AND @MR101               ; Task0 ｴﾗｰ完了
+RES @MR101               ; Task0 ｴﾗｰ完了
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+MPS
+AND @MR105               ; SW1
+JMP @MR5402
+MPP
+AND @MR106               ; SW2
+SET @MR5303              ; 仮置き1/2ﾌｨﾙﾀ取出NG
+CON
+JMP @MR5408
+;to Task2 H/S ﾌｨﾙﾀ残確認要求
+STG @MR5408
+SET MR20101              ; Task0→2 仮置①②F残確認要求
+CON
+JMP @MR5409
+STG @MR5409
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+AND MR20014              ; Task2→0 仮置①②F残確認中
+ANL
+RES MR20101              ; Task0→2 仮置①②F残確認要求
+CON
+JMP @MR5410
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR5410
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+ANB MR20014              ; Task2→0 仮置①②F残確認中
+ANL
+MPS
+ANB MR20015              ; Task2→0 仮置①②F残NG
+JMP @MR5414
+MPP
+AND MR20015              ; Task2→0 仮置①②F残NG
+SET MR20102              ; Task0→2 仮置①②F残NG受信
+CON
+JMP @MR5411
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR5411
+ANB MR20015              ; Task2→0 仮置①②F残NG
+SET @MR5303              ; 仮置き1/2ﾌｨﾙﾀ取出NG
+CON
+RES MR20102              ; Task0→2 仮置①②F残NG受信
+CON
+JMP @MR5414
+;to Task2 H/S end
+STG @MR5414
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+ANB MR20200              ; Task2→0 仮置①②取出し要求
+ANL
+RES MR20202              ; Task0→2 仮置①②取出し動作中
+CON
+JMP @MR5415
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR5415
+RES @MR5302              ; 仮置き1/2ﾌｨﾙﾀ取出中
+CON
+SET @MR5301              ; 仮置き1/2ﾌｨﾙﾀ取出完了
+CON
+ENDS
+;<h1/> ﾌﾚｰﾑA面ﾌｨﾙﾀｾｯﾄ @MR5700
+STG @MR5700              ; ﾌﾚｰﾑA面ﾌｨﾙﾀｾｯﾄ
+MPS
+SET @MR5702              ; ﾌﾚｰﾑA面ﾌｨﾙﾀｾｯﾄ中
+CON
+JMP @MR5709
+MRD
+ANB R7502                ; ﾊﾝﾄﾞ2 吸引
+SET @MR5704              ; ﾊﾝﾄﾞ2吸引無し
+MPP
+AND R7502                ; ﾊﾝﾄﾞ2 吸引
+RES @MR5904              ; ﾊﾝﾄﾞ1吸引無し
+;ﾌｨﾙﾀ搬送RB ﾌﾚｰﾑ①ｾｯﾄ位置
+STG @MR5709
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+DW #41 DM12010           ; SCARA目標ﾎﾟｼﾞｼｮﾝ
+CON
+SET MR20900              ; RC7 移動
+CON
+JMP @MR5710
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR5710
+AND MR20901              ; RC7 移動完了
+RES MR20901              ; RC7 移動完了
+CON
+JMP @MR5711
+;ﾌｨﾙﾀ吸着ﾁｪｯｸ
+STG @MR5711
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+MPS
+LD R4504                 ; ﾊﾝﾄﾞ1吸着   OUT1
+LD R4506                 ; ﾊﾝﾄﾞ2吸着   OUT1
+ORB R7502                ; ﾊﾝﾄﾞ2 吸引
+ANL
+OR DM2000.12             ; ﾄﾞﾗｲ運転
+ANL
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR5800
+MPP
+ANB DM2000.12            ; ﾄﾞﾗｲ運転
+TMR @66 #20
+CON
+AND @T66
+MPS
+ANB R4504                ; ﾊﾝﾄﾞ1吸着   OUT1
+JMP @MR5712
+MPP
+LD R4504                 ; ﾊﾝﾄﾞ1吸着   OUT1
+ANB R4506                ; ﾊﾝﾄﾞ2吸着   OUT1
+AND R7502                ; ﾊﾝﾄﾞ2 吸引
+ANL
+JMP @MR5713
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+;ERR63 ﾍｯﾄﾞ1吸着Error
+STG @MR5712
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+ANB R39004               ; ｴﾗｰ中
+ANL
+SET R39004               ; ｴﾗｰ中
+CON
+DW #63 @DM1              ; ErrorNo /ERROR_DISP
+CON
+DW #4504 @DM2            ; SensorNo /ERROR_DISP
+CON
+DW $2400 @DM9            ; ReturnSW /ERROR_DISP
+CON
+SET @MR100               ; Task0 ERROR
+CON
+JMP @MR5714
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+;ERR67 ﾍｯﾄﾞ2吸着異常
+STG @MR5713
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+ANB R39004               ; ｴﾗｰ中
+ANL
+SET R39004               ; ｴﾗｰ中
+CON
+DW #67 @DM1              ; ErrorNo /ERROR_DISP
+CON
+DW #4506 @DM2            ; SensorNo /ERROR_DISP
+CON
+DW $2400 @DM9            ; ReturnSW /ERROR_DISP
+CON
+SET @MR100               ; Task0 ERROR
+CON
+JMP @MR5714
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR5714
+SET @MR1900              ; Main1 HALT許可
+CON
+AND @MR101               ; Task0 ｴﾗｰ完了
+RES @MR101               ; Task0 ｴﾗｰ完了
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+MPS
+AND @MR105               ; SW1
+JMP @MR5711
+MPP
+AND @MR106               ; SW2
+SET @MR5703              ; ﾌﾚｰﾑA面ﾌｨﾙﾀｾｯﾄNG
+CON
+JMP @MR5812
+;to Task3 H/S start
+STG @MR5800
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+AND MR20300              ; Task3→0 ﾌﾚｰﾑ①給材要求
+ANL
+SET MR20302              ; Task0→3 ﾌﾚｰﾑ①給材中
+CON
+JMP @MR5801
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+;ﾊﾝﾄﾞ 下降
+STG @MR5801
+RES MR7301               ; ﾊﾝﾄﾞ1 上昇
+CON
+SET MR7300               ; ﾊﾝﾄﾞ1 下降
+CON
+MPS
+LDB MR4500               ; ﾊﾝﾄﾞ1 下降端異常
+ANB R4501                ; ﾊﾝﾄﾞ1 上昇端
+AND R4500                ; ﾊﾝﾄﾞ1 下降端
+ANL
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR5802
+MPP
+LD MR4500                ; ﾊﾝﾄﾞ1 下降端異常
+AND R41200               ; TASK0 PAUSE 要求
+ANL
+SET @MR1900              ; Main1 HALT許可
+;ﾌｨﾙﾀ ﾘﾘｰｽ
+STG @MR5802
+RES MR7500               ; ﾊﾝﾄﾞ1 吸引
+CON
+SET MR7501               ; ﾊﾝﾄﾞ1 大気解放
+CON
+MPS
+ANB R4504                ; ﾊﾝﾄﾞ1吸着   OUT1
+TMR @67 @DM12            ; ﾘﾘｰｽｳｪｲﾄ
+CON
+AND @T67
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR5803
+MPP
+TMR @68 #20
+CON
+AND @T68
+AND R4504                ; ﾊﾝﾄﾞ1吸着   OUT1
+ANB R47600               ; _Group1　動作区切り開始
+JMP @MR5803
+;ﾍｯﾄﾞ 上昇
+STG @MR5803
+RES MR7300               ; ﾊﾝﾄﾞ1 下降
+CON
+SET MR7301               ; ﾊﾝﾄﾞ1 上昇
+CON
+MPS
+LDB MR4501               ; ﾊﾝﾄﾞ1 上昇端異常
+ANB R4500                ; ﾊﾝﾄﾞ1 下降端
+AND R4501                ; ﾊﾝﾄﾞ1 上昇端
+ANL
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR5804
+MPP
+LD MR4501                ; ﾊﾝﾄﾞ1 上昇端異常
+AND R41200               ; TASK0 PAUSE 要求
+ANL
+SET @MR1900              ; Main1 HALT許可
+;ﾌｨﾙﾀ残確認
+STG @MR5804
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+MPS
+AND @MR5704              ; ﾊﾝﾄﾞ2吸引無し
+RES MR7503               ; ﾊﾝﾄﾞ2 大気解放
+CON
+SET MR7502               ; ﾊﾝﾄﾞ2 吸引
+MPP
+RES MR7501               ; ﾊﾝﾄﾞ1 大気解放
+CON
+SET MR7500               ; ﾊﾝﾄﾞ1 吸引
+CON
+MPS
+AND R4505                ; ﾊﾝﾄﾞ1吸着   OUT2
+TMR @69 @DM10            ; ﾍｯﾄﾞ除材確認時間
+CON
+AND @T69
+JMP @MR5807
+MPP
+TMR @70 #40
+CON
+AND @T70
+ANB R4505                ; ﾊﾝﾄﾞ1吸着   OUT2
+JMP @MR5805
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+;ERR62 ﾍｯﾄﾞ1ﾌｨﾙﾀ残
+STG @MR5805
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+ANB R39004               ; ｴﾗｰ中
+ANL
+SET R39004               ; ｴﾗｰ中
+CON
+DW #62 @DM1              ; ErrorNo /ERROR_DISP
+CON
+DW #4505 @DM2            ; SensorNo /ERROR_DISP
+CON
+DW $2700 @DM9            ; ReturnSW /ERROR_DISP
+CON
+SET @MR100               ; Task0 ERROR
+CON
+JMP @MR5806
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR5806
+SET @MR1900              ; Main1 HALT許可
+CON
+AND @MR101               ; Task0 ｴﾗｰ完了
+RES @MR101               ; Task0 ｴﾗｰ完了
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+MPS
+AND @MR105               ; SW1
+JMP @MR5804
+MPP
+AND @MR106               ; SW2
+SET MR20303              ; Task0→3 ﾌﾚｰﾑ①給材NG 
+CON
+SET @MR5703              ; ﾌﾚｰﾑA面ﾌｨﾙﾀｾｯﾄNG
+CON
+JMP @MR5808
+;吸着OFF
+STG @MR5807
+MPS
+RES MR7500               ; ﾊﾝﾄﾞ1 吸引
+CON
+RES MR7501               ; ﾊﾝﾄﾞ1 大気解放
+CON
+JMP @MR5808
+MPP
+AND @MR5704              ; ﾊﾝﾄﾞ2吸引無し
+RES MR7502               ; ﾊﾝﾄﾞ2 吸引
+CON
+RES MR7503               ; ﾊﾝﾄﾞ2 大気解放
+;ﾌｨﾙﾀ搬送RB ﾌﾚｰﾑA面ｾｯﾄ上空位置
+STG @MR5808
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+DW #45 DM12010           ; SCARA目標ﾎﾟｼﾞｼｮﾝ
+CON
+SET MR20900              ; RC7 移動
+CON
+JMP @MR5809
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR5809
+AND MR20901              ; RC7 移動完了
+RES MR20901              ; RC7 移動完了
+CON
+JMP @MR5810
+;to Task3 H/S end
+STG @MR5810
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+ANB MR20300              ; Task3→0 ﾌﾚｰﾑ①給材要求
+ANL
+RES MR20302              ; Task0→3 ﾌﾚｰﾑ①給材中
+CON
+JMP @MR5811
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR5811
+MPS
+ANB MR20303              ; Task0→3 ﾌﾚｰﾑ①給材NG 
+JMP @MR5812
+MPP
+AND MR20301              ; Task3→0 ﾌﾚｰﾑ①給材NG受信 
+RES MR20303              ; Task0→3 ﾌﾚｰﾑ①給材NG 
+STG @MR5812
+RES @MR5704              ; ﾊﾝﾄﾞ2吸引無し
+CON
+RES @MR5702              ; ﾌﾚｰﾑA面ﾌｨﾙﾀｾｯﾄ中
+CON
+SET @MR5701              ; ﾌﾚｰﾑA面ﾌｨﾙﾀｾｯﾄ完了
+CON
+ENDS
+;<h1/> ﾌﾚｰﾑB面ﾌｨﾙﾀｾｯﾄ @MR5900
+STG @MR5900              ; ﾌﾚｰﾑB面ﾌｨﾙﾀｾｯﾄ
+MPS
+SET @MR5902              ; ﾌﾚｰﾑB面ﾌｨﾙﾀｾｯﾄ中
+CON
+JMP @MR5909
+MRD
+ANB R7500                ; ﾊﾝﾄﾞ1 吸引
+SET @MR5904              ; ﾊﾝﾄﾞ1吸引無し
+MPP
+AND R7500                ; ﾊﾝﾄﾞ1 吸引
+RES @MR5904              ; ﾊﾝﾄﾞ1吸引無し
+;ﾌｨﾙﾀ搬送RB ﾌﾚｰﾑ②ｾｯﾄ位置
+STG @MR5909
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+DW #42 DM12010           ; SCARA目標ﾎﾟｼﾞｼｮﾝ
+CON
+SET MR20900              ; RC7 移動
+CON
+JMP @MR5910
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR5910
+AND MR20901              ; RC7 移動完了
+RES MR20901              ; RC7 移動完了
+CON
+JMP @MR5911
+;ﾌｨﾙﾀ吸着ﾁｪｯｸ
+STG @MR5911
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+MPS
+LD R4504                 ; ﾊﾝﾄﾞ1吸着   OUT1
+ORB R7500                ; ﾊﾝﾄﾞ1 吸引
+AND R4506                ; ﾊﾝﾄﾞ2吸着   OUT1
+OR DM2000.12             ; ﾄﾞﾗｲ運転
+ANL
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR6000
+MPP
+ANB DM2000.12            ; ﾄﾞﾗｲ運転
+TMR @71 #20
+CON
+AND @T71
+MPS
+ANB R4506                ; ﾊﾝﾄﾞ2吸着   OUT1
+JMP @MR5913
+MPP
+LD R4506                 ; ﾊﾝﾄﾞ2吸着   OUT1
+ANB R4504                ; ﾊﾝﾄﾞ1吸着   OUT1
+AND R7500                ; ﾊﾝﾄﾞ1 吸引
+ANL
+JMP @MR5912
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+;ERR63 ﾍｯﾄﾞ1吸着Error
+STG @MR5912
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+ANB R39004               ; ｴﾗｰ中
+ANL
+SET R39004               ; ｴﾗｰ中
+CON
+DW #63 @DM1              ; ErrorNo /ERROR_DISP
+CON
+DW #4504 @DM2            ; SensorNo /ERROR_DISP
+CON
+DW $2400 @DM9            ; ReturnSW /ERROR_DISP
+CON
+SET @MR100               ; Task0 ERROR
+CON
+JMP @MR5914
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+;ERR67 ﾍｯﾄﾞ2吸着異常
+STG @MR5913
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+ANB R39004               ; ｴﾗｰ中
+ANL
+SET R39004               ; ｴﾗｰ中
+CON
+DW #67 @DM1              ; ErrorNo /ERROR_DISP
+CON
+DW #4506 @DM2            ; SensorNo /ERROR_DISP
+CON
+DW $2400 @DM9            ; ReturnSW /ERROR_DISP
+CON
+SET @MR100               ; Task0 ERROR
+CON
+JMP @MR5914
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR5914
+SET @MR1900              ; Main1 HALT許可
+CON
+AND @MR101               ; Task0 ｴﾗｰ完了
+RES @MR101               ; Task0 ｴﾗｰ完了
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+MPS
+AND @MR105               ; SW1
+JMP @MR5911
+MPP
+AND @MR106               ; SW2
+SET @MR5903              ; ﾌﾚｰﾑB面ﾌｨﾙﾀｾｯﾄNG
+CON
+JMP @MR6012
+;to Task3 H/S start
+STG @MR6000
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+AND MR20304              ; Task3→0 ﾌﾚｰﾑ②給材要求
+ANL
+SET MR20306              ; Task0→3 ﾌﾚｰﾑ②給材中
+CON
+JMP @MR6001
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+;ﾊﾝﾄﾞ 下降
+STG @MR6001
+RES MR7303               ; ﾊﾝﾄﾞ2 上昇
+CON
+SET MR7302               ; ﾊﾝﾄﾞ2 下降
+CON
+MPS
+LDB MR4502               ; ﾊﾝﾄﾞ2 下降端異常
+ANB R4503                ; ﾊﾝﾄﾞ2 上昇端
+AND R4502                ; ﾊﾝﾄﾞ2 下降端
+ANL
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR6002
+MPP
+LD MR4502                ; ﾊﾝﾄﾞ2 下降端異常
+AND R41200               ; TASK0 PAUSE 要求
+ANL
+SET @MR1900              ; Main1 HALT許可
+;ﾌｨﾙﾀ ﾘﾘｰｽ
+STG @MR6002
+RES MR7502               ; ﾊﾝﾄﾞ2 吸引
+CON
+SET MR7503               ; ﾊﾝﾄﾞ2 大気解放
+CON
+MPS
+ANB R4506                ; ﾊﾝﾄﾞ2吸着   OUT1
+TMR @72 @DM12            ; ﾘﾘｰｽｳｪｲﾄ
+CON
+AND @T72
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR6003
+MPP
+TMR @73 #20
+CON
+AND @T73
+ANB R47600               ; _Group1　動作区切り開始
+JMP @MR6003
+;ﾊﾝﾄﾞ 上昇
+STG @MR6003
+RES MR7302               ; ﾊﾝﾄﾞ2 下降
+CON
+SET MR7303               ; ﾊﾝﾄﾞ2 上昇
+CON
+MPS
+LDB MR4503               ; ﾊﾝﾄﾞ2 上昇端異常
+ANB R4502                ; ﾊﾝﾄﾞ2 下降端
+AND R4503                ; ﾊﾝﾄﾞ2 上昇端
+ANL
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR6004
+MPP
+LD MR4503                ; ﾊﾝﾄﾞ2 上昇端異常
+AND R41200               ; TASK0 PAUSE 要求
+ANL
+SET @MR1900              ; Main1 HALT許可
+;ﾌｨﾙﾀ残確認
+STG @MR6004
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+MPS
+AND @MR5904              ; ﾊﾝﾄﾞ1吸引無し
+RES MR7501               ; ﾊﾝﾄﾞ1 大気解放
+CON
+SET MR7500               ; ﾊﾝﾄﾞ1 吸引
+MPP
+RES MR7503               ; ﾊﾝﾄﾞ2 大気解放
+CON
+SET MR7502               ; ﾊﾝﾄﾞ2 吸引
+CON
+MPS
+AND R4507                ; ﾊﾝﾄﾞ2吸着   OUT2
+TMR @74 @DM10            ; ﾍｯﾄﾞ除材確認時間
+CON
+AND @T74
+JMP @MR6007
+MPP
+TMR @75 #40
+CON
+AND @T75
+ANB R4507                ; ﾊﾝﾄﾞ2吸着   OUT2
+JMP @MR6005
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+;ERR66 ﾍｯﾄﾞ2ﾌｨﾙﾀ残
+STG @MR6005
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+ANB R39004               ; ｴﾗｰ中
+ANL
+SET R39004               ; ｴﾗｰ中
+CON
+DW #66 @DM1              ; ErrorNo /ERROR_DISP
+CON
+DW #4507 @DM2            ; SensorNo /ERROR_DISP
+CON
+DW $2700 @DM9            ; ReturnSW /ERROR_DISP
+CON
+SET @MR100               ; Task0 ERROR
+CON
+JMP @MR6006
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR6006
+SET @MR1900              ; Main1 HALT許可
+CON
+AND @MR101               ; Task0 ｴﾗｰ完了
+RES @MR101               ; Task0 ｴﾗｰ完了
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+MPS
+AND @MR105               ; SW1
+JMP @MR6004
+MPP
+AND @MR106               ; SW2
+SET MR20307              ; Task0→3 ﾌﾚｰﾑ②給材NG
+CON
+SET @MR5903              ; ﾌﾚｰﾑB面ﾌｨﾙﾀｾｯﾄNG
+CON
+JMP @MR6008
+;吸着OFF
+STG @MR6007
+MPS
+RES MR7502               ; ﾊﾝﾄﾞ2 吸引
+CON
+RES MR7503               ; ﾊﾝﾄﾞ2 大気解放
+CON
+JMP @MR6008
+MPP
+AND @MR5904              ; ﾊﾝﾄﾞ1吸引無し
+RES MR7500               ; ﾊﾝﾄﾞ1 吸引
+CON
+RES MR7501               ; ﾊﾝﾄﾞ1 大気解放
+;ﾌｨﾙﾀ搬送RB ﾌﾚｰﾑB面ｾｯﾄ上空位置
+STG @MR6008
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+DW #46 DM12010           ; SCARA目標ﾎﾟｼﾞｼｮﾝ
+CON
+SET MR20900              ; RC7 移動
+CON
+JMP @MR6009
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR6009
+AND MR20901              ; RC7 移動完了
+RES MR20901              ; RC7 移動完了
+CON
+JMP @MR6010
+;to Task3 H/S end
+STG @MR6010
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+ANB MR20304              ; Task3→0 ﾌﾚｰﾑ②給材要求
+ANL
+RES MR20306              ; Task0→3 ﾌﾚｰﾑ②給材中
+CON
+JMP @MR6011
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR6011
+MPS
+ANB MR20307              ; Task0→3 ﾌﾚｰﾑ②給材NG
+JMP @MR6012
+MPP
+AND MR20305              ; Task3→0 ﾌﾚｰﾑ②給材NG受信
+RES MR20307              ; Task0→3 ﾌﾚｰﾑ②給材NG
+STG @MR6012
+RES @MR5904              ; ﾊﾝﾄﾞ1吸引無し
+CON
+RES @MR5902              ; ﾌﾚｰﾑB面ﾌｨﾙﾀｾｯﾄ中
+CON
+SET @MR5901              ; ﾌﾚｰﾑB面ﾌｨﾙﾀｾｯﾄ完了
+CON
+ENDS
+;<h1/> ﾌｨﾙﾀ廃棄 @MR6500
+STG @MR6500              ; ﾌﾚｰﾑ排出動作
+SET @MR6502              ; ﾌﾚｰﾑ排出動作中
+CON
+JMP @MR6509
+;ﾌｨﾙﾀ搬送RB 排出位置
+STG @MR6509
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+MPS
+SET MR20900              ; RC7 移動
+CON
+JMP @MR6510
+MRD
+ANB LR10001              ; 排出位置FLG.
+DW #6 DM12010            ; SCARA目標ﾎﾟｼﾞｼｮﾝ
+MPP
+AND LR10001              ; 排出位置FLG.
+DW #7 DM12010            ; SCARA目標ﾎﾟｼﾞｼｮﾝ
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR6510
+AND MR20901              ; RC7 移動完了
+RES MR20901              ; RC7 移動完了
+CON
+JMP @MR6511
+;ﾊﾝﾄﾞ 下降
+STG @MR6511
+RES MR7301               ; ﾊﾝﾄﾞ1 上昇
+CON
+SET MR7300               ; ﾊﾝﾄﾞ1 下降
+CON
+RES MR7303               ; ﾊﾝﾄﾞ2 上昇
+CON
+SET MR7302               ; ﾊﾝﾄﾞ2 下降
+CON
+MPS
+LDB MR4500               ; ﾊﾝﾄﾞ1 下降端異常
+ANB MR4502               ; ﾊﾝﾄﾞ2 下降端異常
+ANB R4501                ; ﾊﾝﾄﾞ1 上昇端
+AND R4500                ; ﾊﾝﾄﾞ1 下降端
+ANB R4503                ; ﾊﾝﾄﾞ2 上昇端
+AND R4502                ; ﾊﾝﾄﾞ2 下降端
+ANL
+JMP @MR6512
+MPP
+LD MR4500                ; ﾊﾝﾄﾞ1 下降端異常
+OR MR4502                ; ﾊﾝﾄﾞ2 下降端異常
+AND R41200               ; TASK0 PAUSE 要求
+ANL
+SET @MR1900              ; Main1 HALT許可
+;ﾌｨﾙﾀ ﾘﾘｰｽ
+STG @MR6512
+RES MR7500               ; ﾊﾝﾄﾞ1 吸引
+CON
+SET MR7501               ; ﾊﾝﾄﾞ1 大気解放
+CON
+RES MR7502               ; ﾊﾝﾄﾞ2 吸引
+CON
+SET MR7503               ; ﾊﾝﾄﾞ2 大気解放
+CON
+MPS
+ANB R4504                ; ﾊﾝﾄﾞ1吸着   OUT1
+TMR @86 @DM12            ; ﾘﾘｰｽｳｪｲﾄ
+CON
+AND @T86
+JMP @MR6513
+MPP
+TMR @87 #20
+CON
+AND @T87
+JMP @MR6513
+;ﾍｯﾄﾞ 上昇
+STG @MR6513
+RES MR7300               ; ﾊﾝﾄﾞ1 下降
+CON
+SET MR7301               ; ﾊﾝﾄﾞ1 上昇
+CON
+RES MR7302               ; ﾊﾝﾄﾞ2 下降
+CON
+SET MR7303               ; ﾊﾝﾄﾞ2 上昇
+CON
+MPS
+LDB MR4501               ; ﾊﾝﾄﾞ1 上昇端異常
+ANB MR4503               ; ﾊﾝﾄﾞ2 上昇端異常
+ANB R4500                ; ﾊﾝﾄﾞ1 下降端
+AND R4501                ; ﾊﾝﾄﾞ1 上昇端
+ANB R4502                ; ﾊﾝﾄﾞ2 下降端
+AND R4503                ; ﾊﾝﾄﾞ2 上昇端
+ANL
+JMP @MR6514
+MPP
+LD MR4501                ; ﾊﾝﾄﾞ1 上昇端異常
+OR MR4503                ; ﾊﾝﾄﾞ2 上昇端異常
+AND R41200               ; TASK0 PAUSE 要求
+ANL
+SET @MR1900              ; Main1 HALT許可
+;ﾌｨﾙﾀ残確認
+STG @MR6514
+RES MR7501               ; ﾊﾝﾄﾞ1 大気解放
+CON
+SET MR7500               ; ﾊﾝﾄﾞ1 吸引
+CON
+RES MR7503               ; ﾊﾝﾄﾞ2 大気解放
+CON
+SET MR7502               ; ﾊﾝﾄﾞ2 吸引
+CON
+MPS
+LD R4505                 ; ﾊﾝﾄﾞ1吸着   OUT2
+AND R4507                ; ﾊﾝﾄﾞ2吸着   OUT2
+ANL
+TMR @88 @DM10            ; ﾍｯﾄﾞ除材確認時間
+CON
+AND @T88
+JMP @MR6602
+MPP
+TMR @89 #40
+CON
+AND @T89
+MPS
+ANB R4505                ; ﾊﾝﾄﾞ1吸着   OUT2
+JMP @MR6515
+MPP
+LD R4505                 ; ﾊﾝﾄﾞ1吸着   OUT2
+ANB R4507                ; ﾊﾝﾄﾞ2吸着   OUT2
+ANL
+JMP @MR6600
+;ERR61 ﾍｯﾄﾞ1ﾌｨﾙﾀ残
+STG @MR6515
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+ANB R39004               ; ｴﾗｰ中
+ANL
+SET R39004               ; ｴﾗｰ中
+CON
+DW #61 @DM1              ; ErrorNo /ERROR_DISP
+CON
+DW #4505 @DM2            ; SensorNo /ERROR_DISP
+CON
+DW $2000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+SET @MR100               ; Task0 ERROR
+CON
+JMP @MR6601
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+;ERR65 ﾍｯﾄﾞ2ﾌｨﾙﾀ残
+STG @MR6600
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+ANB R39004               ; ｴﾗｰ中
+ANL
+SET R39004               ; ｴﾗｰ中
+CON
+DW #65 @DM1              ; ErrorNo /ERROR_DISP
+CON
+DW #4507 @DM2            ; SensorNo /ERROR_DISP
+CON
+DW $2000 @DM9            ; ReturnSW /ERROR_DISP
+CON
+SET @MR100               ; Task0 ERROR
+CON
+JMP @MR6601
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR6601
+SET @MR1900              ; Main1 HALT許可
+CON
+AND @MR101               ; Task0 ｴﾗｰ完了
+RES @MR101               ; Task0 ｴﾗｰ完了
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+JMP @MR6514
+;終了
+STG @MR6602
+ZRES MR7500 MR7502       ; ﾊﾝﾄﾞ1 吸引  ﾊﾝﾄﾞ2 吸引
+CON
+ALT LR10001              ; 排出位置FLG.
+CON
+RES @MR6502              ; ﾌﾚｰﾑ排出動作中
+CON
+SET @MR6501              ; ﾌﾚｰﾑ排出動作完了
+CON
+ENDS
+;<h1/> ｶｽ吸引 @MR6700
+STG @MR6700              ; ｶｽ吸引動作
+SET @MR6702              ; ｶｽ吸引動作中
+CON
+JMP @MR6704
+;ﾌｨﾙﾀ搬送RB ｶｽ吸引位置
+STG @MR6704
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+DW #21 DM12010           ; SCARA目標ﾎﾟｼﾞｼｮﾝ
+CON
+SET MR20900              ; RC7 移動
+CON
+JMP @MR6705
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR6705
+AND MR20901              ; RC7 移動完了
+RES MR20901              ; RC7 移動完了
+CON
+JMP @MR6706
+STG @MR6706
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR6707
+;ｶｽ吸引
+STG @MR6707
+TMR @2 DM7020            ; 基礎ﾃﾞｰﾀ11 ｶｽ吸引時間(0.1s)
+CON
+AND @T2
+SET R47600               ; _Group1　動作区切り開始
+CON
+AND R47608               ; _Group1　動作区切り完了
+JMP @MR6708
+;ﾌｨﾙﾀ搬送RB 上空位置
+STG @MR6708
+DW #3 DM12010            ; SCARA目標ﾎﾟｼﾞｼｮﾝ
+CON
+SET MR20900              ; RC7 移動
+CON
+JMP @MR6709
+STG @MR6709
+AND MR20901              ; RC7 移動完了
+RES MR20901              ; RC7 移動完了
+CON
+JMP @MR6710
+;ﾌｨﾙﾀ吸着ﾁｪｯｸ
+STG @MR6710
+MPS
+ANB R41200               ; TASK0 PAUSE 要求
+MPS
+LD R4504                 ; ﾊﾝﾄﾞ1吸着   OUT1
+AND R4506                ; ﾊﾝﾄﾞ2吸着   OUT1
+OR DM2000.12             ; ﾄﾞﾗｲ運転
+ANL
+JMP @MR6714
+MPP
+ANB DM2000.12            ; ﾄﾞﾗｲ運転
+TMR @3 #20
+CON
+AND @T3
+MPS
+ANB R4504                ; ﾊﾝﾄﾞ1吸着   OUT1
+JMP @MR6711
+MPP
+LD R4504                 ; ﾊﾝﾄﾞ1吸着   OUT1
+ANB R4506                ; ﾊﾝﾄﾞ2吸着   OUT1
+ANL
+JMP @MR6712
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+;ERR63 ﾍｯﾄﾞ1吸着Error
+STG @MR6711
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+ANB R39004               ; ｴﾗｰ中
+ANL
+SET R39004               ; ｴﾗｰ中
+CON
+DW #63 @DM1              ; ErrorNo /ERROR_DISP
+CON
+DW #4504 @DM2            ; SensorNo /ERROR_DISP
+CON
+DW $2400 @DM9            ; ReturnSW /ERROR_DISP
+CON
+SET @MR100               ; Task0 ERROR
+CON
+JMP @MR6713
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+;ERR67 ﾍｯﾄﾞ2吸着異常
+STG @MR6712
+MPS
+LDB R41200               ; TASK0 PAUSE 要求
+ANB R39004               ; ｴﾗｰ中
+ANL
+SET R39004               ; ｴﾗｰ中
+CON
+DW #67 @DM1              ; ErrorNo /ERROR_DISP
+CON
+DW #4506 @DM2            ; SensorNo /ERROR_DISP
+CON
+DW $2400 @DM9            ; ReturnSW /ERROR_DISP
+CON
+SET @MR100               ; Task0 ERROR
+CON
+JMP @MR6713
+MPP
+AND R41200               ; TASK0 PAUSE 要求
+SET @MR1900              ; Main1 HALT許可
+STG @MR6713
+SET @MR1900              ; Main1 HALT許可
+CON
+AND @MR101               ; Task0 ｴﾗｰ完了
+RES @MR101               ; Task0 ｴﾗｰ完了
+CON
+RES R39004               ; ｴﾗｰ中
+CON
+MPS
+AND @MR105               ; SW1
+JMP @MR6710
+MPP
+AND @MR106               ; SW2
+SET @MR6703              ; ｶｽ吸引NG(除材)
+CON
+JMP @MR6714
+;終了
+STG @MR6714
+RES @MR6702              ; ｶｽ吸引動作中
+CON
+SET @MR6701              ; ｶｽ吸引完了
+CON
+ENDS
+;<h1/>SCRB 諸設定
+;DM11356 = DM5260													'SCARA 品種番号
+;DM11359 = DM7006													'SCARA 反転ﾍｯﾄﾞへの挿入速度切替高さ(mm)
+;IF MR001 AND DM7000.D>= 1 AND DM7000.D <=100 THEN 					'RBｵｰﾊﾞｰﾗｲﾄﾞを乗算します(1%以下は除外)
+;  DM11357.U = INT(FLOAT(DM7002.D) * (FLOAT(DM7000.D) / 100))		'SCARA 通常速度(1～100)
+;  DM11358.U = INT(FLOAT(DM7004.D) * (FLOAT(DM7000.D) / 100))		'SCARA 挿入速度(1～100)
+;  DM11360.U = INT(FLOAT(DM7056.D) * (FLOAT(DM7000.D) / 100))		'SCARA ﾜｰｸ所持時移動速度(1～100)
+;ELSE
+;  DM11357.U = DM7002.D												'SCARA 通常速度(1～100)
+;  DM11358.U = DM7004.D												'SCARA 挿入速度(1～100)
+;  DM11360.U = DM7056.D												'SCARA ﾜｰｸ所持時移動速度(1～100)
+;END IF
+;DM11356 = DM5260													'SCARA 品種番号
+;
+LD CR2002                ; 常時ON
+MOV DM5260 DM11356       ; 選択中ｺｰﾄﾞ  SCRBC1へ 品種番号(38)
+;DM11359 = DM7006													'SCARA 反転ﾍｯﾄﾞへの挿入速度切替高さ(mm)
+;
+LD CR2002                ; 常時ON
+MOV DM7006 DM11359       ; 基礎ﾃﾞｰﾀ4 SCARA 切替高さ(mm)  SCRBC1へ 速度切換高さ(41)
+;IF MR001 AND DM7000.D>= 1 AND DM7000.D <=100 THEN 					'RBｵｰﾊﾞｰﾗｲﾄﾞを乗算します(1%以下は除外)
+;
+LD>=.D DM7000 #1         ; 装置基礎ﾃﾞｰﾀ1 RB速度OVERRIDE
+AND MR001                ; 速度低速設定
+OUT @VB00
+LD<=.D DM7000 #100       ; 装置基礎ﾃﾞｰﾀ1 RB速度OVERRIDE
+AND @VB00
+NCJ #2018
+;  DM11357.U = INT(FLOAT(DM7002.D) * (FLOAT(DM7000.D) / 100))		'SCARA 通常速度(1～100)
+;
+LD CR2002                ; 常時ON
+LDA.D DM7000             ; 装置基礎ﾃﾞｰﾀ1 RB速度OVERRIDE
+CON
+FLOAT.D
+CON
+DIV.F +100
+CON
+STA.F @VM9
+CON
+LDA.D DM7002             ; 基礎ﾃﾞｰﾀ2 SCARA 通常速度(%)
+CON
+FLOAT.D
+CON
+MUL.F @VM9
+CON
+INTG.L
+CON
+STA DM11357              ; SCRBC1へ 通常スピード(39)
+;  DM11358.U = INT(FLOAT(DM7004.D) * (FLOAT(DM7000.D) / 100))		'SCARA 挿入速度(1～100)
+;
+LD CR2002                ; 常時ON
+LDA.D DM7000             ; 装置基礎ﾃﾞｰﾀ1 RB速度OVERRIDE
+CON
+FLOAT.D
+CON
+DIV.F +100
+CON
+STA.F @VM11
+CON
+LDA.D DM7004             ; 基礎ﾃﾞｰﾀ3 SCARA 挿入速度(%)
+CON
+FLOAT.D
+CON
+MUL.F @VM11
+CON
+INTG.L
+CON
+STA DM11358              ; SCRBC1へ 挿入スピード(40)
+;  DM11360.U = INT(FLOAT(DM7056.D) * (FLOAT(DM7000.D) / 100))		'SCARA ﾜｰｸ所持時移動速度(1～100)
+;
+LD CR2002                ; 常時ON
+LDA.D DM7000             ; 装置基礎ﾃﾞｰﾀ1 RB速度OVERRIDE
+CON
+FLOAT.D
+CON
+DIV.F +100
+CON
+STA.F @VM13
+CON
+LDA.D DM7056             ; 装置基礎ﾃﾞｰﾀ29
+CON
+FLOAT.D
+CON
+MUL.F @VM13
+CON
+INTG.L
+CON
+STA DM11360              ; SCRBC1へ ﾜｰｸ所持時移動速度(42)
+;ELSE
+;
+LD CR2002                ; 常時ON
+CJ #2019
+LABEL #2018
+;  DM11357.U = DM7002.D												'SCARA 通常速度(1～100)
+;
+LD CR2002                ; 常時ON
+MOV DM7002 DM11357       ; 基礎ﾃﾞｰﾀ2 SCARA 通常速度(%)  SCRBC1へ 通常スピード(39)
+;  DM11358.U = DM7004.D												'SCARA 挿入速度(1～100)
+;
+LD CR2002                ; 常時ON
+MOV DM7004 DM11358       ; 基礎ﾃﾞｰﾀ3 SCARA 挿入速度(%)  SCRBC1へ 挿入スピード(40)
+;  DM11360.U = DM7056.D												'SCARA ﾜｰｸ所持時移動速度(1～100)
+;
+LD CR2002                ; 常時ON
+MOV DM7056 DM11360       ; 装置基礎ﾃﾞｰﾀ29  SCRBC1へ ﾜｰｸ所持時移動速度(42)
+;END IF
+LABEL #2019
+;
+;<h1/>-----------------------------------------------------------
+;<h1/>*ERROR
+;MyTask Error Process Substance/エラー処理実体
+STG @MR100               ; Task0 ERROR
+ANB R39002               ; ERROR_DISP Busy
+MPS
+ZRES @MR105 @MR108       ; SW1  SW4
+CON
+DISN @DM9 @DM3 #4        ; ReturnSW /ERROR_DISP
+MRD
+DW MyTask @DM0           ; 自ﾀｽｸ番号  TaskNo /ERROR_DISP
+CON
+BMOV @DM0 DM60000 #7     ; TaskNo /ERROR_DISP  TaskNo /ERROR_DISP
+MPP
+SET R39000               ; ERROR_DISP Start
+CON
+SET @MR102               ; Task0 ERROR Busy
+CON
+JMP @MR103
+STG @MR103
+AND R39002               ; ERROR_DISP Busy
+AND= DM60008 @DM1        ; ReturnNo /ERROR_DISP  ErrorNo /ERROR_DISP
+MPS
+AND= DM60007 @DM6        ; ReturnSW /ERROR_DISP
+SET @MR105               ; SW1
+CON
+JMP @MR104
+MRD
+AND= DM60007 @DM5        ; ReturnSW /ERROR_DISP
+SET @MR106               ; SW2
+CON
+JMP @MR104
+MRD
+AND= DM60007 @DM4        ; ReturnSW /ERROR_DISP
+SET @MR107               ; SW3
+CON
+JMP @MR104
+MPP
+AND= DM60007 @DM3        ; ReturnSW /ERROR_DISP
+SET @MR108               ; SW4
+CON
+JMP @MR104
+STG @MR104
+ANB R39002               ; ERROR_DISP Busy
+RES @MR102               ; Task0 ERROR Busy
+CON
+SET @MR101               ; Task0 ｴﾗｰ完了
+CON
+ENDS
+;<h1/>*Select_Y_N 
+;MyTask Select_Y_N Process Substance/SELECT_Y_N処理実体
+STG @MR300               ; Task0 SELECT_Y_N
+ANB R39102               ; SELECT_Y_N Busy
+MPS
+ZRES @MR306 @MR307       ; Task0 Y/N
+CON
+DW #0 @DM20              ; TaskNo /SELECT_Y_N
+CON
+BMOV @DM20 DM60020 #3    ; TaskNo /SELECT_Y_N  TaskNo /SELECT_Y_N
+MPP
+SET R39100               ; SELECT_Y_N Start
+CON
+SET @MR302               ; Task0 Y_N Busy
+CON
+JMP @MR303
+STG @MR303
+AND R39102               ; SELECT_Y_N Busy
+MPS
+AND= DM60023 #1          ; Y_N /SELECT_Y_N
+SET @MR306               ; Task0 Y/N
+CON
+JMP @MR304
+MPP
+AND= DM60023 #2          ; Y_N /SELECT_Y_N
+RES @MR306               ; Task0 Y/N
+CON
+JMP @MR304
+STG @MR304
+ANB R39102               ; SELECT_Y_N Busy
+RES @MR302               ; Task0 Y_N Busy
+CON
+SET @MR301               ; Task0 Y/N END
+CON
+ENDS
+;<h1/>*TIMEUP ERROR
+;MyTask TIMEUP_ERROR Process Substance/TIMEUP_ERROR処理実体
+STG @MR400               ; Task0 TIMEUP_ERR
+ANB R39302               ; TIMEUP_ERR Busy
+MPS
+DW #0 @DM40              ; TaskNo /TIMEUP_ERR
+CON
+BMOV @DM40 DM60040 #2    ; TaskNo /TIMEUP_ERR  TaskNo /TIMEUP_ERR
+MPP
+SET R39300               ; TIMEUP_ERR Start
+CON
+SET @MR402               ; Task0 TIMEUP Busy
+CON
+JMP @MR403
+STG @MR403
+AND R39302               ; TIMEUP_ERR Busy
+JMP @MR404
+STG @MR404
+ANB R39302               ; TIMEUP_ERR Busy
+RES @MR402               ; Task0 TIMEUP Busy
+CON
+SET @MR401               ; Task0 TIMEUP_END
+CON
+ENDS
+;<h1/>*Select_ACT 
+;MyTask Select_ACT Process Substance/SELECT_ACT処理実体
+STG @MR200               ; Task0 SELECT_ACT
+ANB R39202               ; SELECT_ACT Busy
+MPS
+ZRES @MR205 @MR208       ; SW1  SW4
+CON
+DW #0 @DM30              ; TaskNo /SELECT_ACT
+CON
+BMOV @DM30 DM60030 #7    ; TaskNo /SELECT_ACT  TaskNo /SELECT_ACT
+MPP
+SET R39200               ; SELECT_ACT Start
+CON
+SET @MR202               ; Task0 SEL_ACT Busy
+CON
+JMP @MR203
+STG @MR203
+AND R39202               ; SELECT_ACT Busy
+AND<> DM60037 #0         ; SelectSW /SELECT_ACT
+MPS
+AND= DM60037 #1          ; SelectSW /SELECT_ACT
+SET @MR205               ; SW1
+CON
+JMP @MR204
+MRD
+AND= DM60037 #2          ; SelectSW /SELECT_ACT
+SET @MR206               ; SW2
+CON
+JMP @MR204
+MRD
+AND= DM60037 #3          ; SelectSW /SELECT_ACT
+SET @MR207               ; SW3
+CON
+JMP @MR204
+MPP
+AND= DM60037 #4          ; SelectSW /SELECT_ACT
+SET @MR208               ; SW4
+CON
+JMP @MR204
+STG @MR204
+ANB R39202               ; SELECT_ACT Busy
+RES @MR202               ; Task0 SEL_ACT Busy
+CON
+SET @MR201               ; Task0 SEL_ACT END
+CON
+ENDS
+;RC700移動中HALT許可
+LD MR20902               ; RC7 移動中
+AND R41200               ; TASK0 PAUSE 要求
+AND MR20903              ; RC7 HALT許可
+SET @MR1900              ; Main1 HALT許可
+;<h1/>HALT
+LD R41200                ; TASK0 PAUSE 要求
+AND @MR1900              ; Main1 HALT許可
+LD @MR1901               ; Main2 HALT許可
+ORB @MR4002              ; Main2 Busy
+ANL
+TMR @40 #5               ; HALT許可 遅延
+CON
+AND @T40                 ; HALT許可 遅延
+SET R42600               ; Grp1_Task0_ﾎﾟｰｽﾞ許可
+LD R42600                ; Grp1_Task0_ﾎﾟｰｽﾞ許可
+ORB R41200               ; TASK0 PAUSE 要求
+ANB @MR001               ; TASK0 ERROR
+RES @MR1900              ; Main1 HALT許可
+CON
+RES @MR1901              ; Main2 HALT許可
+END
+ENDH

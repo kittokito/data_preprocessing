@@ -1,0 +1,1741 @@
+DEVICE:53
+;MODULE:U11_LeakST1
+;MODULE_TYPE:0
+;<h1/>□_入力受け
+;関連する入力受け(ｾﾝｻのﾃﾞｨﾚｲﾀｲﾏ等)を必要があれば作成する。
+;通常は入力ﾕﾆｯﾄに入力時定数(ﾃﾞｨﾚｲ)があるので直接使用しても問題は無い。
+LD M123                  ; 安全扉正常
+AND M124                 ; ｴﾘｱｾﾝｻ正常
+TMR K1101 K5             ; ST1-2間ﾗｲﾄｶｰﾃﾝOK
+LD X1310                 ; ST1_ﾘｰｸ検部_ﾜｰｸ浮き確認1(ON=OK)
+AND X1311                ; ST1_ﾘｰｸ検部_ﾜｰｸ浮き確認2(ON=OK)
+TMR K1102 K3             ; Leak部浮き確認OKﾀｲﾏ
+LD X130F                 ; ST1_ﾘｰｸ検査_ﾜｰｸ確認(ON=有)
+TMR K1103 K3             ; ST1_Leak検査_ﾜｰｸ確認(ON=有)
+TMR K1105 K5             ; ST1_Leak検査_ﾜｰｸ確認
+LDB X130F                ; ST1_ﾘｰｸ検査_ﾜｰｸ確認(ON=有)
+TMR K1104 K3             ; ST1_Leak検査_ﾜｰｸ無確認
+LD X1300                 ; ST1_ﾘｰｸ検査_ｺﾈｸﾀｼｰﾙ_前進端
+TMR K1120 K3             ; ST1_Leak検査_ｺﾈｸﾀｼｰﾙ_前進端
+LD X1302                 ; ST1_ﾘｰｸ検査_上治具_下降端
+TMR K1122 K3             ; ST1_Leak検査_上治具_下降端
+LD X1303                 ; ST1_ﾘｰｸ検査_上治具_上昇端
+AND T1101                ; ST1-2間ﾗｲﾄｶｰﾃﾝOK
+TMH K1124 K100           ; ST1_Leak検査_上治具_上昇端
+;<h1/>__治具IDNO.
+;上治具
+LD X1308                 ; ST1_ﾘｰｸ検査_上治具ID_1
+OUT D6106.0
+LD X1309                 ; ST1_ﾘｰｸ検査_上治具ID_2
+OUT D6106.1
+LD X130A                 ; ST1_ﾘｰｸ検査_上治具ID_3
+OUT D6106.2
+;下治具(ﾁｬﾝﾊﾞｰ)
+LD X130B                 ; ST1_ﾘｰｸ検査_下治具ID_1
+OUT D6107.0
+LD X130C                 ; ST1_ﾘｰｸ検査_下治具ID_2
+OUT D6107.1
+LD X130D                 ; ST1_ﾘｰｸ検査_下治具ID_3
+OUT D6107.2
+;ＩＤ保持
+LD M71                   ; 自動運転開始BZ
+AND L1100                ; LeakST1_有効状態
+AND X1303                ; ST1_ﾘｰｸ検査_上治具_上昇端
+LD M6412                 ; ST_ID保持ﾄﾘｶﾞ
+ANB M6410                ; ST無効中
+ORL
+AND M71                  ; 自動運転開始BZ
+OUT M6412                ; ST_ID保持ﾄﾘｶﾞ
+;____上治具ＩＤ保持
+LD L1100                 ; LeakST1_有効状態
+LD Y2385                 ; ST1ﾁｬﾝﾊﾞｰ蓋上昇
+AND X1303                ; ST1_ﾘｰｸ検査_上治具_上昇端
+OR T1126                 ; 上治具_ID_更新_DLY
+ANL
+MPS
+TMR K1126 K5             ; 上治具_ID_更新_DLY
+MPP
+AND T1126                ; 上治具_ID_更新_DLY
+@MOV D6106 D6100         ; LeakST1_上治具ID_ｾﾝｻｰ状態  LeakST1_上治具ID
+LD CR2002                ; 常時ON
+MOV D6100 W0128          ; LeakST1_上治具ID  ﾘｰｸ上治具ID#1
+LDB L1100                ; LeakST1_有効状態
+MOV K0 D6100             ; LeakST1_上治具ID
+;____下治具ＩＤ保持
+LD L1100                 ; LeakST1_有効状態
+MPS
+TMR K1127 K5             ; 下治具_ID_更新_DLY
+MPP
+AND T1127                ; 下治具_ID_更新_DLY
+@MOV D6107 D6101         ; LeakST1_下治具ID_ｾﾝｻｰ状態  LeakST1_下治具ID
+LD CR2002                ; 常時ON
+MOV D6101 W012C          ; LeakST1_下治具ID  ﾘｰｸ下治具ID#1
+LDB L1100                ; LeakST1_有効状態
+MOV K0 D6101             ; LeakST1_下治具ID
+;<h1/>__ﾘｰｸst治具有効/無効選択
+;段取り状態中ﾌﾗｸﾞの追加
+;自動中は段取り状態中に、ST上のﾜｰｸ無、RBﾊﾝﾄﾞﾜｰｸ無し、供給部ﾜｰｸ無しにて無効状態OKとなる
+LDB X120D                ; ST1_ﾘｰｸ検査 有効/無効SW
+ANB B11CA                ; ST1_Leak検査_有効/無効_Tpb
+ANB W09.0                ; ﾘｰｸｽﾃｰｼﾞ#1 無効切替要求
+INV
+OUT M6406                ; ST1ﾘｰｸ検査_有効/無効SW
+LDB M71                  ; 自動運転開始BZ
+LD M99                   ; 能拡後対応FLG
+ANB M3254                ; ﾊﾝﾄﾞ1_給材ﾜｰｸ受取り
+ANB M3255                ; ﾊﾝﾄﾞ2_給材ﾜｰｸ受取り
+LDB M99                  ; 能拡後対応FLG
+ANB M5254                ; Hand1_給材ﾜｰｸ受取り
+ANB M5255                ; Hand2_給材ﾜｰｸ受取り
+ORL
+ANB M1154                ; ｺｰﾄﾞ読取U1-2起動中
+AND= D1201 K0            ; 投入部1_ﾜｰｸ有無記憶
+OR M3259                 ; ST1-2側投入部ﾜｰｸ無し状態
+LDB M6485                ; U11起動中
+LD M6001                 ; U11-1_S1_ﾜｰｸ供給要求
+ANB M2841                ; 【搬送】搬送→LEAK_ST1搬送開始
+ORL
+ANL
+ANB X130F                ; ST1_ﾘｰｸ検査_ﾜｰｸ確認(ON=有)
+LD M99                   ; 能拡後対応FLG
+ANB M3101                ; ﾊﾝﾄﾞ1_ﾘｰｸ検査品
+ANB M3151                ; ﾊﾝﾄﾞ2_ﾘｰｸ検査品
+ANB M3200                ; ﾊﾝﾄﾞ1_ﾘｰｸST1給材中flg
+ANB M3201                ; ﾊﾝﾄﾞ2_ﾘｰｸST1給材中flg
+LDB M99                  ; 能拡後対応FLG
+ANB M5101                ; Hand1_Leak検査品
+ANB M5151                ; Hand2_Leak検査品
+ANB M5200                ; Hand1_LeakST1給材中flg
+ANB M5201                ; Hand2_LeakST1給材中flg
+ORL
+ANL
+ORL
+OUT M6408                ; st無効OK条件
+LD M6409                 ; ST無効予約(自動運転)
+ANB M6410                ; ST無効中
+ANP M6406                ; ST1ﾘｰｸ検査_有効/無効SW
+OUT M6411                ; ST予約ｷｬﾝｾﾙ
+LDP M6406                ; ST1ﾘｰｸ検査_有効/無効SW
+AND M71                  ; 自動運転開始BZ
+ANB M6409                ; ST無効予約(自動運転)
+LD M6409                 ; ST無効予約(自動運転)
+ANB M6410                ; ST無効中
+ANB M6411                ; ST予約ｷｬﾝｾﾙ
+ORL
+OUT M6409                ; ST無効予約(自動運転)
+LD M6409                 ; ST無効予約(自動運転)
+AND M6408                ; st無効OK条件
+LDP M6406                ; ST1ﾘｰｸ検査_有効/無効SW
+ANB M41                  ; U_起動中
+ORL
+LDB B0164                ; 356)LeakST1下治具位置決めcls異常
+ANB M6311                ; 下治具位置決め上昇指令
+ANB B0165                ; 357)LeakST1上治具ID不一致
+ANB B0166                ; 358)LeakST1下治具ID不一致
+INV
+MEP
+ORL
+LD CR2008                ; 運転開始時1ｽｷｬﾝON
+ANB L1100                ; LeakST1_有効状態
+ORL
+LD M6410                 ; ST無効中
+ANB L1100                ; LeakST1_有効状態
+ORL
+OUT M6410                ; ST無効中
+;<h1/>__ﾘｰｸST_有効処理
+LDP M6406                ; ST1ﾘｰｸ検査_有効/無効SW
+LD<> D6106 K0            ; LeakST1_上治具ID_ｾﾝｻｰ状態
+AND<> D6107 K0           ; LeakST1_下治具ID_ｾﾝｻｰ状態
+AND X1304                ; ST1_ﾘｰｸ検査_下治具位置決1下降端
+AND X1306                ; ST1_ﾘｰｸ検査_下治具位置決2下降端
+AND X1303                ; ST1_ﾘｰｸ検査_上治具_上昇端
+LD M35                   ; 空運転ﾓｰﾄﾞ
+AND= D6106 K0            ; LeakST1_上治具ID_ｾﾝｻｰ状態
+AND= D6107 K0            ; LeakST1_下治具ID_ｾﾝｻｰ状態
+ORL
+ANL
+AND X1301                ; ST1_ﾘｰｸ検査_ｺﾈｸﾀｼｰﾙ_後退端
+AND T1104                ; ST1_Leak検査_ﾜｰｸ無確認
+ANB M6094                ; 動作確認ﾓｰﾄﾞ中
+ANB L1100                ; LeakST1_有効状態
+LD L1100                 ; LeakST1_有効状態
+ANB M6410                ; ST無効中
+ORL
+OUT L1100                ; LeakST1_有効状態
+;　□治具LOCK/UNLOCK
+LDP X120C                ; ST1_ﾘｰｸ下治具LOCK/UNLOCKSW
+AND T1101                ; ST1-2間ﾗｲﾄｶｰﾃﾝOK
+AND M6410                ; ST無効中
+MPS
+LDB Y2602                ; ﾘｰｸST1下治具位置決め下降
+AND<> D6107 K0           ; LeakST1_下治具ID_ｾﾝｻｰ状態
+ANL
+OUT M6403                ; ﾘｰｸST1_下治具位置決め下降指令
+MPP
+AND Y2602                ; ﾘｰｸST1下治具位置決め下降
+OUT M6404                ; ﾘｰｸST1_下治具位置決め上昇指令
+LD X120C                 ; ST1_ﾘｰｸ下治具LOCK/UNLOCKSW
+ANB T1101                ; ST1-2間ﾗｲﾄｶｰﾃﾝOK
+OUT M6414                ; ｾｯﾄ不可ﾌﾞｻﾞｰ(ｴﾘｱｾﾝｻ検出中)
+;JIG_ID一致確認
+LD L1100                 ; LeakST1_有効状態
+MPS
+LD M99                   ; 能拡後対応FLG
+AND= D6100 D1711         ; LeakST1_上治具ID  搬送ﾊﾝﾄﾞ1_ﾘｰｸ上治具ID
+AND= D6101 D1712         ; LeakST1_下治具ID  搬送ﾊﾝﾄﾞ1_ﾘｰｸ下治具ID
+LDB M99                  ; 能拡後対応FLG
+AND= D6100 D3711         ; LeakST1_上治具ID  搬送2ﾊﾝﾄﾞ1_Leak上治具ID
+AND= D6101 D3712         ; LeakST1_下治具ID  搬送2ﾊﾝﾄﾞ1_Leak下治具ID
+ORL
+LD M35                   ; 空運転ﾓｰﾄﾞ
+AND= D6100 K0            ; LeakST1_上治具ID
+AND= D6101 K0            ; LeakST1_下治具ID
+ORL
+ANL
+OUT M6401                ; LeakST1-ﾊﾝﾄﾞ1_ID一致ﾌﾗｸﾞ
+MPP
+LD M99                   ; 能拡後対応FLG
+AND= D6100 D1811         ; LeakST1_上治具ID  搬送ﾊﾝﾄﾞ2_ﾘｰｸ上治具ID
+AND= D6101 D1812         ; LeakST1_下治具ID  搬送ﾊﾝﾄﾞ2_ﾘｰｸ下治具ID
+LDB M99                  ; 能拡後対応FLG
+AND= D6100 D3811         ; LeakST1_上治具ID  搬送2ﾊﾝﾄﾞ2_Leak上治具ID
+AND= D6101 D3812         ; LeakST1_下治具ID  搬送2ﾊﾝﾄﾞ2_Leak下治具ID
+ORL
+LD M35                   ; 空運転ﾓｰﾄﾞ
+AND= D6100 K0            ; LeakST1_上治具ID
+AND= D6101 K0            ; LeakST1_下治具ID
+ORL
+ANL
+OUT M6402                ; LeakST1-ﾊﾝﾄﾞ2_ID一致ﾌﾗｸﾞ
+;<h1/>□_装置状態・動作条件
+;ﾕﾆｯﾄまとめ
+LD M6070                 ; U11-1原点
+AND M6230                ; U11-3原点
+OUT M6480                ; ﾘｰｸST1U11原点
+;□ 非常停止
+LDB M6071                ; U11-1全異常
+ANB M6231                ; U11-3全異常
+INV
+OUT M6481                ; U11即停止異常
+;□ 起動条件
+LD CR2003                ; 常時OFF
+OUT M6482                ; U11起動条件
+;□ 起動OFF
+LDB M50                  ; 運転準備
+LD M60                   ; ｴﾗｰ発生
+OR M52                   ; ｻｲｸﾙ停止異常(ｻｲｸﾙ停止)
+AND M6484                ; U11原点復帰中
+ORL
+OR T15                   ; 強制停止
+OUT M6483                ; U11起動OFF
+;□ 原点復帰
+LD M82                   ; 原点復帰開始
+ANB M6484                ; U11原点復帰中
+OR M6484                 ; U11原点復帰中
+ANB M6483                ; U11起動OFF
+ANB M6491                ; U11ｴﾗｰ発生
+ANB M6297                ; OrgSEND
+OUT M6484                ; U11原点復帰中
+;□ 起動中
+LDB M6078                ; U11-1起動中
+ANB M6234                ; U11-3_ﾘｰｸ検査起動中
+INV
+OUT M6485                ; U11起動中
+;□ ｻｲｸﾙ停止異常
+LDB M6075                ; U11-1ｻｲｸﾙ停止異常
+ANB M6235                ; U11-3ｻｲｸﾙ停止異常
+INV
+OUT M6486                ; U11ｻｲｸﾙ停止異常
+;□ 払出停止異常
+LDB CR2003               ; 常時OFF
+INV
+OUT M6487                ; U11払出停止異常
+;□ 警報補助
+LDB CR2003               ; 常時OFF
+INV
+OUT M6488                ; U11警報補助
+;□ 機器準備確認
+LD CR2002                ; 常時ON
+OUT M6490                ; U11機器準備完了
+;□ ｴﾗｰ発生　一時停止
+LDB M6076                ; U11-1ｴﾗｰ発生
+ANB M6236                ; U11-3ｴﾗｰ発生
+INV
+OUT M6491                ; U11ｴﾗｰ発生
+;□ 動作中ﾕﾆｯﾄ無し
+LD M6077                 ; U11-1動作無し
+AND M6237                ; U11-3動作無し
+OUT M6492                ; U11動作無し確認
+;□ 払出しﾜｰｸ無し
+LDB X130F                ; ST1_ﾘｰｸ検査_ﾜｰｸ確認(ON=有)
+ANB M6421                ; LeakST1_ﾜｰｸ除材要求
+AND M3493                ; U5ﾜｰｸ無し
+AND M36                  ; 払出ﾓｰﾄﾞ
+ANB M3100                ; ﾊﾝﾄﾞ1_ﾜｰｸ有
+ANB M3150                ; ﾊﾝﾄﾞ2_ﾜｰｸ有
+ANB M5100                ; Hand1_ﾜｰｸ有
+ANB M5150                ; Hand2_ﾜｰｸ有
+TMR K1114 K10            ; U11_ﾜｰｸ無し(払出時)
+LD T1114                 ; U11_ﾜｰｸ無し(払出時)
+OUT M6493                ; U11ﾜｰｸ無し(払出時)
+;□ ｽﾃｯﾌﾟ起動
+LD M30                   ; 自動ﾓｰﾄﾞ
+OR M31                   ; 手動ﾓｰﾄﾞ
+AND T1101                ; ST1-2間ﾗｲﾄｶｰﾃﾝOK
+ANB M130                 ; 一時停止
+ANB M51                  ; 即停止異常(緊急停止)
+ANB M52                  ; ｻｲｸﾙ停止異常(ｻｲｸﾙ停止)
+ANB M65                  ; 自動起動停止指令(払出停止)
+ANB M59                  ; 払出停止異常まとめ
+ANB M60                  ; ｴﾗｰ発生
+OUT M6479                ; U11ｽﾃｯﾌﾟ動作
+;<h1/>□_自動回路
+;<h1/>◇_ﾕﾆｯﾄ状態・動作条件(補助)
+LD X1301                 ; ST1_ﾘｰｸ検査_ｺﾈｸﾀｼｰﾙ_後退端
+AND X1303                ; ST1_ﾘｰｸ検査_上治具_上昇端
+LD X1305                 ; ST1_ﾘｰｸ検査_下治具位置決1上昇端
+AND X1307                ; ST1_ﾘｰｸ検査_下治具位置決2上昇端
+LD X1304                 ; ST1_ﾘｰｸ検査_下治具位置決1下降端
+AND X1306                ; ST1_ﾘｰｸ検査_下治具位置決2下降端
+ORL
+ANL
+ANB X130F                ; ST1_ﾘｰｸ検査_ﾜｰｸ確認(ON=有)
+AND= D6201 K0            ; Leak_ST1_ﾜｰｸ有無記憶
+OUT M6070                ; U11-1原点
+;M**71は即停止異常
+LDB B0165                ; 357)LeakST1上治具ID不一致
+ANB B0166                ; 358)LeakST1下治具ID不一致
+ANB B0167                ; 359)LeakST1ﾜｰｸ受取異常
+ANB B0168                ; 360)LeakST1ﾜｰｸ受渡し異常
+ANB B0169                ; 361)LeakST1ﾜｰｸ検知OFF異常
+INV
+OUT M6071                ; U11-1全異常
+LD M6070                 ; U11-1原点
+ANB M6078                ; U11-1起動中
+AND M6479                ; U11ｽﾃｯﾌﾟ動作
+AND L1100                ; LeakST1_有効状態
+LD M6401                 ; LeakST1-ﾊﾝﾄﾞ1_ID一致ﾌﾗｸﾞ
+OR M6402                 ; LeakST1-ﾊﾝﾄﾞ2_ID一致ﾌﾗｸﾞ
+ANB L10                  ; Leak検査有無(0_有/1_無)
+ANB M6408                ; st無効OK条件
+OR M57                   ; 自動起動停止指令(払出停止)
+ANL
+OUT M6072                ; U11-1起動条件
+LDB M50                  ; 運転準備
+OR M6486                 ; U11ｻｲｸﾙ停止異常
+OR T15                   ; 強制停止
+OUT M6073                ; U11-1起動OFF
+LD M73                   ; 各工程起動指令
+AND M6072                ; U11-1起動条件
+OR M6078                 ; U11-1起動中
+ANB M6073                ; U11-1起動OFF
+ANB M6063                ; U11-1ｻｲｸﾙ終了
+OUT M6078                ; U11-1起動中
+LDP M73                  ; 各工程起動指令
+ORP L1100                ; LeakST1_有効状態
+MOV K0 D6020             ; LeakST1投入回数
+MOV K0 D6021             ; LeakST1排出回数
+;ﾕﾆｯﾄ1-1 ｻｲｸﾙ停止異常
+LDB B0163                ; 355)LeakST1Leakﾃｽﾀ異常
+INV
+OUT M6075                ; U11-1ｻｲｸﾙ停止異常
+;ﾕﾆｯﾄ1-1 ｴﾗｰ発生まとめ
+LDB B0162                ; 354)LeakST1ﾜｰｸ浮き検出異常
+ANB B0330                ; 816)LeakST1ﾜｰｸ除去要求
+ANB B0164                ; 356)LeakST1下治具位置決めcls異常
+ANB B0160                ; 352)LeakST1上治具上下CLS異常
+ANB B0161                ; 353)LeakST1ｺﾈｸﾀｼｰﾙ前後CLS異常
+INV
+OUT M6076                ; U11-1ｴﾗｰ発生
+;ﾕﾆｯﾄ7-1 停止判定
+LD= D6000 D6005          ; Unit11-1自動運転ｽﾃｯﾌﾟ  Unit11-1動作中判定
+ORB M6078                ; U11-1起動中
+TMR K1110 K20            ; U11-1_停止中
+LD CR2002                ; 常時ON
+MOV D6000 D6005          ; Unit11-1自動運転ｽﾃｯﾌﾟ  Unit11-1動作中判定
+LD T1110                 ; U11-1_停止中
+OUT M6077                ; U11-1動作無し
+;□
+;□　ﾕﾆｯﾄ7-1 自動運転ステップ開始
+;□
+LD CR2002                ; 常時ON
+FMOV K0 M6000 K4         ; U11-1_S0
+LDB M6078                ; U11-1起動中
+MOV K0 D6000             ; Unit11-1自動運転ｽﾃｯﾌﾟ
+LD M6078                 ; U11-1起動中
+MOV D6000 Z1             ; Unit11-1自動運転ｽﾃｯﾌﾟ
+SET M6000:Z1             ; U11-1_S0
+;条件分岐
+LD M6000                 ; U11-1_S0
+MPS
+ANB M57                  ; 自動起動停止指令(払出停止)
+INC D6000                ; Unit11-1自動運転ｽﾃｯﾌﾟ
+MPP
+AND M57                  ; 自動起動停止指令(払出停止)
+MOV K35 D6000            ; Unit11-1自動運転ｽﾃｯﾌﾟ
+;<h1/>__S1_ﾘｰｸST1ﾜｰｸ要求
+LD M6001                 ; U11-1_S1_ﾜｰｸ供給要求
+MPS
+LD L1100                 ; LeakST1_有効状態
+ANB M6493                ; U11ﾜｰｸ無し(払出時)
+ANL
+MPS
+LD M99                   ; 能拡後対応FLG
+AND M2841                ; 【搬送】搬送→LEAK_ST1搬送開始
+LDB M99                  ; 能拡後対応FLG
+AND M4841                ; 【搬送2】搬送→LEAK_ST1搬送開始
+ORL
+ANL
+INC D6000                ; Unit11-1自動運転ｽﾃｯﾌﾟ
+MPP
+LD M6401                 ; LeakST1-ﾊﾝﾄﾞ1_ID一致ﾌﾗｸﾞ
+OR M6402                 ; LeakST1-ﾊﾝﾄﾞ2_ID一致ﾌﾗｸﾞ
+ANL
+OUT M6420                ; LeakST1_ﾜｰｸ供給要求→搬送
+MPP
+LD M6493                 ; U11ﾜｰｸ無し(払出時)
+LD M6410                 ; ST無効中
+ANB L1100                ; LeakST1_有効状態
+ORL
+ANL
+MOV K63 D6000            ; Unit11-1自動運転ｽﾃｯﾌﾟ
+;　　供給完了ﾊﾝﾄﾞｼｪｲｸ
+LD M6002                 ; U11-1_S2
+LD M99                   ; 能拡後対応FLG
+AND M2846                ; 【搬送】搬送→LEAK_ST1搬送完了
+LDB M99                  ; 能拡後対応FLG
+AND M4846                ; 【搬送2】搬送→LEAK_ST1搬送完了
+ORL
+OR M6422                 ; LeakST1供給完了受取
+ANL
+MPS
+LDB M2841                ; 【搬送】搬送→LEAK_ST1搬送開始
+ANB M2846                ; 【搬送】搬送→LEAK_ST1搬送完了
+ANB M4841                ; 【搬送2】搬送→LEAK_ST1搬送開始
+ANB M4846                ; 【搬送2】搬送→LEAK_ST1搬送完了
+ANL
+INC D6000                ; Unit11-1自動運転ｽﾃｯﾌﾟ
+MPP
+OUT M6422                ; LeakST1供給完了受取
+;ﾜｰｸ置く&搬送位置まで逃げ確認
+LD M6003                 ; U11-1_S3
+LD M2809                 ; ﾘｰｸ不干渉位置
+ORB M99                  ; 能拡後対応FLG
+ANL
+AND M4809                ; Leak不干渉位置
+AND M2808                ; Y軸座標_ﾘｰｸ不干渉位置
+AND= D6201 K1            ; Leak_ST1_ﾜｰｸ有無記憶
+MPS
+LD X130F                 ; ST1_ﾘｰｸ検査_ﾜｰｸ確認(ON=有)
+OR M35                   ; 空運転ﾓｰﾄﾞ
+ANL
+MPS
+ANB T1102                ; Leak部浮き確認OKﾀｲﾏ
+INC D6000                ; Unit11-1自動運転ｽﾃｯﾌﾟ
+MPP
+AND T1102                ; Leak部浮き確認OKﾀｲﾏ
+MOV K6 D6000             ; Unit11-1自動運転ｽﾃｯﾌﾟ
+MPP
+LDB X130F                ; ST1_ﾘｰｸ検査_ﾜｰｸ確認(ON=有)
+ANB M35                  ; 空運転ﾓｰﾄﾞ
+ANL
+MOV K60 D6000            ; Unit11-1自動運転ｽﾃｯﾌﾟ
+;　　ﾜｰｸ受取異常
+LD M6060                 ; U11-1_S60_ﾜｰｸ受取異常
+AND B0167                ; 359)LeakST1ﾜｰｸ受取異常
+MOV K63 D6000            ; Unit11-1自動運転ｽﾃｯﾌﾟ
+;ﾜｰｸ浮き検出異常処理
+LD M6004                 ; U11-1_S4_ﾘｰｸSTﾜｰｸ浮き異常
+AND T1101                ; ST1-2間ﾗｲﾄｶｰﾃﾝOK
+AND B0162                ; 354)LeakST1ﾜｰｸ浮き検出異常
+INC D6000                ; Unit11-1自動運転ｽﾃｯﾌﾟ
+LD M6005                 ; U11-1_S5
+AND T1101                ; ST1-2間ﾗｲﾄｶｰﾃﾝOK
+AND M6479                ; U11ｽﾃｯﾌﾟ動作
+ANB B0162                ; 354)LeakST1ﾜｰｸ浮き検出異常
+MOV K3 D6000             ; Unit11-1自動運転ｽﾃｯﾌﾟ
+LD M6006                 ; U11-1_S6_
+INC D6000                ; Unit11-1自動運転ｽﾃｯﾌﾟ
+@INC D6020               ; LeakST1投入回数
+LD M6007                 ; U11-1_S7_
+INC D6000                ; Unit11-1自動運転ｽﾃｯﾌﾟ
+LD M6008                 ; U11-1_S8
+AND T1101                ; ST1-2間ﾗｲﾄｶｰﾃﾝOK
+AND M6479                ; U11ｽﾃｯﾌﾟ動作
+INC D6000                ; Unit11-1自動運転ｽﾃｯﾌﾟ
+;<h1/>__S9_ﾘｰｸ検査前ﾁｬﾝﾊﾞｰ処理
+LD M6009                 ; U11-1_S9_
+AND T1101                ; ST1-2間ﾗｲﾄｶｰﾃﾝOK
+AND M6479                ; U11ｽﾃｯﾌﾟ動作
+INC D6000                ; Unit11-1自動運転ｽﾃｯﾌﾟ
+LD M6010                 ; U11-1_S10
+AND T1101                ; ST1-2間ﾗｲﾄｶｰﾃﾝOK
+AND M6479                ; U11ｽﾃｯﾌﾟ動作
+INC D6000                ; Unit11-1自動運転ｽﾃｯﾌﾟ
+;上治具下降
+LD M6011                 ; U11-1_S11_上治具下降指令
+MPS
+LD T1101                 ; ST1-2間ﾗｲﾄｶｰﾃﾝOK
+AND M6479                ; U11ｽﾃｯﾌﾟ動作
+AND X1302                ; ST1_ﾘｰｸ検査_上治具_下降端
+ANL
+INC D6000                ; Unit11-1自動運転ｽﾃｯﾌﾟ
+MPP
+LDB T1101                ; ST1-2間ﾗｲﾄｶｰﾃﾝOK
+ORB M6479                ; U11ｽﾃｯﾌﾟ動作
+ANL
+MOV K13 D6000            ; Unit11-1自動運転ｽﾃｯﾌﾟ
+LD M6012                 ; U11-1_S12_上治具下降指令
+AND T1101                ; ST1-2間ﾗｲﾄｶｰﾃﾝOK
+AND M6479                ; U11ｽﾃｯﾌﾟ動作
+AND T1122                ; ST1_Leak検査_上治具_下降端
+MOV K15 D6000            ; Unit11-1自動運転ｽﾃｯﾌﾟ
+;上治具下降中にｴﾘｱｾﾝｻが切れた場合
+LD M6013                 ; U11-1_S13_上治具下降指令停止
+AND T1101                ; ST1-2間ﾗｲﾄｶｰﾃﾝOK
+AND M6479                ; U11ｽﾃｯﾌﾟ動作
+INC D6000                ; Unit11-1自動運転ｽﾃｯﾌﾟ
+LD M6014                 ; U11-1_S14_上治具ちょっと上昇指令
+MPS
+TMH K1130 K20            ; 上治具上昇時間（ﾄﾞｶﾝ!音対策）
+MPP
+AND T1130                ; 上治具上昇時間（ﾄﾞｶﾝ!音対策）
+MOV K11 D6000            ; Unit11-1自動運転ｽﾃｯﾌﾟ
+;上治具下降完了
+LD M6015                 ; U11-1_S15
+INC D6000                ; Unit11-1自動運転ｽﾃｯﾌﾟ
+LD M6016                 ; U11-1_S16_ｺﾈｸﾀｼｰﾙ前進
+LD T1120                 ; ST1_Leak検査_ｺﾈｸﾀｼｰﾙ_前進端
+OR M35                   ; 空運転ﾓｰﾄﾞ
+ANL
+INC D6000                ; Unit11-1自動運転ｽﾃｯﾌﾟ
+LD M6017                 ; U11-1_S17
+INC D6000                ; Unit11-1自動運転ｽﾃｯﾌﾟ
+LD M6018                 ; U11-1_S18
+ANB M6234                ; U11-3_ﾘｰｸ検査起動中
+INC D6000                ; Unit11-1自動運転ｽﾃｯﾌﾟ
+;<h1/>__S19_ﾘｰｸ検査開始
+;ﾘｰｸ検査の中でｼﾌﾄﾃﾞｰﾀは作成する
+LD M6019                 ; U11-1_S19_ﾘｰｸ検査開始
+AND M6234                ; U11-3_ﾘｰｸ検査起動中
+INC D6000                ; Unit11-1自動運転ｽﾃｯﾌﾟ
+LD M6020                 ; U11-1_S20_
+ANB M6234                ; U11-3_ﾘｰｸ検査起動中
+INC D6000                ; Unit11-1自動運転ｽﾃｯﾌﾟ
+LD M6021                 ; U11-1_S21_ﾘｰｸﾃｽﾄ完了ﾌﾗｸﾞ
+AND M6494                ; ﾘｰｸﾃｽﾄ完了記憶
+INC D6000                ; Unit11-1自動運転ｽﾃｯﾌﾟ
+LD M6021                 ; U11-1_S21_ﾘｰｸﾃｽﾄ完了ﾌﾗｸﾞ
+OR M6494                 ; ﾘｰｸﾃｽﾄ完了記憶
+AND M6078                ; U11-1起動中
+OUT M6494                ; ﾘｰｸﾃｽﾄ完了記憶
+LD M6011                 ; U11-1_S11_上治具下降指令
+ANB X1303                ; ST1_ﾘｰｸ検査_上治具_上昇端
+LD M6495                 ; ﾘｰｸｼﾘﾝﾀﾞｰ下降中
+ANB M6494                ; ﾘｰｸﾃｽﾄ完了記憶
+ORL
+AND M6078                ; U11-1起動中
+OUT M6495                ; ﾘｰｸｼﾘﾝﾀﾞｰ下降中
+LD M6022                 ; U11-1_S22
+AND T1101                ; ST1-2間ﾗｲﾄｶｰﾃﾝOK
+AND M6479                ; U11ｽﾃｯﾌﾟ動作
+INC D6000                ; Unit11-1自動運転ｽﾃｯﾌﾟ
+LD M6023                 ; U11_S23_ﾁｬﾝﾊﾞ真空弁OFF(大気開放)
+MPS
+AND T1131                ; ﾁｬﾝﾊﾞｰ大気開放時間
+INC D6000                ; Unit11-1自動運転ｽﾃｯﾌﾟ
+MPP
+TMH K1131 K75            ; ﾁｬﾝﾊﾞｰ大気開放時間
+;上治具上昇指令
+LD M6024                 ; U11-1_S24_上治具上昇指令
+MPS
+LD T1101                 ; ST1-2間ﾗｲﾄｶｰﾃﾝOK
+AND M6479                ; U11ｽﾃｯﾌﾟ動作
+LD X130E                 ; ST1_ﾘｰｸ検査_上治具中間位置
+OR X1303                 ; ST1_ﾘｰｸ検査_上治具_上昇端
+ANL
+ANL
+MOV K26 D6000            ; Unit11-1自動運転ｽﾃｯﾌﾟ
+MPP
+LDB T1101                ; ST1-2間ﾗｲﾄｶｰﾃﾝOK
+ORB M6479                ; U11ｽﾃｯﾌﾟ動作
+ANL
+INC D6000                ; Unit11-1自動運転ｽﾃｯﾌﾟ
+LD M6025                 ; U11-1_S25_上治具上昇停止指令
+AND T1101                ; ST1-2間ﾗｲﾄｶｰﾃﾝOK
+AND M6479                ; U11ｽﾃｯﾌﾟ動作
+MOV K24 D6000            ; Unit11-1自動運転ｽﾃｯﾌﾟ
+;ｺﾈｸﾀｼｰﾙ後退指令
+LD M6026                 ; U11-1_S26_ｺﾈｸﾀｼｰﾙ後退指令
+AND T1101                ; ST1-2間ﾗｲﾄｶｰﾃﾝOK
+AND M6479                ; U11ｽﾃｯﾌﾟ動作
+AND X1301                ; ST1_ﾘｰｸ検査_ｺﾈｸﾀｼｰﾙ_後退端
+AND X1303                ; ST1_ﾘｰｸ検査_上治具_上昇端
+INC D6000                ; Unit11-1自動運転ｽﾃｯﾌﾟ
+LD M6027                 ; U11-1_S27
+AND T1101                ; ST1-2間ﾗｲﾄｶｰﾃﾝOK
+AND M6479                ; U11ｽﾃｯﾌﾟ動作
+INC D6000                ; Unit11-1自動運転ｽﾃｯﾌﾟ
+LD M6028                 ; U11-1_S28
+AND T1101                ; ST1-2間ﾗｲﾄｶｰﾃﾝOK
+AND M6479                ; U11ｽﾃｯﾌﾟ動作
+INC D6000                ; Unit11-1自動運転ｽﾃｯﾌﾟ
+;<h1/>__S29_搬送へﾜｰｸ除去要求
+LD M6029                 ; U11-1_S29
+MPS
+LD M99                   ; 能拡後対応FLG
+AND M2851                ; 【搬送】LEAK_ST1除材開始
+LDB M99                  ; 能拡後対応FLG
+AND M4851                ; 【搬送2】LEAK_ST1除材開始
+ORL
+ANL
+MPS
+INC D6000                ; Unit11-1自動運転ｽﾃｯﾌﾟ
+MPP
+AND= D6207 K1            ; Leak_ST1_BreakMode品(ONで)
+MOV K0 D6207             ; Leak_ST1_BreakMode品(ONで)
+MPP
+ANB M180                 ; 搬送1側_再投入品有
+OUT M6421                ; LeakST1_ﾜｰｸ除材要求
+LD M6030                 ; U11-1_S30
+LD M99                   ; 能拡後対応FLG
+AND M2856                ; 【搬送】LEAK_ST1除材完了
+LDB M99                  ; 能拡後対応FLG
+AND M4856                ; 【搬送2】LEAK_ST1除材完了
+ORL
+OR M6423                 ; Leak除材完了受取り
+ANL
+MPS
+LDB M2851                ; 【搬送】LEAK_ST1除材開始
+ANB M2856                ; 【搬送】LEAK_ST1除材完了
+ANB M2851                ; 【搬送】LEAK_ST1除材開始
+ANB M2856                ; 【搬送】LEAK_ST1除材完了
+ANL
+INC D6000                ; Unit11-1自動運転ｽﾃｯﾌﾟ
+MPP
+OUT M6423                ; Leak除材完了受取り
+LD M6031                 ; U11-1_S31
+MPS
+LD= D6201 K0             ; Leak_ST1_ﾜｰｸ有無記憶
+AND L309                 ; Z_搬送高さ(P9)
+ANL
+MPS
+ANB X130F                ; ST1_ﾘｰｸ検査_ﾜｰｸ確認(ON=有)
+INC D6000                ; Unit11-1自動運転ｽﾃｯﾌﾟ
+MPP
+AND X130F                ; ST1_ﾘｰｸ検査_ﾜｰｸ確認(ON=有)
+OUT M6430                ; leak_ST1ﾜｰｸ受渡し異常
+MPP
+@INC D6021               ; LeakST1排出回数
+LD M6032                 ; U11-1_S32
+AND T1101                ; ST1-2間ﾗｲﾄｶｰﾃﾝOK
+AND M6479                ; U11ｽﾃｯﾌﾟ動作
+INC D6000                ; Unit11-1自動運転ｽﾃｯﾌﾟ
+LD M6033                 ; U11-1_S33_
+INC D6000                ; Unit11-1自動運転ｽﾃｯﾌﾟ
+LD M6034                 ; U11-1_S34
+MOV K63 D6000            ; Unit11-1自動運転ｽﾃｯﾌﾟ
+;ｻｲｸﾙ停止時_上治具下降(次の自動運転は原点復帰からになる)
+LD M6035                 ; U11-1_S35_上治具下降指令
+AND T1101                ; ST1-2間ﾗｲﾄｶｰﾃﾝOK
+AND M6479                ; U11ｽﾃｯﾌﾟ動作
+AND T1122                ; ST1_Leak検査_上治具_下降端
+ANB B0160                ; 352)LeakST1上治具上下CLS異常
+INC D6000                ; Unit11-1自動運転ｽﾃｯﾌﾟ
+LD M6036                 ; U11-1_S36_払出終了OK
+OR M6350                 ; ﾘｰｸﾁｬﾝﾊﾞｰ下降完了
+AND M36                  ; 払出ﾓｰﾄﾞ
+OUT M6350                ; ﾘｰｸﾁｬﾝﾊﾞｰ下降完了
+LD M6036                 ; U11-1_S36_払出終了OK
+ANPB M6036               ; U11-1_S36_払出終了OK
+MPS
+AND M6350                ; ﾘｰｸﾁｬﾝﾊﾞｰ下降完了
+MOV K63 D6000            ; Unit11-1自動運転ｽﾃｯﾌﾟ
+MPP
+ANB M6350                ; ﾘｰｸﾁｬﾝﾊﾞｰ下降完了
+MOV K37 D6000            ; Unit11-1自動運転ｽﾃｯﾌﾟ
+LD M6037                 ; U11-1_S37_下降中にｻｲｸﾙ停止中止
+AND M172                 ; ﾘｰｸ上治具_休息指令中
+INC D6000                ; Unit11-1自動運転ｽﾃｯﾌﾟ
+LD M6038                 ; U11-1_S38
+MOV K52 D6000            ; Unit11-1自動運転ｽﾃｯﾌﾟ
+;<h1/>__S50_上治具下降_休息
+LD M6050                 ; U11-1_S50_上治具_休息
+AND T1101                ; ST1-2間ﾗｲﾄｶｰﾃﾝOK
+AND M6479                ; U11ｽﾃｯﾌﾟ動作
+AND M2808                ; Y軸座標_ﾘｰｸ不干渉位置
+AND X1310                ; ST1_ﾘｰｸ検部_ﾜｰｸ浮き確認1(ON=OK)
+AND X1311                ; ST1_ﾘｰｸ検部_ﾜｰｸ浮き確認2(ON=OK)
+ANB X130F                ; ST1_ﾘｰｸ検査_ﾜｰｸ確認(ON=有)
+INC D6000                ; Unit11-1自動運転ｽﾃｯﾌﾟ
+LD M6051                 ; U11-1_S51_ﾘｰｸ上治具_下降
+AND X1302                ; ST1_ﾘｰｸ検査_上治具_下降端
+INC D6000                ; Unit11-1自動運転ｽﾃｯﾌﾟ
+LD M6052                 ; U11-1_S52_ﾘｰｸ上治具_休息終了待ち
+AND T1101                ; ST1-2間ﾗｲﾄｶｰﾃﾝOK
+AND M6479                ; U11ｽﾃｯﾌﾟ動作
+ANB M179                 ; ﾘｰｸ上治具_休息指令中
+AND M2808                ; Y軸座標_ﾘｰｸ不干渉位置
+INC D6000                ; Unit11-1自動運転ｽﾃｯﾌﾟ
+LD M6053                 ; U11-1_S53_ﾘｰｸ上治具_上昇
+AND X1303                ; ST1_ﾘｰｸ検査_上治具_上昇端
+INC D6000                ; Unit11-1自動運転ｽﾃｯﾌﾟ
+LD M6054                 ; U11-1_S54_
+AND T1101                ; ST1-2間ﾗｲﾄｶｰﾃﾝOK
+AND M6479                ; U11ｽﾃｯﾌﾟ動作
+MOV K63 D6000            ; Unit11-1自動運転ｽﾃｯﾌﾟ
+;<h1/>◇_ﾕﾆｯﾄ-3_ﾘｰｸﾃｽﾀ_状態・動作条件(補助)
+LD CR2002                ; 常時ON
+OUT M6230                ; U11-3原点
+LDB CR2003               ; 常時OFF
+INV
+OUT M6231                ; U11-3全異常
+LD M6230                 ; U11-3原点
+ANB M6234                ; U11-3_ﾘｰｸ検査起動中
+LD M6479                 ; U11ｽﾃｯﾌﾟ動作
+LDB M130                 ; 一時停止
+ANB M51                  ; 即停止異常(緊急停止)
+ANB M52                  ; ｻｲｸﾙ停止異常(ｻｲｸﾙ停止)
+ANB M65                  ; 自動起動停止指令(払出停止)
+ANB M59                  ; 払出停止異常まとめ
+ANB M60                  ; ｴﾗｰ発生
+ORL
+ANL
+AND M300                 ; PC通信正常
+OUT M6232                ; U11-3起動条件
+LDB M50                  ; 運転準備
+OR M6486                 ; U11ｻｲｸﾙ停止異常
+OR T15                   ; 強制停止
+OUT M6233                ; U11-3起動OFF
+LD M6019                 ; U11-1_S19_ﾘｰｸ検査開始
+AND M6232                ; U11-3起動条件
+OR M6234                 ; U11-3_ﾘｰｸ検査起動中
+ANB M6233                ; U11-3起動OFF
+ANB M6223                ; U11-3ｻｲｸﾙ終了
+OUT M6234                ; U11-3_ﾘｰｸ検査起動中
+LD CR2002                ; 常時ON
+DW K0 D6400              ; Leak検査_ｽﾃｰﾀｽ表示
+LD M6234                 ; U11-3_ﾘｰｸ検査起動中
+DW K1 D6400              ; Leak検査_ｽﾃｰﾀｽ表示
+LD= D6203 K1             ; Leak_ST1_Leak検査結果(1=OK_2=NG)
+DW K2 D6400              ; Leak検査_ｽﾃｰﾀｽ表示
+LD= D6203 K2             ; Leak_ST1_Leak検査結果(1=OK_2=NG)
+DW K3 D6400              ; Leak検査_ｽﾃｰﾀｽ表示
+LDB L1100                ; LeakST1_有効状態
+DW K4 D6400              ; Leak検査_ｽﾃｰﾀｽ表示
+;ﾕﾆｯﾄ7-3ｻｲｸﾙ停止異常
+LDB B0163                ; 355)LeakST1Leakﾃｽﾀ異常
+INV
+OUT M6235                ; U11-3ｻｲｸﾙ停止異常
+;ﾕﾆｯﾄ7-3ｴﾗｰ発生まとめ
+LDB CR2003               ; 常時OFF
+INV
+OUT M6236                ; U11-3ｴﾗｰ発生
+;ﾕﾆｯﾄ7-3停止判定
+LD= D6002 D6007          ; Unit11-3自動運転ｽﾃｯﾌﾟ  Unit11-3動作中判定
+TMR K1112 K20            ; U11-3_停止中
+LD CR2002                ; 常時ON
+MOV D6002 D6007          ; Unit11-3自動運転ｽﾃｯﾌﾟ  Unit11-3動作中判定
+LD T1112                 ; U11-3_停止中
+ORB M6234                ; U11-3_ﾘｰｸ検査起動中
+OUT M6237                ; U11-3動作無し
+;□
+;□　ﾕﾆｯﾄ7-3自動運転ステップ開始
+;□
+LD CR2002                ; 常時ON
+FMOV K0 M6160 K4         ; U11-3_S0
+LDB M6234                ; U11-3_ﾘｰｸ検査起動中
+MOV K0 D6002             ; Unit11-3自動運転ｽﾃｯﾌﾟ
+LD M6234                 ; U11-3_ﾘｰｸ検査起動中
+MOV D6002 Z1             ; Unit11-3自動運転ｽﾃｯﾌﾟ
+SET M6160:Z1             ; U11-3_S0
+;<h1/>__S0_検査開始
+LD M6160                 ; U11-3_S0
+INC D6002                ; Unit11-3自動運転ｽﾃｯﾌﾟ
+LD M6161                 ; U11-3_S1
+INC D6002                ; Unit11-3自動運転ｽﾃｯﾌﾟ
+LD M6162                 ; U11-3_S2_PCへﾘｰｸ検査要求
+AND W0102.0              ; ﾘｰｸ検査開始要求#1
+LD W02.0                 ; ﾘｰｸ検査ｽﾃｰｼﾞ状態#1
+LD CR2003                ; 常時OFF
+AND W02.4                ; ﾘｰｸ検査ｽｷｯﾌﾟ#1
+ORL
+OR M3                    ; OFFLINE_MODE
+ANL
+INC D6002                ; Unit11-3自動運転ｽﾃｯﾌﾟ
+LD M6163                 ; U11-3_S3
+MPS
+ANB W02.4                ; ﾘｰｸ検査ｽｷｯﾌﾟ#1
+INC D6002                ; Unit11-3自動運転ｽﾃｯﾌﾟ
+MPP
+AND W02.4                ; ﾘｰｸ検査ｽｷｯﾌﾟ#1
+MOV K5 D6002             ; Unit11-3自動運転ｽﾃｯﾌﾟ
+LD M6164                 ; U11-3_S4_真空ON指令
+AND Y221B                ; ST1_ﾁｬﾝﾊﾞ_真空引き開
+MPS
+AND T1123                ; Leakﾊﾞｲﾊﾟｽ時間(自動中)
+INC D6002                ; Unit11-3自動運転ｽﾃｯﾌﾟ
+MPP
+TMR K1123 D6216          ; Leakﾊﾞｲﾊﾟｽ時間(自動中)  Leak_ST1_Leakﾊﾞｲﾊﾟｽ回路開放時間
+LD M6165                 ; U11-3_S5_
+MPS
+LD M35                   ; 空運転ﾓｰﾄﾞ
+OR M3                    ; OFFLINE_MODE
+ANL
+MPS
+AND T1125                ; Leak検査みなし時間
+INC D6002                ; Unit11-3自動運転ｽﾃｯﾌﾟ
+MPP
+TMR K1125 K450           ; Leak検査みなし時間
+MPP
+LDB M3                   ; OFFLINE_MODE
+ANB M35                  ; 空運転ﾓｰﾄﾞ
+ANL
+INC D6002                ; Unit11-3自動運転ｽﾃｯﾌﾟ
+LD M6166                 ; U11-3_S6
+LDB W02.0                ; ﾘｰｸ検査ｽﾃｰｼﾞ状態#1
+ANB W02.4                ; ﾘｰｸ検査ｽｷｯﾌﾟ#1
+OR M3                    ; OFFLINE_MODE
+OR M35                   ; 空運転ﾓｰﾄﾞ
+ANL
+INC D6002                ; Unit11-3自動運転ｽﾃｯﾌﾟ
+LD M6167                 ; U11-3_S7
+MPS
+AND<> D6203 K0           ; Leak_ST1_Leak検査結果(1=OK_2=NG)
+INC D6002                ; Unit11-3自動運転ｽﾃｯﾌﾟ
+MRD
+LDB M3                   ; OFFLINE_MODE
+ANB M35                  ; 空運転ﾓｰﾄﾞ
+ANL
+MPS
+AND W02.8                ; ﾘｰｸ検査結果#1
+MOV K1 D6203             ; Leak_ST1_Leak検査結果(1=OK_2=NG)
+MPP
+ANB W02.8                ; ﾘｰｸ検査結果#1
+MOV K2 D6203             ; Leak_ST1_Leak検査結果(1=OK_2=NG)
+MPP
+LD M3                    ; OFFLINE_MODE
+OR M35                   ; 空運転ﾓｰﾄﾞ
+ANL
+MPS
+ANB B1030                ; ﾘｰｸST2_強制NG_TEST
+MOV K1 D6203             ; Leak_ST1_Leak検査結果(1=OK_2=NG)
+MPP
+AND B1030                ; ﾘｰｸST2_強制NG_TEST
+MOV K2 D6203             ; Leak_ST1_Leak検査結果(1=OK_2=NG)
+LD M6168                 ; U11-3_S8
+MPS
+ANB D6207.0              ; Leak_ST1_BreakMode品(ONで)
+INC D6002                ; Unit11-3自動運転ｽﾃｯﾌﾟ
+MPP
+AND D6207.0              ; Leak_ST1_BreakMode品(ONで)
+MOV K20 D6002            ; Unit11-3自動運転ｽﾃｯﾌﾟ
+LD M6169                 ; U11-3_S9
+INC D6002                ; Unit11-3自動運転ｽﾃｯﾌﾟ
+LD M6170                 ; U11-3_S10
+MOV K63 D6002            ; Unit11-3自動運転ｽﾃｯﾌﾟ
+;ﾌﾞﾚｲｸﾏｽﾀｰ品は大気解放をいれる。
+LD M6180                 ; U11-3_S20_大気解放
+MPS
+LDB Y221A                ; ST1_ﾁｬﾝﾊﾞ_真空弁開
+AND Y221B                ; ST1_ﾁｬﾝﾊﾞ_真空引き開
+ANL
+TMR K1140 K40            ; 真空解放完了_DLY
+MPP
+AND T1140                ; 真空解放完了_DLY
+INC D6002                ; Unit11-3自動運転ｽﾃｯﾌﾟ
+LD M6181                 ; U11-3_S21_大気解放後Delay
+MPS
+TMR K1141 K5             ; 大気解放後ﾃﾞｨﾚｲ
+MPP
+AND T1141                ; 大気解放後ﾃﾞｨﾚｲ
+MOV K63 D6002            ; Unit11-3自動運転ｽﾃｯﾌﾟ
+;<h1/>◇_動作確認ﾓｰﾄﾞ
+LD M6410                 ; ST無効中
+AND<> D6106 K0           ; LeakST1_上治具ID_ｾﾝｻｰ状態
+AND<> D6107 K0           ; LeakST1_下治具ID_ｾﾝｻｰ状態
+AND X1304                ; ST1_ﾘｰｸ検査_下治具位置決1下降端
+AND X1306                ; ST1_ﾘｰｸ検査_下治具位置決2下降端
+AND X1303                ; ST1_ﾘｰｸ検査_上治具_上昇端
+ANB L1100                ; LeakST1_有効状態
+AND M73                  ; 各工程起動指令
+ANB M6094                ; 動作確認ﾓｰﾄﾞ中
+OUT M6092                ; 動作確認ﾓｰﾄﾞ移行条件
+LDP B11CB                ; ST1_Leak検査_動作確認SW_Tpb
+AND M6092                ; 動作確認ﾓｰﾄﾞ移行条件
+OR M6094                 ; 動作確認ﾓｰﾄﾞ中
+AND M73                  ; 各工程起動指令
+ANB M6149                ; 確認S49_stepend
+ANB M6093                ; 動作確認ﾓｰﾄﾞ終了ﾌﾗｸﾞ
+OUT M6094                ; 動作確認ﾓｰﾄﾞ中
+LD M6094                 ; 動作確認ﾓｰﾄﾞ中
+AND CR2006               ; 1sｸﾛｯｸﾊﾟﾙｽ
+OUT B16CB                ; ST1_Leak検査_動作確認SW_PL
+LD CR2002                ; 常時ON
+ZRES M6100 M6149         ; 確認S00_ﾜｰｸ確認  確認S49_stepend
+LDB M6094                ; 動作確認ﾓｰﾄﾞ中
+MOV K0 D6003             ; 動作確認運転ｽﾃｯﾌﾟ
+LD M6094                 ; 動作確認ﾓｰﾄﾞ中
+MOV D6003 Z1             ; 動作確認運転ｽﾃｯﾌﾟ
+SET M6100:Z1             ; 確認S00_ﾜｰｸ確認
+;ｻｲｸﾙ開始
+LD M6100                 ; 確認S00_ﾜｰｸ確認
+ANPB M6100               ; 確認S00_ﾜｰｸ確認
+AND T1101                ; ST1-2間ﾗｲﾄｶｰﾃﾝOK
+AND M4809                ; Leak不干渉位置
+AND M2808                ; Y軸座標_ﾘｰｸ不干渉位置
+MPS
+LD X130F                 ; ST1_ﾘｰｸ検査_ﾜｰｸ確認(ON=有)
+AND T1102                ; Leak部浮き確認OKﾀｲﾏ
+ANL
+INC D6003                ; 動作確認運転ｽﾃｯﾌﾟ
+MPP
+LDB X130F                ; ST1_ﾘｰｸ検査_ﾜｰｸ確認(ON=有)
+ANP B11CB                ; ST1_Leak検査_動作確認SW_Tpb
+ANL
+OUT M6093                ; 動作確認ﾓｰﾄﾞ終了ﾌﾗｸﾞ
+LD M6101                 ; 確認S01_
+INC D6003                ; 動作確認運転ｽﾃｯﾌﾟ
+LD M6102                 ; 確認S02_
+INC D6003                ; 動作確認運転ｽﾃｯﾌﾟ
+LD M6103                 ; 確認S03_
+INC D6003                ; 動作確認運転ｽﾃｯﾌﾟ
+LD M6104                 ; 確認S04_
+INC D6003                ; 動作確認運転ｽﾃｯﾌﾟ
+;____▼_上治具下降
+LD M6105                 ; 確認S05_上治具下降
+AND T1101                ; ST1-2間ﾗｲﾄｶｰﾃﾝOK
+AND X1302                ; ST1_ﾘｰｸ検査_上治具_下降端
+INC D6003                ; 動作確認運転ｽﾃｯﾌﾟ
+LD M6106                 ; 確認S06_ｺﾈｸﾀ封止前進
+AND T1101                ; ST1-2間ﾗｲﾄｶｰﾃﾝOK
+AND T1120                ; ST1_Leak検査_ｺﾈｸﾀｼｰﾙ_前進端
+INC D6003                ; 動作確認運転ｽﾃｯﾌﾟ
+LD M6107                 ; 確認S07_
+INC D6003                ; 動作確認運転ｽﾃｯﾌﾟ
+LD M6108                 ; 確認S08_
+INC D6003                ; 動作確認運転ｽﾃｯﾌﾟ
+LD M6109                 ; 確認S09_
+INC D6003                ; 動作確認運転ｽﾃｯﾌﾟ
+;ﾓｰﾄﾞ終了待ち
+LD M6110                 ; 確認S10_
+AND B11CB                ; ST1_Leak検査_動作確認SW_Tpb
+INC D6003                ; 動作確認運転ｽﾃｯﾌﾟ
+;上治具上昇
+LD M6111                 ; 確認S11_ﾁｬﾝﾊﾞｰ内待機解放
+MPS
+TMR K1132 K20            ; ﾁｬﾝﾊﾞｰ大気開放時間
+MPP
+AND T1132                ; ﾁｬﾝﾊﾞｰ大気開放時間
+INC D6003                ; 動作確認運転ｽﾃｯﾌﾟ
+LD M6112                 ; 確認S12_上治具上昇
+AND T1101                ; ST1-2間ﾗｲﾄｶｰﾃﾝOK
+AND X1303                ; ST1_ﾘｰｸ検査_上治具_上昇端
+INC D6003                ; 動作確認運転ｽﾃｯﾌﾟ
+LD M6113                 ; 確認S13_ｺﾈｸﾀ封止後退
+AND T1101                ; ST1-2間ﾗｲﾄｶｰﾃﾝOK
+AND X1301                ; ST1_ﾘｰｸ検査_ｺﾈｸﾀｼｰﾙ_後退端
+INC D6003                ; 動作確認運転ｽﾃｯﾌﾟ
+LD M6114                 ; 確認S14_
+INC D6003                ; 動作確認運転ｽﾃｯﾌﾟ
+LD M6115                 ; 確認S15_
+INC D6003                ; 動作確認運転ｽﾃｯﾌﾟ
+LD M6116                 ; 確認S16_
+INC D6003                ; 動作確認運転ｽﾃｯﾌﾟ
+LD M6117                 ; 確認S17_
+INC D6003                ; 動作確認運転ｽﾃｯﾌﾟ
+LD M6118                 ; 確認S18_
+INC D6003                ; 動作確認運転ｽﾃｯﾌﾟ
+LD M6119                 ; 確認S19_
+MOV K49 D6003            ; 動作確認運転ｽﾃｯﾌﾟ
+;<h1/>□_原点復帰回路
+LD CR2002                ; 常時ON
+FMOV K0 M6250 K3         ; OrgS0
+LDB M6484                ; U11原点復帰中
+MOV K0 D6010             ; Unit11原点復帰ｽﾃｯﾌﾟ
+LD M6484                 ; U11原点復帰中
+MOV D6010 Z1             ; Unit11原点復帰ｽﾃｯﾌﾟ
+SET M6250:Z1             ; OrgS0
+;原点復帰ｻｲｸﾙ監視
+LD M6484                 ; U11原点復帰中
+TMR K1100 K200           ; U11_原点復帰ﾀｲﾑｱｳﾄ
+;原点復帰ステップ開始
+LD M6250                 ; OrgS0
+MPS
+LDB X1303                ; ST1_ﾘｰｸ検査_上治具_上昇端
+ANB W02.0                ; ﾘｰｸ検査ｽﾃｰｼﾞ状態#1
+ANL
+@INC D6010               ; Unit11原点復帰ｽﾃｯﾌﾟ
+MPP
+AND X1303                ; ST1_ﾘｰｸ検査_上治具_上昇端
+MOV K3 D6010             ; Unit11原点復帰ｽﾃｯﾌﾟ
+LD M6251                 ; OrgS1_真空弁閉
+ANB Y221A                ; ST1_ﾁｬﾝﾊﾞ_真空弁開
+MPS
+AND T1136                ; 真空引き弁開_DLY
+@INC D6010               ; Unit11原点復帰ｽﾃｯﾌﾟ
+MPP
+TMR K1136 K15            ; 真空引き弁開_DLY
+LD M6252                 ; OrgS2_真空引き弁_開
+LD Y221B                 ; ST1_ﾁｬﾝﾊﾞ_真空引き開
+OR T1137                 ; 真空引き弁閉
+ANL
+MPS
+AND T1138                ; 真空解放完了_DLY
+INC D6010                ; Unit11原点復帰ｽﾃｯﾌﾟ
+MRD
+TMR K1137 K5             ; 真空引き弁閉
+MPP
+AND T1137                ; 真空引き弁閉
+TMR K1138 K15            ; 真空解放完了_DLY
+LD M6253                 ; OrgS3_上治具上昇指令
+AND T1101                ; ST1-2間ﾗｲﾄｶｰﾃﾝOK
+AND X1303                ; ST1_ﾘｰｸ検査_上治具_上昇端
+AND T1124                ; ST1_Leak検査_上治具_上昇端
+@INC D6010               ; Unit11原点復帰ｽﾃｯﾌﾟ
+LD M6254                 ; OrgS4
+AND T1101                ; ST1-2間ﾗｲﾄｶｰﾃﾝOK
+@INC D6010               ; Unit11原点復帰ｽﾃｯﾌﾟ
+LD M6255                 ; OrgS5_ｺﾈｸﾀｼｰﾙ後退指令
+AND T1101                ; ST1-2間ﾗｲﾄｶｰﾃﾝOK
+AND X1301                ; ST1_ﾘｰｸ検査_ｺﾈｸﾀｼｰﾙ_後退端
+@INC D6010               ; Unit11原点復帰ｽﾃｯﾌﾟ
+;　　ﾜｰｸ有無ﾁｪｯｸ
+LD M6256                 ; OrgS6
+AND T1101                ; ST1-2間ﾗｲﾄｶｰﾃﾝOK
+AND L309                 ; Z_搬送高さ(P9)
+MPS
+ANB X130F                ; ST1_ﾘｰｸ検査_ﾜｰｸ確認(ON=有)
+MOV K8 D6010             ; Unit11原点復帰ｽﾃｯﾌﾟ
+MPP
+LD X130F                 ; ST1_ﾘｰｸ検査_ﾜｰｸ確認(ON=有)
+AND M89                  ; 全STﾜｰｸｱﾝｸﾗﾝﾌﾟ状態
+ANL
+@INC D6010               ; Unit11原点復帰ｽﾃｯﾌﾟ
+;　　ﾜｰｸ除去要求
+LD M6257                 ; OrgS7_ORGﾜｰｸ除去要求
+AND T1101                ; ST1-2間ﾗｲﾄｶｰﾃﾝOK
+AND B0330                ; 816)LeakST1ﾜｰｸ除去要求
+@MOV K46 D6010           ; Unit11原点復帰ｽﾃｯﾌﾟ
+;　　
+LD M6258                 ; OrgS8_下治具位置決め固定or解除指
+AND T1101                ; ST1-2間ﾗｲﾄｶｰﾃﾝOK
+@INC D6010               ; Unit11原点復帰ｽﾃｯﾌﾟ
+LD M6259                 ; OrgS9
+AND T1101                ; ST1-2間ﾗｲﾄｶｰﾃﾝOK
+@INC D6010               ; Unit11原点復帰ｽﾃｯﾌﾟ
+LD M6260                 ; OrgS10
+AND T1101                ; ST1-2間ﾗｲﾄｶｰﾃﾝOK
+MPS
+AND M6480                ; ﾘｰｸST1U11原点
+@MOV K46 D6010           ; Unit11原点復帰ｽﾃｯﾌﾟ
+MPP
+FMOV K0 D6200 K100       ; Leak_ST1_INDEX NO.
+LD M6296                 ; OrgS46
+ANB M82                  ; 原点復帰開始
+@MOV K47 D6010           ; Unit11原点復帰ｽﾃｯﾌﾟ
+;<h1/>□_手動回路
+LD M31                   ; 手動ﾓｰﾄﾞ
+AND M32                  ; ﾒｲﾝ手動操作可能条件
+ANB M6485                ; U11起動中
+ANB M6484                ; U11原点復帰中
+MC
+;ﾁｬﾝﾊﾞｰﾘｯﾄﾞ上下
+LD CR2002                ; 常時ON
+AND M129                 ; 安全入力OK
+LD M2801                 ; RCX240動作完了
+AND M2809                ; ﾘｰｸ不干渉位置
+AND M2808                ; Y軸座標_ﾘｰｸ不干渉位置
+LD M4801                 ; RCX240動作完了
+AND M4809                ; Leak不干渉位置
+AND M4808                ; Y軸座標_Leak不干渉位置
+ORL
+ANL
+AND<> D6107 K0           ; LeakST1_下治具ID_ｾﾝｻｰ状態
+AND X1304                ; ST1_ﾘｰｸ検査_下治具位置決1下降端
+AND X1306                ; ST1_ﾘｰｸ検査_下治具位置決2下降端
+OUT M6300                ; 上治具_下降_OK
+LD B11C0                 ; ST1_ﾁｬﾝﾊﾞｰ下降TpSW
+LD M6312                 ; SwBoxMode_LeakﾁｬﾝﾊﾞｰFlag
+AND X1209                ; ST2_電特検査 有効/無効SW
+ANB X1208                ; ST1_電特検査 有効/無効SW
+ORL
+ANB B11C1                ; ST1_ﾁｬﾝﾊﾞｰ上昇TpSW
+AND M6300                ; 上治具_下降_OK
+AND T1101                ; ST1-2間ﾗｲﾄｶｰﾃﾝOK
+OUT M6301                ; 上治具_下降指令
+LD CR2002                ; 常時ON
+ANB M6314                ; ﾘｰｸ手動検査動作中
+OUT M6302                ; 上治具_上昇_OK
+LD B11C1                 ; ST1_ﾁｬﾝﾊﾞｰ上昇TpSW
+LD M6312                 ; SwBoxMode_LeakﾁｬﾝﾊﾞｰFlag
+AND X1208                ; ST1_電特検査 有効/無効SW
+ANB X1209                ; ST2_電特検査 有効/無効SW
+ORL
+ANB B11C0                ; ST1_ﾁｬﾝﾊﾞｰ下降TpSW
+AND M6302                ; 上治具_上昇_OK
+AND T1101                ; ST1-2間ﾗｲﾄｶｰﾃﾝOK
+OUT M6303                ; 上治具_上昇指令
+;ｺﾈｸﾀｼｰﾙ
+LD CR2002                ; 常時ON
+AND M129                 ; 安全入力OK
+OUT M6304                ; ｺﾈｸﾀｼｰﾙ前後_前進_起動OK
+LDP B11C2                ; ST1_ｺﾈｸﾀｼｰﾙ前進TpSW
+AND M6304                ; ｺﾈｸﾀｼｰﾙ前後_前進_起動OK
+LD M6305                 ; ｺﾈｸﾀｼｰﾙ前後_前進_指令
+ANB M6307                ; ｺﾈｸﾀｼｰﾙ前後_後退_指令
+ORL
+OUT M6305                ; ｺﾈｸﾀｼｰﾙ前後_前進_指令
+LD CR2002                ; 常時ON
+ANB M6314                ; ﾘｰｸ手動検査動作中
+OUT M6306                ; ｺﾈｸﾀｼｰﾙ前後_後退_起動OK
+LDP B11C3                ; ST1_ｺﾈｸﾀｼｰﾙ後退SW
+AND M6306                ; ｺﾈｸﾀｼｰﾙ前後_後退_起動OK
+LD M6307                 ; ｺﾈｸﾀｼｰﾙ前後_後退_指令
+ANB M6305                ; ｺﾈｸﾀｼｰﾙ前後_前進_指令
+ORL
+OUT M6307                ; ｺﾈｸﾀｼｰﾙ前後_後退_指令
+;下治具位置決め
+LD CR2002                ; 常時ON
+AND M129                 ; 安全入力OK
+AND X1301                ; ST1_ﾘｰｸ検査_ｺﾈｸﾀｼｰﾙ_後退端
+LD X1303                 ; ST1_ﾘｰｸ検査_上治具_上昇端
+OR CR2002                ; 常時ON
+ANL
+OUT M6308                ; 下治具位置決め下降_OK
+LDP B11C4                ; ST1_下治具位置決め下降TpSW
+AND M6308                ; 下治具位置決め下降_OK
+LD M6309                 ; 下治具位置決め下降指令
+ANB M6311                ; 下治具位置決め上昇指令
+ORL
+OUT M6309                ; 下治具位置決め下降指令
+LD CR2002                ; 常時ON
+ANB M6314                ; ﾘｰｸ手動検査動作中
+OUT M6310                ; 下治具位置決め上昇_OK
+LDP B11C5                ; ST1_下治具位置決め上昇TpSW
+AND M6310                ; 下治具位置決め上昇_OK
+LD M6311                 ; 下治具位置決め上昇指令
+ANB M6309                ; 下治具位置決め下降指令
+ORL
+OUT M6311                ; 下治具位置決め上昇指令
+MCR
+LDP B11C6                ; ST1_SWBox_ﾁｬﾝﾊﾞｰ上下ﾓｰﾄﾞsw
+ANB M6312                ; SwBoxMode_LeakﾁｬﾝﾊﾞｰFlag
+LDPB B11C6               ; ST1_SWBox_ﾁｬﾝﾊﾞｰ上下ﾓｰﾄﾞsw
+AND M6312                ; SwBoxMode_LeakﾁｬﾝﾊﾞｰFlag
+ANB M6812                ; SwBoxMode_電特ﾊﾟﾚｯﾄ前後Flag
+ANB M6813                ; SwBoxMode_電特ｸﾗﾝﾌﾟ&ﾊﾟﾚｯﾄFlag
+ORL
+AND= D50 K201            ; TpM-K_表示中ページNo.
+AND M31                  ; 手動ﾓｰﾄﾞ
+ANB M81                  ; 原点復帰動作中
+AND M50                  ; 運転準備
+OUT M6312                ; SwBoxMode_LeakﾁｬﾝﾊﾞｰFlag
+;ﾘｰｸ検査手動動作
+LD M129                  ; 安全入力OK
+AND X1302                ; ST1_ﾘｰｸ検査_上治具_下降端
+AND X1300                ; ST1_ﾘｰｸ検査_ｺﾈｸﾀｼｰﾙ_前進端
+AND X1304                ; ST1_ﾘｰｸ検査_下治具位置決1下降端
+AND X1306                ; ST1_ﾘｰｸ検査_下治具位置決2下降端
+AND M129                 ; 安全入力OK
+OUT M6313                ; ﾘｰｸ手動動作可能条件
+LDP B11C7                ; ST1_Leak手動検査開始sw
+ANB M6314                ; ﾘｰｸ手動検査動作中
+AND M6313                ; ﾘｰｸ手動動作可能条件
+OR M6314                 ; ﾘｰｸ手動検査動作中
+AND M31                  ; 手動ﾓｰﾄﾞ
+ANB M81                  ; 原点復帰動作中
+AND M50                  ; 運転準備
+ANB M6315                ; ﾘｰｸ検査完了
+ANB B11C8                ; ST1_Leakﾃｽﾄstop_sw
+OUT M6314                ; ﾘｰｸ手動検査動作中
+LD M6314                 ; ﾘｰｸ手動検査動作中
+TMR K1128 D6030          ; Leakﾊﾞｲﾊﾟｽ時間  Leakﾊﾞｲﾊﾟｽ時間
+LD M6314                 ; ﾘｰｸ手動検査動作中
+LDP X1203                ; ST1_ﾘｰｸ_ｱﾗｰﾑ
+ORP X1204                ; ST1_ﾘｰｸ_ｻｲｸﾙ終了
+ANL
+OR M6315                 ; ﾘｰｸ検査完了
+AND M6314                ; ﾘｰｸ手動検査動作中
+OUT M6315                ; ﾘｰｸ検査完了
+;<h1/>□_出力回路
+;ソレノイドバルブ出力
+LD Y2384                 ; ST1ﾁｬﾝﾊﾞｰ蓋下降
+OR Y2385                 ; ST1ﾁｬﾝﾊﾞｰ蓋上昇
+LD T1101                 ; ST1-2間ﾗｲﾄｶｰﾃﾝOK
+OR X1302                 ; ST1_ﾘｰｸ検査_上治具_下降端
+OR X1303                 ; ST1_ﾘｰｸ検査_上治具_上昇端
+ANL
+AND M50                  ; 運転準備
+OUT Y2380                ; ST1ﾁｬﾝﾊﾞｰ蓋ﾌﾞﾚｰｷ解除
+LDB M6251                ; OrgS1_真空弁閉
+ANB M6252                ; OrgS2_真空引き弁_開
+LDB M6381                ; ST1_上治具上昇
+OR X1303                 ; ST1_ﾘｰｸ検査_上治具_上昇端
+ANL
+ANB B01                  ; 001)非常停止異常
+ANB M6023                ; U11_S23_ﾁｬﾝﾊﾞ真空弁OFF(大気開放)
+ANB M6024                ; U11-1_S24_上治具上昇指令
+ANB M6180                ; U11-3_S20_大気解放
+ANB M6111                ; 確認S11_ﾁｬﾝﾊﾞｰ内待機解放
+OUT Y221A                ; ST1_ﾁｬﾝﾊﾞ_真空弁開
+LD M6164                 ; U11-3_S4_真空ON指令
+LD M6314                 ; ﾘｰｸ手動検査動作中
+ANB T1128                ; Leakﾊﾞｲﾊﾟｽ時間
+ORL
+OR M6180                 ; U11-3_S20_大気解放
+LD M6252                 ; OrgS2_真空引き弁_開
+ANB T1137                ; 真空引き弁閉
+ORL
+OUT Y221B                ; ST1_ﾁｬﾝﾊﾞ_真空引き開
+LD X130E                 ; ST1_ﾘｰｸ検査_上治具中間位置
+OFDL K10 L1112           ; ST1_ﾘｰｸ検査_上治具中間位置
+LD Y2384                 ; ST1ﾁｬﾝﾊﾞｰ蓋下降
+OR L1110                 ; ST1ﾁｬﾝﾊﾞｰ蓋下降記憶
+ANB X1303                ; ST1_ﾘｰｸ検査_上治具_上昇端
+ANB L1116                ; ST1_ﾘｰｸ検査_上治具中間位置記憶
+OUT L1110                ; ST1ﾁｬﾝﾊﾞｰ蓋下降記憶
+LD L1112                 ; ST1_ﾘｰｸ検査_上治具中間位置
+OR L1111                 ; ST1ﾁｬﾝﾊﾞｰ蓋下降時速度切替on低
+AND L1110                ; ST1ﾁｬﾝﾊﾞｰ蓋下降記憶
+OUT L1111                ; ST1ﾁｬﾝﾊﾞｰ蓋下降時速度切替on低
+LD Y2385                 ; ST1ﾁｬﾝﾊﾞｰ蓋上昇
+OR L1115                 ; ST1ﾁｬﾝﾊﾞｰ蓋上昇記憶
+AND L1110                ; ST1ﾁｬﾝﾊﾞｰ蓋下降記憶
+OUT L1115                ; ST1ﾁｬﾝﾊﾞｰ蓋上昇記憶
+LD L1115                 ; ST1ﾁｬﾝﾊﾞｰ蓋上昇記憶
+AND L1112                ; ST1_ﾘｰｸ検査_上治具中間位置
+OR L1116                 ; ST1_ﾘｰｸ検査_上治具中間位置記憶
+AND L1110                ; ST1ﾁｬﾝﾊﾞｰ蓋下降記憶
+OUT L1116                ; ST1_ﾘｰｸ検査_上治具中間位置記憶
+LD CR2003                ; 常時OFF
+OUT Y2383
+LD L1111                 ; ST1ﾁｬﾝﾊﾞｰ蓋下降時速度切替on低
+ANB Y2385                ; ST1ﾁｬﾝﾊﾞｰ蓋上昇
+OUT Y2382                ; ST1ﾁｬﾝﾊﾞｰ蓋下降時速度切替(ON低)
+LD M6301                 ; 上治具_下降指令
+OR M221                  ; 全Leak ST_ﾁｬﾝﾊﾞｰ下降指令
+AND M6300                ; 上治具_下降_OK
+AND M2808                ; Y軸座標_ﾘｰｸ不干渉位置
+LDB M6011                ; U11-1_S11_上治具下降指令
+ANB M6012                ; U11-1_S12_上治具下降指令
+ANB M6051                ; U11-1_S51_ﾘｰｸ上治具_下降
+ANB M6035                ; U11-1_S35_上治具下降指令
+ANB M6105                ; 確認S05_上治具下降
+INV
+AND M2808                ; Y軸座標_ﾘｰｸ不干渉位置
+ORL
+LD M6380                 ; ST1_上治具下降
+ANB M6381                ; ST1_上治具上昇
+ANB M6013                ; U11-1_S13_上治具下降指令停止
+LDB M31                  ; 手動ﾓｰﾄﾞ
+OR X1302                 ; ST1_ﾘｰｸ検査_上治具_下降端
+OR M30                   ; 自動ﾓｰﾄﾞ
+ANL
+ORL
+AND M50                  ; 運転準備
+OUT M6380                ; ST1_上治具下降
+LD M6380                 ; ST1_上治具下降
+LD T1101                 ; ST1-2間ﾗｲﾄｶｰﾃﾝOK
+OR X1302                 ; ST1_ﾘｰｸ検査_上治具_下降端
+ANL
+OUT Y2384                ; ST1ﾁｬﾝﾊﾞｰ蓋下降
+LD M6303                 ; 上治具_上昇指令
+AND M6302                ; 上治具_上昇_OK
+OR M223                  ; 全Leak ST_ﾁｬﾝﾊﾞｰ上昇指令
+LDB M6253                ; OrgS3_上治具上昇指令
+ANB M6014                ; U11-1_S14_上治具ちょっと上昇指令
+ANB M6024                ; U11-1_S24_上治具上昇指令
+ANB M6053                ; U11-1_S53_ﾘｰｸ上治具_上昇
+ANB M6112                ; 確認S12_上治具上昇
+INV
+ORL
+LD M6381                 ; ST1_上治具上昇
+ANB M6380                ; ST1_上治具下降
+LDB M31                  ; 手動ﾓｰﾄﾞ
+OR M30                   ; 自動ﾓｰﾄﾞ
+OR X1303                 ; ST1_ﾘｰｸ検査_上治具_上昇端
+ANL
+ORL
+AND M50                  ; 運転準備
+OUT M6381                ; ST1_上治具上昇
+LD M6381                 ; ST1_上治具上昇
+LD T1101                 ; ST1-2間ﾗｲﾄｶｰﾃﾝOK
+OR X1303                 ; ST1_ﾘｰｸ検査_上治具_上昇端
+ANL
+OUT Y2385                ; ST1ﾁｬﾝﾊﾞｰ蓋上昇
+LD M6305                 ; ｺﾈｸﾀｼｰﾙ前後_前進_指令
+AND M6304                ; ｺﾈｸﾀｼｰﾙ前後_前進_起動OK
+LDB M6016                ; U11-1_S16_ｺﾈｸﾀｼｰﾙ前進
+ANB M6106                ; 確認S06_ｺﾈｸﾀ封止前進
+INV
+ORL
+LD Y2600                 ; ﾘｰｸST1ｺﾈｸﾀｼｰﾙｼｰﾙ側
+ANB Y2601                ; ﾘｰｸST1ｺﾈｸﾀｼｰﾙ戻り
+ORL
+AND M50                  ; 運転準備
+OUT Y2600                ; ﾘｰｸST1ｺﾈｸﾀｼｰﾙｼｰﾙ側
+LD M6307                 ; ｺﾈｸﾀｼｰﾙ前後_後退_指令
+AND M6306                ; ｺﾈｸﾀｼｰﾙ前後_後退_起動OK
+LDB M6255                ; OrgS5_ｺﾈｸﾀｼｰﾙ後退指令
+ANB M6026                ; U11-1_S26_ｺﾈｸﾀｼｰﾙ後退指令
+ANB M6113                ; 確認S13_ｺﾈｸﾀ封止後退
+INV
+ORL
+LD Y2601                 ; ﾘｰｸST1ｺﾈｸﾀｼｰﾙ戻り
+ANB Y2600                ; ﾘｰｸST1ｺﾈｸﾀｼｰﾙｼｰﾙ側
+ORL
+AND M50                  ; 運転準備
+OUT Y2601                ; ﾘｰｸST1ｺﾈｸﾀｼｰﾙ戻り
+LD M6309                 ; 下治具位置決め下降指令
+AND M6308                ; 下治具位置決め下降_OK
+ORP M6403                ; ﾘｰｸST1_下治具位置決め下降指令
+LD Y2602                 ; ﾘｰｸST1下治具位置決め下降
+ANB Y2603                ; ﾘｰｸST1下治具位置決め上昇
+ORL
+OUT Y2602                ; ﾘｰｸST1下治具位置決め下降
+LD M6311                 ; 下治具位置決め上昇指令
+AND M6310                ; 下治具位置決め上昇_OK
+ORP M6404                ; ﾘｰｸST1_下治具位置決め上昇指令
+LD Y2603                 ; ﾘｰｸST1下治具位置決め上昇
+ANB Y2602                ; ﾘｰｸST1下治具位置決め下降
+ORL
+OUT Y2603                ; ﾘｰｸST1下治具位置決め上昇
+;■ﾗﾝﾌﾟ表示
+LD X1304                 ; ST1_ﾘｰｸ検査_下治具位置決1下降端
+AND X1306                ; ST1_ﾘｰｸ検査_下治具位置決2下降端
+INV
+AND<> D6107 K0           ; LeakST1_下治具ID_ｾﾝｻｰ状態
+AND CR2006               ; 1sｸﾛｯｸﾊﾟﾙｽ
+LD X1304                 ; ST1_ﾘｰｸ検査_下治具位置決1下降端
+AND X1306                ; ST1_ﾘｰｸ検査_下治具位置決2下降端
+ORL
+OUT Y221C                ; ST1_ﾘｰｸ下治具_LOCK/UNLOCK表示
+LD M6409                 ; ST無効予約(自動運転)
+AND CR2006               ; 1sｸﾛｯｸﾊﾟﾙｽ
+LD L1100                 ; LeakST1_有効状態
+ANB M6409                ; ST無効予約(自動運転)
+ORL
+OUT Y221D                ; ST1_ﾘｰｸ_有効/無効表示
+OUT B16CA                ; ST1ﾘｰｸ検査_有効/無効_Tpb
+;■その他制御出力
+;PC_I/O
+LD X1200                 ; ST1_ﾘｰｸ_OK判定
+OUT W0103.0              ; ﾘｰｸ検査結果OK#1
+LD X1201                 ; ST1_ﾘｰｸ_NG判定
+OUT W0103.1              ; ﾘｰｸ検査結果NG#
+LD X1202                 ; ST1_ﾘｰｸ_NGﾏｽﾀｰ
+OUT W0103.2              ; ﾘｰｸ検査結果NGﾏｽﾀｰ#1
+LD X1203                 ; ST1_ﾘｰｸ_ｱﾗｰﾑ
+OUT W0103.3              ; ﾘｰｸﾃｽﾀｰｱﾗｰﾑ#1
+LD X1204                 ; ST1_ﾘｰｸ_ｻｲｸﾙ終了
+OUT W0103.4              ; ﾘｰｸﾃｽﾀｰｻｲｸﾙ終了#1
+LD W03.1                 ; ﾘｰｸﾃｽﾀｰﾘｾｯﾄ#1
+OR B11C8                 ; ST1_Leakﾃｽﾄstop_sw
+OUT Y2210                ; ST1_ﾘｰｸ ﾘｾｯﾄ
+LD W03.0                 ; ﾘｰｸ検査ｽﾀｰﾄ#1
+OR M6314                 ; ﾘｰｸ手動検査動作中
+OUT Y2211                ; ST1_ﾘｰｸ ｽﾀｰﾄ
+LD W03.2                 ; ﾘｰｸﾃｽﾄﾌﾟﾛｸﾞﾗﾑNo.(Bin1)#1
+OUT Y2212                ; ST1_ﾘｰｸ PRG1
+LD W03.3                 ; ﾘｰｸﾃｽﾄﾌﾟﾛｸﾞﾗﾑNo.(Bin2)#1
+OUT Y2213                ; ST1_ﾘｰｸ PRG2
+LD W03.4                 ; ﾘｰｸﾃｽﾄﾌﾟﾛｸﾞﾗﾑNo.(Bin4)#1
+OUT Y2214                ; ST1_ﾘｰｸ PRG4
+LD W03.5                 ; ﾘｰｸﾃｽﾄﾌﾟﾛｸﾞﾗﾑNo.(Bin8)#1
+OUT Y2215                ; ST1_ﾘｰｸ PRG8
+LD W03.6                 ; ﾘｰｸｵｰﾄｾﾞﾛ#1
+OUT Y2216                ; ST1_ﾘｰｸ ｵｰﾄｾﾞﾛ
+LD M6162                 ; U11-3_S2_PCへﾘｰｸ検査要求
+OUT W0102.0              ; ﾘｰｸ検査開始要求#1
+LD L1100                 ; LeakST1_有効状態
+OUT W0102.8              ; ﾘｰｸ検査ｽﾃｰｼﾞ有効/無効#1
+;□□　　パネル表示　　□□
+LD Y2384                 ; ST1ﾁｬﾝﾊﾞｰ蓋下降
+AND CR2006               ; 1sｸﾛｯｸﾊﾟﾙｽ
+OR X1302                 ; ST1_ﾘｰｸ検査_上治具_下降端
+OUT B16C0                ; ﾁｬﾝﾊﾞｰ下降TpPL
+LD Y2385                 ; ST1ﾁｬﾝﾊﾞｰ蓋上昇
+AND CR2006               ; 1sｸﾛｯｸﾊﾟﾙｽ
+OR X1303                 ; ST1_ﾘｰｸ検査_上治具_上昇端
+OUT B16C1                ; ﾁｬﾝﾊﾞｰ上昇TpPL
+LD Y2600                 ; ﾘｰｸST1ｺﾈｸﾀｼｰﾙｼｰﾙ側
+AND CR2006               ; 1sｸﾛｯｸﾊﾟﾙｽ
+OR X1300                 ; ST1_ﾘｰｸ検査_ｺﾈｸﾀｼｰﾙ_前進端
+OUT B16C2                ; ｺﾈｸﾀｼｰﾙ前進TpPL
+LD Y2601                 ; ﾘｰｸST1ｺﾈｸﾀｼｰﾙ戻り
+AND CR2006               ; 1sｸﾛｯｸﾊﾟﾙｽ
+OR X1301                 ; ST1_ﾘｰｸ検査_ｺﾈｸﾀｼｰﾙ_後退端
+OUT B16C3                ; ｺﾈｸﾀｼｰﾙ後退PL
+LD Y2602                 ; ﾘｰｸST1下治具位置決め下降
+LDB X1304                ; ST1_ﾘｰｸ検査_下治具位置決1下降端
+ORB X1306                ; ST1_ﾘｰｸ検査_下治具位置決2下降端
+ANL
+AND CR2006               ; 1sｸﾛｯｸﾊﾟﾙｽ
+LD X1304                 ; ST1_ﾘｰｸ検査_下治具位置決1下降端
+AND X1306                ; ST1_ﾘｰｸ検査_下治具位置決2下降端
+ORL
+OUT B16C4                ; 下治具位置決め下降TpPL
+LD Y2603                 ; ﾘｰｸST1下治具位置決め上昇
+AND CR2006               ; 1sｸﾛｯｸﾊﾟﾙｽ
+LD X1307                 ; ST1_ﾘｰｸ検査_下治具位置決2上昇端
+AND X1305                ; ST1_ﾘｰｸ検査_下治具位置決1上昇端
+ORL
+OUT B16C5                ; 下治具位置決め上昇TpPL
+LD M6312                 ; SwBoxMode_LeakﾁｬﾝﾊﾞｰFlag
+OUT B16C6                ; PLBox_ﾁｬﾝﾊﾞｰ上下ﾓｰﾄﾞPL
+LD M6314                 ; ﾘｰｸ手動検査動作中
+OUT B16C7                ; ﾘｰｸ手動検査開始PL
+;<h1/>□_異常検出
+LD Y2384                 ; ST1ﾁｬﾝﾊﾞｰ蓋下降
+ANB X1302                ; ST1_ﾘｰｸ検査_上治具_下降端
+LD Y2385                 ; ST1ﾁｬﾝﾊﾞｰ蓋上昇
+ANB X1303                ; ST1_ﾘｰｸ検査_上治具_上昇端
+ORL
+LD X1302                 ; ST1_ﾘｰｸ検査_上治具_下降端
+AND X1303                ; ST1_ﾘｰｸ検査_上治具_上昇端
+ORL
+ANB B0160                ; 352)LeakST1上治具上下CLS異常
+LD CR2003                ; 常時OFF
+ANB B0660                ; 224)_Bz停止
+ORB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B0160                ; 352)LeakST1上治具上下CLS異常
+ORL
+MPS
+AND T1190                ; CLSﾀｲﾑｱｳﾄ
+OUT B0160                ; 352)LeakST1上治具上下CLS異常
+MPP
+TMR K1190 K300           ; CLSﾀｲﾑｱｳﾄ
+LDP B0160                ; 352)LeakST1上治具上下CLS異常
+AND< D13510 K64          ; FIFO_DATA_VALUE
+MOV K352 D13500          ; ALM_WRITE_CODE(複合)
+FIFOW D13500 D13510      ; ALM_WRITE_CODE(複合)  FIFO_DATA_VALUE
+LD M110                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B0660                 ; 224)_Bz停止
+AND B0160                ; 352)LeakST1上治具上下CLS異常
+OUT B0660                ; 224)_Bz停止
+;ｺﾈｸﾀｼｰﾙ
+LD Y2600                 ; ﾘｰｸST1ｺﾈｸﾀｼｰﾙｼｰﾙ側
+ANB X1300                ; ST1_ﾘｰｸ検査_ｺﾈｸﾀｼｰﾙ_前進端
+LD Y2601                 ; ﾘｰｸST1ｺﾈｸﾀｼｰﾙ戻り
+ANB X1301                ; ST1_ﾘｰｸ検査_ｺﾈｸﾀｼｰﾙ_後退端
+ORL
+LD X1300                 ; ST1_ﾘｰｸ検査_ｺﾈｸﾀｼｰﾙ_前進端
+AND X1301                ; ST1_ﾘｰｸ検査_ｺﾈｸﾀｼｰﾙ_後退端
+ORL
+LD CR2003                ; 常時OFF
+ANB B0661                ; 225)_Bz停止
+ORB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B0161                ; 353)LeakST1ｺﾈｸﾀｼｰﾙ前後CLS異常
+ORL
+MPS
+LD T1191                 ; CLSﾀｲﾑｱｳﾄ
+ANB M35                  ; 空運転ﾓｰﾄﾞ
+ANL
+OUT B0161                ; 353)LeakST1ｺﾈｸﾀｼｰﾙ前後CLS異常
+MPP
+TMR K1191 K100           ; CLSﾀｲﾑｱｳﾄ
+LDP B0161                ; 353)LeakST1ｺﾈｸﾀｼｰﾙ前後CLS異常
+AND< D13510 K64          ; FIFO_DATA_VALUE
+MOV K353 D13500          ; ALM_WRITE_CODE(複合)
+FIFOW D13500 D13510      ; ALM_WRITE_CODE(複合)  FIFO_DATA_VALUE
+LD M110                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B0661                 ; 225)_Bz停止
+AND B0161                ; 353)LeakST1ｺﾈｸﾀｼｰﾙ前後CLS異常
+OUT B0661                ; 225)_Bz停止
+LD M6004                 ; U11-1_S4_ﾘｰｸSTﾜｰｸ浮き異常
+LD CR2003                ; 常時OFF
+ANB B0662                ; 226)_Bz停止
+ORB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B0162                ; 354)LeakST1ﾜｰｸ浮き検出異常
+ORL
+OUT B0162                ; 354)LeakST1ﾜｰｸ浮き検出異常
+LDP B0162                ; 354)LeakST1ﾜｰｸ浮き検出異常
+AND< D13510 K64          ; FIFO_DATA_VALUE
+MOV K354 D13500          ; ALM_WRITE_CODE(複合)
+FIFOW D13500 D13510      ; ALM_WRITE_CODE(複合)  FIFO_DATA_VALUE
+LD M110                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B0662                 ; 226)_Bz停止
+AND B0162                ; 354)LeakST1ﾜｰｸ浮き検出異常
+OUT B0662                ; 226)_Bz停止
+;ﾘｰｸalm
+LD X1203                 ; ST1_ﾘｰｸ_ｱﾗｰﾑ
+LD CR2003                ; 常時OFF
+ANB B0663                ; 227)_Bz停止
+ORB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B0163                ; 355)LeakST1Leakﾃｽﾀ異常
+ORL
+AND CR2003               ; 常時OFF
+OUT B0163                ; 355)LeakST1Leakﾃｽﾀ異常
+LDP B0163                ; 355)LeakST1Leakﾃｽﾀ異常
+AND< D13510 K64          ; FIFO_DATA_VALUE
+MOV K355 D13500          ; ALM_WRITE_CODE(複合)
+FIFOW D13500 D13510      ; ALM_WRITE_CODE(複合)  FIFO_DATA_VALUE
+LD M110                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B0663                 ; 227)_Bz停止
+AND B0163                ; 355)LeakST1Leakﾃｽﾀ異常
+OUT B0663                ; 227)_Bz停止
+;　　
+LD Y2602                 ; ﾘｰｸST1下治具位置決め下降
+LDB X1304                ; ST1_ﾘｰｸ検査_下治具位置決1下降端
+ORB X1306                ; ST1_ﾘｰｸ検査_下治具位置決2下降端
+ANL
+LD Y2603                 ; ﾘｰｸST1下治具位置決め上昇
+LDB X1305                ; ST1_ﾘｰｸ検査_下治具位置決1上昇端
+ORB X1307                ; ST1_ﾘｰｸ検査_下治具位置決2上昇端
+ANL
+ORL
+LD CR2003                ; 常時OFF
+ANB B0664                ; 228)_Bz停止
+ORB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B0164                ; 356)LeakST1下治具位置決めcls異常
+ORL
+MPS
+AND T1192                ; CLSﾀｲﾑｱｳﾄ
+OUT B0164                ; 356)LeakST1下治具位置決めcls異常
+MPP
+TMR K1192 K100           ; CLSﾀｲﾑｱｳﾄ
+LDP B0164                ; 356)LeakST1下治具位置決めcls異常
+AND< D13510 K64          ; FIFO_DATA_VALUE
+MOV K356 D13500          ; ALM_WRITE_CODE(複合)
+FIFOW D13500 D13510      ; ALM_WRITE_CODE(複合)  FIFO_DATA_VALUE
+LD M110                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B0664                 ; 228)_Bz停止
+AND B0164                ; 356)LeakST1下治具位置決めcls異常
+OUT B0664                ; 228)_Bz停止
+;　　
+LD T1126                 ; 上治具_ID_更新_DLY
+AND L1100                ; LeakST1_有効状態
+AND<> D6106 D6100        ; LeakST1_上治具ID_ｾﾝｻｰ状態  LeakST1_上治具ID
+AND Y2385                ; ST1ﾁｬﾝﾊﾞｰ蓋上昇
+ANB Y2384                ; ST1ﾁｬﾝﾊﾞｰ蓋下降
+AND T1124                ; ST1_Leak検査_上治具_上昇端
+AND T1101                ; ST1-2間ﾗｲﾄｶｰﾃﾝOK
+LD CR2003                ; 常時OFF
+ANB B0665                ; 229)_Bz停止
+ORB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B0165                ; 357)LeakST1上治具ID不一致
+ORL
+OUT B0165                ; 357)LeakST1上治具ID不一致
+LDP B0165                ; 357)LeakST1上治具ID不一致
+AND< D13510 K64          ; FIFO_DATA_VALUE
+MOV K1357 D13500         ; ALM_WRITE_CODE(複合)
+FIFOW D13500 D13510      ; ALM_WRITE_CODE(複合)  FIFO_DATA_VALUE
+LD M110                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B0665                 ; 229)_Bz停止
+AND B0165                ; 357)LeakST1上治具ID不一致
+OUT B0665                ; 229)_Bz停止
+;　　
+LD T1127                 ; 下治具_ID_更新_DLY
+AND L1100                ; LeakST1_有効状態
+AND<> D6107 D6101        ; LeakST1_下治具ID_ｾﾝｻｰ状態  LeakST1_下治具ID
+LD CR2003                ; 常時OFF
+ANB B0666                ; 230)_Bz停止
+ORB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B0166                ; 358)LeakST1下治具ID不一致
+ORL
+OUT B0166                ; 358)LeakST1下治具ID不一致
+LDP B0166                ; 358)LeakST1下治具ID不一致
+AND< D13510 K64          ; FIFO_DATA_VALUE
+MOV K1358 D13500         ; ALM_WRITE_CODE(複合)
+FIFOW D13500 D13510      ; ALM_WRITE_CODE(複合)  FIFO_DATA_VALUE
+LD M110                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B0666                 ; 230)_Bz停止
+AND B0166                ; 358)LeakST1下治具ID不一致
+OUT B0666                ; 230)_Bz停止
+;　　ﾘｰｸ_ﾜｰｸ受取失敗異常
+LD M6060                 ; U11-1_S60_ﾜｰｸ受取異常
+LD CR2003                ; 常時OFF
+ANB B0667                ; 231)_Bz停止
+ORB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B0167                ; 359)LeakST1ﾜｰｸ受取異常
+ORL
+OUT B0167                ; 359)LeakST1ﾜｰｸ受取異常
+LDP B0167                ; 359)LeakST1ﾜｰｸ受取異常
+AND< D13510 K64          ; FIFO_DATA_VALUE
+MOV K1359 D13500         ; ALM_WRITE_CODE(複合)
+FIFOW D13500 D13510      ; ALM_WRITE_CODE(複合)  FIFO_DATA_VALUE
+LD M110                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B0667                 ; 231)_Bz停止
+AND B0167                ; 359)LeakST1ﾜｰｸ受取異常
+OUT B0667                ; 231)_Bz停止
+;
+LD M6430                 ; leak_ST1ﾜｰｸ受渡し異常
+LD CR2003                ; 常時OFF
+ANB B0668                ; 232)_Bz停止
+ORB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B0168                ; 360)LeakST1ﾜｰｸ受渡し異常
+ORL
+OUT B0168                ; 360)LeakST1ﾜｰｸ受渡し異常
+LDP B0168                ; 360)LeakST1ﾜｰｸ受渡し異常
+AND< D13510 K64          ; FIFO_DATA_VALUE
+MOV K1360 D13500         ; ALM_WRITE_CODE(複合)
+FIFOW D13500 D13510      ; ALM_WRITE_CODE(複合)  FIFO_DATA_VALUE
+LD M110                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B0668                 ; 232)_Bz停止
+AND B0168                ; 360)LeakST1ﾜｰｸ受渡し異常
+OUT B0668                ; 232)_Bz停止
+;
+LD D6201.0
+AND T1104                ; ST1_Leak検査_ﾜｰｸ無確認
+LD M99                   ; 能拡後対応FLG
+ANB M2851                ; 【搬送】LEAK_ST1除材開始
+ANB M2856                ; 【搬送】LEAK_ST1除材完了
+ANB M1824                ; U2-S324_ﾘｰｸとの完了ﾊﾝﾄﾞｼｪｲｸ
+ANB M1825                ; U2-S325_吸着OKﾃﾞｰﾀｼﾌﾄ
+ANB M1826                ; U2-S326_PCﾃﾞｰﾀ送信起動
+LDB M99                  ; 能拡後対応FLG
+ANB M4851                ; 【搬送2】LEAK_ST1除材開始
+ANB M4856                ; 【搬送2】LEAK_ST1除材完了
+ANB M3824                ; U6-S324_Leakとの完了ﾊﾝﾄﾞｼｪｲｸ
+ANB M3825                ; U6-S325_吸着OKﾃﾞｰﾀｼﾌﾄ
+ANB M3826                ; U6-S326_PCﾃﾞｰﾀ送信起動
+ORL
+ANL
+AND M71                  ; 自動運転開始BZ
+LD CR2003                ; 常時OFF
+ANB B0669                ; 233)_Bz停止
+ORB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B0169                ; 361)LeakST1ﾜｰｸ検知OFF異常
+ORL
+ANB M35                  ; 空運転ﾓｰﾄﾞ
+OUT B0169                ; 361)LeakST1ﾜｰｸ検知OFF異常
+LDP B0169                ; 361)LeakST1ﾜｰｸ検知OFF異常
+AND< D13510 K64          ; FIFO_DATA_VALUE
+MOV K1361 D13500         ; ALM_WRITE_CODE(複合)
+FIFOW D13500 D13510      ; ALM_WRITE_CODE(複合)  FIFO_DATA_VALUE
+LD M110                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B0669                 ; 233)_Bz停止
+AND B0169                ; 361)LeakST1ﾜｰｸ検知OFF異常
+OUT B0669                ; 233)_Bz停止
+;　　
+LD M6257                 ; OrgS7_ORGﾜｰｸ除去要求
+LD M1819                 ; U2-S319_吸着ﾐｽ異常orﾜｰｸ除去要求
+LD M3209                 ; ﾊﾝﾄﾞ2_ﾘｰｸST1除材中flg
+OR M3208                 ; ﾊﾝﾄﾞ1_ﾘｰｸST1除材中flg
+ANL
+AND>= D1540 K3           ; 吸着ﾘﾄﾗｲ回数ｶｳﾝﾀ
+ORL
+LD M3819                 ; U6-S319_吸着ﾐｽ異常orﾜｰｸ除去要求
+LD M5208                 ; Hand1_LeakST1除材中flg
+OR M5209                 ; Hand2_LeakST1除材中flg
+ANL
+AND>= D3540 K3           ; 吸着ﾘﾄﾗｲ回数ｶｳﾝﾀ
+ORL
+LD CR2003                ; 常時OFF
+ANB B0830                ; 816)BzStop
+ORB M111                 ; 異常ﾘｾｯﾄﾊﾟﾙｽ
+AND B0330                ; 816)LeakST1ﾜｰｸ除去要求
+ORL
+OUT B0330                ; 816)LeakST1ﾜｰｸ除去要求
+LDP B0330                ; 816)LeakST1ﾜｰｸ除去要求
+AND< D13510 K64          ; FIFO_DATA_VALUE
+MOV K816 D13500          ; ALM_WRITE_CODE(複合)
+FIFOW D13500 D13510      ; ALM_WRITE_CODE(複合)  FIFO_DATA_VALUE
+LD M110                  ; ﾌﾞｻﾞｰ停止ﾊﾟﾙｽ
+OR B0830                 ; 816)BzStop
+AND B0330                ; 816)LeakST1ﾜｰｸ除去要求
+OUT B0830                ; 816)BzStop
+;異常ﾌﾞｻﾞｰまとめ
+LDB B0160                ; 352)LeakST1上治具上下CLS異常
+OR B0660                 ; 224)_Bz停止
+LDB B0161                ; 353)LeakST1ｺﾈｸﾀｼｰﾙ前後CLS異常
+OR B0661                 ; 225)_Bz停止
+ANL
+LDB B0162                ; 354)LeakST1ﾜｰｸ浮き検出異常
+OR B0662                 ; 226)_Bz停止
+ANL
+LDB B0163                ; 355)LeakST1Leakﾃｽﾀ異常
+OR B0663                 ; 227)_Bz停止
+ANL
+LDB B0164                ; 356)LeakST1下治具位置決めcls異常
+OR B0664                 ; 228)_Bz停止
+ANL
+LDB B0165                ; 357)LeakST1上治具ID不一致
+OR B0665                 ; 229)_Bz停止
+ANL
+LDB B0166                ; 358)LeakST1下治具ID不一致
+OR B0666                 ; 230)_Bz停止
+ANL
+LDB B0167                ; 359)LeakST1ﾜｰｸ受取異常
+OR B0667                 ; 231)_Bz停止
+ANL
+LDB B0168                ; 360)LeakST1ﾜｰｸ受渡し異常
+OR B0668                 ; 232)_Bz停止
+ANL
+LDB B0169                ; 361)LeakST1ﾜｰｸ検知OFF異常
+OR B0669                 ; 233)_Bz停止
+ANL
+LDB B016A                ; 362)
+OR B066A                 ; 234)_Bz停止
+ANL
+LDB B016B                ; 363)
+OR B066B                 ; 235)_Bz停止
+ANL
+LDB B016C                ; 364)
+OR B066C                 ; 236)_Bz停止
+ANL
+LDB B016D                ; 365)
+OR B066D                 ; 237)_Bz停止
+ANL
+LDB B016E                ; 366)
+OR B066E                 ; 238)_Bz停止
+ANL
+LDB B016F                ; 367)
+OR B066F                 ; 239)_Bz停止
+ANL
+LDB B0170                ; 368)
+OR B0670                 ; 240)_Bz停止
+ANL
+LDB B0171                ; 369)
+OR B0671                 ; 241)_Bz停止
+ANL
+LDB B0172                ; 370)
+OR B0672                 ; 242)_Bz停止
+ANL
+LDB B0173                ; 371)
+OR B0673                 ; 243)_Bz停止
+ANL
+LDB B0174                ; 372)
+OR B0674                 ; 244)_Bz停止
+ANL
+LDB B0175                ; 373)
+OR B0675                 ; 245)_Bz停止
+ANL
+LDB B0176                ; 374)
+OR B0676                 ; 246)_Bz停止
+ANL
+LDB B0177                ; 375)
+OR B0677                 ; 247)_Bz停止
+ANL
+LDB B0178                ; 376)
+OR B0678                 ; 248)_Bz停止
+ANL
+LDB B0179                ; 377)
+OR B0679                 ; 249)_Bz停止
+ANL
+LDB B017A                ; 378)
+OR B067A                 ; 250)_Bz停止
+ANL
+LDB B017B                ; 379)
+OR B067B                 ; 251)_Bz停止
+ANL
+LDB B017C                ; 380)
+OR B067C                 ; 252)_Bz停止
+ANL
+LDB B017D                ; 381)
+OR B067D                 ; 253)_Bz停止
+ANL
+LDB B017E                ; 382)
+OR B067E                 ; 254)_Bz停止
+ANL
+LDB B017F                ; 383)
+OR B067F                 ; 255)_Bz停止
+ANL
+LDB B0330                ; 816)LeakST1ﾜｰｸ除去要求
+OR B0830                 ; 816)BzStop
+ANL
+INV
+OUT M6489                ; U11異常BZ補助
+END
+ENDH

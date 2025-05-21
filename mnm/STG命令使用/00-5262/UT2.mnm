@@ -1,0 +1,2615 @@
+DEVICE:53
+;MODULE:UT2
+;MODULE_TYPE:0
+;UT2 インク注入1
+;UT2 Ink Injection 1 
+;
+;非常停止
+;Emergency Stop
+LD R50010                ; Emaegency Stop
+OR @MR001
+ZRES @MR002 @MR3915      ; STEP oparation finish
+CON
+OUT @MR001
+TMR @0 #3
+LD @T0
+MDSTOP UT2
+;<h1/>HOME
+LD R50003                ; HOME mode
+ANB R50202               ; UT2 Do
+SET R50202               ; UT2 Do
+CON
+SET @MR1003              ; UT2 Home Return Start
+LDB R50003               ; HOME mode
+ANB R50001               ; AUTO mode
+ANB R50002               ; STEP mode
+AND @MR1015              ; UT2 Home Return finish
+RES R50202               ; UT2 Do
+CON
+RES @MR1015              ; UT2 Home Return finish
+STG @MR1003              ; UT2 Home Return Start
+ANB R50300               ; Pause
+ANB R50112               ; UT2 Error
+SET MR7401               ; Liner feeder ON
+CON
+JMP @MR1004
+STG @MR1004
+ANB R50300               ; Pause
+ANB R50112               ; UT2 Error
+MPS
+ANB DM10507.1            ; RB1 Balanser home Complete
+JMP @MR1005
+MPP
+AND DM10507.1            ; RB1 Balanser home Complete
+JMP @MR1007
+STG @MR1005
+ANB R50300               ; Pause
+ANB R50112               ; UT2 Error
+ANB DM10507.1            ; RB1 Balanser home Complete
+DW #99 EM1300            ; RB1 balancer terget POS
+CON
+AND MR3000               ; RB1 balancer start I/L
+SET R35008               ; RB1 balance up and down origin
+CON
+JMP @MR1006
+STG @MR1006
+ANB R50300               ; Pause
+ANB R50112               ; UT2 Error
+AND R35009               ; RB1 balance up and down origin 
+AND DM10507.1            ; RB1 Balanser home Complete
+AND= EM1301 #1           ; RB1 balancer current POS
+RES R35009               ; RB1 balance up and down origin 
+CON
+JMP @MR1007
+STG @MR1007
+SET MR4200               ; RB1 balancer down moving request
+CON
+JMP @MR1008
+STG @MR1008
+AND MR4201               ; RB1 balancer down moving complet
+RES MR4201               ; RB1 balancer down moving complet
+CON
+JMP @MR1009
+STG @MR1009
+ANB R50300               ; Pause
+ANB R50112               ; UT2 Error
+RES MR7401               ; Liner feeder ON
+CON
+SET R51902               ; UT2 1cycle finished
+CON
+SET @MR1015              ; UT2 Home Return finish
+CON
+ENDS
+;<h1/>AUTO
+LD R50001                ; AUTO mode
+ANB R50202               ; UT2 Do
+ANB @MR2001              ; AUTO oparation 
+SET R50202               ; UT2 Do
+CON
+SET @MR2000              ; UT2 AUTO START
+LDB R50003               ; HOME mode
+ANB R50001               ; AUTO mode
+ANB R50002               ; STEP mode
+AND @MR2915              ; Auto oparation finish
+RES @MR2001              ; AUTO oparation 
+CON
+RES R50202               ; UT2 Do
+CON
+RES @MR2915              ; Auto oparation finish
+STG @MR2000              ; UT2 AUTO START
+AND R50209               ; Operation Start
+SET @MR2001              ; AUTO oparation 
+CON
+JMP @MR2003
+;チャック位置確認
+STG @MR2003
+ANB R50300               ; Pause
+ANB R50112               ; UT2 Error
+LDA #7
+CON
+ADD EM1202               ; Main INDEX current POS
+CON
+STA DM19200              ; UT2 chuck No.
+CON
+JMP @MR2004
+STG @MR2004
+ANB R50300               ; Pause
+ANB R50112               ; UT2 Error
+MPS
+LD>= DM19200 #1          ; UT2 chuck No.
+AND<= DM19200 #8         ; UT2 chuck No.
+ANL
+JMP @MR2005
+MPP
+AND> DM19200 #8          ; UT2 chuck No.
+LDA DM19200              ; UT2 chuck No.
+CON
+SUB #8
+CON
+STA DM19200              ; UT2 chuck No.
+CON
+JMP @MR2005
+;
+STG @MR2005
+MPS
+LD LR41100               ; AC Parameter 0(Normal mode)
+OR LR41101               ; AC Parameter 1(UT6.7 non action)
+ANL
+JMP @MR2006
+MRD
+LD LR41102               ; AC Parameter 2(UT6-8 only)
+OR LR41107               ; AC Parameter 7(UT8 only)
+ANL
+JMP @MR2910
+MPP
+LDB LR41100              ; AC Parameter 0(Normal mode)
+ANB LR41101              ; AC Parameter 1(UT6.7 non action)
+ANB LR41102              ; AC Parameter 2(UT6-8 only)
+ANB LR41107              ; AC Parameter 7(UT8 only)
+ANL
+JMP @MR2006
+STG @MR2006
+MPS
+LD= DM20200 #1           ; UT2-1 Work detection
+AND= DM20202 #1          ; UT2-2 Work detection
+LD= DM20200 #1           ; UT2-1 Work detection
+AND= DM20202 #2          ; UT2-2 Work detection
+ORL
+LD= DM20200 #2           ; UT2-1 Work detection
+AND= DM20202 #1          ; UT2-2 Work detection
+ORL
+LD R4802                 ; INDEX chuck 2-1 work existence
+AND R4803                ; INDEX chuck 2-2 work existence
+LDB MR700                ; Upper stream non H/S
+AND MR714                ; Non Shrink film
+ORL
+ANL
+LD= DM20200 #1           ; UT2-1 Work detection
+AND= DM20202 #0          ; UT2-2 Work detection
+LD R4802                 ; INDEX chuck 2-1 work existence
+OR MR714                 ; Non Shrink film
+ANL
+ANB R4803                ; INDEX chuck 2-2 work existence
+ORL
+LD= DM20200 #0           ; UT2-1 Work detection
+AND= DM20202 #1          ; UT2-2 Work detection
+ANB R4802                ; INDEX chuck 2-1 work existence
+LD R4803                 ; INDEX chuck 2-2 work existence
+OR MR714                 ; Non Shrink film
+ANL
+ORL
+ANB R50300               ; Pause
+ANB R50112               ; UT2 Error
+ANL
+JMP @MR2007
+MPP
+LD= DM20200 #0           ; UT2-1 Work detection
+AND= DM20202 #0          ; UT2-2 Work detection
+LDB R4802                ; INDEX chuck 2-1 work existence
+ANB R4803                ; INDEX chuck 2-2 work existence
+LDB MR700                ; Upper stream non H/S
+AND MR714                ; Non Shrink film
+ORL
+ANL
+LD= DM20200 #2           ; UT2-1 Work detection
+AND= DM20202 #2          ; UT2-2 Work detection
+AND R4802                ; INDEX chuck 2-1 work existence
+AND R4803                ; INDEX chuck 2-2 work existence
+ORL
+LD= DM20200 #2           ; UT2-1 Work detection
+AND= DM20202 #0          ; UT2-2 Work detection
+AND R4802                ; INDEX chuck 2-1 work existence
+ANB R4803                ; INDEX chuck 2-2 work existence
+ORL
+LD= DM20200 #0           ; UT2-1 Work detection
+AND= DM20202 #2          ; UT2-2 Work detection
+ANB R4802                ; INDEX chuck 2-1 work existence
+AND R4803                ; INDEX chuck 2-2 work existence
+ORL
+ANB R50300               ; Pause
+ANB R50112               ; UT2 Error
+ANL
+JMP @MR2910
+;不良ﾜｰｸ確認
+STG @MR2007
+MPS
+LD= DM20204 #0
+AND= DM20206 #0
+ANL
+JMP @MR2100              ; Nomal oparation
+MRD
+LD= DM20200 #1           ; UT2-1 Work detection
+AND= DM20202 #1          ; UT2-2 Work detection
+LD<> DM20204 #0
+OR<> DM20206 #0
+ANL
+ANL
+DW #2 DM20200            ; UT2-1 Work detection
+CON
+DW #2 DM20202            ; UT2-2 Work detection
+CON
+JMP @MR2910
+MRD
+LD= DM20200 #1           ; UT2-1 Work detection
+AND= DM20202 #0          ; UT2-2 Work detection
+AND<> DM20204 #0
+ANL
+DW #2 DM20200            ; UT2-1 Work detection
+CON
+JMP @MR2910
+MPP
+LD= DM20200 #0           ; UT2-1 Work detection
+AND= DM20202 #1          ; UT2-2 Work detection
+AND<> DM20206 #0
+ANL
+DW #2 DM20202            ; UT2-2 Work detection
+CON
+JMP @MR2910
+;通常動作
+;Ordinary Movement
+STG @MR2100              ; Nomal oparation
+ANB R50300               ; Pause
+ANB R50112               ; UT2 Error
+JMP @MR2103
+STG @MR2103
+ANB R50300               ; Pause
+ANB R50112               ; UT2 Error
+MPS
+AND= DM19200 #1          ; UT2 chuck No.
+RES MR7800               ; INDEX chuck1 close
+CON
+SET MR7801               ; INDEX chuck1 open
+CON
+JMP @MR2104
+MRD
+AND= DM19200 #2          ; UT2 chuck No.
+RES MR7802               ; INDEX chuck2 close
+CON
+SET MR7803               ; INDEX chuck2 open
+CON
+JMP @MR2104
+MRD
+AND= DM19200 #3          ; UT2 chuck No.
+RES MR7804               ; INDEX chuck3 close
+CON
+SET MR7805               ; INDEX chuck3 open
+CON
+JMP @MR2104
+MRD
+AND= DM19200 #4          ; UT2 chuck No.
+RES MR7806               ; INDEX chuck4 close
+CON
+SET MR7807               ; INDEX chuck4 open
+CON
+JMP @MR2104
+MRD
+AND= DM19200 #5          ; UT2 chuck No.
+RES MR7808               ; INDEX chuck5 close
+CON
+SET MR7809               ; INDEX chuck5 open
+CON
+JMP @MR2104
+MRD
+AND= DM19200 #6          ; UT2 chuck No.
+RES MR7810               ; INDEX chuck6 close
+CON
+SET MR7811               ; INDEX chuck6 open
+CON
+JMP @MR2104
+MRD
+AND= DM19200 #7          ; UT2 chuck No.
+RES MR7812               ; INDEX chuck7 close
+CON
+SET MR7813               ; INDEX chuck7 open
+CON
+JMP @MR2104
+MPP
+AND= DM19200 #8          ; UT2 chuck No.
+RES MR7814               ; INDEX chuck8 close
+CON
+SET MR7815               ; INDEX chuck8 open
+CON
+JMP @MR2104
+STG @MR2104
+TMH @1 #30
+CON
+AND @T1
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+JMP @MR2105
+STG @MR2105
+ANB R50300               ; Pause
+ANB R50112               ; UT2 Error
+JMP @MR2106
+STG @MR2106
+RES MR4209               ; RB1 balancer up moving complet
+CON
+SET @MR800               ; UT1 Pack
+CON
+SET MR402                ; UT2 work detection/data check 
+CON
+SET MR4208               ; RB1 balancer up moving request
+CON
+JMP @MR2112
+STG @MR2112
+AND MR4209               ; RB1 balancer up moving complet
+JMP @MR2113
+STG @MR2113
+MPS
+ANB @MR006               ; STEP　Oparation
+JMP @MR2313
+MPP
+AND @MR006               ; STEP　Oparation
+MPS
+AND LR40300              ; STEP UT2-0 selection lamp
+JMP @MR2313
+MRD
+AND LR40301              ; STEP UT2-1 selection lamp
+JMP @MR3800              ; STEP balanser 
+MRD
+AND LR40302              ; STEP UT2-2 selection lamp
+@RES @MR3015             ; Balancer1 weight range error
+CON
+@RES @MR3115             ; Balancer2 weight range error
+CON
+JMP @MR2208
+MPP
+AND LR40303              ; STEP UT2-3 selection lamp
+JMP @MR3808              ; STEP vision
+;ﾁｬｯｸ閉(画像前)
+STG @MR2313
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+JMP @MR2405
+STG @MR2405
+RES @MR3408
+CON
+JMP @MR2314
+STG @MR2314
+TMR @5 #0
+CON
+AND @T5
+RES MR4209               ; RB1 balancer up moving complet
+CON
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+JMP @MR2315
+;ﾁｬｯｸ閉(画像前)ここまで
+;画像処理開始
+STG @MR2315
+RES @MR3408
+CON
+SET MR7301               ; Image controller trigger1
+CON
+JMP @MR2400
+LD MR7301                ; Image controller trigger1
+LD R4306                 ; Image output strobe
+OR MR703                 ; Film check force OK
+ANL
+LD R50001                ; AUTO mode
+OR R50002                ; STEP mode
+ANL
+AND= @MR2500 #0
+@SET @MR3408
+STG @MR2400
+MPS
+AND @MR3408
+JMP @MR2402
+MPP
+ANB @MR3408
+TMR @6 #50
+CON
+AND @T6
+SET @MR2708
+CON
+RES MR7301               ; Image controller trigger1
+CON
+JMP @MR2404
+STG @MR2404
+AND @MR302
+RES @MR302
+CON
+JMP @MR2315
+STG @MR2402
+RES @MR3408
+CON
+JMP @MR2403
+;ﾁｬｯｸ開(画像後)
+STG @MR2403
+MPS
+AND= DM19200 #1          ; UT2 chuck No.
+RES MR7800               ; INDEX chuck1 close
+CON
+SET MR7801               ; INDEX chuck1 open
+CON
+JMP @MR2401
+MRD
+AND= DM19200 #2          ; UT2 chuck No.
+RES MR7802               ; INDEX chuck2 close
+CON
+SET MR7803               ; INDEX chuck2 open
+CON
+JMP @MR2401
+MRD
+AND= DM19200 #3          ; UT2 chuck No.
+RES MR7804               ; INDEX chuck3 close
+CON
+SET MR7805               ; INDEX chuck3 open
+CON
+JMP @MR2401
+MRD
+AND= DM19200 #4          ; UT2 chuck No.
+RES MR7806               ; INDEX chuck4 close
+CON
+SET MR7807               ; INDEX chuck4 open
+CON
+JMP @MR2401
+MRD
+AND= DM19200 #5          ; UT2 chuck No.
+RES MR7808               ; INDEX chuck5 close
+CON
+SET MR7809               ; INDEX chuck5 open
+CON
+JMP @MR2401
+MRD
+AND= DM19200 #6          ; UT2 chuck No.
+RES MR7810               ; INDEX chuck6 close
+CON
+SET MR7811               ; INDEX chuck6 open
+CON
+JMP @MR2401
+MRD
+AND= DM19200 #7          ; UT2 chuck No.
+RES MR7812               ; INDEX chuck7 close
+CON
+SET MR7813               ; INDEX chuck7 open
+CON
+JMP @MR2401
+MPP
+AND= DM19200 #8          ; UT2 chuck No.
+RES MR7814               ; INDEX chuck8 close
+CON
+SET MR7815               ; INDEX chuck8 open
+CON
+JMP @MR2401
+STG @MR2401
+TMR @2 #0
+CON
+AND @T2
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+JMP @MR2107
+;ﾁｬｯｸ開(画像後)ここまで
+;天秤計測開始
+STG @MR2107
+MPS
+LD= DM20200 #1           ; UT2-1 Work detection
+ANB @MR3002              ; Balancer1 Mesurement Startting
+ANL
+SET @MR3000              ; Balancer1 Mesurement Start
+CON
+JMP @MR2108
+MPP
+LD= DM20200 #0           ; UT2-1 Work detection
+OR= DM20200 #2           ; UT2-1 Work detection
+ANL
+JMP @MR2108
+STG @MR2108
+MPS
+LD= DM20202 #1           ; UT2-2 Work detection
+ANB @MR3102              ; Balancer2 mesurement starting
+ANL
+SET @MR3100              ; Balancer2 mesurement start
+CON
+JMP @MR2109
+MPP
+LD= DM20202 #0           ; UT2-2 Work detection
+OR= DM20202 #2           ; UT2-2 Work detection
+ANL
+JMP @MR2109
+STG @MR2109
+MPS
+AND= DM20200 #1          ; UT2-1 Work detection
+MPS
+LD @MR3001               ; Balancer1 Mesurement finish
+ANB R37003               ; Send and receive error 1
+ANL
+JMP @MR2110
+MPP
+LD @MR3001               ; Balancer1 Mesurement finish
+AND R37003               ; Send and receive error 1
+ANB @MR3002              ; Balancer1 Mesurement Startting
+ANL
+DW #1 DM20218            ; UT2-1 read error
+CON
+RES R37003               ; Send and receive error 1
+CON
+JMP @MR2110
+MPP
+LD= DM20200 #0           ; UT2-1 Work detection
+OR= DM20200 #2           ; UT2-1 Work detection
+ANL
+JMP @MR2110
+STG @MR2110
+MPS
+AND= DM20202 #1          ; UT2-2 Work detection
+MPS
+LD @MR3101               ; Balancer2 mesurement finish
+ANB R37011               ; Send and receive error 2
+ANL
+JMP @MR2111
+MPP
+LD @MR3101               ; Balancer2 mesurement finish
+AND R37011               ; Send and receive error 2
+ANB @MR3102              ; Balancer2 mesurement starting
+ANL
+DW #1 DM20220            ; UT2-2 read error
+CON
+RES R37011               ; Send and receive error 2
+CON
+JMP @MR2111
+MPP
+LD= DM20202 #0           ; UT2-2 Work detection
+OR= DM20202 #2           ; UT2-2 Work detection
+ANL
+JMP @MR2111
+STG @MR2111
+SET MR40100              ; Weight Data Send
+CON
+RES @MR3001              ; Balancer1 Mesurement finish
+CON
+RES @MR3101              ; Balancer2 mesurement finish
+CON
+JMP @MR2200
+;STEP 専用
+;天秤計量のみ
+STG @MR3800              ; STEP balanser 
+ANB R50300               ; Pause
+ANB R50112               ; UT2 Error
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+MPS
+LD= DM20200 #1           ; UT2-1 Work detection
+ANB @MR3002              ; Balancer1 Mesurement Startting
+ANL
+SET @MR800               ; UT1 Pack
+CON
+SET @MR3000              ; Balancer1 Mesurement Start
+CON
+JMP @MR3801
+MPP
+LD= DM20200 #0           ; UT2-1 Work detection
+OR= DM20200 #2           ; UT2-1 Work detection
+ANL
+JMP @MR3801
+STG @MR3801
+ANB R50300               ; Pause
+ANB R50112               ; UT2 Error
+MPS
+LD= DM20202 #1           ; UT2-2 Work detection
+ANB @MR3102              ; Balancer2 mesurement starting
+ANL
+SET @MR800               ; UT1 Pack
+CON
+SET @MR3100              ; Balancer2 mesurement start
+CON
+JMP @MR3802
+MPP
+LD= DM20202 #0           ; UT2-2 Work detection
+OR= DM20202 #2           ; UT2-2 Work detection
+ANL
+JMP @MR3802
+STG @MR3802
+MPS
+AND= DM20200 #1          ; UT2-1 Work detection
+MPS
+LD @MR3001               ; Balancer1 Mesurement finish
+ANB R37003               ; Send and receive error 1
+ANL
+JMP @MR3803
+MPP
+LD @MR3001               ; Balancer1 Mesurement finish
+AND R37003               ; Send and receive error 1
+ANB @MR3002              ; Balancer1 Mesurement Startting
+ANL
+DW #1 DM20218            ; UT2-1 read error
+CON
+RES R37003               ; Send and receive error 1
+CON
+JMP @MR3803
+MPP
+LD= DM20200 #0           ; UT2-1 Work detection
+OR= DM20200 #2           ; UT2-1 Work detection
+ANL
+JMP @MR3803
+STG @MR3803
+MPS
+AND= DM20202 #1          ; UT2-2 Work detection
+MPS
+LD @MR3101               ; Balancer2 mesurement finish
+ANB R37011               ; Send and receive error 2
+ANL
+JMP @MR3804
+MPP
+LD @MR3101               ; Balancer2 mesurement finish
+AND R37011               ; Send and receive error 2
+ANB @MR3102              ; Balancer2 mesurement starting
+ANL
+DW #1 DM20220            ; UT2-2 read error
+CON
+RES R37011               ; Send and receive error 2
+CON
+JMP @MR3804
+MPP
+LD= DM20202 #0           ; UT2-2 Work detection
+OR= DM20202 #2           ; UT2-2 Work detection
+ANL
+JMP @MR3804
+STG @MR3804
+RES @MR800               ; UT1 Pack
+CON
+RES @MR3001              ; Balancer1 Mesurement finish
+CON
+RES @MR3101              ; Balancer2 mesurement finish
+CON
+JMP @MR2200
+;STEP 専用
+;皺検査のみ
+STG @MR3808              ; STEP vision
+ANB R50300               ; Pause
+ANB R50112               ; UT2 Error
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+ANB MR7301               ; Image controller trigger1
+SET MR7301               ; Image controller trigger1
+CON
+JMP @MR3809
+STG @MR3809
+AND R4306                ; Image output strobe
+JMP @MR2203
+;STEP 専用　皺検査のみ　ここまで
+STG @MR2200
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+RES MR7301               ; Image controller trigger1
+CON
+JMP @MR2203
+;画像判定　OK=1 NG=2
+STG @MR2203
+MPS
+AND= DM20200 #1          ; UT2-1 Work detection
+MPS
+LD R4206                 ; 1 test OK image
+OR MR703                 ; Film check force OK
+ANB R4207                ; 1 test NG image
+ANL
+DW #1 DM20214            ; UT2-1 Vision sensor judgment
+CON
+JMP @MR2215
+MPP
+LD R4207                 ; 1 test NG image
+ANB R4206                ; 1 test OK image
+ANL
+DW #2 DM20214            ; UT2-1 Vision sensor judgment
+CON
+JMP @MR2215
+MPP
+LD= DM20200 #0           ; UT2-1 Work detection
+OR= DM20200 #2           ; UT2-1 Work detection
+ANL
+JMP @MR2215
+STG @MR2215
+MPS
+AND= DM20202 #1          ; UT2-2 Work detection
+MPS
+LD R4208                 ; 2 test OK image
+OR MR703                 ; Film check force OK
+ANB R4209                ; 2 test NG image
+ANL
+DW #1 DM20216            ; UT2-2 Vision sensor judgment
+CON
+JMP @MR2304
+MPP
+LD R4209                 ; 2 test NG image
+ANB R4208                ; 2 test OK image
+ANL
+DW #2 DM20216            ; UT2-2 Vision sensor judgment
+CON
+JMP @MR2304
+MPP
+LD= DM20202 #0           ; UT2-2 Work detection
+OR= DM20202 #2           ; UT2-2 Work detection
+ANL
+JMP @MR2304
+STG @MR2304
+RES MR7301               ; Image controller trigger1
+CON
+JMP @MR2500
+;画像検査ﾘﾄﾗｲ追加
+STG @MR2500
+MPS
+LD<> DM20200 #0          ; UT2-1 Work detection
+AND<> DM20202 #0         ; UT2-2 Work detection
+ANL
+MPS
+LD= DM20214 #1           ; UT2-1 Vision sensor judgment
+AND= DM20216 #1          ; UT2-2 Vision sensor judgment
+ANL
+JMP @MR2206
+MPP
+LD= DM20214 #2           ; UT2-1 Vision sensor judgment
+OR= DM20216 #2           ; UT2-2 Vision sensor judgment
+ANL
+RES @MR2509
+CON
+JMP @MR2501
+MRD
+LD<> DM20200 #0          ; UT2-1 Work detection
+AND= DM20202 #0          ; UT2-2 Work detection
+ANL
+MPS
+AND= DM20214 #1          ; UT2-1 Vision sensor judgment
+JMP @MR2206
+MPP
+AND= DM20214 #2          ; UT2-1 Vision sensor judgment
+RES @MR2509
+CON
+JMP @MR2501
+MRD
+LD= DM20200 #0           ; UT2-1 Work detection
+AND<> DM20202 #0         ; UT2-2 Work detection
+ANL
+MPS
+AND= DM20216 #1          ; UT2-2 Vision sensor judgment
+JMP @MR2206
+MPP
+AND= DM20216 #2          ; UT2-2 Vision sensor judgment
+RES @MR2509
+CON
+JMP @MR2501
+MPP
+LD= DM20200 #0           ; UT2-1 Work detection
+AND= DM20202 #0          ; UT2-2 Work detection
+ANL
+JMP @MR2206
+;画像検査ﾘﾄﾗｲ処理
+STG @MR2501
+TMR @8 #2
+CON
+AND @T8
+MPS
+AND= DM4001 #0
+@INC DM4000
+CON
+JMP @MR2502
+MPP
+AND= DM4001 #1
+JMP @MR2502
+STG @MR2502
+SET MR7301               ; Image controller trigger1
+CON
+SET MR7214               ; Image controller output
+CON
+JMP @MR2503
+LD MR7301                ; Image controller trigger1
+AND R4306                ; Image output strobe
+LD R50001                ; AUTO mode
+OR R50002                ; STEP mode
+ANL
+AND<> @MR2500 #0
+@SET @MR2509
+STG @MR2503
+MPS
+AND @MR2509
+JMP @MR2504
+MPP
+ANB @MR2509
+TMR @7 #50
+CON
+AND @T7
+SET @MR2708
+CON
+RES MR7214               ; Image controller output
+CON
+RES MR7301               ; Image controller trigger1
+CON
+JMP @MR2508
+STG @MR2508
+AND @MR302
+RES @MR302
+CON
+JMP @MR2501
+STG @MR2504
+RES @MR2509
+CON
+JMP @MR2505
+STG @MR2505
+MPS
+LD<> DM20200 #0          ; UT2-1 Work detection
+AND= DM20214 #2          ; UT2-1 Vision sensor judgment
+ANL
+MPS
+LD R4206                 ; 1 test OK image
+OR MR703                 ; Film check force OK
+ANB R4207                ; 1 test NG image
+ANL
+DW #1 DM20214            ; UT2-1 Vision sensor judgment
+CON
+JMP @MR2506
+MPP
+LD R4207                 ; 1 test NG image
+ANB R4206                ; 1 test OK image
+ANL
+DW #2 DM20214            ; UT2-1 Vision sensor judgment
+CON
+JMP @MR2506
+MPP
+LD= DM20200 #0           ; UT2-1 Work detection
+OR= DM20214 #1           ; UT2-1 Vision sensor judgment
+ANL
+JMP @MR2506
+STG @MR2506
+MPS
+LD<> DM20202 #0          ; UT2-2 Work detection
+AND= DM20216 #2          ; UT2-2 Vision sensor judgment
+ANL
+MPS
+LD R4208                 ; 2 test OK image
+OR MR703                 ; Film check force OK
+ANB R4209                ; 2 test NG image
+ANL
+DW #1 DM20216            ; UT2-2 Vision sensor judgment
+CON
+JMP @MR2507
+MPP
+LD R4209                 ; 2 test NG image
+ANB R4208                ; 2 test OK image
+ANL
+DW #2 DM20216            ; UT2-2 Vision sensor judgment
+CON
+JMP @MR2507
+MPP
+LD= DM20202 #0           ; UT2-2 Work detection
+OR= DM20216 #1           ; UT2-2 Vision sensor judgment
+ANL
+JMP @MR2507
+STG @MR2507
+MPS
+LD<> DM20200 #0          ; UT2-1 Work detection
+AND<> DM20202 #0         ; UT2-2 Work detection
+ANL
+MPS
+LD= DM20214 #1           ; UT2-1 Vision sensor judgment
+AND= DM20216 #1          ; UT2-2 Vision sensor judgment
+ANL
+RES MR7214               ; Image controller output
+CON
+RES MR7301               ; Image controller trigger1
+CON
+JMP @MR2206
+MPP
+LD= DM20214 #2           ; UT2-1 Vision sensor judgment
+OR= DM20216 #2           ; UT2-2 Vision sensor judgment
+ANL
+RES MR7214               ; Image controller output
+CON
+RES MR7301               ; Image controller trigger1
+CON
+@INC DM4001
+CON
+JMP @MR2510
+MRD
+LD<> DM20200 #0          ; UT2-1 Work detection
+AND= DM20202 #0          ; UT2-2 Work detection
+ANL
+MPS
+AND= DM20214 #1          ; UT2-1 Vision sensor judgment
+RES MR7214               ; Image controller output
+CON
+RES MR7301               ; Image controller trigger1
+CON
+JMP @MR2206
+MPP
+AND= DM20214 #2          ; UT2-1 Vision sensor judgment
+RES MR7214               ; Image controller output
+CON
+RES MR7301               ; Image controller trigger1
+CON
+@INC DM4001
+CON
+JMP @MR2510
+MRD
+LD= DM20200 #0           ; UT2-1 Work detection
+AND<> DM20202 #0         ; UT2-2 Work detection
+ANL
+MPS
+AND= DM20216 #1          ; UT2-2 Vision sensor judgment
+RES MR7214               ; Image controller output
+CON
+RES MR7301               ; Image controller trigger1
+CON
+JMP @MR2206
+MPP
+AND= DM20216 #2          ; UT2-2 Vision sensor judgment
+RES MR7214               ; Image controller output
+CON
+RES MR7301               ; Image controller trigger1
+CON
+@INC DM4001
+CON
+JMP @MR2510
+MPP
+LD= DM20200 #0           ; UT2-1 Work detection
+AND= DM20202 #0          ; UT2-2 Work detection
+ANL
+RES MR7214               ; Image controller output
+CON
+RES MR7301               ; Image controller trigger1
+CON
+JMP @MR2206
+;再Retry判別
+STG @MR2510
+MPS
+AND<= DM4001 #1
+@INC DM4002
+CON
+JMP @MR2511
+MPP
+AND> DM4001 #1
+JMP @MR2206
+STG @MR2511
+SET @MR800               ; UT1 Pack
+CON
+SET MR4200               ; RB1 balancer down moving request
+CON
+JMP @MR2512
+STG @MR2512
+AND MR4201               ; RB1 balancer down moving complet
+RES MR4201               ; RB1 balancer down moving complet
+CON
+JMP @MR2513
+STG @MR2513
+MPS
+AND= DM19200 #1          ; UT2 chuck No.
+SET MR7800               ; INDEX chuck1 close
+CON
+RES MR7801               ; INDEX chuck1 open
+CON
+JMP @MR2514
+MRD
+AND= DM19200 #2          ; UT2 chuck No.
+SET MR7802               ; INDEX chuck2 close
+CON
+RES MR7803               ; INDEX chuck2 open
+CON
+JMP @MR2514
+MRD
+AND= DM19200 #3          ; UT2 chuck No.
+SET MR7804               ; INDEX chuck3 close
+CON
+RES MR7805               ; INDEX chuck3 open
+CON
+JMP @MR2514
+MRD
+AND= DM19200 #4          ; UT2 chuck No.
+SET MR7806               ; INDEX chuck4 close
+CON
+RES MR7807               ; INDEX chuck4 open
+CON
+JMP @MR2514
+MRD
+AND= DM19200 #5          ; UT2 chuck No.
+SET MR7808               ; INDEX chuck5 close
+CON
+RES MR7809               ; INDEX chuck5 open
+CON
+JMP @MR2514
+MRD
+AND= DM19200 #6          ; UT2 chuck No.
+SET MR7810               ; INDEX chuck6 close
+CON
+RES MR7811               ; INDEX chuck6 open
+CON
+JMP @MR2514
+MRD
+AND= DM19200 #7          ; UT2 chuck No.
+SET MR7812               ; INDEX chuck7 close
+CON
+RES MR7813               ; INDEX chuck7 open
+CON
+JMP @MR2514
+MPP
+AND= DM19200 #8          ; UT2 chuck No.
+SET MR7814               ; INDEX chuck8 close
+CON
+RES MR7815               ; INDEX chuck8 open
+CON
+JMP @MR2514
+STG @MR2514
+TMR @9 #3
+CON
+AND @T9
+MPS
+AND= DM19200 #1          ; UT2 chuck No.
+RES MR7800               ; INDEX chuck1 close
+CON
+SET MR7801               ; INDEX chuck1 open
+CON
+JMP @MR2515
+MRD
+AND= DM19200 #2          ; UT2 chuck No.
+RES MR7802               ; INDEX chuck2 close
+CON
+SET MR7803               ; INDEX chuck2 open
+CON
+JMP @MR2515
+MRD
+AND= DM19200 #3          ; UT2 chuck No.
+RES MR7804               ; INDEX chuck3 close
+CON
+SET MR7805               ; INDEX chuck3 open
+CON
+JMP @MR2515
+MRD
+AND= DM19200 #4          ; UT2 chuck No.
+RES MR7806               ; INDEX chuck4 close
+CON
+SET MR7807               ; INDEX chuck4 open
+CON
+JMP @MR2515
+MRD
+AND= DM19200 #5          ; UT2 chuck No.
+RES MR7808               ; INDEX chuck5 close
+CON
+SET MR7809               ; INDEX chuck5 open
+CON
+JMP @MR2515
+MRD
+AND= DM19200 #6          ; UT2 chuck No.
+RES MR7810               ; INDEX chuck6 close
+CON
+SET MR7811               ; INDEX chuck6 open
+CON
+JMP @MR2515
+MRD
+AND= DM19200 #7          ; UT2 chuck No.
+RES MR7812               ; INDEX chuck7 close
+CON
+SET MR7813               ; INDEX chuck7 open
+CON
+JMP @MR2515
+MPP
+AND= DM19200 #8          ; UT2 chuck No.
+RES MR7814               ; INDEX chuck8 close
+CON
+SET MR7815               ; INDEX chuck8 open
+CON
+JMP @MR2515
+STG @MR2515
+SET MR4208               ; RB1 balancer up moving request
+CON
+JMP @MR2800
+STG @MR2800
+AND MR4209               ; RB1 balancer up moving complet
+RES MR4209               ; RB1 balancer up moving complet
+CON
+JMP @MR2801
+STG @MR2801
+MPS
+AND= DM19200 #1          ; UT2 chuck No.
+SET MR7800               ; INDEX chuck1 close
+CON
+RES MR7801               ; INDEX chuck1 open
+CON
+JMP @MR2802
+MRD
+AND= DM19200 #2          ; UT2 chuck No.
+SET MR7802               ; INDEX chuck2 close
+CON
+RES MR7803               ; INDEX chuck2 open
+CON
+JMP @MR2802
+MRD
+AND= DM19200 #3          ; UT2 chuck No.
+SET MR7804               ; INDEX chuck3 close
+CON
+RES MR7805               ; INDEX chuck3 open
+CON
+JMP @MR2802
+MRD
+AND= DM19200 #4          ; UT2 chuck No.
+SET MR7806               ; INDEX chuck4 close
+CON
+RES MR7807               ; INDEX chuck4 open
+CON
+JMP @MR2802
+MRD
+AND= DM19200 #5          ; UT2 chuck No.
+SET MR7808               ; INDEX chuck5 close
+CON
+RES MR7809               ; INDEX chuck5 open
+CON
+JMP @MR2802
+MRD
+AND= DM19200 #6          ; UT2 chuck No.
+SET MR7810               ; INDEX chuck6 close
+CON
+RES MR7811               ; INDEX chuck6 open
+CON
+JMP @MR2802
+MRD
+AND= DM19200 #7          ; UT2 chuck No.
+SET MR7812               ; INDEX chuck7 close
+CON
+RES MR7813               ; INDEX chuck7 open
+CON
+JMP @MR2802
+MPP
+AND= DM19200 #8          ; UT2 chuck No.
+SET MR7814               ; INDEX chuck8 close
+CON
+RES MR7815               ; INDEX chuck8 open
+CON
+JMP @MR2802
+STG @MR2802
+TMR @10 #3
+CON
+AND @T10
+MPS
+AND= DM19200 #1          ; UT2 chuck No.
+RES MR7800               ; INDEX chuck1 close
+CON
+SET MR7801               ; INDEX chuck1 open
+CON
+JMP @MR2500
+MRD
+AND= DM19200 #2          ; UT2 chuck No.
+RES MR7802               ; INDEX chuck2 close
+CON
+SET MR7803               ; INDEX chuck2 open
+CON
+JMP @MR2500
+MRD
+AND= DM19200 #3          ; UT2 chuck No.
+RES MR7804               ; INDEX chuck3 close
+CON
+SET MR7805               ; INDEX chuck3 open
+CON
+JMP @MR2500
+MRD
+AND= DM19200 #4          ; UT2 chuck No.
+RES MR7806               ; INDEX chuck4 close
+CON
+SET MR7807               ; INDEX chuck4 open
+CON
+JMP @MR2500
+MRD
+AND= DM19200 #5          ; UT2 chuck No.
+RES MR7808               ; INDEX chuck5 close
+CON
+SET MR7809               ; INDEX chuck5 open
+CON
+JMP @MR2500
+MRD
+AND= DM19200 #6          ; UT2 chuck No.
+RES MR7810               ; INDEX chuck6 close
+CON
+SET MR7811               ; INDEX chuck6 open
+CON
+JMP @MR2500
+MRD
+AND= DM19200 #7          ; UT2 chuck No.
+RES MR7812               ; INDEX chuck7 close
+CON
+SET MR7813               ; INDEX chuck7 open
+CON
+JMP @MR2500
+MPP
+AND= DM19200 #8          ; UT2 chuck No.
+RES MR7814               ; INDEX chuck8 close
+CON
+SET MR7815               ; INDEX chuck8 open
+CON
+JMP @MR2500
+;ﾘﾄﾗｲここまで
+STG @MR2206
+MPS
+LD<> DM20200 #0          ; UT2-1 Work detection
+LD<>.L DM20210 +0        ; UT2-1 Weight 
+OR= DM20210 #0           ; UT2-1 Weight 
+OR= DM20218 #1           ; UT2-1 read error
+LD @MR006                ; STEP　Oparation
+AND LR40302              ; STEP UT2-2 selection lamp
+ORL
+ANL
+AND<>.L DM20214 +0       ; UT2-1 Vision sensor judgment
+ANL
+JMP @MR2207
+MPP
+AND= DM20200 #0          ; UT2-1 Work detection
+JMP @MR2207
+STG @MR2207
+MPS
+LD<> DM20202 #0          ; UT2-2 Work detection
+LD<>.L DM20212 +0        ; UT2-2 Weight
+OR= DM20212 #0           ; UT2-2 Weight
+OR= DM20220 #1           ; UT2-2 read error
+LD @MR006                ; STEP　Oparation
+AND LR40302              ; STEP UT2-2 selection lamp
+ORL
+ANL
+AND<>.L DM20216 +0       ; UT2-2 Vision sensor judgment
+ANL
+JMP @MR2208
+MPP
+AND= DM20202 #0          ; UT2-2 Work detection
+JMP @MR2208
+STG @MR2208
+DW #0 DM4001
+CON
+SET MR4200               ; RB1 balancer down moving request
+CON
+JMP @MR2209
+STG @MR2209
+AND MR4201               ; RB1 balancer down moving complet
+RES MR4201               ; RB1 balancer down moving complet
+CON
+RES @MR800               ; UT1 Pack
+CON
+JMP @MR2201
+;画像ｴﾗｰ
+STG @MR2201
+MPS
+AND<> DM20200 #0         ; UT2-1 Work detection
+MPS
+AND= DM20214 #1          ; UT2-1 Vision sensor judgment
+JMP @MR2202
+MPP
+AND= DM20214 #2          ; UT2-1 Vision sensor judgment
+SET @MR2706
+CON
+JMP @MR2204
+MPP
+AND= DM20200 #0          ; UT2-1 Work detection
+JMP @MR2202
+STG @MR2204
+ANB R50112               ; UT2 Error
+AND @MR210
+RES @MR210
+CON
+JMP @MR2202
+STG @MR2202
+MPS
+AND<> DM20202 #0         ; UT2-2 Work detection
+MPS
+AND= DM20216 #1          ; UT2-2 Vision sensor judgment
+JMP @MR2305
+MPP
+AND= DM20216 #2          ; UT2-2 Vision sensor judgment
+SET @MR2707
+CON
+JMP @MR2205
+MPP
+AND= DM20202 #0          ; UT2-2 Work detection
+JMP @MR2305
+STG @MR2205
+ANB R50112               ; UT2 Error
+AND @MR214
+RES @MR214
+CON
+JMP @MR2305
+STG @MR2305
+JMP @MR2210
+;ﾁｬｯｸ閉(BC読込前)
+STG @MR2210
+MPS
+AND= DM19200 #1          ; UT2 chuck No.
+RES MR7801               ; INDEX chuck1 open
+CON
+SET MR7800               ; INDEX chuck1 close
+CON
+JMP @MR2212
+MRD
+AND= DM19200 #2          ; UT2 chuck No.
+RES MR7803               ; INDEX chuck2 open
+CON
+SET MR7802               ; INDEX chuck2 close
+CON
+JMP @MR2212
+MRD
+AND= DM19200 #3          ; UT2 chuck No.
+RES MR7805               ; INDEX chuck3 open
+CON
+SET MR7804               ; INDEX chuck3 close
+CON
+JMP @MR2212
+MRD
+AND= DM19200 #4          ; UT2 chuck No.
+RES MR7807               ; INDEX chuck4 open
+CON
+SET MR7806               ; INDEX chuck4 close
+CON
+JMP @MR2212
+MRD
+AND= DM19200 #5          ; UT2 chuck No.
+RES MR7809               ; INDEX chuck5 open
+CON
+SET MR7808               ; INDEX chuck5 close
+CON
+JMP @MR2212
+MRD
+AND= DM19200 #6          ; UT2 chuck No.
+RES MR7811               ; INDEX chuck6 open
+CON
+SET MR7810               ; INDEX chuck6 close
+CON
+JMP @MR2212
+MRD
+AND= DM19200 #7          ; UT2 chuck No.
+RES MR7813               ; INDEX chuck7 open
+CON
+SET MR7812               ; INDEX chuck7 close
+CON
+JMP @MR2212
+MPP
+AND= DM19200 #8          ; UT2 chuck No.
+RES MR7815               ; INDEX chuck8 open
+CON
+SET MR7814               ; INDEX chuck8 close
+CON
+JMP @MR2212
+STG @MR2212
+TMR @4 #3
+CON
+AND @T4
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+JMP @MR2213
+;ﾁｬｯｸ閉(BC読込前)ここまで
+;ﾊﾞｰｺｰﾄﾞ読込み開始
+STG @MR2213
+MPS
+AND= DM20200 #1          ; UT2-1 Work detection
+MPS
+ANB MR16500              ; Dummy check from cell 1
+SET @MR800               ; UT1 Pack
+CON
+ANB @MR3202              ; BCR1 reading  starting
+SET @MR3200              ; BCR1 reading  start
+CON
+JMP @MR2309
+MPP
+AND MR16500              ; Dummy check from cell 1
+JMP @MR2309
+MPP
+LD= DM20200 #0           ; UT2-1 Work detection
+OR= DM20200 #2           ; UT2-1 Work detection
+ANL
+JMP @MR2309
+STG @MR2309
+MPS
+AND= DM20202 #1          ; UT2-2 Work detection
+MPS
+ANB MR16500              ; Dummy check from cell 1
+SET @MR800               ; UT1 Pack
+CON
+ANB @MR3302              ; BCR2 reading  starting
+SET @MR3300              ; BCR2 reading  start
+CON
+JMP @MR2310
+MPP
+AND MR16500              ; Dummy check from cell 1
+JMP @MR2310
+MPP
+LD= DM20202 #0           ; UT2-2 Work detection
+OR= DM20202 #2           ; UT2-2 Work detection
+ANL
+JMP @MR2310
+STG @MR2310
+MPS
+AND= DM20200 #1          ; UT2-1 Work detection
+MPS
+ANB MR16500              ; Dummy check from cell 1
+MPS
+LD @MR3201               ; BCR1 reading  finish
+ANB R37107               ; SR751-1 communication NG
+ANL
+JMP @MR2311
+MPP
+LD @MR3201               ; BCR1 reading  finish
+AND R37107               ; SR751-1 communication NG
+ANB @MR3202              ; BCR1 reading  starting
+ANL
+DW #2 DM20218            ; UT2-1 read error
+CON
+RES R37107               ; SR751-1 communication NG
+CON
+JMP @MR2311
+MPP
+AND MR16500              ; Dummy check from cell 1
+JMP @MR2311
+MPP
+LD= DM20200 #0           ; UT2-1 Work detection
+OR= DM20200 #2           ; UT2-1 Work detection
+ANL
+JMP @MR2311
+STG @MR2311
+MPS
+AND= DM20202 #1          ; UT2-2 Work detection
+MPS
+ANB MR16500              ; Dummy check from cell 1
+MPS
+LD @MR3301               ; BCR2 reading  finish
+ANB R37011               ; Send and receive error 2
+ANB R37115               ; SR751-2 communication NG
+ANL
+JMP @MR2312
+MPP
+LD @MR3301               ; BCR2 reading  finish
+AND R37115               ; SR751-2 communication NG
+ANB @MR3302              ; BCR2 reading  starting
+ANL
+DW #2 DM20220            ; UT2-2 read error
+CON
+RES R37115               ; SR751-2 communication NG
+CON
+JMP @MR2312
+MPP
+AND MR16500              ; Dummy check from cell 1
+JMP @MR2312
+MPP
+LD= DM20202 #0           ; UT2-2 Work detection
+OR= DM20202 #2           ; UT2-2 Work detection
+ANL
+JMP @MR2312
+STG @MR2312
+RES @MR3201              ; BCR1 reading  finish
+CON
+RES @MR3301              ; BCR2 reading  finish
+CON
+RES @MR800               ; UT1 Pack
+CON
+JMP @MR2308
+;ﾊﾞｰｺｰﾄﾞ読込み開始ここまで
+STG @MR2308
+MPS
+LD<> DM20200 #0          ; UT2-1 Work detection
+AND<> DM20202 #0         ; UT2-2 Work detection
+ANL
+MPS
+LDB @MR3015              ; Balancer1 weight range error
+ANB @MR3115              ; Balancer2 weight range error
+ANL
+DW #2 DM20200            ; UT2-1 Work detection
+CON
+DW #2 DM20202            ; UT2-2 Work detection
+CON
+JMP @MR2211
+MRD
+AND @MR3015              ; Balancer1 weight range error
+MPS
+AND @MR3115              ; Balancer2 weight range error
+DW #1 DM20200            ; UT2-1 Work detection
+CON
+DW #1 DM20202            ; UT2-2 Work detection
+CON
+JMP @MR2211
+MPP
+ANB @MR3115              ; Balancer2 weight range error
+DW #1 DM20200            ; UT2-1 Work detection
+CON
+DW #2 DM20202            ; UT2-2 Work detection
+CON
+JMP @MR2211
+MPP
+LDB @MR3015              ; Balancer1 weight range error
+AND @MR3115              ; Balancer2 weight range error
+ANL
+DW #2 DM20200            ; UT2-1 Work detection
+CON
+DW #1 DM20202            ; UT2-2 Work detection
+CON
+JMP @MR2211
+MRD
+LD<> DM20200 #0          ; UT2-1 Work detection
+AND= DM20202 #0          ; UT2-2 Work detection
+ANL
+MPS
+ANB @MR3015              ; Balancer1 weight range error
+DW #2 DM20200            ; UT2-1 Work detection
+CON
+JMP @MR2211
+MPP
+AND @MR3015              ; Balancer1 weight range error
+DW #1 DM20200            ; UT2-1 Work detection
+CON
+JMP @MR2211
+MPP
+LD= DM20200 #0           ; UT2-1 Work detection
+AND<> DM20202 #0         ; UT2-2 Work detection
+ANL
+MPS
+ANB @MR3115              ; Balancer2 weight range error
+DW #2 DM20202            ; UT2-2 Work detection
+CON
+JMP @MR2211
+MPP
+AND @MR3115              ; Balancer2 weight range error
+DW #1 DM20202            ; UT2-2 Work detection
+CON
+JMP @MR2211
+STG @MR2211
+MPS
+LDB @MR3015              ; Balancer1 weight range error
+ANB @MR3115              ; Balancer2 weight range error
+ANL
+JMP @MR2214
+MPP
+LD @MR3015               ; Balancer1 weight range error
+OR @MR3115               ; Balancer2 weight range error
+ANL
+MPS
+ANB MR16500              ; Dummy check from cell 1
+MPS
+LD< @EM3 #3              ; Weght1 Retry count
+AND< @EM4 #3             ; Weght2 Retry count
+ANL
+RES MR402                ; UT2 work detection/data check 
+CON
+JMP @MR2005
+MRD
+LD>= @EM3 #3             ; Weght1 Retry count
+AND>= @EM4 #3            ; Weght2 Retry count
+ANL
+@SET @MR2702             ; UT2-1 weight range 
+CON
+@SET @MR2703             ; UT2-2 weight range 
+CON
+JMP @MR2600              ; NG Work take out
+MRD
+LD>= @EM3 #3             ; Weght1 Retry count
+AND< @EM4 #3             ; Weght2 Retry count
+ANL
+@SET @MR2702             ; UT2-1 weight range 
+CON
+JMP @MR2600              ; NG Work take out
+MPP
+LD< @EM3 #3              ; Weght1 Retry count
+AND>= @EM4 #3            ; Weght2 Retry count
+ANL
+@SET @MR2703             ; UT2-2 weight range 
+CON
+JMP @MR2600              ; NG Work take out
+MPP
+AND MR16500              ; Dummy check from cell 1
+JMP @MR2214
+STG @MR2214
+RES @MR800               ; UT1 Pack
+CON
+JMP @MR2300
+STG @MR2300
+MPS
+AND<> DM20200 #0         ; UT2-1 Work detection
+MPS
+LD>=.L EM30580 +0        ; ① X  After angle amount
+AND<=.L EM30580 +14500   ; ① X  After angle amount
+ANL
+JMP @MR2301
+MPP
+LD<.L EM30580 +0         ; ① X  After angle amount
+OR>.L EM30580 +14500     ; ① X  After angle amount
+ANL
+DW #1 DM20204
+CON
+SET @MR2704              ; UT2-1 correct range error 
+CON
+JMP @MR2302
+MPP
+AND= DM20200 #0          ; UT2-1 Work detection
+JMP @MR2301
+STG @MR2301
+MPS
+AND<> DM20202 #0         ; UT2-2 Work detection
+MPS
+LD>=.L EM30780 +0        ; ② X  After angle amount
+AND<=.L EM30780 +14500   ; ② X  After angle amount
+ANL
+JMP @MR2910
+MPP
+LD<.L EM30780 +0         ; ② X  After angle amount
+OR>.L EM30780 +14500     ; ② X  After angle amount
+ANL
+DW #1 DM20206
+CON
+SET @MR2705              ; UT2-2 correct range error 
+CON
+JMP @MR2303
+MPP
+AND= DM20202 #0          ; UT2-2 Work detection
+JMP @MR2910
+STG @MR2302
+ANB R50300               ; Pause
+ANB R50112               ; UT2 Error
+AND= @MR2700 #0          ; UT3-1 t-code missmach
+AND= @MR200 #0
+JMP @MR2301
+STG @MR2303
+ANB R50300               ; Pause
+ANB R50112               ; UT2 Error
+AND= @MR2700 #0          ; UT3-1 t-code missmach
+AND= @MR200 #0
+JMP @MR2910
+;動作終了
+;An End of Operation
+STG @MR2910
+RES MR402                ; UT2 work detection/data check 
+CON
+ANB R50300               ; Pause
+ANB R50112               ; UT2 Error
+MPS
+AND R50001               ; AUTO mode
+SET R51902               ; UT2 1cycle finished
+CON
+JMP @MR2911
+MPP
+AND R50002               ; STEP mode
+SET R50009               ; HOLDRQ
+CON
+SET R51902               ; UT2 1cycle finished
+CON
+JMP @MR2911
+STG @MR2911
+ANB R50209               ; Operation Start
+MPS
+AND R50001               ; AUTO mode
+MPS
+LDB R50000               ; HOLD
+AND R50409               ; Cycyle Finished
+ANL
+SET @MR2000              ; UT2 AUTO START
+CON
+ENDS
+MPP
+AND R50000               ; HOLD
+JMP @MR2912
+MPP
+LD R50002                ; STEP mode
+AND R50000               ; HOLD
+ANL
+JMP @MR2912
+;終了処理
+;Processing of end
+STG @MR2912
+ANB R50300               ; Pause
+ANB R50112               ; UT2 Error
+MPS
+AND @MR2001              ; AUTO oparation 
+SET @MR2915              ; Auto oparation finish
+CON
+ENDS
+MPP
+AND @MR006               ; STEP　Oparation
+RES @MR006               ; STEP　Oparation
+CON
+SET @MR3915              ; STEP oparation finish
+CON
+ENDS
+;<h1/>異常ワーク取出し
+STG @MR2600              ; NG Work take out
+RES @MR800               ; UT1 Pack
+CON
+ANB R50300               ; Pause
+AND R50112               ; UT2 Error
+JMP @MR2601
+STG @MR2601
+JMP @MR2602
+STG @MR2602
+ANB R50300               ; Pause
+ANB R50112               ; UT2 Error
+JMP @MR2603
+STG @MR2603
+ANB R50300               ; Pause
+ANB R50112               ; UT2 Error
+AND= @MR2700 #0          ; UT3-1 t-code missmach
+AND= @MR100 #0
+@DW #0 @EM3              ; Weght1 Retry count
+CON
+@DW #0 @EM4              ; Weght2 Retry count
+CON
+RES @MR3015              ; Balancer1 weight range error
+CON
+RES @MR3115              ; Balancer2 weight range error
+CON
+RES MR402                ; UT2 work detection/data check 
+CON
+JMP @MR2214
+;<h1/>STEP
+LD R50002                ; STEP mode
+ANB R50300               ; Pause
+ANB R50202               ; UT2 Do
+SET @MR006               ; STEP　Oparation
+CON
+SET R50202               ; UT2 Do
+CON
+SET @MR3900
+STG @MR3900
+ANB R50300               ; Pause
+ANB R50112               ; UT2 Error
+MPS
+LD LR40300               ; STEP UT2-0 selection lamp
+OR LR40301               ; STEP UT2-1 selection lamp
+OR LR40302               ; STEP UT2-2 selection lamp
+OR LR40303               ; STEP UT2-3 selection lamp
+ANL
+JMP @MR3901
+MPP
+LDB LR40300              ; STEP UT2-0 selection lamp
+ANB LR40301              ; STEP UT2-1 selection lamp
+ANB LR40302              ; STEP UT2-2 selection lamp
+ANB LR40303              ; STEP UT2-3 selection lamp
+ANL
+SET @MR2910
+CON
+JMP @MR3914
+;STEP　ﾁｬｯｸ位置確認
+STG @MR3901
+ANB R50300               ; Pause
+ANB R50112               ; UT2 Error
+LDA #7
+CON
+ADD EM1202               ; Main INDEX current POS
+CON
+STA DM19200              ; UT2 chuck No.
+CON
+JMP @MR3902
+STG @MR3902
+ANB R50300               ; Pause
+ANB R50112               ; UT2 Error
+MPS
+LD>= DM19200 #1          ; UT2 chuck No.
+AND<= DM19200 #8         ; UT2 chuck No.
+ANL
+JMP @MR3903
+MPP
+AND> DM19200 #8          ; UT2 chuck No.
+LDA DM19200              ; UT2 chuck No.
+CON
+SUB #8
+CON
+STA DM19200              ; UT2 chuck No.
+CON
+JMP @MR3903
+;STEP　ﾁｬｯｸ位置確認ここまで
+STG @MR3903
+ANB R50300               ; Pause
+ANB R50112               ; UT2 Error
+@SET LR000               ; Step/Manual Oparation Memory
+CON
+MPS
+AND= DM19200 #1          ; UT2 chuck No.
+SET MR7801               ; INDEX chuck1 open
+CON
+RES MR7800               ; INDEX chuck1 close
+CON
+JMP @MR3904
+MRD
+AND= DM19200 #2          ; UT2 chuck No.
+SET MR7803               ; INDEX chuck2 open
+CON
+RES MR7802               ; INDEX chuck2 close
+CON
+JMP @MR3904
+MRD
+AND= DM19200 #3          ; UT2 chuck No.
+SET MR7805               ; INDEX chuck3 open
+CON
+RES MR7804               ; INDEX chuck3 close
+CON
+JMP @MR3904
+MRD
+AND= DM19200 #4          ; UT2 chuck No.
+SET MR7807               ; INDEX chuck4 open
+CON
+RES MR7806               ; INDEX chuck4 close
+CON
+JMP @MR3904
+MRD
+AND= DM19200 #5          ; UT2 chuck No.
+SET MR7809               ; INDEX chuck5 open
+CON
+RES MR7808               ; INDEX chuck5 close
+CON
+JMP @MR3904
+MRD
+AND= DM19200 #6          ; UT2 chuck No.
+SET MR7811               ; INDEX chuck6 open
+CON
+RES MR7810               ; INDEX chuck6 close
+CON
+JMP @MR3904
+MRD
+AND= DM19200 #7          ; UT2 chuck No.
+SET MR7813               ; INDEX chuck7 open
+CON
+RES MR7812               ; INDEX chuck7 close
+CON
+JMP @MR3904
+MPP
+AND= DM19200 #8          ; UT2 chuck No.
+SET MR7815               ; INDEX chuck8 open
+CON
+RES MR7814               ; INDEX chuck8 close
+CON
+JMP @MR3904
+STG @MR3904
+ANB R50300               ; Pause
+ANB R50112               ; UT2 Error
+OUT R50400               ; Call Post
+CON
+AND R50402               ; Post Ok
+JMP @MR3905
+STG @MR3905
+ANB R50300               ; Pause
+ANB R50112               ; UT2 Error
+MPS
+LD R4802                 ; INDEX chuck 2-1 work existence
+AND R4803                ; INDEX chuck 2-2 work existence
+ANL
+DW #1 DM20200            ; UT2-1 Work detection
+CON
+DW #1 DM20202            ; UT2-2 Work detection
+CON
+SET @MR2100              ; Nomal oparation
+CON
+JMP @MR3906
+MRD
+LD R4802                 ; INDEX chuck 2-1 work existence
+ANB R4803                ; INDEX chuck 2-2 work existence
+ANL
+DW #1 DM20200            ; UT2-1 Work detection
+CON
+SET @MR2100              ; Nomal oparation
+CON
+JMP @MR3906
+MRD
+LDB R4802                ; INDEX chuck 2-1 work existence
+AND R4803                ; INDEX chuck 2-2 work existence
+ANL
+DW #1 DM20202            ; UT2-2 Work detection
+CON
+SET @MR2100              ; Nomal oparation
+CON
+JMP @MR3906
+MPP
+LDB R4802                ; INDEX chuck 2-1 work existence
+ANB R4803                ; INDEX chuck 2-2 work existence
+ANL
+SET @MR2910
+CON
+JMP @MR3906
+STG @MR3906
+ANB R50300               ; Pause
+ANB R50112               ; UT2 Error
+ANB @MR006               ; STEP　Oparation
+MPS
+AND= DM19200 #1          ; UT2 chuck No.
+SET MR7801               ; INDEX chuck1 open
+CON
+RES MR7800               ; INDEX chuck1 close
+CON
+JMP @MR3914
+MRD
+AND= DM19200 #2          ; UT2 chuck No.
+SET MR7803               ; INDEX chuck2 open
+CON
+RES MR7802               ; INDEX chuck2 close
+CON
+JMP @MR3914
+MRD
+AND= DM19200 #3          ; UT2 chuck No.
+SET MR7805               ; INDEX chuck3 open
+CON
+RES MR7804               ; INDEX chuck3 close
+CON
+JMP @MR3914
+MRD
+AND= DM19200 #4          ; UT2 chuck No.
+SET MR7807               ; INDEX chuck4 open
+CON
+RES MR7806               ; INDEX chuck4 close
+CON
+JMP @MR3914
+MRD
+AND= DM19200 #5          ; UT2 chuck No.
+SET MR7809               ; INDEX chuck5 open
+CON
+RES MR7808               ; INDEX chuck5 close
+CON
+JMP @MR3914
+MRD
+AND= DM19200 #6          ; UT2 chuck No.
+SET MR7811               ; INDEX chuck6 open
+CON
+RES MR7810               ; INDEX chuck6 close
+CON
+JMP @MR3914
+MRD
+AND= DM19200 #7          ; UT2 chuck No.
+SET MR7813               ; INDEX chuck7 open
+CON
+RES MR7812               ; INDEX chuck7 close
+CON
+JMP @MR3914
+MPP
+AND= DM19200 #8          ; UT2 chuck No.
+SET MR7815               ; INDEX chuck8 open
+CON
+RES MR7814               ; INDEX chuck8 close
+CON
+JMP @MR3914
+STG @MR3914
+ANB R50300               ; Pause
+ANB R50112               ; UT2 Error
+DW #0 DM20200            ; UT2-1 Work detection
+CON
+DW #0 DM20202            ; UT2-2 Work detection
+CON
+ENDS
+LDB R50003               ; HOME mode
+ANB R50001               ; AUTO mode
+ANB R50002               ; STEP mode
+AND @MR3915              ; STEP oparation finish
+RES R50202               ; UT2 Do
+CON
+RES @MR3915              ; STEP oparation finish
+;<h1/>ｻﾌﾞﾙｰﾁﾝ
+;Subrutine
+;RB1 天秤上下 下降移動
+STG MR4200               ; RB1 balancer down moving request
+SET MR4202               ; RB1 balancer down moving moving 
+CON
+DW #5 EM1300             ; RB1 balancer terget POS
+CON
+AND DM10507.1            ; RB1 Balanser home Complete
+AND MR3000               ; RB1 balancer start I/L
+SET R35000               ; RB1 balance up and down movement
+CON
+JMP @MR1501
+STG @MR1501
+AND R35001               ; RB1 balance up and down movement
+AND T2004                ; RB1 Balanser POS5(down)
+AND= EM1301 #5           ; RB1 balancer current POS
+RES MR4202               ; RB1 balancer down moving moving 
+CON
+RES R35001               ; RB1 balance up and down movement
+CON
+JMP @MR1502              ; RB1 Balancer down Move finish
+STG @MR1502              ; RB1 Balancer down Move finish
+SET MR4201               ; RB1 balancer down moving complet
+CON
+ENDS
+;RB1 天秤上下 上昇移動
+STG MR4208               ; RB1 balancer up moving request
+SET MR4210               ; RB1 balancer UP moving moving 
+CON
+DW #10 EM1300            ; RB1 balancer terget POS
+CON
+AND DM10507.1            ; RB1 Balanser home Complete
+AND MR3000               ; RB1 balancer start I/L
+SET R35000               ; RB1 balance up and down movement
+CON
+JMP @MR1509
+STG @MR1509
+AND R35001               ; RB1 balance up and down movement
+AND T2009                ; RB1 Balanser POS10(up)
+AND= EM1301 #10          ; RB1 balancer current POS
+RES MR4210               ; RB1 balancer UP moving moving 
+CON
+RES R35001               ; RB1 balance up and down movement
+CON
+JMP @MR1510              ; RB1 Balancer up Move finish
+STG @MR1510              ; RB1 Balancer up Move finish
+SET MR4209               ; RB1 balancer up moving complet
+CON
+ENDS
+;<h1/>重量測定　天秤1 計量('C','S'Command)
+STG @MR3000              ; Balancer1 Mesurement Start
+ANB @MR3001              ; Balancer1 Mesurement finish
+@DW #0 @EM1              ; Blancer1 comand change count
+CON
+SET @MR3002              ; Balancer1 Mesurement Startting
+CON
+JMP @MR3003
+STG @MR3003
+ANB R37002               ; AD4212C-1 communication busy
+MPS
+AND< @EM1 #1             ; Blancer1 comand change count
+@DW #1 EM1920            ; Balanser1 command NO
+CON
+SET R37000               ; AD4212C-1 communication start
+CON
+JMP @MR3004
+MPP
+AND>= @EM1 #1            ; Blancer1 comand change count
+@DW #2 EM1920            ; Balanser1 command NO
+CON
+SET R37000               ; AD4212C-1 communication start
+CON
+JMP @MR3004
+STG @MR3004
+MPS
+AND R37001               ; AD4212C-1 communication finish
+RES R37001               ; AD4212C-1 communication finish
+CON
+@INC @EM1                ; Blancer1 comand change count
+CON
+JMP @MR3005
+MPP
+AND R37003               ; Send and receive error 1
+JMP @MR3008
+STG @MR3005
+MPS
+AND< @EM1 #2             ; Blancer1 comand change count
+JMP @MR3003
+MPP
+AND>= @EM1 #2            ; Blancer1 comand change count
+JMP @MR3006
+STG @MR3006
+@BMOV EM30100 DM20210 #2 ; 1234(① weight ±10decmal 32bit)  UT2-1 Weight 
+@BMOV EM30050 DM20250 #3 ; 12(① weight ASC Byte)  UT2-2 weight(ASCⅡ）
+JMP @MR3007
+STG @MR3007
+MPS
+LD>= DM20210 #5000       ; UT2-1 Weight 
+AND<= DM20210 #9500      ; UT2-1 Weight 
+OR MR706                 ; UT2 weight range error invalid
+ANL
+RES @MR3015              ; Balancer1 weight range error
+CON
+@DW #0 @EM3              ; Weght1 Retry count
+CON
+JMP @MR3008
+MPP
+LD< DM20210 #5500        ; UT2-1 Weight 
+OR> DM20210 #9500        ; UT2-1 Weight 
+ANB MR706                ; UT2 weight range error invalid
+ANL
+SET @MR3015              ; Balancer1 weight range error
+CON
+@INC @EM3                ; Weght1 Retry count
+CON
+JMP @MR3008
+STG @MR3008
+RES @MR3002              ; Balancer1 Mesurement Startting
+CON
+SET @MR3001              ; Balancer1 Mesurement finish
+CON
+ENDS
+;<h1/>重量測定　天秤2 計量('C','S'Command)
+STG @MR3100              ; Balancer2 mesurement start
+ANB @MR3101              ; Balancer2 mesurement finish
+@DW #0 @EM2              ; Blancer2 comand change count
+CON
+SET @MR3102              ; Balancer2 mesurement starting
+CON
+JMP @MR3103
+STG @MR3103
+ANB R37010               ; AD4212C-2 communication busy
+MPS
+AND< @EM2 #1             ; Blancer2 comand change count
+@DW #1 EM1922            ; Balanser2 command NO
+CON
+SET R37008               ; AD4212C-2 communication start
+CON
+JMP @MR3104
+MPP
+AND>= @EM2 #1            ; Blancer2 comand change count
+@DW #2 EM1922            ; Balanser2 command NO
+CON
+SET R37008               ; AD4212C-2 communication start
+CON
+JMP @MR3104
+STG @MR3104
+MPS
+AND R37009               ; AD4212C-2 communication finish
+RES R37009               ; AD4212C-2 communication finish
+CON
+@INC @EM2                ; Blancer2 comand change count
+CON
+JMP @MR3105
+MPP
+AND R37011               ; Send and receive error 2
+JMP @MR3108
+STG @MR3105
+MPS
+AND< @EM2 #2             ; Blancer2 comand change count
+JMP @MR3103
+MPP
+AND>= @EM2 #2            ; Blancer2 comand change count
+JMP @MR3106
+STG @MR3106
+@BMOV EM30300 DM20212 #2 ; 1234(② weight ±10decimal32bit)  UT2-2 Weight
+@BMOV EM30250 DM20260 #3 ; 12(② weight ASC Byte)  UT2-1 dent check(ASCⅡ）
+JMP @MR3107
+STG @MR3107
+MPS
+LD>= DM20212 #7500       ; UT2-2 Weight
+AND<= DM20212 #9500      ; UT2-2 Weight
+OR MR706                 ; UT2 weight range error invalid
+ANL
+RES @MR3115              ; Balancer2 weight range error
+CON
+@DW #0 @EM4              ; Weght2 Retry count
+CON
+JMP @MR3108
+MPP
+LD< DM20212 #7500        ; UT2-2 Weight
+OR> DM20212 #9500        ; UT2-2 Weight
+ANB MR706                ; UT2 weight range error invalid
+ANL
+SET @MR3115              ; Balancer2 weight range error
+CON
+@INC @EM4                ; Weght2 Retry count
+CON
+JMP @MR3108
+STG @MR3108
+RES @MR3102              ; Balancer2 mesurement starting
+CON
+SET @MR3101              ; Balancer2 mesurement finish
+CON
+ENDS
+;<h1/>ﾊﾞｰｺｰﾄﾞ1 読込
+STG @MR3200              ; BCR1 reading  start
+ANB @MR3201              ; BCR1 reading  finish
+RES R37101               ; SR751-1 communication finish
+CON
+SET @MR3202              ; BCR1 reading  starting
+CON
+JMP @MR3203
+STG @MR3203
+ANB R37102               ; SR751-1 communication busy
+SET R37100               ; SR751-1 communication start
+CON
+JMP @MR3204
+STG @MR3204
+MPS
+AND R37101               ; SR751-1 communication finish
+JMP @MR3205
+MPP
+AND R37107               ; SR751-1 communication NG
+JMP @MR3207
+STG @MR3205
+RES R37101               ; SR751-1 communication finish
+CON
+JMP @MR3206
+STG @MR3206
+@BMOV EM30470 DM20240 #3 ; ① T-code ASC Word  UT2-1 weight(ASCⅡ）
+@BMOV EM30580 DM20222 #2 ; ① X  After angle amount  UT2-1 correct angle
+MPS
+AND CR2002               ; Normal ON
+MPS
+ANB MR012                ; OFF SET FLG
+MPS
+LDA.L EM30590            ; ① Y  After angle amount
+CON
+ADD.L DM15500            ; 4St ① RB6 standard height
+CON
+STA.L DM20226            ; UT2-1 temp paste height1
+MPP
+LDA.L EM30590            ; ① Y  After angle amount
+CON
+ADD.L DM15600            ; 4St ① RB8 standard height
+CON
+STA.L DM20230            ; UT2-1 Final paste height1
+MPP
+AND MR012                ; OFF SET FLG
+MPS
+LDA.L DM15500            ; 4St ① RB6 standard height
+CON
+ADD.L +0
+CON
+STA.L DM20226            ; UT2-1 temp paste height1
+MPP
+LDA.L DM15600            ; 4St ① RB8 standard height
+CON
+ADD.L +0
+CON
+STA.L DM20230            ; UT2-1 Final paste height1
+MRD
+AND CR2003               ; Normal OFF
+MPS
+AND= EM0 #1              ; M/C LINE NO
+MPS
+LDA.L EM30590            ; ① Y  After angle amount
+CON
+ADD.L +8678
+CON
+STA.L DM20226            ; UT2-1 temp paste height1
+MPP
+LDA.L DM20226            ; UT2-1 temp paste height1
+CON
+SUB.L +478
+CON
+STA.L DM20230            ; UT2-1 Final paste height1
+MPP
+AND= EM0 #2              ; M/C LINE NO
+MPS
+LDA.L EM30590            ; ① Y  After angle amount
+CON
+ADD.L +8720
+CON
+STA.L DM20226            ; UT2-1 temp paste height1
+MPP
+LDA.L DM20226            ; UT2-1 temp paste height1
+CON
+SUB.L +500
+CON
+STA.L DM20230            ; UT2-1 Final paste height1
+MPP
+JMP @MR3207
+STG @MR3207
+RES @MR3202              ; BCR1 reading  starting
+CON
+SET @MR3201              ; BCR1 reading  finish
+CON
+ENDS
+;<h1/>ﾊﾞｰｺｰﾄﾞ2 読込
+STG @MR3300              ; BCR2 reading  start
+ANB @MR3301              ; BCR2 reading  finish
+RES R37109               ; SR751-2 communication finish
+CON
+SET @MR3302              ; BCR2 reading  starting
+CON
+JMP @MR3303
+STG @MR3303
+ANB R37110               ; SR751-2 communication busy
+SET R37108               ; SR751-2 communication start
+CON
+JMP @MR3304
+STG @MR3304
+MPS
+AND R37109               ; SR751-2 communication finish
+JMP @MR3305
+MPP
+AND R37115               ; SR751-2 communication NG
+JMP @MR3307
+STG @MR3305
+RES R37109               ; SR751-2 communication finish
+CON
+JMP @MR3306
+STG @MR3306
+@BMOV EM30670 DM20244 #3 ; ② T-code ASC Word
+@BMOV EM30780 DM20224 #2 ; ② X  After angle amount  UT2-2 correct angle
+MPS
+AND CR2002               ; Normal ON
+MPS
+ANB MR012                ; OFF SET FLG
+MPS
+LDA.L EM30790            ; ② Y  After angle amount
+CON
+ADD.L DM15510            ; 4St ① RB7 standard height
+CON
+STA.L DM20228            ; UT2-2 temp paste height2
+MPP
+LDA.L EM30790            ; ② Y  After angle amount
+CON
+ADD.L DM15610            ; 4St ① RB9 standard height
+CON
+STA.L DM20232            ; UT2-2 Final paste height2
+MPP
+AND MR012                ; OFF SET FLG
+MPS
+LDA.L DM15510            ; 4St ① RB7 standard height
+CON
+ADD.L +0
+CON
+STA.L DM20228            ; UT2-2 temp paste height2
+MPP
+LDA.L DM15610            ; 4St ① RB9 standard height
+CON
+ADD.L +0
+CON
+STA.L DM20228            ; UT2-2 temp paste height2
+MRD
+AND CR2003               ; Normal OFF
+MPS
+AND= EM0 #1              ; M/C LINE NO
+MPS
+LDA.L EM30790            ; ② Y  After angle amount
+CON
+ADD.L +8681
+CON
+STA.L DM20228            ; UT2-2 temp paste height2
+MPP
+LDA.L DM20228            ; UT2-2 temp paste height2
+CON
+SUB.L +471
+CON
+STA.L DM20232            ; UT2-2 Final paste height2
+MPP
+AND= EM0 #2              ; M/C LINE NO
+MPS
+LDA.L EM30790            ; ② Y  After angle amount
+CON
+ADD.L +8720
+CON
+STA.L DM20228            ; UT2-2 temp paste height2
+MPP
+LDA.L DM20228            ; UT2-2 temp paste height2
+CON
+SUB.L +500
+CON
+STA.L DM20232            ; UT2-2 Final paste height2
+MPP
+JMP @MR3307
+STG @MR3307
+RES @MR3302              ; BCR2 reading  starting
+CON
+SET @MR3301              ; BCR2 reading  finish
+CON
+ENDS
+;<h1/>重量測定　天秤1 RE-ZERO('C','R'Command)
+STG @MR3600              ; Balancer1 re-zero start
+ANB @MR3601              ; Balancer1 re-zero finish
+@DW #0 @EM11             ; Blancer1 comand change count
+CON
+SET @MR3602              ; Balancer1 re-zero starting
+CON
+JMP @MR3603
+STG @MR3603
+ANB R37002               ; AD4212C-1 communication busy
+MPS
+AND< @EM11 #1            ; Blancer1 comand change count
+@DW #11 EM1920           ; Balanser1 command NO
+CON
+SET R37000               ; AD4212C-1 communication start
+CON
+JMP @MR3604
+MPP
+AND>= @EM11 #1           ; Blancer1 comand change count
+@DW #12 EM1920           ; Balanser1 command NO
+CON
+SET R37000               ; AD4212C-1 communication start
+CON
+JMP @MR3604
+STG @MR3604
+AND R37001               ; AD4212C-1 communication finish
+RES R37001               ; AD4212C-1 communication finish
+CON
+@INC @EM11               ; Blancer1 comand change count
+CON
+JMP @MR3605
+STG @MR3605
+MPS
+AND< @EM11 #2            ; Blancer1 comand change count
+JMP @MR3603
+MPP
+AND>= @EM11 #2           ; Blancer1 comand change count
+JMP @MR3606
+STG @MR3606
+TMR @11 #30
+CON
+AND @T11
+RES @MR3602              ; Balancer1 re-zero starting
+CON
+SET @MR3601              ; Balancer1 re-zero finish
+CON
+ENDS
+;<h1/>重量測定　天秤2 RE-ZERO('C','R'Command)
+STG @MR3700              ; Balancer2 re-zero start
+ANB @MR3701              ; Balancer2 re-zero finish
+@DW #0 @EM12             ; Blancer2 comand change count
+CON
+SET @MR3702              ; Balancer2 re-zero starting
+CON
+JMP @MR3703
+STG @MR3703
+ANB R37002               ; AD4212C-1 communication busy
+MPS
+AND< @EM12 #1            ; Blancer2 comand change count
+@DW #11 EM1922           ; Balanser2 command NO
+CON
+SET R37008               ; AD4212C-2 communication start
+CON
+JMP @MR3704
+MPP
+AND>= @EM12 #1           ; Blancer2 comand change count
+@DW #12 EM1922           ; Balanser2 command NO
+CON
+SET R37008               ; AD4212C-2 communication start
+CON
+JMP @MR3704
+STG @MR3704
+AND R37009               ; AD4212C-2 communication finish
+RES R37009               ; AD4212C-2 communication finish
+CON
+@INC @EM12               ; Blancer2 comand change count
+CON
+JMP @MR3705
+STG @MR3705
+MPS
+AND< @EM12 #2            ; Blancer2 comand change count
+JMP @MR3703
+MPP
+AND>= @EM12 #2           ; Blancer2 comand change count
+JMP @MR3706
+STG @MR3706
+TMR @12 #30
+CON
+AND @T12
+RES @MR3702              ; Balancer2 re-zero starting
+CON
+SET @MR3701              ; Balancer2 re-zero finish
+CON
+ENDS
+;<h1/>ｴﾗｰ表示
+;Error Display
+;Error 12
+;UT2-1 重量範囲外
+STG @MR2702              ; UT2-1 weight range 
+ANB R50008               ; Whole ERROR
+ANB @MR115
+SET @MR111
+CON
+SET R50008               ; Whole ERROR
+CON
+SET R50112               ; UT2 Error
+CON
+SET R50511               ; 12.UT2-1 out of Weight range 
+CON
+JMP @MR108
+MOV #12 DM400            ; Message NO.
+STG @MR108
+AND R50008               ; Whole ERROR
+JMP @MR109
+STG @MR109
+ANB R50008               ; Whole ERROR
+DW #1 DM20204
+CON
+DW #2 DM20200            ; UT2-1 Work detection
+CON
+RES @MR111
+CON
+ENDS
+;Error 13
+;UT2-2 重量範囲外
+STG @MR2703              ; UT2-2 weight range 
+ANB R50008               ; Whole ERROR
+ANB @MR111
+SET @MR115
+CON
+SET R50008               ; Whole ERROR
+CON
+SET R50112               ; UT2 Error
+CON
+SET R50512               ; 13.UT2-2 out of Weight range 
+CON
+JMP @MR112
+MOV #13 DM400            ; Message NO.
+STG @MR112
+AND R50008               ; Whole ERROR
+JMP @MR113
+STG @MR113
+ANB R50008               ; Whole ERROR
+DW #1 DM20206
+CON
+DW #2 DM20202            ; UT2-2 Work detection
+CON
+RES @MR115
+CON
+ENDS
+;Error 14
+;UT2-1 補正値範囲外異常
+STG @MR2704              ; UT2-1 correct range error 
+ANB R50008               ; Whole ERROR
+SET R50008               ; Whole ERROR
+CON
+SET R50112               ; UT2 Error
+CON
+SET R50513               ; 14.UT2-1 Out of Correction value
+CON
+JMP @MR200
+MOV #14 DM400            ; Message NO.
+STG @MR200
+AND R50008               ; Whole ERROR
+JMP @MR201
+STG @MR201
+ANB R50008               ; Whole ERROR
+ENDS
+;Error 15
+;UT2-2 補正値範囲外異常
+STG @MR2705              ; UT2-2 correct range error 
+ANB R50008               ; Whole ERROR
+SET R50008               ; Whole ERROR
+CON
+SET R50112               ; UT2 Error
+CON
+SET R50514               ; 15.UT2-2 Out of Correction value
+CON
+JMP @MR204
+MOV #15 DM400            ; Message NO.
+STG @MR204
+AND R50008               ; Whole ERROR
+JMP @MR205
+STG @MR205
+ANB R50008               ; Whole ERROR
+ENDS
+;Error 16
+;画像処理通信異常
+STG @MR2708
+ANB R50008               ; Whole ERROR
+SET R50008               ; Whole ERROR
+CON
+SET R50112               ; UT2 Error
+CON
+SET R50515               ; 16.UT2 Image cmmunication NG
+CON
+JMP @MR300
+MOV #16 DM400            ; Message NO.
+STG @MR300
+AND R50008               ; Whole ERROR
+JMP @MR301
+STG @MR301
+ANB R50008               ; Whole ERROR
+SET @MR302
+CON
+ENDS
+;Error 17
+;UT2-1 画像処理NGﾁｪｯｸ用
+STG @MR2706
+ANB R50008               ; Whole ERROR
+SET R50008               ; Whole ERROR
+CON
+SET R50112               ; UT2 Error
+CON
+SET R50600               ; 17.UT2-1 Image NG (cheking)
+CON
+JMP @MR208
+MOV #17 DM400            ; Message NO.
+STG @MR208
+AND R50008               ; Whole ERROR
+SET R50106
+CON
+JMP @MR209
+STG @MR209
+ANB R50008               ; Whole ERROR
+SET @MR210
+CON
+ENDS
+;Error 18
+;UT2-2 画像処理NGﾁｪｯｸ用
+STG @MR2707
+ANB R50008               ; Whole ERROR
+SET R50008               ; Whole ERROR
+CON
+SET R50112               ; UT2 Error
+CON
+SET R50601               ; 18.UT2-2 Image NG (cheking)
+CON
+JMP @MR212
+MOV #18 DM400            ; Message NO.
+STG @MR212
+AND R50008               ; Whole ERROR
+SET R50106
+CON
+JMP @MR213
+STG @MR213
+ANB R50008               ; Whole ERROR
+SET @MR214
+CON
+ENDS
+;<h1/>UT2 ﾎﾟｰｽﾞ禁止
+;UT2 Pause Prohibition
+LDB @MR800               ; UT1 Pack
+INV
+OUT R50102               ; PACK UT2
+END
+ENDH
