@@ -19,19 +19,19 @@ MODEL_NAME = "Qwen/Qwen2.5-Coder-14B-Instruct"
 
 # mnm_to_txt.py
 MNM_TO_TXT_CONFIG = {
-    "directory": "./data/raw/通常",
-    "output_directory": "./data/processed/txt/通常",
-    "error_directory": "./data/raw/encoding_error",
+    "directory": "./data/raw/STG命令使用",
+    "output_directory": "./data/processed/txt/STG命令使用",
+    "error_directory": "./data/raw/encoding_error/STG命令使用",
     "debug": False
 }
 
 # txt_to_jsonl.py の設定
 TXT_TO_JSONL_CONFIG = {
-    "input_directories": "./data/processed/txt/通常",
+    "input_directories": "./data/processed/txt/STG命令使用",
     "output_dir": "./data/processed/jsonl/original",
-    "output_filename": "plc_通常_02.jsonl",
-    "category": "通常",
-    "id_prefix": "02"
+    "output_filename": "plc_STG_01-1.jsonl",
+    "category": "STG",
+    "id_prefix": "01"
 }
 
 # remove_short_jsonl.py の設定
@@ -44,37 +44,56 @@ REMOVE_SHORT_JSONL_CONFIG = {
 # split_long_txt.py の設定
 SPLIT_LONG_TXT_CONFIG = {
     "model_name": MODEL_NAME,
-    "input_dir": "./data/processed/txt/exceeding_limit_h1",
-    "output_dir": "./data/processed/txt/splitted_semicolon",
-    "exceeding_dir": "./data/processed/txt/exceeding_limit_semicolon",
+    "input_dir": "./data/processed/jsonl/deduplicated/plc_normal_01-3.jsonl",
+    "output_dir": "./data/processed/jsonl/long_text_splitted",
+    "exceeding_dir": "./data/processed/jsonl/exceeding_limit_h1",
+    "summary_dir": "./data/analysis/split_summary",
+    "delimiter": ";<h1/>",  # ;<h1/> or \n;
+    "token_limit": 15872
+}
+
+# split_long_jsonl.py の設定
+SPLIT_LONG_JSONL_CONFIG = {
+    "model_name": MODEL_NAME,
+    "input_file": "./data/processed/jsonl/exceeding_limit/h1/plc_normal_01-3_exceeding.jsonl",
+    "output_file": "./data/processed/jsonl/long_text_splitted/plc_normal_01-3_splitted_semi.jsonl",
+    "exceeding_file": "./data/processed/jsonl/exceeding_limit/semicolon/plc_normal_01-3_exceeding.jsonl",
     "summary_dir": "./data/analysis/split_summary",
     "delimiter": "\n;",  # ;<h1/> or \n;
-    "label": "通常",  # 通常 or STG命令使用
-    "token_limit": 16350
+    "token_limit": 15872
 }
 
 
 # split_train_val_jsonl.py の設定
 SPLIT_TRAIN_VAL_JSONL_CONFIG = {
-    "file_path": "./data/processed/jsonl/filtered/filtered_plc_01.jsonl",
+    "file_path": "./data/processed/jsonl/deduplicated/plc_normal_01-3.jsonl",
     "train_ratio": 0.95,
     "output_dir": "./data/processed/jsonl/splitted_train-val",
-    "train_output": "plc_train_01.jsonl",
-    "val_output": "plc_val_01.jsonl",
+    "train_output": "plc_normal_03-1_train.jsonl",
+    "val_output": "plc_normal_03-1_val.jsonl",
     "seed": 42
 }
 
 
 # その他のスクリプト
 """
+- merge_jsonl.py: JSONLファイルを結合
 - count_tokens.py: JSONLファイルのトークン数をカウント
 - generate_sample_jsonl.py: サンプルJSONLファイルを生成
 - remove_files.py: 不要なファイルを削除
 """
 
+# merge_jsonl.py の設定
+MERGE_JSONL_CONFIG = {
+    "file1_path": "./data/processed/jsonl/long_text_splitted/plc_normal_01-3_splitted_h1.jsonl",
+    "file2_path": "./data/processed/jsonl/long_text_splitted/plc_normal_01-3_splitted_semi.jsonl",
+    "output_path": "./data/processed/jsonl/long_text_splitted/plc_normal_03-1.jsonl"
+}
+
+
 # count_tokens.py の設定
 COUNT_TOKENS_CONFIG = {
-    "jsonl_file": './data/processed/jsonl/sft/plc_sft_sample.jsonl',
+    "jsonl_file": './data/processed/jsonl/deduplicated/plc_STG_01-2.jsonl',
     "output_dir": './data/analysis/token_count_plot'
 }
 
@@ -94,10 +113,3 @@ REMOVE_FILES_CONFIG = {
         # 必要に応じて他のディレクトリを追加
     ]
 }
-
-
-
-
-
-
-

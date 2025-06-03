@@ -31,6 +31,7 @@ with open(jsonl_file, 'r', encoding='utf-8') as f:
 # --- 一括トークン化とタイトルごとの集計（バッチ処理） ---
 batch_size = 1000  # バッチサイズは必要に応じて調整
 title_token_counts = {}  # タイトルごとのトークン数を保持
+token_counts = []  # 全体の統計用
 
 for i in tqdm(range(0, len(texts), batch_size), desc="トークン化", dynamic_ncols=True):
     batch_texts = texts[i: i+batch_size]
@@ -42,6 +43,7 @@ for i in tqdm(range(0, len(texts), batch_size), desc="トークン化", dynamic_
         if title not in title_token_counts:
             title_token_counts[title] = 0
         title_token_counts[title] += len(token_ids)
+        token_counts.append(len(token_ids))  # 全体の統計用に追加
 
 # タイトルごとのトークン数を出力
 output_file = os.path.join(output_dir, 'title_token_counts.txt')
@@ -52,11 +54,6 @@ with open(output_file, 'w', encoding='utf-8') as f:
         f.write(f"{title}: {count}トークン\n")
 
 print(f"タイトルごとの総トークン数を保存しました: {output_file}")
-
-# 全体の統計用にtoken_countsを更新
-token_counts = []
-for ids in batch_encoding["input_ids"]:
-    token_counts.append(len(ids))
 
 # --- 統計値の計算 ---
 if token_counts:
