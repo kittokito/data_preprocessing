@@ -2,7 +2,7 @@ import os
 import json
 from config import TXT_TO_JSONL_CONFIG
 
-def txt_files_to_jsonl(input_dirs, output_dir, output_filename, category, id_prefix):
+def txt_files_to_jsonl(input_dirs, output_dir, output_filename, category, id_prefix, use_delimiter=False, delimiter="\n;"):
     """
     指定されたディレクトリ（またはディレクトリのリスト）内のすべての .txt ファイルを読み込み、
     各ファイルの内容とファイル名（拡張子除く）を JSON オブジェクトに変換し、
@@ -17,6 +17,8 @@ def txt_files_to_jsonl(input_dirs, output_dir, output_filename, category, id_pre
         output_filename (str): 出力する JSONL ファイルの名前（例："plc_normal_01.jsonl"）。
         category (str): id のカテゴリ。例: "normal" または "STG"。
         id_prefix (str): id の中間部分。例: "01" や "02"。
+        use_delimiter (bool): デリミタを使用してファイルを分割するかどうか。デフォルトはFalse。
+        delimiter (str): ファイルを分割するデリミタ。デフォルトは"\n;"。
     """
     try:
         # 入力が文字列の場合はリストに変換
@@ -41,16 +43,37 @@ def txt_files_to_jsonl(input_dirs, output_dir, output_filename, category, id_pre
                     # 拡張子を除いたタイトル
                     title = os.path.splitext(file_name)[0]
 
-                    # id を category, id_prefix, 連番から生成
-                    json_id = f"{category}-{id_prefix}-{counter}"
-                    counter += 1
+                    if use_delimiter:
+                        # デリミタを使用してファイルを分割
+                        blocks = content.split(delimiter)
+                        for block_index, block in enumerate(blocks):
+                            block = block.strip()
+                            if block:  # 空のブロックは無視
+                                # id を category, id_prefix, 連番から生成
+                                json_id = f"{category}-{id_prefix}-{counter}"
+                                counter += 1
 
-                    json_entry = {
-                        "id": json_id,
-                        "title": title,
-                        "text": content
-                    }
-                    json_data.append(json_entry)
+                                # タイトルにブロック番号を追加
+                                block_title = f"{title}_block_{block_index}"
+
+                                json_entry = {
+                                    "id": json_id,
+                                    "title": block_title,
+                                    "text": block
+                                }
+                                json_data.append(json_entry)
+                    else:
+                        # 従来の処理（1ファイル1エントリ）
+                        # id を category, id_prefix, 連番から生成
+                        json_id = f"{category}-{id_prefix}-{counter}"
+                        counter += 1
+
+                        json_entry = {
+                            "id": json_id,
+                            "title": title,
+                            "text": content
+                        }
+                        json_data.append(json_entry)
 
         # JSONL ファイルとして出力（1行に1つの JSON オブジェクト）
         with open(output_file, 'w', encoding='utf-8') as out_f:
@@ -60,6 +83,10 @@ def txt_files_to_jsonl(input_dirs, output_dir, output_filename, category, id_pre
 
         print(f"JSONLファイルが作成されました: {output_file}")
         print(f"処理した行数: {len(json_data)}")
+        if use_delimiter:
+            print(f"デリミタ '{delimiter}' を使用してファイルを分割しました")
+        else:
+            print("従来の処理（1ファイル1エントリ）で処理しました")
         
     except Exception as e:
         print(f"エラーが発生しました: {e}")
@@ -70,5 +97,7 @@ category = TXT_TO_JSONL_CONFIG["category"]
 id_prefix = TXT_TO_JSONL_CONFIG["id_prefix"]
 output_directory = TXT_TO_JSONL_CONFIG["output_dir"]
 output_filename = TXT_TO_JSONL_CONFIG["output_filename"]
+use_delimiter = TXT_TO_JSONL_CONFIG.get("use_delimiter", False)
+delimiter = TXT_TO_JSONL_CONFIG.get("delimiter", "\n;")
 
-txt_files_to_jsonl(input_directories, output_directory, output_filename, category, id_prefix)
+txt_files_to_jsonl(input_directories, output_directory, output_filename, category, id_prefix, use_delimiter, delimiter)

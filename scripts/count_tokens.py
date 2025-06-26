@@ -10,6 +10,7 @@ from config import COUNT_TOKENS_CONFIG, MODEL_NAME
 # --- ファイルパスの設定 ---
 jsonl_file = COUNT_TOKENS_CONFIG["jsonl_file"]
 output_dir = COUNT_TOKENS_CONFIG["output_dir"]
+filter_token_limit = COUNT_TOKENS_CONFIG["filter_token_limit"]
 os.makedirs(output_dir, exist_ok=True)
 
 # --- Hugging Face のトークナイザーを取得 ---
@@ -70,11 +71,11 @@ print(f"平均トークン数: {avg_tokens}")
 print(f"最大トークン数: {max_tokens}")
 print(f"最小トークン数: {min_tokens}")
 
-# --- ヒストグラムプロットの作成 ---
+# --- ヒストグラムプロット1: 全体のデータ ---
 fig, ax = plt.subplots(figsize=(10, 6))
 bins = 50
 ax.hist(token_counts, bins=bins, color='skyblue', edgecolor='black')
-ax.set_title('Token Count Distribution')
+ax.set_title('Token Count Distribution (All Data)')
 ax.set_xlabel('Token Count')
 ax.set_ylabel('Frequency')
 ax.grid(True)
@@ -86,12 +87,53 @@ ax.xaxis.set_major_locator(ticker.MaxNLocator(10))
 # 2) x軸ラベルを45度回転
 ax.tick_params(axis='x', rotation=45)
 
-# --- プロット画像の保存 ---
+# --- プロット画像の保存（全体） ---
 input_filename = os.path.basename(jsonl_file)
-png_filename = os.path.splitext(input_filename)[0] + ".png"
-plot_path = os.path.join(output_dir, png_filename)
+png_filename_all = os.path.splitext(input_filename)[0] + "_all.png"
+plot_path_all = os.path.join(output_dir, png_filename_all)
 
-plt.savefig(plot_path, bbox_inches='tight')  # bbox_inches='tight' でラベル切れを防ぐ
+plt.savefig(plot_path_all, bbox_inches='tight')  # bbox_inches='tight' でラベル切れを防ぐ
 plt.close()
 
-print("プロット結果を保存しました:", plot_path)
+print("全体のプロット結果を保存しました:", plot_path_all)
+
+# --- 設定値以下のデータをフィルタリング ---
+token_counts_filtered = [count for count in token_counts if count <= filter_token_limit]
+
+if token_counts_filtered:
+    # --- 設定値以下の統計値の計算 ---
+    sum_tokens_filtered = sum(token_counts_filtered)
+    avg_tokens_filtered = sum_tokens_filtered / len(token_counts_filtered)
+    max_tokens_filtered = max(token_counts_filtered)
+    min_tokens_filtered = min(token_counts_filtered)
+    
+    print(f"\n{filter_token_limit}トークン以下のデータ統計:")
+    print(f"対象行数: {len(token_counts_filtered)}")
+    print(f"総トークン数: {sum_tokens_filtered}")
+    print(f"平均トークン数: {avg_tokens_filtered}")
+    print(f"最大トークン数: {max_tokens_filtered}")
+    print(f"最小トークン数: {min_tokens_filtered}")
+    
+    # --- ヒストグラムプロット2: 設定値以下のデータ ---
+    fig, ax = plt.subplots(figsize=(10, 6))
+    bins = 50
+    ax.hist(token_counts_filtered, bins=bins, color='lightgreen', edgecolor='black')
+    ax.set_title(f'Token Count Distribution (≤{filter_token_limit} tokens)')
+    ax.set_xlabel('Token Count')
+    ax.set_ylabel('Frequency')
+    ax.grid(True)
+    
+    # --- x軸の目盛り設定 ---
+    ax.xaxis.set_major_locator(ticker.MaxNLocator(10))
+    ax.tick_params(axis='x', rotation=45)
+    
+    # --- プロット画像の保存（設定値以下） ---
+    png_filename_filtered = os.path.splitext(input_filename)[0] + f"_filtered_{filter_token_limit}.png"
+    plot_path_filtered = os.path.join(output_dir, png_filename_filtered)
+    
+    plt.savefig(plot_path_filtered, bbox_inches='tight')
+    plt.close()
+    
+    print(f"{filter_token_limit}トークン以下のプロット結果を保存しました:", plot_path_filtered)
+else:
+    print(f"{filter_token_limit}トークン以下のデータが見つかりませんでした。")

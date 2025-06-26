@@ -19,7 +19,8 @@
 │   ├── count_tokens.py                   # トークン数をカウント・可視化
 │   ├── count_file_folder.py              # ファイル/フォルダ数をカウント
 │   ├── remove_files.py                   # ファイルを削除
-│   └── generate_sample_jsonl.py          # サンプルJSONLを生成
+│   ├── generate_sample_jsonl.py          # サンプルJSONLを生成
+│   └── convert_kana.py                   # 半角カタカナを全角カタカナに変換
 ├── data/                                 # データディレクトリ
 │   ├── raw/                              # 元のデータ（mnmファイル）
 │   │   ├── 通常/                         # 通常カテゴリのデータ
@@ -65,6 +66,7 @@
 - **count_file_folder.py**: ディレクトリ内のファイル数とフォルダ数をカウント
 - **remove_files.py**: 指定したディレクトリ内のファイルを削除
 - **generate_sample_jsonl.py**: JSONLファイルからサンプルを生成
+- **convert_kana.py**: JSONLファイルの"text"フィールドに含まれる半角カタカナを全角カタカナに変換。変換後のファイル名は末尾に"_kana"が追加される
 
 ## 使用方法
 
@@ -95,6 +97,7 @@ config.pyには各スクリプトの設定が含まれています。主な設�
 - **COUNT_TOKENS_CONFIG**: count_tokens.pyの設定
 - **GENERATE_SAMPLE_JSONL_CONFIG**: generate_sample_jsonl.pyの設定
 - **REMOVE_FILES_CONFIG**: remove_files.pyの設定
+- **CONVERT_KANA_CONFIG**: convert_kana.pyの設定
 
 ## スクリプトの詳細
 

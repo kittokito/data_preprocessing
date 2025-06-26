@@ -27,11 +27,13 @@ MNM_TO_TXT_CONFIG = {
 
 # txt_to_jsonl.py の設定
 TXT_TO_JSONL_CONFIG = {
-    "input_directories": "./data/processed/txt/STG命令使用",
+    "input_directories": "./data/processed/txt/通常",
     "output_dir": "./data/processed/jsonl/original",
-    "output_filename": "plc_STG_01-1.jsonl",
-    "category": "STG",
-    "id_prefix": "01"
+    "output_filename": "plc_normal_01-4.jsonl",
+    "category": "normal",
+    "id_prefix": "01",
+    "use_delimiter": True,  # デリミタを使用するかどうか
+    "delimiter": "\n;"  # ファイルを分割するデリミタ（use_delimiterがTrueの場合のみ使用）
 }
 
 # remove_short_jsonl.py の設定
@@ -66,11 +68,11 @@ SPLIT_LONG_JSONL_CONFIG = {
 
 # split_train_val_jsonl.py の設定
 SPLIT_TRAIN_VAL_JSONL_CONFIG = {
-    "file_path": "./data/processed/jsonl/deduplicated/plc_normal_01-3.jsonl",
+    "file_path": "./data/processed/jsonl/kana/plc_normal_02-1_kana.jsonl",
     "train_ratio": 0.95,
     "output_dir": "./data/processed/jsonl/splitted_train-val",
-    "train_output": "plc_normal_03-1_train.jsonl",
-    "val_output": "plc_normal_03-1_val.jsonl",
+    "train_output": "plc_normal_02-1_kana_train.jsonl",
+    "val_output": "plc_normal_02-1_kana_val.jsonl",
     "seed": 42
 }
 
@@ -93,8 +95,9 @@ MERGE_JSONL_CONFIG = {
 
 # count_tokens.py の設定
 COUNT_TOKENS_CONFIG = {
-    "jsonl_file": './data/processed/jsonl/deduplicated/plc_STG_01-2.jsonl',
-    "output_dir": './data/analysis/token_count_plot'
+    "jsonl_file": './data/processed/jsonl/kana/plc_normal_01-4_kana.jsonl',
+    "output_dir": './data/analysis/token_count_plot',
+    "filter_token_limit": 8192  # フィルタリング用のトークン制限値
 }
 
 # generate_sample_jsonl.py の設定
@@ -112,4 +115,10 @@ REMOVE_FILES_CONFIG = {
         "./data/processed/txt/通常",
         # 必要に応じて他のディレクトリを追加
     ]
+}
+
+# convert_kana.py の設定
+CONVERT_KANA_CONFIG = {
+    "input_file": "./data/processed/jsonl/original/plc_normal_01-4.jsonl",
+    "output_dir": "./data/processed/jsonl/kana"
 }
