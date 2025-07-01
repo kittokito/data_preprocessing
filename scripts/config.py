@@ -29,11 +29,11 @@ MNM_TO_TXT_CONFIG = {
 TXT_TO_JSONL_CONFIG = {
     "input_directories": "./data/processed/txt/通常",
     "output_dir": "./data/processed/jsonl/original",
-    "output_filename": "plc_normal_01-4.jsonl",
+    "output_filename": "plc_normal_05-1_kana.jsonl",
     "category": "normal",
-    "id_prefix": "01",
+    "id_prefix": "05",
     "use_delimiter": True,  # デリミタを使用するかどうか
-    "delimiter": "\n;"  # ファイルを分割するデリミタ（use_delimiterがTrueの場合のみ使用）
+    "delimiter": ";<h1/>"  # ファイルを分割するデリミタ（use_delimiterがTrueの場合のみ使用）
 }
 
 # remove_short_jsonl.py の設定
@@ -57,9 +57,9 @@ SPLIT_LONG_TXT_CONFIG = {
 # split_long_jsonl.py の設定
 SPLIT_LONG_JSONL_CONFIG = {
     "model_name": MODEL_NAME,
-    "input_file": "./data/processed/jsonl/exceeding_limit/h1/plc_normal_01-3_exceeding.jsonl",
-    "output_file": "./data/processed/jsonl/long_text_splitted/plc_normal_01-3_splitted_semi.jsonl",
-    "exceeding_file": "./data/processed/jsonl/exceeding_limit/semicolon/plc_normal_01-3_exceeding.jsonl",
+    "input_file": "./data/processed/jsonl/exceeding_limit/h1/plc_normal_05-2_exceeding.jsonl",
+    "output_file": "./data/processed/jsonl/long_text_splitted/plc_normal_05-2_semicolon.jsonl",
+    "exceeding_file": "./data/processed/jsonl/exceeding_limit/semicolon/plc_normal_05-2_exceeding.jsonl",
     "summary_dir": "./data/analysis/split_summary",
     "delimiter": "\n;",  # ;<h1/> or \n;
     "token_limit": 15872
@@ -68,11 +68,11 @@ SPLIT_LONG_JSONL_CONFIG = {
 
 # split_train_val_jsonl.py の設定
 SPLIT_TRAIN_VAL_JSONL_CONFIG = {
-    "file_path": "./data/processed/jsonl/kana/plc_normal_02-1_kana.jsonl",
+    "file_path": "./data/processed/jsonl/long_text_splitted/plc_normal_05-3.jsonl",
     "train_ratio": 0.95,
     "output_dir": "./data/processed/jsonl/splitted_train-val",
-    "train_output": "plc_normal_02-1_kana_train.jsonl",
-    "val_output": "plc_normal_02-1_kana_val.jsonl",
+    "train_output": "plc_normal_05-3_train.jsonl",
+    "val_output": "plc_normal_05-3_val.jsonl",
     "seed": 42
 }
 
@@ -87,26 +87,26 @@ SPLIT_TRAIN_VAL_JSONL_CONFIG = {
 
 # merge_jsonl.py の設定
 MERGE_JSONL_CONFIG = {
-    "file1_path": "./data/processed/jsonl/long_text_splitted/plc_normal_01-3_splitted_h1.jsonl",
-    "file2_path": "./data/processed/jsonl/long_text_splitted/plc_normal_01-3_splitted_semi.jsonl",
-    "output_path": "./data/processed/jsonl/long_text_splitted/plc_normal_03-1.jsonl"
+    "file1_path": "./data/processed/jsonl/long_text_splitted/plc_normal_05-2_h1.jsonl",
+    "file2_path": "./data/processed/jsonl/long_text_splitted/plc_normal_05-2_semicolon.jsonl",
+    "output_path": "./data/processed/jsonl/long_text_splitted/plc_normal_05-3.jsonl"
 }
 
 
 # count_tokens.py の設定
 COUNT_TOKENS_CONFIG = {
-    "jsonl_file": './data/processed/jsonl/kana/plc_normal_01-4_kana.jsonl',
+    "jsonl_file": './data/processed/jsonl/exceeding_limit/semicolon/plc_normal_05-2_exceeding.jsonl',
     "output_dir": './data/analysis/token_count_plot',
     "filter_token_limit": 8192  # フィルタリング用のトークン制限値
 }
 
 # generate_sample_jsonl.py の設定
 GENERATE_SAMPLE_JSONL_CONFIG = {
-    "input_filename": "./data/processed/jsonl/merged/plc_normal_01.jsonl",
+    "input_filename": "./data/processed/jsonl/deduplicated/plc_normal_05-2.jsonl",
     "output_folder": "./data/processed/jsonl/sample",
-    "output_filename": "plc_sample_01.jsonl",
-    "num_samples": 1280,
-    "max_tokens": 32700
+    "output_filename": "sample_plc_normal_05-2.jsonl",
+    "num_samples": 300,
+    "max_tokens": 16384
 }
 
 # remove_files.py の設定
@@ -119,6 +119,13 @@ REMOVE_FILES_CONFIG = {
 
 # convert_kana.py の設定
 CONVERT_KANA_CONFIG = {
-    "input_file": "./data/processed/jsonl/original/plc_normal_01-4.jsonl",
+    "input_file": "./data/processed/jsonl/original/plc_normal_05-1_kana.jsonl",
     "output_dir": "./data/processed/jsonl/kana"
+}
+
+# merge_jsonl_by_title.py の設定
+MERGE_JSONL_BY_TITLE_CONFIG = {
+    "input_file": "./data/processed/jsonl/deduplicated/plc_normal_05-2.jsonl",
+    "output_file": "./data/processed/jsonl/merged/merged_plc_normal_05-2.jsonl",
+    "text_delimiter": "\n;<h1/>"  # テキスト結合時の区切り文字
 }
